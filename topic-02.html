@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 2: Getting to know you</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.10);
+    --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A;
+    --text-secondary: #5A5A5A;
+    --text-tertiary: #9A9A9A;
+    --accent: #3C3489;
+    --accent-light: #EEEDFE;
+    --accent-mid: #534AB7;
+    --gold: #EF9F27;
+    --gold-dark: #BA7517;
+    --purple-mid: #7F77DD;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif;
+    --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .site-nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .nav-logo-svg { width: 40px; height: 32px; }
+  .nav-wordmark { font-family: Georgia, 'Times New Roman', serif; font-size: 17px; font-weight: 700; color: var(--accent); letter-spacing: -0.01em; }
+  .nav-wordmark span { color: var(--purple-mid); font-weight: 400; }
+  .nav-links { display: flex; gap: 1.5rem; }
+  .nav-links a { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+  .nav-links a:hover { color: var(--text-primary); }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .player-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1rem; margin-bottom: 1.75rem; }
+  .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
+  .audio-toggle { display: flex; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
+  .toggle-btn { font-size: 12px; font-family: var(--font-ui); font-weight: 400; color: var(--text-secondary); background: none; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
+  .toggle-btn:hover { color: var(--text-primary); }
+  .toggle-btn.active { background: var(--accent); color: white; font-weight: 500; }
+  .download-link { font-size: 12px; color: var(--text-secondary); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 4px 10px; transition: background 0.15s; }
+  .download-link:hover { background: var(--bg); }
+  .audio-row { display: flex; align-items: center; gap: 12px; }
+  .play-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+  .play-btn:hover { background: var(--accent-mid); }
+  .play-btn svg { fill: white; width: 14px; height: 14px; margin-left: 2px; }
+  .scrubber-wrap { flex: 1; }
+  .scrubber-track { width: 100%; padding: 12px 0; cursor: pointer; margin-bottom: 5px; }
+  .scrubber { width: 100%; height: 3px; background: var(--border); border-radius: 2px; position: relative; pointer-events: none; }
+  .scrubber-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 2px; transition: width 0.1s linear; }
+  .time-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .controls-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+  .reveal-all-btn { font-size: 12px; font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
+  .reveal-all-btn:hover { background: var(--surface); }
+  .sent-count-label { font-size: 12px; color: var(--text-tertiary); }
+  .sentence-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 7px; overflow: hidden; transition: border-color 0.15s; }
+  .sentence-card:hover { border-color: var(--border-strong); }
+  .sentence-header { display: flex; align-items: center; gap: 10px; padding: 0.7rem 1rem; cursor: pointer; user-select: none; -webkit-user-select: none; }
+  .sent-num { font-size: 11px; font-weight: 500; color: var(--text-tertiary); min-width: 20px; font-variant-numeric: tabular-nums; }
+  .sent-play-btn { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-light); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+  .sent-play-btn:hover { background: var(--accent); }
+  .sent-play-btn:hover svg { fill: white; }
+  .sent-play-btn.playing { background: var(--accent); }
+  .sent-play-btn svg { fill: var(--accent); width: 10px; height: 10px; margin-left: 1px; }
+  .sent-play-btn.playing svg { fill: white; margin-left: 0; }
+  .sent-preview { font-family: var(--font-thai); font-size: 16px; color: var(--text-primary); flex: 1; line-height: 1.4; }
+  .sent-preview .ell { color: var(--text-tertiary); }
+  .prog-wrap { display: flex; align-items: center; gap: 2.5px; flex-shrink: 0; padding: 2px 0; }
+  .prog-seg { width: 5px; height: 16px; border-radius: 3px; background: var(--border); transition: background 0.2s ease; }
+  .prog-seg.on { background: var(--accent); }
+  .sentence-body { border-top: 0.5px solid var(--border); }
+  .reveal-row { padding: 0.6rem 1rem; border-bottom: 0.5px solid var(--border); }
+  .reveal-row:last-child { border-bottom: none; }
+  .row-thai { font-family: var(--font-thai); font-size: 19px; font-weight: 400; color: var(--text-primary); line-height: 1.5; }
+  .row-english { font-size: 14px; color: var(--text-secondary); }
+  .row-notes { background: var(--bg); }
+  .gloss-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
+  .gloss-chip { background: var(--surface); border: 0.5px solid var(--border); border-radius: 20px; padding: 2px 9px; font-size: 12px; line-height: 1.5; }
+  .g-thai { font-family: var(--font-thai); color: var(--text-primary); font-weight: 500; }
+  .g-eq { color: var(--text-tertiary); margin: 0 2px; }
+  .g-eng { color: var(--text-secondary); }
+  .cultural-note { font-size: 11.5px; color: var(--text-tertiary); font-style: italic; margin-top: 5px; padding-top: 5px; border-top: 0.5px solid var(--border); line-height: 1.5; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } .player-card { padding: 0.9rem 1rem 0.85rem; } }
+  @media (max-width: 600px) {
+    .site-nav { padding: 0 1rem; height: 48px; } .nav-wordmark { font-size: 15px; } .nav-links { gap: 1rem; } .nav-links a { font-size: 12px; }
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .player-card { padding: 0.85rem 0.9rem 0.8rem; margin-bottom: 1.25rem; } .download-link { font-size: 11px; padding: 3px 8px; } .play-btn { width: 34px; height: 34px; }
+    .controls-row { margin-bottom: 0.5rem; } .reveal-all-btn { font-size: 11px; padding: 4px 10px; } .sentence-header { padding: 0.6rem 0.85rem; } .sent-preview { font-size: 15px; }
+    .row-thai { font-size: 17px; } .reveal-row { padding: 0.5rem 0.85rem; } .gloss-chip { font-size: 11px; padding: 2px 7px; } .cultural-note { font-size: 11px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } .row-thai { font-size: 16px; } .nav-links { gap: 0.75rem; } .nav-links a { font-size: 11px; } }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="nav-logo" href="index.html">
+    <svg class="nav-logo-svg" viewBox="136 35 165 180" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(176, 35)">
+        <path d="M60 10 C20 10, 0 45, 0 90 C0 140, 25 175, 60 180 C75 183, 85 175, 85 165 C85 150, 72 145, 65 135 C55 120, 52 105, 55 90 C58 72, 70 62, 80 65 C95 68, 100 85, 95 100 C90 115, 78 118, 75 130 C72 140, 78 150, 90 148 C110 144, 125 120, 125 90 C125 45, 105 10, 60 10Z" fill="#EEEDFE" stroke="#7F77DD" stroke-width="2.5"/>
+        <path d="M60 50 C42 50, 35 65, 35 85 C35 108, 48 125, 62 128 C70 130, 76 125, 76 118 C76 108, 68 104, 65 96 C62 88, 64 76, 72 74 C80 72, 85 80, 82 90 C79 100, 72 103, 70 112" fill="none" stroke="#534AB7" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="62" cy="90" r="5.5" fill="#EF9F27"/>
+      </g>
+      <path d="M168 155 C158 140, 158 170, 168 155" fill="none" stroke="#BA7517" stroke-width="2.8" stroke-linecap="round"/>
+      <path d="M152 155 C136 127, 136 183, 152 155" fill="none" stroke="#BA7517" stroke-width="2.2" stroke-linecap="round" opacity="0.65"/>
+      <path d="M136 155 C114 115, 114 195, 136 155" fill="none" stroke="#BA7517" stroke-width="1.6" stroke-linecap="round" opacity="0.35"/>
+    </svg>
+    <span class="nav-wordmark">Thai<span>Ear</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Topics</a>
+    <a href="index.html">Levels</a>
+    <a href="#">About</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow">Beginner · Topic 2 of 35</div>
+  <h1 class="topic-title">Getting to know you</h1>
+  <p class="topic-meta"><strong>29 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+
+  <div class="player-card">
+    <div class="player-top">
+      <div class="audio-toggle">
+        <button class="toggle-btn active" id="btn-te" onclick="switchAudio('te')">Thai first</button>
+        <button class="toggle-btn" id="btn-et" onclick="switchAudio('et')">English first</button>
+      </div>
+      <a class="download-link" id="download-link" href="https://audio.thaiear.com/GettingToKnow_BEG_TE.mp3" download>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 8l4 4 4-4"/><path d="M2 14h12"/></svg>
+        Download MP3
+      </a>
+    </div>
+    <div class="audio-row">
+      <button class="play-btn" id="play-btn" aria-label="Play audio" onclick="togglePlay()">
+        <svg id="play-icon" viewBox="0 0 16 16"><polygon points="5,2 14,8 5,14"/></svg>
+      </button>
+      <div class="scrubber-wrap">
+        <div class="scrubber-track" id="scrubber" onclick="scrubTo(event)">
+          <div class="scrubber">
+            <div class="scrubber-fill" id="scrubber-fill"></div>
+          </div>
+        </div>
+        <div class="time-row">
+          <span id="time-cur">0:00</span>
+          <span id="time-total">0:00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-row">
+    <button class="reveal-all-btn" id="reveal-all-btn" onclick="toggleAll()">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/></svg>
+      Reveal all
+    </button>
+    <span class="sent-count-label">29 sentences</span>
+  </div>
+
+  <div id="sentence-list"></div>
+</div>
+<!-- Persistent audio element for sentence playback -->
+<audio id="sent-audio-el" preload="none" style="display:none"></audio>
+
+<script>
+const AUDIO_BASE = 'https://audio.thaiear.com';
+
+const sentences = [
+  { num: 24, preview: 'คุณ',     thai: 'คุณชื่ออะไรครับ',                    english: 'What is your name?',                          gloss: [['คุณ','you'],['ชื่อ','name'],['อะไร','what'],['ครับ','polite particle (male)']],                                                                    cultural: '' },
+  { num: 25, preview: 'ผม',      thai: 'ผมชื่อโทบี้ครับ',                    english: 'My name is Toby.',                            gloss: [['ผม','I (male)'],['ชื่อ','name'],['ครับ','polite particle (male)']],                                                                                  cultural: '' },
+  { num: 26, preview: 'คน',      thai: 'คนไทยมักมีชื่อเล่นนะครับ',            english: 'Thai people usually have a nickname.',        gloss: [['คนไทย','Thai person / Thai people'],['มัก','usually'],['มี','have'],['ชื่อเล่น','nickname'],['นะ','softening particle']],                          cultural: 'Most Thais have a short one or two syllable nickname used in everyday life — often quite different from their formal name.' },
+  { num: 27, preview: 'คุณ',     thai: 'คุณชื่อเล่นชื่ออะไรครับ',             english: "What's your nickname?",                       gloss: [['คุณ','you'],['ชื่อเล่น','nickname'],['ชื่อ','name / called'],['อะไร','what']],                                                                       cultural: '' },
+  { num: 28, preview: 'คุณ',     thai: 'คุณมาจากประเทศอะไรครับ',              english: 'What country are you from?',                  gloss: [['คุณ','you'],['มาจาก','come from'],['ประเทศ','country'],['อะไร','what']],                                                                              cultural: '' },
+  { num: 29, preview: 'ผม',      thai: 'ผมมาจากอังกฤษครับ',                   english: "I'm from England.",                           gloss: [['ผม','I (male)'],['มาจาก','come from'],['อังกฤษ','England']],                                                                                        cultural: '' },
+  { num: 30, preview: 'คุณ',     thai: 'คุณอาศัยอยู่ที่ไหนครับ',              english: 'Where do you live?',                          gloss: [['คุณ','you'],['อาศัยอยู่','live / reside'],['ที่ไหน','where']],                                                                                      cultural: '' },
+  { num: 31, preview: 'ตอนนี้',  thai: 'ตอนนี้อยู่ที่กรุงเทพครับ',            english: "I'm living in Bangkok at the moment.",        gloss: [['ตอนนี้','at the moment / now'],['อยู่','live / be at'],['ที่','at'],['กรุงเทพ','Bangkok']],                                                           cultural: '' },
+  { num: 32, preview: 'คุณ',     thai: 'คุณอายุเท่าไรครับ',                   english: 'How old are you?',                            gloss: [['คุณ','you'],['อายุ','age'],['เท่าไร','how much / how many']],                                                                                        cultural: 'Asking age is very normal in Thailand — not considered rude.' },
+  { num: 33, preview: 'ผม',      thai: 'ผมอายุสามสิบสองปีครับ',               english: "I'm thirty-two years old.",                   gloss: [['ผม','I (male)'],['อายุ','age'],['สามสิบสอง','thirty-two'],['ปี','year (time classifier)']],                                                          cultural: '' },
+  { num: 34, preview: 'คุณ',     thai: 'คุณทำงานอะไรครับ',                    english: 'What do you do for work?',                    gloss: [['คุณ','you'],['ทำงาน','work'],['อะไร','what']],                                                                                                      cultural: '' },
+  { num: 35, preview: 'ผม',      thai: 'ผมเป็นครูครับ',                       english: "I'm a teacher.",                              gloss: [['ผม','I (male)'],['เป็น','to be'],['ครู','teacher']],                                                                                                 cultural: '' },
+  { num: 36, preview: 'ตอนนี้',  thai: 'ตอนนี้เรียนอยู่หรือทำงานแล้วครับ',    english: 'Are you studying or working now?',            gloss: [['ตอนนี้','now'],['เรียน','study'],['อยู่','still / currently'],['หรือ','or'],['ทำงาน','work'],['แล้ว','already']],                                    cultural: '' },
+  { num: 37, preview: 'คุณ',     thai: 'คุณแต่งงานแล้วหรือยังครับ',           english: 'Are you married yet?',                        gloss: [['คุณ','you'],['แต่งงาน','be married'],['แล้ว','already'],['หรือยัง','or not yet / yet?']],                                                            cultural: 'Thais often ask this early in conversation — not considered intrusive.' },
+  { num: 38, preview: 'ยัง',     thai: 'ยังไม่ได้แต่งงานครับ',                english: 'Not married yet.',                            gloss: [['ยัง','still / not yet'],['ไม่ได้','have not'],['แต่งงาน','be married']],                                                                              cultural: '' },
+  { num: 39, preview: 'แฟน',     thai: 'แฟนเป็นคนไทยหรือเปล่าครับ',           english: 'Is your partner Thai?',                       gloss: [['แฟน','partner / boyfriend / girlfriend'],['เป็น','is'],['คนไทย','Thai person'],['หรือเปล่า','or not?']],                                           cultural: '' },
+  { num: 40, preview: 'มี',      thai: 'มีลูกไหมครับ',                        english: 'Do you have children?',                       gloss: [['มี','have'],['ลูก','child / children'],['ไหม','question particle']],                                                                                  cultural: '' },
+  { num: 41, preview: 'มี',      thai: 'มีพี่น้องไหมครับ',                    english: 'Do you have any siblings?',                   gloss: [['มี','have'],['พี่น้อง','siblings'],['ไหม','question particle']],                                                                                     cultural: '' },
+  { num: 42, preview: 'มา',      thai: 'มาอยู่เมืองไทยนานแค่ไหนแล้วครับ',    english: 'How long have you been in Thailand?',         gloss: [['มา','come'],['อยู่','stay / live'],['เมืองไทย','Thailand (colloquial)'],['นาน','long time'],['แค่ไหน','how much / to what extent'],['แล้ว','already']], cultural: '' },
+  { num: 43, preview: 'มา',      thai: 'มาได้สามเดือนแล้วครับ',               english: "I've been here three months already.",        gloss: [['มา','come / have been here'],['ได้','for (time)'],['สาม','three'],['เดือน','month'],['แล้ว','already']],                                             cultural: '' },
+  { num: 44, preview: 'มา',      thai: 'มาเมืองไทยครั้งแรกหรือเปล่าครับ',    english: 'Is this your first time in Thailand?',        gloss: [['มา','come'],['เมืองไทย','Thailand (colloquial)'],['ครั้งแรก','first time'],['หรือเปล่า','or not?']],                                                  cultural: '' },
+  { num: 45, preview: 'ไม่',     thai: 'ไม่ใช่ครับ มาหลายครั้งแล้ว',          english: "No — I've been many times already.",          gloss: [['ไม่ใช่','no / that\'s not right'],['มา','come'],['หลาย','many'],['ครั้ง','time (occurrence classifier)'],['แล้ว','already']],                        cultural: '' },
+  { num: 46, preview: 'คุณ',     thai: 'คุณพูดภาษาไทยได้ไหมครับ',             english: 'Can you speak Thai?',                         gloss: [['คุณ','you'],['พูด','speak'],['ภาษาไทย','Thai language'],['ได้','can'],['ไหม','question particle']],                                                    cultural: '' },
+  { num: 47, preview: 'พูด',     thai: 'พูดได้นิดหน่อยครับ ยังฝึกอยู่',       english: "A little — I'm still practising.",            gloss: [['พูดได้','can speak'],['นิดหน่อย','a little'],['ยัง','still'],['ฝึก','practise'],['อยู่','continuous aspect marker']],                                  cultural: '' },
+  { num: 48, preview: 'คุณ',     thai: 'คุณพูดภาษาอังกฤษได้ไหมครับ',          english: 'Can you speak English?',                      gloss: [['คุณ','you'],['พูด','speak'],['ภาษาอังกฤษ','English language'],['ได้','can'],['ไหม','question particle']],                                               cultural: '' },
+  { num: 49, preview: 'นี่',     thai: 'นี่คือเพื่อนของผมครับ ชื่อมาร์คครับ', english: 'This is my friend — his name is Mark.',       gloss: [['นี่','this'],['คือ','is'],['เพื่อน','friend'],['ของ','of / possessive'],['ผม','I / my (male)'],['ชื่อ','name / named']],                              cultural: '' },
+  { num: 50, preview: 'คุณ',     thai: 'คุณพูดภาษาไทยเก่งมากเลยนะครับ',       english: 'You speak Thai really well.',                 gloss: [['คุณ','you'],['พูด','speak'],['ภาษาไทย','Thai language'],['เก่ง','good at / skilled'],['มาก','very'],['เลย','emphasis particle'],['นะ','softening particle']], cultural: '' },
+  { num: 51, preview: 'ยัง',     thai: 'ยังไม่เก่งเลยครับ ยังต้องฝึกอีกเยอะ', english: 'Not good at all yet — still a lot to practise.', gloss: [['ยัง','still / not yet'],['ไม่เก่ง','not good at'],['เลย','at all'],['ต้อง','must / need to'],['ฝึก','practise'],['อีก','more'],['เยอะ','a lot']], cultural: '' },
+  { num: 52, preview: 'คุณ',     thai: 'คุณนับถือศาสนาอะไรครับ',              english: 'What religion do you follow?',                gloss: [['คุณ','you'],['นับถือ','follow / respect'],['ศาสนา','religion'],['อะไร','what']],                                                                       cultural: 'Religion is commonly discussed in Thailand — Buddhism is central to Thai culture and identity.' },
+];
+
+// Strip | clause break markers for display
+function cleanThai(thai) { return thai.replace(/ \| /g, ' '); }
+
+const states = {};
+sentences.forEach(s => states[s.num] = 0);
+let sentPlaying = null;
+let sentLock = false;
+
+function resetSentBtn() {
+  if (sentPlaying !== null) {
+    updateSentBtn(sentPlaying, false);
+    sentPlaying = null;
+  }
+}
+
+let sentResetTimer = null;
+
+function initSentAudio() {
+  const el = document.getElementById('sent-audio-el');
+  if (!el) return;
+  el.addEventListener('ended', resetSentBtn);
+  el.addEventListener('error', resetSentBtn);
+  el.addEventListener('pause', () => {
+    if (el.duration && el.currentTime >= el.duration - 0.3) resetSentBtn();
+  });
+  el.addEventListener('timeupdate', () => {
+    if (el.duration && el.currentTime > 0 && el.currentTime >= el.duration - 0.15) resetSentBtn();
+  });
+}
+
+function getSentAudio() { return document.getElementById('sent-audio-el'); }
+
+// ── MAIN AUDIO PLAYER ──────────────────────────────────────────────────────
+let currentMode = 'te';
+const mainAudio = new Audio(`${AUDIO_BASE}/GettingToKnow_BEG_TE.mp3`);
+mainAudio.preload = 'metadata';
+
+mainAudio.addEventListener('loadedmetadata', () => {
+  document.getElementById('time-total').textContent = formatTime(mainAudio.duration);
+});
+mainAudio.addEventListener('timeupdate', () => {
+  const pct = mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
+  document.getElementById('scrubber-fill').style.width = pct + '%';
+  document.getElementById('time-cur').textContent = formatTime(mainAudio.currentTime);
+});
+mainAudio.addEventListener('ended', () => {
+  document.getElementById('play-icon').innerHTML = '<polygon points="5,2 14,8 5,14"/>';
+});
+
+function formatTime(secs) {
+  if (!secs || isNaN(secs)) return '0:00';
+  const m = Math.floor(secs / 60);
+  const s = String(Math.floor(secs % 60)).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function togglePlay() {
+  const icon = document.getElementById('play-icon');
+  if (mainAudio.paused) {
+    mainAudio.play();
+    icon.innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
+  } else {
+    mainAudio.pause();
+    icon.innerHTML = '<polygon points="5,2 14,8 5,14"/>';
+  }
+}
+
+function scrubTo(e) {
+  const rect = document.getElementById('scrubber').getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  if (mainAudio.duration) mainAudio.currentTime = pct * mainAudio.duration;
+}
+
+function switchAudio(mode) {
+  if (currentMode === mode) return;
+  currentMode = mode;
+  const wasPlaying = !mainAudio.paused;
+  mainAudio.pause();
+  mainAudio.src = `${AUDIO_BASE}/GettingToKnow_BEG_${mode.toUpperCase()}.mp3`;
+  mainAudio.load();
+  document.getElementById('play-icon').innerHTML = '<polygon points="5,2 14,8 5,14"/>';
+  document.getElementById('scrubber-fill').style.width = '0%';
+  document.getElementById('time-cur').textContent = '0:00';
+  document.getElementById('btn-te').classList.toggle('active', mode === 'te');
+  document.getElementById('btn-et').classList.toggle('active', mode === 'et');
+  document.getElementById('download-link').href = `${AUDIO_BASE}/GettingToKnow_BEG_${mode.toUpperCase()}.mp3`;
+  if (wasPlaying) { mainAudio.play(); document.getElementById('play-icon').innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>'; }
+}
+
+// ── PER-SENTENCE AUDIO ─────────────────────────────────────────────────────
+function toggleSentPlay(e, num) {
+  e.stopPropagation();
+  e.preventDefault();
+  if (sentLock) return;
+  sentLock = true;
+  setTimeout(() => { sentLock = false; }, 300);
+
+  const sa = getSentAudio();
+
+  if (sentPlaying === num) {
+    sa.pause();
+    sa.src = '';
+    sentPlaying = null;
+    updateSentBtn(num, false);
+    return;
+  }
+
+  if (sentPlaying !== null) {
+    sa.pause();
+    updateSentBtn(sentPlaying, false);
+    sentPlaying = null;
+  }
+
+  const sid = String(num).padStart(2, '0');
+  sa.src = `${AUDIO_BASE}/GettingToKnow_BEG_S${sid}_TH.mp3`;
+  sa.load();
+  sentPlaying = num;
+  updateSentBtn(num, true);
+
+  if (sentResetTimer) { clearTimeout(sentResetTimer); sentResetTimer = null; }
+
+  sa.addEventListener('loadedmetadata', function onMeta() {
+    sa.removeEventListener('loadedmetadata', onMeta);
+    const duration = sa.duration || 5;
+    if (sentResetTimer) clearTimeout(sentResetTimer);
+    sentResetTimer = setTimeout(() => { resetSentBtn(); sentResetTimer = null; }, (duration + 0.5) * 1000);
+  });
+
+  sa.play().catch(() => { updateSentBtn(num, false); sentPlaying = null; });
+}
+
+function updateSentBtn(num, playing) {
+  const btn = document.querySelector(`#sc-${num} .sent-play-btn`);
+  if (!btn) return;
+  btn.classList.toggle('playing', playing);
+  btn.querySelector('svg').innerHTML = playing
+    ? '<rect x="3" y="2" width="3.5" height="12"/><rect x="9.5" y="2" width="3.5" height="12"/>'
+    : '<polygon points="4,2 13,8 4,14"/>';
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function seg(on) { return `<div class="prog-seg${on ? ' on' : ''}"></div>`; }
+
+function chipHtml(gloss) {
+  return gloss.map(([t, e]) =>
+    `<span class="gloss-chip"><span class="g-thai">${t}</span><span class="g-eq">=</span><span class="g-eng">${e}</span></span>`
+  ).join('');
+}
+
+function cardHtml(s) {
+  const st = states[s.num];
+  const playing = sentPlaying === s.num;
+  const displayThai = cleanThai(s.thai);
+  return `<div class="sentence-card" id="sc-${s.num}">
+    <div class="sentence-header" onclick="cycle(${s.num})" role="button" tabindex="0" aria-label="Sentence ${s.num}">
+      <span class="sent-num">${s.num}</span>
+      <button class="sent-play-btn${playing ? ' playing' : ''}" onclick="toggleSentPlay(event,${s.num})" aria-label="Play sentence ${s.num}">
+        <svg viewBox="0 0 16 16">${playing
+          ? '<rect x="3" y="2" width="3.5" height="12"/><rect x="9.5" y="2" width="3.5" height="12"/>'
+          : '<polygon points="4,2 13,8 4,14"/>'}</svg>
+      </button>
+      <span class="sent-preview">${s.preview}<span class="ell">…</span></span>
+      <div class="prog-wrap" aria-hidden="true">${seg(st>=1)}${seg(st>=2)}${seg(st>=3)}</div>
+    </div>
+    ${st > 0 ? `<div class="sentence-body">
+      <div class="reveal-row row-thai">${displayThai}</div>
+      ${st >= 2 ? `<div class="reveal-row row-english">${s.english}</div>` : ''}
+      ${st >= 3 ? `<div class="reveal-row row-notes">
+        <div class="gloss-row">${chipHtml(s.gloss)}</div>
+        ${s.cultural ? `<div class="cultural-note">${s.cultural}</div>` : ''}
+      </div>` : ''}
+    </div>` : ''}
+  </div>`;
+}
+
+function render() {
+  document.getElementById('sentence-list').innerHTML = sentences.map(cardHtml).join('');
+  const allOpen = sentences.every(s => states[s.num] === 3);
+  const btn = document.getElementById('reveal-all-btn');
+  btn.innerHTML = allOpen
+    ? `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 2l12 12M6.5 6.6A2.5 2.5 0 0 0 10 10.5M1 8s2.5-5 7-5c1 0 2 .2 2.8.6M15 8s-.8 1.6-2.5 3M8 13c-4.5 0-7-5-7-5"/></svg> Collapse all`
+    : `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/></svg> Reveal all`;
+}
+
+function cycle(num) { states[num] = (states[num] + 1) % 4; render(); }
+
+function toggleAll() {
+  const allOpen = sentences.every(s => states[s.num] === 3);
+  sentences.forEach(s => states[s.num] = allOpen ? 0 : 3);
+  render();
+}
+
+render();
+initSentAudio();
+</script>
+</body>
+</html>
