@@ -286,9 +286,12 @@
     background: #F0EFFD;
     color: #534AB7;
   }
-  .badge-mixed {
-    background: #F0F0F0;
-    color: #5A5A5A;
+  .level-badges {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
   .topic-name {
     font-size: 14px;
@@ -306,18 +309,6 @@
     font-size: 12px;
     color: var(--text-tertiary);
   }
-  .topic-progress {
-    display: flex;
-    gap: 2px;
-    margin-left: auto;
-  }
-  .tp-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--border-strong);
-  }
-  .tp-dot.done { background: var(--accent); }
 
   /* ── FOOTER ── */
   .site-footer {
@@ -516,10 +507,15 @@ const topics = [
 ];
 
 function levelBadge(levels) {
-  if (levels.length > 1) return '<span class="level-badge badge-mixed">Mixed levels</span>';
-  if (levels[0] === 'beg') return '<span class="level-badge badge-beg">Beginner</span>';
-  if (levels[0] === 'li1') return '<span class="level-badge badge-li1">Lower intermediate</span>';
-  if (levels[0] === 'li2') return '<span class="level-badge badge-li2">Intermediate</span>';
+  const meta = {
+    beg: ['badge-beg', 'Beginner'],
+    li1: ['badge-li1', 'Lower intermediate'],
+    li2: ['badge-li2', 'Intermediate'],
+  };
+  const badges = levels
+    .map(l => `<span class="level-badge ${meta[l][0]}">${meta[l][1]}</span>`)
+    .join('');
+  return `<div class="level-badges">${badges}</div>`;
 }
 
 // Topic pages available - add to this list as topics go live
@@ -527,9 +523,8 @@ const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html',
 
 function cardHtml(t) {
   const live = liveTopics[t.num];
-  const dots = [1,2,3].map(i => `<div class="tp-dot${t.done && i===1 ? ' done' : ''}"></div>`).join('');
   const metaRight = live
-    ? `<div class="topic-progress">${dots}</div>`
+    ? ''
     : `<span class="coming-soon-label">Coming soon</span>`;
   if (live) {
     return `<a class="topic-card" href="${live}">
