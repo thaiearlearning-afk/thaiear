@@ -464,93 +464,89 @@
 
 <script>
 const topics = [
-  { num: 1, name: "Greetings & farewells", levels: ["beg"], sentences: 23 },
-  { num: 2, name: "Getting to know you", levels: ["beg"], sentences: 29 },
-  { num: 3, name: "Communication survival", levels: ["beg"], sentences: 22 },
-  { num: 4, name: "Colours, shapes & descriptions", levels: ["beg"], sentences: 36 },
-  { num: 5, name: "Weather & seasons", levels: ["beg"], sentences: 26 },
-  { num: 6, name: "Numbers, time & dates", levels: ["beg","li1"], sentences: 30 },
-  { num: 7, name: "Family & relationships", levels: ["beg","li1"], sentences: 35 },
-  { num: 8, name: "Food & drink", levels: ["beg","li1"], sentences: 45 },
-  { num: 9, name: "Home & daily routine", levels: ["beg","li1"], sentences: 35 },
-  { num: 10, name: "Shopping & money (everyday)", levels: ["beg","li1"], sentences: 30 },
-  { num: 11, name: "Getting around & transport", levels: ["beg","li1"], sentences: 30 },
-  { num: 12, name: "Body & health", levels: ["beg","li1"], sentences: 40 },
-  { num: 13, name: "Feelings & emotions", levels: ["beg","li1"], sentences: 30 },
-  { num: 14, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 30 },
-  { num: 15, name: "Social life & events", levels: ["beg","li1"], sentences: 25 },
-  { num: 16, name: "Plans & future", levels: ["beg","li1"], sentences: 20 },
-  { num: 17, name: "Clothing & appearance", levels: ["beg","li1"], sentences: 30 },
-  { num: 18, name: "Cooking & recipes", levels: ["beg","li1"], sentences: 30 },
-  { num: 19, name: "Work & study", levels: ["li1","li2"], sentences: 40 },
-  { num: 20, name: "Education system", levels: ["li1","li2"], sentences: 25 },
-  { num: 21, name: "Food culture & eating out", levels: ["li1","li2"], sentences: 30 },
-  { num: 22, name: "Nature & animals", levels: ["li1","li2"], sentences: 30 },
-  { num: 23, name: "Technology & communication", levels: ["li1","li2"], sentences: 25 },
-  { num: 24, name: "Media & entertainment", levels: ["li1","li2"], sentences: 25 },
-  { num: 25, name: "Sport & exercise", levels: ["li1","li2"], sentences: 25 },
-  { num: 26, name: "Travel & tourism", levels: ["li1","li2"], sentences: 30 },
-  { num: 27, name: "Banking & finance", levels: ["li1","li2"], sentences: 25 },
-  { num: 28, name: "Community & society", levels: ["li1","li2"], sentences: 25 },
-  { num: 29, name: "Agriculture & rural life", levels: ["li1","li2"], sentences: 25 },
-  { num: 30, name: "Crime, law & justice", levels: ["li1","li2"], sentences: 25 },
-  { num: 31, name: "Thai geography & regions", levels: ["li1","li2"], sentences: 25 },
-  { num: 32, name: "Ceremonies & rites of passage", levels: ["li1","li2"], sentences: 25 },
-  { num: 33, name: "Thai culture & customs", levels: ["li1","li2"], sentences: 50 },
-  { num: 34, name: "Buddhism", levels: ["li1","li2"], sentences: 50 },
-  { num: 35, name: "Romantic relationships & dating", levels: ["li1","li2"], sentences: 25 },
-  { num: 36, name: "Asking for help & emergencies", levels: ["beg"], sentences: 20 },
+  // Array order = DISPLAY order. `id` is the FROZEN internal handle (spreadsheet #,
+  // topic-{id}.html filename, liveTopics key). The card number shown is the 1-based
+  // POSITION in this array, computed at render — never the id. See note at end of file.
+  { id: 1,  name: "Greetings & farewells", levels: ["beg"], sentences: 23 },
+  { id: 2,  name: "Getting to know you", levels: ["beg"], sentences: 29 },
+  { id: 3,  name: "Communication survival", levels: ["beg"], sentences: 22 },
+  { id: 4,  name: "Colours & descriptions", levels: ["beg"], sentences: 36 },
+  { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 26 },
+  { id: 6,  name: "Numbers, time & dates", levels: ["beg","li1"], sentences: 30 },
+  { id: 7,  name: "Family & relationships", levels: ["beg","li1"], sentences: 35 },
+  { id: 8,  name: "Food & drink", levels: ["beg","li1"], parts: [22, 23] },
+  { id: 9,  name: "Home & daily routine", levels: ["beg","li1"], sentences: 35 },
+  { id: 10, name: "Shopping & money (everyday)", levels: ["beg","li1"], sentences: 30 },
+  { id: 11, name: "Getting around & transport", levels: ["beg","li1"], sentences: 30 },
+  { id: 36, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 20 },
+  { id: 12, name: "Body & health", levels: ["beg","li1"], parts: [20, 20] },
+  { id: 13, name: "Feelings & emotions", levels: ["beg","li1"], sentences: 30 },
+  { id: 14, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 30 },
+  { id: 15, name: "Social life & events", levels: ["beg","li1"], sentences: 25 },
+  { id: 16, name: "Plans & future", levels: ["beg","li1"], sentences: 20 },
+  { id: 17, name: "Clothing & appearance", levels: ["beg","li1"], sentences: 30 },
+  { id: 18, name: "Cooking & recipes", levels: ["beg","li1"], sentences: 30 },
+  { id: 19, name: "Work & study", levels: ["li1","li2"], parts: [20, 20] },
+  { id: 20, name: "Education system", levels: ["li1","li2"], sentences: 25 },
+  { id: 21, name: "Food culture & eating out", levels: ["li1","li2"], sentences: 30 },
+  { id: 22, name: "Nature & animals", levels: ["li1","li2"], sentences: 30 },
+  { id: 23, name: "Technology & communication", levels: ["li1","li2"], sentences: 25 },
+  { id: 24, name: "Media & entertainment", levels: ["li1","li2"], sentences: 25 },
+  { id: 25, name: "Sport & exercise", levels: ["li1","li2"], sentences: 25 },
+  { id: 26, name: "Travel & tourism", levels: ["li1","li2"], sentences: 30 },
+  { id: 27, name: "Banking & finance", levels: ["li1","li2"], sentences: 25 },
+  { id: 28, name: "Community & society", levels: ["li1","li2"], sentences: 25 },
+  { id: 29, name: "Agriculture & rural life", levels: ["li1","li2"], sentences: 25 },
+  { id: 30, name: "Crime, law & justice", levels: ["li1","li2"], sentences: 25 },
+  { id: 31, name: "Thai geography & regions", levels: ["li1","li2"], sentences: 25 },
+  { id: 32, name: "Ceremonies & rites of passage", levels: ["li1","li2"], sentences: 25 },
+  { id: 33, name: "Thai culture & customs", levels: ["li1","li2"], parts: [22, 28] },
+  { id: 34, name: "Buddhism", levels: ["li1","li2"], parts: [22, 28] },
+  { id: 35, name: "Romantic relationships & dating", levels: ["li1","li2"], sentences: 25 },
 ];
 
+const LEVEL_META = {
+  beg: ['badge-beg', 'Beginner'],
+  li1: ['badge-li1', 'Lower intermediate'],
+  li2: ['badge-li2', 'Intermediate'],
+};
 function levelBadge(levels) {
-  const meta = {
-    beg: ['badge-beg', 'Beginner'],
-    li1: ['badge-li1', 'Lower intermediate'],
-    li2: ['badge-li2', 'Intermediate'],
-  };
-  const badges = levels
-    .map(l => `<span class="level-badge ${meta[l][0]}">${meta[l][1]}</span>`)
-    .join('');
-  return `<div class="level-badges">${badges}</div>`;
+  return '<div class="level-badges">' +
+    levels.map(l => `<span class="level-badge ${LEVEL_META[l][0]}">${LEVEL_META[l][1]}</span>`).join('') +
+    '</div>';
 }
 
-// Topic pages available - add to this list as topics go live
+// Keyed by FROZEN id (never display position). Add entries as topics go live.
 const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html' };
 
-function cardHtml(t) {
-  const live = liveTopics[t.num];
-  const metaRight = live
-    ? ''
-    : `<span class="coming-soon-label">Coming soon</span>`;
-  if (live) {
-    return `<a class="topic-card" href="${live}">
-      <div class="topic-card-top">
-        <span class="topic-num">${(typeof t.num === 'number' ? String(t.num).padStart(2,'0') : t.num)}</span>
+// One card. `label` = display string (e.g. "08" or "13a"); href null => coming soon.
+function renderCard(t, label, sentences, href) {
+  const inner =
+      `<div class="topic-card-top">
+        <span class="topic-num">${label}</span>
         ${levelBadge(t.levels)}
       </div>
       <div class="topic-name">${t.name}</div>
       <div class="topic-meta-row">
-        <span class="topic-sent-count">${t.sentences} sentences</span>
-        ${metaRight}
-      </div>
-    </a>`;
-  } else {
-    return `<div class="topic-card coming-soon">
-      <div class="topic-card-top">
-        <span class="topic-num">${(typeof t.num === 'number' ? String(t.num).padStart(2,'0') : t.num)}</span>
-        ${levelBadge(t.levels)}
-      </div>
-      <div class="topic-name">${t.name}</div>
-      <div class="topic-meta-row">
-        <span class="topic-sent-count">${t.sentences} sentences</span>
-        ${metaRight}
-      </div>
-    </div>`;
+        <span class="topic-sent-count">${sentences} sentences</span>
+        ${href ? '' : '<span class="coming-soon-label">Coming soon</span>'}
+      </div>`;
+  return href
+    ? `<a class="topic-card" href="${href}">${inner}</a>`
+    : `<div class="topic-card coming-soon">${inner}</div>`;
+}
+
+// One topic -> one card, or two (a/b) if split. `pos` = 1-based display position.
+function cardsForTopic(t, pos) {
+  const p = String(pos).padStart(2, '0');
+  if (t.parts) {
+    // Split: two cards sharing the position number, suffixed a/b (both coming soon for now).
+    return t.parts.map((count, i) => renderCard(t, p + 'ab'[i], count, null)).join('');
   }
+  return renderCard(t, p, t.sentences, liveTopics[t.id] || null);
 }
 
 let activeFilter = 'all';
-
 function filterTopics(filter, btn) {
   activeFilter = filter;
   document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
@@ -559,13 +555,43 @@ function filterTopics(filter, btn) {
 }
 
 function renderGrid() {
-  const filtered = activeFilter === 'all'
-    ? topics
-    : topics.filter(t => t.levels.includes(activeFilter));
-  document.getElementById('topic-grid').innerHTML = filtered.map(cardHtml).join('');
+  // Position = 1-based index in the FULL ordered list, so it stays stable under filtering.
+  document.getElementById('topic-grid').innerHTML = topics
+    .map((t, i) => ({ t, pos: i + 1 }))
+    .filter(o => activeFilter === 'all' || o.t.levels.includes(activeFilter))
+    .map(o => cardsForTopic(o.t, o.pos))
+    .join('');
 }
 
 renderGrid();
 </script>
+<!-- ============================================================
+     TOPIC NUMBERING — display vs ID (do not conflate)
+     ------------------------------------------------------------
+     Each topic has TWO independent numbers:
+
+       • Internal id  — FROZEN. It's the spreadsheet Topic #, the
+         page filename topic-{id}.html, and the liveTopics key.
+         Audio does NOT use it. IDs never change when cards are
+         reordered/added/regrouped — they're stable filename
+         handles, and freezing them is what keeps things from
+         breaking. e.g. "Asking for help" = id 36 → topic-36.html
+         forever, even though it displays 12th.
+
+       • Display number — the card's POSITION in the grid (1..N),
+         computed at render time. This is the ONLY number visitors
+         see. The grid is ordered by level/grouping, NOT numerically.
+         So a card can show "12" while its id is 36 and it links to
+         topic-36.html. The topic page's "Topic N of …" uses this
+         same position number.
+
+     RULES:
+       • Render the card number from POSITION, never from the id.
+       • Keep the id only for the topic-{id}.html link / liveTopics key.
+       • NEVER renumber ids to match display order. If the grid looks
+         "out of numeric order," that's intentional — don't sort by id.
+       • Split topics keep the a/b convention (8a, 8b): two cards share
+         the parent's position number with a/b suffixes.
+     ============================================================ -->
 </body>
 </html>
