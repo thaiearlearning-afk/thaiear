@@ -17,11 +17,11 @@
     --text-primary: #1A1A1A;
     --text-secondary: #5A5A5A;
     --text-tertiary: #9A9A9A;
-    --accent: #3C3489;
+    --accent: #4B41AD;
     --accent-light: #EEEDFE;
     --accent-mid: #534AB7;
-    --gold: #EF9F27;
-    --gold-dark: #BA7517;
+    --gold: #F0CC5C;
+    --gold-dark: #C8A030;
     --purple-mid: #7F77DD;
     --radius-sm: 6px;
     --radius-md: 10px;
@@ -34,7 +34,6 @@
   /* ── NAV ── */
   .site-nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
   .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-  .nav-logo-svg { width: 40px; height: 32px; }
   .nav-wordmark { font-family: Georgia, 'Times New Roman', serif; font-size: 17px; font-weight: 700; color: var(--accent); letter-spacing: -0.01em; }
   .nav-wordmark span { color: var(--purple-mid); font-weight: 400; }
   .nav-links { display: flex; gap: 1.5rem; }
@@ -55,8 +54,6 @@
   .toggle-btn { font-size: 12px; font-family: var(--font-ui); font-weight: 400; color: var(--text-secondary); background: none; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
   .toggle-btn:hover { color: var(--text-primary); }
   .toggle-btn.active { background: var(--accent); color: white; font-weight: 500; }
-  .download-link { font-size: 12px; color: var(--text-secondary); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 4px 10px; transition: background 0.15s; }
-  .download-link:hover { background: var(--bg); }
   .audio-row { display: flex; align-items: center; gap: 12px; }
   .play-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
   .play-btn:hover { background: var(--accent-mid); }
@@ -123,7 +120,6 @@
     .topic-title { font-size: 20px; }
     .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
     .player-card { padding: 0.85rem 0.9rem 0.8rem; margin-bottom: 1.25rem; }
-    .download-link { font-size: 11px; padding: 3px 8px; }
     .play-btn { width: 34px; height: 34px; }
     .controls-row { margin-bottom: 0.5rem; }
     .reveal-all-btn { font-size: 11px; padding: 4px 10px; }
@@ -199,21 +195,11 @@
 
 <nav class="site-nav">
   <a class="nav-logo" href="index.html">
-    <svg class="nav-logo-svg" viewBox="136 35 165 180" xmlns="http://www.w3.org/2000/svg">
-      <g transform="translate(176, 35)">
-        <path d="M60 10 C20 10, 0 45, 0 90 C0 140, 25 175, 60 180 C75 183, 85 175, 85 165 C85 150, 72 145, 65 135 C55 120, 52 105, 55 90 C58 72, 70 62, 80 65 C95 68, 100 85, 95 100 C90 115, 78 118, 75 130 C72 140, 78 150, 90 148 C110 144, 125 120, 125 90 C125 45, 105 10, 60 10Z" fill="#EEEDFE" stroke="#7F77DD" stroke-width="2.5"/>
-        <path d="M60 50 C42 50, 35 65, 35 85 C35 108, 48 125, 62 128 C70 130, 76 125, 76 118 C76 108, 68 104, 65 96 C62 88, 64 76, 72 74 C80 72, 85 80, 82 90 C79 100, 72 103, 70 112" fill="none" stroke="#534AB7" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="62" cy="90" r="5.5" fill="#EF9F27"/>
-      </g>
-      <path d="M168 155 C158 140, 158 170, 168 155" fill="none" stroke="#BA7517" stroke-width="2.8" stroke-linecap="round"/>
-      <path d="M152 155 C136 127, 136 183, 152 155" fill="none" stroke="#BA7517" stroke-width="2.2" stroke-linecap="round" opacity="0.65"/>
-      <path d="M136 155 C114 115, 114 195, 136 155" fill="none" stroke="#BA7517" stroke-width="1.6" stroke-linecap="round" opacity="0.35"/>
-    </svg>
-    <span class="nav-wordmark">Thai<span>Ear</span></span>
+    <img src="favicon.png" alt="ThaiEar logo" style="height:34px;width:auto;display:block;">
+    <span class="nav-wordmark">    <span class="nav-wordmark">Thai<span>Ear</span></span>
   </a>
   <div class="nav-links">
     <a href="index.html">Topics</a>
-    <a href="index.html">Levels</a>
     <a href="#">About</a>
   </div>
 </nav>
@@ -229,10 +215,7 @@
         <button class="toggle-btn active" id="btn-te" onclick="switchAudio('te')">Thai first</button>
         <button class="toggle-btn" id="btn-et" onclick="switchAudio('et')">English first</button>
       </div>
-      <a class="download-link" id="download-link" href="https://audio.thaiear.com/Greetings_BEG_TE.mp3" download>
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9M4 8l4 4 4-4"/><path d="M2 14h12"/></svg>
-        Download MP3
-      </a>
+
     </div>
     <div class="audio-row">
       <button class="play-btn" id="play-btn" aria-label="Play audio" onclick="togglePlay()">
@@ -417,7 +400,6 @@ function switchAudio(mode) {
   document.getElementById('time-cur').textContent = '0:00';
   document.getElementById('btn-te').classList.toggle('active', mode === 'te');
   document.getElementById('btn-et').classList.toggle('active', mode === 'et');
-  document.getElementById('download-link').href = `${AUDIO_BASE}/Greetings_BEG_${mode.toUpperCase()}.mp3`;
   if (wasPlaying) { mainAudio.play(); document.getElementById('play-icon').innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>'; }
 }
 
