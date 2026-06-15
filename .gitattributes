@@ -1,0 +1,21 @@
+# Normalize line endings: store everything as LF in the repo.
+# Git auto-detects text vs binary; text files are committed with LF
+# regardless of the OS or how they were originally uploaded.
+* text=auto eol=lf
+
+# Explicit text types (served as-is by Cloudflare Pages)
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.svg   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+
+# Binary assets — never touch these (none committed today, but safe defaults)
+*.mp3   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
