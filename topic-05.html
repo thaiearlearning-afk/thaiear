@@ -19,13 +19,13 @@
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
-  .site-nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .site-nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 2rem; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
   .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
   .nav-logo-svg { width: 40px; height: 32px; }
-  .nav-wordmark { font-family: var(--font-thai); font-size: 19px; font-weight: 500; color: #1C124E; letter-spacing: 0.02em; }
-  .nav-wordmark span { color: #1C124E; font-weight: 500; }
-  .nav-links { display: flex; gap: 1.5rem; }
-  .nav-links a { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+  .nav-wordmark { font-family: var(--font-thai); font-size: 20px; font-weight: 600; color: #1C124E; letter-spacing: 0.02em; }
+  .nav-wordmark span { color: #1C124E; font-weight: 600; }
+  .nav-links { display: flex; gap: 1.75rem; align-items: center; }
+  .nav-links a { font-size: 13px; font-weight: 500; color: var(--text-secondary); text-decoration: none; }
   .nav-links a:hover { color: var(--text-primary); }
   .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
   .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
@@ -42,10 +42,15 @@
   .play-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
   .play-btn:hover { background: var(--accent-mid); }
   .play-btn svg { fill: white; width: 14px; height: 14px; margin-left: 2px; }
+  .skip-btn { position: relative; width: 36px; height: 36px; border-radius: 50%; background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+  .skip-btn:hover { background: var(--bg); color: var(--accent); }
+  .skip-btn svg { width: 30px; height: 30px; }
+  .skip-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
   .scrubber-wrap { flex: 1; }
-  .scrubber-track { width: 100%; padding: 12px 0; cursor: pointer; margin-bottom: 5px; }
+  .scrubber-track { width: 100%; padding: 14px 0; cursor: pointer; margin-bottom: 5px; touch-action: none; }
   .scrubber { width: 100%; height: 3px; background: var(--border); border-radius: 2px; position: relative; pointer-events: none; }
-  .scrubber-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 2px; transition: width 0.1s linear; }
+  .scrubber-fill { position: relative; height: 100%; width: 0%; background: var(--accent); border-radius: 2px; transition: width 0.1s linear; }
+  .scrubber-fill::after { content: ''; position: absolute; right: -7px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
   .time-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
   .orientation-text { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
   .orientation-text strong { color: var(--text-primary); font-weight: 500; }
@@ -92,14 +97,14 @@
   .topic-nav-right { text-align: right; }
   @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } .player-card { padding: 0.9rem 1rem 0.85rem; } }
   @media (max-width: 600px) {
-    .site-nav { padding: 0 1rem; height: 48px; } .nav-wordmark { font-size: 17px; } .nav-links { gap: 1rem; } .nav-links a { font-size: 12px; }
+    .site-nav { padding: 0 1rem; } .nav-links { gap: 1rem; } .nav-links a { font-size: 12px; }
     .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
     .player-card { padding: 0.85rem 0.9rem 0.8rem; margin-bottom: 1.25rem; } .play-btn { width: 34px; height: 34px; }
     .controls-row { margin-bottom: 0.5rem; } .reveal-all-btn { font-size: 11px; padding: 4px 10px; } .sentence-header { padding: 0.6rem 0.85rem; } .sent-preview { font-size: 15px; }
     .row-thai { font-size: 17px; } .reveal-row { padding: 0.5rem 0.85rem; } .gloss-chip { font-size: 11px; padding: 2px 7px; } .cultural-note { font-size: 11px; }
     .topic-nav-btn { font-size: 12px; padding: 6px 10px; } .orientation-text { font-size: 12px; }
   }
-  @media (max-width: 380px) { .topic-title { font-size: 18px; } .row-thai { font-size: 16px; } .nav-links { gap: 0.75rem; } .nav-links a { font-size: 11px; } }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } .row-thai { font-size: 16px; } .nav-wordmark { font-size: 18px; } }
 </style>
 </head>
 <body>
@@ -128,11 +133,19 @@
       </div>
     </div>
     <div class="audio-row">
+      <button class="skip-btn" onclick="skip(-10)" aria-label="Back 10 seconds" title="Back 10 seconds">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        <span class="skip-num">10</span>
+      </button>
       <button class="play-btn" id="play-btn" aria-label="Play audio" onclick="togglePlay()">
         <svg id="play-icon" viewBox="0 0 16 16"><polygon points="5,2 14,8 5,14"/></svg>
       </button>
+      <button class="skip-btn" onclick="skip(10)" aria-label="Forward 10 seconds" title="Forward 10 seconds">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        <span class="skip-num">10</span>
+      </button>
       <div class="scrubber-wrap">
-        <div class="scrubber-track" id="scrubber" onclick="scrubTo(event)">
+        <div class="scrubber-track" id="scrubber">
           <div class="scrubber">
             <div class="scrubber-fill" id="scrubber-fill"></div>
           </div>
@@ -267,10 +280,56 @@ function togglePlay() {
   else { mainAudio.pause(); icon.innerHTML = '<polygon points="5,2 14,8 5,14"/>'; }
 }
 
-function scrubTo(e) {
-  const rect = document.getElementById('scrubber').getBoundingClientRect();
-  const pct = (e.clientX - rect.left) / rect.width;
-  if (mainAudio.duration) mainAudio.currentTime = pct * mainAudio.duration;
+function skip(sec) {
+  if (!mainAudio.duration) return;
+  mainAudio.currentTime = Math.max(0, Math.min(mainAudio.duration, mainAudio.currentTime + sec));
+}
+
+// Variable-precision scrubbing: tap/drag to seek. The further your finger moves
+// vertically away from the bar, the finer (slower) the seek.
+function initScrubber() {
+  const track = document.getElementById('scrubber');
+  const fill = document.getElementById('scrubber-fill');
+  if (!track) return;
+  let dragging = false, lastX = 0, scrubTime = 0;
+  function paint(t) {
+    if (!mainAudio.duration) return;
+    fill.style.width = (t / mainAudio.duration) * 100 + '%';
+    document.getElementById('time-cur').textContent = formatTime(t);
+  }
+  function precision(clientY, rect) {
+    const dist = Math.abs(clientY - (rect.top + rect.height / 2));
+    if (dist < 40)  return 1;
+    if (dist < 100) return 0.5;
+    if (dist < 180) return 0.25;
+    return 0.1;
+  }
+  track.addEventListener('pointerdown', e => {
+    if (!mainAudio.duration) return;
+    dragging = true;
+    try { track.setPointerCapture(e.pointerId); } catch (_) {}
+    fill.style.transition = 'none';
+    const rect = track.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    scrubTime = pct * mainAudio.duration;
+    lastX = e.clientX;
+    mainAudio.currentTime = scrubTime;
+    paint(scrubTime);
+    e.preventDefault();
+  });
+  track.addEventListener('pointermove', e => {
+    if (!dragging || !mainAudio.duration) return;
+    const rect = track.getBoundingClientRect();
+    const dx = e.clientX - lastX;
+    lastX = e.clientX;
+    scrubTime += dx * (mainAudio.duration / rect.width) * precision(e.clientY, rect);
+    scrubTime = Math.max(0, Math.min(mainAudio.duration, scrubTime));
+    mainAudio.currentTime = scrubTime;
+    paint(scrubTime);
+  });
+  function endDrag() { if (!dragging) return; dragging = false; fill.style.transition = ''; }
+  track.addEventListener('pointerup', endDrag);
+  track.addEventListener('pointercancel', endDrag);
 }
 
 function switchAudio(mode) {
@@ -380,6 +439,7 @@ function toggleAll() {
 
 render();
 initSentAudio();
+initScrubber();
 </script>
 </body>
 </html>
