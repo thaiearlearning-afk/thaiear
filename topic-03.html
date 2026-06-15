@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ThaiEar — Topic 3: Communication survival</title>
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -22,8 +22,8 @@
   .site-nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
   .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
   .nav-logo-svg { width: 40px; height: 32px; }
-  .nav-wordmark { font-family: Georgia, 'Times New Roman', serif; font-size: 17px; font-weight: 700; color: var(--accent); letter-spacing: -0.01em; }
-  .nav-wordmark span { color: var(--purple-mid); font-weight: 400; }
+  .nav-wordmark { font-family: var(--font-thai); font-size: 19px; font-weight: 500; color: #1C124E; letter-spacing: 0.02em; }
+  .nav-wordmark span { color: #1C124E; font-weight: 500; }
   .nav-links { display: flex; gap: 1.5rem; }
   .nav-links a { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
   .nav-links a:hover { color: var(--text-primary); }
@@ -82,7 +82,7 @@
   .cultural-note { font-size: 11.5px; color: var(--text-tertiary); font-style: italic; margin-top: 5px; padding-top: 5px; border-top: 0.5px solid var(--border); line-height: 1.5; }
   @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } .player-card { padding: 0.9rem 1rem 0.85rem; } }
   @media (max-width: 600px) {
-    .site-nav { padding: 0 1rem; height: 48px; } .nav-wordmark { font-size: 15px; } .nav-links { gap: 1rem; } .nav-links a { font-size: 12px; }
+    .site-nav { padding: 0 1rem; height: 48px; } .nav-wordmark { font-size: 17px; } .nav-links { gap: 1rem; } .nav-links a { font-size: 12px; }
     .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
     .player-card { padding: 0.85rem 0.9rem 0.8rem; margin-bottom: 1.25rem; } .download-link { font-size: 11px; padding: 3px 8px; } .play-btn { width: 34px; height: 34px; }
     .controls-row { margin-bottom: 0.5rem; } .reveal-all-btn { font-size: 11px; padding: 4px 10px; } .sentence-header { padding: 0.6rem 0.85rem; } .sent-preview { font-size: 15px; }
@@ -148,16 +148,7 @@
 
 <nav class="site-nav">
   <a class="nav-logo" href="index.html">
-    <svg class="nav-logo-svg" viewBox="136 35 165 180" xmlns="http://www.w3.org/2000/svg">
-      <g transform="translate(176, 35)">
-        <path d="M60 10 C20 10, 0 45, 0 90 C0 140, 25 175, 60 180 C75 183, 85 175, 85 165 C85 150, 72 145, 65 135 C55 120, 52 105, 55 90 C58 72, 70 62, 80 65 C95 68, 100 85, 95 100 C90 115, 78 118, 75 130 C72 140, 78 150, 90 148 C110 144, 125 120, 125 90 C125 45, 105 10, 60 10Z" fill="#EEEDFE" stroke="#7F77DD" stroke-width="2.5"/>
-        <path d="M60 50 C42 50, 35 65, 35 85 C35 108, 48 125, 62 128 C70 130, 76 125, 76 118 C76 108, 68 104, 65 96 C62 88, 64 76, 72 74 C80 72, 85 80, 82 90 C79 100, 72 103, 70 112" fill="none" stroke="#534AB7" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="62" cy="90" r="5.5" fill="#EF9F27"/>
-      </g>
-      <path d="M168 155 C158 140, 158 170, 168 155" fill="none" stroke="#BA7517" stroke-width="2.8" stroke-linecap="round"/>
-      <path d="M152 155 C136 127, 136 183, 152 155" fill="none" stroke="#BA7517" stroke-width="2.2" stroke-linecap="round" opacity="0.65"/>
-      <path d="M136 155 C114 115, 114 195, 136 155" fill="none" stroke="#BA7517" stroke-width="1.6" stroke-linecap="round" opacity="0.35"/>
-    </svg>
+    <img src="logoshort.png" alt="ThaiEar logo" style="height:44px;width:auto;display:block;">
     <span class="nav-wordmark">Thai<span>Ear</span></span>
   </a>
   <div class="nav-links">
@@ -223,7 +214,13 @@
           <span class="topic-nav-name">Getting to know you</span>
         </span>
       </a>
-    <span></span>
+    <a class="topic-nav-btn topic-nav-right" href="topic-04.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Colours, shapes &amp; descriptions</span>
+        </span>
+        <span>→</span>
+      </a>
   </nav>
 </div>
 <audio id="sent-audio-el" preload="none" style="display:none"></audio>
