@@ -122,17 +122,20 @@
 
   // Find the topic (and split part, if any) whose page == filename, plus its
   // 1-based display position. Returns null if the page isn't in the list.
+  // Compare WITHOUT the .html extension — Cloudflare Pages serves clean URLs
+  // (location is /topic-03, not /topic-03.html), so we must match either form.
+  function bare(f) { return String(f || '').toLowerCase().replace(/\.html$/, ''); }
   function findByPage(file) {
-    file = String(file || '').toLowerCase();
+    file = bare(file);
     for (let i = 0; i < topics.length; i++) {
       const t = topics[i];
       if (t.parts) {
         for (const part of t.parts) {
-          if (part && part.page && part.page.toLowerCase() === file) {
+          if (part && part.page && bare(part.page) === file) {
             return { pos: i + 1, topic: t, part };
           }
         }
-      } else if (String(liveTopics[t.id] || '').toLowerCase() === file) {
+      } else if (bare(liveTopics[t.id]) === file) {
         return { pos: i + 1, topic: t, part: null };
       }
     }
