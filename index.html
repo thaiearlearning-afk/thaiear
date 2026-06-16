@@ -310,6 +310,11 @@
     width: 11px;
     height: 11px;
   }
+  /* Entitled view: owned/unlocked premium — filled gold, no padlock. */
+  .topic-premium.unlocked {
+    background: var(--gold);
+    color: #5A4A10;
+  }
 
   /* ── FOOTER ── */
   .site-footer {
@@ -463,12 +468,24 @@ const LOCK_SVG =
   'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 
+// Entitled = may access premium content. Phase 3: logged in. Phase 4: logged in AND subscribed.
+function isEntitled() {
+  try { return !!(window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser()); }
+  catch (_) { return false; }
+}
+
 // One card. `label` = display string (e.g. "08" or "13a"); href null => coming soon.
-// premium=true => locked card: 🔒 Premium pill, links to subscribe.html (set in cardsForTopic).
-function renderCard(t, label, sentences, href, premium) {
-  const metaRight = premium
-    ? `<span class="topic-premium">${LOCK_SVG}Premium</span>`
-    : (href ? '' : '<span class="coming-soon-label">Coming soon</span>');
+// premium + !entitled => 🔒 pill, links to subscribe.html. premium + entitled => normal
+// link to the topic page with an (unlocked) gold Premium pill. (Set in cardsForTopic.)
+function renderCard(t, label, sentences, href, premium, entitled) {
+  let metaRight;
+  if (premium) {
+    metaRight = entitled
+      ? `<span class="topic-premium unlocked">Premium</span>`
+      : `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
+  } else {
+    metaRight = href ? '' : '<span class="coming-soon-label">Coming soon</span>';
+  }
   const inner =
       `<div class="topic-card-top">
         <span class="topic-num">${label}</span>
@@ -488,22 +505,26 @@ function renderCard(t, label, sentences, href, premium) {
 // One topic -> one card, or two (a/b) if split. `pos` = 1-based display position.
 function cardsForTopic(t, pos) {
   const p = String(pos).padStart(2, '0');
-  // Premium gates the whole topic: link to subscribe.html, lock takes precedence
-  // over the live page link / coming-soon state. Source of truth = topics[].access.
+  // Premium gates the topic for non-entitled visitors: lock + subscribe.html. Entitled
+  // visitors get the normal page link. Source of truth = topics[].access (+ live audio lock).
   const premium = t.access === 'premium';
+  const entitled = premium && isEntitled();
   if (t.parts) {
     // Split: two cards sharing the position number, suffixed a/b.
     return t.parts.map((part, i) => {
       const label = p + 'ab'[i];
       // Legacy form: a bare sentence count => same parent name, coming soon.
-      if (typeof part === 'number') return renderCard(t, label, part, premium ? 'subscribe.html' : null, premium);
+      if (typeof part === 'number') {
+        const phref = premium ? (entitled ? null : 'subscribe.html') : null;
+        return renderCard(t, label, part, phref, premium, entitled);
+      }
       // Live form: { name, sentences, page } => own name + own page link.
-      const href = premium ? 'subscribe.html' : (part.page || null);
-      return renderCard({ ...t, name: part.name }, label, part.sentences, href, premium);
+      const href = premium ? (entitled ? (part.page || null) : 'subscribe.html') : (part.page || null);
+      return renderCard({ ...t, name: part.name }, label, part.sentences, href, premium, entitled);
     }).join('');
   }
-  const href = premium ? 'subscribe.html' : (liveTopics[t.id] || null);
-  return renderCard(t, p, t.sentences, href, premium);
+  const href = premium ? (entitled ? (liveTopics[t.id] || null) : 'subscribe.html') : (liveTopics[t.id] || null);
+  return renderCard(t, p, t.sentences, href, premium, entitled);
 }
 
 let activeFilter = 'all';
@@ -524,6 +545,9 @@ function renderGrid() {
 }
 
 renderGrid();
+// Premium cards depend on login state, which resolves asynchronously (auth.js, loaded by
+// nav.js). Re-render when it lands or changes so premium topics unlock for entitled users.
+window.addEventListener('thaiear:auth', renderGrid);
 </script>
 <!-- ============================================================
      TOPIC NUMBERING — display vs ID (do not conflate)
