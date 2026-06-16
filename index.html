@@ -47,40 +47,13 @@
   }
 
   /* ── NAV ── */
-  .site-nav {
-    background: var(--surface);
-    border-bottom: 0.5px solid var(--border);
-    padding: 0 2rem;
-    height: 54px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-  }
-  .nav-wordmark {
-    font-family: var(--font-thai);
-    font-size: 20px;
-    font-weight: 600;
-    color: #1C124E;
-    letter-spacing: 0.02em;
-  }
-  .nav-wordmark span { color: #1C124E; font-weight: 600; }
-  .nav-links { display: flex; gap: 1.75rem; align-items: center; }
-  .nav-links a {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-decoration: none;
-  }
-  .nav-links a:hover { color: var(--text-primary); }
+  
+  
+  
+  
+  
+  
+  
 
   /* ── HERO ── */
   .hero {
@@ -350,15 +323,9 @@
     .topic-grid {
       grid-template-columns: 1fr;
     }
-    .site-nav {
-      padding: 0 1rem;
-    }
-    .nav-links {
-      gap: 1rem;
-    }
-    .nav-links a {
-      font-size: 12px;
-    }
+    
+    
+    
     .hero-inner { padding: 2.5rem 1.25rem 0; }
     .hero-logo { width: 91px; margin-bottom: 1.25rem; }
     .hero-thai { font-size: 30px; }
@@ -389,9 +356,7 @@
     .hero-thai { font-size: 26px; }
     .hero-logo { width: 77px; }
     .hero-stats { gap: 1.5rem; }
-    .nav-wordmark {
-      font-size: 18px;
-    }
+    
     .filter-tabs {
       flex-wrap: wrap;
     }
@@ -405,16 +370,7 @@
 <body>
 
 <!-- ── NAV ── -->
-<nav class="site-nav">
-  <a class="nav-logo" href="index.html">
-<img src="logoshort.png" alt="ThaiEar logo" style="height:44px;width:auto;display:block;">
-    <span class="nav-wordmark">    <span class="nav-wordmark">Thai<span>Ear</span></span>
-  </a>
-  <div class="nav-links">
-    <a href="#">Home</a>
-    <a href="#">About</a>
-  </div>
-</nav>
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <!-- ── HERO ── -->
 <section class="hero">
@@ -642,5 +598,6 @@ renderGrid();
        • Split topics keep the a/b convention (8a, 8b): two cards share
          the parent's position number with a/b suffixes.
      ============================================================ -->
+<script src="nav.js" defer></script>
 </body>
 </html>

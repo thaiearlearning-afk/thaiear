@@ -22,14 +22,14 @@
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
-  .site-nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 2rem; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-  .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-  .nav-logo-svg { width: 40px; height: 32px; }
-  .nav-wordmark { font-family: var(--font-thai); font-size: 20px; font-weight: 600; color: #1C124E; letter-spacing: 0.02em; }
-  .nav-wordmark span { color: #1C124E; font-weight: 600; }
-  .nav-links { display: flex; gap: 1.75rem; align-items: center; }
-  .nav-links a { font-size: 13px; font-weight: 500; color: var(--text-secondary); text-decoration: none; }
-  .nav-links a:hover { color: var(--text-primary); }
+  
+  
+  
+  
+  
+  
+  
+  
   .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
   .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
@@ -100,28 +100,19 @@
   .topic-nav-right { text-align: right; }
   @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } .player-card { padding: 0.9rem 1rem 0.85rem; } }
   @media (max-width: 600px) {
-    .site-nav { padding: 0 1rem; } .nav-links { gap: 1rem; } .nav-links a { font-size: 12px; }
+      
     .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
     .player-card { padding: 0.85rem 0.9rem 0.8rem; margin-bottom: 1.25rem; } .play-btn { width: 34px; height: 34px; }
     .controls-row { margin-bottom: 0.5rem; } .reveal-all-btn { font-size: 11px; padding: 4px 10px; } .sentence-header { padding: 0.6rem 0.85rem; } .sent-preview { font-size: 15px; }
     .row-thai { font-size: 17px; } .reveal-row { padding: 0.5rem 0.85rem; } .gloss-chip { font-size: 11px; padding: 2px 7px; } .cultural-note { font-size: 11px; }
     .topic-nav-btn { font-size: 12px; padding: 6px 10px; } .orientation-text { font-size: 12px; }
   }
-  @media (max-width: 380px) { .topic-title { font-size: 18px; } .row-thai { font-size: 16px; } .nav-wordmark { font-size: 18px; } }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } .row-thai { font-size: 16px; }  }
 </style>
 </head>
 <body>
 
-<nav class="site-nav">
-  <a class="nav-logo" href="index.html">
-    <img src="logoshort.png" alt="ThaiEar logo" style="height:44px;width:auto;display:block;">
-    <span class="nav-wordmark">Thai<span>Ear</span></span>
-  </a>
-  <div class="nav-links">
-    <a href="index.html">Home</a>
-    <a href="#">About</a>
-  </div>
-</nav>
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="page-wrap">
   <div class="topic-eyebrow">Beginner · Topic 5 of 36</div>
@@ -444,5 +435,6 @@ render();
 initSentAudio();
 initScrubber();
 </script>
+<script src="nav.js" defer></script>
 </body>
 </html>
