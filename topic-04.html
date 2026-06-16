@@ -22,91 +22,24 @@
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
-  
-  
-  
-  
-  
-  
-  
-  
   .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
   .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
   .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
   .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
-  .player-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1rem; margin-bottom: 1.75rem; }
-  .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
-  .audio-toggle { display: flex; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
-  .toggle-btn { font-size: 12px; font-family: var(--font-ui); font-weight: 400; color: var(--text-secondary); background: none; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
-  .toggle-btn:hover { color: var(--text-primary); }
-  .toggle-btn.active { background: var(--accent); color: white; font-weight: 500; }
-  .audio-row { display: flex; align-items: center; gap: 12px; }
-  .play-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
-  .play-btn:hover { background: var(--accent-mid); }
-  .play-btn svg { fill: white; width: 14px; height: 14px; margin-left: 2px; }
-  .skip-btn { position: relative; width: 36px; height: 36px; border-radius: 50%; background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
-  .skip-btn:hover { background: var(--bg); color: var(--accent); }
-  .skip-btn svg { width: 30px; height: 30px; }
-  .skip-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
-  .scrubber-wrap { flex: 1; }
-  .scrubber-track { width: 100%; padding: 14px 0; cursor: pointer; margin-bottom: 5px; touch-action: none; }
-  .scrubber { width: 100%; height: 3px; background: var(--border); border-radius: 2px; position: relative; pointer-events: none; }
-  .scrubber-fill { position: relative; height: 100%; width: 0%; background: var(--accent); border-radius: 2px; transition: width 0.1s linear; }
-  .scrubber-fill::after { content: ''; position: absolute; right: -7px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
-  .time-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
-  .orientation-text { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
-  .orientation-text strong { color: var(--text-primary); font-weight: 500; }
-  .controls-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
-  .reveal-all-btn { font-size: 12px; font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
-  .reveal-all-btn:hover { background: var(--surface); }
-  .sent-count-label { font-size: 12px; color: var(--text-tertiary); }
-  .sentence-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 7px; overflow: hidden; transition: border-color 0.15s; }
-  .sentence-card:hover { border-color: var(--border-strong); }
-  .sentence-header { display: flex; align-items: center; gap: 10px; padding: 0.7rem 1rem; cursor: pointer; user-select: none; -webkit-user-select: none; }
-  .sent-num { font-size: 11px; font-weight: 500; color: var(--text-tertiary); min-width: 20px; font-variant-numeric: tabular-nums; }
-  .sent-play-btn { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-light); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
-  .sent-play-btn:hover { background: var(--accent); }
-  .sent-play-btn:hover svg { fill: white; }
-  .sent-play-btn.playing { background: var(--accent); }
-  .sent-play-btn svg { fill: var(--accent); width: 10px; height: 10px; margin-left: 1px; }
-  .sent-play-btn.playing svg { fill: white; margin-left: 0; }
-  .speed-toggle { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-light); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; font-size: 14px; line-height: 1; }
-  .speed-toggle:hover { background: var(--accent); }
-  .speed-toggle.active { background: var(--accent); }
-  .sent-preview { font-family: var(--font-thai); font-size: 16px; color: var(--text-primary); flex: 1; line-height: 1.4; }
-  .sent-preview .ell { color: var(--text-tertiary); }
-  .prog-wrap { display: flex; align-items: center; gap: 2.5px; flex-shrink: 0; padding: 2px 0; }
-  .prog-seg { width: 5px; height: 16px; border-radius: 3px; background: var(--border); transition: background 0.2s ease; }
-  .prog-seg.on { background: var(--accent); }
-  .sentence-body { border-top: 0.5px solid var(--border); }
-  .reveal-row { padding: 0.6rem 1rem; border-bottom: 0.5px solid var(--border); }
-  .reveal-row:last-child { border-bottom: none; }
-  .row-thai { font-family: var(--font-thai); font-size: 19px; font-weight: 400; color: var(--text-primary); line-height: 1.5; }
-  .row-english { font-size: 14px; color: var(--text-secondary); }
-  .row-notes { background: var(--bg); }
-  .gloss-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
-  .gloss-chip { background: var(--surface); border: 0.5px solid var(--border); border-radius: 20px; padding: 2px 9px; font-size: 12px; line-height: 1.5; }
-  .g-thai { font-family: var(--font-thai); color: var(--text-primary); font-weight: 500; }
-  .g-eq { color: var(--text-tertiary); margin: 0 2px; }
-  .g-eng { color: var(--text-secondary); }
-  .cultural-note { font-size: 11.5px; color: var(--text-tertiary); font-style: italic; margin-top: 5px; padding-top: 5px; border-top: 0.5px solid var(--border); line-height: 1.5; }
   .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
   .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
   .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
   .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
   .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
   .topic-nav-right { text-align: right; }
-  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } .player-card { padding: 0.9rem 1rem 0.85rem; } }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
   @media (max-width: 600px) {
-      
     .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
-    .player-card { padding: 0.85rem 0.9rem 0.8rem; margin-bottom: 1.25rem; } .play-btn { width: 34px; height: 34px; }
-    .controls-row { margin-bottom: 0.5rem; } .reveal-all-btn { font-size: 11px; padding: 4px 10px; } .sentence-header { padding: 0.6rem 0.85rem; } .sent-preview { font-size: 15px; }
-    .row-thai { font-size: 17px; } .reveal-row { padding: 0.5rem 0.85rem; } .gloss-chip { font-size: 11px; padding: 2px 7px; } .cultural-note { font-size: 11px; }
-    .topic-nav-btn { font-size: 12px; padding: 6px 10px; } .orientation-text { font-size: 12px; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
   }
-  @media (max-width: 380px) { .topic-title { font-size: 18px; } .row-thai { font-size: 16px; }  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
 </style>
 </head>
 <body>
@@ -117,54 +50,7 @@
   <div class="topic-eyebrow">Beginner · Topic 4 of 36</div>
   <h1 class="topic-title">Colours &amp; descriptions</h1>
   <p class="topic-meta"><strong>36 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
-
-  <div class="player-card">
-    <div class="player-top">
-      <div class="audio-toggle">
-        <button class="toggle-btn active" id="btn-te" onclick="switchAudio('te')">Thai first</button>
-        <button class="toggle-btn" id="btn-et" onclick="switchAudio('et')">English first</button>
-      </div>
-    </div>
-    <div class="audio-row">
-      <button class="skip-btn" onclick="skip(-10)" aria-label="Back 10 seconds" title="Back 10 seconds">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-        <span class="skip-num">10</span>
-      </button>
-      <button class="play-btn" id="play-btn" aria-label="Play audio" onclick="togglePlay()">
-        <svg id="play-icon" viewBox="0 0 16 16"><polygon points="5,2 14,8 5,14"/></svg>
-      </button>
-      <button class="skip-btn" onclick="skip(10)" aria-label="Forward 10 seconds" title="Forward 10 seconds">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        <span class="skip-num">10</span>
-      </button>
-      <div class="scrubber-wrap">
-        <div class="scrubber-track" id="scrubber">
-          <div class="scrubber">
-            <div class="scrubber-fill" id="scrubber-fill"></div>
-          </div>
-        </div>
-        <div class="time-row">
-          <span id="time-cur">0:00</span>
-          <span id="time-total">0:00</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <p class="orientation-text">
-    <strong>How to use this topic:</strong> Listen to the <strong>Thai first</strong> audio a couple of times to build familiarity. Then switch to <strong>English first</strong> to test your recall — hear the English prompt and try to produce the Thai before it plays. Click any sentence below to reveal the Thai, English translation, and word notes.
-  </p>
-
-  <div class="controls-row">
-    <button class="reveal-all-btn" id="reveal-all-btn" onclick="toggleAll()">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/></svg>
-      Reveal all
-    </button>
-    <span class="sent-count-label">36 sentences</span>
-  </div>
-
-  <div id="sentence-list"></div>
-
+  <div id="player-root"></div>
   <nav class="topic-nav" aria-label="Topic navigation">
     <a class="topic-nav-btn" href="topic-03.html">
       <span>←</span>
@@ -182,12 +68,11 @@
       </a>
   </nav>
 </div>
-<audio id="sent-audio-el" preload="none" style="display:none"></audio>
 
 <script>
-const AUDIO_BASE = 'https://audio.thaiear.com';
-
-const sentences = [
+window.ThaiEarTopic = {
+  audioPrefix: "Colours_BEG",
+  sentences: [
   { num:  75, display:  1, preview: 'คุณ',      thai: 'คุณชอบสีอะไรคะ',                        english: 'What colour do you like?',                      gloss: [['คุณ','you'],['ชอบ','like'],['สี','colour'],['อะไร','what']], cultural: '' },
   { num:  76, display:  2, preview: 'ผม',       thai: 'ผมชอบสีน้ำเงินครับ',                      english: 'I like dark blue.',                             gloss: [['ผม','I (male)'],['ชอบ','like'],['สีน้ำเงิน','dark blue']], cultural: '' },
   { num:  77, display:  3, preview: 'ผม',       thai: 'ผมเอาสีแดงครับ',                           english: "I'll take the red one.",                        gloss: [['ผม','I (male)'],['เอา','take / want'],['สีแดง','red']], cultural: '' },
@@ -224,226 +109,10 @@ const sentences = [
   { num: 108, display: 34, preview: 'ของ',      thai: 'ของเก่าหรือของใหม่คะ',                  english: 'Is it old or new?',                             gloss: [['ของ','thing / item'],['เก่า','old'],['หรือ','or'],['ใหม่','new']], cultural: '' },
   { num: 109, display: 35, preview: 'ไม่',      thai: 'ไม่แพงเลยครับ | ราคาถูกจริงๆ ครับ',       english: 'Not expensive at all — really cheap.',          gloss: [['ไม่แพงเลย','not expensive at all'],['ราคา','price'],['ถูก','cheap'],['จริงๆ','really / truly']], cultural: '' },
   { num: 110, display: 36, preview: 'คน',       thai: 'คนไทยใจดีมากเลยนะคะ',                   english: 'Thai people are really kind.',                  gloss: [['คนไทย','Thai people'],['ใจดี','kind / generous'],['มากเลย','really'],['นะ','softening particle']], cultural: '' },
-];
-
-function cleanThai(thai) { return thai.replace(/ \| /g, ' '); }
-
-const states = {};
-sentences.forEach(s => states[s.num] = 0);
-let sentPlaying = null;
-let sentLock = false;
-let slowMode = false;
-
-function toggleSlow(e) {
-  e.stopPropagation();
-  e.preventDefault();
-  slowMode = !slowMode;
-  document.querySelectorAll('.speed-toggle').forEach(btn => btn.classList.toggle('active', slowMode));
-}
-
-function resetSentBtn() {
-  if (sentPlaying !== null) { updateSentBtn(sentPlaying, false); sentPlaying = null; }
-}
-
-let sentResetTimer = null;
-
-function initSentAudio() {
-  const el = document.getElementById('sent-audio-el');
-  if (!el) return;
-  el.addEventListener('ended', resetSentBtn);
-  el.addEventListener('error', resetSentBtn);
-  el.addEventListener('pause', () => { if (el.duration && el.currentTime >= el.duration - 0.3) resetSentBtn(); });
-  el.addEventListener('timeupdate', () => { if (el.duration && el.currentTime > 0 && el.currentTime >= el.duration - 0.15) resetSentBtn(); });
-}
-
-function getSentAudio() { return document.getElementById('sent-audio-el'); }
-
-// ── MAIN AUDIO PLAYER ──────────────────────────────────────────────────────
-let currentMode = 'te';
-const mainAudio = new Audio(`${AUDIO_BASE}/Colours_BEG_TE.mp3`);
-mainAudio.preload = 'metadata';
-mainAudio.addEventListener('loadedmetadata', () => { document.getElementById('time-total').textContent = formatTime(mainAudio.duration); });
-mainAudio.addEventListener('timeupdate', () => {
-  const pct = mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
-  document.getElementById('scrubber-fill').style.width = pct + '%';
-  document.getElementById('time-cur').textContent = formatTime(mainAudio.currentTime);
-});
-mainAudio.addEventListener('ended', () => { document.getElementById('play-icon').innerHTML = '<polygon points="5,2 14,8 5,14"/>'; });
-
-function formatTime(secs) {
-  if (!secs || isNaN(secs)) return '0:00';
-  const m = Math.floor(secs / 60);
-  const s = String(Math.floor(secs % 60)).padStart(2, '0');
-  return `${m}:${s}`;
-}
-
-function togglePlay() {
-  const icon = document.getElementById('play-icon');
-  if (mainAudio.paused) { mainAudio.play(); icon.innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>'; }
-  else { mainAudio.pause(); icon.innerHTML = '<polygon points="5,2 14,8 5,14"/>'; }
-}
-
-function skip(sec) {
-  if (!mainAudio.duration) return;
-  mainAudio.currentTime = Math.max(0, Math.min(mainAudio.duration, mainAudio.currentTime + sec));
-}
-
-// Variable-precision scrubbing: tap/drag to seek. The further your finger moves
-// vertically away from the bar, the finer (slower) the seek.
-function initScrubber() {
-  const track = document.getElementById('scrubber');
-  const fill = document.getElementById('scrubber-fill');
-  if (!track) return;
-  let dragging = false, lastX = 0, scrubTime = 0;
-  function paint(t) {
-    if (!mainAudio.duration) return;
-    fill.style.width = (t / mainAudio.duration) * 100 + '%';
-    document.getElementById('time-cur').textContent = formatTime(t);
-  }
-  function precision(clientY, rect) {
-    const dist = Math.abs(clientY - (rect.top + rect.height / 2));
-    if (dist < 40)  return 1;
-    if (dist < 100) return 0.5;
-    if (dist < 180) return 0.25;
-    return 0.1;
-  }
-  track.addEventListener('pointerdown', e => {
-    if (!mainAudio.duration) return;
-    dragging = true;
-    try { track.setPointerCapture(e.pointerId); } catch (_) {}
-    fill.style.transition = 'none';
-    const rect = track.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    scrubTime = pct * mainAudio.duration;
-    lastX = e.clientX;
-    mainAudio.currentTime = scrubTime;
-    paint(scrubTime);
-    e.preventDefault();
-  });
-  track.addEventListener('pointermove', e => {
-    if (!dragging || !mainAudio.duration) return;
-    const rect = track.getBoundingClientRect();
-    const dx = e.clientX - lastX;
-    lastX = e.clientX;
-    scrubTime += dx * (mainAudio.duration / rect.width) * precision(e.clientY, rect);
-    scrubTime = Math.max(0, Math.min(mainAudio.duration, scrubTime));
-    mainAudio.currentTime = scrubTime;
-    paint(scrubTime);
-  });
-  function endDrag() { if (!dragging) return; dragging = false; fill.style.transition = ''; }
-  track.addEventListener('pointerup', endDrag);
-  track.addEventListener('pointercancel', endDrag);
-}
-
-function switchAudio(mode) {
-  if (currentMode === mode) return;
-  currentMode = mode;
-  const wasPlaying = !mainAudio.paused;
-  mainAudio.pause();
-  mainAudio.src = `${AUDIO_BASE}/Colours_BEG_${mode.toUpperCase()}.mp3`;
-  mainAudio.load();
-  document.getElementById('play-icon').innerHTML = '<polygon points="5,2 14,8 5,14"/>';
-  document.getElementById('scrubber-fill').style.width = '0%';
-  document.getElementById('time-cur').textContent = '0:00';
-  document.getElementById('btn-te').classList.toggle('active', mode === 'te');
-  document.getElementById('btn-et').classList.toggle('active', mode === 'et');
-  if (wasPlaying) { mainAudio.play(); document.getElementById('play-icon').innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>'; }
-}
-
-// ── PER-SENTENCE AUDIO ─────────────────────────────────────────────────────
-function toggleSentPlay(e, num) {
-  e.stopPropagation();
-  e.preventDefault();
-  if (sentLock) return;
-  sentLock = true;
-  setTimeout(() => { sentLock = false; }, 300);
-  const sa = getSentAudio();
-  if (sentPlaying === num) {
-    sa.pause(); sa.src = ''; sentPlaying = null; updateSentBtn(num, false); return;
-  }
-  if (sentPlaying !== null) { sa.pause(); updateSentBtn(sentPlaying, false); sentPlaying = null; }
-  const sid = String(num).padStart(2, '0');
-  sa.src = `${AUDIO_BASE}/Colours_BEG_S${sid}_TH.mp3`;
-  sa.load();
-  sentPlaying = num;
-  updateSentBtn(num, true);
-  if (sentResetTimer) { clearTimeout(sentResetTimer); sentResetTimer = null; }
-  sa.addEventListener('loadedmetadata', function onMeta() {
-    sa.removeEventListener('loadedmetadata', onMeta);
-    const duration = sa.duration || 5;
-    if (sentResetTimer) clearTimeout(sentResetTimer);
-    sentResetTimer = setTimeout(() => { resetSentBtn(); sentResetTimer = null; }, (duration + 0.5) * 1000);
-  });
-  sa.playbackRate = slowMode ? 0.75 : 1.0;
-  sa.play().catch(() => { updateSentBtn(num, false); sentPlaying = null; });
-}
-
-function updateSentBtn(num, playing) {
-  const btn = document.querySelector(`#sc-${num} .sent-play-btn`);
-  if (!btn) return;
-  btn.classList.toggle('playing', playing);
-  btn.querySelector('svg').innerHTML = playing
-    ? '<rect x="3" y="2" width="3.5" height="12"/><rect x="9.5" y="2" width="3.5" height="12"/>'
-    : '<polygon points="4,2 13,8 4,14"/>';
-}
-
-// ── RENDER ─────────────────────────────────────────────────────────────────
-function seg(on) { return `<div class="prog-seg${on ? ' on' : ''}"></div>`; }
-
-function chipHtml(gloss) {
-  return gloss.map(([t, e]) =>
-    `<span class="gloss-chip"><span class="g-thai">${t}</span><span class="g-eq">=</span><span class="g-eng">${e}</span></span>`
-  ).join('');
-}
-
-function cardHtml(s) {
-  const st = states[s.num];
-  const playing = sentPlaying === s.num;
-  const displayThai = cleanThai(s.thai);
-  return `<div class="sentence-card" id="sc-${s.num}">
-    <div class="sentence-header" onclick="cycle(${s.num})" role="button" tabindex="0" aria-label="Sentence ${s.display}">
-      <span class="sent-num">${s.display}</span>
-      <button class="sent-play-btn${playing ? ' playing' : ''}" onclick="toggleSentPlay(event,${s.num})" aria-label="Play sentence ${s.display}">
-        <svg viewBox="0 0 16 16">${playing
-          ? '<rect x="3" y="2" width="3.5" height="12"/><rect x="9.5" y="2" width="3.5" height="12"/>'
-          : '<polygon points="4,2 13,8 4,14"/>'}</svg>
-      </button>
-      <button class="speed-toggle${slowMode ? ' active' : ''}" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
-      <span class="sent-preview">${s.preview}<span class="ell">…</span></span>
-      <div class="prog-wrap" aria-hidden="true">${seg(st>=1)}${seg(st>=2)}${seg(st>=3)}</div>
-    </div>
-    ${st > 0 ? `<div class="sentence-body">
-      <div class="reveal-row row-thai">${displayThai}</div>
-      ${st >= 2 ? `<div class="reveal-row row-english">${s.english}</div>` : ''}
-      ${st >= 3 ? `<div class="reveal-row row-notes">
-        <div class="gloss-row">${chipHtml(s.gloss)}</div>
-        ${s.cultural ? `<div class="cultural-note">${s.cultural}</div>` : ''}
-      </div>` : ''}
-    </div>` : ''}
-  </div>`;
-}
-
-function render() {
-  document.getElementById('sentence-list').innerHTML = sentences.map(cardHtml).join('');
-  const allOpen = sentences.every(s => states[s.num] === 3);
-  const btn = document.getElementById('reveal-all-btn');
-  btn.innerHTML = allOpen
-    ? `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 2l12 12M6.5 6.6A2.5 2.5 0 0 0 10 10.5M1 8s2.5-5 7-5c1 0 2 .2 2.8.6M15 8s-.8 1.6-2.5 3M8 13c-4.5 0-7-5-7-5"/></svg> Collapse all`
-    : `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/></svg> Reveal all`;
-}
-
-function cycle(num) { states[num] = (states[num] + 1) % 4; render(); }
-
-function toggleAll() {
-  const allOpen = sentences.every(s => states[s.num] === 3);
-  sentences.forEach(s => states[s.num] = allOpen ? 0 : 3);
-  render();
-}
-
-render();
-initSentAudio();
-initScrubber();
+]
+};
 </script>
+<script src="player.js" defer></script>
 <script src="nav.js" defer></script>
 </body>
 </html>
