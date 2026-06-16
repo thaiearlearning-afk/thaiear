@@ -157,9 +157,29 @@
     if (!found) return; // page not in the list yet — leave the element as-is
     el.textContent = `${levelText(found.topic.levels)} · Topic ${found.pos} of ${topics.length}`;
   }
+
+  // ---- unlock premium prev/next buttons for entitled (logged-in) visitors ----
+  // A premium neighbour's button carries href="subscribe.html" + data-locked-href="topic-NN.html"
+  // and a 🔒 in its name. For a logged-in user, point it at the real page and drop the lock —
+  // mirrors the index cards. (Phase 4: also require an active subscription.)
+  function entitled() {
+    try { return !!(window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser()); }
+    catch (_) { return false; }
+  }
+  function unlockNav() {
+    if (!entitled()) return;
+    document.querySelectorAll('a.topic-nav-btn[data-locked-href]').forEach(function (a) {
+      a.setAttribute('href', a.getAttribute('data-locked-href'));
+      const n = a.querySelector('.topic-nav-name');
+      if (n) n.textContent = n.textContent.replace(/^\s*🔒\s*/, ''); // strip leading 🔒
+    });
+  }
+  window.addEventListener('thaiear:auth', unlockNav); // re-run when login state resolves/changes
+
+  function init() { fillEyebrow(); unlockNav(); }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', fillEyebrow);
+    document.addEventListener('DOMContentLoaded', init);
   } else {
-    fillEyebrow();
+    init();
   }
 })();
