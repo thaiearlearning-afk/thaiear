@@ -36,13 +36,13 @@
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
 
   /* ── NAV ── */
-  .site-nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 2rem; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-  .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-  .nav-wordmark { font-family: var(--font-thai); font-size: 20px; font-weight: 600; color: #1C124E; letter-spacing: 0.02em; }
-  .nav-wordmark span { color: #1C124E; font-weight: 600; }
-  .nav-links { display: flex; gap: 1.75rem; align-items: center; }
-  .nav-links a { font-size: 13px; font-weight: 500; color: var(--text-secondary); text-decoration: none; }
-  .nav-links a:hover { color: var(--text-primary); }
+  
+  
+  
+  
+  
+  
+  
 
   /* ── PAGE ── */
   .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
@@ -121,9 +121,9 @@
     .player-card { padding: 0.9rem 1rem 0.85rem; }
   }
   @media (max-width: 600px) {
-    .site-nav { padding: 0 1rem; }
-    .nav-links { gap: 1rem; }
-    .nav-links a { font-size: 12px; }
+    
+    
+    
     .page-wrap { padding: 1.25rem 1rem 2.5rem; }
     .topic-eyebrow { font-size: 10px; }
     .topic-title { font-size: 20px; }
@@ -142,7 +142,7 @@
   @media (max-width: 380px) {
     .topic-title { font-size: 18px; }
     .row-thai { font-size: 16px; }
-    .nav-wordmark { font-size: 18px; }
+    
   }
 
   /* ── ORIENTATION TEXT ── */
@@ -186,16 +186,7 @@
 </head>
 <body>
 
-<nav class="site-nav">
-  <a class="nav-logo" href="index.html">
-    <img src="logoshort.png" alt="ThaiEar logo" style="height:44px;width:auto;display:block;">
-    <span class="nav-wordmark">    <span class="nav-wordmark">Thai<span>Ear</span></span>
-  </a>
-  <div class="nav-links">
-    <a href="index.html">Home</a>
-    <a href="#">About</a>
-  </div>
-</nav>
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="page-wrap">
   <div class="topic-eyebrow">Beginner · Topic 1 of 36</div>
@@ -575,5 +566,6 @@ render();
 initSentAudio();
 initScrubber();
 </script>
+<script src="nav.js" defer></script>
 </body>
 </html>
