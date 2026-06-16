@@ -463,7 +463,9 @@ const topics = [
   { id: 3,  name: "Communication survival", levels: ["beg"], sentences: 22 },
   { id: 4,  name: "Colours & descriptions", levels: ["beg"], sentences: 36 },
   { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 26 },
-  { id: 6,  name: "Numbers, time & dates", levels: ["beg","li1"], sentences: 30 },
+  { id: 6,  name: "Time, days, numbers & dates", levels: ["beg"], parts: [
+      { name: "Time, days & schedules",   sentences: 23, page: "topic-06a.html" },
+      { name: "Numbers, dates & counting", sentences: 29, page: "topic-06b.html" } ] },
   { id: 7,  name: "Family & relationships", levels: ["beg","li1"], sentences: 35 },
   { id: 8,  name: "Food & drink", levels: ["beg","li1"], parts: [22, 23] },
   { id: 9,  name: "Home & daily routine", levels: ["beg","li1"], sentences: 35 },
@@ -545,8 +547,14 @@ function renderCard(t, label, sentences, href) {
 function cardsForTopic(t, pos) {
   const p = String(pos).padStart(2, '0');
   if (t.parts) {
-    // Split: two cards sharing the position number, suffixed a/b (both coming soon for now).
-    return t.parts.map((count, i) => renderCard(t, p + 'ab'[i], count, null)).join('');
+    // Split: two cards sharing the position number, suffixed a/b.
+    return t.parts.map((part, i) => {
+      const label = p + 'ab'[i];
+      // Legacy form: a bare sentence count => same parent name, coming soon.
+      if (typeof part === 'number') return renderCard(t, label, part, null);
+      // Live form: { name, sentences, page } => own name + own page link.
+      return renderCard({ ...t, name: part.name }, label, part.sentences, part.page || null);
+    }).join('');
   }
   return renderCard(t, p, t.sentences, liveTopics[t.id] || null);
 }
