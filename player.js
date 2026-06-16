@@ -33,6 +33,8 @@
 
   var cfg = window.ThaiEarTopic || {};
   var AUDIO_BASE = 'https://audio.thaiear.com';
+  var AUDIO_API = '/api/audio';            // premium gate (Pages Function) — see functions/api/audio.js
+  var PREMIUM = cfg.premium === true;      // set on premium topic pages; routes audio through the gate
   var PREFIX = cfg.audioPrefix;
   var sentences = cfg.sentences || [];
 
@@ -168,6 +170,37 @@
   function cleanThai(thai) { return thai.replace(/ \| /g, ' '); }
   function $(id) { return document.getElementById(id); }
 
+  /* ---- audio URL resolution (free = public CDN; premium = signed via the gate) ----
+     Free topics build the public audio.thaiear.com URL synchronously, exactly as before.
+     Premium topics ask /api/audio for a short-lived presigned R2 URL, sending the Supabase
+     session token in an Authorization header (which an <audio> tag can't carry). The Function
+     verifies the user and returns the URL; the bytes then load browser ↔ R2 directly. */
+  function buildUrl(file) {
+    if (!PREMIUM) return Promise.resolve(AUDIO_BASE + '/' + file);
+    var token = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken)
+      ? window.ThaiEarAuth.getAccessToken() : null;
+    if (!token) return Promise.reject({ code: 'noauth' });
+    return fetch(AUDIO_API + '?file=' + encodeURIComponent(file), {
+      headers: { Authorization: 'Bearer ' + token }
+    }).then(function (r) {
+      if (!r.ok) return Promise.reject({ code: r.status });
+      return r.json();
+    }).then(function (j) {
+      if (!j || !j.url) return Promise.reject({ code: 'nourl' });
+      return j.url;
+    });
+  }
+  // Not entitled (logged out / no access) → send to the paywall. Transient errors just log;
+  // the play button is already reset by the caller.
+  function handleDenied(err) {
+    var code = err && err.code;
+    if (code === 'noauth' || code === 401 || code === 402 || code === 403) {
+      window.location.href = 'subscribe.html';
+    } else {
+      console.warn('player.js: premium audio unavailable', err);
+    }
+  }
+
   var PLAY_TRI  = '<polygon points="5,2 14,8 5,14"/>';
   var PLAY_BARS = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
   function setMainIcon(playing) { var i = $('play-icon'); if (i) i.innerHTML = playing ? PLAY_BARS : PLAY_TRI; }
@@ -189,8 +222,21 @@
 
   /* ---- main player ---- */
   var currentMode = 'te';
-  var mainAudio = new Audio(AUDIO_BASE + '/' + PREFIX + '_TE.mp3');
+  var currentMainFile = PREFIX + '_TE.mp3';
+  var mainSrcReady = false;                 // has the current file's src been resolved onto mainAudio?
+  var mainAudio = new Audio();
   mainAudio.preload = 'metadata';
+  // Free: set the public src now so duration shows before play. Premium: defer until first
+  // play (we need the session token, and we don't want to burn a signed URL on page load).
+  if (!PREMIUM) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
+
+  // Resolve + attach the current main file's src if not already done (premium-aware).
+  function ensureMainSrc() {
+    if (mainSrcReady) return Promise.resolve();
+    return buildUrl(currentMainFile).then(function (u) {
+      mainAudio.src = u; mainAudio.load(); mainSrcReady = true;
+    });
+  }
   mainAudio.addEventListener('loadedmetadata', function () {
     var t = $('time-total'); if (t) t.textContent = formatTime(mainAudio.duration);
   });
@@ -209,8 +255,9 @@
   }
 
   function togglePlay() {
-    if (mainAudio.paused) { mainAudio.play(); setMainIcon(true); }
-    else { mainAudio.pause(); setMainIcon(false); }
+    if (mainAudio.paused) {
+      ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(handleDenied);
+    } else { mainAudio.pause(); setMainIcon(false); }
     resumeMainAfter = false;   // a manual tap on the top player overrides auto-resume
   }
 
@@ -271,14 +318,15 @@
     currentMode = mode;
     var wasPlaying = !mainAudio.paused;
     mainAudio.pause();
-    mainAudio.src = AUDIO_BASE + '/' + PREFIX + '_' + mode.toUpperCase() + '.mp3';
-    mainAudio.load();
     setMainIcon(false);
+    currentMainFile = PREFIX + '_' + mode.toUpperCase() + '.mp3';
+    mainSrcReady = false;                 // new file → re-resolve (premium needs a fresh signed URL)
+    if (!PREMIUM) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
     var f = $('scrubber-fill'); if (f) f.style.width = '0%';
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
     $('btn-et').classList.toggle('active', mode === 'et');
-    if (wasPlaying) { mainAudio.play(); setMainIcon(true); }
+    if (wasPlaying) ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(handleDenied);
   }
 
   /* ---- per-sentence audio ---- */
@@ -329,19 +377,29 @@
     if (!mainAudio.paused) { resumeMainAfter = true; mainAudio.pause(); setMainIcon(false); }
 
     var sid = String(num).padStart(2, '0');
-    sa.src = AUDIO_BASE + '/' + PREFIX + '_S' + sid + '_TH.mp3';
-    sa.load();
+    var file = PREFIX + '_S' + sid + '_TH.mp3';
     sentPlaying = num;
     updateSentBtn(num, true);
     if (sentResetTimer) { clearTimeout(sentResetTimer); sentResetTimer = null; }
-    sa.addEventListener('loadedmetadata', function onMeta() {
-      sa.removeEventListener('loadedmetadata', onMeta);
-      var duration = sa.duration || 5;
-      if (sentResetTimer) clearTimeout(sentResetTimer);
-      sentResetTimer = setTimeout(function () { resetSentBtn(); sentResetTimer = null; }, (duration + 0.5) * 1000);
+    // Resolve the URL (sync for free, a signed-URL fetch for premium) then play.
+    buildUrl(file).then(function (u) {
+      if (sentPlaying !== num) return;   // user stopped/switched while the URL was resolving
+      sa.src = u;
+      sa.load();
+      sa.addEventListener('loadedmetadata', function onMeta() {
+        sa.removeEventListener('loadedmetadata', onMeta);
+        var duration = sa.duration || 5;
+        if (sentResetTimer) clearTimeout(sentResetTimer);
+        sentResetTimer = setTimeout(function () { resetSentBtn(); sentResetTimer = null; }, (duration + 0.5) * 1000);
+      });
+      sa.playbackRate = slowMode ? 0.75 : 1.0;
+      return sa.play();
+    }).catch(function (err) {
+      updateSentBtn(num, false);
+      if (sentPlaying === num) sentPlaying = null;
+      maybeResumeMain();
+      handleDenied(err);
     });
-    sa.playbackRate = slowMode ? 0.75 : 1.0;
-    sa.play().catch(function () { updateSentBtn(num, false); sentPlaying = null; maybeResumeMain(); });
   }
 
   function updateSentBtn(num, playing) {

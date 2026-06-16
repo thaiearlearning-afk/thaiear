@@ -26,6 +26,7 @@
 
   var client = null;
   var currentUser = null;
+  var currentSession = null;
 
   function userFromSession(session) {
     if (!session || !session.user) return null;
@@ -49,6 +50,9 @@
   window.ThaiEarAuth = {
     isReady: false,
     getUser: function () { return currentUser; },
+    // The Supabase session JWT, for authorising premium-audio requests to /api/audio.
+    // Synchronous + cached; null until the session resolves or when logged out.
+    getAccessToken: function () { return currentSession ? currentSession.access_token : null; },
     signInWithGoogle: function () {
       if (!client) { console.warn('ThaiEar auth still loading…'); return; }
       client.auth.signInWithOAuth({
@@ -68,11 +72,13 @@
       return client.auth.getSession();
     })
     .then(function (res) {
-      currentUser = userFromSession(res && res.data && res.data.session);
+      currentSession = (res && res.data && res.data.session) || null;
+      currentUser = userFromSession(currentSession);
       window.ThaiEarAuth.isReady = true;
       notify();
       // keep in sync on login / logout / token refresh
       client.auth.onAuthStateChange(function (_event, session) {
+        currentSession = session || null;
         currentUser = userFromSession(session);
         notify();
       });
