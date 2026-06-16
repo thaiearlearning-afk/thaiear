@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 7: Family &amp; relationships</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow">Beginner · Topic 7 of 36</div>
+  <h1 class="topic-title">Family &amp; relationships</h1>
+  <p class="topic-meta"><strong>38 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-06b.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Numbers, dates &amp; counting</span>
+      </span>
+    </a>
+    <span class="topic-nav-btn topic-nav-right disabled" aria-disabled="true">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Coming soon</span>
+        </span>
+        <span>→</span>
+      </span>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  audioPrefix: "Family_BEG",
+  sentences: [
+  { num: 189, display: 1, preview: "ครอบครัว", thai: "ครอบครัวผมมีกันสี่คนครับ", english: "There are four of us in my family.", gloss: [["ครอบครัว","family"],["ผม","my (male)"],["มีกัน","there are (of us)"],["สี่คน","four people"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 190, display: 2, preview: "พ่อ", thai: "พ่อกับแม่อยู่ต่างจังหวัดค่ะ", english: "My parents live in a different province.", gloss: [["พ่อ","father"],["กับ","and"],["แม่","mother"],["อยู่","live"],["ต่างจังหวัด","a different province"],["ค่ะ","polite particle (female)"]], cultural: "ต่างจังหวัด literally 'a different province' — in everyday use it means 'up-country', anywhere outside Bangkok." },
+  { num: 191, display: 3, preview: "ผม", thai: "ผมมีพี่ชายหนึ่งคนครับ", english: "I have one older brother.", gloss: [["ผม","I (male)"],["มี","have"],["พี่ชาย","older brother"],["หนึ่งคน","one (person)"],["ครับ","polite particle (male)"]], cultural: "Thai always marks birth order: พี่ = older sibling, น้อง = younger — there is no plain 'brother/sister' on its own." },
+  { num: 192, display: 4, preview: "น้องสาว", thai: "น้องสาวกำลังเรียนมหาวิทยาลัยค่ะ", english: "My younger sister is studying at university.", gloss: [["น้องสาว","younger sister"],["กำลัง","-ing (in progress)"],["เรียน","study"],["มหาวิทยาลัย","university"],["ค่ะ","polite particle (female)"]], cultural: "" },
+  { num: 193, display: 5, preview: "แม่", thai: "แม่ผมใจดีมากครับ", english: "My mum is very kind.", gloss: [["แม่","mother"],["ผม","my (male)"],["ใจดี","kind"],["มาก","very"],["ครับ","polite particle (male)"]], cultural: "Many character words are built on ใจ (heart): ใจดี = good-hearted (kind), ใจร้อน = hot-hearted (impatient), ใจเย็น = cool-hearted (calm)." },
+  { num: 194, display: 6, preview: "พ่อ", thai: "พ่อเป็นคนซื่อสัตย์ค่ะ", english: "My father is an honest person.", gloss: [["พ่อ","father"],["เป็นคน","is a (person who is)"],["ซื่อสัตย์","honest"],["ค่ะ","polite particle (female)"]], cultural: "เป็นคน + adjective ('is a … person') is the natural way to describe someone's character." },
+  { num: 195, display: 7, preview: "พี่ชาย", thai: "พี่ชายผมเป็นคนขยันครับ", english: "My older brother is a diligent person.", gloss: [["พี่ชาย","older brother"],["ผม","my (male)"],["เป็นคน","is a (person who is)"],["ขยัน","diligent / hard-working"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 196, display: 8, preview: "น้องชาย", thai: "น้องชายค่อนข้างขี้เกียจค่ะ", english: "My younger brother is rather lazy.", gloss: [["น้องชาย","younger brother"],["ค่อนข้าง","rather / quite"],["ขี้เกียจ","lazy"],["ค่ะ","polite particle (female)"]], cultural: "The prefix ขี้- marks a habitual (often mildly negative) trait: ขี้เกียจ = lazy, ขี้ลืม = forgetful." },
+  { num: 197, display: 9, preview: "ลูกสาว", thai: "ลูกสาวผมอายุห้าขวบครับ", english: "My daughter is five years old.", gloss: [["ลูกสาว","daughter"],["ผม","my (male)"],["อายุ","age"],["ห้าขวบ","five years old"],["ครับ","polite particle (male)"]], cultural: "ขวบ counts the age of young children; from around eleven onward Thai switches to ปี." },
+  { num: 198, display: 10, preview: "ปู่", thai: "ปู่กับย่ายังแข็งแรงดีค่ะ", english: "My grandparents are still healthy.", gloss: [["ปู่","grandfather (father's father)"],["ย่า","grandmother (father's mother)"],["ยัง","still"],["แข็งแรง","strong / healthy"],["ดี","well"],["ค่ะ","polite particle (female)"]], cultural: "Thai has four grandparent words by side: ปู่/ย่า on the father's side, ตา/ยาย on the mother's." },
+  { num: 199, display: 11, preview: "ตา", thai: "ตาชอบเล่าเรื่องเก่าๆครับ", english: "My grandfather likes telling old stories.", gloss: [["ตา","grandfather (mother's father)"],["ชอบ","likes to"],["เล่าเรื่อง","tell stories"],["เก่าๆ","old (ones)"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 200, display: 12, preview: "ยาย", thai: "ยายพูดจาอ่อนโยนค่ะ", english: "My grandmother speaks gently.", gloss: [["ยาย","grandmother (mother's mother)"],["พูดจา","speaks / talks"],["อ่อนโยน","gentle"],["ค่ะ","polite particle (female)"]], cultural: "" },
+  { num: 201, display: 13, preview: "พี่สาว", thai: "พี่สาวผมใจเย็นมากครับ", english: "My older sister is very calm.", gloss: [["พี่สาว","older sister"],["ผม","my (male)"],["ใจเย็น","calm / even-tempered"],["มาก","very"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 202, display: 14, preview: "ลุง", thai: "ลุงเป็นตำรวจค่ะ", english: "My uncle is a policeman.", gloss: [["ลุง","uncle (parent's older brother)"],["เป็น","is"],["ตำรวจ","police officer"],["ค่ะ","polite particle (female)"]], cultural: "ลุง is an uncle older than your parent; a younger one is น้า (mother's side) or อา (father's side)." },
+  { num: 203, display: 15, preview: "ป้า", thai: "ป้าใจร้อนนิดหน่อยครับ", english: "My aunt is a bit hot-tempered.", gloss: [["ป้า","aunt (parent's older sister)"],["ใจร้อน","hot-tempered / impatient"],["นิดหน่อย","a bit"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 204, display: 16, preview: "น้า", thai: "น้าชอบพาผมไปเที่ยวตอนเด็กๆครับ", english: "My uncle used to take me on outings when I was little.", gloss: [["น้า","uncle/aunt (mother's younger sibling)"],["ชอบ","liked to"],["พา","take (someone)"],["ผม","me (male)"],["ไปเที่ยว","go out / on outings"],["ตอนเด็กๆ","when (I was) a child"],["ครับ","polite particle (male)"]], cultural: "น้า is a parent's younger sibling on the mother's side (อา on the father's side) — used for both uncles and aunts." },
+  { num: 205, display: 17, preview: "ผม", thai: "ผมโตมาในครอบครัวใหญ่ครับ", english: "I grew up in a big family.", gloss: [["ผม","I (male)"],["โตมา","grew up"],["ครอบครัวใหญ่","big family"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 206, display: 18, preview: "พี่", thai: "พี่ครับ | ของคุณหล่นนะครับ", english: "Excuse me, you've dropped something.", gloss: [["พี่","older sibling — here a polite 'excuse me' to someone older"],["ครับ","polite particle (male)"],["ของคุณ","your thing"],["หล่น","drop / fall"],["นะ","softening particle"]], cultural: "Thais call strangers by kin terms judged on age: พี่ for someone a little older than you, น้อง for someone younger — a friendly, polite way to get their attention." },
+  { num: 207, display: 19, preview: "น้อง", thai: "น้องคะ | ถ่ายรูปให้หน่อยได้ไหมคะ", english: "Excuse me, could you take a photo for me?", gloss: [["น้อง","younger sibling — here a polite 'excuse me' to someone younger"],["คะ","polite particle (female)"],["ถ่ายรูป","take a photo"],["ให้","for (me)"],["หน่อย","a little (softener)"],["ได้ไหม","is that OK / can you"]], cultural: "Using น้อง to a younger stranger (and พี่ to an older one) is normal politeness — the kin term, not a name, is how you address people you don't know." },
+  { num: 226, display: 20, preview: "ลุง", thai: "ลุงครับ | เชิญนั่งตรงนี้ครับ", english: "Please sit here, sir.", gloss: [["ลุง","older man — here a respectful address for an older man"],["ครับ","polite particle (male)"],["เชิญ","please (go ahead) / invite"],["นั่ง","sit"],["ตรงนี้","here"],["ครับ","polite particle (male)"]], cultural: "ลุง addresses or refers to any older man, relative or not — here, politely giving up your seat. With ป้า, พี่ and น้อง it rounds out the everyday set of age-based address terms." },
+  { num: 208, display: 21, preview: "พี่สาว", thai: "พี่สาวคนโตเป็นคนที่น่าเชื่อถือที่สุดในบ้านค่ะ", english: "My eldest sister is the most reliable one in the house.", gloss: [["พี่สาว","older sister"],["คนโต","the eldest"],["เป็นคนที่","is the one who is"],["น่าเชื่อถือ","reliable / trustworthy"],["ที่สุด","most"],["ในบ้าน","in the house"],["ค่ะ","polite particle (female)"]], cultural: "คนโต = the eldest child; คนกลาง = the middle one; คนเล็ก / คนสุดท้อง = the youngest." },
+  { num: 209, display: 22, preview: "ลูกพี่ลูกน้อง", thai: "ลูกพี่ลูกน้องผมเป็นคนตลกมากครับ", english: "My cousin is really funny.", gloss: [["ลูกพี่ลูกน้อง","cousin"],["ผม","my (male)"],["เป็นคนตลก","is a funny person"],["มาก","very"],["ครับ","polite particle (male)"]], cultural: "ลูกพี่ลูกน้อง literally 'children of the older/younger siblings' — i.e. cousins." },
+  { num: 210, display: 23, preview: "น้องสาว", thai: "น้องสาวเพิ่งแต่งงานเมื่อปีที่แล้วค่ะ", english: "My younger sister just got married last year.", gloss: [["น้องสาว","younger sister"],["เพิ่ง","just (recently)"],["แต่งงาน","get married"],["เมื่อปีที่แล้ว","last year"],["ค่ะ","polite particle (female)"]], cultural: "เพิ่ง marks something that happened only recently." },
+  { num: 211, display: 24, preview: "ลูกชาย", thai: "ลูกชายของฉันทำงานอยู่ที่ต่างประเทศค่ะ", english: "My son works abroad.", gloss: [["ลูกชาย","son"],["ของฉัน","my (female)"],["ทำงาน","work"],["อยู่ที่","at / in"],["ต่างประเทศ","abroad / overseas"],["ค่ะ","polite particle (female)"]], cultural: "ต่าง- ('other/different') also forms ต่างประเทศ (abroad), paralleling ต่างจังหวัด (a different province)." },
+  { num: 212, display: 25, preview: "สามี", thai: "สามีของพี่สาวเป็นหมอค่ะ", english: "My older sister's husband is a doctor.", gloss: [["สามี","husband"],["ของพี่สาว","of (my) older sister"],["เป็นหมอ","is a doctor"],["ค่ะ","polite particle (female)"]], cultural: "Thai builds in-law relations by description: สามีของพี่สาว = 'older sister's husband' (brother-in-law)." },
+  { num: 213, display: 26, preview: "ภรรยา", thai: "ภรรยาผมทำงานเป็นพยาบาลครับ", english: "My wife works as a nurse.", gloss: [["ภรรยา","wife"],["ผม","my (male)"],["ทำงานเป็น","works as"],["พยาบาล","nurse"],["ครับ","polite particle (male)"]], cultural: "ภรรยา is the formal word for 'wife'; เมีย is the casual, colloquial one." },
+  { num: 214, display: 27, preview: "พ่อแม่", thai: "พ่อแม่คุณเกษียณหรือยังคะ", english: "Have your parents retired yet?", gloss: [["พ่อแม่","parents"],["คุณ","your"],["เกษียณ","retire"],["หรือยัง","…yet?"],["คะ","polite particle (female)"]], cultural: "หรือยัง asks whether something has happened yet; the answer is …แล้ว (already) or ยัง (not yet)." },
+  { num: 215, display: 28, preview: "อา", thai: "อาของฉันเปิดร้านอาหารที่เชียงใหม่ค่ะ", english: "My uncle runs a restaurant in Chiang Mai.", gloss: [["อา","uncle/aunt (father's younger sibling)"],["ของฉัน","my (female)"],["เปิด","open / run"],["ร้านอาหาร","restaurant"],["ที่เชียงใหม่","in Chiang Mai"],["ค่ะ","polite particle (female)"]], cultural: "อา is a parent's younger sibling on the father's side (น้า on the mother's side)." },
+  { num: 216, display: 29, preview: "หลานชาย", thai: "หลานชายผมฉลาดเหมือนพ่อเขาเลยครับ", english: "My nephew is clever, just like his dad.", gloss: [["หลานชาย","nephew (or grandson)"],["ผม","my (male)"],["ฉลาด","clever / smart"],["เหมือน","just like / resembles"],["พ่อเขา","his father"],["เลย","really (emphasis)"],["ครับ","polite particle (male)"]], cultural: "หลาน covers both nephew/niece and grandchild; ชาย/สาว or context shows which." },
+  { num: 217, display: 30, preview: "ผม", thai: "ผมนิสัยเหมือนแม่มากกว่าพ่อครับ", english: "My character is more like my mum's than my dad's.", gloss: [["ผม","I (male)"],["นิสัย","character / temperament"],["เหมือน","like / resembles"],["แม่","mother"],["มากกว่า","more than"],["พ่อ","father"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 218, display: 31, preview: "พี่น้อง", thai: "พี่น้องของฉันสนิทกันมากค่ะ", english: "My siblings are very close.", gloss: [["พี่น้อง","siblings"],["ของฉัน","my (female)"],["สนิท","close"],["กัน","each other"],["มาก","very"],["ค่ะ","polite particle (female)"]], cultural: "พี่น้อง (older-younger together) means 'siblings' as a group." },
+  { num: 219, display: 32, preview: "ป้า", thai: "ป้าที่อยู่ข้างบ้านใจดีกับผมมากครับ", english: "The auntie next door is very kind to me.", gloss: [["ป้า","auntie (here, an older woman)"],["ที่อยู่ข้างบ้าน","who lives next door"],["ใจดี","kind"],["กับผม","to me"],["มาก","very"],["ครับ","polite particle (male)"]], cultural: "ป้า is also a respectful way to refer to any older woman, not only a relative." },
+  { num: 220, display: 33, preview: "คุณป้า", thai: "คุณป้าครับ | ผมช่วยถือของให้ไหมครับ", english: "Auntie, shall I help you carry that?", gloss: [["คุณป้า","auntie (polite address to an older woman)"],["ครับ","polite particle (male)"],["ผม","I (male)"],["ช่วย","help"],["ถือของ","carry (things)"],["ให้","for (you)"],["ไหม","question particle"]], cultural: "Adding คุณ before a kin term (คุณป้า, คุณลุง) makes it a polite way to address an elder you're speaking to directly." },
+  { num: 221, display: 34, preview: "เขา", thai: "เขาเป็นญาติห่างๆของฉันค่ะ", english: "He's a distant relative of mine.", gloss: [["เขา","he"],["เป็นญาติ","is a relative"],["ห่างๆ","distant"],["ของฉัน","of mine (female)"],["ค่ะ","polite particle (female)"]], cultural: "ญาติ covers any relative beyond the immediate family; ห่างๆ ('far') marks a distant one." },
+  { num: 222, display: 35, preview: "พี่ชาย", thai: "พี่ชายคนกลางทำงานเป็นวิศวกรค่ะ", english: "My middle brother works as an engineer.", gloss: [["พี่ชาย","older brother"],["คนกลาง","the middle one"],["ทำงานเป็น","works as"],["วิศวกร","engineer"],["ค่ะ","polite particle (female)"]], cultural: "" },
+  { num: 223, display: 36, preview: "ตั้งแต่", thai: "ตั้งแต่ผมย้ายมากรุงเทพ | ก็ไม่ค่อยได้เจอครอบครัวครับ", english: "Since I moved to Bangkok, I haven't seen my family much.", gloss: [["ตั้งแต่","since / ever since"],["ผม","I (male)"],["ย้ายมา","moved (here)"],["กรุงเทพ","Bangkok"],["ก็","then / so"],["ไม่ค่อย","not much"],["ได้เจอ","get to see"],["ครอบครัว","family"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 224, display: 37, preview: "พ่อแม่", thai: "พ่อแม่อยากให้ผมกลับบ้านบ่อยๆครับ", english: "My parents want me to come home often.", gloss: [["พ่อแม่","parents"],["อยากให้","want (someone) to"],["ผม","me (male)"],["กลับบ้าน","go home"],["บ่อยๆ","often"],["ครับ","polite particle (male)"]], cultural: "อยากให้ + person + verb = 'want someone to do something'." },
+  { num: 225, display: 38, preview: "โทรหา", thai: "โทรหาแม่ทุกวันอาทิตย์ค่ะ", english: "I call my mum every Sunday.", gloss: [["โทรหา","call / phone (someone)"],["แม่","mother"],["ทุกวันอาทิตย์","every Sunday"],["ค่ะ","polite particle (female)"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
