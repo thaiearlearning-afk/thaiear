@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ThaiEar — Topic 5: Weather &amp; seasons</title>
+<title>ThaiEar — Topic 6: Numbers, dates &amp; counting</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -115,9 +115,9 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="page-wrap">
-  <div class="topic-eyebrow">Beginner · Topic 5 of 36</div>
-  <h1 class="topic-title">Weather &amp; seasons</h1>
-  <p class="topic-meta"><strong>26 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div class="topic-eyebrow">Beginner · Topic 6 of 36</div>
+  <h1 class="topic-title">Numbers, dates &amp; counting</h1>
+  <p class="topic-meta"><strong>29 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
 
   <div class="player-card">
     <div class="player-top">
@@ -161,26 +161,26 @@
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/></svg>
       Reveal all
     </button>
-    <span class="sent-count-label">26 sentences</span>
+    <span class="sent-count-label">29 sentences</span>
   </div>
 
   <div id="sentence-list"></div>
 
   <nav class="topic-nav" aria-label="Topic navigation">
-    <a class="topic-nav-btn" href="topic-04.html">
+    <a class="topic-nav-btn" href="topic-06a.html">
       <span>←</span>
       <span>
         <span class="topic-nav-label">Previous</span><br>
-        <span class="topic-nav-name">Colours &amp; descriptions</span>
+        <span class="topic-nav-name">Time, days &amp; schedules</span>
       </span>
     </a>
-    <a class="topic-nav-btn topic-nav-right" href="topic-06a.html">
+    <span class="topic-nav-btn topic-nav-right disabled" aria-disabled="true">
         <span>
           <span class="topic-nav-label">Next</span><br>
-          <span class="topic-nav-name">Time, days &amp; schedules</span>
+          <span class="topic-nav-name">Coming soon</span>
         </span>
         <span>→</span>
-      </a>
+      </span>
   </nav>
 </div>
 <audio id="sent-audio-el" preload="none" style="display:none"></audio>
@@ -189,32 +189,35 @@
 const AUDIO_BASE = 'https://audio.thaiear.com';
 
 const sentences = [
-  { num: 111, display: 1, preview: "ปกติ", thai: "ปกติผมไปเที่ยวหน้าร้อนครับ", english: "I usually go on holiday in the hot season.", gloss: [["ปกติ","usually"],["ไปเที่ยว","go on a trip"],["หน้าร้อน","hot season"],["ครับ","polite particle (male)"]], cultural: "Thailand runs on three seasons, not four — hot (roughly March–May), rainy, and cool." },
-  { num: 112, display: 2, preview: "หน้าฝน", thai: "หน้าฝนมักมีพายุครับ", english: "In the rainy season there are often storms.", gloss: [["หน้าฝน","rainy season"],["มัก","tend to / often"],["มี","there is"],["พายุ","storm"],["ครับ","polite particle (male)"]], cultural: "" },
-  { num: 113, display: 3, preview: "หน้าหนาว", thai: "หน้าหนาวต้องใส่เสื้อกันหนาวนะครับ", english: "In the cool season you have to wear a jacket.", gloss: [["หน้าหนาว","cool season"],["ต้อง","have to"],["ใส่","wear"],["เสื้อกันหนาว","jacket"],["นะ","softening particle"],["ครับ","polite particle (male)"]], cultural: "The cool season is mild in most of the country — properly cold weather is mainly up north." },
-  { num: 114, display: 4, preview: "อากาศ", thai: "อากาศดี ไปปั่นจักรยานกันไหมครับ", english: "The weather's nice — shall we go cycling?", gloss: [["อากาศดี","nice weather"],["ไปปั่นจักรยาน","go cycling"],["กัน","together"],["ไหม","question particle"],["ครับ","polite particle (male)"]], cultural: "" },
-  { num: 115, display: 5, preview: "ในครัว", thai: "ในครัวร้อนอบอ้าวมากเลยค่ะ", english: "It's really hot and muggy in the kitchen.", gloss: [["ใน","in"],["ครัว","kitchen"],["ร้อน","hot"],["อบอ้าว","muggy"],["มาก","very"],["เลย","emphasis particle"],["ค่ะ","polite particle (female)"]], cultural: "" },
-  { num: 116, display: 6, preview: "ถ้า", thai: "ถ้าฝนตก ผมจะนั่งแท็กซี่ไปครับ", english: "If it rains, I'll take a taxi.", gloss: [["ถ้า","if"],["ฝนตก","it rains"],["ผม","I (male)"],["จะ","will"],["นั่งแท็กซี่","take a taxi"],["ครับ","polite particle (male)"]], cultural: "" },
-  { num: 117, display: 7, preview: "ลืม", thai: "ลืมเอาร่มมา เปียกฝนเลยค่ะ", english: "I forgot to bring an umbrella — I got soaked.", gloss: [["ลืม","forget"],["เอาร่มมา","bring an umbrella"],["เปียกฝน","get soaked (by rain)"],["เลย","emphasis particle"],["ค่ะ","polite particle (female)"]], cultural: "" },
-  { num: 118, display: 8, preview: "ตอน", thai: "ตอนฟ้าผ่า อย่าอยู่ใต้ต้นไม้นะครับ", english: "During lightning, don't stay under a tree.", gloss: [["ตอน","during / when"],["ฟ้าผ่า","lightning"],["อย่า","don't"],["อยู่","stay"],["ใต้","under"],["ต้นไม้","tree"],["นะ","softening particle"],["ครับ","polite particle (male)"]], cultural: "" },
-  { num: 119, display: 9, preview: "เช้านี้", thai: "เช้านี้หนาวจังเลยค่ะ", english: "It's so cold this morning.", gloss: [["เช้านี้","this morning"],["หนาว","cold"],["จัง","so / really"],["เลย","emphasis particle"],["ค่ะ","polite particle (female)"]], cultural: "" },
-  { num: 120, display: 10, preview: "ถ้าลม", thai: "ถ้าลมไม่แรง ปั่นจักรยานไปทำงานครับ", english: "If the wind isn't strong, I cycle to work.", gloss: [["ถ้า","if"],["ลม","wind"],["ไม่แรง","not strong"],["ปั่นจักรยาน","cycle"],["ไปทำงาน","to work"],["ครับ","polite particle (male)"]], cultural: "" },
-  { num: 121, display: 11, preview: "แดด", thai: "แดดออกแล้ว ไปตากผ้ากันครับ", english: "The sun's out — let's hang the washing out.", gloss: [["แดด","sunshine"],["ออกแล้ว","has come out"],["ไปตากผ้า","go hang the washing"],["กัน","together (let's)"],["ครับ","polite particle (male)"]], cultural: "Line-drying washing in the sun is the everyday norm — dryers are uncommon." },
-  { num: 122, display: 12, preview: "แดดแรง", thai: "แดดแรงมาก ทาครีมกันแดดด้วยนะครับ", english: "The sun's really strong — put on sunscreen.", gloss: [["แดดแรง","strong sun"],["มาก","very"],["ทา","put on"],["ครีมกันแดด","sunscreen"],["ด้วย","as well"],["นะ","softening particle"],["ครับ","polite particle (male)"]], cultural: "" },
-  { num: 123, display: 13, preview: "อากาศชื้น", thai: "อากาศชื้นแบบนี้ ผ้าไม่ค่อยแห้งเลยค่ะ", english: "In humid weather like this, the washing doesn't really dry.", gloss: [["อากาศ","weather"],["ชื้น","humid"],["แบบนี้","like this"],["ผ้า","washing"],["ไม่ค่อย","not really"],["แห้ง","dry"],["เลย","emphasis particle"],["ค่ะ","polite particle (female)"]], cultural: "" },
-  { num: 124, display: 14, preview: "ฟ้า", thai: "ฟ้าเริ่มมืดครึ้มแล้วค่ะ", english: "The sky's starting to get overcast.", gloss: [["ฟ้า","sky"],["เริ่ม","start to"],["มืดครึ้ม","overcast"],["แล้ว","now"],["ค่ะ","polite particle (female)"]], cultural: "" },
-  { num: 125, display: 15, preview: "เมื่อกี้", thai: "เมื่อกี้ได้ยินเสียงฟ้าร้องไหมครับ", english: "Did you hear the sound of thunder just now?", gloss: [["เมื่อกี้","just now"],["ได้ยิน","hear"],["เสียง","sound"],["ฟ้าร้อง","thunder"],["ไหม","question particle"],["ครับ","polite particle (male)"]], cultural: "" },
-  { num: 126, display: 16, preview: "ฝนตก", thai: "ฝนตกหนัก น้ำท่วมถนนเลยค่ะ", english: "Heavy rain — the road's flooded.", gloss: [["ฝนตกหนัก","heavy rain"],["น้ำท่วม","flood"],["ถนน","road"],["เลย","emphasis particle"],["ค่ะ","polite particle (female)"]], cultural: "Street flooding is a common rainy-season sight, especially in Bangkok." },
-  { num: 127, display: 17, preview: "ข่าว", thai: "ข่าวบอกว่าพรุ่งนี้จะมีพายุครับ", english: "The news says there'll be a storm tomorrow.", gloss: [["ข่าว","news"],["บอกว่า","says that"],["พรุ่งนี้","tomorrow"],["จะมี","there'll be"],["พายุ","storm"],["ครับ","polite particle (male)"]], cultural: "" },
-  { num: 128, display: 18, preview: "ตอนเช้า", thai: "ตอนเช้ามีหมอกเยอะครับ", english: "In the morning there's a lot of fog.", gloss: [["ตอนเช้า","in the morning"],["มี","there is"],["หมอก","fog"],["เยอะ","a lot"],["ครับ","polite particle (male)"]], cultural: "Thick morning mist is a feature of the cool season up in the northern hills." },
-  { num: 129, display: 19, preview: "เมืองไทย", thai: "เมืองไทยไม่ค่อยมีหิมะตกครับ", english: "It rarely snows in Thailand.", gloss: [["เมืองไทย","Thailand"],["ไม่ค่อย","rarely"],["มีหิมะตก","has snowfall"],["ครับ","polite particle (male)"]], cultural: "Snow is essentially unheard of — the nearest thing is rare frost on the highest northern peaks." },
-  { num: 130, display: 20, preview: "ช่วงนี้", thai: "ช่วงนี้อากาศเปลี่ยนบ่อย ระวังไม่สบายนะคะ", english: "The weather changes a lot these days — take care you don't get ill.", gloss: [["ช่วงนี้","these days"],["อากาศ","weather"],["เปลี่ยน","change"],["บ่อย","often"],["ระวัง","take care"],["ไม่สบาย","unwell"],["นะคะ","softening + polite particle (female)"]], cultural: "" },
-  { num: 131, display: 21, preview: "อุณหภูมิ", thai: "อุณหภูมิตอนนี้เท่าไหร่ครับ", english: "What's the temperature now?", gloss: [["อุณหภูมิ","temperature"],["ตอนนี้","now"],["เท่าไหร่","how much"],["ครับ","polite particle (male)"]], cultural: "" },
-  { num: 132, display: 22, preview: "ข้างนอก", thai: "ข้างนอกสี่สิบองศา ไม่อยากไปไหนเลยค่ะ", english: "It's forty degrees outside — I don't want to go anywhere.", gloss: [["ข้างนอก","outside"],["สี่สิบองศา","forty degrees"],["ไม่อยาก","don't want to"],["ไปไหน","go anywhere"],["เลย","at all"],["ค่ะ","polite particle (female)"]], cultural: "" },
-  { num: 133, display: 23, preview: "ฝนหยุด", thai: "ฝนหยุดแล้ว ฟ้าใสเลยค่ะ", english: "The rain's stopped — the sky's clear.", gloss: [["ฝน","rain"],["หยุดแล้ว","has stopped"],["ฟ้า","sky"],["ใส","clear"],["เลย","emphasis particle"],["ค่ะ","polite particle (female)"]], cultural: "" },
-  { num: 134, display: 24, preview: "ลม", thai: "ลมแรงจังเลยค่ะ หมวกเกือบปลิว", english: "It's so windy — my hat almost blew away.", gloss: [["ลม","wind"],["แรง","strong"],["จัง","so"],["เลย","emphasis particle"],["ค่ะ","polite particle (female)"],["หมวก","hat"],["เกือบ","almost"],["ปลิว","blow away"]], cultural: "" },
-  { num: 135, display: 25, preview: "อากาศเย็น", thai: "อากาศเย็นสบาย ออกไปเดินเล่นได้ครับ", english: "The weather's pleasantly cool — you can go for a walk.", gloss: [["อากาศ","weather"],["เย็นสบาย","pleasantly cool"],["ออกไป","go out"],["เดินเล่น","stroll"],["ได้","can"],["ครับ","polite particle (male)"]], cultural: "" },
-  { num: 136, display: 26, preview: "คุณ", thai: "คุณคิดว่าพยากรณ์อากาศแม่นไหมครับ", english: "Do you think the weather forecast is accurate?", gloss: [["คุณ","you"],["คิดว่า","think (that)"],["พยากรณ์อากาศ","weather forecast"],["แม่น","accurate"],["ไหม","question particle"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 160, display: 1, preview: "วันเด็ก", thai: "วันเด็กอยู่เดือนมกราคมครับ", english: "Children's Day is in January.", gloss: [["วันเด็ก","Children's Day"],["อยู่","is in"],["เดือนมกราคม","January"],["ครับ","polite particle (male)"]], cultural: "Thai Children's Day falls on the second Saturday of January." },
+  { num: 161, display: 2, preview: "เดือนกุมภาพันธ์", thai: "เดือนกุมภาพันธ์มีวันวาเลนไทน์ค่ะ", english: "February has Valentine's Day.", gloss: [["เดือนกุมภาพันธ์","February"],["มี","has"],["วันวาเลนไทน์","Valentine's Day"],["ค่ะ","polite particle (female)"]], cultural: "" },
+  { num: 162, display: 3, preview: "เดือนมีนาคม", thai: "เดือนมีนาคมเริ่มเข้าหน้าร้อนครับ", english: "In March the hot season begins.", gloss: [["เดือนมีนาคม","March"],["เริ่ม","begin"],["เข้า","enter"],["หน้าร้อน","hot season"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 163, display: 4, preview: "สงกรานต์", thai: "สงกรานต์ตรงกับเดือนเมษายนครับ", english: "Songkran falls in April.", gloss: [["สงกรานต์","Songkran"],["ตรงกับ","falls on / coincides with"],["เดือนเมษายน","April"],["ครับ","polite particle (male)"]], cultural: "Songkran (13–15 April) is the Thai New Year water festival." },
+  { num: 164, display: 5, preview: "โรงเรียน", thai: "โรงเรียนเปิดเทอมเดือนพฤษภาคมค่ะ", english: "The school term opens in May.", gloss: [["โรงเรียน","school"],["เปิดเทอม","start of term"],["เดือนพฤษภาคม","May"],["ค่ะ","polite particle (female)"]], cultural: "The Thai school year traditionally opens in mid-May." },
+  { num: 165, display: 6, preview: "เดือนมิถุนายน", thai: "เดือนมิถุนายนเพื่อนผมจะแต่งงานครับ", english: "In June my friend is getting married.", gloss: [["เดือนมิถุนายน","June"],["เพื่อน","friend"],["ผม","my (male speaker)"],["จะ","will"],["แต่งงาน","get married"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 166, display: 7, preview: "เดือนกรกฎาคม", thai: "เดือนกรกฎาคมผมจะไปเที่ยวญี่ปุ่นครับ", english: "In July I'm going to travel to Japan.", gloss: [["เดือนกรกฎาคม","July"],["ผม","I (male)"],["จะ","will"],["ไปเที่ยว","go travelling"],["ญี่ปุ่น","Japan"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 167, display: 8, preview: "วันแม่", thai: "วันแม่ตรงกับวันที่สิบสองสิงหาคมค่ะ", english: "Mother's Day falls on the 12th of August.", gloss: [["วันแม่","Mother's Day"],["ตรงกับ","falls on"],["วันที่สิบสอง","the 12th"],["สิงหาคม","August"],["ค่ะ","polite particle (female)"]], cultural: "Thai Mother's Day is 12 August, the birthday of the late Queen Sirikit." },
+  { num: 168, display: 9, preview: "เดือนกันยายน", thai: "เดือนกันยายนน้ำท่วมบ่อยครับ", english: "In September it often floods.", gloss: [["เดือนกันยายน","September"],["น้ำท่วม","flood"],["บ่อย","often"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 169, display: 10, preview: "ตุลาคม", thai: "ตุลาคมยังอยู่ในหน้าฝนค่ะ", english: "October is still in the rainy season.", gloss: [["ตุลาคม","October"],["ยัง","still"],["อยู่ใน","is in"],["หน้าฝน","rainy season"],["ค่ะ","polite particle (female)"]], cultural: "" },
+  { num: 170, display: 11, preview: "เดือนพฤศจิกายน", thai: "เดือนพฤศจิกายนมีงานลอยกระทงครับ", english: "November has the Loi Krathong festival.", gloss: [["เดือนพฤศจิกายน","November"],["มี","has"],["งาน","festival / event"],["ลอยกระทง","Loi Krathong"],["ครับ","polite particle (male)"]], cultural: "Loi Krathong, when people float decorated baskets on the water, is held on the November full moon." },
+  { num: 171, display: 12, preview: "วันพ่อ", thai: "วันพ่ออยู่เดือนธันวาคมครับ", english: "Father's Day is in December.", gloss: [["วันพ่อ","Father's Day"],["อยู่","is in"],["เดือนธันวาคม","December"],["ครับ","polite particle (male)"]], cultural: "Thai Father's Day is 5 December, the birthday of the late King Bhumibol." },
+  { num: 172, display: 13, preview: "โต๊ะ", thai: "โต๊ะนี้นั่งได้กี่คนคะ", english: "How many people can sit at this table?", gloss: [["โต๊ะ","table"],["นี้","this"],["นั่ง","sit"],["ได้","can"],["กี่คน","how many people"],["คะ","polite particle (female)"]], cultural: "คน is the classifier for people." },
+  { num: 173, display: 14, preview: "ขอ", thai: "ขอตั๋วไปกลับสองใบครับ", english: "Two return tickets, please.", gloss: [["ขอ","may I have / request"],["ตั๋ว","ticket"],["ไปกลับ","return / round trip"],["สองใบ","two (tickets)"],["ครับ","polite particle (male)"]], cultural: "ใบ is the classifier for tickets and flat sheet-like items. ไปกลับ is literally 'go-return'." },
+  { num: 174, display: 15, preview: "ขอ", thai: "ขอน้ำสามขวดค่ะ", english: "Three bottles of water, please.", gloss: [["ขอ","may I have"],["น้ำ","water"],["สามขวด","three bottles"],["ค่ะ","polite particle (female)"]], cultural: "ขวด (bottle) is both the container and its classifier." },
+  { num: 175, display: 16, preview: "ขอ", thai: "ขอไข่หนึ่งโหลค่ะ", english: "A dozen eggs, please.", gloss: [["ขอ","may I have"],["ไข่","egg"],["หนึ่งโหล","one dozen"],["ค่ะ","polite particle (female)"]], cultural: "โหล (a dozen) is borrowed from English 'dozen'." },
+  { num: 176, display: 17, preview: "กรุงเทพ", thai: "กรุงเทพมีประชากรสิบล้านคนครับ", english: "Bangkok has a population of ten million.", gloss: [["กรุงเทพ","Bangkok"],["มี","has"],["ประชากร","population"],["สิบล้าน","ten million"],["คน","people"],["ครับ","polite particle (male)"]], cultural: "ล้าน = million; สิบล้าน = ten million." },
+  { num: 177, display: 18, preview: "สนาม", thai: "สนามนี้จุคนได้สามหมื่นค่ะ", english: "This stadium holds thirty thousand people.", gloss: [["สนาม","stadium / ground"],["จุ","hold / seat"],["คน","people"],["ได้","can"],["สามหมื่น","thirty thousand"],["ค่ะ","polite particle (female)"]], cultural: "หมื่น = ten thousand; สามหมื่น = 30,000." },
+  { num: 178, display: 19, preview: "จาก", thai: "จากนี่ไปเชียงใหม่เจ็ดร้อยกว่ากิโลครับ", english: "It's over 700 km from here to Chiang Mai.", gloss: [["จาก","from"],["นี่","here"],["ไป","to"],["เชียงใหม่","Chiang Mai"],["เจ็ดร้อย","seven hundred"],["กว่า","over / more than"],["กิโล","kilometres"],["ครับ","polite particle (male)"]], cultural: "กว่า after a number means 'over / more than' that amount." },
+  { num: 179, display: 20, preview: "งานวิ่ง", thai: "งานวิ่งนี้มีคนเป็นพันเลยค่ะ", english: "There are thousands of people at this run.", gloss: [["งานวิ่ง","running event"],["มีคน","there are people"],["เป็นพัน","in the thousands"],["เลย","emphasis particle"],["ค่ะ","polite particle (female)"]], cultural: "เป็น + a number means 'in the (thousands/hundreds)' — an approximate large amount." },
+  { num: 180, display: 21, preview: "ดารา", thai: "ดาราคนนี้มีคนติดตามเป็นแสนครับ", english: "This celebrity has a hundred thousand followers.", gloss: [["ดารา","celebrity / star"],["คนนี้","this one"],["คนติดตาม","followers"],["เป็นแสน","in the hundred-thousands"],["ครับ","polite particle (male)"]], cultural: "แสน = a hundred thousand." },
+  { num: 181, display: 22, preview: "วันนี้", thai: "วันนี้วันที่เท่าไหร่นะคะ", english: "What's today's date?", gloss: [["วันนี้","today"],["วันที่","date (day of month)"],["เท่าไหร่","what / how much"],["นะ","softening particle"],["คะ","polite particle (female)"]], cultural: "วันที่ + a number gives the calendar date (วันที่ห้า = the 5th)." },
+  { num: 182, display: 23, preview: "คอนเสิร์ต", thai: "คอนเสิร์ตจัดวันที่สิบห้าครับ", english: "The concert is on the 15th.", gloss: [["คอนเสิร์ต","concert"],["จัด","be held"],["วันที่สิบห้า","the 15th"],["ครับ","polite particle (male)"]], cultural: "" },
+  { num: 183, display: 24, preview: "วันเกิด", thai: "วันเกิดผมวันที่สามเดือนธันวาคมครับ", english: "My birthday is the 3rd of December.", gloss: [["วันเกิด","birthday"],["ผม","my (male)"],["วันที่สาม","the 3rd"],["เดือนธันวาคม","December"],["ครับ","polite particle (male)"]], cultural: "Thai dates run day → month: วันที่สาม(เดือน)ธันวาคม = the 3rd of December." },
+  { num: 184, display: 25, preview: "วันเกิด", thai: "วันเกิดคุณเดือนอะไรคะ", english: "What month is your birthday?", gloss: [["วันเกิด","birthday"],["คุณ","you"],["เดือนอะไร","what month"],["คะ","polite particle (female)"]], cultural: "" },
+  { num: 185, display: 26, preview: "ปีนี้", thai: "ปีนี้ปีพ.ศ. สองพันห้าร้อยหกสิบเก้าครับ", english: "This year is B.E. 2569.", gloss: [["ปีนี้","this year"],["ปี","year"],["พ.ศ.","B.E. (Buddhist Era)"],["สองพันห้าร้อยหกสิบเก้า","2569"],["ครับ","polite particle (male)"]], cultural: "Thailand counts years in the Buddhist Era (พ.ศ.), 543 years ahead of the Western year." },
+  { num: 186, display: 27, preview: "คนไทย", thai: "คนไทยใช้ปีพ.ศ. ไม่ใช่ปีค.ศ. ค่ะ", english: "Thai people use B.E. years, not C.E.", gloss: [["คนไทย","Thai people"],["ใช้","use"],["ปีพ.ศ.","B.E. year"],["ไม่ใช่","not"],["ปีค.ศ.","C.E. year"],["ค่ะ","polite particle (female)"]], cultural: "ค.ศ. (Christian/Common Era) is the Western year; พ.ศ. = ค.ศ. + 543." },
+  { num: 187, display: 28, preview: "ห้องเรียน", thai: "ห้องเรียนนี้มีนักเรียนสี่สิบคนค่ะ", english: "This classroom has forty students.", gloss: [["ห้องเรียน","classroom"],["มี","has"],["นักเรียน","students"],["สี่สิบ","forty"],["คน","(classifier: people)"],["ค่ะ","polite particle (female)"]], cultural: "" },
+  { num: 188, display: 29, preview: "ตึก", thai: "ตึกนี้สูงกี่ชั้นครับ", english: "How many floors is this building?", gloss: [["ตึก","building"],["นี้","this"],["สูง","tall"],["กี่ชั้น","how many floors"],["ครับ","polite particle (male)"]], cultural: "ชั้น = floor / storey (also the classifier for layers and levels)." },
 ];
 
 function cleanThai(thai) { return thai.replace(/ \| /g, ' '); }
@@ -251,7 +254,7 @@ function getSentAudio() { return document.getElementById('sent-audio-el'); }
 
 // ── MAIN AUDIO PLAYER ──────────────────────────────────────────────────────
 let currentMode = 'te';
-const mainAudio = new Audio(`${AUDIO_BASE}/Weather_BEG_TE.mp3`);
+const mainAudio = new Audio(`${AUDIO_BASE}/Numbers_BEG_TE.mp3`);
 mainAudio.preload = 'metadata';
 mainAudio.addEventListener('loadedmetadata', () => { document.getElementById('time-total').textContent = formatTime(mainAudio.duration); });
 mainAudio.addEventListener('timeupdate', () => {
@@ -331,7 +334,7 @@ function switchAudio(mode) {
   currentMode = mode;
   const wasPlaying = !mainAudio.paused;
   mainAudio.pause();
-  mainAudio.src = `${AUDIO_BASE}/Weather_BEG_${mode.toUpperCase()}.mp3`;
+  mainAudio.src = `${AUDIO_BASE}/Numbers_BEG_${mode.toUpperCase()}.mp3`;
   mainAudio.load();
   document.getElementById('play-icon').innerHTML = '<polygon points="5,2 14,8 5,14"/>';
   document.getElementById('scrubber-fill').style.width = '0%';
@@ -354,7 +357,7 @@ function toggleSentPlay(e, num) {
   }
   if (sentPlaying !== null) { sa.pause(); updateSentBtn(sentPlaying, false); sentPlaying = null; }
   const sid = String(num).padStart(2, '0');
-  sa.src = `${AUDIO_BASE}/Weather_BEG_S${sid}_TH.mp3`;
+  sa.src = `${AUDIO_BASE}/Numbers_BEG_S${sid}_TH.mp3`;
   sa.load();
   sentPlaying = num;
   updateSentBtn(num, true);
