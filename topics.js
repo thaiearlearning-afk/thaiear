@@ -176,6 +176,17 @@
   }
   window.addEventListener('thaiear:auth', unlockNav); // re-run when login state resolves/changes
 
+  // Robust fallback: decide at CLICK time (auth is always resolved by the time a user clicks),
+  // so a locked button works even if the auth event hadn't rewritten the href yet, or the page
+  // was served from cache. Entitled → go to the real page; otherwise the default subscribe link.
+  document.addEventListener('click', function (e) {
+    const a = e.target.closest ? e.target.closest('a.topic-nav-btn[data-locked-href]') : null;
+    if (a && entitled()) {
+      e.preventDefault();
+      window.location.href = a.getAttribute('data-locked-href');
+    }
+  });
+
   function init() { fillEyebrow(); unlockNav(); }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
