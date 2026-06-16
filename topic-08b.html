@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 8: Food &amp; drink</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow">Lower intermediate · Topic 8 of 36</div>
+  <h1 class="topic-title">Food &amp; drink</h1>
+  <p class="topic-meta"><strong>26 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-08a.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Food &amp; drink</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-09.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Home &amp; daily routine</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  audioPrefix: "Food_LI1",
+  sentences: [
+  { num: 259, display: 1, preview: "จอง", thai: "คุณต้องการจองโต๊ะไหมคะ", english: "Would you like to make a reservation?", gloss: [["คุณ", "you"], ["ต้องการ", "would like / want"], ["จอง", "reserve"], ["โต๊ะ", "table"], ["ไหม", "question particle"], ["คะ", "polite particle (female, question)"]], cultural: "ต้องการ is the more formal \"want,\" typical of staff/service register; everyday speech uses อยาก or เอา." },
+  { num: 260, display: 2, preview: "เต็ม", thai: "ขอโทษครับ | โต๊ะเต็มหมดแล้ว", english: "Sorry, all the tables are full.", gloss: [["ขอโทษ", "sorry / excuse me"], ["ครับ", "polite particle (male)"], ["โต๊ะ", "table"], ["เต็ม", "full"], ["หมด", "all (gone)"], ["แล้ว", "already"]], cultural: "เต็มหมดแล้ว stacks เต็ม \"full\" + หมด \"completely\" + แล้ว \"already\" for \"completely full now.\" (Pause after ขอโทษครับ.)" },
+  { num: 261, display: 3, preview: "ห้าม", thai: "ในร้านห้ามสูบบุหรี่นะครับ", english: "No smoking in the restaurant.", gloss: [["ในร้าน", "in the restaurant"], ["ห้าม", "forbidden / not allowed"], ["สูบบุหรี่", "to smoke (cigarettes)"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"]], cultural: "ห้าม + verb = \"no …-ing / …forbidden,\" the standard structure on all prohibition signs (ห้ามจอด no parking, ห้ามเข้า no entry)." },
+  { num: 262, display: 4, preview: "แนะนำ", thai: "ร้านนี้มีอะไรแนะนำบ้างคะ", english: "What do you recommend here?", gloss: [["ร้านนี้", "this place"], ["มีอะไร", "what is there"], ["แนะนำ", "recommend"], ["บ้าง", "any (some of)"], ["คะ", "polite particle (female, question)"]], cultural: "…มีอะไรแนะนำบ้าง \"what would you recommend?\" is the polite way to ask staff for suggestions; บ้าง invites a list of options." },
+  { num: 263, display: 5, preview: "ขึ้นชื่อ", thai: "เมนูนี้เป็นอาหารขึ้นชื่อของร้านครับ", english: "This is the restaurant's signature dish.", gloss: [["เมนูนี้", "this dish"], ["เป็น", "is"], ["อาหาร", "food / dish"], ["ขึ้นชื่อ", "renowned / signature"], ["ของร้าน", "of the restaurant"], ["ครับ", "polite particle (male)"]], cultural: "ขึ้นชื่อ \"renowned, well-known-for\" marks a place's signature dish or a region's specialty." },
+  { num: 264, display: 6, preview: "ใส่", thai: "ในต้มยำใส่อะไรบ้างคะ", english: "What's in tom yum?", gloss: [["ในต้มยำ", "in tom yum"], ["ใส่", "put in / contains"], ["อะไรบ้าง", "what (things)"], ["คะ", "polite particle (female, question)"]], cultural: "ใส่อะไรบ้าง \"what's put in?\" is how you ask about ingredients; บ้าง again signals you expect several items." },
+  { num: 265, display: 7, preview: "กะทิ", thai: "แกงนี้ใส่กะทิไหมครับ", english: "Does this curry have coconut milk?", gloss: [["แกงนี้", "this curry"], ["ใส่", "contains"], ["กะทิ", "coconut milk"], ["ไหม", "question particle"], ["ครับ", "polite particle (male)"]], cultural: "กะทิ (coconut milk) defines the rich central/southern curries; แกงป่า \"jungle curry\" is the notable coconut-free exception." },
+  { num: 266, display: 8, preview: "กุ้ง", thai: "อาหารจานนี้ใส่กุ้งกับหมูค่ะ", english: "This dish has shrimp and pork.", gloss: [["อาหารจานนี้", "this dish"], ["ใส่", "contains"], ["กุ้ง", "shrimp"], ["กับ", "and"], ["หมู", "pork"], ["ค่ะ", "polite particle (female)"]], cultural: "Worth knowing for allergies or halal needs: many \"vegetable\" dishes still include กุ้ง shrimp, หมู pork, or fish sauce (น้ำปลา)." },
+  { num: 267, display: 9, preview: "ผงชูรส", thai: "ไม่ใส่ผงชูรสได้ไหมคะ", english: "Without MSG, please?", gloss: [["ไม่ใส่", "without / don't put in"], ["ผงชูรส", "MSG"], ["ได้ไหม", "can you"], ["คะ", "polite particle (female, question)"]], cultural: "ผงชูรส (MSG) is common in Thai kitchens; ไม่ใส่... \"without…\" is the all-purpose request to leave an ingredient out." },
+  { num: 268, display: 10, preview: "น้ำตาล", thai: "ขอแบบไม่ใส่น้ำตาลได้ไหมคะ", english: "Could I have it without sugar?", gloss: [["ขอ", "may I have"], ["แบบ", "the kind / version"], ["ไม่ใส่", "without"], ["น้ำตาล", "sugar"], ["ได้ไหม", "can I"], ["คะ", "polite particle (female, question)"]], cultural: "ขอแบบ... \"the …version please\" lets you specify a variant — handy for drinks (แบบไม่หวาน \"the unsweetened one\")." },
+  { num: 269, display: 11, preview: "กว่า", thai: "ต้มยำเผ็ดกว่าแกงจืดเยอะเลยครับ", english: "Tom yum is much spicier than clear soup.", gloss: [["ต้มยำ", "tom yum"], ["เผ็ด", "spicy"], ["กว่า", "more than"], ["แกงจืด", "clear soup"], ["เยอะเลย", "a lot"], ["ครับ", "polite particle (male)"]], cultural: "X กว่า Y = \"X more …than Y\"; add เยอะ/มาก after for \"much more.\" The comparative simply follows the adjective." },
+  { num: 270, display: 12, preview: "มากกว่า", thai: "ผมชอบข้าวผัดมากกว่าผัดไทยครับ", english: "I prefer fried rice to pad thai.", gloss: [["ผม", "I (male)"], ["ชอบ", "like"], ["ข้าวผัด", "fried rice"], ["มากกว่า", "more than"], ["ผัดไทย", "pad thai"], ["ครับ", "polite particle (male)"]], cultural: "ชอบ...มากกว่า \"like …more (than)\" is how Thai expresses \"prefer\" — there's no separate verb for it." },
+  { num: 271, display: 13, preview: "รสจัด", thai: "อาหารร้านนี้รสจัดกว่าที่อื่นค่ะ", english: "The food here is more strongly flavoured than elsewhere.", gloss: [["อาหารร้านนี้", "the food here"], ["รสจัด", "boldly / strongly flavoured"], ["กว่า", "more than"], ["ที่อื่น", "elsewhere"], ["ค่ะ", "polite particle (female)"]], cultural: "รสจัด \"bold, intense flavour\" (strong across all tastes, not just heat) is generally a compliment in Thai cuisine." },
+  { num: 272, display: 14, preview: "เท่า", thai: "ผมกินเผ็ดไม่เก่งเท่าคนไทยครับ", english: "I can't handle spice as well as Thai people.", gloss: [["ผม", "I (male)"], ["กินเผ็ด", "eat spicy (food)"], ["ไม่เก่ง", "not good at"], ["เท่า", "as much as"], ["คนไทย", "Thai people"], ["ครับ", "polite particle (male)"]], cultural: "...ไม่เท่า \"not as …as\" is the equality comparison; กินเผ็ดเก่ง \"good at eating spicy\" treats spice-tolerance as a skill." },
+  { num: 273, display: 15, preview: "เคย", thai: "คุณเคยกินทุเรียนไหมคะ", english: "Have you ever eaten durian?", gloss: [["คุณ", "you"], ["เคย", "ever (have experienced)"], ["กิน", "eat"], ["ทุเรียน", "durian"], ["ไหม", "question particle"], ["คะ", "polite particle (female, question)"]], cultural: "เคย + verb = \"have ever …\"; ทุเรียน (durian), the pungent \"king of fruits,\" is banned in many hotels and on the BTS for its smell." },
+  { num: 274, display: 16, preview: "ชิม", thai: "ลองชิมแกงเขียวหวานดูสิคะ", english: "Try the green curry.", gloss: [["ลอง", "try"], ["ชิม", "taste / sample"], ["แกงเขียวหวาน", "green curry"], ["ดูสิ", "go on / give it a go"], ["คะ", "polite particle (female)"]], cultural: "ลอง...ดู \"try …and see\" frames a suggestion; the added สิ turns it into an encouraging \"go on, try it!\"" },
+  { num: 275, display: 17, preview: "อีสาน", thai: "ผมอยากลองอาหารอีสานดูครับ", english: "I'd like to try Isan food.", gloss: [["ผม", "I (male)"], ["อยาก", "want to"], ["ลอง...ดู", "give …a try"], ["อาหารอีสาน", "Isan (NE) food"], ["ครับ", "polite particle (male)"]], cultural: "อีสาน (northeast) cuisine — ส้มตำ, ลาบ, ไก่ย่าง, sticky rice — is bold, sour and spicy, and hugely popular nationwide." },
+  { num: 276, display: 18, preview: "กรอบ", thai: "ผมชอบอาหารที่กรอบๆ | โดยเฉพาะไก่ทอดครับ", english: "I like crispy food, especially fried chicken.", gloss: [["ผม", "I (male)"], ["ชอบ", "like"], ["อาหารที่กรอบๆ", "crispy food"], ["โดยเฉพาะ", "especially"], ["ไก่ทอด", "fried chicken"], ["ครับ", "polite particle (male)"]], cultural: "The mark ๆ doubles a word for emphasis — กรอบๆ \"nice and crispy.\" (Pause after กรอบๆ.)" },
+  { num: 277, display: 19, preview: "กลมกล่อม", thai: "แกงนี้รสชาติกลมกล่อมดีครับ", english: "This curry has a nicely balanced flavour.", gloss: [["แกงนี้", "this curry"], ["รสชาติ", "flavour / taste"], ["กลมกล่อม", "well-rounded / harmonious"], ["ดี", "nicely"], ["ครับ", "polite particle (male)"]], cultural: "กลมกล่อม \"round and mellow\" praises a harmonious blend where no single taste dominates — the Thai ideal of balance." },
+  { num: 278, display: 20, preview: "เนื้อวัว", thai: "ปกติผมไม่กินเนื้อวัวครับ", english: "I usually don't eat beef.", gloss: [["ปกติ", "usually / normally"], ["ผม", "I (male)"], ["ไม่กิน", "don't eat"], ["เนื้อวัว", "beef"], ["ครับ", "polite particle (male)"]], cultural: "Some Thai Buddhists and people of Chinese descent avoid เนื้อวัว (beef) on religious or family grounds — a common dietary note." },
+  { num: 279, display: 21, preview: "ของทอด", thai: "ผมไม่ค่อยกินของทอดครับ", english: "I don't really eat fried food.", gloss: [["ผม", "I (male)"], ["ไม่ค่อย", "not very / rarely"], ["กิน", "eat"], ["ของทอด", "fried food"], ["ครับ", "polite particle (male)"]], cultural: "ไม่ค่อย \"not really / not often\" softens a negative to \"rarely\"; ของ + verb makes a noun (ของทอด \"fried things,\" ของหวาน \"sweet things\")." },
+  { num: 280, display: 22, preview: "สด", thai: "อาหารทะเลที่นี่สดมากเลยค่ะ", english: "The seafood here is very fresh.", gloss: [["อาหารทะเล", "seafood"], ["ที่นี่", "here"], ["สด", "fresh"], ["มากเลย", "very"], ["ค่ะ", "polite particle (female)"]], cultural: "สด \"fresh\" is the top compliment for seafood; coastal towns advertise อาหารทะเลสด and let you pick live from the tanks." },
+  { num: 281, display: 23, preview: "ของหวาน", thai: "ของหวานไทยส่วนใหญ่ทำจากกะทิค่ะ", english: "Most Thai desserts are made with coconut milk.", gloss: [["ของหวาน", "dessert"], ["ไทย", "Thai"], ["ส่วนใหญ่", "most"], ["ทำจาก", "made from"], ["กะทิ", "coconut milk"], ["ค่ะ", "polite particle (female)"]], cultural: "ทำจาก \"made from\" names the base ingredient; coconut milk (กะทิ) underpins most traditional Thai sweets." },
+  { num: 282, display: 24, preview: "ปลาดิบ", thai: "ซูชิทำจากปลาดิบค่ะ", english: "Sushi is made with raw fish.", gloss: [["ซูชิ", "sushi"], ["ทำจาก", "made from"], ["ปลาดิบ", "raw fish"], ["ค่ะ", "polite particle (female)"]], cultural: "ดิบ \"raw/unripe\" contrasts with สุก \"cooked/ripe\" — a key pair for both food and fruit." },
+  { num: 283, display: 25, preview: "เกินไป", thai: "ผมสั่งอาหารมาเยอะเกินไปครับ", english: "I ordered too much food.", gloss: [["ผม", "I (male)"], ["สั่ง", "order"], ["อาหาร", "food"], ["มา", "(ended up)"], ["เยอะ", "a lot"], ["เกินไป", "too much"], ["ครับ", "polite particle (male)"]], cultural: "...เกินไป \"too / excessively\" attaches to an adjective for \"over-…\"; here เยอะเกินไป \"too much.\"" },
+  { num: 284, display: 26, preview: "เผ็ด", thai: "เผ็ดจนน้ำตาไหลเลยค่ะ", english: "So spicy it brought tears to my eyes.", gloss: [["เผ็ด", "spicy"], ["จน", "until / so much that"], ["น้ำตา", "tears"], ["ไหล", "flow / run"], ["เลย", "really"], ["ค่ะ", "polite particle (female)"]], cultural: "...จน... \"so …that…\" links cause to result — here heat so intense it makes your eyes water." },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
