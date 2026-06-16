@@ -47,16 +47,17 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="page-wrap">
-  <div class="topic-eyebrow">Beginner · Topic 5 of 36</div>
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
   <h1 class="topic-title">Weather &amp; seasons</h1>
   <p class="topic-meta"><strong>26 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
   <div id="player-root"></div>
   <nav class="topic-nav" aria-label="Topic navigation">
-    <a class="topic-nav-btn" href="topic-04.html">
+    <!-- Topic 4 is PREMIUM (see index.html topics[].access) — link to the paywall, not the page. -->
+    <a class="topic-nav-btn" href="subscribe.html">
       <span>←</span>
       <span>
         <span class="topic-nav-label">Previous</span><br>
-        <span class="topic-nav-name">Colours &amp; descriptions</span>
+        <span class="topic-nav-name">🔒 Colours &amp; descriptions</span>
       </span>
     </a>
     <a class="topic-nav-btn topic-nav-right" href="topic-06a.html">
@@ -103,6 +104,7 @@ window.ThaiEarTopic = {
 };
 </script>
 <script src="player.js" defer></script>
+<script src="topics.js" defer></script>
 <script src="nav.js" defer></script>
 </body>
 </html>
