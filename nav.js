@@ -35,7 +35,7 @@
      Flip `members` to true to switch on the Members button, the person
      icon, and the login/username slot across the whole site at once. */
   const FEATURES = {
-    members: false,
+    members: true,
   };
 
   /* ---- TOP-BAR LINKS ----------------------------------------------------
@@ -47,11 +47,8 @@
     // { label: 'Blog',  href: 'blog.html' },
   ];
 
-  /* ---- where the members destinations point ----------------------------
-     One destination that itself forks (signed-in view vs sign-up) so the
-     nav never has to know the auth state to route. */
-  const MEMBERS_HREF = 'members.html';
-  const LOGIN_HREF    = 'login.html';
+  /* ---- where the person/account icon points ---------------------------- */
+  const ACCOUNT_HREF = 'account.html';
 
   /* ---- person icon ------------------------------------------------------ */
   const PERSON_SVG =
@@ -109,17 +106,23 @@
     }).join('');
   }
 
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
   function memberHtml() {
     if (!FEATURES.members) return '';
     const user = getUser();
-    const authSlot = user
-      ? `<span class="nav-username">${user.username}</span>`
-      : `<a class="nav-auth" href="${LOGIN_HREF}">Log in</a>`;
-    return (
-      `<a href="${MEMBERS_HREF}">Members</a>` +
-      `<a class="nav-person" href="${MEMBERS_HREF}" aria-label="Members area">${PERSON_SVG}</a>` +
-      authSlot
-    );
+    if (user) {
+      // Logged in: username + person icon, both leading to the account page.
+      return (
+        `<span class="nav-username">${escapeHtml(user.username)}</span>` +
+        `<a class="nav-person" href="${ACCOUNT_HREF}" aria-label="Your account" title="Account">${PERSON_SVG}</a>`
+      );
+    }
+    // Logged out: a single "Log in" that kicks off Google sign-in via auth.js.
+    return `<a class="nav-auth" href="#" onclick="if(window.ThaiEarAuth)ThaiEarAuth.signInWithGoogle();return false;">Log in</a>`;
   }
 
   function navHtml() {
@@ -134,8 +137,22 @@
     );
   }
 
+  /* ---- load the auth layer once (only when members UI is on) ------------
+     auth.js wires Supabase, exposes window.ThaiEarAuth, and calls
+     ThaiEarNav.refresh() when the login state changes. Loading it from here
+     means no page needs its own <script> — the single-source nav owns it. */
+  function ensureAuth() {
+    if (!FEATURES.members) return;
+    if (document.getElementById('thaiear-auth-js')) return;
+    const s = document.createElement('script');
+    s.id = 'thaiear-auth-js';
+    s.src = 'auth.js';
+    document.body.appendChild(s);
+  }
+
   /* ---- mount ------------------------------------------------------------ */
   function mount() {
+    ensureAuth();
     if (!document.getElementById('site-nav-styles')) {
       const style = document.createElement('style');
       style.id = 'site-nav-styles';

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Your account</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 560px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+  .acct-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .acct-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 1.5rem; line-height: 1.2; }
+  .acct-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem 1.4rem; }
+  .acct-card p { color: var(--text-secondary); margin-bottom: 1rem; }
+  .acct-card .email { color: var(--text-primary); font-weight: 500; }
+  .acct-muted { font-size: 13px; color: var(--text-tertiary); }
+  .btn { font-family: var(--font-ui); font-size: 14px; font-weight: 500; border-radius: var(--radius-sm); padding: 9px 18px; cursor: pointer; border: 0.5px solid var(--border-strong); transition: background 0.15s, border-color 0.15s, color 0.15s; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent-mid); }
+  .btn-ghost { background: var(--surface); color: var(--text-secondary); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 2rem 1rem 3rem; }
+    .acct-title { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="acct-eyebrow">ThaiEar</div>
+  <h1 class="acct-title">Your account</h1>
+  <div class="acct-card" id="account-body"><p class="acct-muted">Loading…</p></div>
+</div>
+
+<script>
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function renderAccount() {
+  var el = document.getElementById('account-body');
+  if (!el) return;
+  var a = window.ThaiEarAuth;
+  if (!a || !a.isReady) { el.innerHTML = '<p class="acct-muted">Loading…</p>'; return; }
+  var user = a.getUser();
+  if (user) {
+    el.innerHTML =
+      '<p>Signed in as <span class="email">' + esc(user.email || user.username) + '</span></p>' +
+      '<button class="btn btn-ghost" onclick="ThaiEarAuth.signOut()">Log out</button>';
+  } else {
+    el.innerHTML =
+      '<p>You are not signed in.</p>' +
+      '<button class="btn btn-primary" onclick="ThaiEarAuth.signInWithGoogle()">Sign in with Google</button>';
+  }
+}
+// auth.js (loaded by nav.js) fires this when the session resolves or changes
+window.addEventListener('thaiear:auth', renderAccount);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderAccount);
+else renderAccount();
+</script>
+<script src="nav.js" defer></script>
+</body>
+</html>
