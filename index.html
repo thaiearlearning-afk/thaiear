@@ -466,7 +466,7 @@ const topics = [
   { id: 6,  name: "Time, days, numbers & dates", levels: ["beg"], parts: [
       { name: "Time, days & schedules",   sentences: 23, page: "topic-06a.html" },
       { name: "Numbers, dates & counting", sentences: 29, page: "topic-06b.html" } ] },
-  { id: 7,  name: "Family & relationships", levels: ["beg","li1"], sentences: 35 },
+  { id: 7,  name: "Family & relationships", levels: ["beg"], sentences: 38 },
   { id: 8,  name: "Food & drink", levels: ["beg","li1"], parts: [22, 23] },
   { id: 9,  name: "Home & daily routine", levels: ["beg","li1"], sentences: 35 },
   { id: 10, name: "Shopping & money (everyday)", levels: ["beg","li1"], sentences: 30 },
@@ -524,7 +524,7 @@ function matchesFilter(levels, filter) {
 }
 
 // Keyed by FROZEN id (never display position). Add entries as topics go live.
-const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html' };
+const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 7: 'topic-07.html' };
 
 // One card. `label` = display string (e.g. "08" or "13a"); href null => coming soon.
 function renderCard(t, label, sentences, href) {
