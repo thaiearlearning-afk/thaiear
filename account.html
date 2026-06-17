@@ -98,6 +98,28 @@ function loadMembership() {
       if (box) box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership status unavailable — refresh to retry.</p>';
     });
 }
+// Maintenance: cancel ALL of the user's subscriptions across every Stripe customer
+// for their email, and clear their row. Triggered only via /account?reset=1.
+function cancelAll() {
+  if (!confirm('Cancel ALL your subscriptions (across every Stripe customer) and reset? This cancels immediately.')) return;
+  var a = window.ThaiEarAuth;
+  var token = a && a.getAccessToken && a.getAccessToken();
+  if (!token) return;
+  var st = document.getElementById('reset-status');
+  if (st) st.textContent = 'Cancelling everything…';
+  fetch('/api/cancel-subscriptions', { method: 'POST', headers: { Authorization: 'Bearer ' + token } })
+    .then(function (r) { return r.text(); })
+    .then(function (t) {
+      var j = {}; try { j = JSON.parse(t); } catch (_) {}
+      if (j && j.ok) {
+        if (st) st.textContent = 'Done — cancelled ' + j.canceled + ' subscription(s) across ' + j.customers + ' customer(s). Reloading…';
+        setTimeout(function () { window.location.href = 'account.html'; }, 1600);
+      } else if (st) {
+        st.textContent = 'Error: ' + (j.detail || j.error || t || 'unknown');
+      }
+    })
+    .catch(function (e) { if (st) st.textContent = 'Error: ' + e; });
+}
 function toggleConsent(cb) {
   var st = document.getElementById('consent-status');
   var a = window.ThaiEarAuth;
@@ -140,10 +162,22 @@ function renderAccount() {
       '</label>' +
       '<p id="consent-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
     '</div>';
+  // Hidden maintenance control — only when the page is opened as /account?reset=1.
+  var resetHtml = '';
+  try {
+    if (new URLSearchParams(location.search).get('reset')) {
+      resetHtml =
+        '<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
+          '<button class="btn btn-ghost" onclick="cancelAll()" style="font-size:13px">Cancel ALL my subscriptions (reset)</button>' +
+          '<p id="reset-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
+        '</div>';
+    }
+  } catch (_) {}
   el.innerHTML =
     '<p>Signed in as <span class="email">' + esc(user.email || user.username) + '</span></p>' +
     '<div id="membership"><p class="acct-muted" style="margin-top:1rem">Loading membership…</p></div>' +
     consentHtml +
+    resetHtml +
     '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="ThaiEarAuth.signOut()">Log out</button></p>';
   loadMembership();
 }
