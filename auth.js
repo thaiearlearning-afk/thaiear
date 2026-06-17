@@ -97,17 +97,25 @@
       return client.from('profiles').upsert(row).then(function (res) {
         if (res && res.error) throw res.error;
         currentConsent = !!optIn;
-        // Best-effort sync to MailerLite (consent is already recorded in Supabase, so
-        // we don't fail the save if the email provider is briefly unavailable).
-        var tok = currentSession && currentSession.access_token;
-        if (tok) {
+        // Best-effort sync to MailerLite. Pull a FRESH token from the client (the cached
+        // session can be momentarily stale), and log the outcome so failures are visible in
+        // the console rather than silently swallowed. Consent is already saved in Supabase
+        // above, so we never fail the save if MailerLite is briefly unavailable.
+        return client.auth.getSession().then(function (s) {
+          var tok = s && s.data && s.data.session && s.data.session.access_token;
+          if (!tok) { console.warn('[marketing] no access token — MailerLite sync skipped'); return true; }
           return fetch('/api/marketing', {
             method: 'POST',
             headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
             body: JSON.stringify({ optIn: !!optIn })
-          }).then(function () { return true; }, function () { return true; });
-        }
-        return true;
+          }).then(function (r) {
+            return r.text().then(function (t) {
+              if (r.ok) console.log('[marketing] MailerLite sync ok:', t);
+              else console.warn('[marketing] MailerLite sync failed', r.status, t);
+              return true;
+            });
+          }, function (e) { console.warn('[marketing] MailerLite sync error', e); return true; });
+        });
       });
     },
     signInWithGoogle: function () {
