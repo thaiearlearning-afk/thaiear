@@ -102,11 +102,21 @@ function renderAccount() {
     return;
   }
   var subbed = a.isSubscribed && a.isSubscribed();
+  var sub = a.getSubscription && a.getSubscription();
+  var endStr = '';
+  if (sub && sub.current_period_end) {
+    try { endStr = new Date(sub.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) {}
+  }
+  var status = subbed
+    ? (sub && sub.cancel_at_period_end
+        ? 'Membership: <strong style="color:var(--accent)">Premium</strong> — active until ' + endStr + ', won’t renew'
+        : 'Membership: <strong style="color:var(--accent)">Premium</strong> (active)')
+    : 'Membership: <strong>Free member</strong>';
   var membership = subbed
-    ? '<p class="acct-muted" style="margin-top:1rem">Membership: <strong style="color:var(--accent)">Premium</strong> (active)</p>' +
+    ? '<p class="acct-muted" style="margin-top:1rem">' + status + '</p>' +
       '<button class="btn btn-ghost" onclick="openPortal()">Manage subscription</button>' +
       '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>'
-    : '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free member</strong></p>' +
+    : '<p class="acct-muted" style="margin-top:1rem">' + status + '</p>' +
       '<a class="btn btn-primary" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>';
   var consent = !!(a.getMarketingConsent && a.getMarketingConsent());
   var consentHtml =

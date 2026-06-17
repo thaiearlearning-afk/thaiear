@@ -49,6 +49,7 @@ function rowFromSub(uid, sub, customer) {
     stripe_customer_id: customer || sub.customer || null,
     stripe_subscription_id: sub.id || null,
     status: sub.status || null,
+    cancel_at_period_end: !!sub.cancel_at_period_end,
     current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
     updated_at: new Date().toISOString(),
   };
