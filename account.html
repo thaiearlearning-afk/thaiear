@@ -34,6 +34,15 @@
   .btn-primary:hover { background: var(--accent-mid); }
   .btn-ghost { background: var(--surface); color: var(--text-secondary); }
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: #B00020; color: #fff; border-color: #B00020; }
+  .btn-danger:hover { background: #8a0019; }
+  /* ── modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(20,16,48,0.45); display: flex; align-items: center; justify-content: center; padding: 1.25rem; z-index: 1000; }
+  .modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 400px; width: 100%; padding: 1.5rem 1.5rem 1.35rem; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
+  .modal-card h2 { font-size: 18px; font-weight: 600; margin-bottom: 0.5rem; }
+  .modal-card p { font-size: 14px; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.55; }
+  .modal-card input { width: 100%; font-family: var(--font-ui); font-size: 14px; padding: 9px 11px; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 1rem; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
   @media (max-width: 600px) {
     .page-wrap { padding: 2rem 1rem 3rem; }
     .acct-title { font-size: 22px; }
@@ -69,9 +78,44 @@ function openPortal() {
     })
     .catch(function () { if (el) el.textContent = 'Could not open the billing portal. Please try again.'; });
 }
+// On-brand confirmation modal (replaces the gray browser popups).
+// opts: { title, body(html), confirmText, cancelText, danger, requireText, onConfirm }
+function showModal(opts) {
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay';
+  ov.innerHTML =
+    '<div class="modal-card" role="dialog" aria-modal="true">' +
+      '<h2>' + esc(opts.title) + '</h2>' +
+      '<p>' + (opts.body || '') + '</p>' +
+      (opts.requireText ? '<input id="modal-input" autocomplete="off" placeholder="Type ' + esc(opts.requireText) + '">' : '') +
+      '<div class="modal-actions">' +
+        '<button class="btn btn-ghost" id="modal-cancel">' + esc(opts.cancelText || 'Cancel') + '</button>' +
+        '<button class="btn ' + (opts.danger ? 'btn-danger' : 'btn-primary') + '" id="modal-ok">' + esc(opts.confirmText || 'Confirm') + '</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+  ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+  ov.querySelector('#modal-cancel').addEventListener('click', close);
+  var inp = ov.querySelector('#modal-input');
+  if (inp) inp.focus();
+  ov.querySelector('#modal-ok').addEventListener('click', function () {
+    if (opts.requireText) {
+      if ((inp.value || '').trim().toUpperCase() !== opts.requireText.toUpperCase()) { inp.style.borderColor = '#B00020'; inp.focus(); return; }
+    }
+    close();
+    opts.onConfirm();
+  });
+}
 function deleteAccount() {
-  if (!confirm('Permanently delete your account? This cancels any membership immediately and erases your data. It cannot be undone.')) return;
-  if ((prompt('Type DELETE to confirm') || '').trim().toUpperCase() !== 'DELETE') return;
+  showModal({
+    title: 'Delete your account?',
+    body: 'This cancels any membership immediately and permanently erases your data. It cannot be undone.',
+    requireText: 'DELETE', confirmText: 'Delete account', cancelText: 'Keep account', danger: true,
+    onConfirm: doDeleteAccount,
+  });
+}
+function doDeleteAccount() {
   var a = window.ThaiEarAuth;
   var token = a && a.getAccessToken && a.getAccessToken();
   if (!token) return;
@@ -81,21 +125,27 @@ function deleteAccount() {
     .then(function (r) { return r.text(); })
     .then(function (t) {
       var j = {}; try { j = JSON.parse(t); } catch (_) {}
-      if (j && j.ok) {
-        try { a.signOut(); } catch (_) {}
-        alert('Your account has been deleted.');
-        window.location.href = 'index.html';
-      } else if (st) { st.textContent = 'Error: ' + (j.detail || j.error || t || 'unknown'); }
+      if (j && j.ok) { try { a.signOut(); } catch (_) {} window.location.href = 'index.html'; return; }
+      if (j && j.error === 'forbidden') { try { a.signOut(); } catch (_) {} if (st) st.textContent = 'Your session expired — please sign in again, then retry.'; return; }
+      if (st) st.textContent = 'Error: ' + (j.detail || j.error || t || 'unknown');
     })
     .catch(function (e) { if (st) st.textContent = 'Error: ' + e; });
 }
 function cancelMembership() {
-  if (!confirm('Cancel your membership? You’ll keep access until the end of the current paid period.')) return;
-  postCancel(false);
+  showModal({
+    title: 'Cancel membership?',
+    body: 'You’ll keep access until the end of the current paid period — after that it won’t renew.',
+    confirmText: 'Cancel membership', cancelText: 'Keep membership', danger: true,
+    onConfirm: function () { postCancel(false); },
+  });
 }
 function resumeMembership() {
-  if (!confirm('Resume your membership? It will keep renewing at your current rate on your current card. You can cancel again anytime before then.')) return;
-  postCancel(true);
+  showModal({
+    title: 'Resume membership?',
+    body: 'It will keep renewing at your current rate on your current card. You can cancel again anytime before then.',
+    confirmText: 'Resume', cancelText: 'Not now',
+    onConfirm: function () { postCancel(true); },
+  });
 }
 function postCancel(resume) {
   var a = window.ThaiEarAuth;
