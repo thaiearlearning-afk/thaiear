@@ -34,13 +34,16 @@
   // topic-{id}.html filename, liveTopics key). The card number shown is the 1-based
   // POSITION in this array, computed at render — never the id.
   //
-  // access: "premium" gates a topic (Phase 2 UX). A premium card shows a 🔒 Premium
-  // pill and links to subscribe.html instead of its topic page. Omitting access (or
-  // "free") = open. THIS ARRAY IS THE SOURCE OF TRUTH for the free/premium split.
-  // NOTE: the prev/next buttons on adjacent topic pages are static HTML — when you
-  // change a topic's access, also update the buttons that point INTO it (e.g. topics
-  // 3 & 4 premium → "Next" on topic-02.html and "Previous" on topic-05.html are
-  // locked to subscribe.html). Backend enforcement of the audio is Phase 3.
+  // access: "member" (any signed-in user) or "premium" (active subscription) gates a
+  // topic; omitting it (or "free") = open. THIS ARRAY IS THE SINGLE SOURCE OF TRUTH for
+  // the free/member/premium split — it drives the index cards AND the prev/next buttons.
+  // You do NOT hand-lock the prev/next buttons: decorateTopicNav() (below) reads each
+  // button's destination topic, looks up its access here, and locks/unlocks it to match
+  // (gold padlock = premium → subscribe.html; purple padlock = member → join.html).
+  // So setting a topic's access here locks its card, the "Next" on the previous topic,
+  // and the "Prev" on the next topic all at once — and unrestricting it (back to free)
+  // removes those padlocks automatically. NEVER edit lock state into the page HTML.
+  // Backend enforcement of the audio is Phase 3 (server-side; this layer is UX only).
   //
   // The list (names / levels / counts) is built from the master Content Plan — the
   // single source of truth. Do NOT hand-maintain it or carry over the old taxonomy.
@@ -185,35 +188,88 @@
     el.textContent = `${levelText(found.topic.levels)} · Topic ${found.pos} of ${topics.length}`;
   }
 
-  // ---- unlock premium prev/next buttons for entitled (logged-in) visitors ----
-  // A premium neighbour's button carries href="subscribe.html" + data-locked-href="topic-NN.html"
-  // and a 🔒 in its name. For an entitled user, point it at the real page and drop the lock —
-  // mirrors the index cards. Premium-aware via canAccess (respects ENFORCE_SUBSCRIPTION).
-  function entitled() {
-    try { return canAccess('premium'); } catch (_) { return false; }
+  // ---- prev/next nav: derive each button's lock state from its target's access ----
+  // The buttons are NOT hand-locked. For each one we resolve its real destination topic
+  // (data-target, else legacy data-locked-href, else href), look up that topic's access
+  // in the list, and lock/unlock to match — exactly like the index cards. canAccess()
+  // respects login/subscription (+ ENFORCE_SUBSCRIPTION), so this also unlocks for
+  // entitled visitors. Gold padlock = premium → subscribe.html; purple = member → join.html.
+  const NAV_LOCK_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  let navStylesInjected = false;
+  function injectNavLockStyles() {
+    if (navStylesInjected) return; navStylesInjected = true;
+    const s = document.createElement('style');
+    s.textContent =
+      '.topic-nav-lock{display:inline-flex;align-items:center;vertical-align:-2px;margin-right:4px}' +
+      '.topic-nav-lock svg{width:11px;height:11px}' +
+      '.topic-nav-lock.premium{color:var(--gold-dark)}' +   // gold = subscription
+      '.topic-nav-lock.member{color:var(--accent)}';        // purple = sign-in
+    (document.head || document.documentElement).appendChild(s);
   }
-  function unlockNav() {
-    if (!entitled()) return;
-    document.querySelectorAll('a.topic-nav-btn[data-locked-href]').forEach(function (a) {
-      a.setAttribute('href', a.getAttribute('data-locked-href'));
-      const n = a.querySelector('.topic-nav-name');
-      if (n) n.textContent = n.textContent.replace(/^\s*🔒\s*/, ''); // strip leading 🔒
+  // The button's real destination page, stored once on data-target so it survives re-runs
+  // (after locking, href points at join/subscribe, not the topic).
+  function navTarget(a) {
+    let t = a.getAttribute('data-target') || a.getAttribute('data-locked-href') || a.getAttribute('href');
+    if (t && !a.getAttribute('data-target')) a.setAttribute('data-target', t);
+    return t;
+  }
+  // access of the topic a button points INTO; null if it isn't a topic page (skip it).
+  function navAccessFor(target) {
+    const found = findByPage(target || '');
+    return found ? (found.topic.access || 'free') : null;
+  }
+  function decorateNavBtn(a) {
+    const target = navTarget(a);
+    const access = navAccessFor(target);
+    if (access === null) return; // not a topic link (e.g. back-to-index) — leave alone
+    const nameEl = a.querySelector('.topic-nav-name');
+    const oldIcon = a.querySelector('.topic-nav-lock'); if (oldIcon) oldIcon.remove();
+    if (nameEl) nameEl.textContent = nameEl.textContent.replace(/^\s*🔒\s*/, ''); // drop legacy emoji
+    if (access === 'free' || canAccess(access)) {            // open (or entitled) → unlocked
+      a.setAttribute('href', target);
+      a.removeAttribute('data-locked-href');
+      return;
+    }
+    a.setAttribute('href', access === 'premium'              // locked → route to the right gate
+      ? 'subscribe.html'
+      : 'join.html?next=' + encodeURIComponent(target));
+    a.setAttribute('data-locked-href', target);
+    injectNavLockStyles();
+    if (nameEl) {
+      const span = document.createElement('span');
+      span.className = 'topic-nav-lock ' + access;
+      span.innerHTML = NAV_LOCK_SVG;
+      nameEl.insertBefore(span, nameEl.firstChild);
+    }
+  }
+  function decorateTopicNav() {
+    document.querySelectorAll('a.topic-nav-btn').forEach(function (a) {
+      if (!a.classList.contains('disabled')) decorateNavBtn(a);
     });
   }
-  window.addEventListener('thaiear:auth', unlockNav); // re-run when login state resolves/changes
+  window.addEventListener('thaiear:auth', decorateTopicNav); // re-run when login resolves/changes
 
-  // Robust fallback: decide at CLICK time (auth is always resolved by the time a user clicks),
-  // so a locked button works even if the auth event hadn't rewritten the href yet, or the page
-  // was served from cache. Entitled → go to the real page; otherwise the default subscribe link.
+  // Click-time safety net (auth is always resolved by click; covers cached/late-auth pages):
+  // if an entitled user clicks a button whose href is still the gate (decorate hadn't run yet),
+  // send them to the real topic. Only intervenes when the href is actually stale, and never on
+  // modified clicks — so normal links keep native behaviour (ctrl/cmd/middle-click → new tab).
   document.addEventListener('click', function (e) {
-    const a = e.target.closest ? e.target.closest('a.topic-nav-btn[data-locked-href]') : null;
-    if (a && entitled()) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest ? e.target.closest('a.topic-nav-btn[data-target]') : null;
+    if (!a) return;
+    const target = a.getAttribute('data-target');
+    const access = navAccessFor(target);
+    const entitled = access !== null && (access === 'free' || canAccess(access));
+    if (entitled && a.getAttribute('href') !== target) { // stale gate href → correct it
       e.preventDefault();
-      window.location.href = a.getAttribute('data-locked-href');
-    }
+      window.location.href = target;
+    } // locked + not entitled → let the default (join/subscribe) href proceed
   });
 
-  function init() { fillEyebrow(); unlockNav(); }
+  function init() { fillEyebrow(); decorateTopicNav(); }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
