@@ -55,13 +55,18 @@ export async function onRequestGet({ request, env }) {
 }
 
 async function storedCustomerId(env, token, uid) {
+  // Durable customer lives in profiles (written by checkout); fall back to the
+  // subscriptions row for users who subscribed before that change.
   try {
-    const r = await fetch(env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + uid + '&select=stripe_customer_id',
-      { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token } });
-    if (!r.ok) return null;
-    const rows = await r.json();
-    return rows[0] && rows[0].stripe_customer_id || null;
-  } catch (_) { return null; }
+    for (const table of ['profiles', 'subscriptions']) {
+      const r = await fetch(env.SUPABASE_URL + '/rest/v1/' + table + '?user_id=eq.' + uid + '&select=stripe_customer_id',
+        { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token } });
+      if (!r.ok) continue;
+      const rows = await r.json();
+      if (rows[0] && rows[0].stripe_customer_id) return rows[0].stripe_customer_id;
+    }
+  } catch (_) {}
+  return null;
 }
 
 async function stripeGet(env, path) {

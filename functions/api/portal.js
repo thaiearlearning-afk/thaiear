@@ -26,11 +26,14 @@ export async function onRequestPost({ request, env }) {
   // gone/missing, fall back to looking the customer up by email.
   let customer = null;
   try {
-    const r = await fetch(
-      env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + user.id + '&select=stripe_customer_id',
-      { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token } });
-    const rows = r.ok ? await r.json() : [];
-    customer = (rows[0] && rows[0].stripe_customer_id) || null;
+    for (const table of ['profiles', 'subscriptions']) {
+      const r = await fetch(
+        env.SUPABASE_URL + '/rest/v1/' + table + '?user_id=eq.' + user.id + '&select=stripe_customer_id',
+        { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token } });
+      if (!r.ok) continue;
+      const rows = await r.json();
+      if (rows[0] && rows[0].stripe_customer_id) { customer = rows[0].stripe_customer_id; break; }
+    }
   } catch (_) {}
 
   if (customer) {
