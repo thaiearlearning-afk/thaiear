@@ -344,11 +344,24 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
   .footer-note {
     font-size: 12px;
     color: var(--text-tertiary);
   }
+  .footer-links {
+    display: flex;
+    gap: 1.1rem;
+  }
+  .footer-links a {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .footer-links a:hover { color: var(--accent); }
   .footer-thai {
     font-family: var(--font-thai);
     font-size: 13px;
@@ -469,6 +482,11 @@
 <!-- ── FOOTER ── -->
 <footer class="site-footer">
   <span class="footer-note">thaiear.com · Thai listening resource</span>
+  <nav class="footer-links">
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="refunds.html">Refunds</a>
+  </nav>
   <span class="footer-thai">หูภาษาไทย</span>
 </footer>
 
