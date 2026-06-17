@@ -118,8 +118,8 @@
       });
     },
     signOut: function () {
-      if (!client) return;
-      client.auth.signOut();
+      if (!client) return Promise.resolve();
+      return client.auth.signOut();
     }
   };
 

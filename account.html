@@ -125,8 +125,14 @@ function doDeleteAccount() {
     .then(function (r) { return r.text(); })
     .then(function (t) {
       var j = {}; try { j = JSON.parse(t); } catch (_) {}
-      if (j && j.ok) { try { a.signOut(); } catch (_) {} window.location.href = 'index.html'; return; }
-      if (j && j.error === 'forbidden') { try { a.signOut(); } catch (_) {} if (st) st.textContent = 'Your session expired — please sign in again, then retry.'; return; }
+      if (j && j.ok) {
+        if (st) st.textContent = 'Account deleted. Signing you out…';
+        var go = function () { window.location.replace('index.html'); };
+        setTimeout(go, 2500); // fallback if signOut hangs
+        Promise.resolve(a.signOut()).catch(function () {}).then(go); // wait for the session to clear
+        return;
+      }
+      if (j && j.error === 'forbidden') { Promise.resolve(a.signOut()).catch(function () {}); if (st) st.textContent = 'Your session expired — please sign in again, then retry.'; return; }
       if (st) st.textContent = 'Error: ' + (j.detail || j.error || t || 'unknown');
     })
     .catch(function (e) { if (st) st.textContent = 'Error: ' + e; });
