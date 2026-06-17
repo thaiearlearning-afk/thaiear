@@ -121,8 +121,9 @@
         `<a class="nav-person" href="${ACCOUNT_HREF}" aria-label="Your account" title="Account">${PERSON_SVG}</a>`
       );
     }
-    // Logged out: a single "Log in" that kicks off Google sign-in via auth.js.
-    return `<a class="nav-auth" href="#" onclick="if(window.ThaiEarAuth)ThaiEarAuth.signInWithGoogle();return false;">Log in</a>`;
+    // Logged out: send to the account page, which shows the Terms/Privacy notice next
+    // to the "Sign in with Google" button (rather than firing OAuth silently from the nav).
+    return `<a class="nav-auth" href="account.html">Log in</a>`;
   }
 
   function navHtml() {
