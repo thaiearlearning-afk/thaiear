@@ -114,7 +114,9 @@
       if (!client) { console.warn('ThaiEar auth still loading…'); return; }
       client.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.href }
+        // prompt=select_account → Google always shows the account chooser, so signing
+        // in is a deliberate confirmation rather than a silent re-auth.
+        options: { redirectTo: window.location.href, queryParams: { prompt: 'select_account' } }
       });
     },
     signOut: function () {
