@@ -37,6 +37,9 @@
 
   function mount() {
     if (document.getElementById('site-copyright')) return; // already placed
+    // If a page hand-builds its own footer (e.g. index.html), it owns the
+    // copyright line itself — don't inject a second one.
+    if (document.querySelector('.site-footer')) return;
     if (!document.getElementById('site-copyright-styles')) {
       const style = document.createElement('style');
       style.id = 'site-copyright-styles';
