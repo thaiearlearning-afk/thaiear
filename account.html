@@ -69,6 +69,30 @@ function openPortal() {
     })
     .catch(function () { if (el) el.textContent = 'Could not open the billing portal. Please try again.'; });
 }
+function cancelMembership() {
+  if (!confirm('Cancel your membership? You’ll keep access until the end of the current paid period.')) return;
+  postCancel(false);
+}
+function resumeMembership() { postCancel(true); }
+function postCancel(resume) {
+  var a = window.ThaiEarAuth;
+  var token = a && a.getAccessToken && a.getAccessToken();
+  if (!token) return;
+  var st = document.getElementById('cancel-status');
+  if (st) st.textContent = resume ? 'Resuming…' : 'Cancelling…';
+  fetch('/api/cancel', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resume: !!resume }),
+  })
+    .then(function (r) { return r.text(); })
+    .then(function (t) {
+      var j = {}; try { j = JSON.parse(t); } catch (_) {}
+      if (j && j.ok) { if (st) st.textContent = 'Done. Updating…'; setTimeout(loadMembership, 900); }
+      else if (st) { st.textContent = 'Error: ' + (j.detail || j.error || t || 'unknown'); }
+    })
+    .catch(function (e) { if (st) st.textContent = 'Error: ' + e; });
+}
 // Live subscription state from Stripe (accurate immediately, no webhook lag).
 function loadMembership() {
   var a = window.ThaiEarAuth;
@@ -85,9 +109,14 @@ function loadMembership() {
         var line = s.cancel_at_period_end
           ? 'Membership: <strong style="color:var(--accent)">Premium</strong> — active until ' + endStr + ', won’t renew'
           : 'Membership: <strong style="color:var(--accent)">Premium</strong> (active)';
+        var action = s.cancel_at_period_end
+          ? '<button class="btn btn-ghost" onclick="resumeMembership()">Resume membership</button>'
+          : '<button class="btn btn-ghost" onclick="cancelMembership()">Cancel membership</button>';
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">' + line + '</p>' +
-          '<button class="btn btn-ghost" onclick="openPortal()">Manage subscription</button>' +
-          '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>';
+          action +
+          ' <button class="btn btn-ghost" onclick="openPortal()" style="margin-left:8px">Update payment method</button>' +
+          '<p id="cancel-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
+          '<span id="portal-status" class="acct-muted"></span>';
       } else {
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free member</strong></p>' +
           '<a class="btn btn-primary" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>';
