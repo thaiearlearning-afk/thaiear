@@ -21,15 +21,26 @@ export async function onRequestPost({ request, env }) {
     user = await who.json();
   } catch (_) { return json({ error: 'auth_unavailable' }, 503); }
 
-  // Their own subscription row (RLS) gives the Stripe customer id.
+  // Resolve a VALID Stripe customer. Prefer the stored id, but verify it still
+  // exists (an earlier deleted customer would otherwise break the portal); if it's
+  // gone/missing, fall back to looking the customer up by email.
   let customer = null;
   try {
     const r = await fetch(
       env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + user.id + '&select=stripe_customer_id',
       { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token } });
     const rows = r.ok ? await r.json() : [];
-    customer = rows[0] && rows[0].stripe_customer_id;
+    customer = (rows[0] && rows[0].stripe_customer_id) || null;
   } catch (_) {}
+
+  if (customer) {
+    const c = await stripeGet(env, 'customers/' + customer);
+    if (!c || c.deleted || c.error) customer = null; // stale/deleted → drop it
+  }
+  if (!customer && user.email) {
+    const list = await stripeGet(env, 'customers?limit=1&email=' + encodeURIComponent(user.email));
+    customer = (list && list.data && list.data[0] && list.data[0].id) || null;
+  }
   if (!customer) return json({ error: 'no_customer' }, 404);
 
   const site = (env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
@@ -48,6 +59,13 @@ export async function onRequestPost({ request, env }) {
   const data = await r.json();
   if (!r.ok) return json({ error: 'stripe_error', detail: data && data.error && data.error.message }, 502);
   return json({ url: data.url }, 200);
+}
+
+async function stripeGet(env, path) {
+  try {
+    const r = await fetch('https://api.stripe.com/v1/' + path, { headers: { Authorization: 'Bearer ' + env.STRIPE_SECRET_KEY } });
+    return await r.json(); // deleted customer → {deleted:true}; not found → {error:...}
+  } catch (_) { return null; }
 }
 
 function json(obj, status) {
