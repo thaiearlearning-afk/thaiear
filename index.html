@@ -489,8 +489,6 @@ const LOCK_SVG =
   'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 
-const SIGNIN = "if(window.ThaiEarAuth)ThaiEarAuth.signInWithGoogle();return false;";
-
 // One card. access ∈ free | member | premium. pageHref = the real topic page (or null).
 // member-locked → prompt sign-in (free); premium-locked → subscribe.html; either unlocked
 // (canAccess true) → the page. canAccess() lives in topics.js and respects ENFORCE_SUBSCRIPTION.
@@ -508,8 +506,8 @@ function renderCard(t, label, sentences, access, pageHref) {
   } else if (access === 'premium') {
     href = 'subscribe.html';
     metaRight = `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
-  } else { // member, locked (signed out) → sign in (free)
-    href = '#'; onclick = ` onclick="${SIGNIN}"`;
+  } else { // member, locked (signed out) → free-membership explainer, then it unlocks
+    href = 'join.html' + (pageHref ? '?next=' + encodeURIComponent(pageHref) : '');
     metaRight = `<span class="topic-member">${LOCK_SVG}Members</span>`;
   }
   const inner =

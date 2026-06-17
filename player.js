@@ -200,9 +200,12 @@
     var code = err && err.code;
     var gate = (code === 'noauth' || code === 401 || code === 402 || code === 403);
     if (!gate) { console.warn('player.js: audio unavailable', err); return; }
-    // Member content is free behind a login → prompt sign-in when signed out.
-    if (TIER === 'member' && window.ThaiEarAuth && !window.ThaiEarAuth.getUser()) {
-      window.ThaiEarAuth.signInWithGoogle();
+    // Member content is free behind a login → send to the free-membership explainer
+    // (which has the Google sign-in), with ?next back to this topic page.
+    if (TIER === 'member') {
+      var page = (location.pathname.split('/').pop() || '');
+      if (!/\.html$/.test(page)) page += '.html';   // clean URLs (/topic-02) → topic-02.html
+      window.location.href = 'join.html?next=' + encodeURIComponent(page);
       return;
     }
     // Premium (or any other denial) → the paywall.
