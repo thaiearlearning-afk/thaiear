@@ -28,6 +28,7 @@
   var currentUser = null;
   var currentSession = null;
   var currentSubscribed = false; // active Stripe subscription? (read from Supabase via RLS)
+  var currentConsent = false;    // opted in to marketing email? (profiles row)
 
   function userFromSession(session) {
     if (!session || !session.user) return null;
@@ -59,6 +60,15 @@
       .then(function () { notify(); });
   }
 
+  // Read the user's marketing-consent flag (profiles row), cache it, re-notify.
+  function refreshProfile() {
+    if (!client || !currentUser) { currentConsent = false; return; }
+    client.from('profiles').select('marketing_opt_in').maybeSingle()
+      .then(function (res) { currentConsent = !!(res && res.data && res.data.marketing_opt_in); })
+      .catch(function () { currentConsent = false; })
+      .then(function () { notify(); });
+  }
+
   // Public API. getUser() is synchronous; the rest are no-ops until the
   // Supabase client has loaded (avoids errors if a button is hit very early).
   window.ThaiEarAuth = {
@@ -70,6 +80,23 @@
     // Synchronous + cached. False until the subscription row resolves (or when not subscribed).
     // The real gate is server-side (/api/audio); this just drives the unlocked/locked UX.
     isSubscribed: function () { return currentSubscribed; },
+    // Marketing-email consent (cached). setMarketingConsent upserts the profiles row.
+    getMarketingConsent: function () { return currentConsent; },
+    setMarketingConsent: function (optIn) {
+      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+      var row = {
+        user_id: currentUser.id,
+        email: currentUser.email || null,
+        marketing_opt_in: !!optIn,
+        marketing_opt_in_at: optIn ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
+      };
+      return client.from('profiles').upsert(row).then(function (res) {
+        if (res && res.error) throw res.error;
+        currentConsent = !!optIn;
+        return true;
+      });
+    },
     signInWithGoogle: function () {
       if (!client) { console.warn('ThaiEar auth still loading…'); return; }
       client.auth.signInWithOAuth({
@@ -94,12 +121,14 @@
       window.ThaiEarAuth.isReady = true;
       notify();
       refreshSubscription(); // async; fires another notify when it resolves
+      refreshProfile();      // marketing-consent flag
       // keep in sync on login / logout / token refresh
       client.auth.onAuthStateChange(function (_event, session) {
         currentSession = session || null;
         currentUser = userFromSession(session);
         notify();
         refreshSubscription();
+        refreshProfile();
       });
     })
     .catch(function (err) {
