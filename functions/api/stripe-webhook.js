@@ -37,8 +37,8 @@ export async function onRequestPost({ request, env }) {
       if (uid) await upsert(env, rowFromSub(uid, obj, obj.customer));
     }
   } catch (e) {
-    // 500 → Stripe retries later; better than silently dropping a state change.
-    return new Response('handler error', { status: 500 });
+    // 500 → Stripe retries later; the message shows in Stripe's delivery log.
+    return new Response('handler error: ' + (e && e.message || e), { status: 500 });
   }
   return new Response('ok', { status: 200 });
 }
@@ -55,6 +55,7 @@ function rowFromSub(uid, sub, customer) {
 }
 
 async function upsert(env, row) {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY missing');
   const r = await fetch(env.SUPABASE_URL + '/rest/v1/subscriptions', {
     method: 'POST',
     headers: {
@@ -65,7 +66,7 @@ async function upsert(env, row) {
     },
     body: JSON.stringify([row]),
   });
-  if (!r.ok) throw new Error('supabase upsert ' + r.status);
+  if (!r.ok) throw new Error('supabase upsert ' + r.status + ': ' + (await r.text()).slice(0, 300));
 }
 
 async function uidByCustomer(env, customer) {
