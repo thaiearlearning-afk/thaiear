@@ -12,10 +12,20 @@
      SITE_URL            (optional)        e.g. https://thaiear.com (else request origin)
    ============================================================ */
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(ctx) {
+  try {
+    return await handle(ctx);
+  } catch (e) {
+    return json({ error: 'exception', detail: String(e && e.message || e) }, 500);
+  }
+}
+
+async function handle({ request, env }) {
   const token = bearer(request);
   const user = await verifyUser(token, env);
   if (!user) return json({ error: 'unauthorized' }, 401);
+  if (!env.STRIPE_SECRET_KEY) return json({ error: 'config', detail: 'STRIPE_SECRET_KEY missing (set it in Pages → Production, then redeploy)' }, 500);
+  if (!env.STRIPE_PRICE_ID) return json({ error: 'config', detail: 'STRIPE_PRICE_ID missing (set it in Pages → Production, then redeploy)' }, 500);
 
   const site = (env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
 
