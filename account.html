@@ -69,6 +69,18 @@ function openPortal() {
     })
     .catch(function () { if (el) el.textContent = 'Could not open the billing portal. Please try again.'; });
 }
+function toggleConsent(cb) {
+  var st = document.getElementById('consent-status');
+  if (st) st.textContent = 'Saving…';
+  window.ThaiEarAuth.setMarketingConsent(cb.checked).then(function () {
+    if (st) st.textContent = cb.checked
+      ? 'Saved — you’ll get occasional update emails.'
+      : 'Saved — you won’t get update emails.';
+  }).catch(function () {
+    if (st) st.textContent = 'Could not save — please try again.';
+    cb.checked = !cb.checked;
+  });
+}
 function renderAccount() {
   var el = document.getElementById('account-body');
   if (!el) return;
@@ -88,9 +100,20 @@ function renderAccount() {
       '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>'
     : '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>None</strong></p>' +
       '<a class="btn btn-primary" href="subscribe.html" style="display:inline-block;text-decoration:none">Become a member</a>';
+  var consent = !!(a.getMarketingConsent && a.getMarketingConsent());
+  var consentHtml =
+    '<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
+      '<label style="display:flex;align-items:flex-start;gap:9px;font-size:14px;color:var(--text-secondary);cursor:pointer">' +
+        '<input type="checkbox" id="consent-box" ' + (consent ? 'checked' : '') +
+        ' onchange="toggleConsent(this)" style="margin-top:3px;flex-shrink:0">' +
+        '<span>Email me about new topics &amp; special offers. Unsubscribe anytime.</span>' +
+      '</label>' +
+      '<p id="consent-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
+    '</div>';
   el.innerHTML =
     '<p>Signed in as <span class="email">' + esc(user.email || user.username) + '</span></p>' +
     membership +
+    consentHtml +
     '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="ThaiEarAuth.signOut()">Log out</button></p>';
 }
 // auth.js (loaded by nav.js) fires this when the session resolves or changes
