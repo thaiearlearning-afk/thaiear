@@ -69,12 +69,32 @@ function openPortal() {
     })
     .catch(function () { if (el) el.textContent = 'Could not open the billing portal. Please try again.'; });
 }
+function deleteAccount() {
+  if (!confirm('Permanently delete your account? This cancels any membership immediately and erases your data. It cannot be undone.')) return;
+  if ((prompt('Type DELETE to confirm') || '').trim().toUpperCase() !== 'DELETE') return;
+  var a = window.ThaiEarAuth;
+  var token = a && a.getAccessToken && a.getAccessToken();
+  if (!token) return;
+  var st = document.getElementById('delete-status');
+  if (st) st.textContent = 'Deleting your account…';
+  fetch('/api/delete-account', { method: 'POST', headers: { Authorization: 'Bearer ' + token } })
+    .then(function (r) { return r.text(); })
+    .then(function (t) {
+      var j = {}; try { j = JSON.parse(t); } catch (_) {}
+      if (j && j.ok) {
+        try { a.signOut(); } catch (_) {}
+        alert('Your account has been deleted.');
+        window.location.href = 'index.html';
+      } else if (st) { st.textContent = 'Error: ' + (j.detail || j.error || t || 'unknown'); }
+    })
+    .catch(function (e) { if (st) st.textContent = 'Error: ' + e; });
+}
 function cancelMembership() {
   if (!confirm('Cancel your membership? You’ll keep access until the end of the current paid period.')) return;
   postCancel(false);
 }
 function resumeMembership() {
-  if (!confirm('Resume your membership? It will keep renewing at £5.99/month on your current card. You can cancel again anytime before then.')) return;
+  if (!confirm('Resume your membership? It will keep renewing at your current rate on your current card. You can cancel again anytime before then.')) return;
   postCancel(true);
 }
 function postCancel(resume) {
@@ -218,7 +238,11 @@ function renderAccount() {
     '<div id="membership"><p class="acct-muted" style="margin-top:1rem">Loading membership…</p></div>' +
     consentHtml +
     resetHtml +
-    '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="ThaiEarAuth.signOut()">Log out</button></p>';
+    '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="ThaiEarAuth.signOut()">Log out</button></p>' +
+    '<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">' +
+      '<button class="btn" onclick="deleteAccount()" style="font-size:12px;color:#B00020;background:none;border-color:rgba(176,0,32,0.35)">Delete my account</button>' +
+      '<p id="delete-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
+    '</div>';
   loadMembership();
   if (doReset) loadResetDebug();
 }
