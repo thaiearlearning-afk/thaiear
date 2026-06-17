@@ -127,7 +127,7 @@ function doDeleteAccount() {
       var j = {}; try { j = JSON.parse(t); } catch (_) {}
       if (j && j.ok) {
         if (st) st.textContent = 'Account deleted. Signing you out…';
-        var go = function () { window.location.replace('index.html'); };
+        var go = function () { window.location.replace('deleted.html'); };
         setTimeout(go, 2500); // fallback if signOut hangs
         Promise.resolve(a.signOut()).catch(function () {}).then(go); // wait for the session to clear
         return;
