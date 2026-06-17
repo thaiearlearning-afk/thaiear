@@ -20,9 +20,10 @@ export async function onRequestPost({ request, env }) {
     const who = await fetch(env.SUPABASE_URL + '/auth/v1/user', {
       headers: { Authorization: 'Bearer ' + token, apikey: env.SUPABASE_ANON_KEY },
     });
-    if (!who.ok) return json({ error: 'forbidden' }, 403);
+    if (!who.ok) return json({ error: 'forbidden', detail: 'auth ' + who.status + ' (session likely expired — sign in again)' }, 403);
     user = await who.json();
   } catch (_) { return json({ error: 'auth_unavailable' }, 503); }
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'config', detail: 'SUPABASE_SERVICE_ROLE_KEY missing' }, 500);
 
   try {
     // 1. Cancel all Stripe subscriptions across every customer for this user.
