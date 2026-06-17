@@ -156,7 +156,7 @@
     '</div>' +
     '<p class="orientation-text">' +
       '<strong>How to use this topic:</strong> Listen to the <strong>Thai first</strong> audio a couple of times to build familiarity. ' +
-      'Then switch to <strong>English first</strong> to test your recall — hear the English prompt and try to produce the Thai before it plays. ' +
+      'Then switch to <strong>English first</strong> to test your recall — hear the English prompt and try to produce the Thai before it plays — but do feel free to pause. ' +
       'Click any sentence below to reveal the Thai, English translation, and word notes.' +
     '</p>' +
     '<div class="controls-row">' +
