@@ -155,9 +155,22 @@
     document.body.appendChild(s);
   }
 
+  /* ---- load the site-wide copyright footer once ------------------------
+     footer.js owns the © line and injects it at the bottom of the page.
+     Loading it from here means no page needs its own <script> — the nav,
+     which is already on every page, brings the footer with it. */
+  function ensureFooter() {
+    if (document.getElementById('thaiear-footer-js')) return;
+    const s = document.createElement('script');
+    s.id = 'thaiear-footer-js';
+    s.src = 'footer.js';
+    document.body.appendChild(s);
+  }
+
   /* ---- mount ------------------------------------------------------------ */
   function mount() {
     ensureAuth();
+    ensureFooter();
     if (!document.getElementById('site-nav-styles')) {
       const style = document.createElement('style');
       style.id = 'site-nav-styles';
