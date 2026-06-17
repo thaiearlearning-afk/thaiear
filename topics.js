@@ -46,7 +46,7 @@
   // single source of truth. Do NOT hand-maintain it or carry over the old taxonomy.
   const topics = [
     { id: 1,  name: "Greetings & farewells", levels: ["beg"], sentences: 23 },
-    { id: 2,  name: "Getting to know you", levels: ["beg"], sentences: 29 },
+    { id: 2,  name: "Getting to know you", levels: ["beg"], sentences: 29, access: "member" },
     { id: 3,  name: "Communication survival", levels: ["beg"], sentences: 22, access: "premium" },
     { id: 4,  name: "Colours & descriptions", levels: ["beg"], sentences: 36, access: "premium" },
     { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 26 },
