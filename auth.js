@@ -28,6 +28,7 @@
   var currentUser = null;
   var currentSession = null;
   var currentSubscribed = false; // active Stripe subscription? (read from Supabase via RLS)
+  var currentSub = null;         // {status, cancel_at_period_end, current_period_end}
   var currentConsent = false;    // opted in to marketing email? (profiles row)
 
   function userFromSession(session) {
@@ -50,13 +51,14 @@
   // Read the user's own subscription row (RLS) and cache active/not, then re-notify
   // so cards/pages re-render once we know. Logged out → not subscribed.
   function refreshSubscription() {
-    if (!client || !currentUser) { currentSubscribed = false; notify(); return; }
-    client.from('subscriptions').select('status').maybeSingle()
+    if (!client || !currentUser) { currentSubscribed = false; currentSub = null; notify(); return; }
+    client.from('subscriptions').select('status,cancel_at_period_end,current_period_end').maybeSingle()
       .then(function (res) {
-        var s = res && res.data && res.data.status;
+        currentSub = (res && res.data) || null;
+        var s = currentSub && currentSub.status;
         currentSubscribed = (s === 'active' || s === 'trialing');
       })
-      .catch(function () { currentSubscribed = false; })
+      .catch(function () { currentSubscribed = false; currentSub = null; })
       .then(function () { notify(); });
   }
 
@@ -80,6 +82,7 @@
     // Synchronous + cached. False until the subscription row resolves (or when not subscribed).
     // The real gate is server-side (/api/audio); this just drives the unlocked/locked UX.
     isSubscribed: function () { return currentSubscribed; },
+    getSubscription: function () { return currentSub; }, // {status, cancel_at_period_end, current_period_end}
     // Marketing-email consent (cached). setMarketingConsent upserts the profiles row.
     getMarketingConsent: function () { return currentConsent; },
     setMarketingConsent: function (optIn) {
