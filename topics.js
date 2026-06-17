@@ -147,7 +147,7 @@
   // behaves like member (signed-in is enough) so nothing breaks before Stripe is live.
   // Flip it to true at the Phase-4 cutover, together with the server ENFORCE_SUBSCRIPTION
   // env on /api/audio. (Real enforcement is server-side; this only drives the UX.)
-  const ENFORCE_SUBSCRIPTION = false;
+  const ENFORCE_SUBSCRIPTION = true;
   function authState() {
     const a = window.ThaiEarAuth || {};
     return {
