@@ -54,15 +54,22 @@ export async function onRequestGet({ request, env }) {
       }, 200);
     }
 
-    // Honest state: a fully-active sub wins; else an active-but-cancelling one; else none.
+    // Honest state: a fully-active sub wins; else an active-but-cancelling one; else a
+    // payment-failed (past_due/unpaid) one that can be recovered; else none.
     const liveSubs = all.filter(function (s) { return s.status === 'active' || s.status === 'trialing'; });
-    const chosen = liveSubs.find(function (s) { return !s.cancel_at_period_end; }) ||
-                   liveSubs.find(function (s) { return s.cancel_at_period_end; }) || null;
+    let chosen = liveSubs.find(function (s) { return !s.cancel_at_period_end; }) ||
+                 liveSubs.find(function (s) { return s.cancel_at_period_end; }) || null;
+    let needsPayment = false;
+    if (!chosen) {
+      chosen = all.find(function (s) { return s.status === 'past_due' || s.status === 'unpaid'; }) || null;
+      needsPayment = !!chosen;
+    }
     if (!chosen) return json({ subscribed: false }, 200);
 
     const pend = periodEnd(chosen);
     return json({
-      subscribed: true,
+      subscribed: !needsPayment,         // past_due → not entitled, but recoverable
+      needsPayment: needsPayment,
       status: chosen.status,
       cancel_at_period_end: !!chosen.cancel_at_period_end,
       current_period_end: pend ? new Date(pend * 1000).toISOString() : null,

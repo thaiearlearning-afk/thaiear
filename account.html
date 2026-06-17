@@ -122,6 +122,11 @@ function loadMembership() {
           action +
           '<p id="cancel-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
           '<span id="portal-status" class="acct-muted"></span>';
+      } else if (s && s.needsPayment) {
+        box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong style="color:#B00020">Payment problem</strong> — your last payment didn’t go through.</p>' +
+          '<p class="acct-muted" style="font-size:13px;margin-bottom:0.6rem">Update your card to keep your membership — access resumes automatically once it clears. No need to sign up again.</p>' +
+          '<button class="btn btn-primary" onclick="openPortal()">Update payment method</button>' +
+          '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>';
       } else {
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free member</strong></p>' +
           '<a class="btn btn-primary" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>';
