@@ -45,6 +45,20 @@ async function handle({ request, env }) {
   if (existing) p.set('customer', existing);
   else if (user.email) p.set('customer_email', user.email);
 
+  let res = await createSession(env, p);
+  // The stored customer can be stale (e.g. deleted in Stripe). If reusing it failed,
+  // retry once letting Checkout create/find a customer from the email — the webhook
+  // then heals the stored id on the next subscribe.
+  if (!res.ok && p.has('customer')) {
+    p.delete('customer');
+    if (user.email) p.set('customer_email', user.email);
+    res = await createSession(env, p);
+  }
+  if (!res.ok) return json({ error: 'stripe_error', detail: res.data && res.data.error && res.data.error.message }, 502);
+  return json({ url: res.data.url }, 200);
+}
+
+async function createSession(env, p) {
   const r = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
     headers: {
@@ -53,9 +67,9 @@ async function handle({ request, env }) {
     },
     body: p.toString(),
   });
-  const data = await r.json();
-  if (!r.ok) return json({ error: 'stripe_error', detail: data && data.error && data.error.message }, 502);
-  return json({ url: data.url }, 200);
+  let data = {};
+  try { data = await r.json(); } catch (_) {}
+  return { ok: r.ok, data };
 }
 
 function bearer(request) {
