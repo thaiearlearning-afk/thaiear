@@ -163,16 +163,15 @@ function renderAccount() {
       '<p id="consent-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
     '</div>';
   // Hidden maintenance control — only when the page is opened as /account?reset=1.
-  var resetHtml = '';
-  try {
-    if (new URLSearchParams(location.search).get('reset')) {
-      resetHtml =
-        '<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
-          '<button class="btn btn-ghost" onclick="cancelAll()" style="font-size:13px">Cancel ALL my subscriptions (reset)</button>' +
-          '<p id="reset-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
-        '</div>';
-    }
-  } catch (_) {}
+  var doReset = false;
+  try { doReset = !!new URLSearchParams(location.search).get('reset'); } catch (_) {}
+  var resetHtml = doReset
+    ? '<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
+        '<button class="btn btn-ghost" onclick="cancelAll()" style="font-size:13px">Cancel ALL my subscriptions (reset)</button>' +
+        '<p id="reset-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
+        '<pre id="reset-debug" style="margin-top:10px;font-size:11px;background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:10px;overflow:auto;white-space:pre-wrap">Loading current Stripe state…</pre>' +
+      '</div>'
+    : '';
   el.innerHTML =
     '<p>Signed in as <span class="email">' + esc(user.email || user.username) + '</span></p>' +
     '<div id="membership"><p class="acct-muted" style="margin-top:1rem">Loading membership…</p></div>' +
@@ -180,6 +179,17 @@ function renderAccount() {
     resetHtml +
     '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="ThaiEarAuth.signOut()">Log out</button></p>';
   loadMembership();
+  if (doReset) loadResetDebug();
+}
+function loadResetDebug() {
+  var a = window.ThaiEarAuth;
+  var token = a && a.getAccessToken && a.getAccessToken();
+  var pre = document.getElementById('reset-debug');
+  if (!pre || !token) return;
+  fetch('/api/subscription?debug=1', { headers: { Authorization: 'Bearer ' + token } })
+    .then(function (r) { return r.text(); })
+    .then(function (t) { if (pre) pre.textContent = t; })
+    .catch(function (e) { if (pre) pre.textContent = 'debug error: ' + e; });
 }
 // auth.js (loaded by nav.js) fires this when the session resolves or changes
 window.addEventListener('thaiear:auth', renderAccount);
