@@ -94,6 +94,16 @@
       return client.from('profiles').upsert(row).then(function (res) {
         if (res && res.error) throw res.error;
         currentConsent = !!optIn;
+        // Best-effort sync to MailerLite (consent is already recorded in Supabase, so
+        // we don't fail the save if the email provider is briefly unavailable).
+        var tok = currentSession && currentSession.access_token;
+        if (tok) {
+          return fetch('/api/marketing', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ optIn: !!optIn })
+          }).then(function () { return true; }, function () { return true; });
+        }
         return true;
       });
     },
