@@ -71,13 +71,18 @@ function openPortal() {
 }
 function toggleConsent(cb) {
   var st = document.getElementById('consent-status');
+  var a = window.ThaiEarAuth;
+  if (!a || typeof a.setMarketingConsent !== 'function') {
+    if (st) st.textContent = 'Please hard-refresh the page and try again.';
+    cb.checked = !cb.checked; return;
+  }
   if (st) st.textContent = 'Saving…';
-  window.ThaiEarAuth.setMarketingConsent(cb.checked).then(function () {
+  a.setMarketingConsent(cb.checked).then(function () {
     if (st) st.textContent = cb.checked
       ? 'Saved — you’ll get occasional update emails.'
       : 'Saved — you won’t get update emails.';
-  }).catch(function () {
-    if (st) st.textContent = 'Could not save — please try again.';
+  }).catch(function (e) {
+    if (st) st.textContent = 'Could not save: ' + ((e && e.message) || e);
     cb.checked = !cb.checked;
   });
 }
@@ -95,11 +100,11 @@ function renderAccount() {
   }
   var subbed = a.isSubscribed && a.isSubscribed();
   var membership = subbed
-    ? '<p class="acct-muted" style="margin-top:1rem">Membership: <strong style="color:var(--accent)">Active</strong></p>' +
+    ? '<p class="acct-muted" style="margin-top:1rem">Membership: <strong style="color:var(--accent)">Premium</strong> (active)</p>' +
       '<button class="btn btn-ghost" onclick="openPortal()">Manage subscription</button>' +
       '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>'
-    : '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>None</strong></p>' +
-      '<a class="btn btn-primary" href="subscribe.html" style="display:inline-block;text-decoration:none">Become a member</a>';
+    : '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free member</strong></p>' +
+      '<a class="btn btn-primary" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>';
   var consent = !!(a.getMarketingConsent && a.getMarketingConsent());
   var consentHtml =
     '<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
