@@ -4,7 +4,7 @@
    Loaded automatically by nav.js when the members UI is on, so
    no page needs its own <script>. Responsibilities:
      • create the Supabase client
-     • expose window.ThaiEarAuth.{ getUser, signInWithGoogle, signOut, isReady }
+     • expose window.ThaiEarAuth.{ getUser, signInWithGoogle, sendMagicLink, signOut, isReady }
      • keep the cached current user in sync and tell the nav to re-render
 
    getUser() is SYNCHRONOUS (the nav calls it during render) and returns
@@ -117,6 +117,18 @@
         // prompt=select_account → Google always shows the account chooser, so signing
         // in is a deliberate confirmation rather than a silent re-auth.
         options: { redirectTo: window.location.href, queryParams: { prompt: 'select_account' } }
+      });
+    },
+    // Passwordless "magic link": Supabase emails a one-click sign-in link. Creating an
+    // account and signing in are the same action (shouldCreateUser defaults true). The
+    // returned session is picked up automatically when the link lands back on the site
+    // (detectSessionInUrl), so onAuthStateChange logs them in — no extra handling here.
+    // Returns the Supabase promise ({ data, error }) so the caller can show feedback.
+    sendMagicLink: function (email) {
+      if (!client) return Promise.reject(new Error('auth still loading'));
+      return client.auth.signInWithOtp({
+        email: email,
+        options: { emailRedirectTo: window.location.origin + '/account.html' }
       });
     },
     signOut: function () {
