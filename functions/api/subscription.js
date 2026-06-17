@@ -60,15 +60,23 @@ export async function onRequestGet({ request, env }) {
                    liveSubs.find(function (s) { return s.cancel_at_period_end; }) || null;
     if (!chosen) return json({ subscribed: false }, 200);
 
+    const pend = periodEnd(chosen);
     return json({
       subscribed: true,
       status: chosen.status,
       cancel_at_period_end: !!chosen.cancel_at_period_end,
-      current_period_end: chosen.current_period_end ? new Date(chosen.current_period_end * 1000).toISOString() : null,
+      current_period_end: pend ? new Date(pend * 1000).toISOString() : null,
     }, 200);
   } catch (e) {
     return json({ error: 'lookup_failed', detail: String(e && e.message || e) }, 200);
   }
+}
+
+// Stripe moved current_period_end onto the subscription item in recent API versions.
+function periodEnd(s) {
+  if (s && s.current_period_end) return s.current_period_end;
+  const it = s && s.items && s.items.data && s.items.data[0];
+  return (it && it.current_period_end) || null;
 }
 
 async function storedCustomerId(env, token, uid) {

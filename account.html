@@ -73,7 +73,10 @@ function cancelMembership() {
   if (!confirm('Cancel your membership? You’ll keep access until the end of the current paid period.')) return;
   postCancel(false);
 }
-function resumeMembership() { postCancel(true); }
+function resumeMembership() {
+  if (!confirm('Resume your membership? It will keep renewing at £5.99/month on your current card. You can cancel again anytime before then.')) return;
+  postCancel(true);
+}
 function postCancel(resume) {
   var a = window.ThaiEarAuth;
   var token = a && a.getAccessToken && a.getAccessToken();
@@ -109,12 +112,14 @@ function loadMembership() {
         var line = s.cancel_at_period_end
           ? 'Membership: <strong style="color:var(--accent)">Premium</strong> — active until ' + endStr + ', won’t renew'
           : 'Membership: <strong style="color:var(--accent)">Premium</strong> (active)';
+        // Cancelling → just offer Resume (no point updating a card that won't be charged).
+        // Active → Cancel + Update payment method.
         var action = s.cancel_at_period_end
           ? '<button class="btn btn-ghost" onclick="resumeMembership()">Resume membership</button>'
-          : '<button class="btn btn-ghost" onclick="cancelMembership()">Cancel membership</button>';
+          : '<button class="btn btn-ghost" onclick="cancelMembership()">Cancel membership</button>' +
+            ' <button class="btn btn-ghost" onclick="openPortal()" style="margin-left:8px">Update payment method</button>';
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">' + line + '</p>' +
           action +
-          ' <button class="btn btn-ghost" onclick="openPortal()" style="margin-left:8px">Update payment method</button>' +
           '<p id="cancel-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
           '<span id="portal-status" class="acct-muted"></span>';
       } else {

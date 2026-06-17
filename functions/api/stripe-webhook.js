@@ -50,9 +50,16 @@ function rowFromSub(uid, sub, customer) {
     stripe_subscription_id: sub.id || null,
     status: sub.status || null,
     cancel_at_period_end: !!sub.cancel_at_period_end,
-    current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+    current_period_end: subPeriodEnd(sub) ? new Date(subPeriodEnd(sub) * 1000).toISOString() : null,
     updated_at: new Date().toISOString(),
   };
+}
+
+// current_period_end moved onto the item in recent Stripe API versions.
+function subPeriodEnd(sub) {
+  if (sub && sub.current_period_end) return sub.current_period_end;
+  const it = sub && sub.items && sub.items.data && sub.items.data[0];
+  return (it && it.current_period_end) || null;
 }
 
 async function upsert(env, row) {
