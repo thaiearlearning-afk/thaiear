@@ -316,6 +316,27 @@
     color: #5A4A10;
   }
 
+  /* ── MEMBER (login-only) CARD — accent (purple), distinct from gold premium ── */
+  .topic-card.member:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  .topic-member {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 2px 9px 2px 7px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .topic-member svg { width: 11px; height: 11px; }
+  .topic-member.unlocked { background: var(--accent); color: #fff; }
+
   /* ── FOOTER ── */
   .site-footer {
     border-top: 0.5px solid var(--border);
@@ -460,31 +481,36 @@
    topics.js (window.ThaiEarTopics), so the index and the topic pages never drift —
    add/remove/reorder topics in topics.js only. See the level + numbering notes there
    and the "TOPIC NUMBERING" note at the end of this file. */
-const { topics, liveTopics, levelBadge, matchesFilter } = window.ThaiEarTopics;
+const { topics, liveTopics, levelBadge, matchesFilter, canAccess } = window.ThaiEarTopics;
 
-// Padlock glyph for premium cards (matches the line-icon style used in nav.js).
+// Padlock glyph for gated cards (matches the line-icon style used in nav.js).
 const LOCK_SVG =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
   'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 
-// Entitled = may access premium content. Phase 3: logged in. Phase 4: logged in AND subscribed.
-function isEntitled() {
-  try { return !!(window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser()); }
-  catch (_) { return false; }
-}
+const SIGNIN = "if(window.ThaiEarAuth)ThaiEarAuth.signInWithGoogle();return false;";
 
-// One card. `label` = display string (e.g. "08" or "13a"); href null => coming soon.
-// premium + !entitled => 🔒 pill, links to subscribe.html. premium + entitled => normal
-// link to the topic page with an (unlocked) gold Premium pill. (Set in cardsForTopic.)
-function renderCard(t, label, sentences, href, premium, entitled) {
-  let metaRight;
-  if (premium) {
-    metaRight = entitled
-      ? `<span class="topic-premium unlocked">Premium</span>`
-      : `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
-  } else {
-    metaRight = href ? '' : '<span class="coming-soon-label">Coming soon</span>';
+// One card. access ∈ free | member | premium. pageHref = the real topic page (or null).
+// member-locked → prompt sign-in (free); premium-locked → subscribe.html; either unlocked
+// (canAccess true) → the page. canAccess() lives in topics.js and respects ENFORCE_SUBSCRIPTION.
+function renderCard(t, label, sentences, access, pageHref) {
+  const gated = access === 'member' || access === 'premium';
+  const accessible = canAccess(access);
+  let href = pageHref, onclick = '', metaRight;
+  if (!gated) {
+    metaRight = pageHref ? '' : '<span class="coming-soon-label">Coming soon</span>';
+  } else if (accessible) {
+    href = pageHref; // unlocked → the page (null if not built yet → coming-soon below)
+    metaRight = access === 'premium'
+      ? '<span class="topic-premium unlocked">Premium</span>'
+      : '<span class="topic-member unlocked">Member</span>';
+  } else if (access === 'premium') {
+    href = 'subscribe.html';
+    metaRight = `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
+  } else { // member, locked (signed out) → sign in (free)
+    href = '#'; onclick = ` onclick="${SIGNIN}"`;
+    metaRight = `<span class="topic-member">${LOCK_SVG}Members</span>`;
   }
   const inner =
       `<div class="topic-card-top">
@@ -496,35 +522,24 @@ function renderCard(t, label, sentences, href, premium, entitled) {
         <span class="topic-sent-count">${sentences} sentences</span>
         ${metaRight}
       </div>`;
-  if (premium) return `<a class="topic-card premium" href="${href}">${inner}</a>`;
-  return href
-    ? `<a class="topic-card" href="${href}">${inner}</a>`
-    : `<div class="topic-card coming-soon">${inner}</div>`;
+  if (!href) return `<div class="topic-card coming-soon">${inner}</div>`;
+  const cls = 'topic-card' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '');
+  return `<a class="${cls}" href="${href}"${onclick}>${inner}</a>`;
 }
 
 // One topic -> one card, or two (a/b) if split. `pos` = 1-based display position.
+// Tier comes from topics[].access (free | member | premium); links resolve via canAccess.
 function cardsForTopic(t, pos) {
   const p = String(pos).padStart(2, '0');
-  // Premium gates the topic for non-entitled visitors: lock + subscribe.html. Entitled
-  // visitors get the normal page link. Source of truth = topics[].access (+ live audio lock).
-  const premium = t.access === 'premium';
-  const entitled = premium && isEntitled();
+  const access = t.access || 'free';
   if (t.parts) {
-    // Split: two cards sharing the position number, suffixed a/b.
     return t.parts.map((part, i) => {
       const label = p + 'ab'[i];
-      // Legacy form: a bare sentence count => same parent name, coming soon.
-      if (typeof part === 'number') {
-        const phref = premium ? (entitled ? null : 'subscribe.html') : null;
-        return renderCard(t, label, part, phref, premium, entitled);
-      }
-      // Live form: { name, sentences, page } => own name + own page link.
-      const href = premium ? (entitled ? (part.page || null) : 'subscribe.html') : (part.page || null);
-      return renderCard({ ...t, name: part.name }, label, part.sentences, href, premium, entitled);
+      if (typeof part === 'number') return renderCard(t, label, part, access, null);
+      return renderCard({ ...t, name: part.name }, label, part.sentences, access, part.page || null);
     }).join('');
   }
-  const href = premium ? (entitled ? (liveTopics[t.id] || null) : 'subscribe.html') : (liveTopics[t.id] || null);
-  return renderCard(t, p, t.sentences, href, premium, entitled);
+  return renderCard(t, p, t.sentences, access, liveTopics[t.id] || null);
 }
 
 let activeFilter = 'all';

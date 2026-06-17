@@ -100,11 +100,11 @@
 
     <div class="price-row">
       <div class="price-label">Monthly membership</div>
-      <div class="price-value">Pricing coming soon</div>
-      <div class="price-note">Memberships aren't open yet — we're putting the finishing touches on it.</div>
+      <div class="price-value">£5.99 <span style="font-size:13px;color:var(--text-tertiary);font-weight:400">/ month</span></div>
+      <div class="price-note">Cancel anytime.</div>
     </div>
 
-    <button class="btn btn-primary" id="subscribe-btn" disabled>Membership coming soon</button>
+    <button class="btn btn-primary" id="subscribe-btn">Subscribe</button>
     <p class="sub-status" id="sub-status"></p>
   </div>
 
@@ -112,31 +112,51 @@
 </div>
 
 <script>
-/* Static paywall page (Phase 2). No payment yet — Stripe Checkout is wired in Phase 4.
-   Until then the CTA is disabled. The auth-aware line below is a light touch: if the
-   visitor is signed in we greet them, otherwise we nudge a (free) login. It reads the
-   shared auth layer that nav.js loads — no extra wiring needed. */
+/* Subscribe page (Phase 4). The button starts Stripe Checkout via /api/checkout
+   (sending the Supabase token). Signed-out → sign in first; already a member →
+   point them at the account page. The real lock is server-side; this is the funnel. */
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
-function renderSubStatus() {
-  var el = document.getElementById('sub-status');
-  if (!el) return;
+function startCheckout() {
   var a = window.ThaiEarAuth;
-  if (!a || !a.isReady) { el.textContent = ''; return; }
+  var token = a && a.getAccessToken && a.getAccessToken();
+  if (!token) { if (a) a.signInWithGoogle(); return; }
+  var btn = document.getElementById('subscribe-btn');
+  btn.disabled = true; btn.textContent = 'Redirecting…';
+  fetch('/api/checkout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && j.url) { window.location.href = j.url; }
+      else { btn.disabled = false; btn.textContent = 'Subscribe';
+             document.getElementById('sub-status').textContent = 'Sorry — could not start checkout. Please try again.'; }
+    })
+    .catch(function () { btn.disabled = false; btn.textContent = 'Subscribe';
+      document.getElementById('sub-status').textContent = 'Sorry — could not start checkout. Please try again.'; });
+}
+function renderSub() {
+  var btn = document.getElementById('subscribe-btn');
+  var el = document.getElementById('sub-status');
+  if (!btn || !el) return;
+  var a = window.ThaiEarAuth;
+  if (!a || !a.isReady) { btn.textContent = 'Subscribe'; el.textContent = ''; return; }
   var user = a.getUser();
-  if (user) {
-    el.innerHTML = 'Signed in as <strong>' + esc(user.username || user.email) + '</strong> — we’ll let you know the moment memberships open.';
+  if (user && a.isSubscribed && a.isSubscribed()) {
+    btn.textContent = 'You’re a member ✓'; btn.disabled = true;
+    el.innerHTML = 'You already have an active membership — <a href="account.html" style="color:var(--accent);font-weight:500;text-decoration:none">manage it here</a>.';
   } else {
-    el.innerHTML = '<a href="#" style="color:var(--accent);font-weight:500;text-decoration:none" ' +
-      'onclick="if(window.ThaiEarAuth)ThaiEarAuth.signInWithGoogle();return false;">Log in</a> ' +
-      'to get ready — it’s free, and saves your place for when memberships open.';
+    btn.disabled = false;
+    btn.textContent = user ? 'Subscribe — £5.99/month' : 'Sign in to subscribe';
+    el.innerHTML = user
+      ? 'Signed in as <strong>' + esc(user.username || user.email) + '</strong>.'
+      : 'It’s a free Google sign-in first, then checkout.';
   }
 }
-window.addEventListener('thaiear:auth', renderSubStatus);
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderSubStatus);
-else renderSubStatus();
+document.getElementById('subscribe-btn').addEventListener('click', startCheckout);
+window.addEventListener('thaiear:auth', renderSub);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderSub);
+else renderSub();
 </script>
 <script src="nav.js" defer></script>
 </body>
