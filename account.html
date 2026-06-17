@@ -101,7 +101,9 @@ function loadMembership() {
   var a = window.ThaiEarAuth;
   var token = a && a.getAccessToken && a.getAccessToken();
   if (!document.getElementById('membership') || !token) return;
-  fetch('/api/subscription', { headers: { Authorization: 'Bearer ' + token } })
+  var sim = '';
+  try { var s2 = new URLSearchParams(location.search).get('simulate'); if (s2) sim = '?simulate=' + encodeURIComponent(s2); } catch (_) {}
+  fetch('/api/subscription' + sim, { headers: { Authorization: 'Bearer ' + token } })
     .then(function (r) { return r.json(); })
     .then(function (s) {
       var box = document.getElementById('membership');

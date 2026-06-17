@@ -23,8 +23,21 @@ export async function onRequestGet({ request, env }) {
     user = await who.json();
   } catch (_) { return json({ error: 'auth_unavailable' }, 503); }
 
+  const params = new URL(request.url).searchParams;
+
+  // QA: ?simulate=active|canceling|past_due|free returns a synthetic state for the
+  // caller's own view only (no real Stripe/Supabase change) so the UI can be eyeballed.
+  const sim = params.get('simulate');
+  if (sim) {
+    const end = new Date(Date.now() + 30 * 864e5).toISOString();
+    if (sim === 'active') return json({ subscribed: true, status: 'active', cancel_at_period_end: false, current_period_end: end }, 200);
+    if (sim === 'canceling') return json({ subscribed: true, status: 'active', cancel_at_period_end: true, current_period_end: end }, 200);
+    if (sim === 'past_due' || sim === 'pastdue') return json({ subscribed: false, needsPayment: true, status: 'past_due', current_period_end: end }, 200);
+    return json({ subscribed: false }, 200); // simulate=free / anything else
+  }
+
   if (!env.STRIPE_SECRET_KEY) return json({ subscribed: false }, 200);
-  const debug = new URL(request.url).searchParams.get('debug');
+  const debug = params.get('debug');
 
   try {
     // Gather EVERY customer for this user (stored + all email matches) — there may
