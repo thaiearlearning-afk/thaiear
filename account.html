@@ -36,6 +36,14 @@
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
   .btn-danger { background: #B00020; color: #fff; border-color: #B00020; }
   .btn-danger:hover { background: #8a0019; }
+  /* ── sign-in ── */
+  .login-box { max-width: 340px; }
+  .login-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 11px 18px; }
+  .login-sep { display: flex; align-items: center; gap: 12px; margin: 1.1rem 0; color: var(--text-tertiary); font-size: 12px; }
+  .login-sep::before, .login-sep::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .login-input { width: 100%; font-family: var(--font-ui); font-size: 14px; padding: 10px 12px; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 0.7rem; }
+  .login-input:focus { outline: none; border-color: var(--accent); }
+  .login-terms { font-size: 12px; margin-top: 1rem; }
   /* ── modal ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(20,16,48,0.45); display: flex; align-items: center; justify-content: center; padding: 1.25rem; z-index: 1000; }
   .modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 400px; width: 100%; padding: 1.5rem 1.5rem 1.35rem; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
@@ -282,18 +290,17 @@ function renderAccount() {
   var user = a.getUser();
   if (!user) {
     el.innerHTML =
-      '<p>You are not signed in.</p>' +
-      '<button class="btn btn-primary" onclick="ThaiEarAuth.signInWithGoogle()">Sign in with Google</button>' +
-      '<p class="acct-muted" style="margin:0.9rem 0 0.7rem">or</p>' +
-      '<input id="login-email-input" type="email" inputmode="email" autocomplete="email" ' +
-        'placeholder="you@example.com" ' +
-        'style="width:100%;max-width:320px;display:block;font-family:var(--font-ui);font-size:14px;' +
-        'padding:9px 11px;border:0.5px solid var(--border-strong);border-radius:var(--radius-sm);margin:0 0 0.6rem">' +
-      '<button class="btn btn-ghost" id="login-link-btn" onclick="sendLoginLink()">Email me a sign-in link</button>' +
-      '<p id="login-email-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
-      '<p class="acct-muted" style="margin-top:0.8rem;font-size:12px">By signing in you agree to our ' +
-        '<a href="terms.html" style="color:var(--accent);text-decoration:none">Terms</a> and ' +
-        '<a href="privacy.html" style="color:var(--accent);text-decoration:none">Privacy Policy</a>.</p>';
+      '<div class="login-box">' +
+        '<p style="margin-bottom:1.2rem">Sign in to manage your membership and unlock premium topics.</p>' +
+        '<button class="btn btn-primary login-btn" onclick="ThaiEarAuth.signInWithGoogle()">Continue with Google</button>' +
+        '<div class="login-sep">or</div>' +
+        '<input id="login-email-input" class="login-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">' +
+        '<button class="btn btn-ghost login-btn" id="login-link-btn" onclick="sendLoginLink()">Email me a sign-in link</button>' +
+        '<p id="login-email-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
+        '<p class="acct-muted login-terms">By continuing you agree to our ' +
+          '<a href="terms.html" style="color:var(--accent);text-decoration:none">Terms</a> and ' +
+          '<a href="privacy.html" style="color:var(--accent);text-decoration:none">Privacy Policy</a>.</p>' +
+      '</div>';
     return;
   }
   var consent = !!(a.getMarketingConsent && a.getMarketingConsent());
