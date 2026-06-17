@@ -17,6 +17,11 @@
         The URL self-expires, so it can't be shared for long.
      Anything unverified gets 401/403 and no URL.
 
+   Tiers (Phase 4): a gated file is either MEMBER (login-only) or PREMIUM
+   (subscription). Both live in the private bucket; the prefix decides which.
+   Premium-subscription enforcement is held behind ENFORCE_SUBSCRIPTION so premium
+   keeps gating on "logged in" until Stripe is wired, then the flag flips it on.
+
    Env (Cloudflare Pages → Settings → Variables & Secrets):
      SUPABASE_URL            e.g. https://pyfyyiegmxwmfshgwvze.supabase.co
      SUPABASE_ANON_KEY       the publishable key (public by design)
@@ -24,6 +29,9 @@
      R2_ACCESS_KEY_ID        SECRET — R2 token id with read on the premium bucket
      R2_SECRET_ACCESS_KEY    SECRET — its secret
      R2_PREMIUM_BUCKET       private bucket name, e.g. thaiear-audio-premium
+     PREMIUM_PREFIXES        comma list, default "CommSurvival_BEG,Colours_BEG"
+     MEMBER_PREFIXES         comma list of login-only audio prefixes (default none)
+     ENFORCE_SUBSCRIPTION    "true" to require an active subscription for premium
    ============================================================ */
 
 const URL_TTL = 3600; // seconds the signed URL stays valid (covers full-file streaming + seeking)
@@ -35,25 +43,35 @@ export async function onRequestGet(context) {
   // Flat filenames only — no slashes / traversal. The premium bucket holds only these.
   if (!/^[A-Za-z0-9_]+\.mp3$/.test(file)) return json({ error: 'bad_request' }, 400);
 
-  // 1) Verify the Supabase session token that player.js sends.
+  // 1) Which tier does this file require? Prefix = name before _S###_TH / _TE / _ET.
+  const m = file.match(/^(.+?)_(?:S\d+_TH|TE|ET)\.mp3$/);
+  const prefix = m ? m[1] : file.replace(/\.mp3$/, '');
+  const premiumList = listEnv(env.PREMIUM_PREFIXES, ['CommSurvival_BEG', 'Colours_BEG']);
+  const memberList = listEnv(env.MEMBER_PREFIXES, []);
+  // Member only if explicitly listed (and not premium); unknown private files default to premium.
+  const tier = (memberList.includes(prefix) && !premiumList.includes(prefix)) ? 'member' : 'premium';
+
+  // 2) Any gated file needs a signed-in user.
   const token = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
   if (!token) return json({ error: 'unauthorized' }, 401);
 
-  let who;
+  let user;
   try {
-    who = await fetch(env.SUPABASE_URL + '/auth/v1/user', {
+    const who = await fetch(env.SUPABASE_URL + '/auth/v1/user', {
       headers: { Authorization: 'Bearer ' + token, apikey: env.SUPABASE_ANON_KEY },
     });
+    if (!who.ok) return json({ error: 'forbidden' }, 403);
+    user = await who.json();
   } catch (_) {
     return json({ error: 'auth_unavailable' }, 503);
   }
-  if (!who.ok) return json({ error: 'forbidden' }, 403);
 
-  // --- Phase 4 hook: also require an active subscription -------------------
-  // const user = await who.json();
-  // const sub = await lookupSubscription(env, user.id);
-  // if (!sub || !sub.active) return json({ error: 'subscription_required' }, 402);
-  // ------------------------------------------------------------------------
+  // 3) Premium also needs an active subscription — once enforcement is switched on.
+  //    Until ENFORCE_SUBSCRIPTION="true", premium behaves like member (logged-in is enough),
+  //    so premium audio keeps working before Stripe is live (the Phase-4 cutover flips this).
+  if (tier === 'premium' && env.ENFORCE_SUBSCRIPTION === 'true') {
+    if (!(await isSubscribed(env, token, user.id))) return json({ error: 'subscription_required' }, 402);
+  }
 
   // 2) Hand back a short-lived presigned URL straight to R2.
   let url;
@@ -70,6 +88,24 @@ function json(obj, status) {
     status,
     headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
   });
+}
+
+function listEnv(v, def) {
+  if (!v) return def;
+  return String(v).split(',').map(s => s.trim()).filter(Boolean);
+}
+
+// Active subscription? Reads the user's own row via RLS (their token), so no service key here.
+async function isSubscribed(env, token, uid) {
+  try {
+    const r = await fetch(
+      env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + uid + '&select=status',
+      { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token } });
+    if (!r.ok) return false;
+    const rows = await r.json();
+    const s = rows[0] && rows[0].status;
+    return s === 'active' || s === 'trialing';
+  } catch (_) { return false; }
 }
 
 /* ---- minimal AWS SigV4 query presigner for Cloudflare R2 (S3 API, path-style) ----

@@ -27,6 +27,7 @@
   var client = null;
   var currentUser = null;
   var currentSession = null;
+  var currentSubscribed = false; // active Stripe subscription? (read from Supabase via RLS)
 
   function userFromSession(session) {
     if (!session || !session.user) return null;
@@ -45,6 +46,19 @@
     try { window.dispatchEvent(new CustomEvent('thaiear:auth', { detail: currentUser })); } catch (e) {}
   }
 
+  // Read the user's own subscription row (RLS) and cache active/not, then re-notify
+  // so cards/pages re-render once we know. Logged out → not subscribed.
+  function refreshSubscription() {
+    if (!client || !currentUser) { currentSubscribed = false; notify(); return; }
+    client.from('subscriptions').select('status').maybeSingle()
+      .then(function (res) {
+        var s = res && res.data && res.data.status;
+        currentSubscribed = (s === 'active' || s === 'trialing');
+      })
+      .catch(function () { currentSubscribed = false; })
+      .then(function () { notify(); });
+  }
+
   // Public API. getUser() is synchronous; the rest are no-ops until the
   // Supabase client has loaded (avoids errors if a button is hit very early).
   window.ThaiEarAuth = {
@@ -53,6 +67,9 @@
     // The Supabase session JWT, for authorising premium-audio requests to /api/audio.
     // Synchronous + cached; null until the session resolves or when logged out.
     getAccessToken: function () { return currentSession ? currentSession.access_token : null; },
+    // Synchronous + cached. False until the subscription row resolves (or when not subscribed).
+    // The real gate is server-side (/api/audio); this just drives the unlocked/locked UX.
+    isSubscribed: function () { return currentSubscribed; },
     signInWithGoogle: function () {
       if (!client) { console.warn('ThaiEar auth still loading…'); return; }
       client.auth.signInWithOAuth({
@@ -76,11 +93,13 @@
       currentUser = userFromSession(currentSession);
       window.ThaiEarAuth.isReady = true;
       notify();
+      refreshSubscription(); // async; fires another notify when it resolves
       // keep in sync on login / logout / token refresh
       client.auth.onAuthStateChange(function (_event, session) {
         currentSession = session || null;
         currentUser = userFromSession(session);
         notify();
+        refreshSubscription();
       });
     })
     .catch(function (err) {

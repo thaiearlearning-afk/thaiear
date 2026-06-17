@@ -55,21 +55,43 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+function openPortal() {
+  var a = window.ThaiEarAuth;
+  var token = a && a.getAccessToken && a.getAccessToken();
+  if (!token) return;
+  var el = document.getElementById('portal-status');
+  if (el) el.textContent = 'Opening…';
+  fetch('/api/portal', { method: 'POST', headers: { Authorization: 'Bearer ' + token } })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && j.url) window.location.href = j.url;
+      else if (el) el.textContent = 'Could not open the billing portal. Please try again.';
+    })
+    .catch(function () { if (el) el.textContent = 'Could not open the billing portal. Please try again.'; });
+}
 function renderAccount() {
   var el = document.getElementById('account-body');
   if (!el) return;
   var a = window.ThaiEarAuth;
   if (!a || !a.isReady) { el.innerHTML = '<p class="acct-muted">Loading…</p>'; return; }
   var user = a.getUser();
-  if (user) {
-    el.innerHTML =
-      '<p>Signed in as <span class="email">' + esc(user.email || user.username) + '</span></p>' +
-      '<button class="btn btn-ghost" onclick="ThaiEarAuth.signOut()">Log out</button>';
-  } else {
+  if (!user) {
     el.innerHTML =
       '<p>You are not signed in.</p>' +
       '<button class="btn btn-primary" onclick="ThaiEarAuth.signInWithGoogle()">Sign in with Google</button>';
+    return;
   }
+  var subbed = a.isSubscribed && a.isSubscribed();
+  var membership = subbed
+    ? '<p class="acct-muted" style="margin-top:1rem">Membership: <strong style="color:var(--accent)">Active</strong></p>' +
+      '<button class="btn btn-ghost" onclick="openPortal()">Manage subscription</button>' +
+      '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>'
+    : '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>None</strong></p>' +
+      '<a class="btn btn-primary" href="subscribe.html" style="display:inline-block;text-decoration:none">Become a member</a>';
+  el.innerHTML =
+    '<p>Signed in as <span class="email">' + esc(user.email || user.username) + '</span></p>' +
+    membership +
+    '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="ThaiEarAuth.signOut()">Log out</button></p>';
 }
 // auth.js (loaded by nav.js) fires this when the session resolves or changes
 window.addEventListener('thaiear:auth', renderAccount);

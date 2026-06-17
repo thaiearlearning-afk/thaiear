@@ -141,11 +141,36 @@
     return null;
   }
 
+  // ---- access tiers (free / member / premium) ----------------------------------
+  // free (or undefined): open to all. member: any signed-in user. premium: an active
+  // subscription. ENFORCE_SUBSCRIPTION gates the premium check: while false, premium
+  // behaves like member (signed-in is enough) so nothing breaks before Stripe is live.
+  // Flip it to true at the Phase-4 cutover, together with the server ENFORCE_SUBSCRIPTION
+  // env on /api/audio. (Real enforcement is server-side; this only drives the UX.)
+  const ENFORCE_SUBSCRIPTION = false;
+  function authState() {
+    const a = window.ThaiEarAuth || {};
+    return {
+      loggedIn: !!(a.getUser && a.getUser()),
+      subscribed: !!(a.isSubscribed && a.isSubscribed()),
+    };
+  }
+  // Can the current visitor open this topic? (drives card links + prev/next unlock)
+  function canAccess(access) {
+    if (access === 'premium') {
+      const s = authState();
+      return ENFORCE_SUBSCRIPTION ? s.subscribed : s.loggedIn;
+    }
+    if (access === 'member') return authState().loggedIn;
+    return true; // free / undefined
+  }
+
   // Shared surface for index.html (grid render) and anything else that needs the data.
   window.ThaiEarTopics = {
     topics, liveTopics, total: topics.length,
     LEVEL_ORDER, LEVEL_CLASS, LEVEL_FULL, LEVEL_SHORT,
-    levelBounds, levelText, levelBadge, matchesFilter, findByPage
+    levelBounds, levelText, levelBadge, matchesFilter, findByPage,
+    canAccess, authState, ENFORCE_SUBSCRIPTION
   };
 
   // ---- topic-page eyebrow: "<level> · Topic X of N", derived from the list ----
@@ -162,11 +187,10 @@
 
   // ---- unlock premium prev/next buttons for entitled (logged-in) visitors ----
   // A premium neighbour's button carries href="subscribe.html" + data-locked-href="topic-NN.html"
-  // and a 🔒 in its name. For a logged-in user, point it at the real page and drop the lock —
-  // mirrors the index cards. (Phase 4: also require an active subscription.)
+  // and a 🔒 in its name. For an entitled user, point it at the real page and drop the lock —
+  // mirrors the index cards. Premium-aware via canAccess (respects ENFORCE_SUBSCRIPTION).
   function entitled() {
-    try { return !!(window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser()); }
-    catch (_) { return false; }
+    try { return canAccess('premium'); } catch (_) { return false; }
   }
   function unlockNav() {
     if (!entitled()) return;
