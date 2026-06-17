@@ -34,7 +34,11 @@
   var cfg = window.ThaiEarTopic || {};
   var AUDIO_BASE = 'https://audio.thaiear.com';
   var AUDIO_API = '/api/audio';            // premium gate (Pages Function) — see functions/api/audio.js
-  var PREMIUM = cfg.premium === true;      // set on premium topic pages; routes audio through the gate
+  // Gated topics route audio through /api/audio. TIER drives the not-entitled UX:
+  // 'member' → prompt a (free) sign-in; 'premium' → send to the paywall. Back-compat:
+  // an old `premium: true` page is treated as tier 'premium'.
+  var TIER = cfg.tier || (cfg.premium === true ? 'premium' : null);
+  var GATED = !!TIER;
   var PREFIX = cfg.audioPrefix;
   var sentences = cfg.sentences || [];
 
@@ -176,7 +180,7 @@
      session token in an Authorization header (which an <audio> tag can't carry). The Function
      verifies the user and returns the URL; the bytes then load browser ↔ R2 directly. */
   function buildUrl(file) {
-    if (!PREMIUM) return Promise.resolve(AUDIO_BASE + '/' + file);
+    if (!GATED) return Promise.resolve(AUDIO_BASE + '/' + file);
     var token = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken)
       ? window.ThaiEarAuth.getAccessToken() : null;
     if (!token) return Promise.reject({ code: 'noauth' });
@@ -194,11 +198,15 @@
   // the play button is already reset by the caller.
   function handleDenied(err) {
     var code = err && err.code;
-    if (code === 'noauth' || code === 401 || code === 402 || code === 403) {
-      window.location.href = 'subscribe.html';
-    } else {
-      console.warn('player.js: premium audio unavailable', err);
+    var gate = (code === 'noauth' || code === 401 || code === 402 || code === 403);
+    if (!gate) { console.warn('player.js: audio unavailable', err); return; }
+    // Member content is free behind a login → prompt sign-in when signed out.
+    if (TIER === 'member' && window.ThaiEarAuth && !window.ThaiEarAuth.getUser()) {
+      window.ThaiEarAuth.signInWithGoogle();
+      return;
     }
+    // Premium (or any other denial) → the paywall.
+    window.location.href = 'subscribe.html';
   }
 
   var PLAY_TRI  = '<polygon points="5,2 14,8 5,14"/>';
@@ -228,7 +236,7 @@
   mainAudio.preload = 'metadata';
   // Free: set the public src now so duration shows before play. Premium: defer until first
   // play (we need the session token, and we don't want to burn a signed URL on page load).
-  if (!PREMIUM) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
+  if (!GATED) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
 
   // Resolve + attach the current main file's src if not already done (premium-aware).
   function ensureMainSrc() {
@@ -321,7 +329,7 @@
     setMainIcon(false);
     currentMainFile = PREFIX + '_' + mode.toUpperCase() + '.mp3';
     mainSrcReady = false;                 // new file → re-resolve (premium needs a fresh signed URL)
-    if (!PREMIUM) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
+    if (!GATED) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
     var f = $('scrubber-fill'); if (f) f.style.width = '0%';
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
