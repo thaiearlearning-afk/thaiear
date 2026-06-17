@@ -42,31 +42,70 @@ async function handle({ request, env }) {
   p.set('subscription_data[metadata][user_id]', user.id);
   p.set('allow_promotion_codes', 'true');
 
-  // Reuse the existing Stripe customer if this user subscribed before (avoids dupes);
-  // otherwise let Checkout create one from their email.
-  const existing = await ownCustomerId(token, user.id, env);
-  if (existing) {
-    p.set('customer', existing);
-    p.set('customer_update[address]', 'auto'); // needed so Stripe Tax can save the collected address
-  } else if (user.email) {
-    p.set('customer_email', user.email);
+  // ONE Stripe customer per user, stored durably in profiles (survives subscription
+  // row resets). This prevents the duplicate-customer mess that made cancellations
+  // look stuck. We always pass a real customer id (never customer_email, which would
+  // make Stripe spin up a fresh customer each time).
+  let customer;
+  try {
+    customer = await ensureCustomer(env, token, user);
+  } catch (e) {
+    return json({ error: 'customer_failed', detail: String(e && e.message || e) }, 502);
   }
+  p.set('customer', customer);
+  p.set('customer_update[address]', 'auto'); // let Stripe Tax save the collected address
+  p.set('automatic_tax[enabled]', 'true');   // VAT/sales tax by buyer location
 
-  // Stripe Tax: calculate VAT/sales tax by the buyer's location (Checkout collects the address).
-  p.set('automatic_tax[enabled]', 'true');
-
-  let res = await createSession(env, p);
-  // The stored customer can be stale (e.g. deleted in Stripe). If reusing it failed,
-  // retry once letting Checkout create/find a customer from the email — the webhook
-  // then heals the stored id on the next subscribe.
-  if (!res.ok && p.has('customer')) {
-    p.delete('customer');
-    p.delete('customer_update[address]');
-    if (user.email) p.set('customer_email', user.email);
-    res = await createSession(env, p);
-  }
+  const res = await createSession(env, p);
   if (!res.ok) return json({ error: 'stripe_error', detail: res.data && res.data.error && res.data.error.message }, 502);
   return json({ url: res.data.url }, 200);
+}
+
+// Durable customer: reuse profiles.stripe_customer_id if still valid, else create a
+// fresh customer and store it. Guarantees exactly one customer per user.
+async function ensureCustomer(env, token, user) {
+  let cid = await profileCustomerId(token, user.id, env);
+  if (cid) {
+    const c = await stripeGet(env, 'customers/' + cid);
+    if (c && !c.deleted && !c.error) return cid;
+  }
+  const params = new URLSearchParams();
+  if (user.email) params.set('email', user.email);
+  params.set('metadata[user_id]', user.id);
+  const r = await fetch('https://api.stripe.com/v1/customers', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + env.STRIPE_SECRET_KEY, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+  const c = await r.json();
+  if (!r.ok) throw new Error('create customer: ' + (c.error && c.error.message));
+  // store durably (service role; profiles row may not exist yet → upsert)
+  await fetch(env.SUPABASE_URL + '/rest/v1/profiles', {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+      'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify([{ user_id: user.id, email: user.email || null, stripe_customer_id: c.id, updated_at: new Date().toISOString() }]),
+  });
+  return c.id;
+}
+
+async function profileCustomerId(token, uid, env) {
+  try {
+    const r = await fetch(env.SUPABASE_URL + '/rest/v1/profiles?user_id=eq.' + uid + '&select=stripe_customer_id',
+      { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token } });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows[0] && rows[0].stripe_customer_id || null;
+  } catch (_) { return null; }
+}
+
+async function stripeGet(env, path) {
+  try {
+    const r = await fetch('https://api.stripe.com/v1/' + path, { headers: { Authorization: 'Bearer ' + env.STRIPE_SECRET_KEY } });
+    return await r.json();
+  } catch (_) { return null; }
 }
 
 async function createSession(env, p) {
