@@ -42,8 +42,15 @@ async function handle({ request, env }) {
   // Reuse the existing Stripe customer if this user subscribed before (avoids dupes);
   // otherwise let Checkout create one from their email.
   const existing = await ownCustomerId(token, user.id, env);
-  if (existing) p.set('customer', existing);
-  else if (user.email) p.set('customer_email', user.email);
+  if (existing) {
+    p.set('customer', existing);
+    p.set('customer_update[address]', 'auto'); // needed so Stripe Tax can save the collected address
+  } else if (user.email) {
+    p.set('customer_email', user.email);
+  }
+
+  // Stripe Tax: calculate VAT/sales tax by the buyer's location (Checkout collects the address).
+  p.set('automatic_tax[enabled]', 'true');
 
   let res = await createSession(env, p);
   // The stored customer can be stale (e.g. deleted in Stripe). If reusing it failed,
@@ -51,6 +58,7 @@ async function handle({ request, env }) {
   // then heals the stored id on the next subscribe.
   if (!res.ok && p.has('customer')) {
     p.delete('customer');
+    p.delete('customer_update[address]');
     if (user.email) p.set('customer_email', user.email);
     res = await createSession(env, p);
   }
