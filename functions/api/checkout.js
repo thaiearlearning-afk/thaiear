@@ -27,6 +27,9 @@ async function handle({ request, env }) {
   if (!env.STRIPE_SECRET_KEY) return json({ error: 'config', detail: 'STRIPE_SECRET_KEY missing (set it in Pages → Production, then redeploy)' }, 500);
   if (!env.STRIPE_PRICE_ID) return json({ error: 'config', detail: 'STRIPE_PRICE_ID missing (set it in Pages → Production, then redeploy)' }, 500);
 
+  // Don't let an already-subscribed user start a second subscription (avoids double billing).
+  if (await hasActiveSub(token, user.id, env)) return json({ error: 'already_subscribed' }, 409);
+
   const site = (env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
 
   const p = new URLSearchParams();
@@ -92,6 +95,19 @@ async function verifyUser(token, env) {
     });
     return r.ok ? r.json() : null;
   } catch (_) { return null; }
+}
+
+// Already has a live subscription? (their own row, via RLS)
+async function hasActiveSub(token, uid, env) {
+  try {
+    const r = await fetch(
+      env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + uid + '&select=status',
+      { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token } });
+    if (!r.ok) return false;
+    const rows = await r.json();
+    const s = rows[0] && rows[0].status;
+    return s === 'active' || s === 'trialing';
+  } catch (_) { return false; }
 }
 
 // Read the user's own subscription row via RLS (their token) to find a stored customer id.
