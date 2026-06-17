@@ -100,7 +100,7 @@
 
     <div class="price-row">
       <div class="price-label">Monthly membership</div>
-      <div class="price-value">£5.99 <span style="font-size:13px;color:var(--text-tertiary);font-weight:400">/ month</span></div>
+      <div class="price-value" id="price-value">£5.99 <span style="font-size:13px;color:var(--text-tertiary);font-weight:400">/ month</span></div>
       <div class="price-note">Cancel anytime.</div>
     </div>
 
@@ -124,6 +124,16 @@
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+var PRICE = '£5.99/month'; // fallback until /api/price loads
+function loadPrice() {
+  fetch('/api/price').then(function (r) { return r.json(); }).then(function (p) {
+    if (!p || !p.display || !p.interval) return;
+    PRICE = p.display + '/' + p.interval;
+    var pv = document.getElementById('price-value');
+    if (pv) pv.innerHTML = esc(p.display) + ' <span style="font-size:13px;color:var(--text-tertiary);font-weight:400">/ ' + esc(p.interval) + '</span>';
+    renderSub();
+  }).catch(function () {});
 }
 function startCheckout() {
   var a = window.ThaiEarAuth;
@@ -160,7 +170,7 @@ function renderSub() {
     el.innerHTML = 'You already have an active membership — <a href="account.html" style="color:var(--accent);font-weight:500;text-decoration:none">manage it here</a>.';
   } else {
     btn.disabled = false;
-    btn.textContent = user ? 'Subscribe — £5.99/month' : 'Sign in to subscribe';
+    btn.textContent = user ? 'Subscribe — ' + PRICE : 'Sign in to subscribe';
     el.innerHTML = user
       ? 'Signed in as <strong>' + esc(user.username || user.email) + '</strong>.'
       : 'It’s a free Google sign-in first, then checkout.';
@@ -170,6 +180,7 @@ document.getElementById('subscribe-btn').addEventListener('click', startCheckout
 window.addEventListener('thaiear:auth', renderSub);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderSub);
 else renderSub();
+loadPrice();
 </script>
 <script src="nav.js" defer></script>
 </body>
