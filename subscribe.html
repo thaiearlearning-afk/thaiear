@@ -128,11 +128,12 @@ function startCheckout() {
   btn.disabled = true; btn.textContent = 'Redirecting…';
   var code;
   fetch('/api/checkout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } })
-    .then(function (r) { code = r.status; return r.json().catch(function () { return {}; }); })
-    .then(function (j) {
+    .then(function (r) { code = r.status; return r.text(); })
+    .then(function (t) {
+      var j = {}; try { j = JSON.parse(t); } catch (_) {}
       if (j && j.url) { window.location.href = j.url; return; }
       btn.disabled = false; btn.textContent = 'Subscribe';
-      st.textContent = 'Checkout error [' + code + ']: ' + ((j && (j.detail || j.error)) || 'unknown');
+      st.textContent = 'Checkout error [' + code + ']: ' + (j.detail || j.error || (t || '').slice(0, 180) || 'unknown');
     })
     .catch(function (e) { btn.disabled = false; btn.textContent = 'Subscribe';
       st.textContent = 'Checkout error (network): ' + e; });
