@@ -24,27 +24,44 @@ export async function onRequestGet({ request, env }) {
   } catch (_) { return json({ error: 'auth_unavailable' }, 503); }
 
   if (!env.STRIPE_SECRET_KEY) return json({ subscribed: false }, 200);
+  const debug = new URL(request.url).searchParams.get('debug');
 
   try {
-    // Resolve the customer: stored id (if still valid) else by email.
-    let customer = await storedCustomerId(env, token, user.id);
-    if (customer) {
-      const c = await stripeGet(env, 'customers/' + customer);
-      if (!c || c.deleted || c.error) customer = null;
+    // Gather EVERY customer for this user (stored + all email matches) — there may
+    // be leftover duplicates, and we must consider all of them to be honest.
+    const ids = new Set();
+    const stored = await storedCustomerId(env, token, user.id);
+    if (stored) ids.add(stored);
+    if (user.email) {
+      const list = await stripeGet(env, 'customers?limit=100&email=' + encodeURIComponent(user.email));
+      (list && list.data || []).forEach(function (c) { ids.add(c.id); });
     }
-    if (!customer && user.email) {
-      const list = await stripeGet(env, 'customers?limit=1&email=' + encodeURIComponent(user.email));
-      customer = (list && list.data && list.data[0] && list.data[0].id) || null;
-    }
-    if (!customer) return json({ subscribed: false }, 200);
 
-    const subs = await stripeGet(env, 'subscriptions?status=all&limit=10&customer=' + customer);
-    const list = (subs && subs.data) || [];
-    const chosen = list.find(function (s) { return s.status === 'active' || s.status === 'trialing'; }) || list[0] || null;
+    // All their subscriptions across all those customers.
+    const all = [];
+    for (const id of ids) {
+      const subs = await stripeGet(env, 'subscriptions?status=all&limit=100&customer=' + id);
+      (subs && subs.data || []).forEach(function (s) { all.push(s); });
+    }
+
+    if (debug) {
+      return json({
+        email: user.email,
+        customers: Array.from(ids),
+        subscriptions: all.map(function (s) {
+          return { id: s.id, customer: s.customer, status: s.status, cancel_at_period_end: !!s.cancel_at_period_end };
+        }),
+      }, 200);
+    }
+
+    // Honest state: a fully-active sub wins; else an active-but-cancelling one; else none.
+    const liveSubs = all.filter(function (s) { return s.status === 'active' || s.status === 'trialing'; });
+    const chosen = liveSubs.find(function (s) { return !s.cancel_at_period_end; }) ||
+                   liveSubs.find(function (s) { return s.cancel_at_period_end; }) || null;
     if (!chosen) return json({ subscribed: false }, 200);
 
     return json({
-      subscribed: chosen.status === 'active' || chosen.status === 'trialing',
+      subscribed: true,
       status: chosen.status,
       cancel_at_period_end: !!chosen.cancel_at_period_end,
       current_period_end: chosen.current_period_end ? new Date(chosen.current_period_end * 1000).toISOString() : null,
