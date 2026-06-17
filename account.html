@@ -254,6 +254,26 @@ function toggleConsent(cb) {
     cb.checked = !cb.checked;
   });
 }
+function sendLoginLink() {
+  var a = window.ThaiEarAuth;
+  var input = document.getElementById('login-email-input');
+  var status = document.getElementById('login-email-status');
+  var btn = document.getElementById('login-link-btn');
+  var email = ((input && input.value) || '').trim();
+  function fail(msg) { if (status) { status.style.color = '#B00020'; status.textContent = msg; } }
+  if (!email || email.indexOf('@') < 1 || email.indexOf('.') < 0) { fail('Please enter a valid email address.'); return; }
+  if (!a || !a.sendMagicLink) { fail('Still loading — try again in a moment.'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  if (status) { status.style.color = 'var(--text-tertiary)'; status.textContent = ''; }
+  a.sendMagicLink(email).then(function (res) {
+    if (res && res.error) throw res.error;
+    if (status) { status.style.color = 'var(--accent)'; status.textContent = 'Check your inbox — we sent a sign-in link to ' + email + '.'; }
+    if (btn) { btn.textContent = 'Link sent'; }
+  }).catch(function (err) {
+    fail('Couldn’t send a link: ' + ((err && err.message) || 'please try again.'));
+    if (btn) { btn.disabled = false; btn.textContent = 'Email me a sign-in link'; }
+  });
+}
 function renderAccount() {
   var el = document.getElementById('account-body');
   if (!el) return;
@@ -264,6 +284,13 @@ function renderAccount() {
     el.innerHTML =
       '<p>You are not signed in.</p>' +
       '<button class="btn btn-primary" onclick="ThaiEarAuth.signInWithGoogle()">Sign in with Google</button>' +
+      '<p class="acct-muted" style="margin:0.9rem 0 0.7rem">or</p>' +
+      '<input id="login-email-input" type="email" inputmode="email" autocomplete="email" ' +
+        'placeholder="you@example.com" ' +
+        'style="width:100%;max-width:320px;display:block;font-family:var(--font-ui);font-size:14px;' +
+        'padding:9px 11px;border:0.5px solid var(--border-strong);border-radius:var(--radius-sm);margin:0 0 0.6rem">' +
+      '<button class="btn btn-ghost" id="login-link-btn" onclick="sendLoginLink()">Email me a sign-in link</button>' +
+      '<p id="login-email-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
       '<p class="acct-muted" style="margin-top:0.8rem;font-size:12px">By signing in you agree to our ' +
         '<a href="terms.html" style="color:var(--accent);text-decoration:none">Terms</a> and ' +
         '<a href="privacy.html" style="color:var(--accent);text-decoration:none">Privacy Policy</a>.</p>';
