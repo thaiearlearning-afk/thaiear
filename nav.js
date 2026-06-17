@@ -43,7 +43,9 @@
      (Blog is parked here, commented out, ready to switch on later.) */
   const LINKS = [
     { label: 'Home',  href: 'index.html' },
-    { label: 'About', href: '#' },
+    // 'About' is hidden until it has a real page (a dead '#' link read as "broken" to
+    // visitors). Re-enable by uncommenting once about.html exists:
+    // { label: 'About', href: 'about.html' },
     // { label: 'Blog',  href: 'blog.html' },
   ];
 
@@ -100,10 +102,14 @@
 
   function linksHtml() {
     const here = currentPage();
-    return LINKS.map(l => {
-      const active = l.href.toLowerCase() === here ? ' class="active"' : '';
-      return `<a href="${l.href}"${active}>${l.label}</a>`;
-    }).join('');
+    const onHome = here === 'index.html';
+    return LINKS
+      // No "Home" link while you're on the home page (you only need it elsewhere).
+      .filter(l => !(onHome && l.href.toLowerCase() === 'index.html'))
+      .map(l => {
+        const active = l.href.toLowerCase() === here ? ' class="active"' : '';
+        return `<a href="${l.href}"${active}>${l.label}</a>`;
+      }).join('');
   }
 
   function escapeHtml(s) {
