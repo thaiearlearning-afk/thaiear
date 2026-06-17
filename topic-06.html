@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 6: Time &amp; numbers</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Time &amp; numbers</h1>
+  <p class="topic-meta"><strong>26 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-05.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Weather &amp; seasons</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-07.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Days &amp; months</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  audioPrefix: "Time_BEG",
+  sentences: [
+  {
+    "num": 144,
+    "display": 1,
+    "preview": "ตอนนี้",
+    "thai": "ตอนนี้กี่โมงแล้วคะ",
+    "english": "What time is it now?",
+    "gloss": [
+      [
+        "ตอนนี้",
+        "now"
+      ],
+      [
+        "กี่โมง",
+        "what time"
+      ],
+      [
+        "แล้ว",
+        "already"
+      ],
+      [
+        "คะ",
+        "polite particle (female)"
+      ]
+    ],
+    "cultural": ""
+  },
+  {
+    "num": 369,
+    "display": 2,
+    "preview": "กี่โมง",
+    "thai": "ร้านเปิดกี่โมงคะ",
+    "english": "What time does the shop open?",
+    "gloss": [
+      [
+        "ร้าน",
+        "shop"
+      ],
+      [
+        "เปิด",
+        "open"
+      ],
+      [
+        "กี่โมง",
+        "what time"
+      ]
+    ],
+    "cultural": ""
+  },
+  {
+    "num": 362,
+    "display": 3,
+    "preview": "ตีห้า",
+    "thai": "เครื่องบินออกตีห้าครับ",
+    "english": "The plane leaves at 5 a.m.",
+    "gloss": [
+      [
+        "เครื่องบิน",
+        "plane"
+      ],
+      [
+        "ออก",
+        "leave / depart"
+      ],
+      [
+        "ตีห้า",
+        "5 a.m."
+      ]
+    ],
+    "cultural": "ตี + a number tells the small hours, about 1–5 a.m.: ตีหนึ่ง (1 a.m.) … ตีห้า (5 a.m.). ตี means 'to strike' — from the gong struck to mark each hour."
+  },
+  {
+    "num": 363,
+    "display": 4,
+    "preview": "แปดโมงเช้า",
+    "thai": "ผมเข้างานแปดโมงเช้าครับ",
+    "english": "I start work at 8 in the morning.",
+    "gloss": [
+      [
+        "เข้างาน",
+        "start work"
+      ],
+      [
+        "แปดโมงเช้า",
+        "8 a.m."
+      ]
+    ],
+    "cultural": "For 6–11 a.m., say the clock number + โมงเช้า: หกโมงเช้า (6), แปดโมงเช้า (8), สิบเอ็ดโมงเช้า (11). เช้า ('morning') is often dropped once the time of day is clear."
+  },
+  {
+    "num": 146,
+    "display": 5,
+    "preview": "เที่ยง",
+    "thai": "เที่ยงแล้ว ไปกินข้าวกันไหมคะ",
+    "english": "It's noon — shall we go and eat?",
+    "gloss": [
+      [
+        "เที่ยง",
+        "noon"
+      ],
+      [
+        "แล้ว",
+        "already"
+      ],
+      [
+        "ไป",
+        "go"
+      ],
+      [
+        "กินข้าว",
+        "eat (a meal)"
+      ],
+      [
+        "กัน",
+        "together"
+      ],
+      [
+        "ไหม",
+        "question particle"
+      ],
+      [
+        "คะ",
+        "polite particle (female)"
+      ]
+    ],
+    "cultural": ""
+  },
+  {
+    "num": 145,
+    "display": 6,
+    "preview": "บ่าย",
+    "thai": "บ่ายสามโมงครึ่งครับ",
+    "english": "Half past three in the afternoon.",
+    "gloss": [
+      [
+        "บ่าย",
+        "afternoon"
+      ],
+      [
+        "สามโมง",
+        "three o'clock"
+      ],
+      [
+        "ครึ่ง",
+        "half (past)"
+      ],
+      [
+        "ครับ",
+        "polite particle (male)"
+      ]
+    ],
+    "cultural": "Early-afternoon hours (1–4pm) are told as บ่าย + โมง."
+  },
+  {
+    "num": 364,
+    "display": 7,
+    "preview": "ห้าโมงเย็น",
+    "thai": "เลิกงานห้าโมงเย็นค่ะ",
+    "english": "I finish work at 5 p.m.",
+    "gloss": [
+      [
+        "เลิกงาน",
+        "finish work"
+      ],
+      [
+        "ห้าโมงเย็น",
+        "5 p.m."
+      ]
+    ],
+    "cultural": "From 4–6 p.m. the count is number + โมงเย็น: สี่โมงเย็น (4), ห้าโมงเย็น (5), หกโมงเย็น (6). เย็น is the cool of the early evening."
+  },
+  {
+    "num": 147,
+    "display": 8,
+    "preview": "หนัง",
+    "thai": "หนังเริ่มสองทุ่มนะครับ",
+    "english": "The film starts at 8pm.",
+    "gloss": [
+      [
+        "หนัง",
+        "film / movie"
+      ],
+      [
+        "เริ่ม",
+        "start"
+      ],
+      [
+        "สองทุ่ม",
+        "8pm"
+      ],
+      [
+        "นะ",
+        "softening particle"
+      ],
+      [
+        "ครับ",
+        "polite particle (male)"
+      ]
+    ],
+    "cultural": "ทุ่ม counts evening hours: หนึ่งทุ่ม = 7pm, สองทุ่ม = 8pm, up to ห้าทุ่ม = 11pm."
+  },
+  {
+    "num": 367,
+    "display": 9,
+    "preview": "นาที",
+    "thai": "ตอนนี้สามทุ่มยี่สิบสามนาทีแล้วครับ",
+    "english": "It's 9:23 PM now.",
+    "gloss": [
+      [
+        "ตอนนี้",
+        "now"
+      ],
+      [
+        "สามทุ่ม",
+        "9 PM"
+      ],
+      [
+        "ยี่สิบสาม",
+        "twenty-three"
+      ],
+      [
+        "นาที",
+        "minute"
+      ]
+    ],
+    "cultural": "Minutes follow the hour: [time] + [number] + นาที — so สามทุ่มยี่สิบสามนาที = 9:23 PM. Half past uses ครึ่ง (บ่ายสามโมงครึ่ง = 3:30)."
+  },
+  {
+    "num": 365,
+    "display": 10,
+    "preview": "สี่ทุ่ม",
+    "thai": "ร้านปิดสี่ทุ่มครับ",
+    "english": "The shop closes at 10 p.m.",
+    "gloss": [
+      [
+        "ร้าน",
+        "shop"
+      ],
+      [
+        "ปิด",
+        "close"
+      ],
+      [
+        "สี่ทุ่ม",
+        "10 p.m."
+      ]
+    ],
+    "cultural": "At 7 p.m. the count restarts: number + ทุ่ม, with หนึ่งทุ่ม = 7 p.m. — so สองทุ่ม (8), สามทุ่ม (9), สี่ทุ่ม (10), ห้าทุ่ม (11). ทุ่ม is the muffled beat of the night drum."
+  },
+  {
+    "num": 366,
+    "display": 11,
+    "preview": "เที่ยงคืน",
+    "thai": "รถไฟถึงเที่ยงคืนพอดีครับ",
+    "english": "The train gets in at exactly midnight.",
+    "gloss": [
+      [
+        "รถไฟ",
+        "train"
+      ],
+      [
+        "ถึง",
+        "arrive"
+      ],
+      [
+        "เที่ยงคืน",
+        "midnight"
+      ],
+      [
+        "พอดี",
+        "exactly"
+      ]
+    ],
+    "cultural": "เที่ยงคืน is midnight (12 a.m.) and เที่ยง / เที่ยงวัน is noon (12 p.m.) — the two hinge points of the system. พอดี after a time means 'exactly, on the dot'."
+  },
+  {
+    "num": 149,
+    "display": 12,
+    "preview": "ธนาคาร",
+    "thai": "ธนาคารเปิดแปดโมงครึ่งถึงสามโมงครึ่งค่ะ",
+    "english": "The bank is open from 8:30 to 3:30.",
+    "gloss": [
+      [
+        "ธนาคาร",
+        "bank"
+      ],
+      [
+        "เปิด",
+        "open"
+      ],
+      [
+        "แปดโมงครึ่ง",
+        "8:30am"
+      ],
+      [
+        "ถึง",
+        "to / until"
+      ],
+      [
+        "สามโมงครึ่ง",
+        "3:30pm"
+      ],
+      [
+        "ค่ะ",
+        "polite particle (female)"
+      ]
+    ],
+    "cultural": "Morning hours use โมง after the number (แปดโมง = 8am); ครึ่ง adds the half-hour."
+  },
+  {
+    "num": 155,
+    "display": 13,
+    "preview": "ผม",
+    "thai": "ผมรอรถไฟมาครึ่งชั่วโมงแล้วครับ",
+    "english": "I've been waiting for the train for half an hour.",
+    "gloss": [
+      [
+        "ผม",
+        "I (male)"
+      ],
+      [
+        "รอ",
+        "wait"
+      ],
+      [
+        "รถไฟ",
+        "train"
+      ],
+      [
+        "ครึ่งชั่วโมง",
+        "half an hour"
+      ],
+      [
+        "แล้ว",
+        "already"
+      ],
+      [
+        "ครับ",
+        "polite particle (male)"
+      ]
+    ],
+    "cultural": ""
+  },
+  {
+    "num": 368,
+    "display": 14,
+    "preview": "วินาที",
+    "thai": "วิ่งเร็วๆ สามสิบวินาทีนะครับ",
+    "english": "Sprint hard for thirty seconds.",
+    "gloss": [
+      [
+        "วิ่ง",
+        "run"
+      ],
+      [
+        "เร็วๆ",
+        "quickly"
+      ],
+      [
+        "สามสิบ",
+        "thirty"
+      ],
+      [
+        "วินาที",
+        "second"
+      ]
+    ],
+    "cultural": "The three duration units: วินาที (seconds) · นาที (minutes) · ชั่วโมง (hours). Doubling เร็ว → เร็วๆ intensifies it ('really fast')."
+  },
+  {
+    "num": 370,
+    "display": 15,
+    "preview": "นาฬิกา",
+    "thai": "นาฬิกาเรือนนี้เดินเร็วไปห้านาทีค่ะ",
+    "english": "This watch is five minutes fast.",
+    "gloss": [
+      [
+        "นาฬิกา",
+        "watch"
+      ],
+      [
+        "เรือน",
+        "clock classifier"
+      ],
+      [
+        "เดิน",
+        "to run (of a clock)"
+      ],
+      [
+        "เร็วไป",
+        "too fast"
+      ],
+      [
+        "ห้านาที",
+        "five minutes"
+      ]
+    ],
+    "cultural": "A clock 'walks' in Thai — นาฬิกาเดิน — and เรือน is its classifier. เดินเร็ว / เดินช้า = runs fast / slow."
+  },
+  {
+    "num": 172,
+    "display": 16,
+    "preview": "โต๊ะ",
+    "thai": "โต๊ะนี้นั่งได้กี่คนคะ",
+    "english": "How many people can sit at this table?",
+    "gloss": [
+      [
+        "โต๊ะ",
+        "table"
+      ],
+      [
+        "นี้",
+        "this"
+      ],
+      [
+        "นั่ง",
+        "sit"
+      ],
+      [
+        "ได้",
+        "can"
+      ],
+      [
+        "กี่คน",
+        "how many people"
+      ],
+      [
+        "คะ",
+        "polite particle (female)"
+      ]
+    ],
+    "cultural": "คน is the classifier for people."
+  },
+  {
+    "num": 173,
+    "display": 17,
+    "preview": "ขอ",
+    "thai": "ขอตั๋วไปกลับสองใบครับ",
+    "english": "Two return tickets, please.",
+    "gloss": [
+      [
+        "ขอ",
+        "may I have / request"
+      ],
+      [
+        "ตั๋ว",
+        "ticket"
+      ],
+      [
+        "ไปกลับ",
+        "return / round trip"
+      ],
+      [
+        "สองใบ",
+        "two (tickets)"
+      ],
+      [
+        "ครับ",
+        "polite particle (male)"
+      ]
+    ],
+    "cultural": "ใบ is the classifier for tickets and flat sheet-like items. ไปกลับ is literally 'go-return'."
+  },
+  {
+    "num": 174,
+    "display": 18,
+    "preview": "ขอ",
+    "thai": "ขอน้ำสามขวดค่ะ",
+    "english": "Three bottles of water, please.",
+    "gloss": [
+      [
+        "ขอ",
+        "may I have"
+      ],
+      [
+        "น้ำ",
+        "water"
+      ],
+      [
+        "สามขวด",
+        "three bottles"
+      ],
+      [
+        "ค่ะ",
+        "polite particle (female)"
+      ]
+    ],
+    "cultural": "ขวด (bottle) is both the container and its classifier."
+  },
+  {
+    "num": 175,
+    "display": 19,
+    "preview": "ขอ",
+    "thai": "ขอไข่หนึ่งโหลค่ะ",
+    "english": "A dozen eggs, please.",
+    "gloss": [
+      [
+        "ขอ",
+        "may I have"
+      ],
+      [
+        "ไข่",
+        "egg"
+      ],
+      [
+        "หนึ่งโหล",
+        "one dozen"
+      ],
+      [
+        "ค่ะ",
+        "polite particle (female)"
+      ]
+    ],
+    "cultural": "โหล (a dozen) is borrowed from English 'dozen'."
+  },
+  {
+    "num": 187,
+    "display": 20,
+    "preview": "ห้องเรียน",
+    "thai": "ห้องเรียนนี้มีนักเรียนสี่สิบคนค่ะ",
+    "english": "This classroom has forty students.",
+    "gloss": [
+      [
+        "ห้องเรียน",
+        "classroom"
+      ],
+      [
+        "มี",
+        "has"
+      ],
+      [
+        "นักเรียน",
+        "students"
+      ],
+      [
+        "สี่สิบ",
+        "forty"
+      ],
+      [
+        "คน",
+        "(classifier: people)"
+      ],
+      [
+        "ค่ะ",
+        "polite particle (female)"
+      ]
+    ],
+    "cultural": ""
+  },
+  {
+    "num": 188,
+    "display": 21,
+    "preview": "ตึก",
+    "thai": "ตึกนี้สูงกี่ชั้นครับ",
+    "english": "How many floors is this building?",
+    "gloss": [
+      [
+        "ตึก",
+        "building"
+      ],
+      [
+        "นี้",
+        "this"
+      ],
+      [
+        "สูง",
+        "tall"
+      ],
+      [
+        "กี่ชั้น",
+        "how many floors"
+      ],
+      [
+        "ครับ",
+        "polite particle (male)"
+      ]
+    ],
+    "cultural": "ชั้น = floor / storey (also the classifier for layers and levels)."
+  },
+  {
+    "num": 178,
+    "display": 22,
+    "preview": "จาก",
+    "thai": "จากนี่ไปเชียงใหม่เจ็ดร้อยกว่ากิโลครับ",
+    "english": "It's over 700 km from here to Chiang Mai.",
+    "gloss": [
+      [
+        "จาก",
+        "from"
+      ],
+      [
+        "นี่",
+        "here"
+      ],
+      [
+        "ไป",
+        "to"
+      ],
+      [
+        "เชียงใหม่",
+        "Chiang Mai"
+      ],
+      [
+        "เจ็ดร้อย",
+        "seven hundred"
+      ],
+      [
+        "กว่า",
+        "over / more than"
+      ],
+      [
+        "กิโล",
+        "kilometres"
+      ],
+      [
+        "ครับ",
+        "polite particle (male)"
+      ]
+    ],
+    "cultural": "กว่า after a number means 'over / more than' that amount."
+  },
+  {
+    "num": 177,
+    "display": 23,
+    "preview": "สนาม",
+    "thai": "สนามนี้จุคนได้สามหมื่นค่ะ",
+    "english": "This stadium holds thirty thousand people.",
+    "gloss": [
+      [
+        "สนาม",
+        "stadium / ground"
+      ],
+      [
+        "จุ",
+        "hold / seat"
+      ],
+      [
+        "คน",
+        "people"
+      ],
+      [
+        "ได้",
+        "can"
+      ],
+      [
+        "สามหมื่น",
+        "thirty thousand"
+      ],
+      [
+        "ค่ะ",
+        "polite particle (female)"
+      ]
+    ],
+    "cultural": "หมื่น = ten thousand; สามหมื่น = 30,000."
+  },
+  {
+    "num": 179,
+    "display": 24,
+    "preview": "งานวิ่ง",
+    "thai": "งานวิ่งนี้มีคนเป็นพันเลยค่ะ",
+    "english": "There are thousands of people at this run.",
+    "gloss": [
+      [
+        "งานวิ่ง",
+        "running event"
+      ],
+      [
+        "มีคน",
+        "there are people"
+      ],
+      [
+        "เป็นพัน",
+        "in the thousands"
+      ],
+      [
+        "เลย",
+        "emphasis particle"
+      ],
+      [
+        "ค่ะ",
+        "polite particle (female)"
+      ]
+    ],
+    "cultural": "เป็น + a number means 'in the (thousands/hundreds)' — an approximate large amount."
+  },
+  {
+    "num": 180,
+    "display": 25,
+    "preview": "ดารา",
+    "thai": "ดาราคนนี้มีคนติดตามเป็นแสนครับ",
+    "english": "This celebrity has a hundred thousand followers.",
+    "gloss": [
+      [
+        "ดารา",
+        "celebrity / star"
+      ],
+      [
+        "คนนี้",
+        "this one"
+      ],
+      [
+        "คนติดตาม",
+        "followers"
+      ],
+      [
+        "เป็นแสน",
+        "in the hundred-thousands"
+      ],
+      [
+        "ครับ",
+        "polite particle (male)"
+      ]
+    ],
+    "cultural": "แสน = a hundred thousand."
+  },
+  {
+    "num": 176,
+    "display": 26,
+    "preview": "กรุงเทพ",
+    "thai": "กรุงเทพมีประชากรสิบล้านคนครับ",
+    "english": "Bangkok has a population of ten million.",
+    "gloss": [
+      [
+        "กรุงเทพ",
+        "Bangkok"
+      ],
+      [
+        "มี",
+        "has"
+      ],
+      [
+        "ประชากร",
+        "population"
+      ],
+      [
+        "สิบล้าน",
+        "ten million"
+      ],
+      [
+        "คน",
+        "people"
+      ],
+      [
+        "ครับ",
+        "polite particle (male)"
+      ]
+    ],
+    "cultural": "ล้าน = million; สิบล้าน = ten million."
+  }
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

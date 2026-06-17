@@ -1,0 +1,7 @@
+# Cloudflare Pages redirects.
+# 2026-06-17 renumber: former split topic 6 (6a/6b) became two standalone topics,
+# 6 "Time & numbers" and 7 "Days & months". Old URLs point at the new pages.
+/topic-06a       /topic-06   301
+/topic-06a.html  /topic-06   301
+/topic-06b       /topic-07   301
+/topic-06b.html  /topic-07   301
