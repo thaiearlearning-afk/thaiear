@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — About</title>
+<meta name="description" content="What ThaiEar is for: building Thai fluency, vocabulary and recall through real sentences and native-speed listening.">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.7; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 2.75rem 1.5rem 3.5rem; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 1rem; line-height: 1.2; }
+  h2 { font-size: 17px; font-weight: 600; margin: 1.9rem 0 0.5rem; }
+  p { color: var(--text-secondary); margin-bottom: 0.85rem; }
+  ul { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin: 0.4rem 0 0.9rem; }
+  li { display: flex; gap: 9px; color: var(--text-secondary); }
+  li .dot { color: var(--accent); flex-shrink: 0; }
+  strong { color: var(--text-primary); font-weight: 600; }
+  .thai { font-family: var(--font-thai); }
+  .contact { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-top: 2rem; }
+  .contact a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .ref { font-size: 12.5px; color: var(--text-tertiary); margin-top: 1.5rem; line-height: 1.6; }
+  @media (max-width: 600px) { .wrap { padding: 2rem 1.1rem 2.5rem; } h1 { font-size: 24px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="wrap">
+  <div class="eyebrow">About</div>
+  <h1>Learn Thai by listening</h1>
+
+  <p>ThaiEar is a Thai-language listening resource built around <strong>real sentences</strong> — organised
+    by topic and difficulty, and voiced at natural, native speed. Instead of drilling isolated words, you
+    hear how Thai is actually spoken, sentence by sentence, and build comprehension from the ground up.</p>
+
+  <h2>Where it fits in your learning</h2>
+  <p>ThaiEar works best once you can already <strong>read Thai script</strong>. Reading comes first for a
+    reason: the script is what tells you a syllable’s tone, so learning to read is how you understand where
+    the tones actually come from. With that foundation in place, ThaiEar is built for the next stage —
+    turning what you know into <strong>fluency</strong>: widening your vocabulary, tuning your ear to
+    native-speed speech, and practising <strong>recall</strong> until it becomes automatic.</p>
+
+  <h2>Why sentences, and why listening</h2>
+  <p>The approach follows what language-acquisition research has pointed to for decades:</p>
+  <ul>
+    <li><span class="dot">—</span><span>We pick up language mainly by <strong>understanding messages</strong> — “comprehensible input” a little beyond our current level (Krashen) — rather than by memorising lists.</span></li>
+    <li><span class="dot">—</span><span>Words stick far better met <strong>in context</strong>, as part of whole phrases and sentences, than in isolation.</span></li>
+    <li><span class="dot">—</span><span>Pairing what you <strong>hear</strong> with what you <strong>read</strong> engages more than one channel at once — “dual coding” (Paivio) — which strengthens memory.</span></li>
+    <li><span class="dot">—</span><span>Actively <strong>recalling</strong> — trying to produce the Thai before it plays — beats passive review (the “testing effect”, or retrieval practice).</span></li>
+  </ul>
+  <p>Every topic is designed around all four: real sentences, native audio paired with the text and word
+    glosses, and a recall step you can switch on once a topic feels familiar.</p>
+
+  <div class="contact">
+    <p style="margin:0">Questions, feedback, or a topic you’d love to see? Email
+      <a href="mailto:support@thaiear.com">support@thaiear.com</a>.</p>
+  </div>
+
+  <p class="ref">Further reading: Krashen, <em>The Input Hypothesis</em> (1985); Paivio, <em>Dual Coding
+    Theory</em>; Roediger &amp; Karpicke on retrieval practice (the “testing effect”).</p>
+</div>
+
+<script src="nav.js" defer></script>
+</body>
+</html>

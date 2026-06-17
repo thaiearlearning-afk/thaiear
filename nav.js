@@ -43,9 +43,7 @@
      (Blog is parked here, commented out, ready to switch on later.) */
   const LINKS = [
     { label: 'Home',  href: 'index.html' },
-    // 'About' is hidden until it has a real page (a dead '#' link read as "broken" to
-    // visitors). Re-enable by uncommenting once about.html exists:
-    // { label: 'About', href: 'about.html' },
+    { label: 'About', href: 'about.html' },
     // { label: 'Blog',  href: 'blog.html' },
   ];
 
