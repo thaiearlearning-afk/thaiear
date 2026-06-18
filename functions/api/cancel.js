@@ -46,8 +46,12 @@ export async function onRequestPost({ request, env }) {
         // "Cancelling" = the boolean OR a scheduled cancel_at (how the portal records it).
         const canceling = !!(s.cancel_at_period_end || s.cancel_at);
         if (canceling === !resume) continue; // already in the desired state
-        // Resume clears BOTH flags (a portal cancel may have used cancel_at, not the boolean).
-        const fields = resume ? { cancel_at_period_end: 'false', cancel_at: '' } : { cancel_at_period_end: 'true' };
+        // Resume must clear whichever mechanism was used — Stripe rejects sending BOTH
+        // cancel_at_period_end and cancel_at in one request. A portal cancel set cancel_at;
+        // an in-app cancel set the boolean.
+        let fields;
+        if (resume) fields = s.cancel_at ? { cancel_at: '' } : { cancel_at_period_end: 'false' };
+        else fields = { cancel_at_period_end: 'true' };
         await stripePost(env, 'subscriptions/' + s.id, fields);
         changed++;
       }
