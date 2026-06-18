@@ -42,9 +42,9 @@
      The one list to edit when adding an ordinary top-bar link.
      (Blog is parked here, commented out, ready to switch on later.) */
   const LINKS = [
-    { label: 'Home',  href: 'index.html' },
-    // 'About' now lives in the Menu dropdown (see MENU_ITEMS) to keep the
-    // top bar uncramped on mobile.
+    // 'Home' and 'About' now live in the Menu dropdown (see MENU_ITEMS) to keep
+    // the top bar uncramped on mobile. (Home is redundant anyway — the logo links
+    // to the index page.)
     // { label: 'Blog',  href: 'blog.html' },
   ];
 
@@ -142,6 +142,7 @@
   // when logged out. The rest are member features: logged-out clicks route to the
   // login page (join.html) which bounces back via ?next after sign-in.
   const MENU_ITEMS = [
+    { label: 'Home', page: 'index.html', public: true },
     { label: 'About', page: 'about.html', public: true },
     { label: 'My progress', page: 'progress.html' },
     { label: 'My sentences', page: 'sentences.html' },
