@@ -46,6 +46,22 @@
     padding: 0.9rem 1.1rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
   .prog-intro strong { color: var(--text-primary); font-weight: 500; }
 
+  /* meditator + "Fluency loading…" with an animated 1→2→3 dot cycle (pure CSS, no JS) */
+  .fluency-block { text-align: center; margin: 0.25rem 0 1.75rem; }
+  .fluency-img { width: 150px; max-width: 42%; height: auto; display: block; margin: 0 auto 0.4rem; }
+  .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
+  /* fixed-width dots so the text never jitters as they cycle */
+  .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
+  .fluency-text .dots::after { content: '.'; animation: fluency-dots 1.4s infinite; }
+  @keyframes fluency-dots {
+    0%, 100% { content: '.'; }
+    33%      { content: '..'; }
+    66%      { content: '...'; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fluency-text .dots::after { animation: none; content: '…'; }
+  }
+
   /* progress rows + bars */
   .prog-list { display: flex; flex-direction: column; gap: 0.85rem; }
   .prog-row { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.85rem 1rem; }
@@ -225,6 +241,12 @@ function render() {
     'attention. Change your progress goal or reset your progress at any time. After 3 to 5 complete listens of a topic, ' +
     'consider listening to it English-first to practise producing the Thai yourself, building fluency in speaking.</p>';
 
+  var fluency =
+    '<div class="fluency-block">' +
+      '<img class="fluency-img" src="meditator.png" alt="Meditating learner" width="150">' +
+      '<div class="fluency-text">Fluency loading<span class="dots" aria-hidden="true"></span></div>' +
+    '</div>';
+
   var list = '<div class="prog-list">' + rows.map(function (r) {
     var c = topics[r.key] || 0;
     var pct = goal ? Math.min(100, Math.round((c / goal) * 100)) : 0;
@@ -261,7 +283,7 @@ function render() {
       '<button class="btn btn-ghost" onclick="resetAll()" style="font-size:13px;color:#B00020;border-color:rgba(176,0,32,0.35)">Reset all progress</button>' +
     '</div>';
 
-  root.innerHTML = head + intro + list + toggle + reset;
+  root.innerHTML = head + intro + fluency + list + toggle + reset;
 }
 
 // On any auth change (login/logout/token refresh) clear a prior load error and re-render.
