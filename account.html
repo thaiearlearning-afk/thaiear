@@ -314,7 +314,18 @@ function sendLoginLink() {
     if (btn) { btn.disabled = false; btn.textContent = 'Email me a sign-in link'; }
   });
 }
-function consentInner(consent) {
+function consentSig() {
+  var a = window.ThaiEarAuth;
+  var known = !!(a && a.isMarketingConsentLoaded && a.isMarketingConsentLoaded());
+  var consent = !!(a && a.getMarketingConsent && a.getMarketingConsent());
+  return known + '|' + consent;
+}
+function consentInner() {
+  var a = window.ThaiEarAuth;
+  // Until the consent flag has loaded from the profiles row, render nothing (the area
+  // reserves its height) — so we never flash the unsubscribed state before we know.
+  if (!(a && a.isMarketingConsentLoaded && a.isMarketingConsentLoaded())) return '';
+  var consent = !!(a.getMarketingConsent && a.getMarketingConsent());
   return (consent
     ? '<p style="margin-bottom:0.7rem;font-size:14px;color:var(--text-secondary)"><span style="color:var(--accent);font-weight:700">✓</span> You’re subscribed to email updates — we’ll let you know when new topics go live.</p>' +
       '<button class="btn btn-ghost" id="unsub-btn" onclick="unsubscribeEmail()" style="font-size:13px">Unsubscribe</button>'
@@ -322,13 +333,12 @@ function consentInner(consent) {
       '<button class="btn btn-primary" id="sub-btn" onclick="subscribeEmail()">Subscribe to email updates</button>'
   ) + '<p id="consent-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>';
 }
-var _acctRenderedUid = false, _acctRenderedConsent = null, _acctRenderedSubSig = null;
+var _acctRenderedUid = false, _acctConsentSig = null, _acctRenderedSubSig = null;
 function updateConsentArea() {
   var area = document.getElementById('consent-area');
-  var a = window.ThaiEarAuth;
-  if (!area || !a) return;
-  _acctRenderedConsent = !!(a.getMarketingConsent && a.getMarketingConsent());
-  area.innerHTML = consentInner(_acctRenderedConsent);
+  if (!area) return;
+  _acctConsentSig = consentSig();
+  area.innerHTML = consentInner();
 }
 function renderAccount() {
   var el = document.getElementById('account-body');
@@ -342,13 +352,13 @@ function renderAccount() {
   // Auth fires several notifies (token refresh, subscription + profile loads) — this
   // collapses them so only a genuine login/logout or consent change touches the DOM.
   if (uid === _acctRenderedUid) {
-    if (!!(a.getMarketingConsent && a.getMarketingConsent()) !== _acctRenderedConsent) updateConsentArea();
+    if (consentSig() !== _acctConsentSig) updateConsentArea();
     var sig = subSig();
     if (sig !== _acctRenderedSubSig) { _acctRenderedSubSig = sig; renderMembershipBox(cacheSub()); }
     return;
   }
   _acctRenderedUid = uid;
-  _acctRenderedConsent = !!(a.getMarketingConsent && a.getMarketingConsent());
+  _acctConsentSig = consentSig();
   if (!user) {
     el.innerHTML =
       '<div class="login-box">' +
@@ -365,8 +375,8 @@ function renderAccount() {
     return;
   }
   var consentHtml =
-    '<div id="consent-area" style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
-      consentInner(_acctRenderedConsent) +
+    '<div id="consent-area" style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border);min-height:96px">' +
+      consentInner() +
     '</div>';
   // Hidden maintenance control — only when the page is opened as /account?reset=1.
   var doReset = false;

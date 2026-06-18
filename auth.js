@@ -30,6 +30,7 @@
   var currentSubscribed = false; // active Stripe subscription? (read from Supabase via RLS)
   var currentSub = null;         // {status, cancel_at_period_end, current_period_end}
   var currentConsent = false;    // opted in to marketing email? (profiles row)
+  var consentLoaded = false;     // has that consent flag been read from profiles yet?
 
   function userFromSession(session) {
     if (!session || !session.user) return null;
@@ -64,11 +65,11 @@
 
   // Read the user's marketing-consent flag (profiles row), cache it, re-notify.
   function refreshProfile() {
-    if (!client || !currentUser) { currentConsent = false; return; }
+    if (!client || !currentUser) { currentConsent = false; consentLoaded = false; return; }
     client.from('profiles').select('marketing_opt_in').maybeSingle()
       .then(function (res) { currentConsent = !!(res && res.data && res.data.marketing_opt_in); })
       .catch(function () { currentConsent = false; })
-      .then(function () { notify(); });
+      .then(function () { consentLoaded = true; notify(); });
   }
 
   // Public API. getUser() is synchronous; the rest are no-ops until the
@@ -85,6 +86,9 @@
     getSubscription: function () { return currentSub; }, // {status, cancel_at_period_end, current_period_end}
     // Marketing-email consent (cached). setMarketingConsent upserts the profiles row.
     getMarketingConsent: function () { return currentConsent; },
+    // Has the consent flag finished loading from the profiles row? Lets the account
+    // UI hold off rendering until it knows, so it never flashes the wrong state.
+    isMarketingConsentLoaded: function () { return consentLoaded; },
     setMarketingConsent: function (optIn) {
       if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
       var row = {
