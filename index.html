@@ -229,6 +229,25 @@
     color: var(--text-tertiary);
     font-weight: 500;
   }
+  /* Section divider for not-yet-built topics, and the no-results message. Both span
+     the full grid width since they live inside the CSS grid. */
+  .coming-soon-heading {
+    grid-column: 1 / -1;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 1.75rem 0 0.25rem;
+    padding-top: 1.5rem;
+    border-top: 0.5px solid var(--border);
+  }
+  .grid-msg {
+    grid-column: 1 / -1;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    padding: 1rem 0;
+  }
   .topic-card-top {
     display: flex;
     align-items: flex-start;
@@ -525,12 +544,18 @@ const LOCK_SVG =
 // (canAccess true) → the page. canAccess() lives in topics.js and respects ENFORCE_SUBSCRIPTION.
 function renderCard(t, label, sentences, access, pageHref) {
   const gated = access === 'member' || access === 'premium';
-  const accessible = canAccess(access);
-  let href = pageHref, onclick = '', metaRight;
-  if (!gated) {
-    metaRight = pageHref ? '' : '<span class="coming-soon-label">Coming soon</span>';
-  } else if (accessible) {
-    href = pageHref; // unlocked → the page (null if not built yet → coming-soon below)
+  const live = !!pageHref;
+  let href = null, metaRight;
+  if (!live) {
+    // Not built yet → ALWAYS a faded, non-clickable "coming soon" card, whatever the tier.
+    // Show the (locked) tier chip if gated so the eventual access level is still visible.
+    metaRight = access === 'premium' ? `<span class="topic-premium">${LOCK_SVG}Premium</span>`
+              : access === 'member'  ? `<span class="topic-member">${LOCK_SVG}Members</span>`
+              : '<span class="coming-soon-label">Coming soon</span>';
+  } else if (!gated) {
+    href = pageHref; metaRight = '';
+  } else if (canAccess(access)) {
+    href = pageHref; // entitled → straight to the page
     metaRight = access === 'premium'
       ? '<span class="topic-premium unlocked">Premium</span>'
       : '<span class="topic-member unlocked">Member</span>';
@@ -538,7 +563,7 @@ function renderCard(t, label, sentences, access, pageHref) {
     href = 'subscribe.html';
     metaRight = `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
   } else { // member, locked (signed out) → free-membership explainer, then it unlocks
-    href = 'join.html' + (pageHref ? '?next=' + encodeURIComponent(pageHref) : '');
+    href = 'join.html?next=' + encodeURIComponent(pageHref);
     metaRight = `<span class="topic-member">${LOCK_SVG}Members</span>`;
   }
   const inner =
@@ -551,9 +576,9 @@ function renderCard(t, label, sentences, access, pageHref) {
         <span class="topic-sent-count">${sentences} sentences</span>
         ${metaRight}
       </div>`;
-  if (!href) return `<div class="topic-card coming-soon">${inner}</div>`;
+  if (!live) return `<div class="topic-card coming-soon">${inner}</div>`;
   const cls = 'topic-card' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '');
-  return `<a class="${cls}" href="${href}"${onclick}>${inner}</a>`;
+  return `<a class="${cls}" href="${href}">${inner}</a>`;
 }
 
 // One topic -> one card, or two (a/b) if split. `pos` = 1-based display position.
@@ -596,15 +621,31 @@ function filterAccess(filter, btn) {
   renderGrid();
 }
 
+// A topic is "live" once it has a page to link to (split topics: any built part counts).
+function isLive(t) {
+  return t.parts
+    ? t.parts.some(p => p && typeof p === 'object' && p.page)
+    : !!liveTopics[t.id];
+}
+
 function renderGrid() {
-  // Position = 1-based index in the FULL ordered list, so it stays stable under filtering.
+  // Position = 1-based index in the FULL ordered list, so card numbers stay stable under
+  // filtering AND under the live / coming-soon split (the number = curriculum position).
   const visible = topics
     .map((t, i) => ({ t, pos: i + 1 }))
     .filter(o => matchesFilter(o.t.levels, activeFilter) && matchesAccess(o.t, activeAccess));
   const grid = document.getElementById('topic-grid');
-  grid.innerHTML = visible.length
-    ? visible.map(o => cardsForTopic(o.t, o.pos)).join('')
-    : '<p style="grid-column:1/-1;color:var(--text-tertiary);font-size:14px;padding:1rem 0">No topics match these filters.</p>';
+  if (!visible.length) {
+    grid.innerHTML = '<p class="grid-msg">No topics match these filters.</p>';
+    return;
+  }
+  // Live topics first; everything not yet built drops below a "Coming soon" divider.
+  const liveCards = visible.filter(o => isLive(o.t)).map(o => cardsForTopic(o.t, o.pos)).join('');
+  const soon = visible.filter(o => !isLive(o.t));
+  const soonCards = soon.length
+    ? '<h2 class="coming-soon-heading">Coming soon</h2>' + soon.map(o => cardsForTopic(o.t, o.pos)).join('')
+    : '';
+  grid.innerHTML = liveCards + soonCards;
 }
 
 renderGrid();
