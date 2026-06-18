@@ -37,11 +37,11 @@
   .btn-danger { background: #B00020; color: #fff; border-color: #B00020; }
   .btn-danger:hover { background: #8a0019; }
   /* ── sign-in ── */
-  .login-box { max-width: 340px; }
+  .login-box { max-width: 340px; margin: 0 auto; text-align: center; }
   .login-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 11px 18px; }
   .login-sep { display: flex; align-items: center; gap: 12px; margin: 1.1rem 0; color: var(--text-tertiary); font-size: 12px; }
   .login-sep::before, .login-sep::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-  .login-input { width: 100%; font-family: var(--font-ui); font-size: 14px; padding: 10px 12px; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 0.7rem; }
+  .login-input { width: 100%; text-align: left; font-family: var(--font-ui); font-size: 14px; padding: 10px 12px; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 0.7rem; }
   .login-input:focus { outline: none; border-color: var(--accent); }
   .login-terms { font-size: 12px; margin-top: 1rem; }
   /* ── modal ── */
@@ -245,21 +245,27 @@ function cancelAll() {
     })
     .catch(function (e) { if (st) st.textContent = 'Error: ' + e; });
 }
-function toggleConsent(cb) {
+function subscribeEmail() { setEmailConsent(true, 'sub-btn'); }
+function unsubscribeEmail() { setEmailConsent(false, 'unsub-btn'); }
+function setEmailConsent(optIn, btnId) {
   var st = document.getElementById('consent-status');
+  var btn = document.getElementById(btnId);
   var a = window.ThaiEarAuth;
   if (!a || typeof a.setMarketingConsent !== 'function') {
-    if (st) st.textContent = 'Please hard-refresh the page and try again.';
-    cb.checked = !cb.checked; return;
+    if (st) st.textContent = 'Please hard-refresh the page and try again.'; return;
   }
-  if (st) st.textContent = 'Saving…';
-  a.setMarketingConsent(cb.checked).then(function () {
-    if (st) st.textContent = cb.checked
-      ? 'Saved — you’ll get occasional update emails.'
-      : 'Saved — you won’t get update emails.';
+  if (btn) { btn.disabled = true; btn.textContent = optIn ? 'Subscribing…' : 'Unsubscribing…'; }
+  if (st) { st.style.color = 'var(--text-tertiary)'; st.textContent = ''; }
+  a.setMarketingConsent(optIn).then(function () {
+    if (st) {
+      st.style.color = 'var(--accent)';
+      st.textContent = optIn ? '✓ Subscribed — check your inbox for a welcome email.' : 'You’ve been unsubscribed.';
+    }
+    // brief confirmation, then re-render so the button flips to the opposite action
+    setTimeout(renderAccount, 1300);
   }).catch(function (e) {
-    if (st) st.textContent = 'Could not save: ' + ((e && e.message) || e);
-    cb.checked = !cb.checked;
+    if (st) { st.style.color = '#B00020'; st.textContent = 'Could not save: ' + ((e && e.message) || e); }
+    if (btn) { btn.disabled = false; btn.textContent = optIn ? 'Subscribe to email updates' : 'Unsubscribe'; }
   });
 }
 function sendLoginLink() {
@@ -306,12 +312,14 @@ function renderAccount() {
   var consent = !!(a.getMarketingConsent && a.getMarketingConsent());
   var consentHtml =
     '<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
-      '<label style="display:flex;align-items:flex-start;gap:9px;font-size:14px;color:var(--text-secondary);cursor:pointer">' +
-        '<input type="checkbox" id="consent-box" ' + (consent ? 'checked' : '') +
-        ' onchange="toggleConsent(this)" style="margin-top:3px;flex-shrink:0">' +
-        '<span>Email me about new topics &amp; special offers. Unsubscribe anytime.</span>' +
-      '</label>' +
-      '<p id="consent-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
+      (consent
+        ? '<p style="margin-bottom:0.7rem;font-size:14px;color:var(--text-secondary)">' +
+            '<span style="color:var(--accent);font-weight:700">✓</span> You’re subscribed to email updates — we’ll let you know when new topics go live.</p>' +
+          '<button class="btn btn-ghost" id="unsub-btn" onclick="unsubscribeEmail()" style="font-size:13px">Unsubscribe</button>'
+        : '<p style="margin-bottom:0.7rem;font-size:14px;color:var(--text-secondary)">Get an email when new topics go live. No spam, unsubscribe anytime.</p>' +
+          '<button class="btn btn-primary" id="sub-btn" onclick="subscribeEmail()">Subscribe to email updates</button>'
+      ) +
+      '<p id="consent-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
     '</div>';
   // Hidden maintenance control — only when the page is opened as /account?reset=1.
   var doReset = false;
