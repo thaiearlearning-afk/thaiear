@@ -182,18 +182,12 @@ function postCancel(resume) {
     })
     .catch(function (e) { if (st) st.textContent = 'Error: ' + e; });
 }
-// Live subscription state from Stripe (accurate immediately, no webhook lag).
-function loadMembership() {
-  var a = window.ThaiEarAuth;
-  var token = a && a.getAccessToken && a.getAccessToken();
-  if (!document.getElementById('membership') || !token) return;
-  var sim = '';
-  try { var s2 = new URLSearchParams(location.search).get('simulate'); if (s2) sim = '?simulate=' + encodeURIComponent(s2); } catch (_) {}
-  fetch('/api/subscription' + sim, { headers: { Authorization: 'Bearer ' + token } })
-    .then(function (r) { return r.json(); })
-    .then(function (s) {
-      var box = document.getElementById('membership');
-      if (!box) return;
+// Render the membership box from a subscription-state object. Shared by the instant
+// cache render and the Stripe refine, so both paths produce identical markup.
+function renderMembershipBox(s) {
+  var box = document.getElementById('membership');
+  if (!box) return;
+  {
       if (s && s.subscribed) {
         var endStr = '';
         if (s.current_period_end) { try { endStr = new Date(s.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) {} }
@@ -219,10 +213,38 @@ function loadMembership() {
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free member</strong></p>' +
           '<a class="btn btn-primary" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>';
       }
-    })
+  }
+}
+// Build a membership-state object from the cached Supabase subscription (instant).
+function cacheSub() {
+  var a = window.ThaiEarAuth;
+  var sub = (a && a.getSubscription && a.getSubscription()) || null;
+  return {
+    subscribed: !!(a && a.isSubscribed && a.isSubscribed()),
+    needsPayment: !!(sub && (sub.status === 'past_due' || sub.status === 'unpaid')),
+    status: sub && sub.status,
+    cancel_at_period_end: sub && sub.cancel_at_period_end,
+    current_period_end: sub && sub.current_period_end
+  };
+}
+function subSig() {
+  var s = cacheSub();
+  return s.subscribed + '|' + s.needsPayment + '|' + s.status + '|' + s.cancel_at_period_end + '|' + s.current_period_end;
+}
+// Refine the box with the authoritative Stripe state (no webhook lag), in place.
+function loadMembership() {
+  var a = window.ThaiEarAuth;
+  var token = a && a.getAccessToken && a.getAccessToken();
+  if (!document.getElementById('membership') || !token) return;
+  var sim = '';
+  try { var s2 = new URLSearchParams(location.search).get('simulate'); if (s2) sim = '?simulate=' + encodeURIComponent(s2); } catch (_) {}
+  fetch('/api/subscription' + sim, { headers: { Authorization: 'Bearer ' + token } })
+    .then(function (r) { return r.json(); })
+    .then(function (s) { renderMembershipBox(s); })
     .catch(function () {
       var box = document.getElementById('membership');
-      if (box) box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership status unavailable — refresh to retry.</p>';
+      // keep the cached display if we already have one; only message if it's empty
+      if (box && !box.innerHTML.trim()) box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership status unavailable — refresh to retry.</p>';
     });
 }
 // Maintenance: cancel ALL of the user's subscriptions across every Stripe customer
@@ -300,7 +322,7 @@ function consentInner(consent) {
       '<button class="btn btn-primary" id="sub-btn" onclick="subscribeEmail()">Subscribe to email updates</button>'
   ) + '<p id="consent-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>';
 }
-var _acctRenderedUid = false, _acctRenderedConsent = null;
+var _acctRenderedUid = false, _acctRenderedConsent = null, _acctRenderedSubSig = null;
 function updateConsentArea() {
   var area = document.getElementById('consent-area');
   var a = window.ThaiEarAuth;
@@ -321,6 +343,8 @@ function renderAccount() {
   // collapses them so only a genuine login/logout or consent change touches the DOM.
   if (uid === _acctRenderedUid) {
     if (!!(a.getMarketingConsent && a.getMarketingConsent()) !== _acctRenderedConsent) updateConsentArea();
+    var sig = subSig();
+    if (sig !== _acctRenderedSubSig) { _acctRenderedSubSig = sig; renderMembershipBox(cacheSub()); }
     return;
   }
   _acctRenderedUid = uid;
@@ -356,7 +380,7 @@ function renderAccount() {
     : '';
   el.innerHTML =
     '<p>Signed in as <span class="email">' + esc(user.email || user.username) + '</span></p>' +
-    '<div id="membership"><p class="acct-muted" style="margin-top:1rem">Loading membership…</p></div>' +
+    '<div id="membership" style="min-height:80px"></div>' +
     consentHtml +
     resetHtml +
     '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="ThaiEarAuth.signOut()">Log out</button></p>' +
@@ -364,7 +388,9 @@ function renderAccount() {
       '<button class="btn" onclick="deleteAccount()" style="font-size:12px;color:#B00020;background:none;border-color:rgba(176,0,32,0.35)">Delete my account</button>' +
       '<p id="delete-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
     '</div>';
-  loadMembership();
+  renderMembershipBox(cacheSub()); // instant from the cached Supabase state
+  _acctRenderedSubSig = subSig();
+  loadMembership();                // then refine with the authoritative Stripe state
   if (doReset) loadResetDebug();
 }
 function loadResetDebug() {
