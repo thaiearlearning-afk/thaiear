@@ -41,6 +41,11 @@
   .btn-danger:hover { background: #8a0019; }
   .muted { font-size: 13px; color: var(--text-tertiary); }
 
+  /* intro blurb */
+  .prog-intro { font-size: 13.5px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 1.5rem;
+    padding: 0.9rem 1.1rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
+  .prog-intro strong { color: var(--text-primary); font-weight: 500; }
+
   /* progress rows + bars */
   .prog-list { display: flex; flex-direction: column; gap: 0.85rem; }
   .prog-row { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.85rem 1rem; }
@@ -212,6 +217,13 @@ function render() {
       '<h1 class="prog-head-title">' + esc(user.username) + '’s progress</h1>' +
     '</div>';
 
+  var intro =
+    '<p class="prog-intro">This page is designed as a tool for you to track your progress. ' +
+    'We recommend each time you listen to a topic in full to add <strong>“one progress”</strong> to that topic — ' +
+    'this is found above the mp3 player. Over time you can see which topics you know well and which topics need more ' +
+    'attention. Change your progress goal or reset your progress at any time. After 3 to 5 complete listens of a topic, ' +
+    'consider listening to it English-first to practise producing the Thai yourself and building fluency in speaking.</p>';
+
   var list = '<div class="prog-list">' + rows.map(function (r) {
     var c = topics[r.key] || 0;
     var pct = goal ? Math.min(100, Math.round((c / goal) * 100)) : 0;
@@ -248,7 +260,7 @@ function render() {
       '<button class="btn btn-ghost" onclick="resetAll()" style="font-size:13px;color:#B00020;border-color:rgba(176,0,32,0.35)">Reset all progress</button>' +
     '</div>';
 
-  root.innerHTML = head + list + toggle + reset;
+  root.innerHTML = head + intro + list + toggle + reset;
 }
 
 // On any auth change (login/logout/token refresh) clear a prior load error and re-render.
