@@ -475,11 +475,18 @@
     <span class="section-title">All topics</span>
   </div>
 
-  <div class="filter-tabs">
+  <div class="filter-tabs" style="margin-bottom:8px">
     <button class="filter-tab active" onclick="filterTopics('all', this)">All levels</button>
     <button class="filter-tab" onclick="filterTopics('beg', this)">Beginner</button>
     <button class="filter-tab" onclick="filterTopics('li1', this)">Lower intermediate</button>
     <button class="filter-tab" onclick="filterTopics('li2', this)">Intermediate</button>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterAccess('all', this)">All access</button>
+    <button class="filter-tab" onclick="filterAccess('free', this)">Non-member</button>
+    <button class="filter-tab" onclick="filterAccess('member', this)">Free member</button>
+    <button class="filter-tab" onclick="filterAccess('premium', this)">Premium</button>
   </div>
 
   <div class="topic-grid" id="topic-grid"></div>
@@ -564,21 +571,40 @@ function cardsForTopic(t, pos) {
   return renderCard(t, p, t.sentences, access, liveTopics[t.id] || null);
 }
 
-let activeFilter = 'all';
+// Two independent filter dimensions that combine (AND): level + access tier.
+let activeFilter = 'all';   // level: all | beg | li1 | li2
+let activeAccess = 'all';   // tier:  all | free (non-member) | member | premium
+
+// Highlight only within the clicked button's own row, so the two rows stay independent.
+function setActiveInRow(btn) {
+  btn.parentElement.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
 function filterTopics(filter, btn) {
   activeFilter = filter;
-  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
+  setActiveInRow(btn);
+  renderGrid();
+}
+// Tier is READ from the topic's access field (free | member | premium) at render time,
+// so when a topic moves tier in topics.js the filter follows automatically — nothing to
+// hardcode here. "Non-member" = free/undefined access.
+function accessTier(t) { return t.access === 'member' ? 'member' : t.access === 'premium' ? 'premium' : 'free'; }
+function matchesAccess(t, filter) { return filter === 'all' || accessTier(t) === filter; }
+function filterAccess(filter, btn) {
+  activeAccess = filter;
+  setActiveInRow(btn);
   renderGrid();
 }
 
 function renderGrid() {
   // Position = 1-based index in the FULL ordered list, so it stays stable under filtering.
-  document.getElementById('topic-grid').innerHTML = topics
+  const visible = topics
     .map((t, i) => ({ t, pos: i + 1 }))
-    .filter(o => matchesFilter(o.t.levels, activeFilter))
-    .map(o => cardsForTopic(o.t, o.pos))
-    .join('');
+    .filter(o => matchesFilter(o.t.levels, activeFilter) && matchesAccess(o.t, activeAccess));
+  const grid = document.getElementById('topic-grid');
+  grid.innerHTML = visible.length
+    ? visible.map(o => cardsForTopic(o.t, o.pos)).join('')
+    : '<p style="grid-column:1/-1;color:var(--text-tertiary);font-size:14px;padding:1rem 0">No topics match these filters.</p>';
 }
 
 renderGrid();
