@@ -43,8 +43,12 @@ export async function onRequestPost({ request, env }) {
       const subs = await stripeGet(env, 'subscriptions?status=all&limit=100&customer=' + id);
       for (const s of (subs && subs.data || [])) {
         if (s.status !== 'active' && s.status !== 'trialing') continue;
-        if (!!s.cancel_at_period_end === !resume) continue; // already in the desired state
-        await stripePost(env, 'subscriptions/' + s.id, { cancel_at_period_end: resume ? 'false' : 'true' });
+        // "Cancelling" = the boolean OR a scheduled cancel_at (how the portal records it).
+        const canceling = !!(s.cancel_at_period_end || s.cancel_at);
+        if (canceling === !resume) continue; // already in the desired state
+        // Resume clears BOTH flags (a portal cancel may have used cancel_at, not the boolean).
+        const fields = resume ? { cancel_at_period_end: 'false', cancel_at: '' } : { cancel_at_period_end: 'true' };
+        await stripePost(env, 'subscriptions/' + s.id, fields);
         changed++;
       }
     }

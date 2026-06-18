@@ -49,8 +49,9 @@ function rowFromSub(uid, sub, customer) {
     stripe_customer_id: customer || sub.customer || null,
     stripe_subscription_id: sub.id || null,
     status: sub.status || null,
-    cancel_at_period_end: !!sub.cancel_at_period_end,
-    current_period_end: subPeriodEnd(sub) ? new Date(subPeriodEnd(sub) * 1000).toISOString() : null,
+    // Portal cancels record a scheduled `cancel_at` rather than the boolean — treat either as cancelling.
+    cancel_at_period_end: !!(sub.cancel_at_period_end || sub.cancel_at),
+    current_period_end: (sub.cancel_at || subPeriodEnd(sub)) ? new Date((sub.cancel_at || subPeriodEnd(sub)) * 1000).toISOString() : null,
     updated_at: new Date().toISOString(),
   };
 }
