@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 13: Asking for help &amp; emergencies</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Asking for help &amp; emergencies</h1>
+  <p class="topic-meta"><strong>36 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-12b.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Getting around &amp; transport 2</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-13a.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Body &amp; health 1</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  audioPrefix: "Emergency_BEG",
+  sentences: [
+  { num: 474, display: 1, preview: "ช่วยด้วย", thai: "ช่วยด้วยครับ", english: "Help!", gloss: [["ช่วยด้วย", "help! (cry for help)"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 475, display: 2, preview: "ระวัง", thai: "ระวังรถ", english: "Watch out — car!", gloss: [["ระวัง", "watch out / careful"], ["รถ", "car"]], cultural: "" },
+  { num: 476, display: 3, preview: "ลื่น", thai: "ระวัง | ขั้นบันไดลื่นมาก", english: "Careful — the steps are very slippery!", gloss: [["ระวัง", "careful"], ["ขั้นบันได", "the steps / stairs"], ["ลื่นมาก", "very slippery"]], cultural: "" },
+  { num: 477, display: 4, preview: "ไฟไหม้", thai: "ไฟไหม้ | รีบออกไป", english: "Fire! Get out, quick!", gloss: [["ไฟไหม้", "fire! / on fire"], ["รีบออกไป", "get out quickly"]], cultural: "" },
+  { num: 478, display: 5, preview: "ช่วยหน่อย", thai: "ช่วยหน่อยได้ไหมครับ", english: "Could you help me?", gloss: [["ช่วยหน่อย", "help (me) a bit"], ["ได้ไหมครับ", "could you? + polite (male)"]], cultural: "" },
+  { num: 479, display: 6, preview: "ความช่วยเหลือ", thai: "ต้องการความช่วยเหลือไหมคะ", english: "Do you need any help?", gloss: [["ต้องการ", "need / want"], ["ความช่วยเหลือ", "help / assistance"], ["ไหมคะ", "question + polite (female)"]], cultural: "" },
+  { num: 480, display: 7, preview: "ตำรวจ", thai: "ช่วยเรียกตำรวจให้หน่อยค่ะ", english: "Please call the police!", gloss: [["ช่วยเรียก", "please call"], ["ตำรวจ", "the police"], ["ให้หน่อย", "for me"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 481, display: 8, preview: "รถพยาบาล", thai: "โทรเรียกรถพยาบาลด่วนเลยครับ", english: "Quick, call an ambulance!", gloss: [["โทรเรียก", "call"], ["รถพยาบาล", "an ambulance"], ["ด่วนเลย", "urgently"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 482, display: 9, preview: "หมอ", thai: "ช่วยโทรหาหมอให้หน่อยค่ะ", english: "Please call a doctor!", gloss: [["ช่วยโทรหา", "please phone"], ["หมอ", "a doctor"], ["ให้หน่อย", "for me"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 483, display: 10, preview: "ฉุกเฉิน", thai: "นี่เหตุฉุกเฉินนะครับ", english: "This is an emergency!", gloss: [["นี่", "this"], ["เหตุฉุกเฉิน", "an emergency"], ["นะครับ", "softening + polite (male)"]], cultural: "" },
+  { num: 484, display: 11, preview: "ทางหนีไฟ", thai: "ทางหนีไฟอยู่ตรงไหนครับ", english: "Where's the fire exit?", gloss: [["ทางหนีไฟ", "fire exit / escape"], ["อยู่ตรงไหน", "where is it"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 485, display: 12, preview: "หนึ่งหกหกเก้า", thai: "โทรหนึ่งหกหกเก้าเรียกรถพยาบาลเร็ว", english: "Call 1669 for an ambulance — quick!", gloss: [["โทร", "dial / call"], ["หนึ่งหกหกเก้า", "1669 (medical emergency hotline)"], ["เรียกรถพยาบาล", "for an ambulance"], ["เร็ว", "quick!"]], cultural: "Thailand's emergency numbers: 1669 (medical / ambulance, free nationwide EMS), 191 (police), 199 (fire)." },
+  { num: 486, display: 13, preview: "จมน้ำ", thai: "มีคนจมน้ำ | ช่วยด้วย", english: "Someone's drowning — help!", gloss: [["มีคน", "someone"], ["จมน้ำ", "is drowning"], ["ช่วยด้วย", "help!"]], cultural: "" },
+  { num: 487, display: 14, preview: "ปฐมพยาบาล", thai: "มีชุดปฐมพยาบาลกับพลาสเตอร์ไหมครับ", english: "Do you have a first-aid kit and plasters?", gloss: [["มี", "do you have"], ["ชุดปฐมพยาบาล", "a first-aid kit"], ["กับ", "and"], ["พลาสเตอร์", "plasters"], ["ไหมครับ", "question + polite (male)"]], cultural: "" },
+  { num: 488, display: 15, preview: "อุบัติเหตุ", thai: "เกิดอุบัติเหตุรถชนกันตรงสี่แยกครับ", english: "There's been a car crash at the intersection.", gloss: [["เกิด", "there's been"], ["อุบัติเหตุ", "an accident"], ["รถชนกัน", "a car crash"], ["ตรงสี่แยก", "at the intersection"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 489, display: 16, preview: "เจ็บหนัก", thai: "มีคนเจ็บหนัก | ช่วยเรียกรถพยาบาลที", english: "Someone's badly hurt — call an ambulance!", gloss: [["มีคน", "someone"], ["เจ็บหนัก", "is badly hurt"], ["ช่วยเรียกรถพยาบาล", "call an ambulance"], ["ที", "please / quickly"]], cultural: "" },
+  { num: 490, display: 17, preview: "หลงทาง", thai: "ผมหลงทาง | หาทางออกไม่เจอเลยครับ", english: "I'm lost — I can't find the way out.", gloss: [["ผม", "I"], ["หลงทาง", "am lost"], ["หาทางออกไม่เจอ", "can't find the way out"], ["เลยครับ", "really + polite (male)"]], cultural: "" },
+  { num: 491, display: 18, preview: "กระเป๋าเงิน", thai: "กระเป๋าเงินหาย | ข้างในมีบัตรสำคัญหมดเลย", english: "I've lost my wallet — all my important cards were in it.", gloss: [["กระเป๋าเงินหาย", "lost my wallet"], ["ข้างใน", "inside"], ["มีบัตรสำคัญ", "were important cards"], ["หมดเลย", "all of them"]], cultural: "" },
+  { num: 492, display: 19, preview: "โดนขโมย", thai: "กระเป๋าโดนขโมยที่ถนนข้าวสารครับ", english: "My bag was stolen on Khao San Road.", gloss: [["กระเป๋า", "bag"], ["โดนขโมย", "was stolen"], ["ที่ถนนข้าวสาร", "on Khao San Road"], ["ครับ", "polite (male)"]], cultural: "ถนนข้าวสาร (Khao San Road) is Bangkok's famous backpacker street — packed with tourists, and a notorious spot for pickpocketing and bag-snatching." },
+  { num: 493, display: 20, preview: "เป็นลม", thai: "มีคนเป็นลมล้มอยู่ตรงนั้น | ช่วยด้วย", english: "Someone's collapsed over there — help!", gloss: [["มีคนเป็นลม", "someone has fainted"], ["ล้มอยู่ตรงนั้น", "collapsed over there"], ["ช่วยด้วย", "help!"]], cultural: "" },
+  { num: 494, display: 21, preview: "หายใจไม่ออก", thai: "เขาหายใจไม่ออก | มีใครเป็นหมอไหม", english: "He can't breathe — is anyone here a doctor?", gloss: [["เขา", "he"], ["หายใจไม่ออก", "can't breathe"], ["มีใครเป็นหมอไหม", "is anyone a doctor?"]], cultural: "" },
+  { num: 495, display: 22, preview: "หน้ามืด", thai: "รู้สึกไม่สบายมาก | หน้ามืดจะเป็นลม", english: "I feel really ill — dizzy, about to faint.", gloss: [["รู้สึกไม่สบายมาก", "feel really ill"], ["หน้ามืด", "dizzy / vision going dark"], ["จะเป็นลม", "about to faint"]], cultural: "" },
+  { num: 496, display: 23, preview: "โรงพยาบาล", thai: "ช่วยพาไปโรงพยาบาลที่ใกล้ที่สุดทีครับ", english: "Please take me to the nearest hospital.", gloss: [["ช่วยพาไป", "please take me to"], ["โรงพยาบาลที่ใกล้ที่สุด", "the nearest hospital"], ["ทีครับ", "please + polite (male)"]], cultural: "" },
+  { num: 497, display: 24, preview: "ติดต่อ", thai: "ช่วยติดต่อครอบครัวผมหน่อยครับ", english: "Please contact my family.", gloss: [["ช่วยติดต่อ", "please contact"], ["ครอบครัวผม", "my family"], ["หน่อยครับ", "please + polite (male)"]], cultural: "" },
+  { num: 498, display: 25, preview: "ล้วงกระเป๋า", thai: "โดนล้วงกระเป๋า | เงินหายหมดเลยค่ะ", english: "I got pickpocketed — all my money's gone.", gloss: [["โดนล้วงกระเป๋า", "got pickpocketed"], ["เงินหายหมด", "all the money's gone"], ["เลยค่ะ", "+ polite (female)"]], cultural: "" },
+  { num: 499, display: 26, preview: "ลูกหาย", thai: "ลูกหายไปในห้าง | ช่วยตามหาหน่อยค่ะ", english: "My child went missing in the mall — please help find them.", gloss: [["ลูกหายไป", "my child went missing"], ["ในห้าง", "in the mall"], ["ช่วยตามหา", "please help find them"], ["หน่อยค่ะ", "please + polite (female)"]], cultural: "" },
+  { num: 500, display: 27, preview: "บุกเข้าบ้าน", thai: "รีบแจ้งตำรวจเลยครับ | มีคนบุกเข้าบ้าน", english: "Call the police, quick — someone's broken into the house.", gloss: [["รีบแจ้งตำรวจ", "quickly tell the police"], ["เลยครับ", "+ polite (male)"], ["มีคนบุกเข้าบ้าน", "someone broke into the house"]], cultural: "" },
+  { num: 501, display: 28, preview: "ใจเย็น", thai: "ทุกคนใจเย็นๆ | รอฟังประกาศนะคะ", english: "Everyone stay calm and wait for the announcement.", gloss: [["ทุกคน", "everyone"], ["ใจเย็นๆ", "stay calm"], ["รอฟังประกาศ", "wait for the announcement"], ["นะคะ", "softening + polite (female)"]], cultural: "" },
+  { num: 502, display: 29, preview: "เครื่องกระตุกหัวใจ", thai: "เครื่องกระตุกหัวใจอยู่ตรงไหนครับ", english: "Where's the defibrillator?", gloss: [["เครื่องกระตุกหัวใจ", "the defibrillator (AED)"], ["อยู่ตรงไหน", "where is it"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 503, display: 30, preview: "เลือด", thai: "เลือดออกเยอะ | เอาผ้าพันแผลกดไว้", english: "He's bleeding a lot — press a bandage on it.", gloss: [["เลือดออกเยอะ", "bleeding a lot"], ["เอาผ้าพันแผล", "take a bandage"], ["กดไว้", "press it down"]], cultural: "" },
+  { num: 504, display: 31, preview: "ขยับ", thai: "อย่าเพิ่งขยับเขา | รอรถพยาบาลก่อน", english: "Don't move him — wait for the ambulance.", gloss: [["อย่าเพิ่งขยับเขา", "don't move him yet"], ["รอรถพยาบาลก่อน", "wait for the ambulance first"]], cultural: "" },
+  { num: 505, display: 32, preview: "สำลัก", thai: "เขาสำลักอาหาร | ช่วยเขาเร็ว", english: "He's choking on his food — quick, help him!", gloss: [["เขาสำลักอาหาร", "he's choking on food"], ["ช่วยเขาเร็ว", "help him quick"]], cultural: "" },
+  { num: 506, display: 33, preview: "งูกัด", thai: "โดนงูกัด | รีบพาไปโรงพยาบาลด่วน", english: "It's a snake bite — get them to hospital, fast!", gloss: [["โดนงูกัด", "snake bite"], ["รีบพาไปโรงพยาบาล", "rush them to hospital"], ["ด่วน", "urgently"]], cultural: "" },
+  { num: 507, display: 34, preview: "พาสปอร์ต", thai: "พาสปอร์ตหาย | ต้องทำยังไงดีคะ", english: "I've lost my passport — what should I do?", gloss: [["พาสปอร์ตหาย", "lost my passport"], ["ต้องทำยังไงดี", "what should I do?"], ["คะ", "polite (female)"]], cultural: "" },
+  { num: 508, display: 35, preview: "ปลอดภัย", thai: "ทุกคนปลอดภัยไหม | มีใครเจ็บไหม", english: "Is everyone okay? Anyone hurt?", gloss: [["ทุกคนปลอดภัยไหม", "is everyone safe?"], ["มีใครเจ็บไหม", "anyone hurt?"]], cultural: "" },
+  { num: 509, display: 36, preview: "ติดอยู่ข้างใน", thai: "มีคนติดอยู่ข้างในตึก | ช่วยด้วย", english: "Someone's trapped inside the building — help!", gloss: [["มีคนติดอยู่ข้างใน", "someone's trapped inside"], ["ตึก", "the building"], ["ช่วยด้วย", "help!"]], cultural: "" }
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
