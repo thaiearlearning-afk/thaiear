@@ -76,7 +76,7 @@
     Free membership
   </span>
   <h1 class="sub-title">Sign in to unlock — it’s free</h1>
-  <p class="sub-lede">This topic is part of ThaiEar’s free membership. There’s no payment and no card —
+  <p class="sub-lede" id="join-lede">This topic is part of ThaiEar’s free membership. There’s no payment and no card —
     just sign in with your Google account to unlock member topics straight away.</p>
 
   <div class="sub-card">
@@ -111,6 +111,19 @@
 /* Free-membership explainer (member tier). Member topics are gated server-side
    (/api/audio), so the value is the login. ?next=<page> sends the visitor to the
    topic they wanted once signed in. */
+
+// Arrived via a member FEATURE (e.g. flagging a sentence) rather than a locked topic?
+// Show feature-oriented copy under the same "Sign in to unlock — it's free" heading.
+(function () {
+  try {
+    if (new URLSearchParams(location.search).get('feature')) {
+      var el = document.getElementById('join-lede');
+      if (el) el.textContent = 'Access member topics, track your progress, and flag sentences. ' +
+        'There’s no payment and no card — just sign in with your Google account to unlock these features straight away.';
+    }
+  } catch (_) {}
+})();
+
 function nextUrl() {
   var m = new URLSearchParams(location.search).get('next');
   // only allow same-site relative topic pages
