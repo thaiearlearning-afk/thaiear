@@ -41,6 +41,10 @@ async function handle({ request, env }) {
   p.set('client_reference_id', user.id);
   p.set('subscription_data[metadata][user_id]', user.id);
   p.set('allow_promotion_codes', 'true');
+  // Don't demand a card when nothing is due now — lets a 100%-off-forever comp code
+  // (see the VIP coupon in Stripe) check out with no payment method. Paying users are
+  // unaffected: their amount is > 0, so Stripe still collects a card.
+  p.set('payment_method_collection', 'if_required');
 
   // ONE Stripe customer per user, stored durably in profiles (survives subscription
   // row resets). This prevents the duplicate-customer mess that made cancellations
