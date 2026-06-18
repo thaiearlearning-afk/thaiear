@@ -65,10 +65,17 @@
   /* progress rows + bars */
   .prog-list { display: flex; flex-direction: column; gap: 0.85rem; }
   .prog-row { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.85rem 1rem; }
-  .prog-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 0.55rem; }
+  .prog-row-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.55rem; }
+  .prog-name-wrap { display: flex; align-items: center; gap: 9px; min-width: 0; flex-wrap: wrap; }
   .prog-name { font-size: 14px; font-weight: 500; }
   .prog-name a { color: var(--text-primary); text-decoration: none; }
   .prog-name a:hover { color: var(--accent); }
+  .prog-goto { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; font-family: var(--font-ui); font-size: 11.5px; font-weight: 500; color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 3px 9px; white-space: nowrap; transition: background 0.15s, border-color 0.15s; }
+  .prog-goto:hover { background: var(--accent-light); border-color: var(--accent); }
+  .prog-goto .lock { display: inline-flex; }
+  .prog-goto .lock svg { width: 10px; height: 10px; }
+  .prog-goto.premium .lock { color: var(--gold-dark); }
+  .prog-goto.member .lock { color: var(--accent); }
   .prog-num { font-size: 12.5px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .prog-bar { width: 100%; height: 9px; background: var(--bg); border: 0.5px solid var(--border); border-radius: 6px; overflow: hidden; }
   .prog-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 6px; transition: width 0.4s cubic-bezier(0.4,0,0.2,1); }
@@ -123,6 +130,12 @@ var PERSON_SVG =
   'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>';
 
+// Padlock for a locked "Go to topic" button (matches the index/nav padlock style).
+var LOCK_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+
 function esc(s) {
   return String(s).replace(/[&<>"']/g, function (c) {
     return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
@@ -141,11 +154,12 @@ function liveRows() {
     if (t.parts) {
       t.parts.forEach(function (part) {
         if (part && typeof part === 'object' && part.page) {
-          rows.push({ key: bare(part.page), name: part.name || t.name, page: part.page });
+          // Split parts share the parent topic's access tier.
+          rows.push({ key: bare(part.page), name: part.name || t.name, page: part.page, access: t.access || 'free' });
         }
       });
     } else if (T.liveTopics[t.id]) {
-      rows.push({ key: bare(T.liveTopics[t.id]), name: t.name, page: T.liveTopics[t.id] });
+      rows.push({ key: bare(T.liveTopics[t.id]), name: t.name, page: T.liveTopics[t.id], access: t.access || 'free' });
     }
   });
   return rows;
@@ -247,13 +261,34 @@ function render() {
       '<div class="fluency-text">Fluency loading<span class="dots" aria-hidden="true"></span></div>' +
     '</div>';
 
+  var T = window.ThaiEarTopics;
   var list = '<div class="prog-list">' + rows.map(function (r) {
     var c = topics[r.key] || 0;
     var pct = goal ? Math.min(100, Math.round((c / goal) * 100)) : 0;
     var full = c >= goal ? ' full' : '';
+
+    // Same gating as the index cards: free or entitled → the topic page; otherwise
+    // route to the right gate (premium → subscribe, member → join) and show a padlock.
+    // Both the title link and the "Go to topic" button use this one destination.
+    var access = r.access || 'free';
+    var canOpen = !T || access === 'free' || (T.canAccess && T.canAccess(access));
+    var href, btnCls = 'prog-goto', lock = '';
+    if (canOpen) {
+      href = r.page;
+    } else if (access === 'premium') {
+      href = 'subscribe.html'; btnCls += ' premium';
+      lock = '<span class="lock">' + LOCK_SVG + '</span>';
+    } else {
+      href = 'join.html?next=' + encodeURIComponent(r.page); btnCls += ' member';
+      lock = '<span class="lock">' + LOCK_SVG + '</span>';
+    }
+
     return '<div class="prog-row">' +
       '<div class="prog-row-top">' +
-        '<span class="prog-name"><a href="' + r.page + '">' + esc(r.name) + '</a></span>' +
+        '<span class="prog-name-wrap">' +
+          '<span class="prog-name"><a href="' + href + '">' + esc(r.name) + '</a></span>' +
+          '<a class="' + btnCls + '" href="' + href + '">' + lock + 'Go to topic</a>' +
+        '</span>' +
         '<span class="prog-num">' + c + ' / ' + goal + '</span>' +
       '</div>' +
       '<div class="prog-bar"><div class="prog-bar-fill' + full + '" style="width:' + pct + '%"></div></div>' +
