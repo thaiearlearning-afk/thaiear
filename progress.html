@@ -82,7 +82,8 @@
   .modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 400px; width: 100%; padding: 1.5rem 1.5rem 1.35rem; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
   .modal-card h2 { font-size: 18px; font-weight: 600; margin-bottom: 0.5rem; }
   .modal-card p { font-size: 14px; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.55; }
-  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions .btn { flex: 1; text-align: center; }
 
   @media (max-width: 600px) {
     .page-wrap { padding: 2rem 1rem 3rem; }
@@ -165,7 +166,7 @@ function resetAll() {
   if (!a || !a.resetProgress) return;
   showModal({
     title: 'Reset all progress?',
-    body: 'This clears every topic’s tally back to zero and returns your goal to 5. This cannot be undone.',
+    body: 'This clears every topic’s tally back to zero. This cannot be undone.',
     confirmText: 'Reset everything', cancelText: 'Keep my progress', danger: true,
     onConfirm: function () {
       a.resetProgress().then(render).catch(function (e) { console.warn('reset failed', e); });
@@ -222,7 +223,7 @@ function render() {
     'We recommend each time you listen to a topic in full to add <strong>“one progress”</strong> to that topic — ' +
     'this is found above the mp3 player. Over time you can see which topics you know well and which topics need more ' +
     'attention. Change your progress goal or reset your progress at any time. After 3 to 5 complete listens of a topic, ' +
-    'consider listening to it English-first to practise producing the Thai yourself and building fluency in speaking.</p>';
+    'consider listening to it English-first to practise producing the Thai yourself, building fluency in speaking.</p>';
 
   var list = '<div class="prog-list">' + rows.map(function (r) {
     var c = topics[r.key] || 0;

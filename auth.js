@@ -205,9 +205,9 @@
         p.goal = Math.max(goal, floor);
       });
     },
-    // Wipe all counts and return the goal to the default. (Caller confirms first.)
+    // Wipe all counts (the goal is left as-is). (Caller confirms first.)
     resetProgress: function () {
-      return mutateProgress(function (p) { p.topics = {}; p.goal = 5; });
+      return mutateProgress(function (p) { p.topics = {}; });
     },
     signInWithGoogle: function () {
       if (!client) { console.warn('ThaiEar auth still loading…'); return; }
