@@ -42,6 +42,12 @@
   var PREFIX = cfg.audioPrefix;
   var sentences = cfg.sentences || [];
 
+  // Progress is keyed by this page's (frozen) filename, e.g. "topic-09a" — unique
+  // per page, matches what the progress page enumerates from topics.js.
+  var PAGE_FILE = (location.pathname.split('/').pop() || '').toLowerCase();
+  if (!/\.html$/.test(PAGE_FILE)) PAGE_FILE += '.html'; // clean URLs (/topic-02) → topic-02.html
+  var TOPIC_KEY = PAGE_FILE.replace(/\.html$/, '');
+
   if (!PREFIX || !sentences.length) {
     console.error('player.js: window.ThaiEarTopic { audioPrefix, sentences } is missing.');
     return;
@@ -50,6 +56,37 @@
   /* ---- styles (the player owns its own CSS; page keeps only chrome) ----
      Depends on the page's :root design tokens, which every page defines. */
   var STYLES = `
+    .progress-controls { margin-bottom: 0.9rem; min-height: 0; }
+    .prog-ctl-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.7rem 0.9rem; }
+    .prog-ctl-left { display: flex; align-items: baseline; gap: 7px; }
+    .prog-ctl-count { font-size: 20px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1; transition: transform 0.18s; }
+    .prog-ctl-count.bump { animation: prog-bump 0.4s cubic-bezier(0.2,0.8,0.3,1.3); }
+    @keyframes prog-bump { 0% { transform: scale(1); } 45% { transform: scale(1.35); } 100% { transform: scale(1); } }
+    .prog-ctl-label { font-size: 12.5px; color: var(--text-secondary); }
+    .prog-ctl-btns { display: flex; align-items: center; gap: 7px; }
+    .prog-ctl-btn { font-family: var(--font-ui); font-size: 13px; font-weight: 500; border-radius: var(--radius-sm);
+      border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary);
+      padding: 6px 12px; cursor: pointer; min-width: 36px; display: inline-flex; align-items: center; justify-content: center;
+      gap: 5px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    .prog-ctl-btn:hover:not([disabled]) { border-color: var(--accent); color: var(--accent); }
+    .prog-ctl-btn[disabled] { opacity: 0.55; cursor: default; }
+    .prog-ctl-btn.prog-ctl-add { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .prog-ctl-btn.prog-ctl-add:hover:not([disabled]) { background: var(--accent-mid); color: #fff; }
+    .prog-ctl-minus { font-size: 17px; line-height: 1; font-weight: 400; padding: 5px 13px; }
+    .prog-ctl-my { font-size: 12.5px; font-weight: 500; color: var(--accent); text-decoration: none; margin-left: 3px; white-space: nowrap; }
+    .prog-ctl-my:hover { color: var(--accent-mid); }
+    .prog-ctl-join { font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
+    .prog-ctl-join:hover { color: var(--accent-mid); }
+    .prog-spin { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: prog-spin 0.6s linear infinite; }
+    @keyframes prog-spin { to { transform: rotate(360deg); } }
+    .prog-tick { display: inline-block; font-weight: 700; animation: prog-tick-pop 0.4s cubic-bezier(0.2,0.8,0.3,1.3) both; }
+    @keyframes prog-tick-pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+    @media (max-width: 600px) {
+      .prog-ctl-card { padding: 0.6rem 0.7rem; }
+      .prog-ctl-count { font-size: 18px; }
+      .prog-ctl-btn { font-size: 12px; padding: 5px 10px; }
+    }
     .player-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1rem; margin-bottom: 1.75rem; }
     .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
     .audio-toggle { display: flex; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
@@ -129,6 +166,7 @@
 
   /* ---- player markup (transport bar, how-to, controls, list, audio el) ---- */
   var PLAYER_HTML =
+    '<div class="progress-controls" id="progress-controls"></div>' +
     '<div class="player-card">' +
       '<div class="player-top">' +
         '<div class="audio-toggle">' +
@@ -476,6 +514,88 @@
     render();
   }
 
+  /* ---- progress controls (add / remove / my progress) ----
+     Single-source like the rest of the player: every topic page gets this row
+     above the transport bar. Logged out → a prompt that routes to join.html.
+     Logged in → a live tally with +/- buttons that write to the user's row. */
+  var progLock = false;
+
+  function renderProgress() {
+    var box = $('progress-controls');
+    if (!box) return;
+    var a = window.ThaiEarAuth;
+    if (!a || !a.isReady) { box.innerHTML = ''; return; } // hold until auth resolves
+    var user = a.getUser && a.getUser();
+    if (!user) {
+      box.innerHTML =
+        '<div class="prog-ctl-card">' +
+          '<span class="prog-ctl-label">Track how many times you’ve listened to this topic.</span>' +
+          '<a class="prog-ctl-join" href="join.html?next=' + encodeURIComponent(PAGE_FILE) + '">Sign in to track progress →</a>' +
+        '</div>';
+      return;
+    }
+    var count = a.getTopicProgress ? a.getTopicProgress(TOPIC_KEY) : 0;
+    box.innerHTML =
+      '<div class="prog-ctl-card">' +
+        '<div class="prog-ctl-left">' +
+          '<span class="prog-ctl-count" id="prog-count">' + count + '</span>' +
+          '<span class="prog-ctl-label">complete listen' + (count === 1 ? '' : 's') + '</span>' +
+        '</div>' +
+        '<div class="prog-ctl-btns">' +
+          '<button class="prog-ctl-btn prog-ctl-minus" id="prog-remove" onclick="progRemove()" aria-label="Remove one listen" title="Remove one listen">−</button>' +
+          '<button class="prog-ctl-btn prog-ctl-add" id="prog-add" onclick="progAdd()" aria-label="Add one listen">+ Add progress</button>' +
+          '<a class="prog-ctl-my" href="progress.html">My progress</a>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // Shared by + and −. Disables both buttons, shows a spinner then a tick, and holds
+  // the lock for a beat after the write so an accidental double-click can't land —
+  // mirrors the subscribe button's deliberate, lag-then-confirm feel.
+  function progStep(kind) {
+    var a = window.ThaiEarAuth;
+    if (!a || !(a.getUser && a.getUser())) return;
+    if (progLock) return;
+    progLock = true;
+    var addBtn = $('prog-add'), remBtn = $('prog-remove'), countEl = $('prog-count');
+    var actBtn = kind === 'add' ? addBtn : remBtn;
+    var orig = actBtn ? actBtn.innerHTML : '';
+    if (addBtn) addBtn.disabled = true;
+    if (remBtn) remBtn.disabled = true;
+    if (actBtn) actBtn.innerHTML = '<span class="prog-spin"></span>';
+    var op = kind === 'add' ? a.addProgress(TOPIC_KEY) : a.removeProgress(TOPIC_KEY);
+    op.then(function () {
+      if (countEl) {
+        countEl.textContent = a.getTopicProgress(TOPIC_KEY);
+        countEl.classList.remove('bump'); void countEl.offsetWidth; countEl.classList.add('bump');
+      }
+      if (actBtn) actBtn.innerHTML = '<span class="prog-tick">✓</span>';
+    }).catch(function (e) {
+      console.warn('player.js: progress save failed', e);
+      if (actBtn) actBtn.innerHTML = orig;
+    }).then(function () {
+      setTimeout(function () {
+        progLock = false;
+        // re-render to refresh the label (listen/listens) and restore button text
+        renderProgress();
+      }, 600);
+    });
+  }
+  function progAdd() { progStep('add'); }
+  function progRemove() { progStep('remove'); }
+
+  // Load the user's progress once, then render; re-run whenever auth resolves/changes.
+  function initProgress() {
+    var a = window.ThaiEarAuth;
+    if (!a || !a.isReady) { renderProgress(); return; }
+    if (a.getUser && a.getUser() && a.loadProgress) {
+      a.loadProgress().then(renderProgress).catch(renderProgress);
+    } else {
+      renderProgress();
+    }
+  }
+  window.addEventListener('thaiear:auth', initProgress);
+
   /* ---- mount ---- */
   function mount() {
     if (!document.getElementById('player-styles')) {
@@ -491,11 +611,13 @@
     render();
     initSentAudio();
     initScrubber();
+    initProgress();
   }
 
   // inline onclick in the injected markup call these by name
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
-    toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow });
+    toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow,
+    progAdd: progAdd, progRemove: progRemove });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();

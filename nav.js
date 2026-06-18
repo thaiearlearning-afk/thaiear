@@ -119,8 +119,12 @@
     if (!FEATURES.members) return '';
     const user = getUser();
     if (user) {
-      // Logged in: username + person icon, both leading to the account page.
+      // Logged in: a Progress link (signed-in only), then username + person icon,
+      // both leading to the account page.
+      const here = currentPage();
+      const progActive = here === 'progress.html' ? ' class="active"' : '';
       return (
+        `<a href="progress.html"${progActive}>Progress</a>` +
         `<span class="nav-username">${escapeHtml(user.username)}</span>` +
         `<a class="nav-person" href="${ACCOUNT_HREF}" aria-label="Your account" title="Account">${PERSON_SVG}</a>`
       );
