@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 15: Feelings &amp; emotions 2</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Feelings &amp; emotions 2</h1>
+  <p class="topic-meta"><strong>26 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-14a.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Feelings &amp; emotions 1</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-15.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Hobbies &amp; free time</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "Feelings_LI1",
+  sentences: [
+  { num: 533, display: 1, preview: "คิดมาก", thai: "ช่วงนี้คิดมากเกินไปหน่อยครับ", english: "Lately I've been overthinking too much.", gloss: [["ช่วงนี้", "lately"], ["คิดมากเกินไปหน่อย", "overthinking too much"], ["ครับ", "polite (m)"]], cultural: "" },
+  { num: 534, display: 2, preview: "เหนื่อยใจ", thai: "รู้สึกเหนื่อยใจมากกว่าเหนื่อยกายครับ", english: "I feel more emotionally drained than physically tired.", gloss: [["รู้สึกเหนื่อยใจ", "feel emotionally drained"], ["มากกว่าเหนื่อยกาย", "more than physically tired"], ["ครับ", "polite (m)"]], cultural: "Thai builds many feeling words with ใจ (heart/mind): เหนื่อยใจ weary at heart, น้อยใจ slighted, โล่งใจ relieved, สบายใจ at ease, ซึ้งใจ touched — the ใจ-word often names a feeling English needs a whole phrase for." },
+  { num: 535, display: 3, preview: "น้อยใจ", thai: "น้อยใจที่เพื่อนไม่ชวนไปด้วยค่ะ", english: "I feel hurt that my friends didn't invite me along.", gloss: [["น้อยใจ", "feel hurt / slighted"], ["ที่เพื่อนไม่ชวนไปด้วย", "that friends didn't invite me"], ["ค่ะ", "polite (f)"]], cultural: "" },
+  { num: 536, display: 4, preview: "เสียดาย", thai: "เสียดายมากที่พลาดโอกาสดีๆแบบนั้น", english: "Such a shame I missed such a good opportunity.", gloss: [["เสียดายมาก", "such a shame"], ["ที่พลาดโอกาสดีๆแบบนั้น", "to miss such a good chance"]], cultural: "" },
+  { num: 537, display: 5, preview: "ความรู้สึก", thai: "เข้าใจความรู้สึกนะ | เคยเจอแบบนี้เหมือนกัน", english: "I understand how you feel — I've been through this too.", gloss: [["เข้าใจความรู้สึกนะ", "I understand how you feel"], ["เคยเจอแบบนี้เหมือนกัน", "I've been through this too"]], cultural: "" },
+  { num: 538, display: 6, preview: "เล่าให้ฟัง", thai: "ไม่ต้องเก็บไว้คนเดียว | เล่าให้ฟังสิ", english: "You don't have to keep it to yourself — go on, tell me.", gloss: [["ไม่ต้องเก็บไว้คนเดียว", "don't keep it to yourself"], ["เล่าให้ฟังสิ", "go on, tell me (สิ = nudge)"]], cultural: "สิ softens an imperative into a warm nudge — \"go on, tell me\" — rather than a blunt command." },
+  { num: 539, display: 7, preview: "พลอยเศร้า", thai: "เห็นเขาเสียใจแล้วพลอยเศร้าไปด้วยครับ", english: "Seeing them upset made me feel down too.", gloss: [["เห็นเขาเสียใจ", "seeing them upset"], ["แล้วพลอยเศร้าไปด้วย", "made me feel down too"], ["ครับ", "polite (m)"]], cultural: "" },
+  { num: 540, display: 8, preview: "ผิดหวัง", thai: "ผิดหวังนิดหน่อย | แต่ก็เข้าใจเหตุผลนะ", english: "A bit disappointed, but I understand the reason.", gloss: [["ผิดหวังนิดหน่อย", "a bit disappointed"], ["แต่ก็เข้าใจเหตุผลนะ", "but I understand the reason"]], cultural: "" },
+  { num: 541, display: 9, preview: "โล่งใจ", thai: "โล่งใจที่ทุกอย่างผ่านไปด้วยดี", english: "Relieved that everything turned out fine.", gloss: [["โล่งใจ", "relieved"], ["ที่ทุกอย่างผ่านไปด้วยดี", "everything turned out fine"]], cultural: "" },
+  { num: 542, display: 10, preview: "หงุดหงิด", thai: "หงุดหงิดง่ายเวลานอนไม่พอ", english: "I get irritable easily when I don't sleep enough.", gloss: [["หงุดหงิดง่าย", "get irritable easily"], ["เวลานอนไม่พอ", "when I don't sleep enough"]], cultural: "" },
+  { num: 543, display: 11, preview: "น้ำตาไหล", thai: "ดีใจจนน้ำตาไหล | ตอนเจอกันอีกครั้ง", english: "I was so happy I teared up when we met again.", gloss: [["ดีใจจนน้ำตาไหล", "so happy I teared up"], ["ตอนเจอกันอีกครั้ง", "when we met again"]], cultural: "" },
+  { num: 544, display: 12, preview: "ความโกรธ", thai: "อย่าเก็บความโกรธไว้น่า | เดี๋ยวไม่สบายใจเปล่าๆ", english: "Come on, don't hold onto your anger — you'll just feel bad for nothing.", gloss: [["อย่าเก็บความโกรธไว้น่า", "come on, don't bottle up the anger (น่า = coaxing)"], ["เดี๋ยวไม่สบายใจเปล่าๆ", "you'll just feel bad for nothing"]], cultural: "The particle น่า (coaxing \"oh, come on now\") is separate from the prefix น่า- in น่ารัก/น่าเบื่อ; here it gently pleads." },
+  { num: 545, display: 13, preview: "เห็นใจ", thai: "เห็นใจเขานะ | ที่ต้องเจอเรื่องหนักขนาดนี้", english: "I really feel for them, having to face something this hard.", gloss: [["เห็นใจเขานะ", "I really feel for them"], ["ที่ต้องเจอเรื่องหนักขนาดนี้", "having to face something this hard"]], cultural: "" },
+  { num: 546, display: 14, preview: "มองต่างมุม", thai: "เข้าใจที่คิดนะ | แต่มองต่างมุมกันนิดหน่อย", english: "I see your thinking, but we view it a little differently.", gloss: [["เข้าใจที่คิดนะ", "I see your thinking"], ["แต่มองต่างมุมกันนิดหน่อย", "but we view it a little differently"]], cultural: "" },
+  { num: 547, display: 15, preview: "ท่าทาง", thai: "ดูท่าทางไม่ค่อยดี | มีอะไรให้ช่วยไหมครับ", english: "You don't look so good — is there anything I can do?", gloss: [["ดูท่าทางไม่ค่อยดี", "you don't look so good"], ["มีอะไรให้ช่วยไหมครับ", "is there anything I can do? + polite (m)"]], cultural: "" },
+  { num: 548, display: 16, preview: "ซึ้งใจ", thai: "ซึ้งใจมากที่ทุกคนมาให้กำลังใจกัน", english: "I'm so touched that everyone came to cheer me on.", gloss: [["ซึ้งใจมาก", "so touched"], ["ที่ทุกคนมาให้กำลังใจกัน", "everyone came to cheer me on"]], cultural: "" },
+  { num: 549, display: 17, preview: "ประทับใจ", thai: "ประทับใจที่เขาใจดีและใจกว้างมากค่ะ", english: "I'm impressed by how kind and generous he is.", gloss: [["ประทับใจ", "impressed"], ["ที่เขาใจดีและใจกว้างมาก", "how kind and generous he is"], ["ค่ะ", "polite (f)"]], cultural: "" },
+  { num: 550, display: 18, preview: "เสียสละ", thai: "ชอบคนที่เสียสละ | ไม่เห็นแก่ตัวครับ", english: "I like people who are selfless, not selfish.", gloss: [["ชอบคนที่เสียสละ", "like people who are selfless"], ["ไม่เห็นแก่ตัว", "not selfish"], ["ครับ", "polite (m)"]], cultural: "" },
+  { num: 551, display: 19, preview: "นับถือ", thai: "นับถือเขามากเลยครับ | ที่อดทนมาได้ขนาดนี้", english: "I really respect him for enduring this much.", gloss: [["นับถือเขามากเลย", "really respect him"], ["ครับ", "polite (m)"], ["ที่อดทนมาได้ขนาดนี้", "for enduring this much"]], cultural: "" },
+  { num: 552, display: 20, preview: "ทึ่ง", thai: "เห็นวิวสวยๆแล้วทึ่งไปเลยค่ะ", english: "Seeing the beautiful view left me in awe.", gloss: [["เห็นวิวสวยๆ", "seeing the beautiful view"], ["แล้วทึ่งไปเลย", "left me in awe"], ["ค่ะ", "polite (f)"]], cultural: "" },
+  { num: 553, display: 21, preview: "สงสาร", thai: "สงสารหมาตัวนั้นจังเลย | ไม่มีใครดูแลมันเลย", english: "I feel so sorry for that dog — no one takes care of it.", gloss: [["สงสารหมาตัวนั้นจังเลย", "feel so sorry for that dog"], ["ไม่มีใครดูแลมันเลย", "no one takes care of it"]], cultural: "สงสาร (compassion/pity) is reached for readily in Thai — often toward animals or the less fortunate — and ties to the Buddhist value of karuṇā (เมตตากรุณา)." },
+  { num: 554, display: 22, preview: "เป็นห่วง", thai: "เห็นเขาเงียบๆไปทั้งวันแล้วเป็นห่วง", english: "Seeing him so quiet all day, I'm worried about him.", gloss: [["เห็นเขาเงียบๆไปทั้งวัน", "seeing him so quiet all day"], ["แล้วเป็นห่วง", "I'm worried about him (เป็นห่วง = worry for someone)"]], cultural: "" },
+  { num: 555, display: 23, preview: "ระบาย", thai: "ถ้าอยากระบายก็บอกได้นะ | ฟังอยู่", english: "If you want to vent, just say — I'm listening.", gloss: [["ถ้าอยากระบายก็บอกได้นะ", "if you want to vent, just say"], ["ฟังอยู่", "I'm listening"]], cultural: "" },
+  { num: 556, display: 24, preview: "ยอมรับ", thai: "ความจริงบางอย่างก็ยากที่จะยอมรับนะ", english: "Some truths are hard to accept.", gloss: [["ความจริงบางอย่าง", "some truths"], ["ก็ยากที่จะยอมรับนะ", "are hard to accept"]], cultural: "" },
+  { num: 557, display: 25, preview: "คาดหวัง", thai: "อย่าคาดหวังมากเกินไป | ค่อยๆดูกันไป", english: "Don't expect too much — just see how it goes.", gloss: [["อย่าคาดหวังมากเกินไป", "don't expect too much"], ["ค่อยๆดูกันไป", "just see how it goes"]], cultural: "" },
+  { num: 558, display: 26, preview: "พอใจ", thai: "แค่นี้แหละ | พอใจแล้ว ไม่ต้องการอะไรเพิ่ม", english: "This is plenty — I'm content, don't need anything more.", gloss: [["แค่นี้แหละ", "this is plenty (แหละ = that's it)"], ["พอใจแล้ว", "I'm content"], ["ไม่ต้องการอะไรเพิ่ม", "don't need anything more"]], cultural: "แหละ marks settled finality — \"this and no more, that's it.\"" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

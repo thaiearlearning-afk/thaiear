@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 15: Feelings &amp; emotions 1</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Feelings &amp; emotions 1</h1>
+  <p class="topic-meta"><strong>23 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-13b.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Body &amp; health 2</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-14b.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Feelings &amp; emotions 2</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "Feelings_BEG",
+  sentences: [
+  { num: 510, display: 1, preview: "ดีใจ", thai: "วันนี้ดีใจมากเลยค่ะ | สอบผ่านแล้ว", english: "I'm so happy today — I passed the exam.", gloss: [["วันนี้", "today"], ["ดีใจมากเลย", "so happy"], ["ค่ะ", "polite (f)"], ["สอบผ่านแล้ว", "passed the exam"]], cultural: "" },
+  { num: 511, display: 2, preview: "เขิน", thai: "ขอโทษนะคะ | รู้สึกเขินที่พูดแบบนั้นไป", english: "I'm sorry — I feel quite silly for saying that now.", gloss: [["ขอโทษนะคะ", "sorry + polite (f)"], ["รู้สึกเขิน", "feel embarrassed / silly"], ["ที่พูดแบบนั้นไป", "for having said that"]], cultural: "" },
+  { num: 512, display: 3, preview: "โกรธ", thai: "พอเห็นข่าวนั้นก็โกรธขึ้นมาทันทีครับ", english: "When I saw that news I got angry right away.", gloss: [["พอเห็นข่าวนั้น", "when I saw that news"], ["ก็โกรธขึ้นมาทันที", "got angry right away"], ["ครับ", "polite (m)"]], cultural: "" },
+  { num: 513, display: 4, preview: "กลัว", thai: "กลัวความมืดมาตั้งแต่เด็กค่ะ", english: "I've been afraid of the dark since I was a kid.", gloss: [["กลัวความมืด", "afraid of the dark"], ["มาตั้งแต่เด็ก", "since I was a kid"], ["ค่ะ", "polite (f)"]], cultural: "" },
+  { num: 514, display: 5, preview: "เหนื่อย", thai: "ว่ายน้ำทั้งวันเลยเหนื่อยมากครับ", english: "I swam all day, so I'm really tired.", gloss: [["ว่ายน้ำทั้งวัน", "swam all day"], ["เลยเหนื่อยมาก", "so really tired"], ["ครับ", "polite (m)"]], cultural: "" },
+  { num: 515, display: 6, preview: "กังวล", thai: "กำลังกังวลเรื่องทริปที่จะไปอยู่ค่ะ", english: "I'm worried about my upcoming trip.", gloss: [["กำลังกังวล", "worried"], ["เรื่องทริปที่จะไป", "about the upcoming trip"], ["ค่ะ", "polite (f)"]], cultural: "" },
+  { num: 516, display: 7, preview: "ตื่นเต้น", thai: "ตื่นเต้นจังค่ะ | พรุ่งนี้จะได้ไปเที่ยว", english: "I'm so excited — tomorrow I get to go out.", gloss: [["ตื่นเต้นจัง", "so excited"], ["ค่ะ", "polite (f)"], ["พรุ่งนี้จะได้ไปเที่ยว", "tomorrow I get to go out"]], cultural: "" },
+  { num: 517, display: 8, preview: "เบื่อ", thai: "เบื่อจังครับ | ไม่รู้จะทำอะไรดี", english: "So bored — I don't know what to do.", gloss: [["เบื่อจัง", "so bored"], ["ครับ", "polite (m)"], ["ไม่รู้จะทำอะไรดี", "don't know what to do"]], cultural: "" },
+  { num: 518, display: 9, preview: "ตกใจ", thai: "ตกใจหมดเลย | เสียงดังมากครับ", english: "It startled me — it was so loud.", gloss: [["ตกใจหมดเลย", "really startled"], ["เสียงดังมาก", "so loud"], ["ครับ", "polite (m)"]], cultural: "" },
+  { num: 519, display: 10, preview: "คิดถึง", thai: "คิดถึงบ้านจังเลยค่ะ", english: "I miss home so much.", gloss: [["คิดถึงบ้าน", "miss home"], ["จังเลย", "so much"], ["ค่ะ", "polite (f)"]], cultural: "" },
+  { num: 520, display: 11, preview: "เหงา", thai: "อยู่คนเดียวแล้วเหงาจังครับ", english: "Being alone, I feel so lonely.", gloss: [["อยู่คนเดียว", "being alone"], ["แล้วเหงาจัง", "so lonely"], ["ครับ", "polite (m)"]], cultural: "" },
+  { num: 521, display: 12, preview: "อิจฉา", thai: "อิจฉาจังเลยที่ได้ไปเที่ยวต่างประเทศ", english: "So envious you got to travel abroad.", gloss: [["อิจฉาจังเลย", "so envious"], ["ที่ได้ไปเที่ยวต่างประเทศ", "that you got to travel abroad"]], cultural: "" },
+  { num: 522, display: 13, preview: "ร้องไห้", thai: "ทำไมร้องไห้ล่ะ | เกิดอะไรขึ้นเหรอ", english: "Why are you crying? What happened?", gloss: [["ทำไมร้องไห้ล่ะ", "why are you crying?"], ["เกิดอะไรขึ้นเหรอ", "what happened?"]], cultural: "" },
+  { num: 523, display: 14, preview: "รัก", thai: "รักครอบครัวมากที่สุดเลยค่ะ", english: "I love my family most of all.", gloss: [["รักครอบครัว", "love my family"], ["มากที่สุดเลย", "most of all"], ["ค่ะ", "polite (f)"]], cultural: "" },
+  { num: 524, display: 15, preview: "สงบ", thai: "อยู่เงียบๆแบบนี้แล้วรู้สึกสงบดีค่ะ", english: "Being in the quiet like this, I feel at peace.", gloss: [["อยู่เงียบๆแบบนี้", "being in the quiet like this"], ["แล้วรู้สึกสงบดี", "feel at peace"], ["ค่ะ", "polite (f)"]], cultural: "" },
+  { num: 525, display: 16, preview: "มั่นใจ", thai: "มั่นใจว่าทำได้แน่นอนครับ", english: "I'm confident I can do it.", gloss: [["มั่นใจ", "confident"], ["ว่าทำได้แน่นอน", "I can do it for sure"], ["ครับ", "polite (m)"]], cultural: "" },
+  { num: 526, display: 17, preview: "ภูมิใจ", thai: "ภูมิใจในตัวลูกจริงๆค่ะ", english: "I'm truly proud of my child.", gloss: [["ภูมิใจในตัวลูก", "proud of my child"], ["จริงๆ", "truly"], ["ค่ะ", "polite (f)"]], cultural: "" },
+  { num: 527, display: 18, preview: "จริงเหรอ", thai: "จริงเหรอ | ไม่อยากเชื่อเลย", english: "Really? I can't believe it.", gloss: [["จริงเหรอ", "really?"], ["ไม่อยากเชื่อเลย", "I can't believe it"]], cultural: "" },
+  { num: 528, display: 19, preview: "มีส่วนถูก", thai: "ก็มีส่วนถูกนะครับ", english: "You've got a point there.", gloss: [["ก็มีส่วนถูก", "you've got a point"], ["นะครับ", "softening + polite (m)"]], cultural: "" },
+  { num: 529, display: 20, preview: "ไม่แน่ใจ", thai: "ไม่แน่ใจเหมือนกันนะคะ", english: "I'm not sure either.", gloss: [["ไม่แน่ใจเหมือนกัน", "I'm not sure either"], ["นะคะ", "softening + polite (f)"]], cultural: "" },
+  { num: 530, display: 21, preview: "แน่นอน", thai: "แน่นอนค่ะ | เดี๋ยวไปด้วยกัน", english: "Of course — I'll go with you.", gloss: [["แน่นอนค่ะ", "of course + polite (f)"], ["เดี๋ยวไปด้วยกัน", "I'll go with you"]], cultural: "" },
+  { num: 531, display: 22, preview: "เหมือนกัน", thai: "ก็ใช่นะ | คิดเหมือนกันค่ะ", english: "Yeah, true — I think the same.", gloss: [["ก็ใช่นะ", "yeah, true"], ["คิดเหมือนกัน", "I think the same"], ["ค่ะ", "polite (f)"]], cultural: "" },
+  { num: 532, display: 23, preview: "ความสุข", thai: "ขอให้มีความสุขมากๆนะคะ", english: "May you be really happy.", gloss: [["ขอให้", "may you (wish)"], ["มีความสุขมากๆ", "be really happy"], ["นะคะ", "softening + polite (f)"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

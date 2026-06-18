@@ -68,7 +68,9 @@
     { id: 13, name: "Body & health", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Body & health 1", sentences: 28, page: "topic-13a.html" },
         { name: "Body & health 2", sentences: 25, page: "topic-13b.html" } ] },
-    { id: 14, name: "Feelings & emotions", levels: ["beg","li1"], sentences: 30, access: "premium" },
+    { id: 14, name: "Feelings & emotions", levels: ["beg","li1"], access: "premium", parts: [
+        { name: "Feelings & emotions 1", sentences: 23, page: "topic-14a.html" },
+        { name: "Feelings & emotions 2", sentences: 26, page: "topic-14b.html" } ] },
     { id: 15, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 30, access: "premium" },
     { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 25, access: "member" },
     { id: 38, name: "Idioms & tone twisters", levels: ["beg","li1"], sentences: 25, access: "premium" },
