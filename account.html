@@ -44,6 +44,8 @@
   .login-input { width: 100%; text-align: left; font-family: var(--font-ui); font-size: 14px; padding: 10px 12px; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 0.7rem; }
   .login-input:focus { outline: none; border-color: var(--accent); }
   .login-terms { font-size: 12px; margin-top: 1rem; }
+  @keyframes tick-pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  .tick-anim { display: inline-block; color: var(--accent); font-weight: 700; animation: tick-pop 0.45s cubic-bezier(0.2,0.8,0.3,1.3) both; }
   /* ── modal ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(20,16,48,0.45); display: flex; align-items: center; justify-content: center; padding: 1.25rem; z-index: 1000; }
   .modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 400px; width: 100%; padding: 1.5rem 1.5rem 1.35rem; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
@@ -259,10 +261,12 @@ function setEmailConsent(optIn, btnId) {
   a.setMarketingConsent(optIn).then(function () {
     if (st) {
       st.style.color = 'var(--accent)';
-      st.textContent = optIn ? '✓ Subscribed — check your inbox for a welcome email.' : 'You’ve been unsubscribed.';
+      if (optIn) st.innerHTML = '<span class="tick-anim">✓</span> Subscribed — check your inbox for a welcome email.';
+      else st.textContent = 'You’ve been unsubscribed.';
     }
-    // brief confirmation, then re-render so the button flips to the opposite action
-    setTimeout(renderAccount, 1300);
+    // brief confirmation, then swap just the consent block to the opposite action
+    // (updateConsentArea, not renderAccount — so the membership box doesn't reload).
+    setTimeout(updateConsentArea, 1300);
   }).catch(function (e) {
     if (st) { st.style.color = '#B00020'; st.textContent = 'Could not save: ' + ((e && e.message) || e); }
     if (btn) { btn.disabled = false; btn.textContent = optIn ? 'Subscribe to email updates' : 'Unsubscribe'; }
@@ -288,12 +292,39 @@ function sendLoginLink() {
     if (btn) { btn.disabled = false; btn.textContent = 'Email me a sign-in link'; }
   });
 }
+function consentInner(consent) {
+  return (consent
+    ? '<p style="margin-bottom:0.7rem;font-size:14px;color:var(--text-secondary)"><span style="color:var(--accent);font-weight:700">✓</span> You’re subscribed to email updates — we’ll let you know when new topics go live.</p>' +
+      '<button class="btn btn-ghost" id="unsub-btn" onclick="unsubscribeEmail()" style="font-size:13px">Unsubscribe</button>'
+    : '<p style="margin-bottom:0.7rem;font-size:14px;color:var(--text-secondary)">Get an email when new topics go live. No spam, unsubscribe anytime.</p>' +
+      '<button class="btn btn-primary" id="sub-btn" onclick="subscribeEmail()">Subscribe to email updates</button>'
+  ) + '<p id="consent-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>';
+}
+var _acctRenderedUid = false, _acctRenderedConsent = null;
+function updateConsentArea() {
+  var area = document.getElementById('consent-area');
+  var a = window.ThaiEarAuth;
+  if (!area || !a) return;
+  _acctRenderedConsent = !!(a.getMarketingConsent && a.getMarketingConsent());
+  area.innerHTML = consentInner(_acctRenderedConsent);
+}
 function renderAccount() {
   var el = document.getElementById('account-body');
   if (!el) return;
   var a = window.ThaiEarAuth;
   if (!a || !a.isReady) { el.innerHTML = '<p class="acct-muted">Loading…</p>'; return; }
   var user = a.getUser();
+  var uid = user ? user.id : null;
+  // Same signed-in user already rendered → don't rebuild the whole body (that reloads
+  // the membership box and makes it flicker); just keep the consent block in sync.
+  // Auth fires several notifies (token refresh, subscription + profile loads) — this
+  // collapses them so only a genuine login/logout or consent change touches the DOM.
+  if (uid === _acctRenderedUid) {
+    if (!!(a.getMarketingConsent && a.getMarketingConsent()) !== _acctRenderedConsent) updateConsentArea();
+    return;
+  }
+  _acctRenderedUid = uid;
+  _acctRenderedConsent = !!(a.getMarketingConsent && a.getMarketingConsent());
   if (!user) {
     el.innerHTML =
       '<div class="login-box">' +
@@ -309,17 +340,9 @@ function renderAccount() {
       '</div>';
     return;
   }
-  var consent = !!(a.getMarketingConsent && a.getMarketingConsent());
   var consentHtml =
-    '<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
-      (consent
-        ? '<p style="margin-bottom:0.7rem;font-size:14px;color:var(--text-secondary)">' +
-            '<span style="color:var(--accent);font-weight:700">✓</span> You’re subscribed to email updates — we’ll let you know when new topics go live.</p>' +
-          '<button class="btn btn-ghost" id="unsub-btn" onclick="unsubscribeEmail()" style="font-size:13px">Unsubscribe</button>'
-        : '<p style="margin-bottom:0.7rem;font-size:14px;color:var(--text-secondary)">Get an email when new topics go live. No spam, unsubscribe anytime.</p>' +
-          '<button class="btn btn-primary" id="sub-btn" onclick="subscribeEmail()">Subscribe to email updates</button>'
-      ) +
-      '<p id="consent-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
+    '<div id="consent-area" style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
+      consentInner(_acctRenderedConsent) +
     '</div>';
   // Hidden maintenance control — only when the page is opened as /account?reset=1.
   var doReset = false;
