@@ -43,7 +43,8 @@
      (Blog is parked here, commented out, ready to switch on later.) */
   const LINKS = [
     { label: 'Home',  href: 'index.html' },
-    { label: 'About', href: 'about.html' },
+    // 'About' now lives in the Menu dropdown (see MENU_ITEMS) to keep the
+    // top bar uncramped on mobile.
     // { label: 'Blog',  href: 'blog.html' },
   ];
 
@@ -137,8 +138,12 @@
   // its page when signed in; when signed out it points at the login page (join.html, which
   // bounces back to the page via ?next after sign-in). So a non-member who clicks Progress
   // or My sentences lands on the login page, exactly as intended.
+  // `public: true` items (e.g. About) always link straight to their page, even
+  // when logged out. The rest are member features: logged-out clicks route to the
+  // login page (join.html) which bounces back via ?next after sign-in.
   const MENU_ITEMS = [
-    { label: 'Progress', page: 'progress.html' },
+    { label: 'About', page: 'about.html', public: true },
+    { label: 'My progress', page: 'progress.html' },
     { label: 'My sentences', page: 'sentences.html' },
   ];
   function menuHtml() {
@@ -146,7 +151,7 @@
     const loggedIn = !!getUser();
     const here = currentPage();
     const items = MENU_ITEMS.map(it => {
-      const href = loggedIn ? it.page : ('join.html?feature=1&next=' + encodeURIComponent(it.page));
+      const href = (it.public || loggedIn) ? it.page : ('join.html?feature=1&next=' + encodeURIComponent(it.page));
       const active = it.page.toLowerCase() === here ? ' class="active"' : '';
       return `<a href="${href}"${active}>${it.label}</a>`;
     }).join('');
