@@ -6,7 +6,7 @@
    MP3s live in a PRIVATE R2 bucket and only this endpoint can hand
    them out, after checking the caller.
 
-   Flow (presigned-URL design — see MEMBERS_PAYWALL_PLAN.md §4):
+   Flow (presigned-URL design — see MEMBERSHIP_PAYWALL.md §4):
      1. player.js fetches this with the Supabase access token in an
         Authorization: Bearer <jwt> header (a header an <audio> tag
         can't send, which is why we do the two-step dance).
