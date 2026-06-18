@@ -126,6 +126,14 @@
     .speed-toggle { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-light); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; font-size: 14px; line-height: 1; }
     .speed-toggle:hover { background: var(--accent); }
     .speed-toggle.active { background: var(--accent); }
+    .sent-flag-btn { width: 26px; height: 26px; border-radius: 50%; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; transition: background 0.15s, transform 0.15s; }
+    .sent-flag-btn:hover { background: var(--accent-light); }
+    .sent-flag-btn svg { width: 15px; height: 15px; fill: none; stroke: var(--purple-mid); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; transition: fill 0.15s, stroke 0.15s, opacity 0.15s; }
+    .sent-flag-btn:hover svg { opacity: 1; }
+    .sent-flag-btn.flagged svg { fill: var(--accent); stroke: var(--accent); opacity: 1; }
+    .sent-flag-btn.pending { opacity: 0.5; pointer-events: none; }
+    .sent-flag-btn.pop { animation: sent-flag-pop 0.4s cubic-bezier(0.2,0.8,0.3,1.3); }
+    @keyframes sent-flag-pop { 0% { transform: scale(1); } 45% { transform: scale(1.4); } 100% { transform: scale(1); } }
     .sent-preview { font-family: var(--font-thai); font-size: 16px; color: var(--text-primary); flex: 1; line-height: 1.4; }
     .sent-preview .ell { color: var(--text-tertiary); }
     .prog-wrap { display: flex; align-items: center; gap: 2.5px; flex-shrink: 0; padding: 2px 0; }
@@ -469,11 +477,25 @@
     }).join('');
   }
 
+  // Feather-style flag. Faint purple outline (unflagged) → solid purple (flagged), via CSS.
+  var FLAG_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>' +
+    '<line x1="4" y1="22" x2="4" y2="15"/></svg>';
+
   function cardHtml(s) {
     var st = states[s.num];
     var playing = sentPlaying === s.num;
     var displayThai = cleanThai(s.thai);
     var d = dispNum(s);
+    // Flag control shows only for signed-in users (the flag is saved to their account).
+    var A = window.ThaiEarAuth;
+    var loggedIn = !!(A && A.getUser && A.getUser());
+    var flagged = loggedIn && A.isFlagged && A.isFlagged(TOPIC_KEY, s.num);
+    var flagBtn = loggedIn
+      ? '<button class="sent-flag-btn' + (flagged ? ' flagged' : '') + '" onclick="flagSent(event,' + s.num + ')" ' +
+          'aria-label="' + (flagged ? 'Remove flag from sentence ' : 'Flag sentence ') + d + '" ' +
+          'title="' + (flagged ? 'Flagged — click to remove' : 'Flag this sentence') + '">' + FLAG_SVG + '</button>'
+      : '';
     return '<div class="sentence-card" id="sc-' + s.num + '">' +
       '<div class="sentence-header" onclick="cycle(' + s.num + ')" role="button" tabindex="0" aria-label="Sentence ' + d + '">' +
         '<span class="sent-num">' + d + '</span>' +
@@ -483,6 +505,7 @@
             : '<polygon points="4,2 13,8 4,14"/>') + '</svg>' +
         '</button>' +
         '<button class="speed-toggle' + (slowMode ? ' active' : '') + '" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>' +
+        flagBtn +
         '<span class="sent-preview">' + s.preview + '<span class="ell">…</span></span>' +
         '<div class="prog-wrap" aria-hidden="true">' + seg(st >= 1) + seg(st >= 2) + seg(st >= 3) + '</div>' +
       '</div>' +
@@ -596,6 +619,50 @@
   }
   window.addEventListener('thaiear:auth', initProgress);
 
+  /* ---- sentence flagging ----
+     Toggle this sentence's flag (saved to the user's account). Debounced + a pop so a
+     double-tap can't land — same discipline as the progress buttons. Updates just the
+     button (no full re-render, to stay snappy). */
+  var flagLock = false;
+  function flagSent(e, num) {
+    e.stopPropagation(); e.preventDefault();
+    var a = window.ThaiEarAuth;
+    if (!a || !(a.getUser && a.getUser()) || !a.toggleFlag) return;
+    if (flagLock) return;
+    flagLock = true;
+    var btn = document.querySelector('#sc-' + num + ' .sent-flag-btn');
+    if (btn) btn.classList.add('pending');
+    var s = null;
+    for (var i = 0; i < sentences.length; i++) { if (sentences[i].num === num) { s = sentences[i]; break; } }
+    var nugget = s
+      ? { num: s.num, preview: s.preview, thai: s.thai, english: s.english, gloss: s.gloss, cultural: s.cultural || '', audioPrefix: PREFIX }
+      : { num: num, audioPrefix: PREFIX };
+    a.toggleFlag(TOPIC_KEY, nugget).then(function (isOn) {
+      if (btn) {
+        btn.classList.remove('pending');
+        btn.classList.toggle('flagged', isOn);
+        btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
+        btn.setAttribute('title', isOn ? 'Flagged — click to remove' : 'Flag this sentence');
+      }
+    }).catch(function (err) {
+      console.warn('player.js: flag save failed', err);
+      if (btn) btn.classList.remove('pending');
+    }).then(function () {
+      setTimeout(function () { flagLock = false; }, 300);
+    });
+  }
+
+  // Load the user's flags once, then re-render the list so flag state shows; re-run on auth.
+  function initFlags() {
+    var a = window.ThaiEarAuth;
+    if (a && a.isReady && a.getUser && a.getUser() && a.loadFlags) {
+      a.loadFlags().then(render).catch(function () {});
+    } else {
+      render(); // logged out (or auth gone) → re-render to hide the flag controls
+    }
+  }
+  window.addEventListener('thaiear:auth', initFlags);
+
   /* ---- mount ---- */
   function mount() {
     if (!document.getElementById('player-styles')) {
@@ -612,12 +679,13 @@
     initSentAudio();
     initScrubber();
     initProgress();
+    initFlags();
   }
 
   // inline onclick in the injected markup call these by name
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow,
-    progAdd: progAdd, progRemove: progRemove });
+    progAdd: progAdd, progRemove: progRemove, flagSent: flagSent });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
