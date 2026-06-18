@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 12: Getting around &amp; transport 2</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Getting around &amp; transport 2</h1>
+  <p class="topic-meta"><strong>24 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-12a.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Getting around &amp; transport 1</span>
+      </span>
+    </a>
+    <span class="topic-nav-btn topic-nav-right disabled" aria-disabled="true">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Coming soon</span>
+        </span>
+        <span>→</span>
+      </span>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "Transport_LI1",
+  sentences: [
+  { num: 395, display: 1, preview: "รถติด", thai: "ช่วงเย็นรถติดมาก | กว่าจะถึงบ้านใช้เวลาเป็นชั่วโมง", english: "In the evening the traffic's heavy; it takes an hour to get home.", gloss: [["ช่วงเย็น", "in the evening"], ["รถติดมาก", "traffic is heavy"], ["กว่าจะถึงบ้าน", "by the time you get home"], ["ใช้เวลาเป็นชั่วโมง", "it takes an hour"]], cultural: "" },
+  { num: 396, display: 2, preview: "ข้างๆ", thai: "ท่าเรืออยู่ข้างๆร้านสะดวกซื้อตรงหัวมุมครับ", english: "The pier is next to the convenience store on the corner.", gloss: [["ท่าเรือ", "pier / boat landing"], ["อยู่ข้างๆ", "is next to"], ["ร้านสะดวกซื้อ", "convenience store"], ["ตรงหัวมุม", "on the corner"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 397, display: 3, preview: "ตรงข้าม", thai: "สถานีรถไฟฟ้าอยู่ตรงข้ามห้างใช่ไหมคะ", english: "The BTS station is opposite the mall, right?", gloss: [["สถานีรถไฟฟ้า", "BTS station"], ["อยู่ตรงข้าม", "is opposite"], ["ห้าง", "mall"], ["ใช่ไหมคะ", "right? + polite (female)"]], cultural: "" },
+  { num: 398, display: 4, preview: "ระหว่าง", thai: "ร้านอยู่ระหว่างธนาคารกับไปรษณีย์ | เดินไม่ไกลครับ", english: "The shop is between the bank and the post office — not far to walk.", gloss: [["ร้าน", "shop"], ["อยู่ระหว่าง", "is between"], ["ธนาคาร", "bank"], ["กับ", "and"], ["ไปรษณีย์", "post office"], ["เดินไม่ไกล", "not far to walk"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 399, display: 5, preview: "ถัดจาก", thai: "ลงป้ายถัดจากตลาด | เดินต่ออีกนิดเดียวค่ะ", english: "Get off at the stop after the market, then it's a short walk.", gloss: [["ลงป้าย", "get off at the stop"], ["ถัดจาก", "next from / after"], ["ตลาด", "market"], ["เดินต่อ", "walk on"], ["อีกนิดเดียว", "just a little"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 400, display: 6, preview: "ตรงเวลา", thai: "รถไฟฟ้าใต้ดินเย็นสบาย | แถมตรงเวลาดีเนอะ", english: "The MRT is nice and cool, and punctual too, isn't it.", gloss: [["รถไฟฟ้าใต้ดิน", "MRT / underground"], ["เย็นสบาย", "nice and cool"], ["แถม", "plus"], ["ตรงเวลา", "on time / punctual"], ["ดี", "good"], ["เนอะ", "...isn't it (seeking agreement)"]], cultural: "" },
+  { num: 401, display: 7, preview: "ชั่วโมงเร่งด่วน", thai: "ชั่วโมงเร่งด่วนคนแน่นจนแทบหายใจไม่ออก", english: "At rush hour it's so packed you can barely breathe.", gloss: [["ชั่วโมงเร่งด่วน", "rush hour"], ["คนแน่น", "packed with people"], ["จนแทบ", "so much that almost"], ["หายใจไม่ออก", "can't breathe"]], cultural: "" },
+  { num: 402, display: 8, preview: "ผิดสาย", thai: "เมื่อกี้ขึ้นรถเมล์ผิดสาย | เลยต้องนั่งย้อนกลับมาค่ะ", english: "Just now I got on the wrong bus line, so I had to ride back.", gloss: [["เมื่อกี้", "just now"], ["ขึ้นรถเมล์", "got on the bus"], ["ผิดสาย", "wrong line"], ["เลยต้อง", "so had to"], ["นั่งย้อนกลับมา", "ride back"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 403, display: 9, preview: "เที่ยวสุดท้าย", thai: "ถ้ามาช้ากว่านี้ | เดี๋ยวตกรถไฟเที่ยวสุดท้ายนะครับ", english: "If you're any later, you'll miss the last train.", gloss: [["ถ้ามาช้ากว่านี้", "if you're any later"], ["เดี๋ยว", "soon / will"], ["ตกรถไฟ", "miss the train"], ["เที่ยวสุดท้าย", "the last run / service"], ["นะครับ", "softening + polite (male)"]], cultural: "" },
+  { num: 404, display: 10, preview: "สี่แยก", thai: "พอถึงสี่แยก | ก็เลี้ยวซ้ายเข้าซอยได้เลยค่ะ", english: "Once you reach the intersection, turn left into the soi.", gloss: [["พอถึง", "once you reach"], ["สี่แยก", "intersection"], ["ก็เลี้ยวซ้าย", "then turn left"], ["เข้าซอย", "into the soi"], ["ได้เลย", "go ahead"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 405, display: 11, preview: "ค่าโดยสาร", thai: "แท็กซี่ไม่ยอมกดมิเตอร์ | คิดค่าโดยสารแพงเกินไปครับ", english: "The taxi wouldn't use the meter and charged an over-the-top fare.", gloss: [["แท็กซี่", "taxi"], ["ไม่ยอม", "wouldn't"], ["กดมิเตอร์", "use the meter"], ["คิดค่าโดยสาร", "charged a fare"], ["แพงเกินไป", "too expensive"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 406, display: 12, preview: "ขับรถ", thai: "นั่งรถไฟเร็วกว่าขับรถเยอะ | เพราะไม่ต้องเจอรถติด", english: "The train's much faster than driving, because you don't hit traffic.", gloss: [["นั่งรถไฟ", "take the train"], ["เร็วกว่า", "faster than"], ["ขับรถ", "driving"], ["เยอะ", "a lot"], ["เพราะ", "because"], ["ไม่ต้องเจอรถติด", "don't hit traffic"]], cultural: "" },
+  { num: 407, display: 13, preview: "แกร็บ", thai: "เรียกแกร็บมารับหน้าปากซอยดีกว่าค่ะ", english: "Better to call a Grab to pick us up at the mouth of the soi.", gloss: [["เรียกแกร็บ", "call a Grab"], ["มารับ", "to pick up"], ["หน้าปากซอย", "at the mouth of the soi"], ["ดีกว่า", "better"], ["ค่ะ", "polite (female)"]], cultural: "แกร็บ (Grab) is Southeast Asia's main ride-hailing app — like Uber — used here as a verb: เรียกแกร็บ = \"call a Grab\"." },
+  { num: 408, display: 14, preview: "อ้อม", thai: "ตรงนี้รถผ่านไม่ได้ | คนขับเลยขับอ้อมไปอีกทางครับ", english: "The road's closed here, so the driver drove around another way.", gloss: [["ตรงนี้", "here"], ["รถผ่านไม่ได้", "cars can't pass"], ["คนขับ", "driver"], ["เลยขับอ้อม", "so drove around"], ["ไปอีกทาง", "another way"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 473, display: 15, preview: "วน", thai: "หาที่จอดไม่เจอเลย | วนมาสองรอบแล้ว", english: "Can't find parking — I've gone round twice already.", gloss: [["หาที่จอด", "look for parking"], ["ไม่เจอเลย", "can't find any"], ["วน", "drive around / circle"], ["มาสองรอบแล้ว", "twice already (รอบ = lap/round)"]], cultural: "" },
+  { num: 409, display: 16, preview: "ทางด่วน", thai: "ถ้าไปทางด่วนจะถึงเร็วขึ้น | แต่ต้องจ่ายค่าผ่านทาง", english: "The expressway's faster, but you have to pay the toll.", gloss: [["ถ้าไปทางด่วน", "if you take the expressway"], ["จะถึงเร็วขึ้น", "you'll arrive sooner"], ["แต่", "but"], ["ต้องจ่าย", "have to pay"], ["ค่าผ่านทาง", "toll"]], cultural: "ทางด่วน are Bangkok's elevated toll expressways; ค่าผ่านทาง is the toll paid at the booth." },
+  { num: 410, display: 17, preview: "ลิฟต์", thai: "จอดรถใต้ตึกแล้ว | เดินขึ้นลิฟต์มานะคะ", english: "Park under the building, then take the lift up.", gloss: [["จอดรถ", "park"], ["ใต้ตึก", "under the building"], ["แล้ว", "then"], ["เดินขึ้น", "walk up"], ["ลิฟต์", "lift / elevator"], ["มานะคะ", "come + softening (female)"]], cultural: "" },
+  { num: 411, display: 18, preview: "ทางม้าลาย", thai: "ข้ามถนนตรงทางม้าลายปลอดภัยกว่านะครับ", english: "It's safer to cross at the zebra crossing.", gloss: [["ข้ามถนน", "cross the road"], ["ตรงทางม้าลาย", "at the zebra crossing"], ["ปลอดภัยกว่า", "safer"], ["นะครับ", "softening + polite (male)"]], cultural: "" },
+  { num: 412, display: 19, preview: "ใกล้กับ", thai: "บ้านอยู่ใกล้กับสถานีรถไฟ | ห่างแค่ครึ่งกิโลเองครับ", english: "My place is near the train station — only half a km away.", gloss: [["บ้าน", "home"], ["อยู่ใกล้กับ", "is near"], ["สถานีรถไฟ", "train station"], ["ห่างแค่", "only ... away"], ["ครึ่งกิโล", "half a km"], ["เองครับ", "just + polite (male)"]], cultural: "" },
+  { num: 413, display: 20, preview: "ทางออก", thai: "ทางเข้าที่จอดรถอยู่ด้านหน้า | ส่วนทางออกอยู่ด้านหลัง", english: "The car park entrance is at the front, and the exit's at the back.", gloss: [["ทางเข้า", "entrance"], ["ที่จอดรถ", "car park"], ["อยู่ด้านหน้า", "is at the front"], ["ส่วน", "as for"], ["ทางออก", "exit"], ["อยู่ด้านหลัง", "is at the back"]], cultural: "" },
+  { num: 414, display: 21, preview: "ทางจักรยาน", thai: "มีทางจักรยานเลียบคลองให้ปั่นออกกำลังได้ด้วยค่ะ", english: "There's a bike lane along the canal you can cycle for exercise too.", gloss: [["มีทางจักรยาน", "there's a bike lane"], ["เลียบคลอง", "along the canal"], ["ให้ปั่น", "to cycle"], ["ออกกำลัง", "for exercise"], ["ได้ด้วย", "as well"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 415, display: 22, preview: "คุ้นทาง", thai: "ไม่คุ้นทางแถวนี้เลย | ไปคนเดียวเดี๋ยวหลงแน่", english: "I don't know my way around here — going alone I'll definitely get lost.", gloss: [["ไม่คุ้นทาง", "don't know the way"], ["แถวนี้", "around here"], ["เลย", "at all"], ["ไปคนเดียว", "go alone"], ["เดี๋ยวหลงแน่", "will definitely get lost"]], cultural: "" },
+  { num: 416, display: 23, preview: "แผนที่", thai: "เปิดแผนที่ในมือถือดูก่อนว่าไปทางไหนใกล้สุด", english: "Check the map on your phone first to see which way's shortest.", gloss: [["เปิดแผนที่", "open the map"], ["ในมือถือ", "on your phone"], ["ดูก่อน", "check first"], ["ว่าไปทางไหน", "which way"], ["ใกล้สุด", "is shortest"]], cultural: "" },
+  { num: 417, display: 24, preview: "ขากลับ", thai: "แล้วขากลับล่ะคะ | จะนั่งอะไรกลับดี", english: "And the way back? What should we take to get home?", gloss: [["แล้วขากลับล่ะ", "and the way back? (ล่ะ = follow-up particle)"], ["คะ", "polite (female)"], ["จะนั่งอะไรกลับ", "what will we take back"], ["ดี", "... is best"]], cultural: "" }
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
