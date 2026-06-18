@@ -49,8 +49,10 @@ export async function onRequestGet(context) {
   // ── TIER LISTS — source of truth (edit here in git; no dashboard needed) ──
   // Keep in sync with topics.js `access` flags + each page's `tier`. The env vars are
   // just optional overrides; normally these code defaults decide the tier.
-  const premiumList = listEnv(env.PREMIUM_PREFIXES, ['CommSurvival_BEG', 'Colours_BEG']);
-  const memberList = listEnv(env.MEMBER_PREFIXES, ['GettingToKnow_BEG']);
+  // Premium (live): Colours, Weather, Time, Home, Shopping. Member (live): none yet —
+  // the live member-tier topics (16+) aren't built. Free topics never reach this endpoint.
+  const premiumList = listEnv(env.PREMIUM_PREFIXES, ['Colours_BEG', 'Weather_BEG', 'Time_BEG', 'Home_BEG', 'Shopping_BEG']);
+  const memberList = listEnv(env.MEMBER_PREFIXES, []);
   // Member only if explicitly listed (and not premium); unknown private files default to premium.
   const tier = (memberList.includes(prefix) && !premiumList.includes(prefix)) ? 'member' : 'premium';
 
