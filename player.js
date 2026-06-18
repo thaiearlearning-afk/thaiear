@@ -555,7 +555,7 @@
       box.innerHTML =
         '<div class="prog-ctl-card">' +
           '<span class="prog-ctl-label">Track how many times you’ve listened to this topic.</span>' +
-          '<a class="prog-ctl-join" href="join.html?next=' + encodeURIComponent(PAGE_FILE) + '">Sign in to track progress →</a>' +
+          '<a class="prog-ctl-join" href="join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE) + '">Sign in to track progress →</a>' +
         '</div>';
       return;
     }
