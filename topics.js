@@ -61,7 +61,9 @@
         { name: "Food & drink 2", sentences: 26, page: "topic-09b.html" } ] },
     { id: 10, name: "Home & daily routine", levels: ["beg","li1"], sentences: 38, access: "premium" },
     { id: 11, name: "Shopping & money (everyday)", levels: ["beg","li1"], sentences: 30, access: "premium" },
-    { id: 12, name: "Getting around & transport", levels: ["beg","li1"], sentences: 30, access: "premium" },
+    { id: 12, name: "Getting around & transport", levels: ["beg","li1"], access: "premium", parts: [
+        { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html" },
+        { name: "Getting around & transport 2", sentences: 24, page: "topic-12b.html" } ] },
     { id: 37, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 20 },
     { id: 13, name: "Body & health", levels: ["beg","li1"], access: "premium", parts: [20, 20] },
     { id: 14, name: "Feelings & emotions", levels: ["beg","li1"], sentences: 30, access: "premium" },
