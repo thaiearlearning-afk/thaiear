@@ -36,6 +36,8 @@
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
   .btn-danger { background: #B00020; color: #fff; border-color: #B00020; }
   .btn-danger:hover { background: #8a0019; }
+  /* Membership action buttons — flex row so they align and wrap cleanly. */
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
   /* ── sign-in ── */
   .login-box { max-width: 340px; margin: 0 auto; text-align: center; }
   .login-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 11px 18px; }
@@ -56,6 +58,9 @@
   @media (max-width: 600px) {
     .page-wrap { padding: 2rem 1rem 3rem; }
     .acct-title { font-size: 22px; }
+    /* Stack the membership buttons full-width so they stay aligned in the
+       narrower space instead of squishing side by side. */
+    .btn-row .btn { width: 100%; }
   }
 </style>
 </head>
@@ -197,9 +202,9 @@ function renderMembershipBox(s) {
         // Cancelling → just offer Resume (no point updating a card that won't be charged).
         // Active → Cancel + Update payment method.
         var action = s.cancel_at_period_end
-          ? '<button class="btn btn-ghost" onclick="resumeMembership()">Resume membership</button>'
-          : '<button class="btn btn-ghost" onclick="cancelMembership()">Cancel membership</button>' +
-            ' <button class="btn btn-ghost" onclick="openPortal()" style="margin-left:8px">Update payment method</button>';
+          ? '<div class="btn-row"><button class="btn btn-ghost" onclick="resumeMembership()">Resume membership</button></div>'
+          : '<div class="btn-row"><button class="btn btn-ghost" onclick="cancelMembership()">Cancel membership</button>' +
+            '<button class="btn btn-ghost" onclick="openPortal()">Update payment method</button></div>';
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">' + line + '</p>' +
           action +
           '<p id="cancel-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
