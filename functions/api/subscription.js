@@ -62,7 +62,9 @@ export async function onRequestGet({ request, env }) {
         email: user.email,
         customers: Array.from(ids),
         subscriptions: all.map(function (s) {
-          return { id: s.id, customer: s.customer, status: s.status, cancel_at_period_end: !!s.cancel_at_period_end };
+          return { id: s.id, customer: s.customer, status: s.status,
+            cancel_at_period_end: !!s.cancel_at_period_end, cancel_at: s.cancel_at || null,
+            current_period_end: periodEnd(s) };
         }),
       }, 200);
     }
@@ -70,8 +72,8 @@ export async function onRequestGet({ request, env }) {
     // Honest state: a fully-active sub wins; else an active-but-cancelling one; else a
     // payment-failed (past_due/unpaid) one that can be recovered; else none.
     const liveSubs = all.filter(function (s) { return s.status === 'active' || s.status === 'trialing'; });
-    let chosen = liveSubs.find(function (s) { return !s.cancel_at_period_end; }) ||
-                 liveSubs.find(function (s) { return s.cancel_at_period_end; }) || null;
+    let chosen = liveSubs.find(function (s) { return !isCanceling(s); }) ||
+                 liveSubs.find(function (s) { return isCanceling(s); }) || null;
     let needsPayment = false;
     if (!chosen) {
       chosen = all.find(function (s) { return s.status === 'past_due' || s.status === 'unpaid'; }) || null;
@@ -79,18 +81,24 @@ export async function onRequestGet({ request, env }) {
     }
     if (!chosen) return json({ subscribed: false }, 200);
 
-    const pend = periodEnd(chosen);
+    // End date = the scheduled cancel_at (how the portal records it) if present, else period end.
+    const endTs = chosen.cancel_at || periodEnd(chosen);
     return json({
       subscribed: !needsPayment,         // past_due → not entitled, but recoverable
       needsPayment: needsPayment,
       status: chosen.status,
-      cancel_at_period_end: !!chosen.cancel_at_period_end,
-      current_period_end: pend ? new Date(pend * 1000).toISOString() : null,
+      cancel_at_period_end: isCanceling(chosen),
+      current_period_end: endTs ? new Date(endTs * 1000).toISOString() : null,
     }, 200);
   } catch (e) {
     return json({ error: 'lookup_failed', detail: String(e && e.message || e) }, 200);
   }
 }
+
+// A subscription is "cancelling" if it ends at period end (the boolean) OR has a scheduled
+// cancel_at date — the Stripe Customer Portal records a period-end cancel via `cancel_at`,
+// not `cancel_at_period_end`, so we must check both or portal cancellations look active.
+function isCanceling(s) { return !!(s && (s.cancel_at_period_end || s.cancel_at)); }
 
 // Stripe moved current_period_end onto the subscription item in recent API versions.
 function periodEnd(s) {
