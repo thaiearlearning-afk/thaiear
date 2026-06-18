@@ -311,10 +311,10 @@ function render() {
   var total = flags.length;
 
   if (!total) {
-    root.innerHTML = head + muaythai +
+    root.innerHTML = head +
       '<div class="intro">You haven’t flagged any sentences yet. On any topic page, tap the ' +
       '<span style="color:var(--accent);font-weight:600">flag</span> next to a sentence (just right of the 🐢) ' +
-      'to save it here as a personal focus list.</div>';
+      'to save it here as a personal focus list.</div>' + muaythai;
     return;
   }
 
@@ -333,7 +333,7 @@ function render() {
     return '<div class="topic-group">' + headRow + bodyRows + '</div>';
   }).join('');
 
-  root.innerHTML = head + muaythai + intro + groups;
+  root.innerHTML = head + intro + muaythai + groups;
 }
 
 // reset play icon when a clip finishes (the <audio> exists above this script already)
