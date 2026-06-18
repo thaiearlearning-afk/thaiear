@@ -31,6 +31,19 @@
   var currentSub = null;         // {status, cancel_at_period_end, current_period_end}
   var currentConsent = false;    // opted in to marketing email? (profiles row)
   var consentLoaded = false;     // has that consent flag been read from profiles yet?
+  var currentProgress = null;    // { goal:int, topics:{ key:count } } — lazy-loaded from `progress`
+  var progressLoaded = false;    // has the progress row been read yet?
+
+  // Goal steps the loading bars snap to. The goal auto-advances to the smallest
+  // step that still contains the highest count, so a bar can never overflow.
+  var GOAL_STEPS = [5, 10, 20, 50, 100];
+  function nextGoalFor(n) {
+    for (var i = 0; i < GOAL_STEPS.length; i++) { if (GOAL_STEPS[i] >= n) return GOAL_STEPS[i]; }
+    return GOAL_STEPS[GOAL_STEPS.length - 1]; // cap at 100
+  }
+  function maxCount(topics) {
+    var m = 0; for (var k in topics) { if (topics[k] > m) m = topics[k]; } return m;
+  }
 
   function userFromSession(session) {
     if (!session || !session.user) return null;
@@ -70,6 +83,41 @@
       .then(function (res) { currentConsent = !!(res && res.data && res.data.marketing_opt_in); })
       .catch(function () { currentConsent = false; })
       .then(function () { consentLoaded = true; notify(); });
+  }
+
+  // ---- listening progress (own `progress` row, RLS) ----------------------
+  // One jsonb row per user: { goal, topics:{ topicKey:count } }. Read on demand
+  // (topic pages + the progress page), not on every page load. Read-modify-write
+  // is fine here — a user only touches their own single row.
+  function fetchProgress() {
+    if (!client || !currentUser) { currentProgress = { goal: 5, topics: {} }; progressLoaded = true; return Promise.resolve(currentProgress); }
+    return client.from('progress').select('goal,topics').maybeSingle()
+      .then(function (res) {
+        if (res && res.error) throw res.error;
+        var d = (res && res.data) || null;
+        currentProgress = { goal: (d && d.goal) || 5, topics: (d && d.topics) || {} };
+        progressLoaded = true;
+        return currentProgress;
+      });
+  }
+  function saveProgress() {
+    if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+    var row = {
+      user_id: currentUser.id,
+      goal: currentProgress.goal,
+      topics: currentProgress.topics,
+      updated_at: new Date().toISOString()
+    };
+    return client.from('progress').upsert(row).then(function (res) {
+      if (res && res.error) throw res.error;
+      return currentProgress;
+    });
+  }
+  // Ensure the cache is populated, then run fn (which mutates currentProgress) and save.
+  function mutateProgress(fn) {
+    if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+    var ready = (progressLoaded && currentProgress) ? Promise.resolve(currentProgress) : fetchProgress();
+    return ready.then(function () { fn(currentProgress); return saveProgress(); });
   }
 
   // Public API. getUser() is synchronous; the rest are no-ops until the
@@ -122,6 +170,45 @@
         });
       });
     },
+    // ---- listening progress -------------------------------------------------
+    // The bar goal steps (5,10,20,50,100) — the progress page reads this to build
+    // the toggle so the values live in one place.
+    progressGoalSteps: function () { return GOAL_STEPS.slice(); },
+    // Synchronous, cached. getProgressData() is null until loadProgress() resolves.
+    getProgressData: function () { return currentProgress; },
+    isProgressLoaded: function () { return progressLoaded; },
+    getProgressGoal: function () { return currentProgress ? currentProgress.goal : 5; },
+    getTopicProgress: function (key) { return (currentProgress && currentProgress.topics[key]) || 0; },
+    // Async. Resolves the cached row (fetching once); safe to call repeatedly.
+    loadProgress: function () {
+      if (progressLoaded && currentProgress) return Promise.resolve(currentProgress);
+      return fetchProgress();
+    },
+    addProgress: function (key) {
+      return mutateProgress(function (p) {
+        var n = (p.topics[key] || 0) + 1;
+        p.topics[key] = n;
+        if (n > p.goal) p.goal = nextGoalFor(n); // auto-advance so the bar never overflows
+      });
+    },
+    removeProgress: function (key) {
+      return mutateProgress(function (p) {
+        var n = Math.max(0, (p.topics[key] || 0) - 1);
+        if (n === 0) delete p.topics[key]; else p.topics[key] = n;
+      });
+    },
+    // Set the global goal. Never below the highest count (the bars can't overflow),
+    // so a goal smaller than the current max is clamped up to the next valid step.
+    setProgressGoal: function (goal) {
+      return mutateProgress(function (p) {
+        var floor = nextGoalFor(maxCount(p.topics));
+        p.goal = Math.max(goal, floor);
+      });
+    },
+    // Wipe all counts and return the goal to the default. (Caller confirms first.)
+    resetProgress: function () {
+      return mutateProgress(function (p) { p.topics = {}; p.goal = 5; });
+    },
     signInWithGoogle: function () {
       if (!client) { console.warn('ThaiEar auth still loading…'); return; }
       client.auth.signInWithOAuth({
@@ -165,6 +252,7 @@
       client.auth.onAuthStateChange(function (_event, session) {
         currentSession = session || null;
         currentUser = userFromSession(session);
+        currentProgress = null; progressLoaded = false; // re-fetch for the new (or no) user
         notify();
         refreshSubscription();
         refreshProfile();
