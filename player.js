@@ -487,7 +487,8 @@
     var playing = sentPlaying === s.num;
     var displayThai = cleanThai(s.thai);
     var d = dispNum(s);
-    // Flag control shows only for signed-in users (the flag is saved to their account).
+    // Flag control shows for everyone. Signed in → toggles a saved flag. Signed out → same
+    // look (not greyed), but a click routes to the feature sign-in page (it doesn't flag).
     var A = window.ThaiEarAuth;
     var loggedIn = !!(A && A.getUser && A.getUser());
     var flagged = loggedIn && A.isFlagged && A.isFlagged(TOPIC_KEY, s.num);
@@ -495,7 +496,8 @@
       ? '<button class="sent-flag-btn' + (flagged ? ' flagged' : '') + '" onclick="flagSent(event,' + s.num + ')" ' +
           'aria-label="' + (flagged ? 'Remove flag from sentence ' : 'Flag sentence ') + d + '" ' +
           'title="' + (flagged ? 'Flagged — click to remove' : 'Flag this sentence') + '">' + FLAG_SVG + '</button>'
-      : '';
+      : '<button class="sent-flag-btn" onclick="flagSignIn(event)" ' +
+          'aria-label="Sign in to flag sentence ' + d + '" title="Sign in to flag sentences">' + FLAG_SVG + '</button>';
     return '<div class="sentence-card" id="sc-' + s.num + '">' +
       '<div class="sentence-header" onclick="cycle(' + s.num + ')" role="button" tabindex="0" aria-label="Sentence ' + d + '">' +
         '<span class="sent-num">' + d + '</span>' +
@@ -624,6 +626,11 @@
      double-tap can't land — same discipline as the progress buttons. Updates just the
      button (no full re-render, to stay snappy). */
   var flagLock = false;
+  // Logged-out flag click → the feature sign-in page, with ?next back to this topic.
+  function flagSignIn(e) {
+    e.stopPropagation(); e.preventDefault();
+    window.location.href = 'join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE);
+  }
   function flagSent(e, num) {
     e.stopPropagation(); e.preventDefault();
     var a = window.ThaiEarAuth;
@@ -658,7 +665,7 @@
     if (a && a.isReady && a.getUser && a.getUser() && a.loadFlags) {
       a.loadFlags().then(render).catch(function () {});
     } else {
-      render(); // logged out (or auth gone) → re-render to hide the flag controls
+      render(); // logged out (or auth gone) → re-render (flags show but route to sign-in)
     }
   }
   window.addEventListener('thaiear:auth', initFlags);
@@ -685,7 +692,7 @@
   // inline onclick in the injected markup call these by name
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow,
-    progAdd: progAdd, progRemove: progRemove, flagSent: flagSent });
+    progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();

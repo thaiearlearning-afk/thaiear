@@ -146,7 +146,7 @@
     const loggedIn = !!getUser();
     const here = currentPage();
     const items = MENU_ITEMS.map(it => {
-      const href = loggedIn ? it.page : ('join.html?next=' + encodeURIComponent(it.page));
+      const href = loggedIn ? it.page : ('join.html?feature=1&next=' + encodeURIComponent(it.page));
       const active = it.page.toLowerCase() === here ? ' class="active"' : '';
       return `<a href="${href}"${active}>${it.label}</a>`;
     }).join('');
