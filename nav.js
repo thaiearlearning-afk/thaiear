@@ -83,6 +83,24 @@
     .nav-auth:hover { color: var(--accent-mid); }
     .nav-username { font-size: 13px; font-weight: 500; color: var(--text-primary); }
 
+    /* "Menu" dropdown — member features (Progress, My sentences). Visible to everyone;
+       logged-out clicks route to the login page (handled by the item hrefs). */
+    .nav-menu { position: relative; display: inline-flex; }
+    .nav-menu-btn { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-ui);
+      font-size: 13px; font-weight: 500; color: var(--text-secondary); background: none; border: none;
+      cursor: pointer; padding: 0; }
+    .nav-menu-btn:hover { color: var(--text-primary); }
+    .nav-menu-caret { width: 10px; height: 10px; transition: transform 0.18s; }
+    .nav-menu-btn[aria-expanded="true"] .nav-menu-caret { transform: rotate(180deg); }
+    .nav-menu-drop { position: absolute; top: calc(100% + 12px); right: 0; min-width: 168px;
+      background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: var(--radius-md);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.13); padding: 5px; z-index: 200; display: flex; flex-direction: column; }
+    .nav-menu-drop a { font-size: 13px; font-weight: 500; color: var(--text-secondary); text-decoration: none;
+      padding: 8px 12px; border-radius: var(--radius-sm); white-space: nowrap; }
+    .nav-menu-drop a:hover { background: var(--accent-light); color: var(--accent); }
+    .nav-menu-drop a.active { color: var(--accent); }
+    .nav-menu-drop[hidden] { display: none; }
+
     @media (max-width: 600px) {
       .site-nav { padding: 0 1rem; }
       .nav-links { gap: 1rem; }
@@ -115,16 +133,40 @@
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // Member-features dropdown — shown to EVERYONE (logged in or not). Each item points at
+  // its page when signed in; when signed out it points at the login page (join.html, which
+  // bounces back to the page via ?next after sign-in). So a non-member who clicks Progress
+  // or My sentences lands on the login page, exactly as intended.
+  const MENU_ITEMS = [
+    { label: 'Progress', page: 'progress.html' },
+    { label: 'My sentences', page: 'sentences.html' },
+  ];
+  function menuHtml() {
+    if (!FEATURES.members) return '';
+    const loggedIn = !!getUser();
+    const here = currentPage();
+    const items = MENU_ITEMS.map(it => {
+      const href = loggedIn ? it.page : ('join.html?next=' + encodeURIComponent(it.page));
+      const active = it.page.toLowerCase() === here ? ' class="active"' : '';
+      return `<a href="${href}"${active}>${it.label}</a>`;
+    }).join('');
+    return (
+      `<div class="nav-menu" id="nav-menu">` +
+        `<button type="button" class="nav-menu-btn" id="nav-menu-btn" aria-haspopup="true" aria-expanded="false">` +
+          `Menu` +
+          `<svg class="nav-menu-caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>` +
+        `</button>` +
+        `<div class="nav-menu-drop" id="nav-menu-drop" hidden>${items}</div>` +
+      `</div>`
+    );
+  }
+
   function memberHtml() {
     if (!FEATURES.members) return '';
     const user = getUser();
     if (user) {
-      // Logged in: a Progress link (signed-in only), then username + person icon,
-      // both leading to the account page.
-      const here = currentPage();
-      const progActive = here === 'progress.html' ? ' class="active"' : '';
+      // Logged in: username + person icon, both leading to the account page.
       return (
-        `<a href="progress.html"${progActive}>Progress</a>` +
         `<span class="nav-username">${escapeHtml(user.username)}</span>` +
         `<a class="nav-person" href="${ACCOUNT_HREF}" aria-label="Your account" title="Account">${PERSON_SVG}</a>`
       );
@@ -141,10 +183,34 @@
           `<img src="logoshort.png" alt="ThaiEar logo">` +
           `<span class="nav-wordmark">Thai<span>Ear</span></span>` +
         `</a>` +
-        `<div class="nav-links">${linksHtml()}${memberHtml()}</div>` +
+        `<div class="nav-links">${linksHtml()}${menuHtml()}${memberHtml()}</div>` +
       `</nav>`
     );
   }
+
+  // Open/close the dropdown. Wired fresh each mount (the nav is re-rendered on auth change).
+  function wireMenu() {
+    const btn = document.getElementById('nav-menu-btn');
+    const drop = document.getElementById('nav-menu-drop');
+    if (!btn || !drop) return;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const open = drop.hasAttribute('hidden');
+      if (open) { drop.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); }
+      else { drop.setAttribute('hidden', ''); btn.setAttribute('aria-expanded', 'false'); }
+    });
+  }
+  function closeMenu() {
+    const drop = document.getElementById('nav-menu-drop');
+    const btn = document.getElementById('nav-menu-btn');
+    if (drop && !drop.hasAttribute('hidden')) { drop.setAttribute('hidden', ''); if (btn) btn.setAttribute('aria-expanded', 'false'); }
+  }
+  // Close on outside-click / Escape (added once; query elements live so re-mounts are fine).
+  document.addEventListener('click', function (e) {
+    const menu = document.getElementById('nav-menu');
+    if (menu && !menu.contains(e.target)) closeMenu();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
 
   /* ---- load the auth layer once (only when members UI is on) ------------
      auth.js wires Supabase, exposes window.ThaiEarAuth, and calls
@@ -189,6 +255,7 @@
     const el = tmp.firstElementChild;
     const slot = document.getElementById('site-nav-root') || document.querySelector('nav.site-nav');
     if (slot) slot.replaceWith(el);
+    wireMenu();
   }
 
   if (document.readyState === 'loading') {

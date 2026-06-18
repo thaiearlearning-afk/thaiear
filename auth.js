@@ -33,6 +33,8 @@
   var consentLoaded = false;     // has that consent flag been read from profiles yet?
   var currentProgress = null;    // { goal:int, topics:{ key:count } } — lazy-loaded from `progress`
   var progressLoaded = false;    // has the progress row been read yet?
+  var currentFlags = null;       // map "topicKey:num" -> {topic_key,num,sentence} — lazy from `sentence_flags`
+  var flagsLoaded = false;       // has the flag set been read yet?
 
   // Goal steps the loading bars snap to. The goal auto-advances to the smallest
   // step that still contains the highest count, so a bar can never overflow.
@@ -118,6 +120,22 @@
     if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
     var ready = (progressLoaded && currentProgress) ? Promise.resolve(currentProgress) : fetchProgress();
     return ready.then(function () { fn(currentProgress); return saveProgress(); });
+  }
+
+  // ---- flagged sentences (own `sentence_flags` rows, RLS) ----------------
+  // One row per flagged sentence; the sentence nugget is stored so the My-sentences
+  // page is self-contained. Cached as a map keyed by "topicKey:num".
+  function flagKey(tk, num) { return tk + ':' + num; }
+  function fetchFlags() {
+    if (!client || !currentUser) { currentFlags = {}; flagsLoaded = true; return Promise.resolve(currentFlags); }
+    return client.from('sentence_flags').select('topic_key,num,sentence')
+      .then(function (res) {
+        if (res && res.error) throw res.error;
+        var map = {};
+        (res && res.data || []).forEach(function (r) { map[flagKey(r.topic_key, r.num)] = r; });
+        currentFlags = map; flagsLoaded = true;
+        return currentFlags;
+      });
   }
 
   // Public API. getUser() is synchronous; the rest are no-ops until the
@@ -209,6 +227,43 @@
     resetProgress: function () {
       return mutateProgress(function (p) { p.topics = {}; });
     },
+    // ---- flagged sentences --------------------------------------------------
+    loadFlags: function () {
+      if (flagsLoaded && currentFlags) return Promise.resolve(currentFlags);
+      return fetchFlags();
+    },
+    isFlagsLoaded: function () { return flagsLoaded; },
+    isFlagged: function (tk, num) { return !!(currentFlags && currentFlags[flagKey(tk, num)]); },
+    // All flagged records: [{ topic_key, num, sentence }, …]
+    getFlags: function () {
+      if (!currentFlags) return [];
+      return Object.keys(currentFlags).map(function (k) { return currentFlags[k]; });
+    },
+    // Toggle a sentence flag. nugget = { num, preview, thai, english, gloss, cultural, audioPrefix }.
+    // Resolves to the new state (true = now flagged, false = now unflagged).
+    toggleFlag: function (tk, nugget) {
+      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+      var num = nugget.num;
+      var key = flagKey(tk, num);
+      var ready = (flagsLoaded && currentFlags) ? Promise.resolve() : fetchFlags();
+      return ready.then(function () {
+        if (currentFlags[key]) {
+          return client.from('sentence_flags').delete()
+            .eq('user_id', currentUser.id).eq('topic_key', tk).eq('num', num)
+            .then(function (res) { if (res && res.error) throw res.error; delete currentFlags[key]; return false; });
+        }
+        var row = { user_id: currentUser.id, topic_key: tk, num: num, sentence: nugget, created_at: new Date().toISOString() };
+        return client.from('sentence_flags').upsert(row)
+          .then(function (res) { if (res && res.error) throw res.error; currentFlags[key] = { topic_key: tk, num: num, sentence: nugget }; return true; });
+      });
+    },
+    // Remove a flag by (topicKey, num) — used by the My-sentences page's remove button.
+    removeFlag: function (tk, num) {
+      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+      return client.from('sentence_flags').delete()
+        .eq('user_id', currentUser.id).eq('topic_key', tk).eq('num', num)
+        .then(function (res) { if (res && res.error) throw res.error; if (currentFlags) delete currentFlags[flagKey(tk, num)]; return true; });
+    },
     signInWithGoogle: function () {
       if (!client) { console.warn('ThaiEar auth still loading…'); return; }
       client.auth.signInWithOAuth({
@@ -253,6 +308,7 @@
         currentSession = session || null;
         currentUser = userFromSession(session);
         currentProgress = null; progressLoaded = false; // re-fetch for the new (or no) user
+        currentFlags = null; flagsLoaded = false;
         notify();
         refreshSubscription();
         refreshProfile();
