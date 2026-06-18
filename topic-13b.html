@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 14: Body &amp; health 2</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Body &amp; health 2</h1>
+  <p class="topic-meta"><strong>25 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-13a.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Body &amp; health 1</span>
+      </span>
+    </a>
+    <span class="topic-nav-btn topic-nav-right disabled" aria-disabled="true">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Coming soon</span>
+        </span>
+        <span>→</span>
+      </span>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "Health_LI1",
+  sentences: [
+  { num: 446, display: 1, preview: "เป็นๆหายๆ", thai: "ปวดท้องตรงนี้ | เป็นๆหายๆมาหลายวันแล้วค่ะ", english: "It hurts right here, and it's come and gone for several days.", gloss: [["ปวดท้อง", "stomach pain"], ["ตรงนี้", "right here"], ["เป็นๆหายๆ", "comes and goes"], ["มาหลายวันแล้ว", "for several days"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 447, display: 2, preview: "แพทย์", thai: "แพทย์สั่งให้กินยาครั้งละสองเม็ด | หลังอาหารทุกมื้อ", english: "The doctor said to take two pills each time, after every meal.", gloss: [["แพทย์", "physician (formal)"], ["สั่งให้", "instructed to"], ["กินยา", "take medicine"], ["ครั้งละสองเม็ด", "two pills each time (เม็ด = classifier for pills)"], ["หลังอาหารทุกมื้อ", "after every meal"]], cultural: "Thai has two words for \"doctor\": หมอ (everyday, colloquial) and แพทย์ (formal/written, also in compounds like จิตแพทย์ \"psychiatrist\")." },
+  { num: 448, display: 3, preview: "คลินิก", thai: "ไปหาหมอที่คลินิกใกล้บ้านดีกว่าไหมคะ", english: "Should I go see the doctor at the clinic near home?", gloss: [["ไปหาหมอ", "go see the doctor"], ["ที่คลินิก", "at the clinic"], ["ใกล้บ้าน", "near home"], ["ดีกว่าไหมคะ", "...would be better? + polite (female)"]], cultural: "" },
+  { num: 449, display: 4, preview: "ตรวจสุขภาพ", thai: "ตรวจสุขภาพประจำปีครั้งต่อไปเมื่อไหร่คะ", english: "When is my next annual check-up due?", gloss: [["ตรวจสุขภาพประจำปี", "annual health check-up"], ["ครั้งต่อไป", "next time"], ["เมื่อไหร่คะ", "when? + polite (female)"]], cultural: "" },
+  { num: 450, display: 5, preview: "ผลตรวจ", thai: "ได้ผลตรวจหรือยังคะ", english: "Did you get your test results yet?", gloss: [["ได้", "get / receive"], ["ผลตรวจ", "test results"], ["หรือยังคะ", "...yet? + polite (female)"]], cultural: "" },
+  { num: 451, display: 6, preview: "โรงพยาบาล", thai: "อาการแบบนี้ควรไปโรงพยาบาลนะคะ", english: "Symptoms like these — you should go to the hospital.", gloss: [["อาการแบบนี้", "symptoms like these"], ["ควรไป", "should go to"], ["โรงพยาบาล", "hospital"], ["นะคะ", "softening + polite (female)"]], cultural: "" },
+  { num: 452, display: 7, preview: "แพ้ยา", thai: "แพ้ยาบางตัว | ต้องบอกหมอก่อนทุกครั้งค่ะ", english: "I'm allergic to some medicines, so I must tell the doctor every time.", gloss: [["แพ้ยา", "drug allergy"], ["บางตัว", "some (kinds)"], ["ต้องบอกหมอ", "must tell the doctor"], ["ก่อนทุกครั้ง", "every time first"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 453, display: 8, preview: "หมอ", thai: "ถ้ายังไม่ดีขึ้น | พรุ่งนี้ไปหาหมอกันนะ", english: "If you're still not better, let's see a doctor tomorrow.", gloss: [["ถ้ายังไม่ดีขึ้น", "if still not better"], ["พรุ่งนี้", "tomorrow"], ["ไปหาหมอกัน", "let's see a doctor"], ["นะ", "softening particle"]], cultural: "" },
+  { num: 454, display: 9, preview: "ดูแลตัวเอง", thai: "ดูแลตัวเองด้วยนะ | อย่าหักโหมมากเกินไป", english: "Take care of yourself — don't overdo it.", gloss: [["ดูแลตัวเอง", "take care of yourself"], ["ด้วยนะ", "...okay"], ["อย่าหักโหม", "don't overexert"], ["มากเกินไป", "too much"]], cultural: "" },
+  { num: 455, display: 10, preview: "เป็นห่วง", thai: "หายไวๆนะคะ | เป็นห่วงมากเลย", english: "Get well soon — I'm really worried.", gloss: [["หายไวๆนะคะ", "get well soon"], ["เป็นห่วง", "worried"], ["มากเลย", "so much"]], cultural: "" },
+  { num: 456, display: 11, preview: "พักผ่อน", thai: "พักผ่อนให้เต็มที่ | เดี๋ยวก็หายเองครับ", english: "Rest up properly; you'll get better soon enough.", gloss: [["พักผ่อนให้เต็มที่", "rest fully"], ["เดี๋ยวก็", "soon"], ["หายเอง", "recover on your own"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 457, display: 12, preview: "เครียด", thai: "ช่วงนี้รู้สึกเครียด | ควรหาเวลาพักผ่อนบ้างนะคะ", english: "I've been feeling stressed lately — I should make time to rest.", gloss: [["ช่วงนี้", "lately"], ["รู้สึกเครียด", "feel stressed"], ["ควรหาเวลา", "should find time"], ["พักผ่อนบ้าง", "to rest"], ["นะคะ", "softening + polite (female)"]], cultural: "" },
+  { num: 458, display: 13, preview: "ความเครียด", thai: "ความเครียดสะสมส่งผลเสียต่อสุขภาพได้ครับ", english: "Built-up stress can have bad effects on your health.", gloss: [["ความเครียดสะสม", "built-up stress"], ["ส่งผลเสีย", "has bad effects"], ["ต่อสุขภาพ", "on health"], ["ได้", "can"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 459, display: 14, preview: "ซึมเศร้า", thai: "ถ้ารู้สึกซึมเศร้าบ่อยๆ | ลองปรึกษาจิตแพทย์ดูนะคะ", english: "If you often feel down, try talking to a psychiatrist.", gloss: [["ถ้ารู้สึกซึมเศร้า", "if you feel depressed"], ["บ่อยๆ", "often"], ["ลองปรึกษา", "try consulting"], ["จิตแพทย์", "psychiatrist"], ["ดูนะคะ", "...give it a try + polite (female)"]], cultural: "" },
+  { num: 460, display: 15, preview: "นักจิตวิทยา", thai: "การไปหานักจิตวิทยาเป็นเรื่องปกติมากขึ้นแล้วค่ะ", english: "Going to see a psychologist has become much more normal.", gloss: [["การไปหา", "going to see"], ["นักจิตวิทยา", "psychologist"], ["เป็นเรื่องปกติ", "is normal"], ["มากขึ้นแล้ว", "more and more now"], ["ค่ะ", "polite (female)"]], cultural: "Seeing mental-health professionals is increasingly accepted in Thailand. จิตแพทย์ is a psychiatrist (medical doctor), นักจิตวิทยา a psychologist, and นักบำบัด a therapist." },
+  { num: 461, display: 16, preview: "สุขภาพจิต", thai: "ดูแลสุขภาพจิตสำคัญพอๆกับสุขภาพกายครับ", english: "Looking after mental health matters as much as physical health.", gloss: [["ดูแลสุขภาพจิต", "look after mental health"], ["สำคัญพอๆกับ", "as important as"], ["สุขภาพกาย", "physical health"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 462, display: 17, preview: "วิตกกังวล", thai: "เวลาวิตกกังวล | ลองหายใจเข้าออกช้าๆดูค่ะ", english: "When you're anxious, try breathing in and out slowly.", gloss: [["เวลาวิตกกังวล", "when anxious"], ["ลองหายใจ", "try breathing"], ["เข้าออกช้าๆ", "in and out slowly"], ["ดูค่ะ", "...give it a try + polite (female)"]], cultural: "" },
+  { num: 463, display: 18, preview: "ภูมิ", thai: "นอนไม่พอติดต่อกันหลายวัน | ทำให้ภูมิตกครับ", english: "Not sleeping enough for days on end lowers your immunity.", gloss: [["นอนไม่พอ", "not sleeping enough"], ["ติดต่อกันหลายวัน", "for days on end"], ["ทำให้", "causes"], ["ภูมิตก", "immunity to drop"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 464, display: 19, preview: "ออกกำลังกาย", thai: "ออกกำลังกายสม่ำเสมอช่วยให้สุขภาพแข็งแรงครับ", english: "Exercising regularly helps keep you healthy.", gloss: [["ออกกำลังกายสม่ำเสมอ", "exercising regularly"], ["ช่วยให้", "helps"], ["สุขภาพแข็งแรง", "stay healthy"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 465, display: 20, preview: "ล่าสุด", thai: "ตรวจสุขภาพครั้งล่าสุดเมื่อไหร่คะ", english: "When was your last check-up?", gloss: [["ตรวจสุขภาพ", "health check-up"], ["ครั้งล่าสุด", "last / most recent time"], ["เมื่อไหร่คะ", "when? + polite (female)"]], cultural: "" },
+  { num: 466, display: 21, preview: "ผู้ป่วย", thai: "แพทย์แนะนำให้ผู้ป่วยพักผ่อนและดื่มน้ำเยอะๆครับ", english: "The physician advises patients to rest and drink plenty of water.", gloss: [["แพทย์แนะนำ", "the physician advises"], ["ให้ผู้ป่วย", "patients to"], ["พักผ่อน", "rest"], ["และดื่มน้ำเยอะๆ", "and drink plenty of water"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 467, display: 22, preview: "นักบำบัด", thai: "การพูดคุยกับนักบำบัดช่วยให้จัดการความเครียดได้ดีขึ้น", english: "Talking with a therapist helps you manage stress better.", gloss: [["การพูดคุยกับ", "talking with"], ["นักบำบัด", "a therapist"], ["ช่วยให้", "helps"], ["จัดการความเครียด", "manage stress"], ["ได้ดีขึ้น", "better"]], cultural: "" },
+  { num: 468, display: 23, preview: "รถพยาบาล", thai: "เมื่อวานเห็นรถพยาบาลจอดอยู่หน้าโรงพยาบาล", english: "Yesterday I saw an ambulance parked in front of the hospital.", gloss: [["เมื่อวาน", "yesterday"], ["เห็น", "saw"], ["รถพยาบาล", "ambulance"], ["จอดอยู่", "parked"], ["หน้าโรงพยาบาล", "in front of the hospital"]], cultural: "" },
+  { num: 469, display: 24, preview: "ผลข้างเคียง", thai: "ผลข้างเคียงที่พบบ่อยคือฝันร้าย", english: "A common side effect is nightmares.", gloss: [["ผลข้างเคียง", "side effect"], ["ที่พบบ่อย", "common"], ["คือ", "is"], ["ฝันร้าย", "nightmares"]], cultural: "" },
+  { num: 470, display: 25, preview: "โรคระบาด", thai: "ช่วงที่มีโรคระบาด | ควรใส่หน้ากากและล้างมือบ่อยๆ", english: "During an epidemic, you should wear a mask and wash your hands often.", gloss: [["ช่วงที่มีโรคระบาด", "during an epidemic"], ["ควรใส่หน้ากาก", "should wear a mask"], ["และล้างมือ", "and wash hands"], ["บ่อยๆ", "often"]], cultural: "" }
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

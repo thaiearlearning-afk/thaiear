@@ -65,7 +65,9 @@
         { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html" },
         { name: "Getting around & transport 2", sentences: 24, page: "topic-12b.html" } ] },
     { id: 37, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 20 },
-    { id: 13, name: "Body & health", levels: ["beg","li1"], access: "premium", parts: [20, 20] },
+    { id: 13, name: "Body & health", levels: ["beg","li1"], access: "premium", parts: [
+        { name: "Body & health 1", sentences: 28, page: "topic-13a.html" },
+        { name: "Body & health 2", sentences: 25, page: "topic-13b.html" } ] },
     { id: 14, name: "Feelings & emotions", levels: ["beg","li1"], sentences: 30, access: "premium" },
     { id: 15, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 30, access: "premium" },
     { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 25, access: "member" },
