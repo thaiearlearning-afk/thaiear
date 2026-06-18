@@ -33,6 +33,21 @@
   .intro { font-size: 13.5px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 1.75rem; padding: 0.9rem 1.1rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
   .muted { font-size: 13px; color: var(--text-tertiary); }
 
+  /* boxer image + "Thai inbound…" with the same animated 1→2→3 dot cycle as the progress page */
+  .fluency-block { text-align: center; margin: 0.25rem 0 1.75rem; }
+  .fluency-img { width: 150px; max-width: 42%; height: auto; display: block; margin: 0 auto 0.4rem; }
+  .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
+  .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
+  .fluency-text .dots::after { content: '.'; animation: fluency-dots 1.4s infinite; }
+  @keyframes fluency-dots {
+    0%, 100% { content: '.'; }
+    33%      { content: '..'; }
+    66%      { content: '...'; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fluency-text .dots::after { animation: none; content: '…'; }
+  }
+
   .btn { font-family: var(--font-ui); font-size: 14px; font-weight: 500; border-radius: var(--radius-sm); padding: 9px 18px; cursor: pointer; border: 0.5px solid var(--border-strong); transition: background 0.15s, border-color 0.15s, color 0.15s; }
   .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn-primary:hover { background: var(--accent-mid); }
@@ -284,11 +299,19 @@ function render() {
       '<h1 class="prog-head-title">' + esc(user.username) + '’s sentences</h1>' +
     '</div>';
 
+  // Sits below the header, above the intro/empty message — mirrors the meditator block
+  // on the progress page (same font/style), with the animated ellipsis.
+  var muaythai =
+    '<div class="fluency-block">' +
+      '<img class="fluency-img" src="muaythai.png" alt="Muay Thai boxer" width="150">' +
+      '<div class="fluency-text">Thai inbound<span class="dots" aria-hidden="true"></span></div>' +
+    '</div>';
+
   var rows = liveRows();
   var total = flags.length;
 
   if (!total) {
-    root.innerHTML = head +
+    root.innerHTML = head + muaythai +
       '<div class="intro">You haven’t flagged any sentences yet. On any topic page, tap the ' +
       '<span style="color:var(--accent);font-weight:600">flag</span> next to a sentence (just right of the 🐢) ' +
       'to save it here as a personal focus list.</div>';
@@ -310,7 +333,7 @@ function render() {
     return '<div class="topic-group">' + headRow + bodyRows + '</div>';
   }).join('');
 
-  root.innerHTML = head + intro + groups;
+  root.innerHTML = head + muaythai + intro + groups;
 }
 
 // reset play icon when a clip finishes (the <audio> exists above this script already)
