@@ -179,6 +179,7 @@ function loggedOutHtml() {
   );
 }
 
+var loadErr = null;
 function render() {
   var root = document.getElementById('progress-root');
   if (!root) return;
@@ -187,8 +188,16 @@ function render() {
   var user = a.getUser && a.getUser();
   if (!user) { root.innerHTML = loggedOutHtml(); return; }
   if (a.isProgressLoaded && !a.isProgressLoaded()) {
+    // Show the real error instead of re-trying forever (avoids hammering the API).
+    if (loadErr) {
+      root.innerHTML = '<p class="muted">Couldn’t load your progress: ' +
+        esc((loadErr && loadErr.message) || String(loadErr)) +
+        '. Please refresh to try again.</p>';
+      return;
+    }
     root.innerHTML = '<p class="muted">Loading your progress…</p>';
-    a.loadProgress().then(render).catch(render);
+    a.loadProgress().then(function () { loadErr = null; render(); })
+                    .catch(function (e) { loadErr = e; render(); });
     return;
   }
 
@@ -242,7 +251,8 @@ function render() {
   root.innerHTML = head + list + toggle + reset;
 }
 
-window.addEventListener('thaiear:auth', render);
+// On any auth change (login/logout/token refresh) clear a prior load error and re-render.
+window.addEventListener('thaiear:auth', function () { loadErr = null; render(); });
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
 else render();
 </script>
