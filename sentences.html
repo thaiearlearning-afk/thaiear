@@ -296,7 +296,7 @@ function render() {
   }
 
   var intro = '<p class="intro">Sentences you’ve flagged, grouped by topic. Tap one to reveal the Thai, English and notes, ' +
-    'or play its audio. Remove any with its flag. If a topic’s membership lapses, its sentences stay listed but lock until you’re entitled again.</p>';
+    'or play its audio. Remove any with its flag.</p>';
 
   var groups = rows.map(function (row) {
     var items = byTopic[row.key] || [];
