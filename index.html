@@ -248,6 +248,19 @@
     font-size: 14px;
     padding: 1rem 0;
   }
+  /* Difficulty band heading for LIVE topics — deliberately MORE assertive than the
+     subtle grey "Coming soon" divider: navy, larger, sentence-case. */
+  .level-heading {
+    grid-column: 1 / -1;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #1C124E;
+    margin: 2.25rem 0 0.9rem;
+    padding-top: 1.6rem;
+    border-top: 0.5px solid var(--border);
+  }
+  .level-heading:first-child { margin-top: 0; padding-top: 0; border-top: none; }
   .topic-card-top {
     display: flex;
     align-items: flex-start;
@@ -495,12 +508,16 @@
     <span class="section-title">All topics</span>
   </div>
 
+  <!-- TEMP-DISABLED (level filter): live topics are now grouped under difficulty
+       headings, so this row is hidden. Re-enable by uncommenting this block. The
+       filterTopics()/activeFilter code is kept; activeFilter stays 'all'.
   <div class="filter-tabs" style="margin-bottom:8px">
     <button class="filter-tab active" onclick="filterTopics('all', this)">All levels</button>
     <button class="filter-tab" onclick="filterTopics('beg', this)">Beginner</button>
     <button class="filter-tab" onclick="filterTopics('li1', this)">Lower intermediate</button>
     <button class="filter-tab" onclick="filterTopics('li2', this)">Intermediate</button>
   </div>
+  -->
 
   <div class="filter-tabs">
     <button class="filter-tab active" onclick="filterAccess('all', this)">All access</button>
@@ -532,7 +549,22 @@
    topics.js (window.ThaiEarTopics), so the index and the topic pages never drift —
    add/remove/reorder topics in topics.js only. See the level + numbering notes there
    and the "TOPIC NUMBERING" note at the end of this file. */
-const { topics, liveTopics, levelBadge, matchesFilter, canAccess } = window.ThaiEarTopics;
+const { topics, liveTopics, levelBadge, matchesFilter, canAccess, levelBounds, LEVEL_FULL } = window.ThaiEarTopics;
+
+/* ---- index display toggles -------------------------------------------------
+   Current design: live topics are grouped under difficulty HEADINGS, and the
+   per-card level pill + the top level-filter row are hidden (the access filter
+   stays). None of that code is deleted — flip these flags (and uncomment the
+   level-filter <div> in the markup) to restore the previous per-pill layout. */
+const SHOW_LEVEL_PILLS   = false;   // per-card "Beginner"/"Lower int" badge in renderCard
+const GROUP_LIVE_BY_LEVEL = true;   // group live topics under difficulty headings
+
+// Full-text difficulty band label for a topic's levels, e.g. "Beginner" or
+// "Beginner → Lower intermediate" (headings use the full names, not the abbreviations).
+function bandHeading(levels) {
+  const [floor, ceiling] = levelBounds(levels);
+  return floor === ceiling ? LEVEL_FULL[floor] : `${LEVEL_FULL[floor]} → ${LEVEL_FULL[ceiling]}`;
+}
 
 // Hero "Topics" stat: derived from the topic list so it never needs hand-editing —
 // add/remove a topic in topics.js and this updates itself.
@@ -577,7 +609,7 @@ function renderCard(t, label, sentences, access, pageHref) {
   const inner =
       `<div class="topic-card-top">
         <span class="topic-num">${label}</span>
-        ${levelBadge(t.levels)}
+        ${SHOW_LEVEL_PILLS ? levelBadge(t.levels) : ''}
       </div>
       <div class="topic-name">${t.name}</div>
       <div class="topic-meta-row">
@@ -648,8 +680,27 @@ function renderGrid() {
     return;
   }
   // Live topics first; everything not yet built drops below a "Coming soon" divider.
-  const liveCards = visible.filter(o => isLive(o.t)).map(o => cardsForTopic(o.t, o.pos)).join('');
+  const liveList = visible.filter(o => isLive(o.t));
   const soon = visible.filter(o => !isLive(o.t));
+
+  // Live topics are EITHER grouped under assertive difficulty headings (current design),
+  // OR a single flat run (flip GROUP_LIVE_BY_LEVEL to restore the old pill-per-card layout).
+  let liveCards;
+  if (GROUP_LIVE_BY_LEVEL) {
+    const order = [], groups = {};            // preserve curriculum order (topics[] is band-ordered)
+    liveList.forEach(o => {
+      const band = bandHeading(o.t.levels);
+      if (!(band in groups)) { groups[band] = []; order.push(band); }
+      groups[band].push(o);
+    });
+    liveCards = order.map(band =>
+      `<h2 class="level-heading">${band}</h2>` +
+      groups[band].map(o => cardsForTopic(o.t, o.pos)).join('')
+    ).join('');
+  } else {
+    liveCards = liveList.map(o => cardsForTopic(o.t, o.pos)).join('');
+  }
+
   const soonCards = soon.length
     ? '<h2 class="coming-soon-heading">Coming soon</h2>' + soon.map(o => cardsForTopic(o.t, o.pos)).join('')
     : '';
