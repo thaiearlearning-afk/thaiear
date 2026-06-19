@@ -144,6 +144,7 @@
   const MENU_ITEMS = [
     { label: 'Home', page: 'index.html', public: true },
     { label: 'About', page: 'about.html', public: true },
+    { label: 'Guide', page: 'guide.html', public: true },
     { label: 'My progress', page: 'progress.html' },
     { label: 'My sentences', page: 'sentences.html' },
   ];
