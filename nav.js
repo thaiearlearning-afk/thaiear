@@ -67,7 +67,8 @@
     .nav-logo img { height: 44px; width: auto; display: block; }
     .nav-wordmark { font-family: var(--font-thai); font-size: 20px; font-weight: 600;
       color: #4B41AD; letter-spacing: 0.02em; }
-    .nav-wordmark span { color: #C8A030; font-weight: 600; }
+    .nav-wordmark span { color: #C8A030; font-weight: 600;
+      text-shadow: 0 0 1px rgba(29,19,77,1), 0 0 2px rgba(29,19,77,0.7); }
     .nav-links { display: flex; gap: 1.75rem; align-items: center; }
     .nav-links a { font-size: 13px; font-weight: 500; color: var(--text-secondary);
       text-decoration: none; }
