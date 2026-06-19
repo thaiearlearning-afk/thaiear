@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 17: Social life &amp; events</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Social life &amp; events</h1>
+  <p class="topic-meta"><strong>36 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-15.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Hobbies &amp; free time</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-38.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Idioms</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "SocialLife_BEG",
+  sentences: [
+  { num: 639, display: 1, preview: "สงกรานต์", thai: "สงกรานต์นี้ชวนเพื่อนไปเล่นน้ำกันครับ", english: "This Songkran, let's invite friends to go play with water.", gloss: [["สงกรานต์", "Songkran"], ["นี้", "this"], ["ชวน", "invite"], ["เพื่อน", "friends"], ["ไป", "go"], ["เล่นน้ำ", "play with water"], ["กัน", "together"], ["ครับ", "polite particle (male)"]], cultural: "Songkran (13–15 April) is the Thai New Year, famous for nationwide water fights — splashing symbolises washing away the old year and bad luck." },
+  { num: 640, display: 2, preview: "ลอยกระทง", thai: "ลอยกระทงปีนี้ไปลอยที่แม่น้ำไหมคะ", english: "This Loi Krathong, shall we go float one at the river?", gloss: [["ลอยกระทง", "Loi Krathong"], ["ปีนี้", "this year"], ["ไป", "go"], ["ลอย", "float"], ["ที่", "at"], ["แม่น้ำ", "the river"], ["ไหม", "question particle"], ["คะ", "polite particle (female)"]], cultural: "Loi Krathong falls on the full moon of the 12th lunar month (usually November). People float decorated baskets (krathong) on rivers and ponds to honour the water and let go of misfortune." },
+  { num: 641, display: 3, preview: "ตรุษจีน", thai: "ตรุษจีนแจกอั่งเปาให้เด็กๆค่ะ", english: "At Chinese New Year, we give red envelopes to the kids.", gloss: [["ตรุษจีน", "Chinese New Year"], ["แจก", "give out"], ["อั่งเปา", "red envelopes"], ["ให้", "to"], ["เด็กๆ", "children"], ["ค่ะ", "polite particle (female)"]], cultural: "Thailand's large Thai-Chinese community celebrates ตรุษจีน. Elders give children and unmarried juniors อั่งเปา — red envelopes containing 'lucky money'." },
+  { num: 642, display: 4, preview: "งานวัด", thai: "งานวัดมีของกินให้เลือกเยอะแยะค่ะ", english: "The temple fair has loads of food to choose from.", gloss: [["งานวัด", "temple fair"], ["มี", "has"], ["ของกิน", "food"], ["ให้เลือก", "to choose"], ["เยอะแยะ", "loads"], ["ค่ะ", "polite particle (female)"]], cultural: "งานวัด (temple fairs) are community festivals held on temple grounds — packed with food stalls, games and performances, often tied to a Buddhist holy day or temple fundraiser." },
+  { num: 643, display: 5, preview: "เทียนพรรษา", thai: "ที่อุบลมีงานแห่เทียนพรรษาน่าไปดูครับ", english: "In Ubon there's the Candle Festival — well worth seeing.", gloss: [["ที่", "in"], ["อุบล", "Ubon"], ["มี", "there's"], ["แห่", "procession"], ["เทียนพรรษา", "Candle Festival"], ["น่าไปดู", "worth seeing"], ["ครับ", "polite particle (male)"]], cultural: "Ubon Ratchathani's Candle Festival marks the start of Buddhist Lent (around July). The province is renowned for giant, intricately carved beeswax candles paraded through the streets." },
+  { num: 644, display: 6, preview: "ยี่เป็ง", thai: "ยี่เป็งที่เชียงใหม่คนนิยมปล่อยโคมลอยค่ะ", english: "At Yi Peng in Chiang Mai, people love to release sky lanterns.", gloss: [["ยี่เป็ง", "Yi Peng"], ["ที่", "in"], ["เชียงใหม่", "Chiang Mai"], ["คน", "people"], ["นิยม", "love to"], ["ปล่อย", "release"], ["โคมลอย", "sky lanterns"], ["ค่ะ", "polite particle (female)"]], cultural: "Yi Peng is the northern (Lanna) celebration held alongside Loi Krathong in Chiang Mai, where thousands of glowing โคมลอย (sky lanterns) are released into the night sky." },
+  { num: 645, display: 7, preview: "วันเกิด", thai: "ชวนไปงานวันเกิดหน่อยได้ไหมครับ", english: "Can I invite you to a birthday party?", gloss: [["ชวน", "invite"], ["ไป", "to"], ["งานวันเกิด", "birthday party"], ["หน่อย", "please (softener)"], ["ได้ไหม", "can I?"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 646, display: 8, preview: "ขึ้นบ้านใหม่", thai: "ซื้อของขวัญไปงานขึ้นบ้านใหม่กันไหมคะ", english: "Shall we buy a gift together for the housewarming?", gloss: [["ซื้อ", "buy"], ["ของขวัญ", "a gift"], ["ไป", "for"], ["งานขึ้นบ้านใหม่", "housewarming"], ["กัน", "together"], ["ไหม", "question particle"], ["คะ", "polite particle (female)"]], cultural: "A Thai housewarming (งานขึ้นบ้านใหม่) often includes a merit-making blessing — monks are invited to chant and bless the new home for good fortune." },
+  { num: 647, display: 9, preview: "คอนเสิร์ต", thai: "คืนนี้มีคอนเสิร์ตที่สวนสาธารณะครับ", english: "Tonight there's a concert at the park.", gloss: [["คืนนี้", "tonight"], ["มี", "there's"], ["คอนเสิร์ต", "a concert"], ["ที่", "at"], ["สวนสาธารณะ", "the park"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 648, display: 10, preview: "พลุ", thai: "เย็นนี้ว่างไหม | ไปดูพลุด้วยกันนะ", english: "Free this evening? Let's go watch the fireworks together.", gloss: [["เย็นนี้", "this evening"], ["ว่าง", "free"], ["ไหม", "question particle"], ["ไป", "go"], ["ดู", "watch"], ["พลุ", "fireworks"], ["ด้วยกัน", "together"], ["นะ", "softening particle"]], cultural: "" },
+  { num: 649, display: 11, preview: "แน่นอน", thai: "ไปแน่นอนค่ะ | งานนี้ไม่พลาดเลย", english: "Definitely going — I wouldn't miss this one.", gloss: [["ไป", "going"], ["แน่นอน", "definitely"], ["ค่ะ", "polite particle (female)"], ["งานนี้", "this event"], ["ไม่พลาด", "won't miss"], ["เลย", "at all"]], cultural: "" },
+  { num: 650, display: 12, preview: "ปีใหม่", thai: "ปีใหม่นี้กลับบ้านไปฉลองกับครอบครัวครับ", english: "This New Year I'll go home to celebrate with family.", gloss: [["ปีใหม่", "New Year"], ["นี้", "this"], ["กลับบ้าน", "go home"], ["ไป", "to"], ["ฉลอง", "celebrate"], ["กับ", "with"], ["ครอบครัว", "family"], ["ครับ", "polite particle (male)"]], cultural: "Over New Year and other major holidays, many Thais travel back to their home provinces — so big cities empty out as people 'กลับบ้าน' (return home) to be with family." },
+  { num: 651, display: 13, preview: "รับปริญญา", thai: "ได้บัตรเชิญไปงานรับปริญญาเพื่อนเดือนหน้าค่ะ", english: "I got an invitation to my friend's graduation next month.", gloss: [["ได้", "got"], ["บัตรเชิญ", "an invitation"], ["ไป", "to"], ["งานรับปริญญา", "graduation"], ["เพื่อน", "my friend's"], ["เดือนหน้า", "next month"], ["ค่ะ", "polite particle (female)"]], cultural: "Thai university graduations are major formal occasions, often presided over by a member of the royal family or a royal representative, with families gathering and presenting flowers." },
+  { num: 652, display: 14, preview: "กลุ่มเล็กๆ", thai: "ผมชอบเจอเพื่อนกลุ่มเล็กๆมากกว่าครับ", english: "I prefer meeting friends in small groups.", gloss: [["ผม", "I (male)"], ["ชอบ", "prefer"], ["เจอ", "meeting"], ["เพื่อน", "friends"], ["กลุ่มเล็กๆ", "in small groups"], ["มากกว่า", "more"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 653, display: 15, preview: "คนเยอะ", thai: "ช่วงปีใหม่ที่ไหนก็คนเยอะไปหมดครับ", english: "Around New Year, everywhere is packed with people.", gloss: [["ช่วงปีใหม่", "New Year period"], ["ที่ไหนก็", "everywhere"], ["คนเยอะ", "crowded"], ["ไปหมด", "all over"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 654, display: 16, preview: "ร่วมงาน", thai: "งานปีนี้มีคนมาร่วมงานเป็นร้อยเลยครับ", english: "Over a hundred people came to the event this year.", gloss: [["งาน", "the event"], ["ปีนี้", "this year"], ["มี", "had"], ["คน", "people"], ["มาร่วมงาน", "attend"], ["เป็นร้อย", "hundreds"], ["เลย", "emphasis"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 655, display: 17, preview: "เทศกาล", thai: "คนไทยยังให้ความสำคัญกับเทศกาลดั้งเดิมอย่างลอยกระทง", english: "Thai people still value traditional festivals like Loi Krathong.", gloss: [["คนไทย", "Thai people"], ["ยัง", "still"], ["ให้ความสำคัญ", "value"], ["กับ", "—"], ["เทศกาล", "festivals"], ["ดั้งเดิม", "traditional"], ["อย่าง", "like"], ["ลอยกระทง", "Loi Krathong"]], cultural: "" },
+  { num: 656, display: 18, preview: "รวมญาติ", thai: "สงกรานต์ไม่ใช่แค่เล่นน้ำ | แต่เป็นวันรวมญาติด้วย", english: "Songkran isn't just playing with water — it's also a day for family reunion.", gloss: [["สงกรานต์", "Songkran"], ["ไม่ใช่แค่", "isn't just"], ["เล่นน้ำ", "water play"], ["แต่", "but"], ["เป็น", "is"], ["วันรวมญาติ", "family reunion day"], ["ด้วย", "too"]], cultural: "Beyond the water fights, Songkran is a time to return home and pour scented water over elders' hands (รดน้ำดำหัว) as a gesture of respect and to receive their blessing." },
+  { num: 657, display: 19, preview: "กินเจ", thai: "ช่วงเทศกาลกินเจทั้งเมืองภูเก็ตคึกคักมากเลยครับ", english: "During the Vegetarian Festival, all of Phuket is really lively.", gloss: [["ช่วง", "during"], ["เทศกาลกินเจ", "Vegetarian Festival"], ["ทั้งเมือง", "the whole city"], ["ภูเก็ต", "Phuket"], ["คึกคัก", "lively"], ["มาก", "very"], ["เลย", "emphasis"], ["ครับ", "polite particle (male)"]], cultural: "Phuket's Vegetarian Festival (nine days in the 9th Chinese lunar month) has roots in the island's Chinese heritage. Devotees follow a strict vegan diet and perform dramatic purification rituals." },
+  { num: 658, display: 20, preview: "เป็นระเบียบ", thai: "งานเมื่อวานจัดได้เป็นระเบียบเรียบร้อยมากเลยครับ", english: "Yesterday's event was so well organised.", gloss: [["งาน", "the event"], ["เมื่อวาน", "yesterday"], ["จัดได้", "was run"], ["เป็นระเบียบเรียบร้อย", "very orderly"], ["มาก", "very"], ["เลย", "emphasis"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 659, display: 21, preview: "เตรียมงาน", thai: "ดูออกว่าทีมงานเตรียมงานกันมาหลายเดือนเลยครับ", english: "You can tell the team spent months preparing.", gloss: [["ดูออก", "you can tell"], ["ว่า", "that"], ["ทีมงาน", "the team"], ["เตรียมงาน", "prepared"], ["กัน", "together"], ["มา", "—"], ["หลายเดือน", "for months"], ["เลย", "emphasis"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 660, display: 22, preview: "งานแต่ง", thai: "ไปงานแต่งเพื่อนมา | บรรยากาศอบอุ่นมากครับ", english: "I went to a friend's wedding — the atmosphere was so warm.", gloss: [["ไป", "went to"], ["งานแต่ง", "a wedding"], ["เพื่อน", "friend's"], ["มา", "—"], ["บรรยากาศ", "the atmosphere"], ["อบอุ่น", "warm"], ["มาก", "very"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 661, display: 23, preview: "เลี้ยงรุ่น", thai: "ถ้าว่างคืนวันพฤหัส | มางานเลี้ยงรุ่นด้วยกันนะ", english: "If you're free Thursday night, come to the class reunion with us.", gloss: [["ถ้า", "if"], ["ว่าง", "free"], ["คืนวันพฤหัส", "Thursday night"], ["มา", "come"], ["งานเลี้ยงรุ่น", "class reunion"], ["ด้วยกัน", "together"], ["นะ", "softening particle"]], cultural: "" },
+  { num: 662, display: 24, preview: "เพลีย", thai: "ไปงานที่คนเยอะๆทีไร | กลับมาก็เพลียทุกที", english: "Whenever I go to crowded events, I always come back drained.", gloss: [["ไป", "go"], ["งาน", "events"], ["คนเยอะๆ", "crowded"], ["ทีไร", "whenever"], ["กลับมา", "come back"], ["ก็", "then"], ["เพลีย", "drained"], ["ทุกที", "every time"]], cultural: "" },
+  { num: 663, display: 25, preview: "มีพลัง", thai: "เจอผู้คนเยอะๆ | ยิ่งทำให้ผมรู้สึกมีพลังครับ", english: "Being around lots of people only makes me feel more energised.", gloss: [["เจอ", "being around"], ["ผู้คน", "people"], ["เยอะๆ", "lots of"], ["ยิ่ง", "the more"], ["ทำให้", "makes"], ["ผม", "me (male)"], ["รู้สึก", "feel"], ["มีพลัง", "energised"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 664, display: 26, preview: "สังสรรค์", thai: "หลังเลิกงานผมชอบไปสังสรรค์กับเพื่อน | ดีกว่าอยู่บ้านคนเดียว", english: "After work I'd rather go out with friends than stay home alone.", gloss: [["หลังเลิกงาน", "after work"], ["ผม", "I (male)"], ["ชอบ", "like to"], ["ไปสังสรรค์", "go socialise"], ["กับเพื่อน", "with friends"], ["ดีกว่า", "better than"], ["อยู่บ้าน", "staying home"], ["คนเดียว", "alone"]], cultural: "" },
+  { num: 665, display: 27, preview: "งานเลี้ยง", thai: "ช่วงปีใหม่หลายบ้านนิยมจัดงานเลี้ยงสังสรรค์กัน", english: "Around New Year, many households like to hold get-togethers.", gloss: [["ช่วงปีใหม่", "New Year period"], ["หลายบ้าน", "many households"], ["นิยม", "like to"], ["จัด", "throw"], ["งานเลี้ยงสังสรรค์", "get-togethers"], ["กัน", "—"]], cultural: "" },
+  { num: 666, display: 28, preview: "เลื่อน", thai: "ปีก่อนฝนตกหนัก | งานเลยต้องเลื่อนออกไป", english: "Last year it rained hard, so the event had to be postponed.", gloss: [["ปีก่อน", "last year"], ["ฝนตกหนัก", "rained hard"], ["งาน", "the event"], ["เลย", "so"], ["ต้อง", "had to"], ["เลื่อนออกไป", "be postponed"]], cultural: "" },
+  { num: 667, display: 29, preview: "ขอขมา", thai: "คนไทยลอยกระทง | เพื่อขอขมาและขอบคุณแม่น้ำ", english: "Thais float krathongs to apologise to and thank the river.", gloss: [["คนไทย", "Thai people"], ["ลอยกระทง", "float krathongs"], ["เพื่อ", "in order to"], ["ขอขมา", "ask forgiveness"], ["และ", "and"], ["ขอบคุณ", "thank"], ["แม่น้ำ", "the river"]], cultural: "Floating a krathong carries meaning: it thanks the water goddess (พระแม่คงคา) for water's life-giving role and asks forgiveness for having polluted the rivers." },
+  { num: 668, display: 30, preview: "ผีตาโขน", thai: "ใครชอบงานสีสันแปลกตา | ต้องไปดูผีตาโขนที่เลยสักครั้ง", english: "If you like colourful, unusual festivals, you've got to see Phi Ta Khon in Loei once.", gloss: [["ใคร", "whoever"], ["ชอบ", "likes"], ["งาน", "festivals"], ["สีสันแปลกตา", "colourful, unusual"], ["ต้อง", "should"], ["ไปดู", "go see"], ["ผีตาโขน", "Phi Ta Khon"], ["ที่เลย", "in Loei"], ["สักครั้ง", "at least once"]], cultural: "Phi Ta Khon, the 'ghost mask' festival in Dan Sai, Loei province, features vivid hand-painted masks and a lively procession blending Buddhist merit-making with local spirit beliefs. (Here เลย is the province name Loei, not the common particle เลย.)" },
+  { num: 669, display: 31, preview: "ดูตาราง", thai: "ขอบคุณที่ชวนนะคะ | ขอดูตารางก่อนแล้วจะบอก", english: "Thanks for the invite — let me check my schedule and I'll let you know.", gloss: [["ขอบคุณ", "thank you"], ["ที่ชวน", "for inviting"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"], ["ขอ", "let me"], ["ดูตาราง", "check my schedule"], ["ก่อน", "first"], ["แล้วจะบอก", "then I'll tell you"]], cultural: "Politely deferring — 'let me check and I'll let you know' — is a common, face-saving way to handle an invitation you can't immediately accept, softening a possible 'no'." },
+  { num: 670, display: 32, preview: "เซอร์ไพรส์", thai: "ปีนี้ตั้งใจจะจัดงานวันเกิดเซอร์ไพรส์ให้ยายค่ะ", english: "This year I'm planning a surprise birthday party for grandma.", gloss: [["ปีนี้", "this year"], ["ตั้งใจจะ", "plan to"], ["จัด", "throw"], ["งานวันเกิดเซอร์ไพรส์", "surprise birthday party"], ["ให้", "for"], ["ยาย", "grandma"], ["ค่ะ", "polite particle (female)"]], cultural: "Thai distinguishes grandparents by side of the family: ยาย is your mother's mother (your father's mother is ย่า)." },
+  { num: 671, display: 33, preview: "ร้องตาม", thai: "คอนเสิร์ตเมื่อคืนสนุกมาก | ร้องตามทั้งงานเลย", english: "Last night's concert was so much fun — everyone sang along the whole time.", gloss: [["คอนเสิร์ต", "the concert"], ["เมื่อคืน", "last night"], ["สนุกมาก", "so much fun"], ["ร้องตาม", "sang along"], ["ทั้งงาน", "the whole time"], ["เลย", "emphasis"]], cultural: "" },
+  { num: 672, display: 34, preview: "ประทับใจ", thai: "ถ้ามีโอกาสมาเที่ยวช่วงลอยกระทง | รับรองว่าประทับใจแน่นอน", english: "If you get the chance to visit during Loi Krathong, you'll surely be impressed.", gloss: [["ถ้า", "if"], ["มีโอกาส", "you get the chance"], ["มาเที่ยว", "to visit"], ["ช่วงลอยกระทง", "during Loi Krathong"], ["รับรองว่า", "I assure you"], ["ประทับใจ", "impressed"], ["แน่นอน", "for sure"]], cultural: "" },
+  { num: 673, display: 35, preview: "ล่วงหน้า", thai: "ซื้อตั๋วล่วงหน้าดีกว่า | จะได้ที่นั่งดีๆ", english: "Better to book tickets in advance so we get good seats.", gloss: [["ซื้อตั๋ว", "buy tickets"], ["ล่วงหน้า", "in advance"], ["ดีกว่า", "better"], ["จะได้", "so you get"], ["ที่นั่งดีๆ", "good seats"]], cultural: "" },
+  { num: 674, display: 36, preview: "เกินคาด", thai: "คนมาเยอะเกินคาด | เก้าอี้แทบไม่พอ", english: "Far more people came than expected — barely enough chairs.", gloss: [["คน", "people"], ["มา", "came"], ["เยอะ", "many"], ["เกินคาด", "more than expected"], ["เก้าอี้", "chairs"], ["แทบไม่พอ", "barely enough"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
