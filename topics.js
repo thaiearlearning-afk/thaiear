@@ -83,7 +83,11 @@
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "member", parts: [
         { name: "Cooking & recipes 1", sentences: 30, page: "topic-19a.html" },
         { name: "Cooking & recipes 2", sentences: 27, page: "topic-19b.html" } ] },
-    { id: 20, name: "Work & study", levels: ["li1","li2"], access: "member", parts: [20, 20] },
+    { id: 20, name: "Work & study", levels: ["li1","li2"], access: "member", parts: [
+        { name: "Work & study 1", sentences: 24, page: "topic-20a.html" },
+        { name: "Work & study 2", sentences: 24, page: "topic-20b.html" },
+        { name: "Work & study 3", sentences: 24, page: "topic-20c.html" },
+        { name: "Work & study 4", sentences: 21, page: "topic-20d.html" } ] },
     { id: 21, name: "Education system", levels: ["li1","li2"], sentences: 25, access: "member" },
     { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], sentences: 30 },
     { id: 23, name: "Nature & animals", levels: ["li1","li2"], sentences: 30, access: "premium" },

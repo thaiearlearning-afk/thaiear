@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 22: Work &amp; study 1</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-subtitle { font-size: 14px; font-weight: 500; color: var(--accent-mid); margin: 2px 0 10px; letter-spacing: -0.01em; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Work &amp; study 1</h1>
+  <p class="topic-subtitle">Daily work &amp; duties</p>
+  <p class="topic-meta"><strong>24 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-19b.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Cooking &amp; recipes 2</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-20b.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Work &amp; study 2</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "Job_LI1",
+  sentences: [
+  { num: 832, display: 1, preview: "เอกสาร", thai: "งานหลักๆคือดูแลเรื่องเอกสารครับ", english: "My main job is handling the paperwork.", gloss: [["งานหลักๆ", "main job"], ["ดูแล", "handle / look after"], ["เอกสาร", "documents / paperwork"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 833, display: 2, preview: "หน้าที่", thai: "หน้าที่ของเขาคือคอยตอบอีเมลลูกค้าค่ะ", english: "His job is answering customer emails.", gloss: [["หน้าที่", "duty / role"], ["คอย", "keep (doing)"], ["ตอบอีเมล", "answer emails"], ["ลูกค้า", "customer"], ["ค่ะ", "polite particle (female)"]], cultural: "เขา is a gender-neutral third-person pronoun — 'he', 'she' or 'they' depending on who's meant." },
+  { num: 834, display: 3, preview: "ตำแหน่ง", thai: "ตำแหน่งใหม่รับผิดชอบเยอะกว่าเดิมค่ะ", english: "The new position has a lot more responsibility than before.", gloss: [["ตำแหน่ง", "position"], ["รับผิดชอบ", "responsibility"], ["เยอะกว่าเดิม", "more than before"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 835, display: 4, preview: "ส่งงาน", thai: "เดี๋ยวผมส่งงานให้เจ้านายตรวจก่อนนะครับ", english: "Let me send the work to my boss to check first.", gloss: [["เดี๋ยว", "in a moment"], ["ส่งงาน", "submit the work"], ["เจ้านาย", "boss"], ["ตรวจ", "check / review"], ["ก่อน", "first"], ["นะครับ", "polite (male)"]], cultural: "เจ้านาย and หัวหน้า both translate as 'boss': เจ้านาย leans toward the employer/big boss, หัวหน้า toward your direct supervisor." },
+  { num: 836, display: 5, preview: "เข้างาน", thai: "ปกติเข้างานแปดโมง | เลิกห้าโมงเย็นค่ะ", english: "I usually start work at eight and finish at five.", gloss: [["ปกติ", "usually"], ["เข้างาน", "start work"], ["แปดโมง", "8 a.m."], ["เลิก", "finish"], ["ห้าโมงเย็น", "5 p.m."], ["ค่ะ", "polite (female)"]], cultural: "Thai tells daytime hours with โมง on a smaller clock: แปดโมง(เช้า) = 8 a.m., ห้าโมงเย็น = 5 p.m." },
+  { num: 837, display: 6, preview: "โอที", thai: "ช่วงนี้งานเยอะ | ต้องอยู่ทำโอทีเกือบทุกวันเลยครับ", english: "There's a lot of work lately — I have to do overtime almost every day.", gloss: [["ช่วงนี้", "these days"], ["งานเยอะ", "lots of work"], ["โอที", "overtime"], ["เกือบทุกวัน", "almost every day"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 838, display: 7, preview: "ประชุม", thai: "ประชุมเช้านี้ยาวมาก | กว่าจะเลิกก็เที่ยงเลยค่ะ", english: "This morning's meeting was so long it didn't finish until noon.", gloss: [["ประชุม", "meeting"], ["ยาว", "long"], ["กว่าจะเลิก", "before it finally ended"], ["เที่ยง", "noon"], ["ค่ะ", "polite (female)"]], cultural: "กว่าจะ…ก็ frames 'by the time X happened' — it dragged on longer than expected." },
+  { num: 839, display: 8, preview: "ลาป่วย", thai: "วันนี้ขอลาป่วยนะครับ | ไม่ค่อยสบาย", english: "I'd like to take sick leave today — I'm not feeling well.", gloss: [["ขอ", "may I…"], ["ลาป่วย", "take sick leave"], ["ไม่ค่อยสบาย", "not feeling well"]], cultural: "" },
+  { num: 840, display: 9, preview: "ลาพักร้อน", thai: "อาทิตย์หน้าผมลาพักร้อนสามวันครับ", english: "Next week I'm taking three days of annual leave.", gloss: [["อาทิตย์หน้า", "next week"], ["ลาพักร้อน", "take annual leave"], ["สามวัน", "three days"], ["ครับ", "polite (male)"]], cultural: "ลาพักร้อน (literally 'leave to rest from the heat') is the everyday word for paid annual/holiday leave." },
+  { num: 841, display: 10, preview: "ภายใน", thai: "งานนี้ต้องส่งภายในศุกร์นี้ครับ", english: "This has to be handed in by this Friday.", gloss: [["ต้องส่ง", "must hand in"], ["ภายใน", "within / by"], ["ศุกร์นี้", "this Friday"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 842, display: 11, preview: "ออฟฟิศ", thai: "ทำงานออฟฟิศมันก็นั่งหน้าคอมทั้งวันแหละครับ", english: "Office work is basically sitting at a computer all day.", gloss: [["ทำงานออฟฟิศ", "office work"], ["นั่งหน้าคอม", "sit at the computer"], ["ทั้งวัน", "all day"], ["แหละ", "(settling emphasis)"]], cultural: "แหละ adds a resigned 'that's just how it is' tone. คอม is short for คอมพิวเตอร์." },
+  { num: 843, display: 12, preview: "เร่งงาน", thai: "ช่วงนี้ลูกค้าเร่งงานมาก | เลยต้องรีบหน่อยค่ะ", english: "Clients are really pushing right now, so I have to hurry.", gloss: [["ลูกค้า", "client / customer"], ["เร่งงาน", "push / rush the work"], ["ต้องรีบ", "have to hurry"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 844, display: 13, preview: "ลูกน้อง", thai: "ลูกน้องในทีมมีอยู่ห้าคนค่ะ", english: "I've got five people in my team.", gloss: [["ลูกน้อง", "subordinates / staff"], ["ในทีม", "in the team"], ["ห้าคน", "five (people)"], ["ค่ะ", "polite (female)"]], cultural: "ลูกน้อง (lit. 'junior') are the people under you — the counterpart to หัวหน้า/เจ้านาย above you." },
+  { num: 845, display: 14, preview: "เจอคน", thai: "ชอบงานที่ได้เจอคนเยอะๆค่ะ", english: "I like work where I get to meet lots of people.", gloss: [["ชอบ", "like"], ["งานที่...", "work that..."], ["ได้เจอคน", "get to meet people"], ["เยอะๆ", "lots"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 846, display: 15, preview: "โต๊ะทำงาน", thai: "งานยุ่ง | จนต้องกินข้าวที่โต๊ะทำงานเลยค่ะ", english: "So busy I end up eating at my desk.", gloss: [["งานยุ่ง", "busy with work"], ["จน", "so much that"], ["โต๊ะทำงาน", "desk"], ["ค่ะ", "polite (female)"]], cultural: "Here จน means 'to the point that / so…that' (a result), not the other จน meaning 'poor'." },
+  { num: 847, display: 16, preview: "พักเที่ยง", thai: "พักเที่ยงปกติออกไปกินข้าวข้างนอกไหมคะ", english: "At lunch, do you usually go out to eat?", gloss: [["พักเที่ยง", "lunch break"], ["ออกไป", "go out"], ["กินข้าวข้างนอก", "eat out"], ["ไหม", "question particle"], ["คะ", "polite (female)"]], cultural: "" },
+  { num: 848, display: 17, preview: "ปรินต์", thai: "กระดาษปรินต์หมด | เดี๋ยวไปเอามาเติมนะครับ", english: "We're out of printer paper — I'll go refill it.", gloss: [["กระดาษปรินต์", "printer paper"], ["หมด", "run out"], ["ไปเอามาเติม", "go and refill"], ["นะครับ", "polite (male)"]], cultural: "" },
+  { num: 849, display: 18, preview: "เครื่องถ่ายเอกสาร", thai: "เครื่องถ่ายเอกสารใช้ไม่ได้ | ต้องเรียกช่างมาดูค่ะ", english: "The photocopier's not working — we have to call a technician.", gloss: [["เครื่องถ่ายเอกสาร", "photocopier"], ["ใช้ไม่ได้", "not working"], ["เรียกช่าง", "call a technician"], ["ค่ะ", "polite (female)"]], cultural: "ช่าง is the general word for any skilled tradesperson — technician, mechanic, repairman, craftsman." },
+  { num: 850, display: 19, preview: "โทรกลับ", thai: "เดี๋ยวโทรกลับนะครับ | ตอนนี้กำลังประชุมอยู่", english: "I'll call you back — I'm in a meeting right now.", gloss: [["โทรกลับ", "call back"], ["นะครับ", "polite (male)"], ["กำลัง...อยู่", "in the middle of"], ["ประชุม", "a meeting"]], cultural: "กำลัง…อยู่ wraps a verb to mean 'currently doing X' — the Thai present continuous." },
+  { num: 851, display: 20, preview: "โปรเจกต์", thai: "ตอนนี้ผมดูแลโปรเจกต์ใหม่อยู่ | งานเลยเยอะเป็นพิเศษครับ", english: "I'm running a new project at the moment, so it's especially busy.", gloss: [["ดูแล", "look after / run"], ["โปรเจกต์", "project"], ["งานเยอะ", "lots of work"], ["เป็นพิเศษ", "especially"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 852, display: 21, preview: "โรงงาน", thai: "พี่เขาทำงานในโรงงาน | เข้ากะดึกตลอดเลยค่ะ", english: "He works in a factory — always on the night shift.", gloss: [["พี่เขา", "he (older person)"], ["โรงงาน", "factory"], ["เข้ากะดึก", "work the night shift"], ["ตลอด", "always"], ["ค่ะ", "polite (female)"]], cultural: "พี่ ('elder sibling') doubles as a respectful pronoun for an older person. เข้ากะ = to work a shift; กะดึก = the night shift." },
+  { num: 853, display: 22, preview: "งานเสร็จ", thai: "ถ้างานเสร็จเร็ว | เย็นนี้ก็กลับบ้านได้ครับ", english: "If the work's done early, I can go home this evening.", gloss: [["ถ้า", "if"], ["งานเสร็จ", "work is done"], ["เร็ว", "early / fast"], ["กลับบ้าน", "go home"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 854, display: 23, preview: "จันทร์ถึงศุกร์", thai: "ที่นี่ทำงานจันทร์ถึงศุกร์ใช่ไหมคะ", english: "You work Monday to Friday here, right?", gloss: [["ที่นี่", "here"], ["จันทร์ถึงศุกร์", "Monday to Friday"], ["ใช่ไหม", "...right?"], ["คะ", "polite (female)"]], cultural: "" },
+  { num: 855, display: 24, preview: "บริษัท", thai: "อยู่บริษัทนี้มานานหรือยังครับ", english: "Have you been at this company long?", gloss: [["บริษัท", "company"], ["มานาน", "for a long time"], ["หรือยัง", "...yet?"], ["ครับ", "polite (male)"]], cultural: "…มา…หรือยัง asks 'have you been …-ing for a while (yet)?' — มา marks an action running up to now." },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

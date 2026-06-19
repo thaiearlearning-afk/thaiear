@@ -595,7 +595,7 @@ function cardsForTopic(t, pos) {
   const access = t.access || 'free';
   if (t.parts) {
     return t.parts.map((part, i) => {
-      const label = p + 'ab'[i];
+      const label = p + String.fromCharCode(97 + i); // a, b, c, d … (supports >2 parts)
       if (typeof part === 'number') return renderCard(t, label, part, access, null);
       return renderCard({ ...t, name: part.name }, label, part.sentences, access, part.page || null);
     }).join('');

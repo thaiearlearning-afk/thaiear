@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 22: Work &amp; study 3</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-subtitle { font-size: 14px; font-weight: 500; color: var(--accent-mid); margin: 2px 0 10px; letter-spacing: -0.01em; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Work &amp; study 3</h1>
+  <p class="topic-subtitle">Careers &amp; job-hunting</p>
+  <p class="topic-meta"><strong>24 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-20b.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Work &amp; study 2</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-20d.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Work &amp; study 4</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "Career_LI2",
+  sentences: [
+  { num: 880, display: 1, preview: "หางาน", thai: "ช่วงนี้กำลังหางานใหม่อยู่ | แต่ยังไม่เจอที่ถูกใจเลยครับ", english: "I'm job-hunting at the moment, but haven't found one I like yet.", gloss: [["หางาน", "job-hunt"], ["กำลัง...อยู่", "currently"], ["ยังไม่เจอ", "haven't found"], ["ที่ถูกใจ", "one I like"], ["ครับ", "polite (male)"]], cultural: "ถูกใจ (lit. 'hits the heart') = to one's liking / just right." },
+  { num: 881, display: 2, preview: "ใบสมัคร", thai: "ส่งใบสมัครไปหลายที่แล้ว | รอเขาเรียกสัมภาษณ์อยู่ครับ", english: "I've sent applications to several places and I'm waiting to be called for interviews.", gloss: [["ใบสมัคร", "application form"], ["หลายที่", "several places"], ["รอ", "wait"], ["เรียกสัมภาษณ์", "call for interview"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 882, display: 3, preview: "สัมภาษณ์", thai: "ตอนสัมภาษณ์เขาถามเรื่องประสบการณ์ทำงานเยอะมากค่ะ", english: "In the interview they asked a lot about work experience.", gloss: [["สัมภาษณ์", "interview"], ["เขาถาม", "they asked"], ["ประสบการณ์ทำงาน", "work experience"], ["เยอะมาก", "a lot"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 883, display: 4, preview: "ได้งาน", thai: "ได้งานที่ใหม่แล้ว | เริ่มต้นเดือนหน้าครับ", english: "I got the new job — I start next month.", gloss: [["ได้งาน", "got the job"], ["ที่ใหม่", "the new place"], ["เริ่มต้น", "start"], ["เดือนหน้า", "next month"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 884, display: 5, preview: "ลาออก", thai: "เขาเพิ่งลาออกจากงาน | เพื่อไปเปิดร้านของตัวเองค่ะ", english: "She just resigned to go and open her own shop.", gloss: [["เพิ่ง", "just (recently)"], ["ลาออก", "resign / quit"], ["เพื่อ", "in order to"], ["เปิดร้าน", "open a shop"], ["ของตัวเอง", "of one's own"]], cultural: "ลาออก = to resign/quit by choice — the opposite of เลิกจ้าง (to be laid off), which is the employer's decision." },
+  { num: 885, display: 6, preview: "เลิกจ้าง", thai: "เพื่อนผมโดนเลิกจ้างตอนบริษัทลดคนครับ", english: "My friend got laid off when the company cut staff.", gloss: [["เพื่อนผม", "my friend"], ["โดน", "got (adversely)"], ["เลิกจ้าง", "laid off"], ["ลดคน", "cut staff"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 886, display: 7, preview: "เลื่อนขั้น", thai: "อยากเลื่อนขั้นเร็วๆ | เลยพยายามพัฒนาตัวเองอยู่ตลอดครับ", english: "I want to move up quickly, so I keep developing myself.", gloss: [["อยาก", "want to"], ["เลื่อนขั้น", "move up / get promoted"], ["พยายาม", "try"], ["พัฒนาตัวเอง", "develop oneself"], ["ครับ", "polite (male)"]], cultural: "เลื่อนขั้น = move up a pay grade/level; เลื่อนตำแหน่ง (next part) = move into a higher position. Both translate as 'get promoted'." },
+  { num: 887, display: 8, preview: "เปลี่ยนสาย", thai: "ทำงานนี้มาหลายปีแล้ว | เริ่มรู้สึกอยากเปลี่ยนสายค่ะ", english: "I've worked this job for years now and I'm starting to want a career change.", gloss: [["ทำงานนี้มา", "worked this job for"], ["หลายปี", "many years"], ["เริ่มรู้สึก", "starting to feel"], ["เปลี่ยนสาย", "career change"], ["ค่ะ", "polite (female)"]], cultural: "สาย = line / field / track; เปลี่ยนสาย = switch career fields." },
+  { num: 888, display: 9, preview: "ความท้าทาย", thai: "เงินเดือนดีก็จริง | แต่งานนี้ไม่ค่อยมีความท้าทายครับ", english: "The pay's good, true, but this job isn't very challenging.", gloss: [["เงินเดือนดี", "good salary"], ["ก็จริง", "it's true that"], ["ไม่ค่อยมี", "not much"], ["ความท้าทาย", "challenge"], ["ครับ", "polite (male)"]], cultural: "…ก็จริง แต่… = 'it's true that …, but …', a concession frame." },
+  { num: 889, display: 10, preview: "เลื่อนตำแหน่ง", thai: "ปีนี้ได้เลื่อนตำแหน่งเป็นหัวหน้าทีมแล้วครับ", english: "This year I got promoted to team leader.", gloss: [["ปีนี้", "this year"], ["เลื่อนตำแหน่ง", "get promoted"], ["หัวหน้าทีม", "team leader"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 890, display: 11, preview: "ขึ้นเงินเดือน", thai: "เขาขอขึ้นเงินเดือน | แต่หัวหน้ายังไม่อนุมัติครับ", english: "He asked for a raise, but the boss hasn't approved it yet.", gloss: [["ขอ", "ask for"], ["ขึ้นเงินเดือน", "a pay rise"], ["หัวหน้า", "boss"], ["ยังไม่อนุมัติ", "hasn't approved"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 891, display: 12, preview: "เก็บประสบการณ์", thai: "ผมตั้งใจว่าจะเก็บประสบการณ์ที่นี่สักสองปีก่อนครับ", english: "I'm planning to build up experience here for a couple of years first.", gloss: [["ตั้งใจว่าจะ", "intend to"], ["เก็บประสบการณ์", "build up experience"], ["สักสองปี", "about two years"], ["ก่อน", "first"], ["ครับ", "polite (male)"]], cultural: "สัก before an amount = 'about / around' (a rough quantity)." },
+  { num: 892, display: 13, preview: "ฟรีแลนซ์", thai: "เขาออกมาทำฟรีแลนซ์ | จะได้มีเวลาเป็นของตัวเองมากขึ้นครับ", english: "He went freelance so he'd have more of his own time.", gloss: [["ออกมาทำ", "left to do"], ["ฟรีแลนซ์", "freelance"], ["จะได้", "so that"], ["เวลาของตัวเอง", "own time"], ["ครับ", "polite (male)"]], cultural: "จะได้ = 'so that / in order to be able to' — it marks the intended result of an action." },
+  { num: 893, display: 14, preview: "ผู้ประกอบการ", thai: "ไอเดียดีนะ | เคยคิดจะเป็นผู้ประกอบการไหมคะ", english: "That's a good idea — have you thought about becoming an entrepreneur?", gloss: [["ไอเดียดี", "good idea"], ["เคยคิด", "ever thought"], ["ผู้ประกอบการ", "entrepreneur"], ["ไหมคะ", "...? (female)"]], cultural: "ผู้ประกอบการ (entrepreneur / business operator) stresses founding & running; เจ้าของธุรกิจ (next) stresses ownership." },
+  { num: 894, display: 15, preview: "เจ้าของธุรกิจ", thai: "ตอนนี้หาคนทำงานยาก | เจ้าของธุรกิจเลยลำบากกันครับ", english: "It's hard to find workers right now, so business owners are struggling.", gloss: [["หาคนทำงานยาก", "hard to find workers"], ["เจ้าของธุรกิจ", "business owner"], ["ลำบาก", "have it tough"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 895, display: 16, preview: "ทักษะ", thai: "งานสมัยนี้ต้องมีทักษะหลายด้านครับ", english: "Jobs these days need a range of skills.", gloss: [["งานสมัยนี้", "jobs these days"], ["ต้องมี", "need to have"], ["ทักษะ", "skills"], ["หลายด้าน", "many areas"], ["ครับ", "polite (male)"]], cultural: "" },
+  { num: 896, display: 17, preview: "งานประจำ", thai: "งานประจำดีตรงที่รายได้ค่อนข้างมั่นคงครับ", english: "The good thing about a permanent job is the fairly steady income.", gloss: [["งานประจำ", "permanent job"], ["ดีตรงที่", "the good thing is"], ["รายได้", "income"], ["มั่นคง", "stable"], ["ครับ", "polite (male)"]], cultural: "งานประจำ = a regular, permanent salaried job — the counterpart to ฟรีแลนซ์ / พาร์ทไทม์." },
+  { num: 897, display: 18, preview: "พาร์ทไทม์", thai: "งานพาร์ทไทม์เลิกดึกหน่อย | แต่ได้เงินดีค่ะ", english: "The part-time job finishes late, but it pays well.", gloss: [["พาร์ทไทม์", "part-time"], ["เลิกดึก", "finish late"], ["แต่", "but"], ["ได้เงินดี", "pays well"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 898, display: 19, preview: "ผลประเมิน", thai: "ผลประเมินปีนี้ออกมาดี | เลยมีลุ้นได้ขึ้นเงินเดือนครับ", english: "My performance review came out well this year, so there's a chance of a raise.", gloss: [["ผลประเมิน", "review result"], ["ออกมาดี", "came out well"], ["มีลุ้น", "there's a chance"], ["ขึ้นเงินเดือน", "a pay rise"], ["ครับ", "polite (male)"]], cultural: "ลุ้น = to hope for / root for an uncertain outcome, cheering it on." },
+  { num: 899, display: 20, preview: "ยอดขาย", thai: "เดือนนี้ยอดขายพุ่งขึ้นกว่าเดิมเยอะเลยค่ะ", english: "Sales have jumped a lot this month.", gloss: [["เดือนนี้", "this month"], ["ยอดขาย", "sales figures"], ["พุ่งขึ้น", "jumped up"], ["กว่าเดิม", "than before"], ["ค่ะ", "polite (female)"]], cultural: "" },
+  { num: 900, display: 21, preview: "ผลงาน", thai: "ผลงานของเขาได้รับการยอมรับมากในวงการนี้ครับ", english: "His work is highly recognised in this field.", gloss: [["ผลงาน", "work / output"], ["ได้รับการยอมรับ", "is recognised"], ["วงการ", "field / circle"], ["ครับ", "polite (male)"]], cultural: "ได้รับ + a noun makes a neutral passive ('receives / gets [recognition]') — the polite flip side of adversative โดน." },
+  { num: 901, display: 22, preview: "เลือก", thai: "ถ้าเลือกได้ | อยากทำงานสายไหนมากที่สุดคะ", english: "If you could choose, which field would you most want to work in?", gloss: [["ถ้าเลือกได้", "if you could choose"], ["อยากทำงาน", "would want to work"], ["สายไหน", "which field"], ["มากที่สุด", "most"], ["คะ", "polite (female)"]], cultural: "" },
+  { num: 902, display: 23, preview: "ความมั่นคง", thai: "เดี๋ยวนี้หลายคนกังวลเรื่องความมั่นคงในงาน | เพราะเอไอเข้ามาแทนคนมากขึ้นครับ", english: "These days a lot of people worry about job security, because AI is increasingly replacing people.", gloss: [["กังวล", "worry"], ["ความมั่นคงในงาน", "job security"], ["เพราะ", "because"], ["เอไอ", "AI"], ["เข้ามาแทนคน", "replacing people"]], cultural: "เอไอ is 'AI', said as the English letters; the formal Thai term is ปัญญาประดิษฐ์." },
+  { num: 903, display: 24, preview: "กดดัน", thai: "งานนี้กดดันสูง | แต่ผมก็พยายามทำให้ดีที่สุดครับ", english: "This job is high-pressure, but I try my best.", gloss: [["กดดันสูง", "high-pressure"], ["แต่", "but"], ["พยายาม", "try"], ["ทำให้ดีที่สุด", "do my best"], ["ครับ", "polite (male)"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
