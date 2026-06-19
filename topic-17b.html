@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 19: Plans &amp; future 2</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Plans &amp; future 2</h1>
+  <p class="topic-meta"><strong>16 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-17a.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Plans &amp; future 1</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-39.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Tone twisters</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "Plans_LI1",
+  sentences: [
+  { num: 703, display: 1, preview: "ไม่แน่ใจ", thai: "ยังไม่แน่ใจเลยว่าสุดสัปดาห์นี้จะว่างหรือเปล่า", english: "I'm not sure yet whether I'll be free this weekend.", gloss: [["ยังไม่แน่ใจ", "not sure yet"], ["เลย", "at all"], ["ว่า", "whether"], ["สุดสัปดาห์", "weekend"], ["ว่าง", "free"], ["หรือเปล่า", "...or not"]], cultural: "" },
+  { num: 704, display: 2, preview: "ภาษาจีน", thai: "เดือนหน้าผมอาจจะไปเรียนภาษาจีนเพิ่ม", english: "Next month I might go and take extra Chinese lessons.", gloss: [["เดือนหน้า", "next month"], ["ผม", "I (male)"], ["อาจจะ", "might"], ["เรียน", "study"], ["ภาษาจีน", "Chinese"], ["เพิ่ม", "extra / more"]], cultural: "" },
+  { num: 706, display: 3, preview: "แล้วแต่", thai: "ไปหรือไม่ไป | แล้วแต่ว่างานจะเสร็จทันหรือเปล่าค่ะ", english: "Whether I go or not depends on whether I finish work in time.", gloss: [["ไปหรือไม่ไป", "whether I go or not"], ["แล้วแต่ว่า", "depends on whether"], ["งาน", "work"], ["เสร็จทัน", "finish in time"], ["หรือเปล่า", "...or not"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 707, display: 4, preview: "เรียนจบ", thai: "พอเรียนจบ | ก็จะกลับไปอยู่บ้านเกิดสักพักค่ะ", english: "Once I finish studying, I'll go back to my hometown for a while.", gloss: [["พอ...ก็", "once... (then)"], ["เรียนจบ", "finish studying"], ["กลับไปอยู่", "go back to live"], ["บ้านเกิด", "hometown"], ["สักพัก", "for a while"], ["ค่ะ", "polite particle (female)"]], cultural: "Going back to one's บ้านเกิด (home province) later in life is a strong thread in Thai culture — many who move to Bangkok for study or work fully intend to return to family and roots." },
+  { num: 708, display: 5, preview: "โบนัส", thai: "ถ้าได้โบนัส | ผมก็จะพาครอบครัวไปกินข้าวฉลองกันครับ", english: "If I get the bonus, I'll take the family out to celebrate.", gloss: [["ถ้า...ก็", "if... then"], ["ได้โบนัส", "get the bonus"], ["พาครอบครัว", "take the family"], ["ไปกินข้าว", "go out to eat"], ["ฉลอง", "celebrate"], ["ครับ", "polite particle (male)"]], cultural: "Marking good fortune by treating family or friends to a meal is a common Thai gesture — sharing a windfall around rather than keeping it to oneself." },
+  { num: 709, display: 6, preview: "เยี่ยมยาย", thai: "สิ้นเดือนพฤษภาคมคงจะได้กลับไปเยี่ยมยายสักที", english: "By the end of May I'll probably finally get to visit grandma.", gloss: [["สิ้นเดือน", "end of the month"], ["พฤษภาคม", "May"], ["คงจะ", "will probably"], ["กลับไป", "go back"], ["เยี่ยมยาย", "visit grandma"], ["สักที", "finally / at last"]], cultural: "ยาย is specifically the maternal grandmother — Thai has a separate word for each grandparent (ย่า paternal grandmother, ตา maternal grandfather, ปู่ paternal grandfather)." },
+  { num: 710, display: 7, preview: "นวด", thai: "ถ้าอาทิตย์หน้าไม่ติดอะไร | อยากไปนวดสักครั้งมากเลย", english: "If nothing comes up next week, I'd love to go for a massage.", gloss: [["ถ้า", "if"], ["อาทิตย์หน้า", "next week"], ["ไม่ติดอะไร", "nothing on / free"], ["อยากไป", "would love to go"], ["นวด", "get a massage"], ["สักครั้ง", "(at least) once"], ["มากเลย", "so much"]], cultural: "Thai massage (นวด) is everyday self-care, not a rare luxury — neighbourhood shops are cheap and widely used for aches and simple relaxation alike." },
+  { num: 711, display: 8, preview: "ตามแผน", thai: "ไม่ใช่ว่าทุกอย่างจะเป็นไปตามแผนเสมอไปนะครับ", english: "Not everything always goes to plan.", gloss: [["ไม่ใช่ว่า", "it's not that"], ["ทุกอย่าง", "everything"], ["เป็นไปตามแผน", "goes to plan"], ["เสมอไป", "always (necessarily)"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 712, display: 9, preview: "ดูหน้างาน", thai: "ไม่ต้องวางแผนอะไรมาก | เดี๋ยวค่อยดูหน้างานเอาก็ได้ค่ะ", english: "No need to over-plan — we'll just play it by ear.", gloss: [["ไม่ต้อง", "no need to"], ["วางแผน", "plan"], ["เดี๋ยวค่อย", "later on"], ["ดูหน้างาน", "play it by ear"], ["เอาก็ได้", "that'll do fine"], ["ค่ะ", "polite particle (female)"]], cultural: "ดูหน้างาน (literally 'look at the work-site') means deciding on the spot rather than planning ahead — it reflects a relaxed, improvise-as-you-go outlook that's widely accepted." },
+  { num: 713, display: 10, preview: "ตามใจ", thai: "ปกติผมไม่ค่อยคิดอะไรล่วงหน้า | ชอบทำอะไรตามใจมากกว่า", english: "I usually don't think too far ahead; I prefer being spontaneous.", gloss: [["ปกติ", "usually"], ["ผม", "I (male)"], ["ไม่ค่อย", "rarely"], ["คิดล่วงหน้า", "plan ahead"], ["ชอบ", "prefer"], ["ตามใจ", "as one pleases"], ["มากกว่า", "more"]], cultural: "" },
+  { num: 714, display: 11, preview: "พูดดังๆ", thai: "เวลาวางแผนอะไร | เราว่าพูดออกมาดังๆ ช่วยให้คิดง่ายขึ้นค่ะ", english: "When I'm planning something, I find saying it aloud helps me think it through.", gloss: [["เวลา", "when"], ["วางแผน", "planning"], ["เราว่า", "I find / I think"], ["พูดออกมาดังๆ", "say it out loud"], ["ช่วยให้", "helps to"], ["คิดง่ายขึ้น", "think more clearly"], ["ค่ะ", "polite particle (female)"]], cultural: "เรา ('we') is often used casually to mean 'I' in relaxed speech — a soft, friendly first-person that sounds less blunt than ผม or ฉัน." },
+  { num: 715, display: 12, preview: "บ้านของตัวเอง", thai: "อยากมีบ้านเป็นของตัวเองสักหลังในอนาคตค่ะ", english: "Someday I'd like a place of my own.", gloss: [["อยากมี", "would like to have"], ["บ้าน", "house"], ["เป็นของตัวเอง", "of one's own"], ["สักหลัง", "a house [หลัง counts buildings]"], ["ในอนาคต", "in the future"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 716, display: 13, preview: "ต่างประเทศ", thai: "ฝันว่าสักวันจะได้ไปใช้ชีวิตอยู่ต่างประเทศครับ", english: "I dream of living abroad one day.", gloss: [["ฝันว่า", "dream that"], ["สักวัน", "someday"], ["จะได้", "will get to"], ["ใช้ชีวิต", "live / spend life"], ["ต่างประเทศ", "abroad"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 717, display: 14, preview: "ตั้งตารอ", thai: "ตั้งตารอวันหยุดยาวอยู่เลยค่ะ", english: "I'm really looking forward to the long weekend.", gloss: [["ตั้งตารอ", "really looking forward to"], ["วันหยุดยาว", "long weekend"], ["อยู่เลย", "right now (emphatic)"], ["ค่ะ", "polite particle (female)"]], cultural: "Public holidays in Thailand are often nudged beside a weekend to make a วันหยุดยาว (long weekend) — prime time for heading home or taking a trip." },
+  { num: 718, display: 15, preview: "ตั้งเป้า", thai: "ตั้งเป้าไว้ว่าปีนี้จะพูดภาษาไทยให้คล่องครับ", english: "I've set myself a goal of speaking Thai fluently this year.", gloss: [["ตั้งเป้าไว้ว่า", "set a goal that"], ["ปีนี้", "this year"], ["พูดภาษาไทย", "speak Thai"], ["ให้คล่อง", "fluently"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 719, display: 16, preview: "เตรียมตัวสอบ", thai: "ช่วงนี้กำลังเตรียมตัวสอบอยู่ค่ะ", english: "I'm busy getting ready for an exam at the moment.", gloss: [["ช่วงนี้", "right now / lately"], ["กำลัง...อยู่", "in the middle of"], ["เตรียมตัว", "get ready / prepare"], ["สอบ", "exam"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

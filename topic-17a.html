@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 19: Plans &amp; future 1</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Plans &amp; future 1</h1>
+  <p class="topic-meta"><strong>28 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-38.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Idioms</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-17b.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Plans &amp; future 2</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "Plans_BEG",
+  sentences: [
+  { num: 675, display: 1, preview: "หมอฟัน", thai: "พรุ่งนี้จะไปหาหมอฟันค่ะ", english: "Tomorrow I'm going to the dentist.", gloss: [["พรุ่งนี้", "tomorrow"], ["จะ", "will"], ["ไปหา", "go and see"], ["หมอฟัน", "dentist"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 676, display: 2, preview: "เย็นนี้", thai: "เย็นนี้คุณจะทำอะไรคะ", english: "What are you doing this evening?", gloss: [["เย็นนี้", "this evening"], ["คุณ", "you"], ["ทำอะไร", "do what"], ["คะ", "polite particle (female, question)"]], cultural: "" },
+  { num: 677, display: 3, preview: "นัด", thai: "เสาร์นี้ผมนัดกับเพื่อนไว้แล้วครับ", english: "I've already made plans with a friend this Saturday.", gloss: [["เสาร์นี้", "this Saturday"], ["ผม", "I (male)"], ["นัด", "have plans / arrange"], ["กับเพื่อน", "with a friend"], ["ไว้แล้ว", "already, in advance"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 678, display: 4, preview: "ว่ายน้ำ", thai: "ว่าจะเริ่มหัดว่ายน้ำค่ะ", english: "I'm thinking of starting to learn to swim.", gloss: [["ว่าจะ", "thinking of (doing)"], ["เริ่ม", "start"], ["หัด", "learn / practise"], ["ว่ายน้ำ", "swim"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 679, display: 5, preview: "ไปไหน", thai: "วันนี้ยังไม่ไปไหนค่ะ", english: "I'm not going anywhere yet today.", gloss: [["วันนี้", "today"], ["ยังไม่", "not yet"], ["ไปไหน", "go anywhere"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 680, display: 6, preview: "นอนเร็ว", thai: "คืนนี้เราน่าจะนอนเร็วๆหน่อยนะครับ", english: "We should get an early night tonight.", gloss: [["คืนนี้", "tonight"], ["เรา", "we"], ["น่าจะ", "ought to / should"], ["นอนเร็ว", "sleep early"], ["หน่อย", "a bit"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 681, display: 7, preview: "วันหยุด", thai: "วันหยุดนี้คุณจะไปไหนไหมครับ", english: "Are you going anywhere this holiday?", gloss: [["วันหยุด", "day off / holiday"], ["จะ", "will"], ["ไปไหน", "go anywhere"], ["ไหม", "question particle"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 682, display: 8, preview: "ไปไม่ได้", thai: "วันนี้ไปไม่ได้ | ไว้วันหลังนะครับ", english: "I can't make it today — another time.", gloss: [["ไปไม่ได้", "can't make it"], ["ไว้วันหลัง", "another day / some other time"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 683, display: 9, preview: "ติดงาน", thai: "ถ้าไม่ติดงาน | เย็นนี้จะไปหาค่ะ", english: "If I'm not tied up with work, I'll come over this evening.", gloss: [["ถ้า", "if"], ["ไม่ติดงาน", "not tied up with work"], ["เย็นนี้", "this evening"], ["ไปหา", "come over / visit"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 684, display: 10, preview: "โทรหา", thai: "เดี๋ยวผมจะโทรหาคุณนะครับ", english: "I'll call you in a bit.", gloss: [["เดี๋ยว", "in a bit"], ["ผม", "I (male)"], ["โทรหา", "call (someone)"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 685, display: 11, preview: "เปลี่ยนวัน", thai: "ขอเปลี่ยนเป็นวันอื่นได้ไหมครับ | วันนั้นไม่สะดวก", english: "Could we change it to another day? That day isn't convenient.", gloss: [["ขอ", "may I / I'd like to"], ["เปลี่ยน", "change"], ["วันอื่น", "another day"], ["ได้ไหม", "is that OK?"], ["วันนั้น", "that day"], ["ไม่สะดวก", "not convenient"]], cultural: "" },
+  { num: 686, display: 12, preview: "ปิดเทอม", thai: "ปิดเทอมนี้มีแผนจะพาลูกไปไหนหรือยังคะ", english: "Do you have plans yet to take the kids somewhere this school break?", gloss: [["ปิดเทอม", "school break"], ["มีแผน", "have plans"], ["พาลูก", "take the kids"], ["ไปไหน", "somewhere"], ["หรือยัง", "...yet?"], ["คะ", "polite particle (female, question)"]], cultural: "" },
+  { num: 687, display: 13, preview: "ยกเลิก", thai: "ขอโทษจริงๆนะคะ | พอดีต้องขอยกเลิกค่ะ", english: "I'm so sorry — I'm going to have to cancel.", gloss: [["ขอโทษจริงๆ", "I'm so sorry"], ["นะ", "softening particle"], ["พอดี", "as it happens"], ["ต้องขอ", "have to"], ["ยกเลิก", "cancel"], ["ค่ะ", "polite particle (female)"]], cultural: "Adding พอดี ('as it happens') when cancelling frames the change as unlucky circumstance rather than personal choice — a small softener that helps both sides save face." },
+  { num: 688, display: 14, preview: "เลื่อนนัด", thai: "พอดีมีเรื่องด่วน | ขอเลื่อนนัดหน่อยได้ไหมครับ", english: "Something urgent's come up — could we postpone?", gloss: [["พอดี", "as it happens"], ["มีเรื่องด่วน", "something urgent's come up"], ["ขอ", "may I"], ["เลื่อนนัด", "postpone the appointment"], ["หน่อย", "a bit"], ["ได้ไหม", "...is that OK?"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 689, display: 15, preview: "นัดใหม่", thai: "ได้เลยค่ะ ไม่มีปัญหา | ไว้นัดกันใหม่ก็ได้", english: "Sure, no problem — we can just rearrange.", gloss: [["ได้เลย", "sure, of course"], ["ค่ะ", "polite particle (female)"], ["ไม่มีปัญหา", "no problem"], ["ไว้", "later"], ["นัดกันใหม่", "rearrange"], ["ก็ได้", "that's fine too"]], cultural: "" },
+  { num: 690, display: 16, preview: "เหมือนเดิม", thai: "พรุ่งนี้ยังนัดกันเหมือนเดิมใช่ไหมครับ", english: "We're still on for tomorrow, right?", gloss: [["พรุ่งนี้", "tomorrow"], ["ยัง", "still"], ["นัดกัน", "our arrangement"], ["เหมือนเดิม", "same as before"], ["ใช่ไหม", "...right?"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 691, display: 17, preview: "เปลี่ยนใจ", thai: "ขอโทษนะ | เราเปลี่ยนใจแล้ว ไม่ไปดีกว่าค่ะ", english: "Sorry — I've changed my mind, I'd rather not go.", gloss: [["ขอโทษ", "sorry"], ["นะ", "softening particle"], ["เปลี่ยนใจ", "change one's mind"], ["ไม่ไป", "not go"], ["ดีกว่า", "...would be better"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 692, display: 18, preview: "สัญญา", thai: "สัญญาว่าครั้งหน้าจะไปให้ได้แน่นอนครับ", english: "I promise I'll definitely make it next time.", gloss: [["สัญญาว่า", "promise that"], ["ครั้งหน้า", "next time"], ["ให้ได้", "manage to"], ["แน่นอน", "definitely"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 693, display: 19, preview: "กี่โมง", thai: "นัดกันกี่โมงดีครับ | บ่ายสองว่างไหม", english: "What time shall we meet? Are you free at two?", gloss: [["นัดกัน", "meet"], ["กี่โมงดี", "what time works?"], ["ครับ", "polite particle (male)"], ["บ่ายสอง", "2 p.m."], ["ว่าง", "free"], ["ไหม", "question particle"]], cultural: "" },
+  { num: 694, display: 20, preview: "เจอกัน", thai: "งั้นนัดกันบ่ายสองนะคะ | เจอกันหน้าร้าน", english: "Two it is, then — see you out front.", gloss: [["งั้น", "in that case / then"], ["นัดกัน", "let's meet"], ["บ่ายสอง", "2 p.m."], ["นะ", "softening particle"], ["คะ", "polite particle (female)"], ["เจอกัน", "see you"], ["หน้าร้าน", "out front (of the shop)"]], cultural: "" },
+  { num: 695, display: 21, preview: "ไปแทน", thai: "วันนั้นผมติดธุระ | ไปแทนกันได้ไหมครับ", english: "I'm tied up that day — could you go in my place?", gloss: [["วันนั้น", "that day"], ["ผม", "I (male)"], ["ติดธุระ", "tied up / have an errand"], ["ไปแทน", "go instead / cover"], ["ได้ไหม", "could you?"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 696, display: 22, preview: "ยืนยัน", thai: "รบกวนยืนยันด้วยนะครับว่าจะมาหรือเปล่า", english: "Could you kindly confirm whether you're coming?", gloss: [["รบกวน", "could I trouble you"], ["ยืนยัน", "confirm"], ["ด้วย", "too"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"], ["ว่า", "that"], ["จะมา", "you'll come"], ["หรือเปล่า", "...or not"]], cultural: "รบกวน (literally 'to disturb') is a polite lead-in to a request — like 'sorry to bother you, but...' — acknowledging the small imposition before asking." },
+  { num: 697, display: 23, preview: "เป็นไปได้", thai: "ว่าจะทำให้เสร็จพรุ่งนี้ | พอจะเป็นไปได้ไหมคะ", english: "I'm hoping to get it done by tomorrow — is that doable?", gloss: [["ว่าจะ", "intending to"], ["ทำให้เสร็จ", "get it finished"], ["พรุ่งนี้", "tomorrow"], ["พอจะ...ไหม", "would it be...?"], ["เป็นไปได้", "possible"], ["คะ", "polite particle (female, question)"]], cultural: "" },
+  { num: 698, display: 24, preview: "พิเศษ", thai: "แล้วคุณล่ะคะ | มีแผนจะทำอะไรพิเศษไหม", english: "And what about you? Any special plans?", gloss: [["แล้วคุณล่ะ", "and what about you?"], ["ล่ะ", "turns the question back"], ["คะ", "polite particle (female, question)"], ["มีแผน", "have plans"], ["ทำอะไรพิเศษ", "do anything special"], ["ไหม", "question particle"]], cultural: "" },
+  { num: 699, display: 25, preview: "วันไหนก็ได้", thai: "วันไหนก็ได้ครับ | แล้วแต่คุณสะดวกเลย", english: "Any day's fine — whatever suits you.", gloss: [["วันไหนก็ได้", "any day's fine"], ["ก็ได้", "...is fine"], ["ครับ", "polite particle (male)"], ["แล้วแต่คุณ", "up to you"], ["สะดวก", "convenient"], ["เลย", "at all / entirely"]], cultural: "" },
+  { num: 700, display: 26, preview: "งานยุ่ง", thai: "ช่วงนี้คงไปไหนไม่ได้หรอกค่ะ | งานยุ่งมาก", english: "I won't be able to go anywhere for a while, I'm afraid — work's hectic.", gloss: [["ช่วงนี้", "these days"], ["คง", "probably"], ["ไปไหนไม่ได้", "can't go anywhere"], ["หรอก", "softens the negative"], ["ค่ะ", "polite particle (female)"], ["งานยุ่งมาก", "swamped with work"]], cultural: "" },
+  { num: 701, display: 27, preview: "ไปด้วยกัน", thai: "จะไปด้วยกันมั้ย | บอกให้ทันก่อนนะ", english: "Are you coming along? Let me know in good time.", gloss: [["ไปด้วยกัน", "go together / come along"], ["มั้ย", "question particle (casual)"], ["บอกให้ทัน", "let me know in time"], ["ก่อน", "beforehand"], ["นะ", "softening particle"]], cultural: "" },
+  { num: 702, display: 28, preview: "ตัดสินใจ", thai: "ตัดสินใจแล้ว | แจ้งมาได้เลยนะฮะ", english: "Once you've decided, just let me know, yeah.", gloss: [["ตัดสินใจ", "decide"], ["แล้ว", "once (you have)"], ["แจ้งมา", "let me know"], ["ได้เลย", "just go ahead"], ["นะ", "softening particle"], ["ฮะ", "friendly casual 'ครับ'"]], cultural: "ฮะ is a relaxed, friendly stand-in for ครับ — warmer and less formal, common between people who know each other." },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
