@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 39: Tone twisters</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Tone twisters</h1>
+  <p class="topic-meta"><strong>20 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-38.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Idioms</span>
+      </span>
+    </a>
+    <span class="topic-nav-btn topic-nav-right disabled" aria-disabled="true">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Coming soon</span>
+        </span>
+        <span>→</span>
+      </span>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "ToneTwister_LI1",
+  sentences: [
+  { num: 586, display: 1, preview: "ไหมใหม่", thai: "ไหมใหม่ไม่ไหม้", english: "New silk doesn't burn", gloss: [["ไหม", "silk"], ["ใหม่", "new"], ["ไม่", "not"], ["ไหม้", "burn"]], cultural: "The classic four-tone twister — one syllable in four tones: rising, falling, low, falling." },
+  { num: 587, display: 2, preview: "ไม้ใหม่", thai: "ไม้ใหม่ไม่ไหม้", english: "New wood doesn't burn", gloss: [["ไม้", "wood"], ["ใหม่", "new"], ["ไม่", "not"], ["ไหม้", "burn"]], cultural: "A variant of #1 opening on a high tone (ไม้), almost identical in sound." },
+  { num: 588, display: 3, preview: "ใช่ไหม", thai: "ไหมใหม่ไม่ไหม้ | ใช่ไหม", english: "New silk doesn't burn, does it?", gloss: [["ไหม", "silk"], ["ใหม่", "new"], ["ไม่", "not"], ["ไหม้", "burn"], ["ใช่ไหม", "right?"]], cultural: "The four-tone classic plus the tag ใช่ไหม — itself another ไม tone play." },
+  { num: 589, display: 4, preview: "ไข่ไก่", thai: "ใครขายไข่ไก่", english: "Who sells chicken eggs?", gloss: [["ใคร", "who"], ["ขาย", "sells"], ["ไข่", "eggs"], ["ไก่", "chicken"]], cultural: "Contrasts mid and rising tones across the near-identical krai / khài / kài / gài." },
+  { num: 590, display: 5, preview: "ม้าหมามา", thai: "ม้ากับหมา | มาที่นี่", english: "The horse and dog came here.", gloss: [["ม้า", "horse"], ["กับ", "and"], ["หมา", "dog"], ["มา", "came"], ["ที่นี่", "here"]], cultural: "Three meanings of /maa/ in one breath: ม้า horse (high), หมา dog (rising), มา come (mid)." },
+  { num: 591, display: 6, preview: "ยาฆ่าหญ้า", thai: "ยาฆ่าหญ้า", english: "Weed killer (medicine that kills grass)", gloss: [["ยา", "chemical"], ["ฆ่า", "kills"], ["หญ้า", "grass"]], cultural: "Three tones in three syllables: ยา (mid), ฆ่า (falling), หญ้า (rising)." },
+  { num: 592, display: 7, preview: "อย่าใส่ยา", thai: "อย่าใส่ยาฆ่าหญ้า", english: "Don't put weed killer on the grass.", gloss: [["อย่า", "don't"], ["ใส่", "put"], ["ยา", "chemical"], ["ฆ่า", "kill"], ["หญ้า", "grass"]], cultural: "Builds on ยาฆ่าหญ้า — อย่า (don't) against ยา (chemical): same vowel, different tone." },
+  { num: 593, display: 8, preview: "ไหหาย", thai: "อย่าทำให้ไหหาย", english: "Don't lose the earthen jar.", gloss: [["อย่า", "don't"], ["ทำให้", "let"], ["ไห", "jar"], ["หาย", "get lost"]], cultural: "Five single syllables, five different tones in a row." },
+  { num: 594, display: 9, preview: "คนใบ้", thai: "คนใบ้ | ไปอ่านป้าย", english: "The mute/deaf person went to read the sign.", gloss: [["คน", "person"], ["ใบ้", "mute"], ["ไป", "went"], ["อ่าน", "read"], ["ป้าย", "sign"]], cultural: "Plays the vowels and tones of ใบ้ / ไป / ป้าย against one another." },
+  { num: 595, display: 10, preview: "กี่วา", thai: "ผู้ว่าถามว่า | ยาวกี่วา", english: "The governor asked how many waa long it was.", gloss: [["ผู้ว่า", "governor"], ["ถาม", "asked"], ["ว่า", "that"], ["ยาว", "long"], ["กี่", "how many"], ["วา", "waa"]], cultural: "ว่า three times in three roles: ผู้ว่า governor, ถามว่า asked that, and the length unit วา." },
+  { num: 596, display: 11, preview: "ยักษ์", thai: "ยักษ์ใหญ่ไล่ยักษ์เล็ก | ยักษ์เล็กไล่ยักษ์ใหญ่", english: "The big giant chases the small giant, the small giant chases the big giant.", gloss: [["ยักษ์", "giant"], ["ใหญ่", "big"], ["ไล่", "chases"], ["ยักษ์", "giant"], ["เล็ก", "small"], ["ยักษ์", "giant"], ["เล็ก", "small"], ["ไล่", "chases"], ["ยักษ์", "giant"], ["ใหญ่", "big"]], cultural: "A speed drill — ใหญ่ (big) and เล็ก (small) alternating around the anchor ยักษ์ (giant)." },
+  { num: 597, display: 12, preview: "เสือเสื้อเสื่อ", thai: "เสือใส่เสื้อสีส้ม | นั่งบนเสื่อสวย", english: "A tiger wearing an orange shirt sits on a beautiful mat.", gloss: [["เสือ", "tiger"], ["ใส่", "wears"], ["เสื้อ", "shirt"], ["สีส้ม", "orange"], ["นั่ง", "sits"], ["บน", "on"], ["เสื่อ", "mat"], ["สวย", "pretty"]], cultural: "Three เส- words with different tones and vowel lengths: เสือ tiger, เสื้อ shirt, เสื่อ mat." },
+  { num: 598, display: 13, preview: "ลิงลม", thai: "ลิงลมล้อเล่นลิ้น", english: "The monkey plays with its tongue.", gloss: [["ลิง", "monkey"], ["ลม", "wind"], ["ล้อ", "tease"], ["เล่น", "play"], ["ลิ้น", "tongue"]], cultural: "A pure ล drill — every word begins with the lateral consonant ล." },
+  { num: 599, display: 14, preview: "ใกล้ไกล", thai: "ไก่อยู่ใกล้ | กุ้งอยู่ไกล", english: "The chicken is near, the shrimp is far.", gloss: [["ไก่", "chicken"], ["อยู่", "is"], ["ใกล้", "near"], ["กุ้ง", "shrimp"], ["อยู่", "is"], ["ไกล", "far"]], cultural: "A minimal tone pair: ใกล้ near (falling) vs ไกล far (mid)." },
+  { num: 600, display: 15, preview: "เป็ดเผ็ด", thai: "เป็ดเผ็ดเผ็ด | 8 จาน", english: "Very very spicy duck, 8 plates.", gloss: [["เป็ด", "duck"], ["เผ็ด", "spicy"], ["เผ็ด", "spicy"], ["8", "eight"], ["จาน", "plates"]], cultural: "เป็ด duck vs เผ็ด spicy — identical but for an unaspirated vs aspirated initial. Repeat fast." },
+  { num: 601, display: 16, preview: "ระนองระยอง", thai: "ระนอง | ระยอง | ยะลา", english: "Ranong, Rayong, Yala (three southern province names).", gloss: [["ระนอง", "Ranong"], ["ระยอง", "Rayong"], ["ยะลา", "Yala"]], cultural: "Three real province names whose syllables blur together at speed — famous for catching out learners and native speakers alike." },
+  { num: 602, display: 17, preview: "มันเผือก", thai: "กินมันติดเหงือก | กินเผือกติดฟัน | กินทั้งมันกินทั้งเผือก | ติดทั้งเหงือกติดทั้งฟัน", english: "Eating yam sticks to your gums; eating taro sticks to your teeth; eating both sticks to both gums and teeth.", gloss: [["กิน", "eat"], ["มัน", "yam"], ["ติด", "sticks"], ["เหงือก", "gums"], ["กิน", "eat"], ["เผือก", "taro"], ["ติด", "sticks"], ["ฟัน", "teeth"], ["กิน", "eat"], ["ทั้ง", "both"], ["มัน", "yam"], ["กิน", "eat"], ["ทั้ง", "both"], ["เผือก", "taro"], ["ติด", "sticks"], ["ทั้ง", "both"], ["เหงือก", "gums"], ["ติด", "sticks"], ["ทั้ง", "both"], ["ฟัน", "teeth"]], cultural: "Often called the hardest Thai tongue twister: มัน/เผือก and เหงือก/ฟัน alternating in identical rhythm." },
+  { num: 603, display: 18, preview: "ชามเขียวชามขาว", thai: "ชามเขียวคว่ำเช้า | ชามขาวคว่ำค่ำ", english: "A green bowl turned upside down in the morning; a white bowl upside down at night.", gloss: [["ชาม", "bowl"], ["เขียว", "green"], ["คว่ำ", "upturned"], ["เช้า", "morning"], ["ชาม", "bowl"], ["ขาว", "white"], ["คว่ำ", "upturned"], ["ค่ำ", "night"]], cultural: "Tonal symmetry: เขียว green and ขาว white (both rising), เช้า morning vs ค่ำ night." },
+  { num: 604, display: 19, preview: "ผัดฟักฟักผัด", thai: "เช้าฟาดผัดฟัก | เย็นฟาดฟักผัด", english: "In the morning, stir-fried winter gourd; in the evening, winter gourd stir-fried.", gloss: [["เช้า", "morning"], ["ฟาด", "devours"], ["ผัด", "stir-fried"], ["ฟัก", "gourd"], ["เย็น", "evening"], ["ฟาด", "devours"], ["ฟัก", "gourd"], ["ผัด", "stir-fried"]], cultural: "ผัดฟัก vs ฟักผัด — the same two words swapped, easy to trip over at speed." },
+  { num: 605, display: 20, preview: "ป้าบ้า", thai: "ป้าบ้าพาปู่ไป | ปาปูและปลาในป่า", english: "The crazy aunt takes grandfather to throw crabs and fish in the forest.", gloss: [["ป้า", "aunt"], ["บ้า", "crazy"], ["พา", "takes"], ["ปู่", "grandpa"], ["ไป", "go"], ["ปา", "throw"], ["ปู", "crabs"], ["และ", "and"], ["ปลา", "fish"], ["ใน", "in"], ["ป่า", "forest"]], cultural: "Every word rides a ป/พ/ผ initial — a plosive-cluster speed drill." },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
