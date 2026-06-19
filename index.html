@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ThaiEar — Learn Thai by Listening</title>
-<meta name="description" content="A free Thai language listening resource. 38 topics, 1,000+ sentences, native-speed audio. Learn Thai by listening.">
+<meta name="description" content="A free Thai language listening resource. 39 topics, 1,000+ sentences, native-speed audio. Learn Thai by listening.">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -471,7 +471,7 @@
   <div class="hero-stats-band">
     <div class="hero-stats">
       <div>
-        <span class="hero-stat-num">38</span>
+        <span class="hero-stat-num" id="hero-topic-count">38</span>
         <span class="hero-stat-label">Topics</span>
       </div>
       <div>
@@ -532,6 +532,13 @@
    add/remove/reorder topics in topics.js only. See the level + numbering notes there
    and the "TOPIC NUMBERING" note at the end of this file. */
 const { topics, liveTopics, levelBadge, matchesFilter, canAccess } = window.ThaiEarTopics;
+
+// Hero "Topics" stat: derived from the topic list so it never needs hand-editing —
+// add/remove a topic in topics.js and this updates itself.
+(function () {
+  const el = document.getElementById('hero-topic-count');
+  if (el) el.textContent = topics.length;
+})();
 
 // Padlock glyph for gated cards (matches the line-icon style used in nav.js).
 const LOCK_SVG =
