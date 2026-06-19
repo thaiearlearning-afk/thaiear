@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 20: Clothing &amp; appearance 1</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Clothing &amp; appearance 1</h1>
+  <p class="topic-meta"><strong>22 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-17b.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Plans &amp; future 2</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-18b.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Clothing &amp; appearance 2</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "Clothing_BEG",
+  sentences: [
+  { num: 720, display: 1, preview: "เสื้อ", thai: "คุณชอบใส่เสื้อสีอะไรครับ", english: "What colour shirts do you like to wear?", gloss: [["คุณ", "you"], ["ชอบ", "like"], ["ใส่", "wear"], ["เสื้อ", "shirt / top"], ["สี", "colour"], ["อะไร", "what"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 721, display: 2, preview: "เสื้อยืด", thai: "ผมอยากได้เสื้อยืดสีขาวครับ", english: "I'd like a white t-shirt.", gloss: [["ผม", "I (male)"], ["อยากได้", "would like"], ["เสื้อยืด", "t-shirt"], ["สีขาว", "white"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 722, display: 3, preview: "กางเกงยีนส์", thai: "มีกางเกงยีนส์ให้ยืมไหมครับ", english: "Do you have any jeans I can borrow?", gloss: [["มี", "have"], ["กางเกงยีนส์", "jeans"], ["ให้ยืม", "to lend"], ["ไหม", "(question)"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 723, display: 4, preview: "กระโปรง", thai: "กระโปรงตัวนี้น่ารัก | เข้ากับสีตาคุณด้วยค่ะ", english: "This skirt is cute — it matches your eyes too.", gloss: [["กระโปรง", "skirt"], ["ตัวนี้", "this one"], ["น่ารัก", "cute"], ["เข้ากับ", "matches"], ["สีตา", "eye colour"], ["คุณ", "your"], ["ด้วย", "too"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 724, display: 5, preview: "รองเท้า", thai: "ใส่รองเท้าคู่ไหนดีครับ", english: "Which pair of shoes should I wear?", gloss: [["ใส่", "wear"], ["รองเท้า", "shoes"], ["คู่ไหน", "which pair"], ["ดี", "best"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 725, display: 6, preview: "หมวก", thai: "หมวกสีเหลืองใบนี้เท่ดีนะครับ", english: "This yellow hat looks cool.", gloss: [["หมวก", "hat"], ["สีเหลือง", "yellow"], ["ใบนี้", "this one"], ["เท่", "cool / stylish"], ["ดี", "quite"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 726, display: 7, preview: "ลอง", thai: "ขอลองเสื้อตัวนี้ได้ไหมคะ", english: "Can I try this shirt on?", gloss: [["ขอ", "may I"], ["ลอง", "try on"], ["เสื้อ", "top"], ["ตัวนี้", "this one"], ["ได้ไหม", "can I?"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 727, display: 8, preview: "ห้องลอง", thai: "ห้องลองอยู่ตรงไหนครับ", english: "Where is the fitting room?", gloss: [["ห้องลอง", "fitting room"], ["อยู่", "is (located)"], ["ตรงไหน", "where"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 728, display: 9, preview: "คับ", thai: "ตัวนี้คับไปหน่อยค่ะ", english: "This one is a bit too tight.", gloss: [["ตัวนี้", "this one"], ["คับ", "tight"], ["ไปหน่อย", "a bit too"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 729, display: 10, preview: "ไซส์", thai: "ตัวนี้ไซส์อะไรครับ", english: "What size is this one?", gloss: [["ตัวนี้", "this one"], ["ไซส์", "size"], ["อะไร", "what"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 730, display: 11, preview: "เบอร์", thai: "รองเท้าคู่นี้มีเบอร์อะไรบ้างคะ", english: "What sizes does this shoe come in?", gloss: [["รองเท้า", "shoes"], ["คู่นี้", "this pair"], ["มี", "have"], ["เบอร์", "size (number)"], ["อะไรบ้าง", "which"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 731, display: 12, preview: "สบาย", thai: "กางเกงตัวนี้ใส่สบายดีค่ะ", english: "These trousers are comfortable to wear.", gloss: [["กางเกง", "trousers"], ["ตัวนี้", "this one"], ["ใส่สบาย", "comfy to wear"], ["ดี", "quite"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 732, display: 13, preview: "แต่งตัว", thai: "วันนี้พี่แต่งตัวสวยจังเลยค่ะ", english: "You're dressed up so nicely today.", gloss: [["วันนี้", "today"], ["พี่", "you (older)"], ["แต่งตัว", "dress up"], ["สวย", "beautifully"], ["จัง", "so"], ["เลย", "really"], ["ค่ะ", "polite particle (female)"]], cultural: "Thai often uses kinship terms by relative age as polite address — พี่ ('older sibling') here just means someone a little older, not an actual sibling; ลุง/ป้า (uncle/auntie) and น้อง (younger) work the same way." },
+  { num: 733, display: 14, preview: "เสื้อแขนยาว", thai: "ถ้าหนาวก็ใส่เสื้อแขนยาวนะคะ", english: "If you're cold, wear a long-sleeved top.", gloss: [["ถ้า", "if"], ["หนาว", "cold"], ["ก็", "then"], ["ใส่", "wear"], ["เสื้อแขนยาว", "long-sleeved top"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 734, display: 15, preview: "ถอด", thai: "ถอดรองเท้าก่อนเข้าบ้านนะครับ", english: "Take your shoes off before going inside.", gloss: [["ถอด", "take off"], ["รองเท้า", "shoes"], ["ก่อน", "before"], ["เข้าบ้าน", "entering the house"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"]], cultural: "Removing your shoes before entering a Thai home — and any temple building — is expected, not optional." },
+  { num: 735, display: 16, preview: "แว่นกันแดด", thai: "ใส่แว่นกันแดดด้วยดีกว่าค่ะ", english: "Better put sunglasses on as well.", gloss: [["ใส่", "wear"], ["แว่นกันแดด", "sunglasses"], ["ด้วย", "as well"], ["ดีกว่า", "better to"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 736, display: 17, preview: "ชุด", thai: "พรุ่งนี้เราจะใส่ชุดอะไรไปงานดีคะ", english: "What should we wear to the event tomorrow?", gloss: [["พรุ่งนี้", "tomorrow"], ["เรา", "we"], ["จะ", "will"], ["ใส่", "wear"], ["ชุด", "outfit"], ["อะไร", "what"], ["ไปงาน", "to the event"], ["ดี", "best"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 737, display: 18, preview: "ถุงเท้า", thai: "ขอถุงเท้าสีดำราคาถูกสักคู่ครับ", english: "I'd like a pair of cheap black socks.", gloss: [["ขอ", "may I have"], ["ถุงเท้า", "socks"], ["สีดำ", "black"], ["ราคาถูก", "cheap"], ["สักคู่", "a pair"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 738, display: 19, preview: "กางเกงขายาว", thai: "กางเกงขายาวช่วยกันยุงได้ดีนะครับ", english: "Long trousers are good for keeping mosquitoes off.", gloss: [["กางเกงขายาว", "long trousers"], ["ช่วย", "help"], ["กันยุง", "keep mosquitoes off"], ["ได้ดี", "well"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"]], cultural: "Long trousers in the evening are a common defence against mosquitoes, which spread dengue in Thailand." },
+  { num: 739, display: 20, preview: "พอดี", thai: "ตัวนี้ใส่แล้วพอดีค่ะ | ชอบตัวนี้", english: "This one fits just right — I like it.", gloss: [["ตัวนี้", "this one"], ["ใส่แล้ว", "once on"], ["พอดี", "fits just right"], ["ค่ะ", "polite particle (female)"], ["ชอบ", "like it"]], cultural: "" },
+  { num: 740, display: 21, preview: "เปลี่ยนชุด", thai: "รีบเปลี่ยนชุดเร็ว | เดี๋ยวไปไม่ทันค่ะ", english: "Hurry and change your clothes — we'll be late.", gloss: [["รีบ", "hurry"], ["เปลี่ยนชุด", "change clothes"], ["เร็ว", "quickly"], ["เดี๋ยว", "or else"], ["ไปไม่ทัน", "won't make it in time"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 741, display: 22, preview: "รองเท้า", thai: "รองเท้าคู่นี้ใส่แล้วเจ็บเท้าค่ะ", english: "This pair of shoes hurts my feet.", gloss: [["รองเท้า", "shoes"], ["คู่นี้", "this pair"], ["ใส่แล้ว", "when worn"], ["เจ็บเท้า", "hurt my feet"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

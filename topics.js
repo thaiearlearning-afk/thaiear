@@ -77,7 +77,9 @@
     { id: 17, name: "Plans & future", levels: ["beg","li1"], access: "member", parts: [
         { name: "Plans & future 1", sentences: 28, page: "topic-17a.html" },
         { name: "Plans & future 2", sentences: 16, page: "topic-17b.html" } ] },
-    { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], sentences: 30, access: "member" },
+    { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], access: "member", parts: [
+        { name: "Clothing & appearance 1", sentences: 22, page: "topic-18a.html" },
+        { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html" } ] },
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], sentences: 30, access: "member" },
     { id: 20, name: "Work & study", levels: ["li1","li2"], access: "member", parts: [20, 20] },
     { id: 21, name: "Education system", levels: ["li1","li2"], sentences: 25, access: "member" },
