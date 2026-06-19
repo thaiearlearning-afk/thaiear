@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 18: Idioms</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Idioms</h1>
+  <p class="topic-meta"><strong>27 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-14b.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Feelings &amp; emotions 2</span>
+      </span>
+    </a>
+    <span class="topic-nav-btn topic-nav-right disabled" aria-disabled="true">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Coming soon</span>
+        </span>
+        <span>→</span>
+      </span>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "Idiom_BEG",
+  sentences: [
+  { num: 559, display: 1, preview: "กรรม", thai: "กรรมตามสนอง", english: "Karma follows and repays", gloss: [["กรรม", "karma"], ["ตาม", "follows"], ["สนอง", "repays"]], cultural: "You reap what you sow; what goes around comes around" },
+  { num: 560, display: 2, preview: "สมน้ำหน้า", thai: "สมน้ำหน้า", english: "You get what you deserve", gloss: [["สม", "serves"], ["น้ำหน้า", "your face"]], cultural: "Serves you right; said when someone suffers the consequences of their own actions" },
+  { num: 561, display: 3, preview: "เข้าหูซ้าย", thai: "เข้าหูซ้าย | ทะลุหูขวา", english: "In the left ear, out the right", gloss: [["เข้า", "enters"], ["หู", "ear"], ["ซ้าย", "left"], ["ทะลุ", "out through"], ["หู", "ear"], ["ขวา", "right"]], cultural: "Not taking in what you're told; advice going in one ear and out the other" },
+  { num: 562, display: 4, preview: "กำแพงมีหู", thai: "กำแพงมีหู | ประตูมีตา", english: "Walls have ears, doors have eyes", gloss: [["กำแพง", "wall"], ["มี", "has"], ["หู", "ears"], ["ประตู", "door"], ["มี", "has"], ["ตา", "eyes"]], cultural: "Be careful what you say; secrets get out" },
+  { num: 563, display: 5, preview: "ขนหัวลุก", thai: "ขนหัวลุก", english: "Hair standing up on the head", gloss: [["ขน", "hair"], ["หัว", "head"], ["ลุก", "stands up"]], cultural: "To get goosebumps; to be terrified" },
+  { num: 564, display: 6, preview: "กบในกะลา", thai: "กบในกะลาครอบ", english: "Frog under a coconut shell", gloss: [["กบ", "frog"], ["ใน", "under"], ["กะลา", "coconut shell"], ["ครอบ", "covering"]], cultural: "Someone with limited experience who thinks they know everything" },
+  { num: 565, display: 7, preview: "กระต่ายตื่นตูม", thai: "กระต่ายตื่นตูม", english: "The panicking hare", gloss: [["กระต่าย", "hare"], ["ตื่น", "startled"], ["ตูม", "(a bang)"]], cultural: "Someone who overreacts or panics without thinking first" },
+  { num: 566, display: 8, preview: "ปากหวาน", thai: "ปากหวาน", english: "Sweet mouth", gloss: [["ปาก", "mouth"], ["หวาน", "sweet"]], cultural: "A sweet-talker; someone who flatters people to get what they want" },
+  { num: 567, display: 9, preview: "ก้นเปรี้ยว", thai: "ปากหวาน | ก้นเปรี้ยว", english: "Sweet mouth, sour bottom", gloss: [["ปาก", "mouth"], ["หวาน", "sweet"], ["ก้น", "bottom"], ["เปรี้ยว", "sour"]], cultural: "Someone who says nice things but is insincere or two-faced" },
+  { num: 568, display: 10, preview: "กงเกวียน", thai: "กงเกวียน | กำเกวียน", english: "The cart wheel, the cart spokes", gloss: [["กง", "wheel rim"], ["เกวียน", "cart"], ["กำ", "spoke"], ["เกวียน", "cart"]], cultural: "What goes around comes around; karma repays in kind" },
+  { num: 569, display: 11, preview: "ใกล้เกลือ", thai: "ใกล้เกลือ | กินด่าง", english: "Near salt but eating lye", gloss: [["ใกล้", "near"], ["เกลือ", "salt"], ["กิน", "eat"], ["ด่าง", "lye"]], cultural: "Not appreciating what you have right in front of you; overlooking the obvious and valuable" },
+  { num: 570, display: 12, preview: "ขี่ช้าง", thai: "ขี่ช้าง | จับตั๊กแตน", english: "Ride an elephant to catch a grasshopper", gloss: [["ขี่", "ride"], ["ช้าง", "elephant"], ["จับ", "catch"], ["ตั๊กแตน", "grasshopper"]], cultural: "Investing far too much effort or money on something trivial" },
+  { num: 571, display: 13, preview: "อดเปรี้ยว", thai: "อดเปรี้ยวไว้ | กินหวาน", english: "Forego the sour to eat the sweet", gloss: [["อด", "forgo"], ["เปรี้ยว", "the sour"], ["ไว้", "for later"], ["กิน", "eat"], ["หวาน", "the sweet"]], cultural: "Be patient now for better things later; good things come to those who wait" },
+  { num: 572, display: 14, preview: "หวานเป็นลม", thai: "หวานเป็นลม | ขมเป็นยา", english: "Sweet words are wind, bitter words are medicine", gloss: [["หวาน", "sweet"], ["เป็น", "is"], ["ลม", "wind"], ["ขม", "bitter"], ["เป็น", "is"], ["ยา", "medicine"]], cultural: "Honest criticism is more valuable than empty flattery" },
+  { num: 573, display: 15, preview: "ขายผ้า", thai: "ขายผ้า | เอาหน้ารอด", english: "Sell your clothes to save face", gloss: [["ขาย", "sell"], ["ผ้า", "clothes"], ["เอา", "take"], ["หน้า", "face"], ["รอด", "survive"]], cultural: "To sacrifice something real just to preserve appearances" },
+  { num: 574, display: 16, preview: "น้ำท่วมทุ่ง", thai: "น้ำท่วมทุ่ง | ผักบุ้งโหรงเหรง", english: "The field floods but the morning glory is sparse", gloss: [["น้ำท่วม", "floods"], ["ทุ่ง", "field"], ["ผักบุ้ง", "morning glory"], ["โหรงเหรง", "sparse"]], cultural: "Talking a lot but saying very little; all talk, no content" },
+  { num: 575, display: 17, preview: "ข้าวใหม่ปลามัน", thai: "ข้าวใหม่ | ปลามัน", english: "New rice, tasty fish", gloss: [["ข้าว", "rice"], ["ใหม่", "new"], ["ปลา", "fish"], ["มัน", "rich"]], cultural: "The honeymoon phase; something new always seems best" },
+  { num: 576, display: 18, preview: "ไก่อ่อน", thai: "ไก่อ่อน", english: "Young chick", gloss: [["ไก่", "chicken"], ["อ่อน", "young"]], cultural: "Naive, inexperienced, easily fooled" },
+  { num: 577, display: 19, preview: "ไม่กินหวาน", thai: "กินคาวไม่กินหวาน | สันดานไพร่", english: "Not eating dessert is the character of a commoner", gloss: [["กิน", "eat"], ["คาว", "savoury"], ["ไม่", "not"], ["กิน", "eat"], ["หวาน", "sweet"], ["สันดาน", "nature"], ["ไพร่", "commoner"]], cultural: "Jokingly used as an excuse to eat dessert; there is always room for dessert" },
+  { num: 578, display: 20, preview: "ยามรัก", thai: "ยามรักน้ำต้มผักก็ว่าหวาน | ยามชังน้ำตาลก็ว่าขม", english: "When in love, vegetable broth tastes sweet; when you hate, sugar tastes bitter", gloss: [["ยาม", "when"], ["รัก", "in love"], ["น้ำต้ม", "broth"], ["ผัก", "vegetable"], ["ก็", "even"], ["ว่า", "seems"], ["หวาน", "sweet"], ["ยาม", "when"], ["ชัง", "hating"], ["น้ำตาล", "sugar"], ["ก็", "even"], ["ว่า", "seems"], ["ขม", "bitter"]], cultural: "Love and hate colour everything; love is blind" },
+  { num: 579, display: 21, preview: "กัดหางตัวเอง", thai: "กัดหางตัวเอง", english: "Biting one's own tail", gloss: [["กัด", "bite"], ["หาง", "tail"], ["ตัวเอง", "one's own"]], cultural: "Talking in circles; contradicting yourself; an argument that defeats itself" },
+  { num: 580, display: 22, preview: "เกลือเป็นหนอน", thai: "เกลือเป็นหนอน", english: "Salt turning into maggots", gloss: [["เกลือ", "salt"], ["เป็น", "turns to"], ["หนอน", "maggots"]], cultural: "Betrayal by someone close, especially family" },
+  { num: 581, display: 23, preview: "แกะดำ", thai: "แกะดำ", english: "Black sheep", gloss: [["แกะ", "sheep"], ["ดำ", "black"]], cultural: "The odd one out; someone who acts differently from the group" },
+  { num: 582, display: 24, preview: "แขวนนวม", thai: "แขวนนวม", english: "Hang up the boxing gloves", gloss: [["แขวน", "hang up"], ["นวม", "boxing gloves"]], cultural: "To retire or quit something" },
+  { num: 583, display: 25, preview: "กว่าถั่วจะสุก", thai: "กว่าถั่วจะสุก | งาก็ไหม้", english: "By the time the beans cook, the sesame burns", gloss: [["กว่า", "by the time"], ["ถั่ว", "beans"], ["จะ", "will"], ["สุก", "cook"], ["งา", "sesame"], ["ก็", "already"], ["ไหม้", "burns"]], cultural: "Being so indecisive that you lose on both fronts" },
+  { num: 584, display: 26, preview: "ก่อแล้วต้องสาน", thai: "ก่อแล้ว | ต้องสาน", english: "Start it, must finish it", gloss: [["ก่อ", "start"], ["แล้ว", "then"], ["ต้อง", "must"], ["สาน", "weave on"]], cultural: "Once you've started something, you have to see it through" },
+  { num: 585, display: 27, preview: "เข็นครกขึ้นเขา", thai: "เข็นครกขึ้นเขา", english: "Pushing a mortar up a hill", gloss: [["เข็น", "push"], ["ครก", "mortar"], ["ขึ้น", "up"], ["เขา", "hill"]], cultural: "Doing something extremely difficult; a Sisyphean task" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
