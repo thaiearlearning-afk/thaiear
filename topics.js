@@ -94,10 +94,11 @@
     { id: 34, name: "Thai culture & customs", levels: ["li1","li2"], access: "premium", parts: [22, 28] },
     { id: 35, name: "Buddhism", levels: ["li1","li2"], parts: [22, 28] },
     { id: 36, name: "Romantic relationships & dating", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 20, access: "member" },
   ];
 
   // Keyed by FROZEN id (never display position). Add entries as topics go live.
-  const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 6: 'topic-06.html', 7: 'topic-07.html', 8: 'topic-08.html', 10: 'topic-10.html', 11: 'topic-11.html', 37: 'topic-37.html', 38: 'topic-38.html' };
+  const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 6: 'topic-06.html', 7: 'topic-07.html', 8: 'topic-08.html', 10: 'topic-10.html', 11: 'topic-11.html', 37: 'topic-37.html', 38: 'topic-38.html', 39: 'topic-39.html' };
 
   // Level order + labels. Difficulty is a RANGE: a topic's label shows floor -> ceiling.
   const LEVEL_ORDER = ['beg', 'li1', 'li2'];
