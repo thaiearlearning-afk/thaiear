@@ -74,7 +74,9 @@
     { id: 15, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 33, access: "premium" },
     { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 36, access: "member" },
     { id: 38, name: "Idioms", levels: ["beg","li1"], sentences: 27, access: "premium" },
-    { id: 17, name: "Plans & future", levels: ["beg","li1"], sentences: 20, access: "member" },
+    { id: 17, name: "Plans & future", levels: ["beg","li1"], access: "member", parts: [
+        { name: "Plans & future 1", sentences: 28, page: "topic-17a.html" },
+        { name: "Plans & future 2", sentences: 16, page: "topic-17b.html" } ] },
     { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], sentences: 30, access: "member" },
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], sentences: 30, access: "member" },
     { id: 20, name: "Work & study", levels: ["li1","li2"], access: "member", parts: [20, 20] },
