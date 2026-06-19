@@ -53,7 +53,7 @@ export async function onRequestGet(context) {
   // the free-member incentive topic). Free topics never reach this endpoint. Member files
   // share the private bucket with premium; only this list decides login-vs-subscription.
   const premiumList = listEnv(env.PREMIUM_PREFIXES, ['Colours_BEG', 'Time_BEG', 'Home_BEG', 'Shopping_BEG', 'Transport_BEG', 'Transport_LI1', 'Health_BEG', 'Health_LI1', 'Feelings_BEG', 'Feelings_LI1', 'Idiom_BEG', 'Hobbies_BEG']);
-  const memberList = listEnv(env.MEMBER_PREFIXES, ['Weather_BEG', 'ToneTwister_LI1']);
+  const memberList = listEnv(env.MEMBER_PREFIXES, ['Weather_BEG', 'ToneTwister_LI1', 'SocialLife_BEG']);
   // Member only if explicitly listed (and not premium); unknown private files default to premium.
   const tier = (memberList.includes(prefix) && !premiumList.includes(prefix)) ? 'member' : 'premium';
 

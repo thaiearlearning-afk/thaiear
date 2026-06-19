@@ -72,7 +72,7 @@
         { name: "Feelings & emotions 1", sentences: 23, page: "topic-14a.html" },
         { name: "Feelings & emotions 2", sentences: 26, page: "topic-14b.html" } ] },
     { id: 15, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 33, access: "premium" },
-    { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 25, access: "member" },
+    { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 36, access: "member" },
     { id: 38, name: "Idioms", levels: ["beg","li1"], sentences: 27, access: "premium" },
     { id: 17, name: "Plans & future", levels: ["beg","li1"], sentences: 20, access: "member" },
     { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], sentences: 30, access: "member" },
@@ -98,7 +98,7 @@
   ];
 
   // Keyed by FROZEN id (never display position). Add entries as topics go live.
-  const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 6: 'topic-06.html', 7: 'topic-07.html', 8: 'topic-08.html', 10: 'topic-10.html', 11: 'topic-11.html', 15: 'topic-15.html', 37: 'topic-37.html', 38: 'topic-38.html', 39: 'topic-39.html' };
+  const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 6: 'topic-06.html', 7: 'topic-07.html', 8: 'topic-08.html', 10: 'topic-10.html', 11: 'topic-11.html', 15: 'topic-15.html', 16: 'topic-16.html', 37: 'topic-37.html', 38: 'topic-38.html', 39: 'topic-39.html' };
 
   // Level order + labels. Difficulty is a RANGE: a topic's label shows floor -> ceiling.
   const LEVEL_ORDER = ['beg', 'li1', 'li2'];
