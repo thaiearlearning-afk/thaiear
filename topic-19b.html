@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 21: Cooking &amp; recipes 2</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Cooking &amp; recipes 2</h1>
+  <p class="topic-meta"><strong>27 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-19a.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Cooking &amp; recipes 1</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-39.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Tone twisters</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "Recipes_LI1",
+  sentences: [
+  { num: 805, display: 1, preview: "ตะไคร้", thai: "ทำต้มยำต้องมีตะไคร้กับใบมะกรูดนะ", english: "To make tom yum you need lemongrass and kaffir lime leaves.", gloss: [["ทำ", "make"], ["ต้มยำ", "tom yum"], ["ต้องมี", "you need"], ["ตะไคร้", "lemongrass"], ["กับ", "and"], ["ใบมะกรูด", "kaffir lime leaves"], ["นะ", "softening particle"]], cultural: "ต้มยำ (hot-and-sour soup) gets its aroma from fresh ตะไคร้ (lemongrass), ข่า (galangal) and ใบมะกรูด (kaffir lime leaves). These are infused for fragrance and pushed aside, not eaten." },
+  { num: 806, display: 2, preview: "กะทิ", thai: "ใส่กะทิตอนท้ายๆ จะได้ไม่แตกมัน", english: "Add the coconut milk near the end so it doesn't separate.", gloss: [["ใส่", "add"], ["กะทิ", "coconut milk"], ["ตอนท้ายๆ", "near the end"], ["จะได้ไม่", "so it won't"], ["แตกมัน", "curdle"]], cultural: "กะทิ (coconut milk) is added late and never boiled hard, so it doesn't แตกมัน — literally 'the oil breaks', i.e. curdles and separates. A real curry-making term." },
+  { num: 807, display: 3, preview: "เคี่ยว", thai: "ถ้าอยากให้แกงข้นขึ้นก็เคี่ยวต่ออีกหน่อย", english: "If you want the curry thicker, simmer it a bit longer.", gloss: [["ถ้า", "if"], ["อยากให้", "you want"], ["แกง", "the curry"], ["ข้นขึ้น", "thicker"], ["ก็", "then"], ["เคี่ยวต่อ", "keep simmering"], ["อีกหน่อย", "a bit longer"]], cultural: "" },
+  { num: 808, display: 4, preview: "เติมน้ำ", thai: "ถ้าเค็มไปก็เติมน้ำลงไปอีกนิด", english: "If it's too salty, add a little more water.", gloss: [["ถ้า", "if"], ["เค็มไป", "too salty"], ["ก็", "then"], ["เติมน้ำ", "add water"], ["ลงไป", "in"], ["อีกนิด", "a little more"]], cultural: "" },
+  { num: 809, display: 5, preview: "ชิม", thai: "ชิมดูก่อนนะ | ถ้าจืดค่อยเติมน้ำปลา", english: "Taste it first; if it's bland, add fish sauce.", gloss: [["ชิมดู", "taste it"], ["ก่อน", "first"], ["นะ", "softening particle"], ["ถ้าจืด", "if bland"], ["ค่อย", "then"], ["เติมน้ำปลา", "add fish sauce"]], cultural: "" },
+  { num: 810, display: 6, preview: "ไฟอ่อน", thai: "เคี่ยวด้วยไฟอ่อนๆ จะได้ไม่ไหม้", english: "Simmer on low heat so it won't burn.", gloss: [["เคี่ยว", "simmer"], ["ด้วยไฟอ่อนๆ", "on low heat"], ["จะได้ไม่", "so it won't"], ["ไหม้", "burn"]], cultural: "Thai recipes name three heat levels: ไฟอ่อน (low), ไฟกลาง (medium), ไฟแรง (high) — ไฟ literally means 'fire'. เร่งไฟ is to turn it up, หรี่ไฟ to turn it down." },
+  { num: 811, display: 7, preview: "ไฟแรง", thai: "ผัดด้วยไฟแรงผักจะกรอบกว่า", english: "Stir-frying on high heat keeps the veg crispier.", gloss: [["ผัด", "stir-fry"], ["ด้วยไฟแรง", "on high heat"], ["ผัก", "the veg"], ["จะกรอบกว่า", "stays crispier"]], cultural: "" },
+  { num: 812, display: 8, preview: "ร้อนจัด", thai: "เวลาทอดต้องให้น้ำมันร้อนจัดก่อน", english: "When deep-frying, the oil must be really hot first.", gloss: [["เวลาทอด", "when deep-frying"], ["ต้องให้", "must be"], ["น้ำมัน", "the oil"], ["ร้อนจัด", "really hot"], ["ก่อน", "first"]], cultural: "" },
+  { num: 813, display: 9, preview: "ข้าวเย็น", thai: "เวลาผัดข้าวควรใช้ข้าวเย็นจะได้ไม่เละ", english: "For fried rice, use cold rice so it won't be mushy.", gloss: [["เวลาผัดข้าว", "for fried rice"], ["ควรใช้", "you should use"], ["ข้าวเย็น", "cold rice"], ["จะได้ไม่", "so it won't"], ["เละ", "be mushy"]], cultural: "" },
+  { num: 814, display: 10, preview: "นุ่ม", thai: "หั่นเนื้อตามขวางจะได้นุ่ม", english: "Cut the meat across the grain so it's tender.", gloss: [["หั่นเนื้อ", "cut the meat"], ["ตามขวาง", "across the grain"], ["จะได้", "so it's"], ["นุ่ม", "tender"]], cultural: "" },
+  { num: 815, display: 11, preview: "เปื่อย", thai: "ต้มเนื้อนานๆ | จนเปื่อยนะ", english: "Boil the beef a long time until it's tender.", gloss: [["ต้มเนื้อ", "boil the beef"], ["นานๆ", "a long time"], ["จน", "until"], ["เปื่อย", "falling-apart tender"], ["นะ", "softening particle"]], cultural: "" },
+  { num: 816, display: 12, preview: "เครื่องแกง", thai: "ใส่เครื่องแกงลงไปผัดให้หอมก่อน", english: "Add the curry paste and fry it until fragrant first.", gloss: [["ใส่", "add"], ["เครื่องแกง", "curry paste"], ["ลงไป", "in"], ["ผัด", "fry"], ["ให้หอม", "until fragrant"], ["ก่อน", "first"]], cultural: "" },
+  { num: 817, display: 13, preview: "ชั่ง", thai: "ทำขนมต้องชั่งส่วนผสมให้เป๊ะ", english: "For desserts you must weigh the ingredients precisely.", gloss: [["ทำขนม", "for desserts"], ["ต้อง", "you must"], ["ชั่ง", "weigh"], ["ส่วนผสม", "the ingredients"], ["ให้เป๊ะ", "precisely"]], cultural: "" },
+  { num: 818, display: 14, preview: "ร่อน", thai: "ร่อนแป้งก่อนจะได้ไม่เป็นก้อน", english: "Sift the flour first so it won't be lumpy.", gloss: [["ร่อนแป้ง", "sift the flour"], ["ก่อน", "first"], ["จะได้ไม่", "so it won't"], ["เป็นก้อน", "be lumpy"]], cultural: "" },
+  { num: 819, display: 15, preview: "อบ", thai: "อบเค้กใช้ไฟกลางประมาณสี่สิบนาที", english: "Bake the cake on medium heat for about forty minutes.", gloss: [["อบเค้ก", "bake the cake"], ["ใช้ไฟกลาง", "on medium heat"], ["ประมาณ", "about"], ["สี่สิบนาที", "forty minutes"]], cultural: "Baking (อบ) is fairly un-traditional in Thai home cooking — most kitchens have no oven — so cakes and อบ are tied more to shops and Western-style desserts." },
+  { num: 820, display: 16, preview: "สูตร", thai: "ขอสูตรผัดกะเพราหน่อยได้ไหม", english: "Could I have the recipe for pad kaprao?", gloss: [["ขอ", "could I have"], ["สูตร", "the recipe"], ["ผัดกะเพรา", "for pad kaprao"], ["หน่อย", "please"], ["ได้ไหม", "may I?"]], cultural: "ผัดกะเพรา (stir-fry with holy basil) is Thailand's default quick meal — ordered over rice with a fried egg on top, it's effectively the national fast food." },
+  { num: 821, display: 17, preview: "กลมกล่อม", thai: "ทำแกงเขียวหวานยังไงให้กลมกล่อม", english: "How do you make green curry taste well-balanced?", gloss: [["ทำ", "make"], ["แกงเขียวหวาน", "green curry"], ["ยังไง", "how"], ["ให้กลมกล่อม", "well-balanced"]], cultural: "แกงเขียวหวาน ('green sweet curry') is named for its green colour, from green chillies — not for being sweet. กลมกล่อม describes a rounded, well-balanced flavour." },
+  { num: 822, display: 18, preview: "วิธีทำ", thai: "วิธีทำง่ายมาก | แค่ผสมทุกอย่างเข้าด้วยกัน", english: "The method is easy — just mix everything together.", gloss: [["วิธีทำ", "the method"], ["ง่ายมาก", "very easy"], ["แค่", "just"], ["ผสม", "mix"], ["ทุกอย่าง", "everything"], ["เข้าด้วยกัน", "together"]], cultural: "" },
+  { num: 823, display: 19, preview: "ก้นหม้อ", thai: "เปิดฝาคนบ่อยๆ | ไม่งั้นข้าวจะติดก้นหม้อ", english: "Open the lid and stir often, or the rice sticks to the bottom.", gloss: [["เปิดฝา", "open the lid"], ["คน", "stir"], ["บ่อยๆ", "often"], ["ไม่งั้น", "otherwise"], ["ข้าว", "the rice"], ["ติดก้นหม้อ", "sticks to the bottom"]], cultural: "" },
+  { num: 824, display: 20, preview: "เตรียม", thai: "เตรียมเครื่องปรุงให้ครบก่อนเริ่มทำ", english: "Get all the seasonings ready before you start.", gloss: [["เตรียม", "prepare"], ["เครื่องปรุง", "the seasonings"], ["ให้ครบ", "all of them"], ["ก่อนเริ่มทำ", "before you start"]], cultural: "" },
+  { num: 825, display: 21, preview: "ยกลง", thai: "พอข้าวสุกแล้วค่อยยกลงนะ", english: "Once the rice is cooked, then take it off the heat.", gloss: [["พอ", "once"], ["ข้าวสุก", "the rice is cooked"], ["แล้วค่อย", "then"], ["ยกลง", "take it off the heat"], ["นะ", "softening particle"]], cultural: "" },
+  { num: 826, display: 22, preview: "น้ำมันหอย", thai: "ใส่น้ำมันหอยช่วยให้รสชาติเข้มข้นขึ้น", english: "Oyster sauce makes the flavour richer.", gloss: [["ใส่", "add"], ["น้ำมันหอย", "oyster sauce"], ["ช่วยให้", "makes"], ["รสชาติ", "the flavour"], ["เข้มข้นขึ้น", "richer"]], cultural: "" },
+  { num: 827, display: 23, preview: "ดิบ", thai: "ระวังอย่าให้ไก่สุกๆ ดิบๆ นะคะ", english: "Be careful not to leave the chicken half-cooked.", gloss: [["ระวัง", "be careful"], ["อย่าให้", "don't let"], ["ไก่", "the chicken"], ["สุกๆ ดิบๆ", "half-cooked"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "สุกๆ ดิบๆ is a reduplicated idiom — doubling สุก (cooked) and ดิบ (raw) — for food that's half-done, neither cooked through nor raw. A handy warning, especially for chicken." },
+  { num: 828, display: 24, preview: "ทีหลังสุด", thai: "กุ้งสุกเร็วมาก | ใส่ทีหลังสุดนะ", english: "Prawns cook very fast, add them last.", gloss: [["กุ้ง", "prawns"], ["สุกเร็ว", "cook fast"], ["มาก", "very"], ["ใส่", "add them"], ["ทีหลังสุด", "last"], ["นะ", "softening particle"]], cultural: "" },
+  { num: 829, display: 25, preview: "ลวก", thai: "ลวกเส้นแค่พอนิ่มก็ตักขึ้น", english: "Blanch the noodles just until soft, then scoop them out.", gloss: [["ลวก", "blanch"], ["เส้น", "the noodles"], ["แค่พอนิ่ม", "just until soft"], ["ก็", "then"], ["ตักขึ้น", "scoop out"]], cultural: "" },
+  { num: 830, display: 26, preview: "ปรุงรส", thai: "ปรุงรสตามชอบได้เลยนะ", english: "Season it however you like.", gloss: [["ปรุงรส", "season"], ["ตามชอบ", "to your taste"], ["ได้เลย", "go ahead"], ["นะ", "softening particle"]], cultural: "ปรุงรส means to season to taste. At the table Thai diners often ปรุง their own dish from the เครื่องปรุง set — fish sauce, dried chilli, sugar and chilli-vinegar — balancing it themselves." },
+  { num: 831, display: 27, preview: "ทำเผื่อ", thai: "ทำเผื่อไว้เยอะๆ เดี๋ยวไม่พอกิน", english: "Make plenty extra, or there won't be enough.", gloss: [["ทำเผื่อ", "make extra"], ["ไว้", "in reserve"], ["เยอะๆ", "plenty"], ["เดี๋ยว", "or else"], ["ไม่พอกิน", "not enough to eat"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

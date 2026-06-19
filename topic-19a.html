@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 21: Cooking &amp; recipes 1</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Cooking &amp; recipes 1</h1>
+  <p class="topic-meta"><strong>30 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-18b.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Clothing &amp; appearance 2</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-19b.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Cooking &amp; recipes 2</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "Cooking_BEG",
+  sentences: [
+  { num: 775, display: 1, preview: "ล้างมือ", thai: "อย่าลืมล้างมือก่อนเริ่มทำกับข้าวนะคะ", english: "Don't forget to wash your hands before you start cooking.", gloss: [["อย่าลืม", "don't forget"], ["ล้างมือ", "wash hands"], ["ก่อน", "before"], ["เริ่ม", "start"], ["ทำกับข้าว", "cooking"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 776, display: 2, preview: "ผัก", thai: "ล้างผักให้สะอาดก่อนนะคะ", english: "Wash the vegetables clean first.", gloss: [["ล้าง", "wash"], ["ผัก", "vegetables"], ["ให้สะอาด", "until clean"], ["ก่อน", "first"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 777, display: 3, preview: "หั่น", thai: "หั่นเนื้อหมูเป็นชิ้นพอดีคำครับ", english: "Cut the pork into bite-sized pieces.", gloss: [["หั่น", "cut / chop"], ["เนื้อหมู", "pork"], ["เป็นชิ้น", "into pieces"], ["พอดีคำ", "bite-sized"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 778, display: 4, preview: "สับ", thai: "สับหอมแดงให้ละเอียดนะคะ", english: "Mince the shallots finely.", gloss: [["สับ", "mince"], ["หอมแดง", "shallots"], ["ให้ละเอียด", "finely"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "The หอม family trips learners up: หอมแดง is shallot, หัวหอม is onion, and หอม alone means 'fragrant' — in a recipe หอม usually points to shallots." },
+  { num: 779, display: 5, preview: "ตอก", thai: "ตอกไข่ใส่ชามแล้วตีให้เข้ากัน", english: "Crack the eggs into a bowl and beat them together.", gloss: [["ตอก", "crack"], ["ไข่", "egg"], ["ใส่ชาม", "into a bowl"], ["แล้ว", "then"], ["ตี", "beat"], ["ให้เข้ากัน", "until combined"]], cultural: "" },
+  { num: 780, display: 6, preview: "กระทะ", thai: "ตั้งกระทะให้ร้อนก่อนใส่น้ำมัน", english: "Heat the wok before adding the oil.", gloss: [["ตั้งกระทะ", "heat the wok"], ["ให้ร้อน", "until hot"], ["ก่อน", "before"], ["ใส่", "adding"], ["น้ำมัน", "oil"]], cultural: "" },
+  { num: 781, display: 7, preview: "ปอก", thai: "ปอกหัวหอมแล้วหั่นเป็นแว่น", english: "Peel the onion and slice it into rings.", gloss: [["ปอก", "peel"], ["หัวหอม", "onion"], ["แล้ว", "then"], ["หั่น", "slice"], ["เป็นแว่น", "into rings"]], cultural: "" },
+  { num: 782, display: 8, preview: "เจียว", thai: "เจียวกระเทียมให้หอมก่อนนะคะ", english: "Fry the garlic until fragrant first.", gloss: [["เจียว", "fry in oil"], ["กระเทียม", "garlic"], ["ให้หอม", "until fragrant"], ["ก่อน", "first"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "เจียว is shallow-frying in oil — distinct from ทอด (deep-fry) and ผัด (stir-fry). Frying garlic or shallots until fragrant is the aromatic starting point of countless Thai dishes." },
+  { num: 783, display: 9, preview: "ผัด", thai: "ผัดให้สุกแล้วปิดไฟเลยค่ะ", english: "Stir-fry until cooked, then turn off the heat.", gloss: [["ผัด", "stir-fry"], ["ให้สุก", "until cooked"], ["แล้ว", "then"], ["ปิดไฟ", "turn off the heat"], ["เลย", "right away"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 784, display: 10, preview: "ต้ม", thai: "ต้มน้ำให้เดือดก่อนใส่เส้น", english: "Boil the water before adding the noodles.", gloss: [["ต้มน้ำ", "boil water"], ["ให้เดือด", "until boiling"], ["ก่อน", "before"], ["ใส่", "adding"], ["เส้น", "the noodles"]], cultural: "" },
+  { num: 785, display: 11, preview: "ทอด", thai: "ทอดไข่ให้กรอบนิดนึงนะครับ", english: "Fry the egg until slightly crispy.", gloss: [["ทอด", "fry"], ["ไข่", "egg"], ["ให้กรอบ", "until crispy"], ["นิดนึง", "a bit"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 786, display: 12, preview: "นึ่ง", thai: "นึ่งปลาประมาณสิบนาทีก็พอค่ะ", english: "Steam the fish for about ten minutes.", gloss: [["นึ่ง", "steam"], ["ปลา", "fish"], ["ประมาณ", "about"], ["สิบนาที", "ten minutes"], ["ก็พอ", "is enough"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 787, display: 13, preview: "ย่าง", thai: "ย่างไก่ให้สุกทั่วถึงนะครับ", english: "Grill the chicken until cooked all the way through.", gloss: [["ย่าง", "grill"], ["ไก่", "chicken"], ["ให้สุก", "until cooked"], ["ทั่วถึง", "all through"], ["นะ", "softening particle"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 788, display: 14, preview: "เกลือ", thai: "เติมเกลือทีละนิดนะคะ", english: "Add the salt a little at a time.", gloss: [["เติม", "add"], ["เกลือ", "salt"], ["ทีละนิด", "a little at a time"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 789, display: 15, preview: "น้ำปลา", thai: "ใส่น้ำปลาสองช้อนโต๊ะค่ะ", english: "Add two tablespoons of fish sauce.", gloss: [["ใส่", "add"], ["น้ำปลา", "fish sauce"], ["สอง", "two"], ["ช้อนโต๊ะ", "tablespoons"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 790, display: 16, preview: "น้ำตาล", thai: "ใส่น้ำตาลแค่ช้อนชาเดียวพอครับ", english: "Add just one teaspoon of sugar.", gloss: [["ใส่", "add"], ["น้ำตาล", "sugar"], ["แค่", "just"], ["ช้อนชา", "teaspoon"], ["เดียว", "one"], ["พอ", "enough"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 791, display: 17, preview: "ตวง", thai: "ตวงข้าวสารสองถ้วยลงหม้อหุงข้าว", english: "Measure two cups of rice into the rice cooker.", gloss: [["ตวง", "measure out"], ["ข้าวสาร", "raw rice"], ["สองถ้วย", "two cups"], ["ลง", "into"], ["หม้อหุงข้าว", "the rice cooker"]], cultural: "Rice has its own vocabulary by state: ข้าวสาร (raw grains) become ข้าวสวย / ข้าวสุก (cooked). Almost every Thai kitchen cooks it in a หม้อหุงข้าว, an electric rice cooker, measured by the cup." },
+  { num: 792, display: 18, preview: "คน", thai: "คนให้เข้ากัน | อย่าให้ติดกระทะ", english: "Stir it together so it doesn't stick to the pan.", gloss: [["คน", "stir"], ["ให้เข้ากัน", "until combined"], ["อย่าให้", "don't let it"], ["ติดกระทะ", "stick to the pan"]], cultural: "คน here is the verb 'to stir' — a homograph of the everyday noun คน 'person'. Only context tells them apart." },
+  { num: 793, display: 19, preview: "หม้อ", thai: "ใช้หม้อใบใหญ่ต้มน้ำซุปนะคะ", english: "Use the big pot to boil the stock.", gloss: [["ใช้", "use"], ["หม้อ", "pot"], ["ใบใหญ่", "the big"], ["ต้ม", "boil"], ["น้ำซุป", "stock"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 794, display: 20, preview: "มีด", thai: "หยิบมีดกับเขียงมาให้หน่อยครับ", english: "Pass me the knife and chopping board.", gloss: [["หยิบ", "pass"], ["มีด", "knife"], ["กับ", "and"], ["เขียง", "chopping board"], ["มาให้หน่อย", "over, please"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 795, display: 21, preview: "ตะหลิว", thai: "ใช้ตะหลิวกลับด้านไข่เจียวค่ะ", english: "Use the spatula to flip the omelette.", gloss: [["ใช้", "use"], ["ตะหลิว", "the spatula"], ["กลับด้าน", "flip over"], ["ไข่เจียว", "the omelette"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 796, display: 22, preview: "ฝา", thai: "ปิดฝาหม้อไว้สักห้านาทีครับ", english: "Put the lid on the pot for about five minutes.", gloss: [["ปิดฝา", "put the lid on"], ["หม้อ", "pot"], ["ไว้", "for"], ["สักห้านาที", "about five minutes"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 797, display: 23, preview: "เตาแก๊ส", thai: "เปิดเตาแก๊สเบาๆ นะคะ", english: "Turn the gas stove to low.", gloss: [["เปิด", "turn on"], ["เตาแก๊ส", "the gas stove"], ["เบาๆ", "on low"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 798, display: 24, preview: "แช่", thai: "แช่เห็ดในน้ำก่อนเอามาผัด", english: "Soak the mushrooms in water before stir-frying.", gloss: [["แช่", "soak"], ["เห็ด", "mushrooms"], ["ในน้ำ", "in water"], ["ก่อน", "before"], ["เอามาผัด", "stir-frying"]], cultural: "" },
+  { num: 799, display: 25, preview: "หมัก", thai: "หมักไก่กับซีอิ๊วสักครึ่งชั่วโมง", english: "Marinate the chicken in soy sauce for about half an hour.", gloss: [["หมัก", "marinate"], ["ไก่", "chicken"], ["กับ", "in"], ["ซีอิ๊ว", "soy sauce"], ["สักครึ่งชั่วโมง", "about half an hour"]], cultural: "" },
+  { num: 800, display: 26, preview: "ตำ", thai: "ตำพริกกับกระเทียมในครกค่ะ", english: "Pound the chilli and garlic in the mortar.", gloss: [["ตำ", "pound"], ["พริก", "chilli"], ["กับ", "and"], ["กระเทียม", "garlic"], ["ในครก", "in the mortar"], ["ค่ะ", "polite particle (female)"]], cultural: "The ครก (mortar) and สาก (pestle) are core Thai kitchen tools. Pounding — ตำ — chillies and garlic into a paste is so central that ส้มตำ ('pounded sour', i.e. papaya salad) is named after the action." },
+  { num: 801, display: 27, preview: "ขูด", thai: "ขูดมะพร้าวไว้ทำขนมนะคะ", english: "Grate the coconut for making dessert.", gloss: [["ขูด", "grate"], ["มะพร้าว", "coconut"], ["ไว้", "for"], ["ทำขนม", "making dessert"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 802, display: 28, preview: "กุ้ง", thai: "แกะเปลือกกุ้งออกให้หมดนะคะ", english: "Shell the prawns completely.", gloss: [["แกะ", "shell"], ["เปลือกกุ้ง", "prawn shells"], ["ออกให้หมด", "all off"], ["นะ", "softening particle"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 803, display: 29, preview: "เร่งไฟ", thai: "เร่งไฟได้เลยไหมคะ", english: "Can I turn the heat up now?", gloss: [["เร่งไฟ", "turn up the heat"], ["ได้เลย", "now"], ["ไหม", "(question)"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 804, display: 30, preview: "ไหม้", thai: "ไหม้แล้ว | รีบปิดไฟเร็ว", english: "It's burning — quick, turn off the heat!", gloss: [["ไหม้แล้ว", "it's burning"], ["รีบ", "quick"], ["ปิดไฟ", "turn off the heat"], ["เร็ว", "fast"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

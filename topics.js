@@ -80,7 +80,9 @@
     { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], access: "member", parts: [
         { name: "Clothing & appearance 1", sentences: 22, page: "topic-18a.html" },
         { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html" } ] },
-    { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], sentences: 30, access: "member" },
+    { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "member", parts: [
+        { name: "Cooking & recipes 1", sentences: 30, page: "topic-19a.html" },
+        { name: "Cooking & recipes 2", sentences: 27, page: "topic-19b.html" } ] },
     { id: 20, name: "Work & study", levels: ["li1","li2"], access: "member", parts: [20, 20] },
     { id: 21, name: "Education system", levels: ["li1","li2"], sentences: 25, access: "member" },
     { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], sentences: 30 },
