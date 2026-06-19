@@ -94,7 +94,7 @@
     { id: 34, name: "Thai culture & customs", levels: ["li1","li2"], access: "premium", parts: [22, 28] },
     { id: 35, name: "Buddhism", levels: ["li1","li2"], parts: [22, 28] },
     { id: 36, name: "Romantic relationships & dating", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 20, access: "member" },
+    { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 19, access: "member" },
   ];
 
   // Keyed by FROZEN id (never display position). Add entries as topics go live.
