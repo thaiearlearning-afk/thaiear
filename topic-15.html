@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 16: Hobbies &amp; free time</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Hobbies &amp; free time</h1>
+  <p class="topic-meta"><strong>33 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-14b.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Feelings &amp; emotions 2</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-38.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Idioms</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "Hobbies_BEG",
+  sentences: [
+  { num: 606, display: 1, preview: "วิ่ง", thai: "ชอบตื่นเช้ามาวิ่งทุกวันค่ะ", english: "I like getting up early to run every day.", gloss: [["ชอบ", "like"], ["ตื่นเช้า", "get up early"], ["มา", "to"], ["วิ่ง", "run"], ["ทุกวัน", "every day"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 607, display: 2, preview: "อ่านหนังสือ", thai: "ว่างๆชอบอ่านหนังสืออยู่บ้านครับ", english: "When I'm free I like reading at home.", gloss: [["ว่างๆ", "when free"], ["ชอบ", "like"], ["อ่านหนังสือ", "read"], ["อยู่บ้าน", "at home"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 608, display: 3, preview: "ดูหนัง", thai: "ดูหนังกับฟังเพลงเป็นงานอดิเรกค่ะ", english: "Watching films and listening to music are my hobbies.", gloss: [["ดูหนัง", "watch films"], ["กับ", "and"], ["ฟังเพลง", "listen to music"], ["เป็น", "are"], ["งานอดิเรก", "hobbies"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 609, display: 4, preview: "เกมมือถือ", thai: "น้องๆชอบเล่นเกมมือถือตอนว่างครับ", english: "The kids like playing mobile games in their free time.", gloss: [["น้องๆ", "the kids"], ["ชอบ", "like"], ["เล่นเกม", "play games"], ["มือถือ", "mobile phone"], ["ตอนว่าง", "in free time"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 610, display: 5, preview: "ซีรีส์", thai: "สำหรับเราซีรีส์ยาวๆดูไม่ค่อยสนุกค่ะ", english: "For me, long series aren't much fun.", gloss: [["สำหรับเรา", "for me"], ["ซีรีส์", "series"], ["ยาวๆ", "long"], ["ดู", "watch"], ["ไม่ค่อย", "not very"], ["สนุก", "fun"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 611, display: 6, preview: "เต้นรำ", thai: "ว่างๆชอบไปเต้นรำค่ะ", english: "When I'm free I like going dancing.", gloss: [["ว่างๆ", "when free"], ["ชอบ", "like"], ["ไป", "go"], ["เต้นรำ", "dancing"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 612, display: 7, preview: "ทำอาหาร", thai: "เขาทั้งสองชอบทำอาหารมากกว่ากินข้าวนอกบ้านครับ", english: "They both prefer cooking to eating out.", gloss: [["เขาทั้งสอง", "they both"], ["ชอบ", "like"], ["ทำอาหาร", "cooking"], ["มากกว่า", "more than"], ["กินข้าวนอกบ้าน", "eating out"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 613, display: 8, preview: "ออกกำลังกาย", thai: "ออกกำลังกายตอนเช้าดีที่สุดเลย | เห็นด้วยไหมคะ", english: "Exercising in the morning is the best — don't you agree?", gloss: [["ออกกำลังกาย", "exercise"], ["ตอนเช้า", "in the morning"], ["ดีที่สุด", "best"], ["เลย", "really"], ["เห็นด้วย", "agree"], ["ไหม", "question particle"], ["คะ", "polite particle (female)"]], cultural: "Early-morning group exercise in public parks — aerobics, jogging, tai chi — is a common sight across Thailand." },
+  { num: 614, display: 9, preview: "ตอนเย็น", thai: "ก็จริงนะ | แต่ผมชอบออกกำลังตอนเย็นมากกว่า", english: "True, but I prefer exercising in the evening.", gloss: [["ก็จริงนะ", "true, but"], ["แต่", "but"], ["ผม", "I (male)"], ["ชอบ", "prefer"], ["ออกกำลัง", "exercise"], ["ตอนเย็น", "in the evening"], ["มากกว่า", "more"]], cultural: "" },
+  { num: 615, display: 10, preview: "ถ่ายรูป", thai: "ชอบถ่ายรูปเวลาไปเที่ยวที่ใหม่ๆครับ", english: "I like taking photos when I travel somewhere new.", gloss: [["ชอบ", "like"], ["ถ่ายรูป", "take photos"], ["เวลา", "when"], ["ไปเที่ยว", "travel"], ["ที่ใหม่ๆ", "new places"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 616, display: 11, preview: "เล่นดนตรี", thai: "อยากหัดเล่นดนตรีสักอย่างค่ะ", english: "I'd like to learn to play some instrument.", gloss: [["อยาก", "want to"], ["หัด", "learn"], ["เล่นดนตรี", "play an instrument"], ["สักอย่าง", "some / any"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 617, display: 12, preview: "ปลูกต้นไม้", thai: "ปลูกต้นไม้ช่วยให้รู้สึกผ่อนคลายค่ะ", english: "Gardening helps me feel relaxed.", gloss: [["ปลูกต้นไม้", "gardening"], ["ช่วยให้", "helps"], ["รู้สึก", "feel"], ["ผ่อนคลาย", "relaxed"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 618, display: 13, preview: "คาราโอเกะ", thai: "ร้องคาราโอเกะทีไรก็สนุกทุกทีครับ", english: "Every time I do karaoke it's fun.", gloss: [["ร้องคาราโอเกะ", "do karaoke"], ["ทีไร", "whenever"], ["ก็", "then"], ["สนุก", "fun"], ["ทุกที", "every time"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 619, display: 14, preview: "เทศกาลดนตรี", thai: "คู่นั้นชอบไปงานเทศกาลดนตรีด้วยกันค่ะ", english: "That couple like going to music festivals together.", gloss: [["คู่นั้น", "that couple"], ["ชอบ", "like"], ["ไป", "go to"], ["งานเทศกาลดนตรี", "music festivals"], ["ด้วยกัน", "together"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 620, display: 15, preview: "นั่งสมาธิ", thai: "กำลังพยายามหัดนั่งสมาธิอยู่ | มีอะไรแนะนำไหมครับ", english: "I'm trying to get into meditation — any advice?", gloss: [["กำลัง", "-ing"], ["พยายาม", "trying"], ["หัด", "learn"], ["นั่งสมาธิ", "meditate"], ["อยู่", "currently"], ["มีอะไรแนะนำ", "any advice"], ["ไหม", "question particle"], ["ครับ", "polite particle (male)"]], cultural: "นั่งสมาธิ (seated meditation) is widely practised in Thailand well beyond temples; many take it up simply for calm and focus." },
+  { num: 621, display: 16, preview: "ตกปลา", thai: "วันหยุดชอบไปนั่งตกปลาที่บึงครับ", english: "On days off I like sitting fishing at the pond.", gloss: [["วันหยุด", "on days off"], ["ชอบ", "like"], ["ไปนั่ง", "go and sit"], ["ตกปลา", "fishing"], ["ที่บึง", "at the pond"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 622, display: 17, preview: "กีตาร์", thai: "เล่นกีตาร์มาตั้งแต่เด็ก | แต่เพิ่งกล้าเล่นให้คนอื่นฟังตอนโต", english: "I've played guitar since I was a kid, but only recently got the nerve to play for others.", gloss: [["เล่นกีตาร์", "play guitar"], ["มาตั้งแต่เด็ก", "since childhood"], ["แต่", "but"], ["เพิ่ง", "only recently"], ["กล้า", "dare"], ["เล่นให้คนอื่นฟัง", "play for others"], ["ตอนโต", "as an adult"]], cultural: "" },
+  { num: 623, display: 18, preview: "ว่างไหม", thai: "เสาร์นี้ว่างไหม | ไปดูหนังด้วยกันไหมคะ", english: "Free this Saturday? Want to go see a film together?", gloss: [["เสาร์นี้", "this Saturday"], ["ว่างไหม", "free?"], ["ไปดูหนัง", "go see a film"], ["ด้วยกัน", "together"], ["ไหม", "question particle"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 624, display: 19, preview: "ชมรมพายเรือ", thai: "ปีที่แล้วพวกเราสมัครเข้าชมรมพายเรือ | ไม่ผิดหวังเลยครับ", english: "Last year we joined the rowing club — no regrets at all!", gloss: [["ปีที่แล้ว", "last year"], ["พวกเรา", "we"], ["สมัครเข้า", "joined"], ["ชมรม", "club"], ["พายเรือ", "rowing"], ["ไม่ผิดหวัง", "no regrets"], ["เลย", "at all"], ["ครับ", "polite particle (male)"]], cultural: "ชมรม are interest-based clubs and a big part of Thai school and university life — from music and sport to volunteering." },
+  { num: 625, display: 20, preview: "โยคะ", thai: "เล่นโยคะมาสามปีแล้ว | รู้สึกว่าสุขภาพดีขึ้นเยอะค่ะ", english: "I've done yoga for three years now — I feel a lot healthier.", gloss: [["เล่นโยคะ", "do yoga"], ["มาสามปีแล้ว", "for three years"], ["รู้สึกว่า", "feel that"], ["สุขภาพ", "health"], ["ดีขึ้น", "better"], ["เยอะ", "a lot"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 626, display: 21, preview: "วิ่งตอนเช้า", thai: "ลองมาวิ่งตอนเช้าดูสิ | ติดใจแน่นอน", english: "Try going for a morning run — you'll definitely get hooked.", gloss: [["ลองมา", "try"], ["วิ่ง", "run"], ["ตอนเช้า", "in the morning"], ["ดูสิ", "go on, try it"], ["ติดใจ", "get hooked"], ["แน่นอน", "for sure"]], cultural: "" },
+  { num: 627, display: 22, preview: "อ่านหนังสือ", thai: "ชอบอ่านหนังสือมากกว่าดูทีวี | เพราะได้ใช้จินตนาการครับ", english: "I prefer reading to watching TV, because I get to use my imagination.", gloss: [["ชอบ", "prefer"], ["อ่านหนังสือ", "reading"], ["มากกว่า", "more than"], ["ดูทีวี", "watching TV"], ["เพราะ", "because"], ["ได้ใช้", "get to use"], ["จินตนาการ", "imagination"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 628, display: 23, preview: "ปั่นจักรยาน", thai: "ว่างวันอาทิตย์ไปปั่นจักรยานริมแม่น้ำกันไหมคะ", english: "Free on Sunday? Shall we go cycling along the river?", gloss: [["ว่าง", "free"], ["วันอาทิตย์", "Sunday"], ["ไปปั่นจักรยาน", "go cycling"], ["ริมแม่น้ำ", "by the river"], ["กันไหม", "shall we?"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 629, display: 24, preview: "สีน้ำ", thai: "เพิ่งหัดวาดรูปสีน้ำ | ยังไม่เก่งแต่ก็สนุกดีค่ะ", english: "I just started learning watercolour — not good yet, but it's good fun.", gloss: [["เพิ่ง", "just"], ["หัด", "started learning"], ["วาดรูปสีน้ำ", "watercolour painting"], ["ยังไม่เก่ง", "not good yet"], ["แต่ก็", "but still"], ["สนุกดี", "good fun"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 630, display: 25, preview: "ดูหนัง", thai: "หนังเรื่องนี้สนุกมาก | ต้องไปดูให้ได้นะครับ", english: "This film is so much fun — you absolutely have to go see it.", gloss: [["หนังเรื่องนี้", "this film"], ["สนุกมาก", "so much fun"], ["ต้องไปดูให้ได้", "you must see it"], ["นะ", "emphasis"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 631, display: 26, preview: "เล่นเกม", thai: "หลายคนชอบเล่นเกม | แต่เราว่านั่งวาดรูปเพลินกว่า", english: "Lots of people like gaming, but I find sitting and drawing more absorbing.", gloss: [["หลายคน", "lots of people"], ["ชอบ", "like"], ["เล่นเกม", "gaming"], ["แต่", "but"], ["เราว่า", "I find"], ["นั่งวาดรูป", "sitting drawing"], ["เพลินกว่า", "more absorbing"]], cultural: "" },
+  { num: 632, display: 27, preview: "เพลงเก่า", thai: "ทุกเย็นชอบฟังเพลงเก่าๆ | ช่วยให้อารมณ์ดีขึ้นเยอะครับ", english: "Every evening I like old songs — it lifts my mood a lot.", gloss: [["ทุกเย็น", "every evening"], ["ชอบ", "like"], ["ฟังเพลงเก่าๆ", "old songs"], ["ช่วยให้", "helps"], ["อารมณ์ดีขึ้น", "lift the mood"], ["เยอะ", "a lot"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 633, display: 28, preview: "บอร์ดเกม", thai: "เสาร์นี้พวกเรานัดกันไปเล่นบอร์ดเกมที่บ้านเพื่อนค่ะ", english: "This Saturday we're meeting up to play board games at a friend's place.", gloss: [["เสาร์นี้", "this Saturday"], ["พวกเรา", "we"], ["นัดกัน", "meet up"], ["ไปเล่น", "to play"], ["บอร์ดเกม", "board games"], ["ที่บ้านเพื่อน", "at a friend's"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 634, display: 29, preview: "กีฬา", thai: "ดูกีฬาไม่ค่อยสนุกสำหรับผม | ชอบเล่นเองมากกว่าครับ", english: "Watching sport isn't much fun for me — I prefer playing myself.", gloss: [["ดูกีฬา", "watching sport"], ["ไม่ค่อยสนุก", "not much fun"], ["สำหรับผม", "for me"], ["ชอบ", "prefer"], ["เล่นเอง", "playing myself"], ["มากกว่า", "more"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 635, display: 30, preview: "คาเฟ่", thai: "วันหยุดพวกเราชอบไปนั่งคาเฟ่ | คุยกันเพลินๆทั้งบ่ายค่ะ", english: "On days off we like sitting in cafés, chatting away the whole afternoon.", gloss: [["วันหยุด", "on days off"], ["พวกเรา", "we"], ["ชอบไปนั่ง", "like sitting at"], ["คาเฟ่", "cafés"], ["คุยกัน", "chatting"], ["เพลินๆ", "pleasantly"], ["ทั้งบ่าย", "all afternoon"], ["ค่ะ", "polite particle (female)"]], cultural: "Café-hopping — seeking out stylish cafés to sit, chat and take photos — is hugely popular in Thailand, especially with younger people." },
+  { num: 636, display: 31, preview: "เย็บปัก", thai: "ช่วงนี้เริ่มสนใจงานเย็บปัก | เลยหัดทำเองที่บ้านค่ะ", english: "Lately I've gotten interested in needlework, so I've started doing it at home myself.", gloss: [["ช่วงนี้", "lately"], ["เริ่มสนใจ", "got interested in"], ["งานเย็บปัก", "needlework"], ["เลย", "so"], ["หัดทำเอง", "took it up myself"], ["ที่บ้าน", "at home"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 637, display: 32, preview: "วงดนตรี", thai: "คืนนี้มาซ้อมวงดนตรีด้วยกันเถอะ | น่าจะมีงานให้เล่นเร็วๆนี้ครับ", english: "Tonight let's practise with the band — we'll probably have a gig soon.", gloss: [["คืนนี้", "tonight"], ["มาซ้อม", "let's practise"], ["วงดนตรี", "the band"], ["ด้วยกัน", "together"], ["เถอะ", "let's"], ["น่าจะ", "probably"], ["มีงานให้เล่น", "have a gig"], ["เร็วๆนี้", "soon"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 638, display: 33, preview: "งานอดิเรก", thai: "ลองหางานอดิเรกทำดูสิ | ชีวิตจะมีสีสันมากขึ้นครับ", english: "Try finding yourself a hobby — life gets a lot more colourful.", gloss: [["ลองหา", "try to find"], ["งานอดิเรก", "a hobby"], ["ทำดูสิ", "give it a go"], ["ชีวิต", "life"], ["จะมีสีสัน", "gets colourful"], ["มากขึ้น", "more"], ["ครับ", "polite particle (male)"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
