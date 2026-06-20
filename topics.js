@@ -52,7 +52,7 @@
     { id: 2,  name: "Getting to know you", levels: ["beg"], sentences: 29, audio: "GettingToKnow_BEG" },
     { id: 3,  name: "Communication survival", levels: ["beg"], sentences: 22, audio: "CommSurvival_BEG" },
     { id: 4,  name: "Colours & descriptions", levels: ["beg"], sentences: 36, access: "premium", audio: "Colours_BEG" },
-    { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 26, access: "premium", audio: "Weather_BEG" },
+    { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 30, access: "premium", audio: "Weather_BEG" },
     { id: 6,  name: "Time & numbers", levels: ["beg"], sentences: 26, access: "premium", audio: "Time_BEG" },
     { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37, access: "premium", audio: "Dates_BEG" },
     { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38, access: "premium", audio: "Family_BEG" },
