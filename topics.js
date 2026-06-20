@@ -55,7 +55,7 @@
         { name: "Colours & descriptions 1", sentences: 21, page: "topic-04a.html", access: "member", audio: "ColoursAndDescriptions_BEG" },
         { name: "Colours & descriptions 2", sentences: 21, page: "topic-04b.html", audio: "ColoursAndDescriptions2_BEG" } ] },
     { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 30, access: "premium", audio: "Weather_BEG" },
-    { id: 6,  name: "Time & numbers", levels: ["beg"], sentences: 26, access: "premium", audio: "Time_BEG" },
+    { id: 6,  name: "Time & numbers", levels: ["beg"], sentences: 30, access: "premium", audio: "Time_BEG" },
     { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37, access: "premium", audio: "Dates_BEG" },
     { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38, access: "premium", audio: "Family_BEG" },
     { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
