@@ -62,7 +62,9 @@
         { name: "Food & drink 1", sentences: 39, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
         { name: "Food & drink 2", sentences: 26, page: "topic-09b.html", audio: "Food_LI1" } ] },
     { id: 10, name: "Home & daily routine", levels: ["beg","li1"], sentences: 38, access: "premium", audio: "Home_BEG" },
-    { id: 11, name: "Shopping & money (everyday)", levels: ["beg","li1"], sentences: 30, access: "premium", audio: "Shopping_BEG" },
+    { id: 11, name: "Shopping & money", levels: ["beg","li1"], access: "premium", parts: [
+        { name: "Shopping & money 1", sentences: 22, page: "topic-11a.html", access: "member", audio: "ShoppingAndMoney_BEG" },
+        { name: "Shopping & money 2", sentences: 29, page: "topic-11b.html", audio: "ShoppingAndMoney2_BEG" } ] },
     { id: 12, name: "Getting around & transport", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html", access: "member", audio: "Transport_BEG" },
         { name: "Getting around & transport 2", sentences: 24, page: "topic-12b.html", audio: "Transport_LI1" } ] },

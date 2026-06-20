@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 11: Shopping &amp; money 1</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-subtitle { font-size: 14px; font-weight: 500; color: var(--accent-mid); margin: 2px 0 10px; letter-spacing: -0.01em; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Shopping &amp; money 1</h1>
+  <p class="topic-subtitle">Prices, bargaining &amp; paying</p>
+  <p class="topic-meta"><strong>22 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-10.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Home &amp; daily routine</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-11b.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Shopping &amp; money 2</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "ShoppingAndMoney_BEG",
+  sentences: [
+  { num: 323, display: 1, preview: "ราคา", thai: "อันนี้ราคาเท่าไหร่ครับ", english: "What's the price of this one?", gloss: [["อันนี้", "this one"], ["ราคา", "price"], ["เท่าไหร่", "how much"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 324, display: 2, preview: "กิโลละ", thai: "มะม่วงกิโลละเท่าไหร่คะ", english: "How much per kilo for mangoes?", gloss: [["มะม่วง", "mango"], ["กิโล", "kilo"], ["ละ", "per"], ["เท่าไหร่", "how much"], ["คะ", "polite(f)"]], cultural: "X ละ เท่าไหร่ is the everyday way to ask a unit price — กิโลละ 'per kilo', อันละ 'per piece'." },
+  { num: 325, display: 3, preview: "ทั้งหมด", thai: "ทั้งหมดกี่บาทครับ", english: "How much altogether?", gloss: [["ทั้งหมด", "altogether"], ["กี่บาท", "how many baht"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 326, display: 4, preview: "แพง", thai: "โอ้โห แพงไปหน่อยนะคะ", english: "Wow, that's a bit too expensive.", gloss: [["โอ้โห", "wow"], ["แพง", "expensive"], ["ไปหน่อย", "a bit too"], ["นะคะ", "polite(f)"]], cultural: "Tagging ...ไปหน่อย ('a bit too…') plus นะคะ softens a complaint and keeps haggling friendly." },
+  { num: 327, display: 5, preview: "ลด", thai: "ลดได้อีกไหมครับ", english: "Can you lower it any more?", gloss: [["ลด", "lower"], ["ได้", "can"], ["อีก", "more"], ["ไหม", "(question)"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 328, display: 6, preview: "ร้อยเดียว", thai: "เอาร้อยเดียวได้ไหมคะ", english: "Could you do it for just a hundred?", gloss: [["เอา", "take"], ["ร้อย", "hundred"], ["เดียว", "just"], ["ได้ไหม", "can?"], ["คะ", "polite(f)"]], cultural: "เดียว after a number means 'just/only that much' — ร้อยเดียว 'just a hundred' is a classic counter-offer." },
+  { num: 329, display: 7, preview: "เอา", thai: "เอาอันนี้สองอันค่ะ", english: "I'll take two of these.", gloss: [["เอา", "take"], ["อันนี้", "this one"], ["สอง", "two"], ["อัน", "(classifier)"], ["ค่ะ", "polite(f)"]], cultural: "อัน is the all-purpose classifier for small objects. Thai counts as noun + number + classifier, so 'two of these' is literally 'these, two อัน'." },
+  { num: 330, display: 8, preview: "ครึ่งกิโล", thai: "ขอครึ่งกิโลพอครับ", english: "Can I just get half a kilo?", gloss: [["ขอ", "may I have"], ["ครึ่ง", "half"], ["กิโล", "kilo"], ["พอ", "enough"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 331, display: 9, preview: "ของที่ระลึก", thai: "ผมจะซื้อรูปปั้นนี้เพื่อเป็นของที่ระลึกครับ", english: "I'll buy this statue to keep as a souvenir.", gloss: [["ผม", "I(m)"], ["จะ", "will"], ["ซื้อ", "buy"], ["รูปปั้น", "statue"], ["นี้", "this"], ["เพื่อ", "to"], ["เป็น", "be"], ["ของที่ระลึก", "souvenir"], ["ครับ", "polite(m)"]], cultural: "เพื่อ + a verb or noun marks purpose: 'in order to / so as to'." },
+  { num: 332, display: 10, preview: "จ่ายเงิน", thai: "จ่ายเงินตรงไหนคะ", english: "Where do I pay?", gloss: [["จ่ายเงิน", "pay"], ["ตรงไหน", "where"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 333, display: 11, preview: "บัตร", thai: "รับบัตรไหมครับ", english: "Do you take card?", gloss: [["รับ", "accept"], ["บัตร", "card"], ["ไหม", "(question)"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 334, display: 12, preview: "ทอนเงิน", thai: "พี่ทอนเงินผิดนะคะ", english: "You gave me the wrong change.", gloss: [["พี่", "(you)"], ["ทอนเงิน", "give change"], ["ผิด", "wrong"], ["นะคะ", "polite(f)"]], cultural: "พี่ ('older sibling') is the normal friendly way to address a vendor or anyone a bit older — warmer than 'you'." },
+  { num: 341, display: 13, preview: "สแกนจ่าย", thai: "สแกนจ่ายได้ไหมครับ", english: "Can I pay by QR scan?", gloss: [["สแกน", "scan"], ["จ่าย", "pay"], ["ได้ไหม", "can?"], ["ครับ", "polite(m)"]], cultural: "Paying by scanning a QR code (PromptPay) is everywhere in Thailand — many stalls and street vendors prefer it to cash." },
+  { num: 342, display: 14, preview: "ขาดตัว", thai: "ราคานี้ขาดตัวแล้วค่ะ", english: "This is the lowest price already.", gloss: [["ราคานี้", "this price"], ["ขาดตัว", "rock-bottom"], ["แล้ว", "already"], ["ค่ะ", "polite(f)"]], cultural: "ขาดตัว is the vendor saying 'this is my final price, I can't go lower' — your cue that haggling is over." },
+  { num: 343, display: 15, preview: "ถุง", thai: "รับถุงไหมคะ", english: "Would you like a bag?", gloss: [["รับ", "take"], ["ถุง", "bag"], ["ไหม", "(question)"], ["คะ", "polite(f)"]], cultural: "Since Thailand's plastic-bag charges, vendors often ask รับถุงไหม ('want a bag?') — many shoppers bring their own." },
+  { num: 1046, display: 16, preview: "ทอน", thai: "มีแต่แบงค์พัน ทอนได้ไหมครับ", english: "I've only got a 1000 — can you make change?", gloss: [["มีแต่", "only have"], ["แบงค์", "note"], ["พัน", "thousand"], ["ทอน", "give change"], ["ได้ไหม", "can?"], ["ครับ", "polite(m)"]], cultural: "แบงค์ (from English 'bank[note]') is the everyday word for a banknote; แบงค์พัน is a 1,000-baht note, often too big for small stalls to break." },
+  { num: 1049, display: 17, preview: "ใบเสร็จ", thai: "ขอใบเสร็จด้วยครับ", english: "Can I have a receipt too?", gloss: [["ขอ", "may I have"], ["ใบเสร็จ", "receipt"], ["ด้วย", "too"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 1050, display: 18, preview: "เงินไม่พอ", thai: "เงินไม่พอ ลดอีกนิดได้ไหมคะ", english: "I'm a bit short — knock a little more off?", gloss: [["เงิน", "money"], ["ไม่พอ", "not enough"], ["ลด", "lower"], ["อีกนิด", "a bit more"], ["ได้ไหม", "can?"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 1051, display: 19, preview: "ต่อรอง", thai: "ราคาแพงเกินไป ต่อรองได้ไหมครับ", english: "Too expensive — can I negotiate?", gloss: [["ราคา", "price"], ["แพง", "expensive"], ["เกินไป", "too"], ["ต่อรอง", "negotiate"], ["ได้ไหม", "can?"], ["ครับ", "polite(m)"]], cultural: "ต่อรอง is the verb 'to bargain/negotiate'. Expected at markets; in malls and chain shops prices are fixed." },
+  { num: 1052, display: 20, preview: "เงินสด", thai: "จ่ายด้วยบัตรได้ไหมครับ ไม่ได้พกเงินสด", english: "Can I pay by card? I didn't bring cash.", gloss: [["จ่าย", "pay"], ["ด้วย", "with"], ["บัตร", "card"], ["ได้ไหม", "can?"], ["ครับ", "polite(m)"], ["ไม่ได้", "didn't"], ["พก", "bring"], ["เงินสด", "cash"]], cultural: "" },
+  { num: 1053, display: 21, preview: "ค่าส่ง", thai: "ราคานี้รวมค่าส่งด้วยไหมคะ", english: "Does this price include delivery?", gloss: [["ราคานี้", "this price"], ["รวม", "include"], ["ค่าส่ง", "delivery"], ["ด้วย", "too"], ["ไหม", "(question)"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 1055, display: 22, preview: "ตู้กดเงิน", thai: "ตู้กดเงินอยู่แถวไหนคะ", english: "Where's an ATM around here?", gloss: [["ตู้กดเงิน", "ATM"], ["อยู่", "is"], ["แถวไหน", "whereabouts"], ["คะ", "polite(f)"]], cultural: "ตู้กดเงิน (literally 'press-money machine') is the colloquial word for an ATM — more common in speech than ตู้เอทีเอ็ม." },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

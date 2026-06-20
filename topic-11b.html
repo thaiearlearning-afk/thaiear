@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 11: Shopping &amp; money 2</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-subtitle { font-size: 14px; font-weight: 500; color: var(--accent-mid); margin: 2px 0 10px; letter-spacing: -0.01em; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Shopping &amp; money 2</h1>
+  <p class="topic-subtitle">Browsing, choosing &amp; quality</p>
+  <p class="topic-meta"><strong>29 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-11a.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Shopping &amp; money 1</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-12a.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Getting around &amp; transport 1</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "ShoppingAndMoney2_BEG",
+  sentences: [
+  { num: 335, display: 1, preview: "ตลาดนัด", thai: "กำลังจะไปเดินตลาดนัดค่ะ", english: "I'm about to head off to the market.", gloss: [["กำลังจะ", "about to"], ["ไป", "go"], ["เดิน", "walk round"], ["ตลาดนัด", "weekend market"], ["ค่ะ", "polite(f)"]], cultural: "ตลาดนัด is a periodic market that pops up on set days (often weekends/evenings). เดินตลาด 'walking the market' is as much a social outing as shopping." },
+  { num: 336, display: 2, preview: "แม่ค้า", thai: "แม่ค้าร้านนี้ใจป้ำค่ะ", english: "The vendor at this stall is generous.", gloss: [["แม่ค้า", "vendor(f)"], ["ร้านนี้", "this stall"], ["ใจป้ำ", "generous"], ["ค่ะ", "polite(f)"]], cultural: "แม่ค้า is a female market vendor (พ่อค้า is male). ใจป้ำ describes someone open-handed — here, a seller who gives good prices or throws in extras." },
+  { num: 337, display: 3, preview: "ขอดู", thai: "ขอดูก่อนได้ไหมคะ", english: "Can I have a look first?", gloss: [["ขอ", "may I"], ["ดู", "look"], ["ก่อน", "first"], ["ได้ไหม", "can?"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 338, display: 4, preview: "ชิม", thai: "ขอชิมหน่อยได้ไหมคะ", english: "Can I taste a bit?", gloss: [["ขอ", "may I"], ["ชิม", "taste"], ["หน่อย", "a bit"], ["ได้ไหม", "can?"], ["คะ", "polite(f)"]], cultural: "Tasting before buying is normal at Thai food markets — ขอชิมหน่อย ('can I try a bit?') is welcomed, not cheeky." },
+  { num: 339, display: 5, preview: "ตัวอย่าง", thai: "มีตัวอย่างให้ลองไหมคะ", english: "Do you have samples to try?", gloss: [["มี", "have"], ["ตัวอย่าง", "sample"], ["ให้ลอง", "to try"], ["ไหม", "(question)"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 340, display: 6, preview: "ขาย", thai: "ที่นี่ขายกระเป๋าเป้ไหมคะ", english: "Do you sell backpacks here?", gloss: [["ที่นี่", "here"], ["ขาย", "sell"], ["กระเป๋าเป้", "backpack"], ["ไหม", "(question)"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 344, display: 7, preview: "ถูกกว่า", thai: "อันนี้ถูกกว่าอันนั้นนิดหน่อยนะคะ", english: "This one's a little cheaper than that one.", gloss: [["อันนี้", "this one"], ["ถูกกว่า", "cheaper"], ["อันนั้น", "that one"], ["นิดหน่อย", "a little"], ["นะคะ", "polite(f)"]], cultural: "...กว่า is the comparative ('-er / more'): ถูกกว่า 'cheaper', แพงกว่า 'more expensive'." },
+  { num: 345, display: 8, preview: "ทนทาน", thai: "รองเท้าบูทคู่นี้ดูทนทานมากเลยค่ะ", english: "These boots look very durable.", gloss: [["รองเท้าบูท", "boots"], ["คู่นี้", "this pair"], ["ดู", "look"], ["ทนทาน", "durable"], ["มากเลย", "really"], ["ค่ะ", "polite(f)"]], cultural: "คู่ is the classifier for things in pairs — shoes, socks, earrings: รองเท้าคู่นี้ 'this pair of shoes'." },
+  { num: 346, display: 9, preview: "คุณภาพ", thai: "ของสองร้านนี้คุณภาพต่างกันเยอะเลยค่ะ", english: "The quality differs a lot between these two shops.", gloss: [["ของ", "goods"], ["สองร้านนี้", "these two shops"], ["คุณภาพ", "quality"], ["ต่างกัน", "differ"], ["เยอะ", "a lot"], ["เลย", "(emphasis)"], ["ค่ะ", "polite(f)"]], cultural: "" },
+  { num: 347, display: 10, preview: "ยี่ห้อ", thai: "ยี่ห้อนี้กับยี่ห้อนั้นอันไหนใช้ได้นานกว่ากันคะ", english: "Between this brand and that one, which lasts longer?", gloss: [["ยี่ห้อนี้", "this brand"], ["กับ", "and"], ["ยี่ห้อนั้น", "that brand"], ["อันไหน", "which"], ["ใช้ได้", "lasts"], ["นานกว่า", "longer"], ["กัน", "(comparing)"], ["คะ", "polite(f)"]], cultural: "ยี่ห้อ = brand/make. ...กว่ากัน at the end frames a 'which of the two is more…?' question." },
+  { num: 348, display: 11, preview: "คุ้ม", thai: "ราคานี้ถือว่าคุ้มมากเลยค่ะ", english: "At this price it's really good value.", gloss: [["ราคานี้", "this price"], ["ถือว่า", "counts as"], ["คุ้ม", "good value"], ["มากเลย", "really"], ["ค่ะ", "polite(f)"]], cultural: "คุ้ม (or คุ้มค่า) = 'worth it / good value for money' — high praise for a buy." },
+  { num: 349, display: 12, preview: "หายาก", thai: "ของถูกแต่คุณภาพดีแบบนี้หายากนะครับ", english: "Cheap but good quality like this is hard to find.", gloss: [["ของถูก", "cheap goods"], ["แต่", "but"], ["คุณภาพดี", "good quality"], ["แบบนี้", "like this"], ["หายาก", "hard to find"], ["นะครับ", "polite(m)"]], cultural: "" },
+  { num: 350, display: 13, preview: "ลดราคา", thai: "ถ้าซื้อสามชิ้น เดี๋ยวลดราคาให้นะคะ", english: "If you buy three, I'll give you a discount.", gloss: [["ถ้า", "if"], ["ซื้อ", "buy"], ["สามชิ้น", "three pieces"], ["เดี๋ยว", "then"], ["ลดราคา", "discount"], ["ให้", "for you"], ["นะคะ", "polite(f)"]], cultural: "ชิ้น is the classifier for pieces/items. Bulk discounts ('buy three, get a deal') are standard market practice." },
+  { num: 351, display: 14, preview: "เหมา", thai: "เหมาทั้งหมดนี่มีของแถมไหมครับ", english: "If I take the whole lot, is there anything thrown in free?", gloss: [["เหมา", "buy the lot"], ["ทั้งหมด", "all"], ["นี่", "this"], ["มี", "is there"], ["ของแถม", "freebie"], ["ไหม", "(question)"], ["ครับ", "polite(m)"]], cultural: "เหมา = buy the whole lot at once (often for a better price). ของแถม is a free extra thrown in — a common sweetener." },
+  { num: 352, display: 15, preview: "ของแท้", thai: "กระเป๋าใบนี้เป็นของแท้หรือของปลอมคะ", english: "Is this bag genuine or a fake?", gloss: [["กระเป๋า", "bag"], ["ใบนี้", "this one"], ["เป็น", "is"], ["ของแท้", "genuine"], ["หรือ", "or"], ["ของปลอม", "fake"], ["คะ", "polite(f)"]], cultural: "ใบ classifies bags, tickets and other flat/hollow items. ของแท้ vs ของปลอม ('genuine vs fake') is worth knowing where copies are common." },
+  { num: 353, display: 16, preview: "ทน", thai: "รองเท้าแตะคู่นี้ใส่ทนไหมครับ", english: "Will these sandals hold up well?", gloss: [["รองเท้าแตะ", "sandals"], ["คู่นี้", "this pair"], ["ใส่", "wear"], ["ทน", "hard-wearing"], ["ไหม", "(question)"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 354, display: 17, preview: "ยังดีอยู่", thai: "ของชิ้นนี้ใช้มาหลายปีแล้วยังดีอยู่เลยค่ะ", english: "I've used this one for years and it's still good.", gloss: [["ของชิ้นนี้", "this one"], ["ใช้มา", "have used"], ["หลายปี", "years"], ["แล้ว", "already"], ["ยัง", "still"], ["ดี", "good"], ["อยู่", "(state)"], ["เลย", "(emphasis)"], ["ค่ะ", "polite(f)"]], cultural: "ยัง…อยู่ wraps a verb to mean 'still (being/doing)' — ยังดีอยู่ 'still in good shape'." },
+  { num: 355, display: 18, preview: "ไซส์", thai: "ไซส์นี้เล็กไปหน่อย มีใหญ่กว่านี้ไหมครับ", english: "This size is a bit too small — do you have a bigger one?", gloss: [["ไซส์นี้", "this size"], ["เล็ก", "small"], ["ไปหน่อย", "a bit too"], ["มี", "have"], ["ใหญ่กว่านี้", "a bigger one"], ["ไหม", "(question)"], ["ครับ", "polite(m)"]], cultural: "ไซส์ (from English 'size') is used for clothes and shoes; ...กว่านี้ = '-er than this'." },
+  { num: 356, display: 19, preview: "สี", thai: "มีสีอื่นนอกจากสีนี้อีกไหมคะ", english: "Are there other colours besides this one?", gloss: [["มี", "have"], ["สีอื่น", "other colours"], ["นอกจาก", "besides"], ["สีนี้", "this colour"], ["อีก", "else"], ["ไหม", "(question)"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 357, display: 20, preview: "ชำรุด", thai: "อันนี้ชำรุดนิดหน่อย ขอเปลี่ยนอันใหม่ได้ไหมคะ", english: "This one's slightly damaged — can I swap it for a new one?", gloss: [["อันนี้", "this one"], ["ชำรุด", "faulty"], ["นิดหน่อย", "a little"], ["ขอ", "may I"], ["เปลี่ยน", "swap"], ["อันใหม่", "a new one"], ["ได้ไหม", "can?"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 358, display: 21, preview: "คืน", thai: "ซื้อไปแล้ว ถ้าใช้ไม่ได้คืนได้ไหมครับ", english: "If it doesn't work after I buy it, can I return it?", gloss: [["ซื้อไปแล้ว", "after buying"], ["ถ้า", "if"], ["ใช้ไม่ได้", "doesn't work"], ["คืน", "return"], ["ได้ไหม", "can?"], ["ครับ", "polite(m)"]], cultural: "Returns aren't a given at Thai markets and small shops — worth asking up front, since คืนได้ไหม often gets a no." },
+  { num: 359, display: 22, preview: "คิดดู", thai: "ขอคิดดูก่อนนะคะ แล้วค่อยมาใหม่", english: "Let me think it over — then I'll come back.", gloss: [["ขอ", "let me"], ["คิดดู", "think it over"], ["ก่อน", "first"], ["นะคะ", "polite(f)"], ["แล้วค่อย", "then"], ["มา", "come"], ["ใหม่", "again"]], cultural: "ขอคิดดูก่อน ('let me think about it first') is a polite, face-saving way to walk away without buying." },
+  { num: 1045, display: 23, preview: "ร้านสะดวกซื้อ", thai: "แถวนี้มีร้านสะดวกซื้อไหมครับ", english: "Is there a convenience store near here?", gloss: [["แถวนี้", "around here"], ["มี", "is there"], ["ร้านสะดวกซื้อ", "convenience store"], ["ไหม", "(question)"], ["ครับ", "polite(m)"]], cultural: "ร้านสะดวกซื้อ ('convenience store') — 7-Eleven and the like sit on nearly every corner, open 24/7 for snacks, drinks and even paying bills." },
+  { num: 1047, display: 24, preview: "โปร", thai: "ยังมีโปรซื้อหนึ่งแถมหนึ่งอยู่ไหมครับ", english: "Is the buy-one-get-one still on?", gloss: [["ยัง", "still"], ["มี", "have"], ["โปร", "promo"], ["ซื้อหนึ่งแถมหนึ่ง", "buy-one-get-one"], ["อยู่", "(state)"], ["ไหม", "(question)"], ["ครับ", "polite(m)"]], cultural: "โปร is short for โปรโมชั่น (promotion). ซื้อหนึ่งแถมหนึ่ง = 'buy one get one' — แถม is the same 'free extra' as ของแถม." },
+  { num: 1048, display: 25, preview: "หมด", thai: "ขอโทษค่ะ ไซส์นี้หมดแล้ว", english: "Sorry, this size is sold out.", gloss: [["ขอโทษ", "sorry"], ["ค่ะ", "polite(f)"], ["ไซส์นี้", "this size"], ["หมด", "sold out"], ["แล้ว", "now"]], cultural: "หมด means 'all gone / used up' — สินค้าหมด or just หมดแล้ว is how a vendor says something's sold out." },
+  { num: 1054, display: 26, preview: "ชั้น", thai: "ร้านอยู่ชั้นสาม ขึ้นบันไดเลื่อนได้เลยค่ะ", english: "The shop's on the third floor — just take the escalator up.", gloss: [["ร้าน", "shop"], ["อยู่", "is on"], ["ชั้นสาม", "third floor"], ["ขึ้น", "take"], ["บันไดเลื่อน", "escalator"], ["ได้เลย", "just"], ["ค่ะ", "polite(f)"]], cultural: "ชั้น = floor/storey (ชั้นสาม 'third floor'). บันไดเลื่อน ('moving stairs') is an escalator; บันได alone is an ordinary staircase." },
+  { num: 1056, display: 27, preview: "แผนก", thai: "ขนมปังอยู่แผนกไหนครับ", english: "Which aisle is the bread in?", gloss: [["ขนมปัง", "bread"], ["อยู่", "is in"], ["แผนกไหน", "which section"], ["ครับ", "polite(m)"]], cultural: "แผนก = department/section of a shop or supermarket — แผนกไหน 'which section?' for finding your way around." },
+  { num: 1057, display: 28, preview: "ดูเฉยๆ", thai: "ขอดูเฉยๆ ก่อนนะคะ", english: "I'm just looking for now, thanks.", gloss: [["ขอ", "(I'll)"], ["ดู", "look"], ["เฉยๆ", "just browse"], ["ก่อน", "for now"], ["นะคะ", "polite(f)"]], cultural: "ดูเฉยๆ ('just looking') politely waves off a helpful vendor without committing — เฉยๆ means 'just / no particular reason'." },
+  { num: 1058, display: 29, preview: "ห่อของขวัญ", thai: "ห่อของขวัญให้หน่อยได้ไหมคะ", english: "Could you gift-wrap it for me?", gloss: [["ห่อ", "wrap"], ["ของขวัญ", "gift"], ["ให้", "for me"], ["หน่อย", "please"], ["ได้ไหม", "can?"], ["คะ", "polite(f)"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
