@@ -179,6 +179,7 @@
       transition: background .15s, color .15s, border-color .15s; white-space: nowrap; }
     .xtra-toggle:hover { color: var(--text-primary); }
     .xtra-toggle svg { width: 13px; height: 13px; }
+    .xtra-lbl-short { display: none; }   /* the compact "Auto" label is mobile-only */
     .xtra-toggle.active { background: var(--accent); color: #fff; border-color: var(--accent); }
     .xtra-icon { position: relative; width: 32px; height: 32px; border-radius: 50%; background: none; border: none;
       color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
@@ -197,8 +198,20 @@
     @keyframes np-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
     .now-playing strong { color: var(--text-primary); font-weight: 600; }
     @media (max-width: 600px) {
-      .xtra-toggle { font-size: 11px; padding: 5px 8px; }
-      .xtra-icon { width: 30px; height: 30px; }
+      /* keep the whole control row on ONE line on phones (portrait) */
+      .player-top { gap: 6px; }
+      .audio-toggle .toggle-btn { font-size: 11px; padding: 4px 7px; }
+      .xtra-controls { gap: 2px; }
+      .xtra-toggle { font-size: 11px; padding: 5px 7px; gap: 4px; }
+      .xtra-toggle svg { width: 12px; height: 12px; }
+      .xtra-lbl-full { display: none; }    /* swap "Autoplay" → "Auto" to save width */
+      .xtra-lbl-short { display: inline; }
+      .xtra-icon { width: 28px; height: 28px; }
+      .xtra-icon svg { width: 16px; height: 16px; }
+    }
+    @media (max-width: 360px) {
+      .xtra-lbl-short { display: none; }   /* tightest phones: autoplay icon only */
+      .xtra-icon { width: 26px; height: 26px; }
     }
   `;
 
@@ -214,7 +227,8 @@
         '<div class="xtra-controls">' +
           '<button class="xtra-toggle" id="btn-autoplay" onclick="toggleAutoplay()" aria-pressed="false" title="Autoplay: continue to the next topic when this one ends">' +
             '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="13 5 22 12 13 19"/><polygon points="2 5 11 12 2 19"/></svg>' +
-            '<span class="xtra-lbl">Autoplay</span>' +
+            '<span class="xtra-lbl xtra-lbl-full">Autoplay</span>' +
+            '<span class="xtra-lbl xtra-lbl-short">Auto</span>' +
           '</button>' +
           '<button class="xtra-icon" id="btn-prev-topic" onclick="advanceTopic(-1)" aria-label="Previous topic" title="Previous topic">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="19 20 9 12 19 4"/><line x1="5" y1="19" x2="5" y2="5"/></svg>' +
@@ -365,6 +379,9 @@
   }
   mainAudio.addEventListener('loadedmetadata', function () {
     var t = $('time-total'); if (t) t.textContent = formatTime(mainAudio.duration);
+    if ('mediaSession' in navigator && navigator.mediaSession.setPositionState && mainAudio.duration && isFinite(mainAudio.duration)) {
+      try { navigator.mediaSession.setPositionState({ duration: mainAudio.duration, playbackRate: 1, position: 0 }); } catch (_) {}
+    }
   });
   mainAudio.addEventListener('timeupdate', function () {
     var pct = mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
@@ -391,7 +408,7 @@
 
   function togglePlay() {
     if (mainAudio.paused) {
-      ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(function (e) { handleDenied(e, mainTier); });
+      ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); setupMediaSession(); }).catch(function (e) { handleDenied(e, mainTier); });
     } else { mainAudio.pause(); setMainIcon(false); }
     resumeMainAfter = false;   // a manual tap on the top player overrides auto-resume
   }
@@ -497,7 +514,7 @@
       if (mainPrefix !== unit.audio) return;        // a newer hop superseded this one
       mainAudio.src = u; mainAudio.load(); mainSrcReady = true;
       return mainAudio.play();
-    }).then(function () { setMainIcon(true); })
+    }).then(function () { setMainIcon(true); setupMediaSession(); })
       .catch(function (e) { setMainIcon(false); handleDenied(e, mainTier); });
   }
 
@@ -535,6 +552,12 @@
     set('pause', function () { if (!mainAudio.paused) togglePlay(); });
     set('previoustrack', function () { advanceTopic(-1); });
     set('nexttrack', function () { advanceTopic(1); });
+    // iOS Control Center shows the prev/next-TRACK buttons only when the seek handlers are
+    // absent — otherwise it falls back to the ±15s skip buttons. Clear them explicitly so
+    // our topic prev/next show on the lock screen. (Our on-page ±10s buttons are unaffected.)
+    set('seekbackward', null);
+    set('seekforward', null);
+    set('seekto', null);
   }
 
   /* ---- autoplay / repeat toggles ---- */
