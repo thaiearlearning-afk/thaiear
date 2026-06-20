@@ -104,6 +104,128 @@
     };
   }
 
+  /* ---- offline downloads (Capacitor app only) ----
+     A topic can be downloaded for offline listening: the two combined files (_TE/_ET) plus every
+     per-sentence clip, stored in app-private storage (Filesystem DATA). Playback then prefers the
+     local copy — the native engine plays the file:// directly; the web sentence <audio> uses
+     Capacitor.convertFileSrc. PREMIUM downloads carry an offline LICENCE: they only play offline if
+     the subscription was verified online within OFFLINE_GRACE_MS (a lapsed/cancelled member loses
+     offline access once that window passes). Free + member topics have no expiry. Guarded on NATIVE;
+     the website never shows any of this. */
+  // TESTING VALUE — 2 minutes so the failsafe is easy to test. PRODUCTION: 30 days =
+  // 30 * 24 * 60 * 60 * 1000 = 2592000000.
+  var OFFLINE_GRACE_MS = 2 * 60 * 1000;
+  var Filesystem = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
+  var OFFLINE = !!(NATIVE && Filesystem);
+
+  function offlineDir(prefix) { return 'offline/' + prefix; }
+  function topicFiles() {
+    var files = [PREFIX + '_TE.mp3', PREFIX + '_ET.mp3'];
+    sentences.forEach(function (s) { files.push(PREFIX + '_S' + String(s.num).padStart(2, '0') + '_TH.mp3'); });
+    return files;
+  }
+  function getManifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
+  function setManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
+  function isDownloaded(prefix) { return !!getManifest()[prefix]; }
+  function markDownloaded(prefix, tier, files) { var m = getManifest(); m[prefix] = { tier: tier || 'free', files: files, at: Date.now() }; setManifest(m); }
+  function removeDownloaded(prefix) { var m = getManifest(); delete m[prefix]; setManifest(m); }
+  function downloadedTier(prefix) { var e = getManifest()[prefix]; return e ? e.tier : null; }
+
+  function stampVerified() { try { localStorage.setItem('thaiear_lastVerified', String(Date.now())); } catch (_) {} }
+  // May an offline download of this tier be played right now? free/member: always.
+  // premium: live subscription when online; else within the verified-online window.
+  function canUseOffline(tier) {
+    if (tier !== 'premium') return true;
+    var a = window.ThaiEarAuth;
+    var subbed = a && a.isSubscribed && a.isSubscribed();
+    if (navigator.onLine) {
+      if (subbed) { stampVerified(); return true; }
+      if (a && a.isReady) return false;   // definitively not subscribed
+      // auth still loading → fall through to the window
+    }
+    var last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);
+    return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
+  }
+
+  function localUri(prefix, file) {
+    if (!Filesystem) return Promise.resolve(null);
+    return Filesystem.getUri({ directory: 'DATA', path: offlineDir(prefix) + '/' + file })
+      .then(function (r) { return (r && r.uri) ? r.uri : null; })
+      .catch(function () { return null; });
+  }
+  // Main (native) player: local file:// if downloaded + licence ok, else the remote URL.
+  function mainSrcFor(file) {
+    if (OFFLINE && isDownloaded(mainPrefix) && canUseOffline(mainTier)) {
+      return localUri(mainPrefix, file).then(function (uri) { return uri || buildUrl(file, mainGated); });
+    }
+    return buildUrl(file, mainGated);
+  }
+  // Sentence (web <audio>) player: convertFileSrc(local) if downloaded + licence ok, else remote.
+  function sentSrcFor(file) {
+    if (OFFLINE && isDownloaded(PREFIX) && canUseOffline(TIER)) {
+      return localUri(PREFIX, file).then(function (uri) {
+        return uri ? (window.Capacitor.convertFileSrc ? window.Capacitor.convertFileSrc(uri) : uri) : buildUrl(file);
+      });
+    }
+    return buildUrl(file);
+  }
+
+  function downloadTopic() {
+    if (!OFFLINE) return;
+    var files = topicFiles();
+    var done = 0;
+    setOfflineState('downloading', 0, files.length);
+    var chain = Promise.resolve();
+    files.forEach(function (file) {
+      chain = chain.then(function () {
+        return buildUrl(file, GATED).then(function (url) {
+          return Filesystem.downloadFile({ url: url, path: offlineDir(PREFIX) + '/' + file, directory: 'DATA', recursive: true });
+        }).then(function () { done++; setOfflineState('downloading', done, files.length); });
+      });
+    });
+    chain.then(function () {
+      markDownloaded(PREFIX, TIER || 'free', files);
+      stampVerified();                       // they were online + entitled at download time
+      setOfflineState('downloaded');
+    }).catch(function (err) {
+      console.warn('player.js: offline download failed', err);
+      setOfflineState('error');
+    });
+  }
+  function deleteTopic() {
+    if (!OFFLINE) return;
+    Filesystem.rmdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
+      .catch(function () {})
+      .then(function () { removeDownloaded(PREFIX); setOfflineState('idle'); });
+  }
+  function setOfflineState(state, done, total) {
+    var bar = $('offline-bar'); if (!bar) return;
+    if (state === 'downloading') {
+      bar.innerHTML = '<span class="offline-status"><span class="prog-spin"></span> Downloading ' + (done || 0) + '/' + (total || '?') + '…</span>';
+    } else if (state === 'downloaded') {
+      bar.innerHTML = '<span class="offline-status offline-ok">✓ Available offline</span>' +
+        '<button class="offline-btn offline-del" onclick="deleteTopic()">Delete</button>';
+    } else if (state === 'error') {
+      bar.innerHTML = '<span class="offline-status">Download failed.</span>' +
+        '<button class="offline-btn" onclick="downloadTopic()">Retry</button>';
+    } else { // idle
+      bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' +
+        '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+        ' Download for offline</button>';
+    }
+  }
+  function renderOfflineBar() {
+    var bar = $('offline-bar'); if (!bar) return;
+    if (!OFFLINE) { bar.style.display = 'none'; return; }  // website / non-app: never shown
+    bar.style.display = 'flex';
+    setOfflineState(isDownloaded(PREFIX) ? 'downloaded' : 'idle');
+  }
+  // Refresh the offline licence whenever auth resolves online with an active subscription.
+  window.addEventListener('thaiear:auth', function () {
+    var a = window.ThaiEarAuth;
+    if (navigator.onLine && a && a.isSubscribed && a.isSubscribed()) stampVerified();
+  });
+
   // Progress is keyed by this page's (frozen) filename, e.g. "topic-09a" — unique
   // per page, matches what the progress page enumerates from topics.js.
   var PAGE_FILE = (location.pathname.split('/').pop() || '').toLowerCase();
@@ -262,6 +384,12 @@
     .now-playing a { color: var(--accent); text-decoration: none; }
     .now-playing a strong { color: var(--accent); }
     .now-playing a:hover { text-decoration: underline; }
+    .offline-bar { display: flex; align-items: center; gap: 10px; margin: -0.75rem 0 1.25rem; flex-wrap: wrap; }
+    .offline-btn { font-family: var(--font-ui); font-size: 13px; font-weight: 500; color: var(--accent); background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s; }
+    .offline-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+    .offline-btn.offline-del { color: var(--text-secondary); }
+    .offline-status { font-size: 13px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 7px; }
+    .offline-status.offline-ok { color: var(--accent); font-weight: 500; }
     @media (max-width: 600px) {
       /* keep the whole control row on ONE line on phones (portrait) */
       .player-top { gap: 6px; }
@@ -326,6 +454,7 @@
         '</div>' +
       '</div>' +
     '</div>' +
+    '<div class="offline-bar" id="offline-bar" style="display:none"></div>' +
     '<p class="orientation-text">' +
       '<strong>How to use this topic:</strong> Listen to the <strong>Thai first</strong> audio a couple of times to build familiarity. ' +
       'Then switch to <strong>English first</strong> to test your recall — hear the English prompt and try to produce the Thai before it plays. Feel free to pause anytime, especially on your first few listens. ' +
@@ -434,12 +563,14 @@
   mainAudio.preload = 'metadata';
   // Free: set the public src now so duration shows before play. Premium: defer until first
   // play (we need the session token, and we don't want to burn a signed URL on page load).
-  if (!mainGated) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
+  // Free + web: set the public src now so duration shows. In the app, defer to ensureMainSrc so a
+  // downloaded local copy can be used (offline-aware).
+  if (!mainGated && !OFFLINE) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
 
-  // Resolve + attach the current main file's src if not already done (premium-aware).
+  // Resolve + attach the current main file's src if not already done (premium- and offline-aware).
   function ensureMainSrc() {
     if (mainSrcReady) return Promise.resolve();
-    return buildUrl(currentMainFile, mainGated).then(function (u) {
+    return mainSrcFor(currentMainFile).then(function (u) {
       mainAudio.src = u; mainAudio.load(); mainSrcReady = true;
     });
   }
@@ -540,7 +671,7 @@
     setMainIcon(false);
     currentMainFile = mainPrefix + '_' + mode.toUpperCase() + '.mp3';
     mainSrcReady = false;                 // new file → re-resolve (premium needs a fresh signed URL)
-    if (!mainGated) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
+    if (!mainGated && !OFFLINE) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
     var f = $('scrubber-fill'); if (f) f.style.width = '0%';
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
@@ -576,8 +707,8 @@
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     var tt = $('time-total'); if (tt) tt.textContent = '0:00';
     updateNowPlaying(unit);
-    // Fresh URL each hop (a premium signed URL never goes stale across a long walk).
-    buildUrl(currentMainFile, mainGated).then(function (u) {
+    // Local copy if downloaded, else a fresh URL each hop (a premium signed URL never goes stale).
+    mainSrcFor(currentMainFile).then(function (u) {
       if (mainPrefix !== unit.audio) return;        // a newer hop superseded this one
       mainAudio.src = u; mainAudio.load(); mainSrcReady = true;
       return mainAudio.play();
@@ -712,8 +843,8 @@
     sentPlaying = num;
     updateSentBtn(num, true);
     if (sentResetTimer) { clearTimeout(sentResetTimer); sentResetTimer = null; }
-    // Resolve the URL (sync for free, a signed-URL fetch for premium) then play.
-    buildUrl(file).then(function (u) {
+    // Resolve the src: local copy if downloaded, else free CDN / signed-URL fetch. Then play.
+    sentSrcFor(file).then(function (u) {
       if (sentPlaying !== num) return;   // user stopped/switched while the URL was resolving
       sa.src = u;
       sa.load();
@@ -962,13 +1093,15 @@
     initProgress();
     initFlags();
     initXtraControls();
+    renderOfflineBar();
   }
 
   // inline onclick in the injected markup call these by name
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow,
     progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn,
-    advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat });
+    advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat,
+    downloadTopic: downloadTopic, deleteTopic: deleteTopic });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
