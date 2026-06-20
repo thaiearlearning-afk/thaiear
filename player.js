@@ -55,6 +55,18 @@
   var NA = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.NativeAudio : null;
   var nativeMeta = { title: 'ThaiEar', subtitle: 'ThaiEar', artwork: 'https://thaiear.com/apple-touch-icon.png' };
 
+  // Best title for whatever the TOP player is on. Prefer the topics.js unit name; fall back to
+  // the page <title> (in case topics.js hasn't run yet on a cold open — that left the lock-screen
+  // showing "ThaiEar" on the very first direct play).
+  function resolveMainTitle() {
+    var T = window.ThaiEarTopics;
+    if (T && T.pageUnit) { try { var u = T.pageUnit(mainPage); if (u && u.name) return u.name; } catch (_) {} }
+    return (document.title || 'ThaiEar')
+      .replace(/^ThaiEar\s*[—–-]\s*Topic\s*\d+\s*:\s*/i, '')
+      .replace(/\s*[·—–-]\s*ThaiEar.*$/i, '')
+      .trim() || 'ThaiEar';
+  }
+
   function makeNativeAudio() {
     var L = { loadedmetadata: [], timeupdate: [], ended: [] };
     var st = { src: '', preparedSrc: null, paused: true, currentTime: 0, duration: 0 };
@@ -76,6 +88,7 @@
         if (!NA) return Promise.resolve();
         // resume (same track already prepared) → just play; new track → prepare with metadata first
         if (st.preparedSrc === st.src && st.src) { st.paused = false; return NA.play(); }
+        nativeMeta.title = resolveMainTitle();   // ensure the lock screen shows the topic, even on first play
         return NA.prepare({ url: st.src, title: nativeMeta.title, subtitle: nativeMeta.subtitle, artwork: nativeMeta.artwork })
           .then(function () { st.preparedSrc = st.src; st.paused = false; return NA.play(); });
       },
@@ -239,6 +252,9 @@
     .now-playing .np-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: np-pulse 1.4s ease-in-out infinite; }
     @keyframes np-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
     .now-playing strong { color: var(--text-primary); font-weight: 600; }
+    .now-playing a { color: var(--accent); text-decoration: none; }
+    .now-playing a strong { color: var(--accent); }
+    .now-playing a:hover { text-decoration: underline; }
     @media (max-width: 600px) {
       /* keep the whole control row on ONE line on phones (portrait) */
       .player-top { gap: 6px; }
@@ -571,7 +587,10 @@
     var box = $('now-playing'), txt = $('now-playing-text');
     var moved = bareKey(unit.page) !== TOPIC_KEY;
     if (box) box.classList.toggle('show', !!moved);
-    if (txt) txt.innerHTML = 'Now playing <strong>' + escapeHtml(unit.name) + '</strong>' + (lvl ? ' · ' + escapeHtml(lvl) : '');
+    if (txt) {
+      var href = escapeHtml(unit.page || '');
+      txt.innerHTML = 'Now playing <a href="' + href + '"><strong>' + escapeHtml(unit.name) + '</strong></a>' + (lvl ? ' · ' + escapeHtml(lvl) : '');
+    }
     if (unit.name) document.title = unit.name + ' · ThaiEar';
     updateMediaSession(unit, lvl);
   }
