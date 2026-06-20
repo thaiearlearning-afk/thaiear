@@ -120,7 +120,7 @@
     display: flex;
     justify-content: center;
     gap: 3.5rem;
-    padding: 1.5rem 2rem 0.7rem;
+    padding: 1.1rem 2rem;
     max-width: 620px;
     margin: 0 auto;
   }
@@ -137,16 +137,6 @@
     color: rgba(255,255,255,0.44);
     letter-spacing: 0.08em;
     text-transform: uppercase;
-  }
-  /* Single centred note under the three stats — signals the figures are what's BUILT. */
-  .hero-stats-soon {
-    text-align: center;
-    font-size: 10.5px;
-    color: rgba(255,255,255,0.30);
-    letter-spacing: 0.04em;
-    font-style: italic;
-    margin: 0;
-    padding: 0 2rem 1.3rem;
   }
 
     /* ── TOPICS SECTION ── */
@@ -167,6 +157,14 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-tertiary);
+  }
+  /* Quieter than the title beside it: lighter weight, normal case, more faded. */
+  .section-title-soon {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    font-style: italic;
+    opacity: 0.6;
   }
 
   /* ── LEVEL FILTER ── */
@@ -503,14 +501,13 @@
         <span class="hero-stat-label">Unique words</span>
       </div>
     </div>
-    <p class="hero-stats-soon">more coming soon</p>
   </div>
 </section>
 
 <!-- ── TOPICS ── -->
 <section class="topics-section">
   <div class="section-header">
-    <span class="section-title">All topics</span>
+    <span class="section-title">All topics <span class="section-title-soon">— more coming soon…</span></span>
   </div>
 
   <!-- TEMP-DISABLED (level filter): live topics are now grouped under difficulty
