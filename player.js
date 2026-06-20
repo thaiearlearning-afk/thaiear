@@ -170,6 +170,36 @@
     @media (max-width: 380px) {
       .row-thai { font-size: 16px; }
     }
+    /* ---- continuous-playback controls (autoplay / prev / next / repeat) ---- */
+    .player-top { flex-wrap: wrap; gap: 8px; }
+    .xtra-controls { display: flex; align-items: center; gap: 4px; }
+    .xtra-toggle { font-family: var(--font-ui); font-size: 12px; font-weight: 500; color: var(--text-secondary);
+      background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm);
+      padding: 5px 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+      transition: background .15s, color .15s, border-color .15s; white-space: nowrap; }
+    .xtra-toggle:hover { color: var(--text-primary); }
+    .xtra-toggle svg { width: 13px; height: 13px; }
+    .xtra-toggle.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .xtra-icon { position: relative; width: 32px; height: 32px; border-radius: 50%; background: none; border: none;
+      color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background .15s, color .15s; }
+    .xtra-icon:hover { background: var(--bg); color: var(--accent); }
+    .xtra-icon svg { width: 17px; height: 17px; }
+    .xtra-icon.active { color: var(--accent); }
+    .repeat-badge { position: absolute; top: 0; right: 0; min-width: 12px; height: 12px; padding: 0 2px; box-sizing: border-box;
+      border-radius: 6px; background: var(--accent); color: #fff; font-size: 8px; font-weight: 700; line-height: 12px;
+      text-align: center; display: none; }
+    .xtra-icon.active .repeat-badge { display: block; }
+    .now-playing { display: none; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-secondary);
+      background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 6px 10px; margin-bottom: 0.85rem; }
+    .now-playing.show { display: flex; }
+    .now-playing .np-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: np-pulse 1.4s ease-in-out infinite; }
+    @keyframes np-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+    .now-playing strong { color: var(--text-primary); font-weight: 600; }
+    @media (max-width: 600px) {
+      .xtra-toggle { font-size: 11px; padding: 5px 8px; }
+      .xtra-icon { width: 30px; height: 30px; }
+    }
   `;
 
   /* ---- player markup (transport bar, how-to, controls, list, audio el) ---- */
@@ -181,7 +211,24 @@
           '<button class="toggle-btn active" id="btn-te" onclick="switchAudio(\'te\')">Thai first</button>' +
           '<button class="toggle-btn" id="btn-et" onclick="switchAudio(\'et\')">English first</button>' +
         '</div>' +
+        '<div class="xtra-controls">' +
+          '<button class="xtra-toggle" id="btn-autoplay" onclick="toggleAutoplay()" aria-pressed="false" title="Autoplay: continue to the next topic when this one ends">' +
+            '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="13 5 22 12 13 19"/><polygon points="2 5 11 12 2 19"/></svg>' +
+            '<span class="xtra-lbl">Autoplay</span>' +
+          '</button>' +
+          '<button class="xtra-icon" id="btn-prev-topic" onclick="advanceTopic(-1)" aria-label="Previous topic" title="Previous topic">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="19 20 9 12 19 4"/><line x1="5" y1="19" x2="5" y2="5"/></svg>' +
+          '</button>' +
+          '<button class="xtra-icon" id="btn-next-topic" onclick="advanceTopic(1)" aria-label="Next topic" title="Next topic">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 4 15 12 5 20"/><line x1="19" y1="5" x2="19" y2="19"/></svg>' +
+          '</button>' +
+          '<button class="xtra-icon" id="btn-repeat" onclick="toggleRepeat()" aria-pressed="false" title="Repeat this topic">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>' +
+            '<span class="repeat-badge">1</span>' +
+          '</button>' +
+        '</div>' +
       '</div>' +
+      '<div class="now-playing" id="now-playing"><span class="np-dot"></span><span id="now-playing-text"></span></div>' +
       '<div class="audio-row">' +
         '<button class="skip-btn" onclick="skip(-10)" aria-label="Back 10 seconds" title="Back 10 seconds">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>' +
@@ -225,8 +272,9 @@
      Premium topics ask /api/audio for a short-lived presigned R2 URL, sending the Supabase
      session token in an Authorization header (which an <audio> tag can't carry). The Function
      verifies the user and returns the URL; the bytes then load browser ↔ R2 directly. */
-  function buildUrl(file) {
-    if (!GATED) return Promise.resolve(AUDIO_BASE + '/' + file);
+  function buildUrl(file, gated) {
+    if (gated == null) gated = GATED;
+    if (!gated) return Promise.resolve(AUDIO_BASE + '/' + file);
     var token = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken)
       ? window.ThaiEarAuth.getAccessToken() : null;
     if (!token) return Promise.reject({ code: 'noauth' });
@@ -242,13 +290,14 @@
   }
   // Not entitled (logged out / no access) → send to the paywall. Transient errors just log;
   // the play button is already reset by the caller.
-  function handleDenied(err) {
+  function handleDenied(err, tier) {
+    if (tier == null) tier = TIER;
     var code = err && err.code;
     var gate = (code === 'noauth' || code === 401 || code === 402 || code === 403);
     if (!gate) { console.warn('player.js: audio unavailable', err); return; }
     // Member content is free behind a login → send to the free-membership explainer
     // (which has the Google sign-in), with ?next back to this topic page.
-    if (TIER === 'member') {
+    if (tier === 'member') {
       var page = (location.pathname.split('/').pop() || '');
       if (!/\.html$/.test(page)) page += '.html';   // clean URLs (/topic-02) → topic-02.html
       window.location.href = 'join.html?next=' + encodeURIComponent(page);
@@ -260,7 +309,10 @@
 
   var PLAY_TRI  = '<polygon points="5,2 14,8 5,14"/>';
   var PLAY_BARS = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
-  function setMainIcon(playing) { var i = $('play-icon'); if (i) i.innerHTML = playing ? PLAY_BARS : PLAY_TRI; }
+  function setMainIcon(playing) {
+    var i = $('play-icon'); if (i) i.innerHTML = playing ? PLAY_BARS : PLAY_TRI;
+    if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = playing ? 'playing' : 'paused'; } catch (_) {} }
+  }
 
   /* ---- state ---- */
   var states = {};
@@ -277,20 +329,37 @@
     document.querySelectorAll('.speed-toggle').forEach(function (btn) { btn.classList.toggle('active', slowMode); });
   }
 
-  /* ---- main player ---- */
+  /* ---- main player ----
+     The TOP player carries its OWN identity (mainPrefix / mainGated / mainTier / mainPage),
+     separate from the page's PREFIX/GATED/TIER. They start equal, but autoplay and the
+     prev/next-topic controls swap the top player onto ANOTHER topic's combined audio without
+     reloading the page — so playback continues with the screen locked. The sentence list
+     below stays on the topic the page was opened with (it keeps using PREFIX/GATED/TIER). */
   var currentMode = 'te';
-  var currentMainFile = PREFIX + '_TE.mp3';
+  var mainPrefix = PREFIX;          // audio prefix the top player is currently on
+  var mainGated = GATED;            // is that topic gated? → signed URL vs public CDN
+  var mainTier = TIER;              // its tier → denial route, if it ever denies
+  var mainPage = PAGE_FILE;         // the live-unit page the top player is currently playing
+  var currentMainFile = mainPrefix + '_TE.mp3';
   var mainSrcReady = false;                 // has the current file's src been resolved onto mainAudio?
+
+  // Continuous-playback prefs, remembered across pages. autoplay → advance on track end;
+  // repeat (repeat-one) → loop the current topic and takes PRECEDENCE over autoplay.
+  function prefOn(key) { try { return localStorage.getItem(key) === '1'; } catch (_) { return false; } }
+  function prefSet(key, on) { try { localStorage.setItem(key, on ? '1' : '0'); } catch (_) {} }
+  var autoplayOn = prefOn('thaiear_autoplay');
+  var repeatOn = prefOn('thaiear_repeat');
+
   var mainAudio = new Audio();
   mainAudio.preload = 'metadata';
   // Free: set the public src now so duration shows before play. Premium: defer until first
   // play (we need the session token, and we don't want to burn a signed URL on page load).
-  if (!GATED) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
+  if (!mainGated) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
 
   // Resolve + attach the current main file's src if not already done (premium-aware).
   function ensureMainSrc() {
     if (mainSrcReady) return Promise.resolve();
-    return buildUrl(currentMainFile).then(function (u) {
+    return buildUrl(currentMainFile, mainGated).then(function (u) {
       mainAudio.src = u; mainAudio.load(); mainSrcReady = true;
     });
   }
@@ -302,7 +371,16 @@
     var f = $('scrubber-fill'); if (f) f.style.width = pct + '%';
     var c = $('time-cur'); if (c) c.textContent = formatTime(mainAudio.currentTime);
   });
-  mainAudio.addEventListener('ended', function () { setMainIcon(false); });
+  mainAudio.addEventListener('ended', function () {
+    setMainIcon(false);
+    // repeat-one wins over autoplay: loop the current topic.
+    if (repeatOn) {
+      mainAudio.currentTime = 0;
+      mainAudio.play().then(function () { setMainIcon(true); }).catch(function () {});
+      return;
+    }
+    if (autoplayOn) advanceTopic(1);
+  });
 
   function formatTime(secs) {
     if (!secs || isNaN(secs)) return '0:00';
@@ -313,7 +391,7 @@
 
   function togglePlay() {
     if (mainAudio.paused) {
-      ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(handleDenied);
+      ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(function (e) { handleDenied(e, mainTier); });
     } else { mainAudio.pause(); setMainIcon(false); }
     resumeMainAfter = false;   // a manual tap on the top player overrides auto-resume
   }
@@ -376,14 +454,110 @@
     var wasPlaying = !mainAudio.paused;
     mainAudio.pause();
     setMainIcon(false);
-    currentMainFile = PREFIX + '_' + mode.toUpperCase() + '.mp3';
+    currentMainFile = mainPrefix + '_' + mode.toUpperCase() + '.mp3';
     mainSrcReady = false;                 // new file → re-resolve (premium needs a fresh signed URL)
-    if (!GATED) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
+    if (!mainGated) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
     var f = $('scrubber-fill'); if (f) f.style.width = '0%';
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
     $('btn-et').classList.toggle('active', mode === 'et');
-    if (wasPlaying) ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(handleDenied);
+    if (wasPlaying) ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(function (e) { handleDenied(e, mainTier); });
+  }
+
+  /* ---- continuous playback: advance to another topic in the SAME audio element ----
+     The whole point of the persistent-audio model: we never reload the page, we swap the
+     top player onto the next/prev accessible topic's combined file and keep going (works
+     with the screen locked, and drives the lock-screen ⏮/⏭ via the Media Session API). */
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function advanceTopic(dir) {
+    var T = window.ThaiEarTopics;
+    if (!T || !T.nextAccessible) return;            // topics.js not present → feature inert
+    var unit = T.nextAccessible(mainPage, dir);
+    if (!unit || !unit.audio) return;
+    // Adopt the target topic's identity for the TOP player only (sentence list unchanged).
+    mainPage = String(unit.page || '').toLowerCase();
+    if (!/\.html$/.test(mainPage)) mainPage += '.html';
+    mainPrefix = unit.audio;
+    mainTier = (unit.access && unit.access !== 'free') ? unit.access : null;
+    mainGated = !!mainTier;
+    currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';  // stay on the same TE/ET side
+    mainSrcReady = false;
+    // reset the transport UI
+    var f = $('scrubber-fill'); if (f) f.style.width = '0%';
+    var c = $('time-cur'); if (c) c.textContent = '0:00';
+    var tt = $('time-total'); if (tt) tt.textContent = '0:00';
+    updateNowPlaying(unit);
+    // Fresh URL each hop (a premium signed URL never goes stale across a long walk).
+    buildUrl(currentMainFile, mainGated).then(function (u) {
+      if (mainPrefix !== unit.audio) return;        // a newer hop superseded this one
+      mainAudio.src = u; mainAudio.load(); mainSrcReady = true;
+      return mainAudio.play();
+    }).then(function () { setMainIcon(true); })
+      .catch(function (e) { setMainIcon(false); handleDenied(e, mainTier); });
+  }
+
+  // Lightweight "now playing" refresh: a strip in the player + the tab title + lock screen.
+  // The sentence cards below stay on the opened topic, so the strip only shows once we've
+  // actually moved off it.
+  function updateNowPlaying(unit) {
+    var T = window.ThaiEarTopics;
+    var lvl = (T && T.levelText && unit.levels) ? T.levelText(unit.levels) : '';
+    var box = $('now-playing'), txt = $('now-playing-text');
+    var moved = bareKey(unit.page) !== TOPIC_KEY;
+    if (box) box.classList.toggle('show', !!moved);
+    if (txt) txt.innerHTML = 'Now playing <strong>' + escapeHtml(unit.name) + '</strong>' + (lvl ? ' · ' + escapeHtml(lvl) : '');
+    if (unit.name) document.title = unit.name + ' · ThaiEar';
+    updateMediaSession(unit, lvl);
+  }
+  function bareKey(page) { return String(page || '').toLowerCase().replace(/\.html$/, ''); }
+
+  /* ---- Media Session: lock-screen metadata + ⏯/⏮/⏭ wired to our controls ---- */
+  function updateMediaSession(unit, lvl) {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new (window.MediaMetadata)({
+        title: unit.name || 'ThaiEar',
+        artist: lvl ? ('ThaiEar · ' + lvl) : 'ThaiEar',
+        album: 'ThaiEar — Thai listening'
+      });
+    } catch (_) {}
+  }
+  function setupMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    var ms = navigator.mediaSession;
+    function set(action, fn) { try { ms.setActionHandler(action, fn); } catch (_) {} }
+    set('play', function () { if (mainAudio.paused) togglePlay(); });
+    set('pause', function () { if (!mainAudio.paused) togglePlay(); });
+    set('previoustrack', function () { advanceTopic(-1); });
+    set('nexttrack', function () { advanceTopic(1); });
+  }
+
+  /* ---- autoplay / repeat toggles ---- */
+  function toggleAutoplay() {
+    autoplayOn = !autoplayOn; prefSet('thaiear_autoplay', autoplayOn);
+    var b = $('btn-autoplay');
+    if (b) { b.classList.toggle('active', autoplayOn); b.setAttribute('aria-pressed', autoplayOn ? 'true' : 'false'); }
+  }
+  function toggleRepeat() {
+    repeatOn = !repeatOn; prefSet('thaiear_repeat', repeatOn);
+    var b = $('btn-repeat');
+    if (b) { b.classList.toggle('active', repeatOn); b.setAttribute('aria-pressed', repeatOn ? 'true' : 'false'); }
+  }
+  // Reflect remembered prefs onto the buttons + seed the lock screen with this page's topic.
+  function initXtraControls() {
+    var a = $('btn-autoplay');
+    if (a) { a.classList.toggle('active', autoplayOn); a.setAttribute('aria-pressed', autoplayOn ? 'true' : 'false'); }
+    var r = $('btn-repeat');
+    if (r) { r.classList.toggle('active', repeatOn); r.setAttribute('aria-pressed', repeatOn ? 'true' : 'false'); }
+    setupMediaSession();
+    var T = window.ThaiEarTopics;
+    var unit = (T && T.pageUnit) ? T.pageUnit(PAGE_FILE) : null;
+    if (unit) updateMediaSession(unit, (T.levelText && unit.levels) ? T.levelText(unit.levels) : '');
   }
 
   /* ---- per-sentence audio ---- */
@@ -687,12 +861,14 @@
     initScrubber();
     initProgress();
     initFlags();
+    initXtraControls();
   }
 
   // inline onclick in the injected markup call these by name
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow,
-    progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn });
+    progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn,
+    advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
