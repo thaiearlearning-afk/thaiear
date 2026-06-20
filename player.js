@@ -42,6 +42,48 @@
   var PREFIX = cfg.audioPrefix;
   var sentences = cfg.sentences || [];
 
+  /* ---- native (Capacitor app) audio engine ----
+     In a browser the TOP player is an HTML5 <audio>. Inside the app that won't play with
+     the screen locked, so audio is routed to a native ExoPlayer plugin (NativeAudio) that
+     owns background + lock-screen playback. makeNativeAudio() returns a shim with the SAME
+     surface player.js already uses on `mainAudio` (src / paused / currentTime / duration /
+     play / pause / load / addEventListener), so the rest of this file is unchanged. All of
+     this is gated on NATIVE — the website keeps using <audio>. It plays whatever URL the
+     existing buildUrl() resolves (public CDN or signed /api/audio), so the free/member/
+     premium tiers all work with no extra logic. */
+  var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  var NA = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.NativeAudio : null;
+  var nativeMeta = { title: 'ThaiEar', subtitle: 'ThaiEar', artwork: 'https://thaiear.com/apple-touch-icon.png' };
+
+  function makeNativeAudio() {
+    var L = { loadedmetadata: [], timeupdate: [], ended: [] };
+    var st = { src: '', preparedSrc: null, paused: true, currentTime: 0, duration: 0 };
+    function emit(t) { (L[t] || []).forEach(function (fn) { try { fn(); } catch (e) {} }); }
+    NA.addListener('ready', function (d) { st.duration = (d && d.duration) || 0; emit('loadedmetadata'); });
+    NA.addListener('time', function (d) { if (d) { st.currentTime = d.position || 0; if (d.duration) st.duration = d.duration; } emit('timeupdate'); });
+    NA.addListener('ended', function () { st.paused = true; emit('ended'); });
+    NA.addListener('playing', function (d) { st.paused = !(d && d.playing); });
+    return {
+      get paused() { return st.paused; },
+      get duration() { return st.duration; },
+      get currentTime() { return st.currentTime; },
+      set currentTime(v) { st.currentTime = v; if (NA) NA.seekTo({ seconds: v }); },
+      get src() { return st.src; },
+      set src(v) { if (v !== st.src) { st.src = v; st.preparedSrc = null; } },
+      set preload(v) {},
+      load: function () {},
+      play: function () {
+        if (!NA) return Promise.resolve();
+        // resume (same track already prepared) → just play; new track → prepare with metadata first
+        if (st.preparedSrc === st.src && st.src) { st.paused = false; return NA.play(); }
+        return NA.prepare({ url: st.src, title: nativeMeta.title, subtitle: nativeMeta.subtitle, artwork: nativeMeta.artwork })
+          .then(function () { st.preparedSrc = st.src; st.paused = false; return NA.play(); });
+      },
+      pause: function () { st.paused = true; return NA ? NA.pause() : Promise.resolve(); },
+      addEventListener: function (t, fn) { if (L[t]) L[t].push(fn); }
+    };
+  }
+
   // Progress is keyed by this page's (frozen) filename, e.g. "topic-09a" — unique
   // per page, matches what the progress page enumerates from topics.js.
   var PAGE_FILE = (location.pathname.split('/').pop() || '').toLowerCase();
@@ -349,12 +391,13 @@
      prev/next-topic controls swap the top player onto ANOTHER topic's combined audio without
      reloading the page — so playback continues with the screen locked. The sentence list
      below stays on the topic the page was opened with (it keeps using PREFIX/GATED/TIER). */
-  var currentMode = 'te';
+  // Direction: web always defaults to Thai-first; the native app remembers your last choice.
+  var currentMode = (NATIVE ? (function () { try { return localStorage.getItem('thaiear_dir') === 'et' ? 'et' : 'te'; } catch (_) { return 'te'; } })() : 'te');
   var mainPrefix = PREFIX;          // audio prefix the top player is currently on
   var mainGated = GATED;            // is that topic gated? → signed URL vs public CDN
   var mainTier = TIER;              // its tier → denial route, if it ever denies
   var mainPage = PAGE_FILE;         // the live-unit page the top player is currently playing
-  var currentMainFile = mainPrefix + '_TE.mp3';
+  var currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
   var mainSrcReady = false;                 // has the current file's src been resolved onto mainAudio?
 
   // Continuous-playback prefs, remembered across pages. autoplay → advance on track end;
@@ -364,7 +407,7 @@
   var autoplayOn = prefOn('thaiear_autoplay');
   var repeatOn = prefOn('thaiear_repeat');
 
-  var mainAudio = new Audio();
+  var mainAudio = NA ? makeNativeAudio() : new Audio();
   mainAudio.preload = 'metadata';
   // Free: set the public src now so duration shows before play. Premium: defer until first
   // play (we need the session token, and we don't want to burn a signed URL on page load).
@@ -468,6 +511,7 @@
   function switchAudio(mode) {
     if (currentMode === mode) return;
     currentMode = mode;
+    if (NATIVE) { try { localStorage.setItem('thaiear_dir', mode); } catch (_) {} }
     var wasPlaying = !mainAudio.paused;
     mainAudio.pause();
     setMainIcon(false);
@@ -535,6 +579,9 @@
 
   /* ---- Media Session: lock-screen metadata + ⏯/⏮/⏭ wired to our controls ---- */
   function updateMediaSession(unit, lvl) {
+    // Feed the native lock-screen player its title/subtitle (artwork is constant).
+    nativeMeta.title = (unit && unit.name) || 'ThaiEar';
+    nativeMeta.subtitle = lvl ? ('ThaiEar · ' + lvl) : 'ThaiEar';
     if (!('mediaSession' in navigator)) return;
     try {
       navigator.mediaSession.metadata = new (window.MediaMetadata)({
@@ -573,6 +620,10 @@
   }
   // Reflect remembered prefs onto the buttons + seed the lock screen with this page's topic.
   function initXtraControls() {
+    // Reflect the active direction on the toggle (matters when native restored 'et').
+    var bte = $('btn-te'), bet = $('btn-et');
+    if (bte) bte.classList.toggle('active', currentMode === 'te');
+    if (bet) bet.classList.toggle('active', currentMode === 'et');
     var a = $('btn-autoplay');
     if (a) { a.classList.toggle('active', autoplayOn); a.setAttribute('aria-pressed', autoplayOn ? 'true' : 'false'); }
     var r = $('btn-repeat');
