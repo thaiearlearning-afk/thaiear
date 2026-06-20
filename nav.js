@@ -16,6 +16,15 @@
 (function () {
   'use strict';
 
+  /* ---- offline: register the service worker (caches the app shell + pages) ----
+     Runs on every page since nav.js loads everywhere. Enables offline browse/play
+     in the app (and PWA offline on the web). Audio is handled separately. */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (e) { console.warn('SW register failed', e); });
+    });
+  }
+
   /* ---- AUTH INTEGRATION POINT -------------------------------------------
      The ONLY thing the real members system needs to provide later.
      Wire your auth provider to expose window.ThaiEarAuth.getUser(),
