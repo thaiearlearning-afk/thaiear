@@ -100,7 +100,7 @@
 
     <div class="price-row">
       <div class="price-label">Monthly membership</div>
-      <div class="price-value" id="price-value">£5.99 <span style="font-size:13px;color:var(--text-tertiary);font-weight:400">/ month</span></div>
+      <div class="price-value" id="price-value">£5.55 <span style="font-size:13px;color:var(--text-tertiary);font-weight:400">/ month</span></div>
       <div class="price-note">Cancel anytime.</div>
     </div>
 
@@ -125,7 +125,7 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
-var PRICE = '£5.99/month'; // fallback until /api/price loads
+var PRICE = '£5.55/month'; // fallback until /api/price loads
 function loadPrice() {
   fetch('/api/price').then(function (r) { return r.json(); }).then(function (p) {
     if (!p || !p.display || !p.interval) return;
