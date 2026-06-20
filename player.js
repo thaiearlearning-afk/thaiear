@@ -175,22 +175,30 @@
     var files = topicFiles();
     var done = 0;
     setOfflineState('downloading', 0, files.length);
-    var chain = Promise.resolve();
-    files.forEach(function (file) {
-      chain = chain.then(function () {
-        return buildUrl(file, GATED).then(function (url) {
-          return Filesystem.downloadFile({ url: url, path: offlineDir(PREFIX) + '/' + file, directory: 'DATA', recursive: true });
-        }).then(function () { done++; setOfflineState('downloading', done, files.length); });
+    // Create the topic's folder first (downloadFile won't always make parent dirs).
+    Filesystem.mkdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
+      .catch(function () {})                  // already exists → fine
+      .then(function () {
+        var chain = Promise.resolve();
+        files.forEach(function (file) {
+          chain = chain.then(function () {
+            return buildUrl(file, GATED).then(function (url) {
+              return Filesystem.downloadFile({ url: url, path: offlineDir(PREFIX) + '/' + file, directory: 'DATA', recursive: true });
+            }).then(function () { done++; setOfflineState('downloading', done, files.length); });
+          });
+        });
+        return chain;
+      })
+      .then(function () {
+        markDownloaded(PREFIX, TIER || 'free', files);
+        stampVerified();                      // they were online + entitled at download time
+        setOfflineState('downloaded');
+      })
+      .catch(function (err) {
+        var msg = (err && (err.message || err.errorMessage)) || String(err);
+        console.warn('player.js: offline download failed', err);
+        setOfflineState('error', msg);
       });
-    });
-    chain.then(function () {
-      markDownloaded(PREFIX, TIER || 'free', files);
-      stampVerified();                       // they were online + entitled at download time
-      setOfflineState('downloaded');
-    }).catch(function (err) {
-      console.warn('player.js: offline download failed', err);
-      setOfflineState('error');
-    });
   }
   function deleteTopic() {
     if (!OFFLINE) return;
@@ -206,7 +214,8 @@
       bar.innerHTML = '<span class="offline-status offline-ok">✓ Available offline</span>' +
         '<button class="offline-btn offline-del" onclick="deleteTopic()">Delete</button>';
     } else if (state === 'error') {
-      bar.innerHTML = '<span class="offline-status">Download failed.</span>' +
+      var msg = done ? (': ' + escapeHtml(String(done).slice(0, 160))) : '.';
+      bar.innerHTML = '<span class="offline-status">Download failed' + msg + '</span>' +
         '<button class="offline-btn" onclick="downloadTopic()">Retry</button>';
     } else { // idle
       bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' +
