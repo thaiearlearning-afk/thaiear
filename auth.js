@@ -138,6 +138,59 @@
       });
   }
 
+  // ---- Capacitor native OAuth (app only) ---------------------------------
+  // In a web browser, Google sign-in is an ordinary page redirect. Inside the
+  // Capacitor app that bounces out to an external browser and the session never
+  // comes back. So when running NATIVELY we open Google in a system browser tab,
+  // return via the com.thaiear.app:// deep link, and complete the session here in
+  // the webview. All of this is gated by isNative(), so the website is unaffected.
+  var NATIVE_REDIRECT = 'com.thaiear.app://auth-callback';
+  function isNative() {
+    return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  }
+  function capPlugin(name) {
+    return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[name]) || null;
+  }
+  function nativeGoogleSignIn() {
+    var Browser = capPlugin('Browser');
+    client.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: NATIVE_REDIRECT,
+        skipBrowserRedirect: true, // don't navigate the webview; we open the tab ourselves
+        queryParams: { prompt: 'select_account' }
+      }
+    }).then(function (res) {
+      var url = res && res.data && res.data.url;
+      if (!url) { console.warn('[native-auth] no OAuth url returned'); return; }
+      if (Browser && Browser.open) Browser.open({ url: url });
+      else window.location.href = url; // last-resort fallback
+    }).catch(function (e) { console.error('[native-auth] sign-in failed', e); });
+  }
+  // The deep link returns from Google → Supabase → app. Handle BOTH Supabase
+  // flows: implicit (tokens in the URL hash) and PKCE (?code= exchanged here).
+  function handleAuthDeepLink(url) {
+    if (!url || url.indexOf('auth-callback') === -1) return;
+    var Browser = capPlugin('Browser');
+    var close = function () { try { if (Browser && Browser.close) Browser.close(); } catch (_) {} };
+    try {
+      var hp = new URLSearchParams(url.split('#')[1] || '');
+      var at = hp.get('access_token'), rt = hp.get('refresh_token');
+      if (at && rt) {
+        client.auth.setSession({ access_token: at, refresh_token: rt })
+          .then(close).catch(function (e) { console.error('[native-auth] setSession', e); close(); });
+        return;
+      }
+      var code = new URLSearchParams((url.split('?')[1] || '').split('#')[0]).get('code');
+      if (code) {
+        client.auth.exchangeCodeForSession(code)
+          .then(close).catch(function (e) { console.error('[native-auth] exchangeCode', e); close(); });
+        return;
+      }
+      console.warn('[native-auth] deep link had no token or code:', url);
+    } catch (e) { console.error('[native-auth] deep link parse failed', e); }
+  }
+
   // Public API. getUser() is synchronous; the rest are no-ops until the
   // Supabase client has loaded (avoids errors if a button is hit very early).
   window.ThaiEarAuth = {
@@ -266,6 +319,8 @@
     },
     signInWithGoogle: function () {
       if (!client) { console.warn('ThaiEar auth still loading…'); return; }
+      // Native app → deep-link flow; web → ordinary page redirect.
+      if (isNative()) { nativeGoogleSignIn(); return; }
       client.auth.signInWithOAuth({
         provider: 'google',
         // prompt=select_account → Google always shows the account chooser, so signing
@@ -313,6 +368,13 @@
         refreshSubscription();
         refreshProfile();
       });
+      // In the native app, complete Google sign-in when the OAuth deep link returns.
+      if (isNative()) {
+        var AppPlugin = capPlugin('App');
+        if (AppPlugin && AppPlugin.addListener) {
+          AppPlugin.addListener('appUrlOpen', function (data) { handleAuthDeepLink(data && data.url); });
+        }
+      }
     })
     .catch(function (err) {
       console.error('ThaiEar auth failed to initialise:', err);
