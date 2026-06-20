@@ -52,59 +52,61 @@
     { id: 2,  name: "Getting to know you", levels: ["beg"], sentences: 29 },
     { id: 3,  name: "Communication survival", levels: ["beg"], sentences: 22 },
     { id: 4,  name: "Colours & descriptions", levels: ["beg"], sentences: 36, access: "premium" },
-    { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 26, access: "member" },
+    { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 26, access: "premium" },
     { id: 6,  name: "Time & numbers", levels: ["beg"], sentences: 26, access: "premium" },
-    { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37 },
-    { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38 },
-    { id: 9,  name: "Food & drink", levels: ["beg","li1"], parts: [
-        { name: "Food & drink 1", sentences: 32, page: "topic-09a.html" },
+    { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37, access: "premium" },
+    { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38, access: "premium" },
+    { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
+        { name: "Food & drink 1", sentences: 32, page: "topic-09a.html", access: "member" },
         { name: "Food & drink 2", sentences: 26, page: "topic-09b.html" } ] },
     { id: 10, name: "Home & daily routine", levels: ["beg","li1"], sentences: 38, access: "premium" },
     { id: 11, name: "Shopping & money (everyday)", levels: ["beg","li1"], sentences: 30, access: "premium" },
     { id: 12, name: "Getting around & transport", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html" },
+        { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html", access: "member" },
         { name: "Getting around & transport 2", sentences: 24, page: "topic-12b.html" } ] },
-    { id: 37, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 36 },
+    { id: 37, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 36, access: "premium" },
     { id: 13, name: "Body & health", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Body & health 1", sentences: 28, page: "topic-13a.html" },
+        { name: "Body & health 1", sentences: 28, page: "topic-13a.html", access: "member" },
         { name: "Body & health 2", sentences: 25, page: "topic-13b.html" } ] },
     { id: 14, name: "Feelings & emotions", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Feelings & emotions 1", sentences: 23, page: "topic-14a.html" },
+        { name: "Feelings & emotions 1", sentences: 23, page: "topic-14a.html", access: "member" },
         { name: "Feelings & emotions 2", sentences: 26, page: "topic-14b.html" } ] },
     { id: 15, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 33, access: "premium" },
-    { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 36, access: "member" },
+    { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 36, access: "premium" },
     { id: 38, name: "Idioms", levels: ["beg","li1"], sentences: 27, access: "premium" },
-    { id: 17, name: "Plans & future", levels: ["beg","li1"], access: "member", parts: [
-        { name: "Plans & future 1", sentences: 28, page: "topic-17a.html" },
+    { id: 17, name: "Plans & future", levels: ["beg","li1"], access: "premium", parts: [
+        { name: "Plans & future 1", sentences: 28, page: "topic-17a.html", access: "member" },
         { name: "Plans & future 2", sentences: 16, page: "topic-17b.html" } ] },
-    { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], access: "member", parts: [
-        { name: "Clothing & appearance 1", sentences: 22, page: "topic-18a.html" },
+    { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], access: "premium", parts: [
+        { name: "Clothing & appearance 1", sentences: 22, page: "topic-18a.html", access: "member" },
         { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html" } ] },
-    { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "member", parts: [
-        { name: "Cooking & recipes 1", sentences: 30, page: "topic-19a.html" },
+    { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
+        { name: "Cooking & recipes 1", sentences: 30, page: "topic-19a.html", access: "member" },
         { name: "Cooking & recipes 2", sentences: 27, page: "topic-19b.html" } ] },
-    { id: 20, name: "Work & study", levels: ["li1","li2"], access: "member", parts: [
-        { name: "Work & study 1", sentences: 24, page: "topic-20a.html" },
+    { id: 20, name: "Work & study", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Work & study 1", sentences: 24, page: "topic-20a.html", access: "member" },
         { name: "Work & study 2", sentences: 24, page: "topic-20b.html" },
         { name: "Work & study 3", sentences: 24, page: "topic-20c.html" },
         { name: "Work & study 4", sentences: 21, page: "topic-20d.html" } ] },
-    { id: 21, name: "Education system", levels: ["li1","li2"], sentences: 25, access: "member" },
-    { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], sentences: 30 },
+    { id: 21, name: "Education system", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], sentences: 30, access: "premium" },
     { id: 23, name: "Nature & animals", levels: ["li1","li2"], sentences: 30, access: "premium" },
     { id: 24, name: "Technology & communication", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 25, name: "Media & entertainment", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 26, name: "Sport & exercise", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 27, name: "Travel & tourism", levels: ["li1","li2"], sentences: 30, access: "premium" },
-    { id: 28, name: "Banking & finance", levels: ["li1","li2"], sentences: 25, access: "member" },
-    { id: 29, name: "Community & society", levels: ["li1","li2"], sentences: 25, access: "member" },
-    { id: 30, name: "Agriculture & rural life", levels: ["li1","li2"], sentences: 25, access: "member" },
-    { id: 31, name: "Crime, law & justice", levels: ["li1","li2"], sentences: 25, access: "member" },
-    { id: 32, name: "Thai geography & regions", levels: ["li1","li2"], sentences: 25, access: "member" },
+    { id: 28, name: "Banking & finance", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 29, name: "Community & society", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 30, name: "Agriculture & rural life", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 31, name: "Crime, law & justice", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 32, name: "Thai geography & regions", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 33, name: "Ceremonies & rites of passage", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 34, name: "Thai culture & customs", levels: ["li1","li2"], access: "premium", parts: [22, 28] },
-    { id: 35, name: "Buddhism", levels: ["li1","li2"], parts: [22, 28] },
+    { id: 34, name: "Thai culture & customs", levels: ["li1","li2"], access: "premium", parts: [
+        { sentences: 22, access: "member" }, { sentences: 28 } ] },
+    { id: 35, name: "Buddhism", levels: ["li1","li2"], access: "premium", parts: [
+        { sentences: 22, access: "member" }, { sentences: 28 } ] },
     { id: 36, name: "Romantic relationships & dating", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 19, access: "member" },
+    { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 19, access: "premium" },
   ];
 
   // Keyed by FROZEN id (never display position). Add entries as topics go live.
@@ -176,6 +178,16 @@
       subscribed: !!(a.isSubscribed && a.isSubscribed()),
     };
   }
+  // Effective access for a topic OR one of its split parts. A part may carry its OWN
+  // `access` (e.g. a split topic whose first part is a free member taster while the rest
+  // stay premium); when it doesn't, it inherits the topic's access. Returns
+  // 'free' | 'member' | 'premium'. This is the single rule both the index cards and the
+  // prev/next nav use, so a part's tier is consistent everywhere.
+  function accessFor(topic, part) {
+    if (part && part.access) return part.access;
+    return (topic && topic.access) || 'free';
+  }
+
   // Can the current visitor open this topic? (drives card links + prev/next unlock)
   function canAccess(access) {
     if (access === 'premium') {
@@ -191,7 +203,7 @@
     topics, liveTopics, total: topics.length,
     LEVEL_ORDER, LEVEL_CLASS, LEVEL_FULL, LEVEL_SHORT,
     levelBounds, levelText, levelBadge, matchesFilter, findByPage,
-    canAccess, authState, ENFORCE_SUBSCRIPTION
+    canAccess, accessFor, authState, ENFORCE_SUBSCRIPTION
   };
 
   // ---- topic-page eyebrow: "<level> · Topic X of N", derived from the list ----
@@ -234,10 +246,12 @@
     if (t && !a.getAttribute('data-target')) a.setAttribute('data-target', t);
     return t;
   }
-  // access of the topic a button points INTO; null if it isn't a topic page (skip it).
+  // access of the topic (or specific split PART) a button points INTO; null if it isn't a
+  // topic page (skip it). Uses the part's own tier when it has one, so a "Next" pointing at
+  // a premium second part locks gold even though the topic's first part is member.
   function navAccessFor(target) {
     const found = findByPage(target || '');
-    return found ? (found.topic.access || 'free') : null;
+    return found ? accessFor(found.topic, found.part) : null;
   }
   function decorateNavBtn(a) {
     const target = navTarget(a);

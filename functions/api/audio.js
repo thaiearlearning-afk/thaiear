@@ -49,11 +49,14 @@ export async function onRequestGet(context) {
   // ── TIER LISTS — source of truth (edit here in git; no dashboard needed) ──
   // Keep in sync with topics.js `access` flags + each page's `tier`. The env vars are
   // just optional overrides; normally these code defaults decide the tier.
-  // Premium (live): Colours, Time, Home, Shopping. Member (live): Weather (login-only —
-  // the free-member incentive topic). Free topics never reach this endpoint. Member files
-  // share the private bucket with premium; only this list decides login-vs-subscription.
-  const premiumList = listEnv(env.PREMIUM_PREFIXES, ['Colours_BEG', 'Time_BEG', 'Home_BEG', 'Shopping_BEG', 'Transport_BEG', 'Transport_LI1', 'Health_BEG', 'Health_LI1', 'Feelings_BEG', 'Feelings_LI1', 'Idiom_BEG', 'Hobbies_BEG']);
-  const memberList = listEnv(env.MEMBER_PREFIXES, ['Weather_BEG', 'ToneTwister_LI1', 'SocialLife_BEG', 'Plans_BEG', 'Plans_LI1', 'Clothing_BEG', 'Appearance_LI1', 'Cooking_BEG', 'Recipes_LI1', 'Job_LI1', 'Workplace_LI1', 'Career_LI2', 'Study_LI1']);
+  // Model: only the first 3 topics are free. Every other single topic is premium; each
+  // split topic's FIRST part is member (login-only taster) and its remaining parts premium.
+  // MEMBER must be listed explicitly (else it wrongly demands a subscription); premium is the
+  // default for any private file not in memberList, so premiumList is documentation/defensive.
+  // Member (live, first split parts): Food_BEG, Transport_BEG, Health_BEG, Feelings_BEG,
+  // Plans_BEG, Clothing_BEG, Cooking_BEG, Job_LI1. Free topics never reach this endpoint.
+  const premiumList = listEnv(env.PREMIUM_PREFIXES, ['Colours_BEG', 'Weather_BEG', 'Time_BEG', 'Dates_BEG', 'Family_BEG', 'Food_LI1', 'Home_BEG', 'Shopping_BEG', 'Transport_LI1', 'Emergency_BEG', 'Health_LI1', 'Feelings_LI1', 'Hobbies_BEG', 'SocialLife_BEG', 'Idiom_BEG', 'Plans_LI1', 'Appearance_LI1', 'Recipes_LI1', 'Workplace_LI1', 'Career_LI2', 'Study_LI1', 'ToneTwister_LI1']);
+  const memberList = listEnv(env.MEMBER_PREFIXES, ['Food_BEG', 'Transport_BEG', 'Health_BEG', 'Feelings_BEG', 'Plans_BEG', 'Clothing_BEG', 'Cooking_BEG', 'Job_LI1']);
   // Member only if explicitly listed (and not premium); unknown private files default to premium.
   const tier = (memberList.includes(prefix) && !premiumList.includes(prefix)) ? 'member' : 'premium';
 
