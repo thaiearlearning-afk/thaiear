@@ -26,6 +26,20 @@
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.7; }
   .wrap { max-width: 640px; margin: 0 auto; padding: 2.75rem 1.5rem 3.5rem; }
   .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  /* image + caption with the same animated 1→2→3 dot cycle used across the site (mirrors about.html) */
+  .fluency-block { text-align: center; margin: 1.25rem 0 1.5rem; }
+  .fluency-img { width: 195px; max-width: 55%; height: auto; display: block; margin: 0 auto 0.4rem; }
+  .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
+  .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
+  .fluency-text .dots::after { content: '.'; animation: fluency-dots 1.4s infinite; }
+  @keyframes fluency-dots {
+    0%, 100% { content: '.'; }
+    33%      { content: '..'; }
+    66%      { content: '...'; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fluency-text .dots::after { animation: none; content: '…'; }
+  }
   h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 1.25rem; line-height: 1.2; color: var(--navy); }
   p { color: var(--text-secondary); margin-bottom: 0.95rem; }
   strong { color: var(--text-primary); font-weight: 600; }
@@ -47,6 +61,11 @@
 
   <p>The ThaiEar syllabus is designed to take a <strong>relative beginner</strong> who is familiar with the
     Thai script to an <strong>intermediate level</strong> of speaking.</p>
+
+  <div class="fluency-block">
+    <img class="fluency-img" src="khwai.png" alt="Water buffalo" width="200">
+    <div class="fluency-text">Chewing it over<span class="dots" aria-hidden="true"></span></div>
+  </div>
 
   <p>For most users, ThaiEar could represent a <strong>year</strong> or even <strong>two years</strong> of
     quality study material. <strong>A key message</strong> of this guide is to discourage you from rushing,
