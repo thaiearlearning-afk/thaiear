@@ -772,5 +772,30 @@ window.addEventListener('thaiear:auth', renderGrid);
     if (el) el.textContent = now > START ? START + '–' + now : String(START);
   })();
 </script>
+<!-- Restore the grid scroll position when returning (e.g. after a locked-topic gate). Browsers
+     restore it via bfcache; the app's WebView has no bfcache and would otherwise jump to the top.
+     Save on leave, restore on load once the grid has rendered. -->
+<script>
+  (function () {
+    var KEY = 'thaiear_index_scroll';
+    function save() {
+      try { sessionStorage.setItem(KEY, JSON.stringify({ y: window.scrollY || window.pageYOffset || 0, t: Date.now() })); } catch (_) {}
+    }
+    window.addEventListener('pagehide', save);
+    window.addEventListener('beforeunload', save);
+    function restore() {
+      var v;
+      try { v = JSON.parse(sessionStorage.getItem(KEY) || 'null'); sessionStorage.removeItem(KEY); } catch (_) { return; }
+      if (!v || !v.y || (Date.now() - (v.t || 0) > 300000)) return; // ignore none / stale (>5 min)
+      var tries = 0;
+      (function attempt() {
+        window.scrollTo(0, v.y);
+        if (Math.abs((window.scrollY || 0) - v.y) > 4 && tries++ < 40) requestAnimationFrame(attempt); // grid still growing
+      })();
+    }
+    if (document.readyState === 'complete') restore();
+    else window.addEventListener('load', restore);
+  })();
+</script>
 </body>
 </html>
