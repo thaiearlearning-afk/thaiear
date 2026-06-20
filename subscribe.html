@@ -23,7 +23,18 @@
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
-  .page-wrap { max-width: 620px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+  .page-wrap { position: relative; max-width: 620px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+
+  .gate-close {
+    position: absolute; top: 1.5rem; right: 1.25rem;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface); border: 0.5px solid var(--border-strong);
+    color: var(--text-secondary); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s; z-index: 5;
+  }
+  .gate-close:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+  .gate-close svg { width: 16px; height: 16px; }
 
   .sub-eyebrow {
     display: inline-flex; align-items: center; gap: 6px;
@@ -74,6 +85,9 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="page-wrap">
+  <button class="gate-close" id="gate-close" type="button" aria-label="Close and go back" title="Close">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
   <span class="sub-eyebrow">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
     ThaiEar Premium
@@ -181,6 +195,23 @@ window.addEventListener('thaiear:auth', renderSub);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderSub);
 else renderSub();
 loadPrice();
+</script>
+<script>
+/* Close button: return the visitor to where they came from (the topic/grid they were on),
+   not forward to the locked topic. Same-site referrer + real history → go back; else index. */
+(function () {
+  var c = document.getElementById('gate-close');
+  if (!c) return;
+  c.addEventListener('click', function () {
+    try {
+      var ref = document.referrer;
+      if (ref && new URL(ref).origin === location.origin && history.length > 1) {
+        history.back(); return;
+      }
+    } catch (_) {}
+    location.href = 'index.html';
+  });
+})();
 </script>
 <script src="nav.js" defer></script>
 </body>
