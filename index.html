@@ -549,7 +549,7 @@
    topics.js (window.ThaiEarTopics), so the index and the topic pages never drift —
    add/remove/reorder topics in topics.js only. See the level + numbering notes there
    and the "TOPIC NUMBERING" note at the end of this file. */
-const { topics, liveTopics, levelBadge, matchesFilter, canAccess, levelBounds, LEVEL_FULL } = window.ThaiEarTopics;
+const { topics, liveTopics, levelBadge, matchesFilter, canAccess, accessFor, levelBounds, LEVEL_FULL } = window.ThaiEarTopics;
 
 /* ---- index display toggles -------------------------------------------------
    Current design: live topics are grouped under difficulty HEADINGS, and the
@@ -622,18 +622,21 @@ function renderCard(t, label, sentences, access, pageHref) {
 }
 
 // One topic -> one card, or two (a/b) if split. `pos` = 1-based display position.
-// Tier comes from topics[].access (free | member | premium); links resolve via canAccess.
+// Tier comes from accessFor(topic, part) — a split part may carry its OWN access (e.g. a
+// member first-part taster in front of premium continuations); otherwise it inherits the
+// topic's. Links resolve via canAccess.
 function cardsForTopic(t, pos) {
   const p = String(pos).padStart(2, '0');
-  const access = t.access || 'free';
   if (t.parts) {
     return t.parts.map((part, i) => {
       const label = p + String.fromCharCode(97 + i); // a, b, c, d … (supports >2 parts)
-      if (typeof part === 'number') return renderCard(t, label, part, access, null);
-      return renderCard({ ...t, name: part.name }, label, part.sentences, access, part.page || null);
+      const num  = typeof part === 'number' ? part : part.sentences;
+      const href = (part && typeof part === 'object' && part.page) ? part.page : null;
+      const name = (part && typeof part === 'object' && part.name) ? part.name : t.name;
+      return renderCard({ ...t, name }, label, num, accessFor(t, part), href);
     }).join('');
   }
-  return renderCard(t, p, t.sentences, access, liveTopics[t.id] || null);
+  return renderCard(t, p, t.sentences, accessFor(t, null), liveTopics[t.id] || null);
 }
 
 // Two independent filter dimensions that combine (AND): level + access tier.
@@ -650,11 +653,15 @@ function filterTopics(filter, btn) {
   setActiveInRow(btn);
   renderGrid();
 }
-// Tier is READ from the topic's access field (free | member | premium) at render time,
-// so when a topic moves tier in topics.js the filter follows automatically — nothing to
-// hardcode here. "Non-member" = free/undefined access.
-function accessTier(t) { return t.access === 'member' ? 'member' : t.access === 'premium' ? 'premium' : 'free'; }
-function matchesAccess(t, filter) { return filter === 'all' || accessTier(t) === filter; }
+// Tier is READ from the access field(s) (free | member | premium) at render time, so when a
+// topic moves tier in topics.js the filter follows automatically — nothing to hardcode here.
+// A split topic can hold more than one tier (member first part + premium rest), so it matches
+// a filter tab when ANY of its parts is that tier. "Non-member" = free/undefined access.
+function topicTiers(t) {
+  if (t.parts) return [...new Set(t.parts.map(p => accessFor(t, p)))];
+  return [accessFor(t, null)];
+}
+function matchesAccess(t, filter) { return filter === 'all' || topicTiers(t).includes(filter); }
 function filterAccess(filter, btn) {
   activeAccess = filter;
   setActiveInRow(btn);
