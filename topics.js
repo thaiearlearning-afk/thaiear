@@ -57,7 +57,7 @@
     { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37, access: "premium", audio: "Dates_BEG" },
     { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38, access: "premium", audio: "Family_BEG" },
     { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Food & drink 1", sentences: 32, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
+        { name: "Food & drink 1", sentences: 39, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
         { name: "Food & drink 2", sentences: 26, page: "topic-09b.html", audio: "Food_LI1" } ] },
     { id: 10, name: "Home & daily routine", levels: ["beg","li1"], sentences: 38, access: "premium", audio: "Home_BEG" },
     { id: 11, name: "Shopping & money (everyday)", levels: ["beg","li1"], sentences: 30, access: "premium", audio: "Shopping_BEG" },
