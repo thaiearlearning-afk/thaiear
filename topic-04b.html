@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 4: Colours &amp; descriptions 2</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-subtitle { font-size: 14px; font-weight: 500; color: var(--accent-mid); margin: 2px 0 10px; letter-spacing: -0.01em; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Colours &amp; descriptions 2</h1>
+  <p class="topic-subtitle">Everyday qualities &amp; impressions</p>
+  <p class="topic-meta"><strong>21 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-04a.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Colours &amp; descriptions 1</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-05.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Weather &amp; seasons</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "ColoursAndDescriptions2_BEG",
+  sentences: [
+  { num: 87, display: 1, preview: "สูง", thai: "คุณสูงมากเลยนะคะ", english: "You're really tall.", gloss: [["คุณ", "you"], ["สูง", "tall"], ["มากเลย", "really"], ["นะ", "(softening)"], ["คะ", "polite(f)"]], cultural: "Friendly remarks on someone's appearance — height, looks — are common, well-meant small talk in Thailand." },
+  { num: 92, display: 2, preview: "กว้าง", thai: "ห้องนี้ค่อนข้างกว้างครับ", english: "This room is quite spacious.", gloss: [["ห้อง", "room"], ["นี้", "this"], ["ค่อนข้าง", "quite"], ["กว้าง", "spacious"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 93, display: 3, preview: "แคบ", thai: "ระวังนะคะ ถนนสายนี้แคบจริงๆ ค่ะ", english: "Be careful — this road is really narrow.", gloss: [["ระวัง", "careful"], ["นะ", "(softening)"], ["คะ", "polite(f)"], ["ถนน", "road"], ["สาย", "(classifier)"], ["นี้", "this"], ["แคบ", "narrow"], ["จริงๆ", "really"], ["ค่ะ", "polite(f)"]], cultural: "สาย is the classifier for roads, rivers, routes and other long, line-like things." },
+  { num: 94, display: 4, preview: "สบาย", thai: "โรงแรมนี้สบายมากเลยครับ", english: "This hotel is really comfortable.", gloss: [["โรงแรม", "hotel"], ["นี้", "this"], ["สบาย", "comfortable"], ["มากเลย", "really"], ["ครับ", "polite(m)"]], cultural: "สบาย is a central Thai idea of comfort and ease — also the root of สบายดี ('I'm well')." },
+  { num: 95, display: 5, preview: "ร้อน", thai: "ซุปร้อนมากค่ะ", english: "The soup is very hot.", gloss: [["ซุป", "soup"], ["ร้อน", "hot"], ["มาก", "very"], ["ค่ะ", "polite(f)"]], cultural: "" },
+  { num: 96, display: 6, preview: "เผ็ด", thai: "อาหารเผ็ดมากครับ", english: "The food is very spicy.", gloss: [["อาหาร", "food"], ["เผ็ด", "spicy"], ["มาก", "very"], ["ครับ", "polite(m)"]], cultural: "Chilli heat (เผ็ด) defines much Thai food; 'เผ็ดน้อย' (a little spicy) is a handy phrase when ordering." },
+  { num: 97, display: 7, preview: "เย็น", thai: "น้ำเย็นไหมคะ", english: "Is the water cold?", gloss: [["น้ำ", "water"], ["เย็น", "cold"], ["ไหม", "(question)"], ["คะ", "polite(f)"]], cultural: "น้ำเย็น ('cold water') usually means iced water — the default drink in Thailand's heat." },
+  { num: 98, display: 8, preview: "ไกล", thai: "ไกลไหมครับ", english: "Is it far?", gloss: [["ไกล", "far"], ["ไหม", "(question)"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 99, display: 9, preview: "ใกล้", thai: "ไม่ไกลเลยครับ ใกล้ครับ", english: "Not far at all — it's close.", gloss: [["ไม่", "not"], ["ไกล", "far"], ["เลย", "at all"], ["ครับ", "polite(m)"], ["ใกล้", "close"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 100, display: 10, preview: "สะอาด", thai: "ห้องน้ำสะอาดดีค่ะ", english: "The bathroom is nice and clean.", gloss: [["ห้องน้ำ", "bathroom"], ["สะอาด", "clean"], ["ดี", "nice"], ["ค่ะ", "polite(f)"]], cultural: "" },
+  { num: 101, display: 11, preview: "สกปรก", thai: "รองเท้าของผมสกปรกมากครับ", english: "My shoes are really dirty.", gloss: [["รองเท้า", "shoes"], ["ของผม", "my"], ["สกปรก", "dirty"], ["มาก", "really"], ["ครับ", "polite(m)"]], cultural: "Shoes (รองเท้า) come off before entering homes, temples and many shops in Thailand." },
+  { num: 102, display: 12, preview: "เป็นมิตร", thai: "หมาของคุณเป็นมิตรใช่ไหมคะ", english: "Is your dog friendly?", gloss: [["หมา", "dog"], ["ของคุณ", "your"], ["เป็น", "is"], ["มิตร", "friendly"], ["ใช่ไหม", "right?"], ["คะ", "polite(f)"]], cultural: "Free-roaming 'soi (street) dogs' are common in Thailand — and not all are friendly, so it's a practical thing to ask." },
+  { num: 103, display: 13, preview: "เงียบ", thai: "แถวนี้เงียบมากเลยครับ ชอบมาก", english: "It's really quiet around here — I love it.", gloss: [["แถว", "around"], ["นี้", "here"], ["เงียบ", "quiet"], ["มากเลย", "really"], ["ครับ", "polite(m)"], ["ชอบ", "love"], ["มาก", "a lot"]], cultural: "" },
+  { num: 104, display: 14, preview: "เสียงดัง", thai: "เสียงดังมากเลยค่ะ ทำให้นอนไม่หลับเลย", english: "It's so noisy — I can't sleep at all.", gloss: [["เสียงดัง", "noisy"], ["มากเลย", "so"], ["ค่ะ", "polite(f)"], ["ทำให้", "makes"], ["นอนไม่หลับ", "can't sleep"], ["เลย", "at all"]], cultural: "" },
+  { num: 105, display: 15, preview: "ยาก", thai: "ภาษาไทยยากหรือเปล่าครับ", english: "Is Thai difficult?", gloss: [["ภาษาไทย", "Thai"], ["ยาก", "difficult"], ["หรือเปล่า", "or not"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 106, display: 16, preview: "สนุก", thai: "ยากค่ะ แต่สนุกมาก", english: "It's difficult but really fun.", gloss: [["ยาก", "difficult"], ["ค่ะ", "polite(f)"], ["แต่", "but"], ["สนุก", "fun"], ["มาก", "really"]], cultural: "" },
+  { num: 107, display: 17, preview: "กลม", thai: "ผลไม้กลมๆ นั้นเรียกว่าอะไรครับ", english: "What is that round fruit called?", gloss: [["ผลไม้", "fruit"], ["กลมๆ", "round"], ["นั้น", "that"], ["เรียกว่าอะไร", "what's it called"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 108, display: 18, preview: "เก่า", thai: "ของเก่าหรือของใหม่คะ", english: "Is it old or new?", gloss: [["ของเก่า", "old one"], ["หรือ", "or"], ["ของใหม่", "new one"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 109, display: 19, preview: "ถูก", thai: "ไม่แพงเลยครับ ราคาถูกจริงๆ ครับ", english: "Not expensive at all — really cheap.", gloss: [["ไม่แพง", "not expensive"], ["เลย", "at all"], ["ครับ", "polite(m)"], ["ราคา", "price"], ["ถูก", "cheap"], ["จริงๆ", "really"], ["ครับ", "polite(m)"]], cultural: "Haggling is normal at Thai markets — declaring something ราคาถูก ('cheap') is part of the friendly back-and-forth." },
+  { num: 110, display: 20, preview: "ใจดี", thai: "คนไทยใจดีมากเลยนะคะ", english: "Thai people are really kind.", gloss: [["คนไทย", "Thai people"], ["ใจดี", "kind"], ["มากเลย", "really"], ["นะ", "(softening)"], ["คะ", "polite(f)"]], cultural: "ใจดี ('good heart' = kind) is one of many ใจ ('heart') character words — e.g. ใจร้อน (impatient), ใจเย็น (calm)." },
+  { num: 1039, display: 21, preview: "อันตราย", thai: "ตรงนั้นอันตรายค่ะ อย่าเข้าไปนะคะ", english: "That area's dangerous — don't go in.", gloss: [["ตรงนั้น", "over there"], ["อันตราย", "dangerous"], ["ค่ะ", "polite(f)"], ["อย่า", "don't"], ["เข้าไป", "go in"], ["นะ", "(softening)"], ["คะ", "polite(f)"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
