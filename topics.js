@@ -51,7 +51,9 @@
     { id: 1,  name: "Greetings & farewells", levels: ["beg"], sentences: 23, audio: "Greetings_BEG" },
     { id: 2,  name: "Getting to know you", levels: ["beg"], sentences: 29, audio: "GettingToKnow_BEG" },
     { id: 3,  name: "Communication survival", levels: ["beg"], sentences: 22, audio: "CommSurvival_BEG" },
-    { id: 4,  name: "Colours & descriptions", levels: ["beg"], sentences: 36, access: "premium", audio: "Colours_BEG" },
+    { id: 4,  name: "Colours & descriptions", levels: ["beg"], access: "premium", parts: [
+        { name: "Colours & descriptions 1", sentences: 21, page: "topic-04a.html", access: "member", audio: "ColoursAndDescriptions_BEG" },
+        { name: "Colours & descriptions 2", sentences: 21, page: "topic-04b.html", audio: "ColoursAndDescriptions2_BEG" } ] },
     { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 30, access: "premium", audio: "Weather_BEG" },
     { id: 6,  name: "Time & numbers", levels: ["beg"], sentences: 26, access: "premium", audio: "Time_BEG" },
     { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37, access: "premium", audio: "Dates_BEG" },

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 4: Colours &amp; descriptions 1</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-subtitle { font-size: 14px; font-weight: 500; color: var(--accent-mid); margin: 2px 0 10px; letter-spacing: -0.01em; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Colours &amp; descriptions 1</h1>
+  <p class="topic-subtitle">Colours &amp; describing things</p>
+  <p class="topic-meta"><strong>21 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-03.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Communication survival</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-04b.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Colours &amp; descriptions 2</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "ColoursAndDescriptions_BEG",
+  sentences: [
+  { num: 75, display: 1, preview: "สี", thai: "คุณชอบสีอะไรคะ", english: "What colour do you like?", gloss: [["คุณ", "you"], ["ชอบ", "like"], ["สี", "colour"], ["อะไร", "what"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 76, display: 2, preview: "สีน้ำเงิน", thai: "ผมชอบสีน้ำเงินครับ", english: "I like dark blue.", gloss: [["ผม", "I (m)"], ["ชอบ", "like"], ["สีน้ำเงิน", "dark blue"], ["ครับ", "polite(m)"]], cultural: "Thai splits 'blue' in two: สีน้ำเงิน is the dark navy blue, while สีฟ้า (later in this set) is the light sky blue." },
+  { num: 77, display: 3, preview: "สีแดง", thai: "สีแดงก็ได้ครับ", english: "I'll take the red one.", gloss: [["สีแดง", "red"], ["ก็ได้", "that's fine"], ["ครับ", "polite(m)"]], cultural: "ก็ได้ signals easy agreement — 'that one works' / 'red's fine by me'." },
+  { num: 78, display: 4, preview: "สีดำ", thai: "มีสีดำหรือสีขาวไหมคะ", english: "Do you have it in black or white?", gloss: [["มี", "have"], ["สีดำ", "black"], ["หรือ", "or"], ["สีขาว", "white"], ["ไหม", "(question)"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 79, display: 5, preview: "สีฟ้า", thai: "ทะเลสีฟ้าจัดมากเลยวันนี้ครับ", english: "The sea is a really deep blue today.", gloss: [["ทะเล", "sea"], ["สีฟ้า", "blue"], ["จัด", "vivid"], ["มากเลย", "really"], ["วันนี้", "today"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 80, display: 6, preview: "สีเทา", thai: "เมฆสีเทาเลยนะคะ ฝนจะตกแล้ว", english: "The clouds are grey — it's going to rain.", gloss: [["เมฆ", "clouds"], ["สีเทา", "grey"], ["เลย", "really"], ["นะ", "(softening)"], ["คะ", "polite(f)"], ["ฝน", "rain"], ["จะ", "about to"], ["ตก", "fall"], ["แล้ว", "soon"]], cultural: "" },
+  { num: 81, display: 7, preview: "สีม่วง", thai: "ผมชอบดอกไม้สีม่วงมากเลยครับ", english: "I really love the purple flowers.", gloss: [["ผม", "I (m)"], ["ชอบ", "love"], ["ดอกไม้", "flowers"], ["สีม่วง", "purple"], ["มากเลย", "really"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 82, display: 8, preview: "สีชมพู", thai: "น้ำสีชมพูรสหวานค่ะ", english: "The pink drink is sweet.", gloss: [["น้ำ", "drink"], ["สีชมพู", "pink"], ["รส", "taste"], ["หวาน", "sweet"], ["ค่ะ", "polite(f)"]], cultural: "A sweet pink-red drink (น้ำแดง, a sala-syrup cordial) is a common market and festival sight." },
+  { num: 83, display: 9, preview: "สีเขียว", thai: "รถแท็กซี่มีทั้งสีเขียวทั้งสีเหลืองครับ", english: "The taxis are green and yellow.", gloss: [["รถแท็กซี่", "taxis"], ["มี", "come in"], ["ทั้ง", "both"], ["สีเขียว", "green"], ["ทั้ง", "and"], ["สีเหลือง", "yellow"], ["ครับ", "polite(m)"]], cultural: "Bangkok taxis come in many bright colours — the two-tone green-and-yellow ones are owner-driven, while solid colours mark different companies." },
+  { num: 84, display: 10, preview: "สีส้ม", thai: "พระใส่จีวรสีส้มค่ะ", english: "Monks wear orange robes.", gloss: [["พระ", "monk"], ["ใส่", "wear"], ["จีวร", "robe"], ["สีส้ม", "orange"], ["ค่ะ", "polite(f)"]], cultural: "Thai Buddhist monks wear saffron-orange robes (จีวร), a colour that marks their renunciation of worldly life." },
+  { num: 85, display: 11, preview: "สีน้ำตาล", thai: "กาแฟสีน้ำตาลเข้มครับ", english: "The coffee is a dark brown.", gloss: [["กาแฟ", "coffee"], ["สีน้ำตาล", "brown"], ["เข้ม", "dark"], ["ครับ", "polite(m)"]], cultural: "สีน้ำตาล ('brown') literally means 'sugar-water colour' — น้ำตาล is the everyday word for sugar." },
+  { num: 86, display: 12, preview: "สี", thai: "แมวของคุณสีอะไรคะ", english: "What colour is your cat?", gloss: [["แมว", "cat"], ["ของคุณ", "your"], ["สี", "colour"], ["อะไร", "what"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 88, display: 13, preview: "ใหญ่", thai: "หมวกใบนี้ใหญ่เกินไปครับ", english: "This hat is too big.", gloss: [["หมวก", "hat"], ["ใบ", "(classifier)"], ["นี้", "this"], ["ใหญ่", "big"], ["เกินไป", "too"], ["ครับ", "polite(m)"]], cultural: "ใบ is the classifier for hats, bags, and other round or container-like objects." },
+  { num: 89, display: 14, preview: "เล็ก", thai: "มีเล็กกว่านี้ไหมคะ", english: "Do you have one smaller than this?", gloss: [["มี", "have"], ["เล็ก", "small"], ["กว่า", "more than"], ["นี้", "this"], ["ไหม", "(question)"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 90, display: 15, preview: "หนัก", thai: "กระเป๋าใบนี้หนักมากเลยครับ", english: "This bag is really heavy.", gloss: [["กระเป๋า", "bag"], ["ใบ", "(classifier)"], ["นี้", "this"], ["หนัก", "heavy"], ["มากเลย", "really"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 91, display: 16, preview: "เบา", thai: "ไม่หนักเลยค่ะ เบาค่ะ", english: "Not heavy at all — it's light.", gloss: [["ไม่", "not"], ["หนัก", "heavy"], ["เลย", "at all"], ["ค่ะ", "polite(f)"], ["เบา", "light"], ["ค่ะ", "polite(f)"]], cultural: "" },
+  { num: 1040, display: 17, preview: "สีอ่อน", thai: "ถ้ามีสีอ่อนกว่านี้ ก็ขอหน่อยนะครับ", english: "If you've got a paler shade, I'll take it.", gloss: [["ถ้า", "if"], ["มี", "have"], ["สี", "colour"], ["อ่อน", "pale"], ["กว่า", "more than"], ["นี้", "this"], ["ก็", "then"], ["ขอ", "I'll have"], ["หน่อย", "please"], ["นะ", "(softening)"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 1041, display: 18, preview: "ผ้าพันคอ", thai: "ผ้าพันคอผืนนี้สั้นเกินไปครับ ขอที่ยาวกว่านี้", english: "This scarf's too short — could I have a longer one?", gloss: [["ผ้าพันคอ", "scarf"], ["ผืน", "(classifier)"], ["นี้", "this"], ["สั้น", "short"], ["เกินไป", "too"], ["ครับ", "polite(m)"], ["ขอ", "may I have"], ["ที่", "one"], ["ยาว", "long"], ["กว่า", "more than"], ["นี้", "this"]], cultural: "ผืน is the classifier for flat cloth items — scarves, blankets, towels, mats." },
+  { num: 1042, display: 19, preview: "สวย", thai: "สีนี้สวยจังเลยค่ะ น่าซื้อนะคะ", english: "This colour's so lovely — worth buying.", gloss: [["สี", "colour"], ["นี้", "this"], ["สวย", "beautiful"], ["จัง", "so"], ["เลย", "really"], ["ค่ะ", "polite(f)"], ["น่า", "worth"], ["ซื้อ", "buying"], ["นะ", "(softening)"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 1043, display: 20, preview: "หลากสี", thai: "ผลไม้ในตลาดมีหลากสีเลยครับ", english: "The fruit in the market comes in so many colours.", gloss: [["ผลไม้", "fruit"], ["ใน", "in"], ["ตลาด", "market"], ["มี", "come in"], ["หลากสี", "many colours"], ["เลย", "so"], ["ครับ", "polite(m)"]], cultural: "Thai fresh markets (ตลาด) overflow with vividly coloured tropical fruit — dragonfruit, mangosteen, rambutan and more." },
+  { num: 1044, display: 21, preview: "สีทอง", thai: "ผมชอบแหวนสีทองมากกว่าสีเงินครับ", english: "I prefer gold rings to silver ones.", gloss: [["ผม", "I (m)"], ["ชอบ", "like"], ["แหวน", "ring"], ["สีทอง", "gold"], ["มาก", "more"], ["กว่า", "than"], ["สีเงิน", "silver"], ["ครับ", "polite(m)"]], cultural: "Gold (ทอง) carries strong value and status in Thailand — gold jewellery doubles as savings, and temples are often gilded." },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
