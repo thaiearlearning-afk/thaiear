@@ -470,6 +470,20 @@
       padding: 4px 10px;
     }
   }
+
+  /* Desktop/tablet (≥601px): tighten the hero's vertical rhythm — closer lines,
+     smaller gaps — so the dark stats band lands above the fold on load. Phones are
+     all ≤600px, so this leaves the mobile hero (handled above) untouched. */
+  @media (min-width: 601px) {
+    .hero-inner { padding-top: 0.5rem; }
+    .hero-logo { width: 78px; margin-bottom: 0.4rem; }
+    .hero-thai { margin-bottom: 0.5rem; }
+    .hero-tagline { margin-bottom: 0.85rem; }
+    .hero-rule { margin-bottom: 0.85rem; }
+    .hero-desc { line-height: 1.6; }
+    .hero-stats-band { margin-top: 0.4rem; }
+    .hero-stats { padding: 0.9rem 2rem; }
+  }
 </style>
 </head>
 <body>
