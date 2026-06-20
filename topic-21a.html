@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 23: Education system 1</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-subtitle { font-size: 14px; font-weight: 500; color: var(--accent-mid); margin: 2px 0 10px; letter-spacing: -0.01em; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Education system 1</h1>
+  <p class="topic-subtitle">Schools, levels &amp; entrance</p>
+  <p class="topic-meta"><strong>26 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-20d.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Work &amp; study 4</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-21b.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Education system 2</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "Schooling_LI1",
+  sentences: [
+  { num: 925, display: 1, preview: "ประถม", thai: "ลูกชายเพิ่งขึ้นชั้นประถมปีนี้ค่ะ", english: "My son just moved up to primary school this year.", gloss: [["ลูกชาย", "son"], ["เพิ่ง", "just"], ["ขึ้นชั้น", "moved up a grade"], ["ประถม", "primary school"], ["ปีนี้", "this year"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 926, display: 2, preview: "อนุบาล", thai: "น้องคนเล็กยังอยู่ชั้นอนุบาลอยู่เลย", english: "The youngest is still in kindergarten.", gloss: [["น้องคนเล็ก", "the youngest"], ["ยัง", "still"], ["อนุบาล", "kindergarten"], ["อยู่เลย", "(emphasis)"]], cultural: "" },
+  { num: 927, display: 3, preview: "มัธยมต้น", thai: "อีกสองปีหลานชายก็จะจบมัธยมต้นแล้วครับ", english: "In two more years my nephew will finish lower secondary.", gloss: [["อีกสองปี", "in two more years"], ["หลานชาย", "nephew"], ["ก็จะ", "will"], ["จบ", "finish"], ["มัธยมต้น", "lower secondary"], ["แล้ว", "(by then)"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 928, display: 4, preview: "มัธยมปลาย", thai: "ที่ไทยเรียนมัธยมปลายสามปีก่อนเข้ามหาวิทยาลัย", english: "In Thailand you do three years of upper secondary before university.", gloss: [["ที่ไทย", "in Thailand"], ["เรียน", "you study"], ["มัธยมปลาย", "upper secondary"], ["สามปี", "three years"], ["ก่อน", "before"], ["เข้ามหาวิทยาลัย", "entering university"]], cultural: "Thai schooling runs อนุบาล (kindergarten) → ป.1–6 (ประถม, primary) → ม.1–3 (มัธยมต้น, lower secondary) → ม.4–6 (มัธยมปลาย, upper secondary) → university. Grades are written ป./ม. plus a number, so 'ม.6' is the final pre-university year." },
+  { num: 929, display: 5, preview: "ค่าเทอม", thai: "โรงเรียนรัฐบาลกับเอกชนต่างกันที่ค่าเทอม", english: "Government and private schools differ in their fees.", gloss: [["โรงเรียนรัฐบาล", "government school"], ["กับ", "and"], ["เอกชน", "private"], ["ต่างกัน", "differ"], ["ที่", "in"], ["ค่าเทอม", "tuition fees"]], cultural: "Thai schools fall into tiers: รัฐบาล (government, low or no fees, often crowded) and เอกชน (private, fee-paying), plus a pricier โรงเรียนนานาชาติ (international) tier teaching in English." },
+  { num: 930, display: 6, preview: "ปริญญาตรี", thai: "พี่สาวผมเรียนจบปริญญาตรีจากจุฬาฯครับ", english: "My older sister got her bachelor's from Chula.", gloss: [["พี่สาว", "older sister"], ["เรียนจบ", "graduated"], ["ปริญญาตรี", "bachelor's degree"], ["จาก", "from"], ["จุฬาฯ", "Chula"], ["ครับ", "polite particle (male)"]], cultural: "จุฬาฯ is Chulalongkorn University, Thailand's oldest and most prestigious (the ฯ is an abbreviation mark). A place at a top public university like Chula or Thammasat carries real social weight." },
+  { num: 931, display: 7, preview: "ประถมสี่", thai: "พ่อผมจบแค่ชั้นประถมสี่เองครับ", english: "My dad only finished grade four.", gloss: [["พ่อ", "my dad"], ["จบ", "finished"], ["แค่", "only"], ["ประถมสี่", "grade four"], ["เอง", "just that"], ["ครับ", "polite particle (male)"]], cultural: "Until a few decades ago many older Thais — especially in the countryside — left school after ป.4, then the end of compulsory education. Free schooling now extends to ม.3." },
+  { num: 932, display: 8, preview: "มหาวิทยาลัย", thai: "คุณเรียนจบมหาวิทยาลัยไหนมาคะ", english: "Which university did you graduate from?", gloss: [["คุณ", "you"], ["เรียนจบ", "graduated"], ["มหาวิทยาลัย", "university"], ["ไหน", "which"], ["มา", "from"], ["คะ", "polite particle (female)"]], cultural: "" },
+  { num: 933, display: 9, preview: "สอบเข้า", thai: "มหาวิทยาลัยรัฐสอบเข้ายากกว่าเอกชน", english: "Public universities are harder to get into than private ones.", gloss: [["มหาวิทยาลัยรัฐ", "public universities"], ["สอบเข้า", "entrance exam"], ["ยากกว่า", "harder than"], ["เอกชน", "private"]], cultural: "" },
+  { num: 934, display: 10, preview: "เตรียมสอบ", thai: "ลูกสาวกำลังเตรียมสอบเข้ามหาวิทยาลัยค่ะ", english: "My daughter is preparing for the university entrance exam.", gloss: [["ลูกสาว", "daughter"], ["กำลัง", "is"], ["เตรียม", "preparing for"], ["สอบเข้ามหาวิทยาลัย", "the uni entrance exam"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 935, display: 11, preview: "สอบติด", thai: "สอบติดคณะที่อยากเข้าหรือเปล่าครับ", english: "Did you get into the faculty you wanted?", gloss: [["สอบติด", "got accepted"], ["คณะ", "faculty"], ["ที่อยากเข้า", "you wanted"], ["หรือเปล่า", "or not?"], ["ครับ", "polite particle (male)"]], cultural: "" },
+  { num: 936, display: 12, preview: "วิศวะ", thai: "ลูกพี่ลูกน้องผมเลือกเรียนคณะวิศวะที่มหาวิทยาลัยของรัฐ", english: "My cousin chose to study engineering at a public university.", gloss: [["ลูกพี่ลูกน้อง", "cousin"], ["เลือกเรียน", "chose to study"], ["คณะวิศวะ", "engineering"], ["ที่", "at"], ["มหาวิทยาลัยของรัฐ", "a public university"]], cultural: "วิศวะ is the colloquial clip of วิศวกรรมศาสตร์ (engineering). Thais routinely shorten faculty names this way — หมอ for medicine, นิติ for law, บัญชี for accounting." },
+  { num: 937, display: 13, preview: "คะแนน", thai: "คะแนนสอบเข้าปีนี้สูงกว่าทุกปีเลย", english: "This year's entrance scores were higher than ever.", gloss: [["คะแนนสอบเข้า", "entrance scores"], ["ปีนี้", "this year"], ["สูงกว่า", "higher than"], ["ทุกปี", "every year"], ["เลย", "(emphasis)"]], cultural: "" },
+  { num: 938, display: 14, preview: "เรียนพิเศษ", thai: "นักเรียนส่วนใหญ่เรียนพิเศษหลังเลิกเรียน", english: "Most students take extra tuition after school.", gloss: [["นักเรียน", "students"], ["ส่วนใหญ่", "most"], ["เรียนพิเศษ", "take extra tuition"], ["หลังเลิกเรียน", "after school"]], cultural: "" },
+  { num: 939, display: 15, preview: "กวดวิชา", thai: "โรงเรียนกวดวิชาแถวนี้คนเยอะมาก", english: "The cram schools around here are packed.", gloss: [["โรงเรียนกวดวิชา", "cram schools"], ["แถวนี้", "around here"], ["คนเยอะมาก", "are very crowded"]], cultural: "Cram schools (โรงเรียนกวดวิชา) are a huge private industry: after regular classes, students pay for intensive, exam-focused drilling. เรียนพิเศษ is the broader term for any paid extra tuition; กวดวิชา specifically targets entrance exams." },
+  { num: 940, display: 16, preview: "ค่าเรียนพิเศษ", thai: "ค่าเรียนพิเศษแพงขึ้นทุกปีเลยค่ะ", english: "The cost of tutoring goes up every year.", gloss: [["ค่าเรียนพิเศษ", "tutoring fees"], ["แพงขึ้น", "get pricier"], ["ทุกปี", "every year"], ["เลย", "(emphasis)"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 941, display: 17, preview: "จ่ายแพง", thai: "พ่อแม่หลายคนยอมจ่ายแพง | เพื่อให้ลูกได้เรียนที่ดีๆ", english: "Many parents will pay a lot for their kids to attend good schools.", gloss: [["พ่อแม่", "parents"], ["หลายคน", "many"], ["ยอมจ่ายแพง", "will pay a lot"], ["เพื่อให้", "so that"], ["ลูก", "their kids"], ["ได้เรียน", "attend"], ["ที่ดีๆ", "good schools"]], cultural: "" },
+  { num: 942, display: 18, preview: "ครู", thai: "ครูที่โรงเรียนนี้ดูแลเด็กป.หกดีมากค่ะ", english: "The teachers here look after the year-6 kids really well.", gloss: [["ครู", "teachers"], ["ที่โรงเรียนนี้", "at this school"], ["ดูแล", "look after"], ["เด็กป.หก", "year-6 kids"], ["ดีมาก", "really well"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 943, display: 19, preview: "ห้องเรียน", thai: "ห้องเรียนที่โรงเรียนรัฐมีนักเรียนเยอะมาก", english: "Classrooms in government schools have a lot of students.", gloss: [["ห้องเรียน", "classrooms"], ["ที่โรงเรียนรัฐ", "in government schools"], ["มี", "have"], ["นักเรียน", "students"], ["เยอะมาก", "a lot of"]], cultural: "" },
+  { num: 944, display: 20, preview: "ชุดนักเรียน", thai: "นักเรียนไทยต้องใส่ชุดนักเรียนไปโรงเรียนทุกวัน", english: "Thai students have to wear a uniform to school every day.", gloss: [["นักเรียนไทย", "Thai students"], ["ต้องใส่", "must wear"], ["ชุดนักเรียน", "a uniform"], ["ไปโรงเรียน", "to school"], ["ทุกวัน", "every day"]], cultural: "Uniforms are compulsory at almost every Thai school — and, unusually to outsiders, at universities too, where even undergraduates wear them." },
+  { num: 945, display: 21, preview: "อาจารย์", thai: "อาจารย์มหาวิทยาลัยส่วนใหญ่จบปริญญาเอก", english: "Most university lecturers hold a doctorate.", gloss: [["อาจารย์มหาวิทยาลัย", "university lecturers"], ["ส่วนใหญ่", "most"], ["จบ", "hold"], ["ปริญญาเอก", "a doctorate"]], cultural: "" },
+  { num: 946, display: 22, preview: "ปีการศึกษา", thai: "ปีการศึกษาของไทยเริ่มเดือนพฤษภาคม", english: "Thailand's academic year starts in May.", gloss: [["ปีการศึกษา", "the academic year"], ["ของไทย", "in Thailand"], ["เริ่ม", "starts"], ["เดือนพฤษภาคม", "in May"]], cultural: "The Thai academic year runs roughly May to March, with the long break falling over April — the hottest month and Songkran (New Year) season — rather than over a Western-style summer." },
+  { num: 947, display: 23, preview: "เข้าเรียน", thai: "เด็กที่นี่เข้าเรียนตั้งแต่อายุสามขวบ", english: "Children here start school from age three.", gloss: [["เด็กที่นี่", "children here"], ["เข้าเรียน", "start school"], ["ตั้งแต่", "from"], ["อายุสามขวบ", "age three"]], cultural: "" },
+  { num: 948, display: 24, preview: "นานาชาติ", thai: "โรงเรียนนานาชาติสอนเป็นภาษาอังกฤษทั้งหมด", english: "International schools teach entirely in English.", gloss: [["โรงเรียนนานาชาติ", "international schools"], ["สอน", "teach"], ["เป็นภาษาอังกฤษ", "in English"], ["ทั้งหมด", "entirely"]], cultural: "" },
+  { num: 949, display: 25, preview: "โรงเรียนประจำ", thai: "หลานเพิ่งสอบเข้าโรงเรียนประจำได้ค่ะ", english: "My niece just got into a boarding school.", gloss: [["หลาน", "niece"], ["เพิ่ง", "just"], ["สอบเข้า", "got into"], ["โรงเรียนประจำ", "a boarding school"], ["ได้", "(succeeded)"], ["ค่ะ", "polite particle (female)"]], cultural: "" },
+  { num: 950, display: 26, preview: "สายอาชีพ", thai: "เรียนจบสายอาชีพก็หางานทำง่ายเหมือนกัน", english: "Finishing a vocational track also makes it easy to find work.", gloss: [["เรียนจบ", "graduating from"], ["สายอาชีพ", "a vocational track"], ["ก็", "also"], ["หางานทำ", "find work"], ["ง่าย", "easily"], ["เหมือนกัน", "just as"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

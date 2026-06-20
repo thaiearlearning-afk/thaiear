@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 23: Education system 2</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-subtitle { font-size: 14px; font-weight: 500; color: var(--accent-mid); margin: 2px 0 10px; letter-spacing: -0.01em; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Education system 2</h1>
+  <p class="topic-subtitle">The education system</p>
+  <p class="topic-meta"><strong>26 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-21a.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Education system 1</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-39.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Tone twisters</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "System_LI2",
+  sentences: [
+  { num: 951, display: 1, preview: "ระบบการศึกษา", thai: "ระบบการศึกษาไทยเน้นการสอบมากเกินไป", english: "The Thai education system focuses too much on exams.", gloss: [["ระบบการศึกษา", "the education system"], ["ไทย", "Thai"], ["เน้น", "focuses on"], ["การสอบ", "exams"], ["มากเกินไป", "too much"]], cultural: "" },
+  { num: 952, display: 2, preview: "ลอกข้อสอบ", thai: "การลอกข้อสอบในห้องสอบยังเป็นปัญหาอยู่", english: "Cheating in the exam hall is still a problem.", gloss: [["การลอกข้อสอบ", "cheating on exams"], ["ในห้องสอบ", "in the exam hall"], ["ยังเป็นปัญหา", "is still a problem"], ["อยู่", "(ongoing)"]], cultural: "" },
+  { num: 953, display: 3, preview: "แข่งขัน", thai: "เด็กไทยต้องแข่งขันกันสูง | เพื่อเข้ามหาวิทยาลัยดีๆ", english: "Thai children compete fiercely to get into good universities.", gloss: [["เด็กไทย", "Thai children"], ["ต้องแข่งขันกัน", "have to compete"], ["สูง", "fiercely"], ["เพื่อ", "to"], ["เข้ามหาวิทยาลัย", "get into university"], ["ดีๆ", "good ones"]], cultural: "" },
+  { num: 954, display: 4, preview: "ทีแคส", thai: "ระบบทีแคสเปลี่ยนเกือบทุกปี | จนงงไปหมด", english: "The TCAS system changes almost every year — totally confusing.", gloss: [["ระบบทีแคส", "the TCAS system"], ["เปลี่ยน", "changes"], ["เกือบทุกปี", "almost every year"], ["จน", "to the point that"], ["งงไปหมด", "it's all confusing"]], cultural: "TCAS (the Thai University Central Admission System) is the centralised university-entrance process: applicants choose faculties (คณะ) and compete on exam scores. Frequent rule changes are a standing source of complaint." },
+  { num: 955, display: 5, preview: "เป็นหนี้", thai: "หลายครอบครัวยอมเป็นหนี้ | เพื่อส่งลูกเรียนเอกชน", english: "Many families go into debt to send their kids to private school.", gloss: [["หลายครอบครัว", "many families"], ["ยอมเป็นหนี้", "go into debt"], ["เพื่อ", "to"], ["ส่งลูกเรียน", "send kids to"], ["เอกชน", "private school"]], cultural: "" },
+  { num: 956, display: 6, preview: "แป๊ะเจี๊ยะ", thai: "บางโรงเรียนดังต้องจ่ายแป๊ะเจี๊ยะ | ถึงจะฝากลูกเข้าได้", english: "At some sought-after schools you have to pay tea money to get your child a place.", gloss: [["บางโรงเรียนดัง", "some sought-after schools"], ["ต้องจ่าย", "require paying"], ["แป๊ะเจี๊ยะ", "tea money"], ["ถึงจะ", "only then"], ["ฝากลูกเข้า", "get your child in"], ["ได้", "can"]], cultural: "แป๊ะเจี๊ยะ, a Teochew-Chinese loanword, is an under-the-table 'donation' to secure a child's place at a sought-after school — officially illegal, widely understood to happen." },
+  { num: 957, display: 7, preview: "ฐานะ", thai: "การศึกษาที่ดีไม่ควรขึ้นอยู่กับฐานะของครอบครัว", english: "Good education shouldn't depend on a family's wealth.", gloss: [["การศึกษาที่ดี", "good education"], ["ไม่ควร", "shouldn't"], ["ขึ้นอยู่กับ", "depend on"], ["ฐานะ", "the wealth"], ["ของครอบครัว", "of one's family"]], cultural: "" },
+  { num: 958, display: 8, preview: "คุณภาพ", thai: "โรงเรียนในเมืองกับต่างจังหวัดคุณภาพต่างกันมาก", english: "Schools in the city and the provinces differ greatly in quality.", gloss: [["โรงเรียนในเมือง", "city schools"], ["กับ", "and"], ["ต่างจังหวัด", "provincial ones"], ["คุณภาพ", "quality"], ["ต่างกันมาก", "differ greatly"]], cultural: "" },
+  { num: 959, display: 9, preview: "เด็กวัด", thai: "สมัยก่อนเด็กผู้ชายอีสานต้องไปเป็นเด็กวัด | ถึงจะได้เรียนหนังสือ", english: "In the old days, Isan boys had to become temple boys just to get an education.", gloss: [["สมัยก่อน", "in the past"], ["เด็กผู้ชายอีสาน", "Isan boys"], ["ต้องไปเป็น", "had to become"], ["เด็กวัด", "temple boys"], ["ถึงจะได้", "just to"], ["เรียนหนังสือ", "get schooling"]], cultural: "Before state schooling spread, temples were the main route to literacy, especially in the rural northeast (อีสาน). Boys lived at the local wat as เด็กวัด, serving the monks who taught them in return; girls were largely excluded — one root of older-generation literacy gaps." },
+  { num: 960, display: 10, preview: "ใบปริญญา", thai: "คนไทยให้ค่ากับใบปริญญามากกว่าความสามารถจริง", english: "Thais value the degree certificate more than actual ability.", gloss: [["คนไทย", "Thais"], ["ให้ค่ากับ", "value"], ["ใบปริญญา", "the degree certificate"], ["มากกว่า", "more than"], ["ความสามารถจริง", "actual ability"]], cultural: "" },
+  { num: 961, display: 11, preview: "ท่องจำ", thai: "ระบบท่องจำทำให้เด็กคิดวิเคราะห์ไม่ค่อยเป็น", english: "The rote-learning system leaves kids weak at critical thinking.", gloss: [["ระบบท่องจำ", "the rote-learning system"], ["ทำให้", "leaves"], ["เด็ก", "kids"], ["คิดวิเคราะห์", "thinking critically"], ["ไม่ค่อยเป็น", "weak at"]], cultural: "ท่องจำ (rote memorisation) is the standard criticism of traditional Thai education — learning by recitation rather than คิดวิเคราะห์ (critical analysis). It's the central theme of reform debates." },
+  { num: 962, display: 12, preview: "กดดัน", thai: "พ่อแม่บางคนกดดันลูกเรื่องเรียนมากเกินไป", english: "Some parents pressure their children too much about studying.", gloss: [["พ่อแม่บางคน", "some parents"], ["กดดัน", "pressure"], ["ลูก", "their kids"], ["เรื่องเรียน", "about studying"], ["มากเกินไป", "too much"]], cultural: "" },
+  { num: 963, display: 13, preview: "กระจุก", thai: "เด็กเก่งๆมักจะไปกระจุกอยู่ที่โรงเรียนดังๆ", english: "Top students tend to cluster at the famous schools.", gloss: [["เด็กเก่งๆ", "top students"], ["มักจะ", "tend to"], ["ไปกระจุกอยู่", "cluster"], ["ที่", "at"], ["โรงเรียนดังๆ", "the famous schools"]], cultural: "" },
+  { num: 964, display: 14, preview: "เกียรตินิยม", thai: "การได้เกียรตินิยมช่วยให้หางานง่ายขึ้น", english: "Graduating with honours makes finding a job easier.", gloss: [["การได้เกียรตินิยม", "graduating with honours"], ["ช่วยให้", "makes"], ["หางาน", "finding a job"], ["ง่ายขึ้น", "easier"]], cultural: "" },
+  { num: 965, display: 15, preview: "แพงขึ้น", thai: "ค่าเทอมมหาวิทยาลัยแพงขึ้นทุกปีจนน่าตกใจ", english: "University fees rise every year, alarmingly so.", gloss: [["ค่าเทอมมหาวิทยาลัย", "university fees"], ["แพงขึ้น", "rise"], ["ทุกปี", "every year"], ["จน", "to the point it's"], ["น่าตกใจ", "alarming"]], cultural: "" },
+  { num: 966, display: 16, preview: "เครียด", thai: "เด็กสมัยนี้เครียดเรื่องเรียนตั้งแต่ยังเล็ก", english: "Kids these days are stressed about school from a young age.", gloss: [["เด็กสมัยนี้", "kids these days"], ["เครียด", "get stressed"], ["เรื่องเรียน", "about school"], ["ตั้งแต่", "from"], ["ยังเล็ก", "a young age"]], cultural: "" },
+  { num: 967, display: 17, preview: "ประสบการณ์", thai: "บางคนมองว่าปริญญาไม่จำเป็นเท่าประสบการณ์", english: "Some see a degree as less essential than experience.", gloss: [["บางคน", "some people"], ["มองว่า", "see that"], ["ปริญญา", "a degree"], ["ไม่จำเป็นเท่า", "isn't as vital as"], ["ประสบการณ์", "experience"]], cultural: "" },
+  { num: 968, display: 18, preview: "ลงทุน", thai: "รัฐควรลงทุนกับการศึกษาให้มากกว่านี้", english: "The state should invest more in education.", gloss: [["รัฐ", "the state"], ["ควรลงทุน", "should invest"], ["กับการศึกษา", "in education"], ["ให้มากกว่านี้", "more than it does"]], cultural: "" },
+  { num: 969, display: 19, preview: "อุปกรณ์การเรียน", thai: "โรงเรียนเอกชนมักมีอุปกรณ์การเรียนครบกว่า", english: "Private schools usually have more complete facilities.", gloss: [["โรงเรียนเอกชน", "private schools"], ["มักมี", "usually have"], ["อุปกรณ์การเรียน", "learning facilities"], ["ครบกว่า", "more complete"]], cultural: "" },
+  { num: 970, display: 20, preview: "ขาดแคลน", thai: "ครูในชนบทขาดแคลนมานานแล้ว", english: "Rural areas have faced a teacher shortage for a long time.", gloss: [["ครู", "teachers"], ["ในชนบท", "in rural areas"], ["ขาดแคลน", "are in short supply"], ["มานานแล้ว", "for a long time"]], cultural: "" },
+  { num: 971, display: 21, preview: "ทั้งบ้าน", thai: "การสอบเข้ามหาวิทยาลัยกลายเป็นเรื่องเครียดของทั้งบ้าน", english: "University entrance has become a source of stress for the whole household.", gloss: [["การสอบเข้ามหาวิทยาลัย", "university entrance"], ["กลายเป็น", "has become"], ["เรื่องเครียด", "a source of stress"], ["ของทั้งบ้าน", "for the whole household"]], cultural: "" },
+  { num: 972, display: 22, preview: "เรียนต่อ", thai: "เด็กที่ไม่ได้เรียนต่อก็ไม่ได้แปลว่าไม่เก่ง", english: "Kids who don't continue their studies aren't necessarily less capable.", gloss: [["เด็กที่ไม่ได้เรียนต่อ", "kids who stop studying"], ["ก็ไม่ได้แปลว่า", "doesn't mean"], ["ไม่เก่ง", "they're not smart"]], cultural: "" },
+  { num: 973, display: 23, preview: "หลักสูตร", thai: "หลักสูตรไทยควรปรับให้ทันโลกมากขึ้น", english: "The Thai curriculum should be updated to keep pace with the world.", gloss: [["หลักสูตรไทย", "the Thai curriculum"], ["ควรปรับ", "should be updated"], ["ให้ทันโลก", "to keep up with the world"], ["มากขึ้น", "more"]], cultural: "" },
+  { num: 974, display: 24, preview: "เมืองนอก", thai: "บางคนเบื่อระบบ | จนอยากไปเรียนเมืองนอก", english: "Some are so fed up with the system they want to study overseas.", gloss: [["บางคน", "some people"], ["เบื่อระบบ", "are fed up with the system"], ["จน", "so much that"], ["อยากไป", "they want to"], ["เรียนเมืองนอก", "study overseas"]], cultural: "" },
+  { num: 975, display: 25, preview: "อินเตอร์", thai: "คนมีเงินส่งลูกเข้าโรงเรียนอินเตอร์ตั้งแต่เด็ก", english: "Those with money put their kids in international schools from young.", gloss: [["คนมีเงิน", "those with money"], ["ส่งลูกเข้า", "put their kids in"], ["โรงเรียนอินเตอร์", "international schools"], ["ตั้งแต่เด็ก", "from a young age"]], cultural: "อินเตอร์ (from English 'inter') is the everyday word for an international school or programme; นานาชาติ is the formal equivalent. Both teach largely in English and cater to wealthier or expat families." },
+  { num: 976, display: 26, preview: "ความยากจน", thai: "หลายคนเชื่อว่าการศึกษาคือทางออกจากความยากจน", english: "Many believe education is the way out of poverty.", gloss: [["หลายคน", "many people"], ["เชื่อว่า", "believe that"], ["การศึกษา", "education"], ["คือ", "is"], ["ทางออก", "the way out"], ["จากความยากจน", "of poverty"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

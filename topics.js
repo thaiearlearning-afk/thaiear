@@ -88,7 +88,9 @@
         { name: "Work & study 2", sentences: 24, page: "topic-20b.html" },
         { name: "Work & study 3", sentences: 24, page: "topic-20c.html" },
         { name: "Work & study 4", sentences: 21, page: "topic-20d.html" } ] },
-    { id: 21, name: "Education system", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 21, name: "Education system", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Education system 1", sentences: 26, page: "topic-21a.html", access: "member" },
+        { name: "Education system 2", sentences: 26, page: "topic-21b.html" } ] },
     { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], sentences: 30, access: "premium" },
     { id: 23, name: "Nature & animals", levels: ["li1","li2"], sentences: 30, access: "premium" },
     { id: 24, name: "Technology & communication", levels: ["li1","li2"], sentences: 25, access: "premium" },
