@@ -120,7 +120,7 @@
     display: flex;
     justify-content: center;
     gap: 3.5rem;
-    padding: 1.5rem 2rem;
+    padding: 1.5rem 2rem 0.7rem;
     max-width: 620px;
     margin: 0 auto;
   }
@@ -138,13 +138,15 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
-  .hero-stat-soon {
-    display: block;
-    font-size: 10px;
-    color: rgba(255,255,255,0.28);
+  /* Single centred note under the three stats — signals the figures are what's BUILT. */
+  .hero-stats-soon {
+    text-align: center;
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.30);
     letter-spacing: 0.04em;
-    margin-top: 2px;
     font-style: italic;
+    margin: 0;
+    padding: 0 2rem 1.3rem;
   }
 
     /* ── TOPICS SECTION ── */
@@ -489,20 +491,19 @@
   <div class="hero-stats-band">
     <div class="hero-stats">
       <div>
-        <span class="hero-stat-num" id="hero-topic-count">38</span>
+        <span class="hero-stat-num" id="hero-topic-count">25</span>
         <span class="hero-stat-label">Topics</span>
       </div>
       <div>
         <span class="hero-stat-num">1,000+</span>
         <span class="hero-stat-label">Sentences</span>
-        <span class="hero-stat-soon">coming soon</span>
       </div>
       <div>
-        <span class="hero-stat-num">2,000+</span>
+        <span class="hero-stat-num">1,500+</span>
         <span class="hero-stat-label">Unique words</span>
-        <span class="hero-stat-soon">coming soon</span>
       </div>
     </div>
+    <p class="hero-stats-soon">more coming soon</p>
   </div>
 </section>
 
@@ -570,11 +571,11 @@ function bandHeading(levels) {
   return floor === ceiling ? LEVEL_FULL[floor] : `${LEVEL_FULL[floor]} → ${LEVEL_FULL[ceiling]}`;
 }
 
-// Hero "Topics" stat: derived from the topic list so it never needs hand-editing —
-// add/remove a topic in topics.js and this updates itself.
+// Hero "Topics" stat: count of LIVE (built) topics, so the figure reflects what's
+// actually available — it climbs on its own as topics go live (isLive() is hoisted).
 (function () {
   const el = document.getElementById('hero-topic-count');
-  if (el) el.textContent = topics.length;
+  if (el) el.textContent = topics.filter(isLive).length;
 })();
 
 // Padlock glyph for gated cards (matches the line-icon style used in nav.js).
