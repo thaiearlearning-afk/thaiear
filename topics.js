@@ -48,52 +48,52 @@
   // The list (names / levels / counts) is built from the master Content Plan — the
   // single source of truth. Do NOT hand-maintain it or carry over the old taxonomy.
   const topics = [
-    { id: 1,  name: "Greetings & farewells", levels: ["beg"], sentences: 23 },
-    { id: 2,  name: "Getting to know you", levels: ["beg"], sentences: 29 },
-    { id: 3,  name: "Communication survival", levels: ["beg"], sentences: 22 },
-    { id: 4,  name: "Colours & descriptions", levels: ["beg"], sentences: 36, access: "premium" },
-    { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 26, access: "premium" },
-    { id: 6,  name: "Time & numbers", levels: ["beg"], sentences: 26, access: "premium" },
-    { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37, access: "premium" },
-    { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38, access: "premium" },
+    { id: 1,  name: "Greetings & farewells", levels: ["beg"], sentences: 23, audio: "Greetings_BEG" },
+    { id: 2,  name: "Getting to know you", levels: ["beg"], sentences: 29, audio: "GettingToKnow_BEG" },
+    { id: 3,  name: "Communication survival", levels: ["beg"], sentences: 22, audio: "CommSurvival_BEG" },
+    { id: 4,  name: "Colours & descriptions", levels: ["beg"], sentences: 36, access: "premium", audio: "Colours_BEG" },
+    { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 26, access: "premium", audio: "Weather_BEG" },
+    { id: 6,  name: "Time & numbers", levels: ["beg"], sentences: 26, access: "premium", audio: "Time_BEG" },
+    { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37, access: "premium", audio: "Dates_BEG" },
+    { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38, access: "premium", audio: "Family_BEG" },
     { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Food & drink 1", sentences: 32, page: "topic-09a.html", access: "member" },
-        { name: "Food & drink 2", sentences: 26, page: "topic-09b.html" } ] },
-    { id: 10, name: "Home & daily routine", levels: ["beg","li1"], sentences: 38, access: "premium" },
-    { id: 11, name: "Shopping & money (everyday)", levels: ["beg","li1"], sentences: 30, access: "premium" },
+        { name: "Food & drink 1", sentences: 32, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
+        { name: "Food & drink 2", sentences: 26, page: "topic-09b.html", audio: "Food_LI1" } ] },
+    { id: 10, name: "Home & daily routine", levels: ["beg","li1"], sentences: 38, access: "premium", audio: "Home_BEG" },
+    { id: 11, name: "Shopping & money (everyday)", levels: ["beg","li1"], sentences: 30, access: "premium", audio: "Shopping_BEG" },
     { id: 12, name: "Getting around & transport", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html", access: "member" },
-        { name: "Getting around & transport 2", sentences: 24, page: "topic-12b.html" } ] },
-    { id: 37, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 36, access: "premium" },
+        { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html", access: "member", audio: "Transport_BEG" },
+        { name: "Getting around & transport 2", sentences: 24, page: "topic-12b.html", audio: "Transport_LI1" } ] },
+    { id: 37, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 36, access: "premium", audio: "Emergency_BEG" },
     { id: 13, name: "Body & health", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Body & health 1", sentences: 28, page: "topic-13a.html", access: "member" },
-        { name: "Body & health 2", sentences: 25, page: "topic-13b.html" } ] },
+        { name: "Body & health 1", sentences: 28, page: "topic-13a.html", access: "member", audio: "Health_BEG" },
+        { name: "Body & health 2", sentences: 25, page: "topic-13b.html", audio: "Health_LI1" } ] },
     { id: 14, name: "Feelings & emotions", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Feelings & emotions 1", sentences: 23, page: "topic-14a.html", access: "member" },
-        { name: "Feelings & emotions 2", sentences: 26, page: "topic-14b.html" } ] },
-    { id: 15, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 33, access: "premium" },
-    { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 36, access: "premium" },
-    { id: 38, name: "Idioms", levels: ["beg","li1"], sentences: 27, access: "premium" },
+        { name: "Feelings & emotions 1", sentences: 23, page: "topic-14a.html", access: "member", audio: "Feelings_BEG" },
+        { name: "Feelings & emotions 2", sentences: 26, page: "topic-14b.html", audio: "Feelings_LI1" } ] },
+    { id: 15, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 33, access: "premium", audio: "Hobbies_BEG" },
+    { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 36, access: "premium", audio: "SocialLife_BEG" },
+    { id: 38, name: "Idioms", levels: ["beg","li1"], sentences: 27, access: "premium", audio: "Idiom_BEG" },
     { id: 17, name: "Plans & future", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Plans & future 1", sentences: 28, page: "topic-17a.html", access: "member" },
-        { name: "Plans & future 2", sentences: 16, page: "topic-17b.html" } ] },
+        { name: "Plans & future 1", sentences: 28, page: "topic-17a.html", access: "member", audio: "Plans_BEG" },
+        { name: "Plans & future 2", sentences: 16, page: "topic-17b.html", audio: "Plans_LI1" } ] },
     { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Clothing & appearance 1", sentences: 22, page: "topic-18a.html", access: "member" },
-        { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html" } ] },
+        { name: "Clothing & appearance 1", sentences: 22, page: "topic-18a.html", access: "member", audio: "Clothing_BEG" },
+        { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html", audio: "Appearance_LI1" } ] },
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Cooking & recipes 1", sentences: 30, page: "topic-19a.html", access: "member" },
-        { name: "Cooking & recipes 2", sentences: 27, page: "topic-19b.html" } ] },
+        { name: "Cooking & recipes 1", sentences: 30, page: "topic-19a.html", access: "member", audio: "Cooking_BEG" },
+        { name: "Cooking & recipes 2", sentences: 27, page: "topic-19b.html", audio: "Recipes_LI1" } ] },
     { id: 20, name: "Work & study", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Work & study 1", sentences: 24, page: "topic-20a.html", access: "member" },
-        { name: "Work & study 2", sentences: 24, page: "topic-20b.html" },
-        { name: "Work & study 3", sentences: 24, page: "topic-20c.html" },
-        { name: "Work & study 4", sentences: 21, page: "topic-20d.html" } ] },
+        { name: "Work & study 1", sentences: 24, page: "topic-20a.html", access: "member", audio: "Job_LI1" },
+        { name: "Work & study 2", sentences: 24, page: "topic-20b.html", audio: "Workplace_LI1" },
+        { name: "Work & study 3", sentences: 24, page: "topic-20c.html", audio: "Career_LI2" },
+        { name: "Work & study 4", sentences: 21, page: "topic-20d.html", audio: "Study_LI1" } ] },
     { id: 21, name: "Education system", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Education system 1", sentences: 26, page: "topic-21a.html", access: "member" },
-        { name: "Education system 2", sentences: 26, page: "topic-21b.html" } ] },
+        { name: "Education system 1", sentences: 26, page: "topic-21a.html", access: "member", audio: "Schooling_LI1" },
+        { name: "Education system 2", sentences: 26, page: "topic-21b.html", audio: "System_LI2" } ] },
     { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Food culture & eating out 1", sentences: 29, page: "topic-22a.html", access: "member" },
-        { name: "Food culture & eating out 2", sentences: 22, page: "topic-22b.html" } ] },
+        { name: "Food culture & eating out 1", sentences: 29, page: "topic-22a.html", access: "member", audio: "FoodSocial_LI1" },
+        { name: "Food culture & eating out 2", sentences: 22, page: "topic-22b.html", audio: "FoodCulture_LI2" } ] },
     { id: 23, name: "Nature & animals", levels: ["li1","li2"], sentences: 30, access: "premium" },
     { id: 24, name: "Technology & communication", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 25, name: "Media & entertainment", levels: ["li1","li2"], sentences: 25, access: "premium" },
@@ -110,7 +110,7 @@
     { id: 35, name: "Buddhism", levels: ["li1","li2"], access: "premium", parts: [
         { sentences: 22, access: "member" }, { sentences: 28 } ] },
     { id: 36, name: "Romantic relationships & dating", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 19, access: "premium" },
+    { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 19, access: "premium", audio: "ToneTwister_LI1" },
   ];
 
   // Keyed by FROZEN id (never display position). Add entries as topics go live.
@@ -202,12 +202,68 @@
     return true; // free / undefined
   }
 
+  // ---- continuous-playback sequence (drives the player's autoplay + prev/next) -------
+  // A "unit" is one playable page: a non-split topic, or one part of a split topic. The
+  // player swaps between these (same audio element, no page reload) so playback survives a
+  // locked screen. Built straight from this list so it stays a single source of truth.
+  // A unit must have BOTH a page (it's built/live) and an `audio` prefix to be playable.
+  function unitOf(topic, part, pos) {
+    return {
+      pos: pos,
+      id: topic.id,
+      page: part ? part.page : liveTopics[topic.id],
+      name: part ? (part.name || topic.name) : topic.name,
+      audio: part ? part.audio : topic.audio,
+      access: accessFor(topic, part),
+      levels: topic.levels
+    };
+  }
+  // All live, playable units in DISPLAY order (split topics expanded into their parts).
+  function liveSequence() {
+    const seq = [];
+    for (let i = 0; i < topics.length; i++) {
+      const t = topics[i];
+      if (t.parts) {
+        t.parts.forEach(function (p) { if (p && p.page && p.audio) seq.push(unitOf(t, p, i + 1)); });
+      } else if (liveTopics[t.id] && t.audio) {
+        seq.push(unitOf(t, null, i + 1));
+      }
+    }
+    return seq;
+  }
+  // The unit for a given page (null if the page isn't a live, playable unit).
+  function pageUnit(page) {
+    page = bare(page);
+    const seq = liveSequence();
+    for (let i = 0; i < seq.length; i++) if (bare(seq[i].page) === page) return seq[i];
+    return null;
+  }
+  // Walk the sequence from `page` in `dir` (+1 next / -1 prev), wrapping last<->first,
+  // skipping any unit the current visitor can't access. Returns the next accessible unit,
+  // or the current page's unit if it's the only accessible one, or null if `page` isn't in
+  // the sequence. canAccess() reads live auth, so this is correct per visitor tier.
+  function nextAccessible(page, dir) {
+    const seq = liveSequence();
+    if (!seq.length) return null;
+    const p = bare(page);
+    let idx = -1;
+    for (let i = 0; i < seq.length; i++) if (bare(seq[i].page) === p) { idx = i; break; }
+    if (idx === -1) return null;
+    const n = seq.length;
+    for (let step = 1; step <= n; step++) {
+      const j = ((idx + dir * step) % n + n) % n;
+      if (canAccess(seq[j].access)) return seq[j];
+    }
+    return seq[idx]; // nothing else accessible — stay put
+  }
+
   // Shared surface for index.html (grid render) and anything else that needs the data.
   window.ThaiEarTopics = {
     topics, liveTopics, total: topics.length,
     LEVEL_ORDER, LEVEL_CLASS, LEVEL_FULL, LEVEL_SHORT,
     levelBounds, levelText, levelBadge, matchesFilter, findByPage,
-    canAccess, accessFor, authState, ENFORCE_SUBSCRIPTION
+    canAccess, accessFor, authState, ENFORCE_SUBSCRIPTION,
+    liveSequence, pageUnit, nextAccessible
   };
 
   // ---- topic-page eyebrow: "<level> · Topic X of N", derived from the list ----
