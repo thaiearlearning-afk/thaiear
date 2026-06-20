@@ -75,6 +75,13 @@
     NA.addListener('time', function (d) { if (d) { st.currentTime = d.position || 0; if (d.duration) st.duration = d.duration; } emit('timeupdate'); });
     NA.addListener('ended', function () { st.paused = true; emit('ended'); });
     NA.addListener('playing', function (d) { st.paused = !(d && d.playing); });
+    // Lock-screen / notification buttons (prev/next/repeat). ±10 is seeked natively.
+    NA.addListener('command', function (d) {
+      var a = d && d.action;
+      if (a === 'thaiear.NEXT') advanceTopic(1);
+      else if (a === 'thaiear.PREV') advanceTopic(-1);
+      else if (a === 'thaiear.REPEAT') toggleRepeat();
+    });
     return {
       get paused() { return st.paused; },
       get duration() { return st.duration; },
