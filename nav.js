@@ -331,8 +331,8 @@
     function isDl(prefix) { try { return !!JSON.parse(localStorage.getItem('thaiear_offline') || '{}')[prefix]; } catch (_) { return false; } }
     // Same premium offline-licence rule as the topic player — applied here so an expired member can't
     // advance into a downloaded premium topic from a non-topic page. KEEP OFFLINE_GRACE_MS IN SYNC WITH
-    // player.js (2 min for testing → 30 days for prod).
-    const OFFLINE_GRACE_MS = 2 * 60 * 1000;
+    // player.js (1 min for testing → 30 days for prod).
+    const OFFLINE_GRACE_MS = 1 * 60 * 1000;
     function canUseOffline(tier) {
       if (tier !== 'premium') return true;
       const a = window.ThaiEarAuth, subbed = a && a.isSubscribed && a.isSubscribed();

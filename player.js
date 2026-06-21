@@ -146,9 +146,9 @@
      the subscription was verified online within OFFLINE_GRACE_MS (a lapsed/cancelled member loses
      offline access once that window passes). Free + member topics have no expiry. Guarded on NATIVE;
      the website never shows any of this. */
-  // TESTING VALUE — 2 minutes so the failsafe is easy to test. PRODUCTION: 30 days =
-  // 30 * 24 * 60 * 60 * 1000 = 2592000000.
-  var OFFLINE_GRACE_MS = 2 * 60 * 1000;
+  // TESTING VALUE — 1 minute so the failsafe is easy to test. PRODUCTION: 30 days =
+  // 30 * 24 * 60 * 60 * 1000 = 2592000000.  (Keep nav.js OFFLINE_GRACE_MS in sync.)
+  var OFFLINE_GRACE_MS = 1 * 60 * 1000;
   var Filesystem = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
   var OFFLINE = !!(NATIVE && Filesystem);
 
