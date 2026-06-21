@@ -368,15 +368,27 @@
     },
     signOut: function () {
       if (!client) return Promise.resolve();
-      // Offline-safe: a normal signOut posts to Supabase to revoke the token, which
-      // hangs/fails with no connection — so logout would silently do nothing offline.
-      // Offline → clear the LOCAL session only (works instantly). Online → revoke
-      // server-side too, but fall back to a local clear if that request fails, so
-      // logout NEVER gets stuck. Either path emits SIGNED_OUT → the nav refreshes.
-      if (!navigator.onLine) return client.auth.signOut({ scope: 'local' });
-      return client.auth.signOut().catch(function () {
-        return client.auth.signOut({ scope: 'local' });
-      });
+      // Logout must work even with NO connection. Supabase's signOut() POSTs to /logout to revoke the
+      // token (and even scope:'local' can make that network call), which hangs forever offline — and
+      // navigator.onLine is unreliable in the webview (frequently reports "online" in airplane mode),
+      // so we can't branch on it. Strategy: attempt a local sign-out but RACE it against a short timeout,
+      // then ALWAYS finish with a guaranteed local teardown (wipe the cached Supabase session, reset the
+      // cached state, and notify) so the UI logs out within ~1.5s no matter what the network does.
+      var forceLocal = function () {
+        try {
+          for (var i = localStorage.length - 1; i >= 0; i--) {
+            var k = localStorage.key(i);
+            if (k && k.indexOf('sb-') === 0 && k.indexOf('-auth-token') !== -1) localStorage.removeItem(k);
+          }
+        } catch (_) {}
+        currentSession = null; currentUser = null;
+        currentSubscribed = false; currentSub = null;
+        try { localStorage.removeItem('thaiear_lifetime'); } catch (_) {}
+        notify();   // re-render nav + account page as logged-out
+      };
+      var attempt = client.auth.signOut({ scope: 'local' }).catch(function () {});
+      var timeout = new Promise(function (res) { setTimeout(res, 1500); });
+      return Promise.race([attempt, timeout]).then(forceLocal);
     }
   };
 
