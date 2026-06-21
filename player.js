@@ -502,6 +502,7 @@
     .now-playing a { color: var(--accent); text-decoration: none; }
     .now-playing a strong { color: var(--accent); }
     .now-playing a:hover { text-decoration: underline; }
+    .now-playing a.np-return { color: #C0392B; font-weight: 600; margin-left: 8px; white-space: nowrap; }
     .offline-bar { display: flex; align-items: center; gap: 10px; margin: -0.75rem 0 1.25rem; flex-wrap: wrap; }
     .offline-btn { font-family: var(--font-ui); font-size: 13px; font-weight: 500; color: var(--accent); background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s; }
     .offline-btn:hover { border-color: var(--accent); background: var(--accent-light); }
@@ -868,6 +869,33 @@
       .catch(function (e) { setMainIcon(false); handleDenied(e, mainTier); });
   }
 
+  // "Return": re-align the TOP player with the page you're reading — the inverse of
+  // advanceTopic. Playback drifted to another topic (autoplay/next); this snaps it back to
+  // THIS page's own topic and plays it, so the now-playing strip realigns (and then hides,
+  // because the playing topic == the page topic). Going TO the playing topic already exists
+  // as the strip's hyperlink, so we only add this opposite direction.
+  function returnToThisTopic() {
+    var T = window.ThaiEarTopics;
+    var unit = (T && T.pageUnit) ? T.pageUnit(PAGE_FILE) : null;
+    mainPage = PAGE_FILE;
+    mainPrefix = PREFIX;
+    mainGated = GATED;
+    mainTier = TIER;
+    currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
+    mainSrcReady = false;
+    var f = $('scrubber-fill'); if (f) f.style.width = '0%';
+    var c = $('time-cur'); if (c) c.textContent = '0:00';
+    var tt = $('time-total'); if (tt) tt.textContent = '0:00';
+    if (unit) updateNowPlaying(unit);                 // unit.page === this page → strip hides
+    else { var box = $('now-playing'); if (box) box.classList.remove('show'); }
+    mainSrcFor(currentMainFile).then(function (u) {
+      if (mainPrefix !== PREFIX) return;              // a newer hop superseded this one
+      mainAudio.src = u; mainAudio.load(); mainSrcReady = true;
+      return mainAudio.play();
+    }).then(function () { setMainIcon(true); setupMediaSession(); })
+      .catch(function (e) { setMainIcon(false); handleDenied(e, mainTier); });
+  }
+
   // Lightweight "now playing" refresh: a strip in the player + the tab title + lock screen.
   // The sentence cards below stay on the opened topic, so the strip only shows once we've
   // actually moved off it.
@@ -879,7 +907,9 @@
     if (box) box.classList.toggle('show', !!moved);
     if (txt) {
       var href = escapeHtml(unit.page || '');
-      txt.innerHTML = 'Now playing <a href="' + href + '"><strong>' + escapeHtml(unit.name) + '</strong></a>' + (lvl ? ' · ' + escapeHtml(lvl) : '');
+      txt.innerHTML = 'Now playing <a href="' + href + '"><strong>' + escapeHtml(unit.name) + '</strong></a>' + (lvl ? ' · ' + escapeHtml(lvl) : '')
+        + (moved ? ' <a href="#" class="np-return" id="np-return" title="Bring the player back to this topic">↩ Return</a>' : '');
+      var rb = $('np-return'); if (rb) rb.onclick = function (e) { e.preventDefault(); returnToThisTopic(); };
     }
     if (unit.name) document.title = unit.name + ' · ThaiEar';
     updateMediaSession(unit, lvl);

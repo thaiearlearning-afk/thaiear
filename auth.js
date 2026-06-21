@@ -368,7 +368,15 @@
     },
     signOut: function () {
       if (!client) return Promise.resolve();
-      return client.auth.signOut();
+      // Offline-safe: a normal signOut posts to Supabase to revoke the token, which
+      // hangs/fails with no connection — so logout would silently do nothing offline.
+      // Offline → clear the LOCAL session only (works instantly). Online → revoke
+      // server-side too, but fall back to a local clear if that request fails, so
+      // logout NEVER gets stuck. Either path emits SIGNED_OUT → the nav refreshes.
+      if (!navigator.onLine) return client.auth.signOut({ scope: 'local' });
+      return client.auth.signOut().catch(function () {
+        return client.auth.signOut({ scope: 'local' });
+      });
     }
   };
 
