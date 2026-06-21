@@ -52,16 +52,12 @@
   .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
   /* fixed-width dots so the text never jitters as they cycle */
   .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
-  /* Reveal three dots by animating WIDTH, not `content` — Chromium (the app webview) can't animate
-     `content`, which froze the ellipsis. steps() shows 1 → 2 → 3 dots in sequence. */
-  .fluency-text .dots::after {
-    content: '...'; display: inline-block; width: 0.35em; overflow: hidden;
-    vertical-align: bottom; animation: fluency-dots 1.4s steps(3, jump-none) infinite;
-  }
-  @keyframes fluency-dots { from { width: 0.35em; } to { width: 1.05em; } }
-  @media (prefers-reduced-motion: reduce) {
-    .fluency-text .dots::after { animation: none; width: auto; content: '…'; }
-  }
+  /* Pulse the ellipsis opacity. Earlier tries animated `content` (not animatable in Chromium) then
+     `width` with steps(jump-none) (patchy on old webviews, and can be gated off by reduced-motion).
+     Opacity is universally animatable, and we deliberately DON'T gate on prefers-reduced-motion so it
+     animates even on phones with system animations turned down — matching the now-playing equalizer. */
+  .fluency-text .dots::after { content: '…'; animation: fluency-dots 1.4s ease-in-out infinite; }
+  @keyframes fluency-dots { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
 
   /* progress rows + bars */
   .prog-list { display: flex; flex-direction: column; gap: 0.85rem; }

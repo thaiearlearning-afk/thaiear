@@ -83,6 +83,7 @@ function esc(s) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 function openPortal() {
+  if (offlineGuard('portal-status', 'You’re offline — reconnect to manage payment.')) return;
   var a = window.ThaiEarAuth;
   var token = a && a.getAccessToken && a.getAccessToken();
   if (!token) return;
@@ -160,7 +161,16 @@ function doDeleteAccount() {
     })
     .catch(function (e) { if (st) st.textContent = 'Error: ' + e; });
 }
+// Shared offline guard for the network-only membership actions. navigator.onLine can lie in the
+// webview, but when it's accurate this cleanly blocks the action with a message instead of failing.
+function offlineGuard(statusId, msg) {
+  if (navigator.onLine) return false;
+  var st = document.getElementById(statusId);
+  if (st) { st.style.color = '#B00020'; st.textContent = msg || 'You’re offline — reconnect to do this.'; }
+  return true;
+}
 function cancelMembership() {
+  if (offlineGuard('cancel-status', 'You’re offline — reconnect to change your membership.')) return;
   showModal({
     title: 'Cancel membership?',
     body: 'You’ll keep access until the end of the current paid period — after that it won’t renew.',
@@ -169,6 +179,7 @@ function cancelMembership() {
   });
 }
 function resumeMembership() {
+  if (offlineGuard('cancel-status', 'You’re offline — reconnect to change your membership.')) return;
   showModal({
     title: 'Resume membership?',
     body: 'It will keep renewing at your current rate on your current card. You can cancel again anytime before then.',
@@ -232,8 +243,18 @@ function renderMembershipBox(s) {
 function cacheSub() {
   var a = window.ThaiEarAuth;
   var sub = (a && a.getSubscription && a.getSubscription()) || null;
+  if (!sub) {
+    // Offline (or not yet loaded): fall back to the last-known persisted subscription so a premium
+    // member still sees "Premium — active until …" rather than the generic free-member state.
+    try {
+      var c = JSON.parse(localStorage.getItem('thaiear_sub_cache') || 'null');
+      var u = a && a.getUser && a.getUser();
+      if (c && c.sub && (!u || c.uid === u.id)) sub = c.sub;
+    } catch (_) {}
+  }
+  var subscribed = !!(a && a.isSubscribed && a.isSubscribed()) || !!(sub && (sub.status === 'active' || sub.status === 'trialing'));
   return {
-    subscribed: !!(a && a.isSubscribed && a.isSubscribed()),
+    subscribed: subscribed,
     needsPayment: !!(sub && (sub.status === 'past_due' || sub.status === 'unpaid')),
     status: sub && sub.status,
     cancel_at_period_end: sub && sub.cancel_at_period_end,
