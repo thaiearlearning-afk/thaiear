@@ -373,18 +373,20 @@
   .topic-member svg { width: 11px; height: 11px; }
   /* Entitled view: same soft Beginner-pill palette, no padlock (was a strong solid purple). */
   .topic-member.unlocked { background: var(--accent-light); color: var(--accent); }
-  /* Downloaded tick — app only; tap to select for removal (a lavender ring appears). */
-  .dl-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
-    border-radius: 50%; color: var(--accent); margin-left: 6px; vertical-align: middle; cursor: pointer;
-    border: 2px solid transparent; transition: border-color 0.15s, background 0.15s; }
-  .dl-badge.clear-selected { border-color: #9d92e0; background: var(--accent-light); }
-  /* App-only: per-card select circle for batch download. Light purple default → dark when selected. */
-  .dl-select { display: inline-block; width: 18px; height: 18px; border-radius: 50%; margin-left: 6px;
-    vertical-align: middle; cursor: pointer; background: var(--accent-light); border: 1.5px solid var(--accent-light);
-    transition: background 0.15s, border-color 0.15s, transform 0.1s; }
-  .dl-select:hover { border-color: var(--accent); }
-  .dl-select.selected { background: var(--accent); border-color: var(--accent); }
-  .dl-select.selected:active { transform: scale(0.9); }
+  /* App-only selection controls. The OUTER span is a big, finger-friendly tap target; the inner
+     dot/tick is the smaller visible mark — so they're easy to hit without catching the card link. */
+  .dl-select, .dl-badge { display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 36px; margin-left: 2px; vertical-align: middle; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  /* Download select circle: light purple → dark when selected. */
+  .dl-dot { width: 23px; height: 23px; border-radius: 50%; background: var(--accent-light);
+    border: 1.5px solid var(--accent-light); transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+  .dl-select:hover .dl-dot { border-color: var(--accent); }
+  .dl-select.selected .dl-dot { background: var(--accent); border-color: var(--accent); }
+  .dl-select:active .dl-dot { transform: scale(0.92); }
+  /* Downloaded tick: a lavender ring appears when selected for removal. */
+  .dl-tick { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px;
+    border-radius: 50%; color: var(--accent); border: 2px solid transparent; transition: border-color 0.15s, background 0.15s; }
+  .dl-badge.clear-selected .dl-tick { border-color: #9d92e0; background: var(--accent-light); }
   /* While selecting one kind, dim the other so the two modes can't mix. */
   .mode-download .dl-badge { opacity: 0.4; }
   .mode-clear .dl-select { opacity: 0.4; }
@@ -392,8 +394,8 @@
     background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md);
     padding: 0.7rem 0.9rem; margin-bottom: 0.9rem; }
   .dl-batch-btns { display: flex; gap: 8px; }
-  .dl-batch-btn { flex: 1; font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: #fff;
-    background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 9px 14px; cursor: pointer; }
+  .dl-batch-btn { flex: 1; font-family: var(--font-ui); font-size: 15px; font-weight: 500; color: #fff;
+    background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 12px 16px; cursor: pointer; }
   .dl-batch-btn:hover:not([disabled]) { background: var(--accent-mid); }
   .dl-batch-btn[disabled] { background: var(--border); color: var(--text-tertiary); cursor: default; }
   .dl-clear-btn { background: var(--surface); color: var(--text-secondary); border: 0.5px solid var(--border-strong); }
@@ -680,14 +682,14 @@ function selectCircle(audio, page, tier) {
   if (!NA_OFFLINE || !audio || !page) return '';
   const on = dlSelected.has(audio) ? ' selected' : '';
   return '<span class="dl-select' + on + '" data-prefix="' + audio + '" data-page="' + page +
-    '" data-tier="' + (tier || 'free') + '" role="button" aria-label="Select for offline download"></span>';
+    '" data-tier="' + (tier || 'free') + '" role="button" aria-label="Select for offline download"><span class="dl-dot"></span></span>';
 }
 // Tick for a downloaded topic (clear selection): a lavender ring appears when selected.
 function downloadedTick(audio, page, tier) {
   const on = clearSelected.has(audio) ? ' clear-selected' : '';
   return '<span class="dl-badge' + on + '" data-prefix="' + audio + '" data-page="' + (page || '') +
     '" data-tier="' + (tier || 'free') + '" role="button" title="Downloaded · tap to select for removal" aria-label="Downloaded — tap to select for removal">' +
-    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
+    '<span class="dl-tick"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>';
 }
 
 function dlFileUrl(file, tier) { // free → public CDN; member/premium → signed /api/audio
