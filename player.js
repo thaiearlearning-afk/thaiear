@@ -118,6 +118,21 @@
   var Filesystem = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
   var OFFLINE = !!(NATIVE && Filesystem);
 
+  // Persist a downloaded topic's PAGE (+ shared scripts) in a cache the service worker never
+  // version-wipes, so the page still opens offline after an SW update. Self-heals whenever we're
+  // online on a downloaded topic's page. (The SW's activate step preserves the 'thaiear-dl' cache.)
+  var DL_PAGE_CACHE = 'thaiear-dl';
+  function cachePage() {
+    if (!window.caches || !navigator.onLine) return;
+    try {
+      caches.open(DL_PAGE_CACHE).then(function (c) {
+        [location.href, '/player.js', '/topics.js', '/nav.js', '/auth.js', '/footer.js'].forEach(function (u) {
+          c.add(u).catch(function () {});
+        });
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
   function offlineDir(prefix) { return 'offline/' + prefix; }
   function topicFiles() {
     var files = [PREFIX + '_TE.mp3', PREFIX + '_ET.mp3'];
@@ -192,6 +207,7 @@
       .then(function () {
         markDownloaded(PREFIX, TIER || 'free', files);
         stampVerified();                      // they were online + entitled at download time
+        cachePage();                          // persist the page so it opens offline (survives SW updates)
         setOfflineState('downloaded');
       })
       .catch(function (err) {
@@ -227,7 +243,9 @@
     var bar = $('offline-bar'); if (!bar) return;
     if (!OFFLINE) { bar.style.display = 'none'; return; }  // website / non-app: never shown
     bar.style.display = 'flex';
-    setOfflineState(isDownloaded(PREFIX) ? 'downloaded' : 'idle');
+    var dl = isDownloaded(PREFIX);
+    if (dl) cachePage();   // self-heal: re-persist the page whenever we open a downloaded topic online
+    setOfflineState(dl ? 'downloaded' : 'idle');
   }
   // Refresh the offline licence whenever auth resolves online with an active subscription.
   window.addEventListener('thaiear:auth', function () {

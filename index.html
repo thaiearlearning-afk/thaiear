@@ -603,6 +603,21 @@ const DL_BADGE =
   'stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
 function offlineManifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
 function isDownloaded(prefix) { return !!(prefix && offlineManifest()[prefix]); }
+// When online, persist the PAGES of every downloaded topic into the SW's persistent cache, so they
+// open offline (and survive SW updates) without the user re-visiting each one. No-op on the website.
+function precacheDownloadedPages() {
+  if (!window.caches || !navigator.onLine) return;
+  const m = offlineManifest(); const pages = [];
+  topics.forEach(function (t) {
+    if (t.parts) { t.parts.forEach(function (p) { if (p && p.audio && m[p.audio] && p.page) pages.push(p.page); }); }
+    else if (t.audio && m[t.audio] && liveTopics[t.id]) { pages.push(liveTopics[t.id]); }
+  });
+  if (!pages.length) return;
+  caches.open('thaiear-dl').then(function (c) {
+    pages.forEach(function (pg) { c.add(pg).catch(function () {}); });
+    ['/player.js', '/topics.js', '/nav.js', '/auth.js', '/footer.js'].forEach(function (u) { c.add(u).catch(function () {}); });
+  }).catch(function () {});
+}
 
 // One card. access ∈ free | member | premium. pageHref = the real topic page (or null).
 // member-locked → prompt sign-in (free); premium-locked → subscribe.html; either unlocked
@@ -750,8 +765,9 @@ renderGrid();
 // nav.js). Re-render when it lands or changes so premium topics unlock for entitled users.
 window.addEventListener('thaiear:auth', renderGrid);
 // Re-render when connectivity flips, so downloaded topics unlock/lock on the grid offline.
-window.addEventListener('online', renderGrid);
+window.addEventListener('online', function () { renderGrid(); precacheDownloadedPages(); });
 window.addEventListener('offline', renderGrid);
+precacheDownloadedPages(); // on load (when online), persist downloaded topics' pages for offline
 </script>
 <!-- ============================================================
      TOPIC NUMBERING — display vs ID (do not conflate)
