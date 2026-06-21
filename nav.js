@@ -320,6 +320,60 @@
     NA.addListener('time', alive);                              // a tick = something is playing
     NA.addListener('ended', hide);
     NA.addListener('playing', function (d) { if (d && d.playing === false) hide(); });
+
+    // ---- track control on NON-topic pages (no player.js here, so the lock-screen ⏮/⏭/autoplay would
+    //      otherwise do nothing). Advances the persistent native player straight from this page. ----
+    const AUDIO_BASE = 'https://audio.thaiear.com';
+    if (!window.ThaiEarTopics && !document.getElementById('te-topics-js')) {
+      const sc = document.createElement('script'); sc.id = 'te-topics-js'; sc.src = 'topics.js'; sc.defer = true;
+      document.head.appendChild(sc);                           // need the topic list for next/prev
+    }
+    function isDl(prefix) { try { return !!JSON.parse(localStorage.getItem('thaiear_offline') || '{}')[prefix]; } catch (_) { return false; } }
+    function remoteUrl(file, access) {
+      if (access !== 'member' && access !== 'premium') return Promise.resolve(AUDIO_BASE + '/' + file);
+      const tok = window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken && window.ThaiEarAuth.getAccessToken();
+      if (!tok) return Promise.reject({ code: 'noauth' });
+      return fetch('/api/audio?file=' + encodeURIComponent(file), { headers: { Authorization: 'Bearer ' + tok } })
+        .then(function (r) { if (!r.ok) return Promise.reject({ code: r.status }); return r.json(); })
+        .then(function (j) { if (!j || !j.url) return Promise.reject({ code: 'nourl' }); return j.url; });
+    }
+    function resolveUrl(file, prefix, access) {
+      const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+      if (FS && isDl(prefix)) {                                // offline: prefer the local download
+        return FS.getUri({ directory: 'DATA', path: 'offline/' + prefix + '/' + file })
+          .then(function (r) { return (r && r.uri) ? r.uri : remoteUrl(file, access); })
+          .catch(function () { return remoteUrl(file, access); });
+      }
+      return remoteUrl(file, access);
+    }
+    function npGet() { try { return JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { return null; } }
+    function navAdvance(dir) {
+      const T = window.ThaiEarTopics, np = npGet();
+      if (!T || !T.nextAccessible || !np || !np.page) return;
+      const unit = T.nextAccessible(np.page, dir);
+      if (!unit || !unit.audio) return;
+      const file = unit.audio + '_' + (np.mode === 'et' ? 'ET' : 'TE') + '.mp3';
+      resolveUrl(file, unit.audio, unit.access).then(function (url) {
+        return NA.prepare({ url: url, title: unit.name || 'ThaiEar', subtitle: 'ThaiEar', artwork: 'https://thaiear.com/apple-touch-icon.png' })
+          .then(function () { return NA.play(); })
+          .then(function () {
+            let page = String(unit.page || '').toLowerCase(); if (page && !/\.html$/.test(page)) page += '.html';
+            try { localStorage.setItem('thaiear_np', JSON.stringify({ page: page, name: unit.name, prefix: unit.audio, mode: np.mode || 'te' })); } catch (_) {}
+          });
+      }).catch(function () {});
+    }
+    NA.addListener('command', function (d) {
+      const a = d && d.action;
+      if (a === 'thaiear.NEXT') navAdvance(1);
+      else if (a === 'thaiear.PREV') navAdvance(-1);
+      else if (a === 'thaiear.REPEAT') { try { localStorage.setItem('thaiear_repeat', localStorage.getItem('thaiear_repeat') === '1' ? '0' : '1'); } catch (_) {} }
+    });
+    NA.addListener('ended', function () {
+      let rep = false, auto = false;
+      try { rep = localStorage.getItem('thaiear_repeat') === '1'; auto = localStorage.getItem('thaiear_autoplay') === '1'; } catch (_) {}
+      if (rep) { NA.seekTo({ seconds: 0 }).then(function () { NA.play(); }).catch(function () {}); }   // repeat-one
+      else if (auto) { navAdvance(1); }                                                                // autoplay continues off-page
+    });
   }
 
   if (document.readyState === 'loading') {
