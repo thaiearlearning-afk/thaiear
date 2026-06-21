@@ -240,26 +240,33 @@ function renderMembershipBox(s) {
   }
 }
 // Build a membership-state object from the cached Supabase subscription (instant).
+function persistMembership(s) {
+  try {
+    var u = window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser();
+    if (u && s) localStorage.setItem('thaiear_membership', JSON.stringify({ uid: u.id, s: s }));
+  } catch (_) {}
+}
 function cacheSub() {
   var a = window.ThaiEarAuth;
   var sub = (a && a.getSubscription && a.getSubscription()) || null;
-  if (!sub) {
-    // Offline (or not yet loaded): fall back to the last-known persisted subscription so a premium
-    // member still sees "Premium — active until …" rather than the generic free-member state.
-    try {
-      var c = JSON.parse(localStorage.getItem('thaiear_sub_cache') || 'null');
-      var u = a && a.getUser && a.getUser();
-      if (c && c.sub && (!u || c.uid === u.id)) sub = c.sub;
-    } catch (_) {}
+  var subscribedNow = !!(a && a.isSubscribed && a.isSubscribed());
+  if (sub || subscribedNow) {
+    return {
+      subscribed: subscribedNow,
+      needsPayment: !!(sub && (sub.status === 'past_due' || sub.status === 'unpaid')),
+      status: sub && sub.status,
+      cancel_at_period_end: sub && sub.cancel_at_period_end,
+      current_period_end: sub && sub.current_period_end
+    };
   }
-  var subscribed = !!(a && a.isSubscribed && a.isSubscribed()) || !!(sub && (sub.status === 'active' || sub.status === 'trialing'));
-  return {
-    subscribed: subscribed,
-    needsPayment: !!(sub && (sub.status === 'past_due' || sub.status === 'unpaid')),
-    status: sub && sub.status,
-    cancel_at_period_end: sub && sub.cancel_at_period_end,
-    current_period_end: sub && sub.current_period_end
-  };
+  // Offline / not yet loaded: return the last-known AUTHORITATIVE membership from a prior online visit
+  // (persisted from /api/subscription) so a premium member still sees "Premium — active until …".
+  try {
+    var u = a && a.getUser && a.getUser();
+    var c = JSON.parse(localStorage.getItem('thaiear_membership') || 'null');
+    if (c && c.s && (!u || c.uid === u.id)) return c.s;
+  } catch (_) {}
+  return { subscribed: false };
 }
 function subSig() {
   var s = cacheSub();
@@ -274,7 +281,7 @@ function loadMembership() {
   try { var s2 = new URLSearchParams(location.search).get('simulate'); if (s2) sim = '?simulate=' + encodeURIComponent(s2); } catch (_) {}
   fetch('/api/subscription' + sim, { headers: { Authorization: 'Bearer ' + token } })
     .then(function (r) { return r.json(); })
-    .then(function (s) { renderMembershipBox(s); })
+    .then(function (s) { renderMembershipBox(s); persistMembership(s); })
     .catch(function () {
       var box = document.getElementById('membership');
       // keep the cached display if we already have one; only message if it's empty
