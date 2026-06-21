@@ -133,6 +133,10 @@
     } catch (_) {}
   }
 
+  // A JS-driven download stops if the page unloads, so warn before leaving mid-download.
+  var downloadingNow = false;
+  window.addEventListener('beforeunload', function (e) { if (downloadingNow) { e.preventDefault(); e.returnValue = ''; } });
+
   function offlineDir(prefix) { return 'offline/' + prefix; }
   function topicFiles() {
     var files = [PREFIX + '_TE.mp3', PREFIX + '_ET.mp3'];
@@ -189,6 +193,7 @@
     if (!OFFLINE) return;
     var files = topicFiles();
     var done = 0;
+    downloadingNow = true;
     setOfflineState('downloading', 0, files.length);
     // Create the topic's folder first (downloadFile won't always make parent dirs).
     Filesystem.mkdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
@@ -208,11 +213,13 @@
         markDownloaded(PREFIX, TIER || 'free', files);
         stampVerified();                      // they were online + entitled at download time
         cachePage();                          // persist the page so it opens offline (survives SW updates)
+        downloadingNow = false;
         setOfflineState('downloaded');
       })
       .catch(function (err) {
         var msg = (err && (err.message || err.errorMessage)) || String(err);
         console.warn('player.js: offline download failed', err);
+        downloadingNow = false;
         setOfflineState('error', msg);
       });
   }
@@ -225,7 +232,7 @@
   function setOfflineState(state, done, total) {
     var bar = $('offline-bar'); if (!bar) return;
     if (state === 'downloading') {
-      bar.innerHTML = '<span class="offline-status"><span class="prog-spin"></span> Downloading ' + (done || 0) + '/' + (total || '?') + '…</span>';
+      bar.innerHTML = '<span class="offline-status"><span class="prog-spin"></span> Downloading ' + (done || 0) + '/' + (total || '?') + ' — keep this page open</span>';
     } else if (state === 'downloaded') {
       bar.innerHTML = '<span class="offline-status offline-ok">✓ Available offline</span>' +
         '<button class="offline-btn offline-del" onclick="deleteTopic()">Delete</button>';
