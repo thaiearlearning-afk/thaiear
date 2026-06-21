@@ -27,20 +27,57 @@ export async function onRequestPost({ request, env }) {
     if (event.type === 'checkout.session.completed') {
       const uid = obj.client_reference_id || (obj.metadata && obj.metadata.user_id);
       if (uid && obj.subscription) {
-        const sub = await stripeGet(env, 'subscriptions/' + obj.subscription);
-        await upsert(env, rowFromSub(uid, sub, obj.customer));
+        // Expand the coupon so we can detect a "lifetime" (forever-free) grant.
+        const sub = await stripeGet(env, 'subscriptions/' + obj.subscription + '?expand[]=discounts.coupon');
+        const row = rowFromSub(uid, sub, obj.customer);
+        if (sub && !sub.error && isLifetimeFromSub(sub)) row.lifetime = true; // STICKY: only ever auto-set true
+        await upsert(env, row);
       }
     } else if (event.type === 'customer.subscription.updated' ||
                event.type === 'customer.subscription.created' ||
                event.type === 'customer.subscription.deleted') {
       const uid = (obj.metadata && obj.metadata.user_id) || await uidByCustomer(env, obj.customer);
-      if (uid) await upsert(env, rowFromSub(uid, obj, obj.customer));
+      if (uid) {
+        // Re-fetch with the coupon expanded — the event payload may carry only discount IDs.
+        let full = obj, expanded = false;
+        try {
+          const f = await stripeGet(env, 'subscriptions/' + obj.id + '?expand[]=discounts.coupon');
+          if (f && !f.error) { full = f; expanded = true; }
+        } catch (_) {}
+        const row = rowFromSub(uid, full, obj.customer);
+        if (expanded && isLifetimeFromSub(full)) row.lifetime = true; // STICKY: only ever auto-set true
+        await upsert(env, row);
+      }
     }
   } catch (e) {
     // 500 → Stripe retries later; the message shows in Stripe's delivery log.
     return new Response('handler error: ' + (e && e.message || e), { status: 500 });
   }
   return new Response('ok', { status: 200 });
+}
+
+// A "lifetime" member = effectively free FOREVER: a forever coupon that zeroes the price, or a £0
+// recurring price. Detected server-side from Stripe (can't be spoofed, needs no manual step) so a
+// trusted monk can pass the forever-comp coupon to another monk and lifetime offline access just works.
+// We only ever auto-SET lifetime=true (sticky) — never write false — so a transient/odd event can't
+// strip a genuine lifetime member; ordinary revocation still works via subscription status (canceled →
+// the app denies access regardless of this flag). A normal paying user never matches → never flagged.
+function isLifetimeFromSub(sub) {
+  if (!sub || sub.error) return false;
+  const item = sub.items && sub.items.data && sub.items.data[0];
+  const planAmount = item && item.price && typeof item.price.unit_amount === 'number'
+    ? item.price.unit_amount : null;
+  if (planAmount === 0) return true;                       // genuinely £0 recurring price
+  const discs = [];
+  if (Array.isArray(sub.discounts)) for (const d of sub.discounts) discs.push(d);
+  if (sub.discount) discs.push(sub.discount);              // legacy single-discount field
+  for (const d of discs) {
+    const c = (d && typeof d === 'object') ? (d.coupon || d) : null;
+    if (!c || c.valid === false || c.duration !== 'forever') continue;
+    if (c.percent_off === 100) return true;                // 100%-off forever
+    if (c.amount_off && planAmount != null && c.amount_off >= planAmount) return true; // amount covers the price, forever
+  }
+  return false;
 }
 
 function rowFromSub(uid, sub, customer) {
