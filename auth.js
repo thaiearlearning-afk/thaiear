@@ -67,7 +67,11 @@
   // Read the user's own subscription row (RLS) and cache active/not, then re-notify
   // so cards/pages re-render once we know. Logged out → not subscribed.
   function refreshSubscription() {
-    if (!client || !currentUser) { currentSubscribed = false; currentSub = null; notify(); return; }
+    if (!client || !currentUser) {
+      currentSubscribed = false; currentSub = null;
+      try { localStorage.removeItem('thaiear_lifetime'); } catch (_) {} // logged out → never lifetime
+      notify(); return;
+    }
     client.from('subscriptions').select('status,cancel_at_period_end,current_period_end').maybeSingle()
       .then(function (res) {
         currentSub = (res && res.data) || null;
@@ -75,7 +79,29 @@
         currentSubscribed = (s === 'active' || s === 'trialing');
       })
       .catch(function () { currentSubscribed = false; currentSub = null; })
-      .then(function () { notify(); });
+      .then(function () { notify(); refreshLifetime(); });
+  }
+
+  // Maintain the OFFLINE lifetime flag (thaiear_lifetime) used by player.js/nav.js to let true
+  // "lifetime" members (£0-forever) keep downloaded premium audio with NO offline timeout. Kept
+  // SEPARATE and error-tolerant from the core subscription query above, so it can never affect normal
+  // subscription detection: if the `lifetime` column doesn't exist yet, or we're offline, we leave the
+  // cached flag untouched. The flag is ONLY ever set when the server confirms lifetime AND active, and
+  // ONLY when online — so a regular paying user can never be flagged, and a revoked member is cleared
+  // the next time they connect. Offline, the last-known value persists (that's the whole point).
+  function refreshLifetime() {
+    if (!client || !currentUser || !navigator.onLine) return; // offline → keep whatever's cached
+    client.from('subscriptions').select('lifetime,status').maybeSingle()
+      .then(function (res) {
+        if (!res || res.error) return;                        // column missing / query error → don't touch flag
+        var d = res.data;
+        var subbed = d && (d.status === 'active' || d.status === 'trialing');
+        try {
+          if (d && d.lifetime && subbed) localStorage.setItem('thaiear_lifetime', '1');
+          else localStorage.removeItem('thaiear_lifetime');   // not lifetime (or not active) → clear
+        } catch (_) {}
+      })
+      .catch(function () {});                                  // network/error → leave cached flag intact
   }
 
   // Read the user's marketing-consent flag (profiles row), cache it, re-notify.
