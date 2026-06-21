@@ -53,11 +53,11 @@ export async function onRequestGet(context) {
   // split topic's FIRST part is member (login-only taster) and its remaining parts premium.
   // MEMBER must be listed explicitly (else it wrongly demands a subscription); premium is the
   // default for any private file not in memberList, so premiumList is documentation/defensive.
-  // Member (live, first split parts): ColoursAndDescriptions_BEG, ShoppingAndMoney_BEG, Food_BEG,
-  // Transport_BEG, Health_BEG, Feelings_BEG, Plans_BEG, Clothing_BEG, Cooking_BEG, Job_LI1, Schooling_LI1,
-  // FoodSocial_LI1. Free topics never reach here.
-  const premiumList = listEnv(env.PREMIUM_PREFIXES, ['ColoursAndDescriptions2_BEG', 'ShoppingAndMoney2_BEG', 'Weather_BEG', 'Time_BEG', 'Dates_BEG', 'Family_BEG', 'Food_LI1', 'Home_BEG', 'Transport_LI1', 'Emergency_BEG', 'Health_LI1', 'Feelings_LI1', 'Hobbies_BEG', 'SocialLife_BEG', 'Idiom_BEG', 'Plans_LI1', 'Appearance_LI1', 'Recipes_LI1', 'Workplace_LI1', 'Career_LI2', 'Study_LI1', 'System_LI2', 'FoodCulture_LI2', 'ToneTwister_LI1']);
-  const memberList = listEnv(env.MEMBER_PREFIXES, ['ColoursAndDescriptions_BEG', 'ShoppingAndMoney_BEG', 'Food_BEG', 'Transport_BEG', 'Health_BEG', 'Feelings_BEG', 'Plans_BEG', 'Clothing_BEG', 'Cooking_BEG', 'Job_LI1', 'Schooling_LI1', 'FoodSocial_LI1']);
+  // Member (live, first split parts): ColoursAndDescriptions_BEG, ShoppingAndMoney_BEG,
+  // HomeAndDailyRoutine_BEG, Food_BEG, Transport_BEG, Health_BEG, Feelings_BEG, Plans_BEG, Clothing_BEG,
+  // Cooking_BEG, Job_LI1, Schooling_LI1, FoodSocial_LI1. Free topics never reach here.
+  const premiumList = listEnv(env.PREMIUM_PREFIXES, ['ColoursAndDescriptions2_BEG', 'ShoppingAndMoney2_BEG', 'HomeAndDailyRoutine2_BEG', 'Weather_BEG', 'Time_BEG', 'Dates_BEG', 'Family_BEG', 'Food_LI1', 'Transport_LI1', 'Emergency_BEG', 'Health_LI1', 'Feelings_LI1', 'Hobbies_BEG', 'SocialLife_BEG', 'Idiom_BEG', 'Plans_LI1', 'Appearance_LI1', 'Recipes_LI1', 'Workplace_LI1', 'Career_LI2', 'Study_LI1', 'System_LI2', 'FoodCulture_LI2', 'ToneTwister_LI1']);
+  const memberList = listEnv(env.MEMBER_PREFIXES, ['ColoursAndDescriptions_BEG', 'ShoppingAndMoney_BEG', 'HomeAndDailyRoutine_BEG', 'Food_BEG', 'Transport_BEG', 'Health_BEG', 'Feelings_BEG', 'Plans_BEG', 'Clothing_BEG', 'Cooking_BEG', 'Job_LI1', 'Schooling_LI1', 'FoodSocial_LI1']);
   // Member only if explicitly listed (and not premium); unknown private files default to premium.
   const tier = (memberList.includes(prefix) && !premiumList.includes(prefix)) ? 'member' : 'premium';
 

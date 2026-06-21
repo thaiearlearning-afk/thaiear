@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 10: Home &amp; daily routine 2</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-subtitle { font-size: 14px; font-weight: 500; color: var(--accent-mid); margin: 2px 0 10px; letter-spacing: -0.01em; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Home &amp; daily routine 2</h1>
+  <p class="topic-subtitle">Furnishings, housework &amp; home life</p>
+  <p class="topic-meta"><strong>23 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-10a.html">
+      <span>←</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Home &amp; daily routine 1</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-11a.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Shopping &amp; money 1</span>
+        </span>
+        <span>→</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "HomeAndDailyRoutine2_BEG",
+  sentences: [
+  { num: 297, display: 1, preview: "พัดลม", thai: "ร้อนจัง เปิดพัดลมหน่อยได้ไหมคะ", english: "So hot — can you turn on the fan?", gloss: [["ร้อน", "hot"], ["จัง", "so"], ["เปิด", "turn on"], ["พัดลม", "fan"], ["หน่อย", "a bit"], ["ได้ไหม", "can you?"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 298, display: 2, preview: "แอร์", thai: "เปิดแอร์ได้เลยนะครับ ไม่คิดเงิน", english: "Go ahead and turn on the air-con — no charge.", gloss: [["เปิด", "turn on"], ["แอร์", "air-con"], ["ได้เลย", "go ahead"], ["นะ", "(softener)"], ["ครับ", "polite(m)"], ["ไม่", "no"], ["คิดเงิน", "charge"]], cultural: "ไม่คิดเงิน = 'won't charge you' — คิดเงิน is literally 'calculate money' = to bill." },
+  { num: 299, display: 3, preview: "ตู้เย็น", thai: "เอาผลไม้ไปแช่ตู้เย็นนะคะ", english: "Put the fruit in the fridge.", gloss: [["เอา", "put"], ["ผลไม้", "fruit"], ["ไป", "go"], ["แช่", "chill"], ["ตู้เย็น", "fridge"], ["นะ", "(softener)"], ["คะ", "polite(f)"]], cultural: "แช่ = to soak/chill; แช่ตู้เย็น = put in the fridge to keep cool." },
+  { num: 301, display: 4, preview: "โซฟา", thai: "ยกโซฟาตัวนี้หน่อยได้ไหมครับ", english: "Can you lift this sofa?", gloss: [["ยก", "lift"], ["โซฟา", "sofa"], ["ตัว", "(classifier)"], ["นี้", "this"], ["หน่อย", "a bit"], ["ได้ไหม", "can you?"], ["ครับ", "polite(m)"]], cultural: "ตัว is the classifier for furniture like sofas and chairs (and for animals)." },
+  { num: 302, display: 5, preview: "ลิ้นชัก", thai: "มีดอยู่ในลิ้นชักนะคะ", english: "The knife's in the drawer.", gloss: [["มีด", "knife"], ["อยู่ใน", "is in"], ["ลิ้นชัก", "the drawer"], ["นะ", "(softener)"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 303, display: 6, preview: "กระทะ", thai: "ระวังนะครับ กระทะยังร้อนอยู่", english: "Careful — the pan's still hot.", gloss: [["ระวัง", "careful"], ["นะ", "(softener)"], ["ครับ", "polite(m)"], ["กระทะ", "the pan"], ["ยัง", "still"], ["ร้อน", "hot"], ["อยู่", "(state)"]], cultural: "ยัง…อยู่ = 'still …' (still hot)." },
+  { num: 304, display: 7, preview: "เตาอบ", thai: "บ้านเราไม่มีเตาอบครับ", english: "Our house doesn't have an oven.", gloss: [["บ้านเรา", "our house"], ["ไม่มี", "doesn't have"], ["เตาอบ", "an oven"], ["ครับ", "polite(m)"]], cultural: "บ้านเรา ('our house') — เรา ('we') is used loosely. Ovens are uncommon in Thai home kitchens, which centre on the stovetop and wok." },
+  { num: 305, display: 8, preview: "ขยะ", thai: "ช่วยเอาขยะไปทิ้งหน่อยค่ะ", english: "Please take the rubbish out.", gloss: [["ช่วย", "please"], ["เอา", "take"], ["ขยะ", "rubbish"], ["ไป", "out"], ["ทิ้ง", "throw away"], ["หน่อย", "a bit"], ["ค่ะ", "polite(f)"]], cultural: "ช่วย…หน่อย is the standard polite way to ask a favour ('could you please …')." },
+  { num: 307, display: 9, preview: "ล้างจาน", thai: "หลังจากกินข้าวเสร็จ ผมก็ล้างจานครับ", english: "After finishing eating, I wash the dishes.", gloss: [["หลังจาก", "after"], ["กินข้าว", "eating"], ["เสร็จ", "finishing"], ["ผม", "I(m)"], ["ก็", "then"], ["ล้างจาน", "wash the dishes"], ["ครับ", "polite(m)"]], cultural: "หลังจาก…เสร็จ = 'after finishing …'." },
+  { num: 308, display: 10, preview: "เก็บบ้าน", thai: "เมื่อวานกว่าจะเก็บบ้านเสร็จก็เกือบบ่ายสองค่ะ", english: "Yesterday, by the time I'd tidied the house, it was nearly 2pm.", gloss: [["เมื่อวาน", "yesterday"], ["กว่าจะ", "by the time"], ["เก็บบ้าน", "tidy house"], ["เสร็จ", "done"], ["ก็", "then"], ["เกือบ", "nearly"], ["บ่ายสอง", "2pm"], ["ค่ะ", "polite(f)"]], cultural: "กว่าจะ…เสร็จ stresses how long something took: 'by the time it was finally done …'." },
+  { num: 310, display: 11, preview: "ทำความสะอาด", thai: "ผมทำความสะอาดบ้านหลังนี้ทุกวันอาทิตย์ครับ", english: "I clean this house every Sunday.", gloss: [["ผม", "I(m)"], ["ทำความสะอาด", "clean"], ["บ้าน", "house"], ["หลัง", "(classifier)"], ["นี้", "this"], ["ทุกวันอาทิตย์", "every Sunday"], ["ครับ", "polite(m)"]], cultural: "หลัง is the classifier for houses (บ้านหลังนี้ = 'this house')." },
+  { num: 311, display: 12, preview: "กวาดบ้าน", thai: "ทุกเช้าแม่จะกวาดบ้านก่อนไปทำงานค่ะ", english: "Every morning my mum sweeps before going to work.", gloss: [["ทุกเช้า", "every morning"], ["แม่", "mum"], ["จะ", "(will)"], ["กวาดบ้าน", "sweep"], ["ก่อน", "before"], ["ไปทำงาน", "going to work"], ["ค่ะ", "polite(f)"]], cultural: "" },
+  { num: 312, display: 13, preview: "ถูบ้าน", thai: "วันนี้ถึงตาใครถูบ้านคะ", english: "Whose turn is it to mop today?", gloss: [["วันนี้", "today"], ["ถึงตา", "whose turn"], ["ใคร", "who"], ["ถูบ้าน", "to mop"], ["คะ", "polite(f)"]], cultural: "ถึงตา(ใคร) = 'whose turn is it' — ตา here means 'turn'." },
+  { num: 313, display: 14, preview: "ซักผ้า", thai: "ซักผ้าเสร็จแล้ว ช่วยเอาไปตากที่ระเบียงนะคะ", english: "When the laundry's done, hang it on the balcony.", gloss: [["ซักผ้า", "laundry"], ["เสร็จแล้ว", "done"], ["ช่วย", "please"], ["เอาไป", "take it to"], ["ตาก", "hang to dry"], ["ที่", "at"], ["ระเบียง", "the balcony"], ["นะ", "(softener)"], ["คะ", "polite(f)"]], cultural: "ตาก = to hang washing out to dry in the air/sun." },
+  { num: 314, display: 15, preview: "รดน้ำต้นไม้", thai: "อย่าลืมรดน้ำต้นไม้หน้าบ้านนะครับ", english: "Don't forget to water the plants out front.", gloss: [["อย่าลืม", "don't forget"], ["รดน้ำ", "water"], ["ต้นไม้", "the plants"], ["หน้าบ้าน", "out front"], ["นะ", "(softener)"], ["ครับ", "polite(m)"]], cultural: "หน้าบ้าน = 'front of the house / out front' (pairs with หลังบ้าน, 'out back')." },
+  { num: 315, display: 16, preview: "เครื่องซักผ้า", thai: "เครื่องซักผ้าเสียอีกแล้วครับ ต้องส่งซ่อม", english: "The washing machine's broken again — it needs repairing.", gloss: [["เครื่องซักผ้า", "washing machine"], ["เสีย", "broken"], ["อีกแล้ว", "again"], ["ครับ", "polite(m)"], ["ต้อง", "needs"], ["ส่งซ่อม", "sending for repair"]], cultural: "ส่งซ่อม = 'send it off to be repaired'." },
+  { num: 317, display: 17, preview: "คอนโด", thai: "ตอนนี้ผมเช่าคอนโดแค่ห้องเดียวใกล้ที่ทำงานครับ", english: "Right now I rent a studio condo near work.", gloss: [["ตอนนี้", "right now"], ["ผม", "I(m)"], ["เช่า", "rent"], ["คอนโด", "a condo"], ["แค่", "just"], ["ห้องเดียว", "one room"], ["ใกล้", "near"], ["ที่ทำงาน", "work"], ["ครับ", "polite(m)"]], cultural: "คอนโด (from 'condominium') is a flat in a block; ห้องเดียว ('one room') = a studio." },
+  { num: 318, display: 18, preview: "อยู่คนเดียว", thai: "ฉันอยู่คนเดียว เลยเงียบดีค่ะ", english: "I live alone, so it's nice and quiet.", gloss: [["ฉัน", "I(f)"], ["อยู่คนเดียว", "live alone"], ["เลย", "so"], ["เงียบ", "quiet"], ["ดี", "nice"], ["ค่ะ", "polite(f)"]], cultural: "เลย here links cause to result: '… so it's …'." },
+  { num: 319, display: 19, preview: "หอพัก", thai: "ตอนเรียนฉันเคยอยู่หอพักในเมืองค่ะ", english: "When I was studying, I lived in a dorm in town.", gloss: [["ตอนเรียน", "when studying"], ["ฉัน", "I(f)"], ["เคย", "used to"], ["อยู่", "live"], ["หอพัก", "a dorm"], ["ในเมือง", "in town"], ["ค่ะ", "polite(f)"]], cultural: "เคย = 'used to / have ever' — it marks past experience (เคยอยู่ = used to live)." },
+  { num: 320, display: 20, preview: "เพื่อนร่วมห้อง", thai: "เพื่อนร่วมห้องฉันไม่ค่อยเก็บของเลยค่ะ", english: "My roommate hardly ever tidies up.", gloss: [["เพื่อนร่วมห้อง", "roommate"], ["ฉัน", "my"], ["ไม่ค่อย", "hardly"], ["เก็บของ", "tidy up"], ["เลย", "at all"], ["ค่ะ", "polite(f)"]], cultural: "ไม่ค่อย…เลย = 'hardly … at all'." },
+  { num: 321, display: 21, preview: "ย้ายเข้ามา", thai: "ผมเพิ่งย้ายเข้ามาอยู่เดือนที่แล้วครับ", english: "I just moved in last month.", gloss: [["ผม", "I(m)"], ["เพิ่ง", "just"], ["ย้ายเข้ามา", "moved in"], ["อยู่", "(live)"], ["เดือนที่แล้ว", "last month"], ["ครับ", "polite(m)"]], cultural: "เพิ่ง = 'just (did)' — marks the very recent past." },
+  { num: 322, display: 22, preview: "เพื่อนบ้าน", thai: "เพื่อนบ้านข้างๆเปิดเพลงดังทุกคืนค่ะ", english: "The neighbours next door play loud music every night.", gloss: [["เพื่อนบ้าน", "neighbours"], ["ข้างๆ", "next door"], ["เปิดเพลง", "play music"], ["ดัง", "loud"], ["ทุกคืน", "every night"], ["ค่ะ", "polite(f)"]], cultural: "ข้างๆ = 'right beside / next door'." },
+  { num: 1071, display: 23, preview: "ไม้กวาด", thai: "แม่บอกว่าไม้กวาดอยู่หลังบ้านค่ะ", english: "Mum said the broom's out back.", gloss: [["แม่", "mum"], ["บอกว่า", "said that"], ["ไม้กวาด", "the broom"], ["อยู่", "is"], ["หลังบ้าน", "out back"], ["ค่ะ", "polite(f)"]], cultural: "บอกว่า = 'said that …' — ว่า links a saying verb to the reported words; หลังบ้าน = 'out back'." },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
