@@ -374,6 +374,22 @@
   /* Entitled view: same soft Beginner-pill palette, no padlock (was a strong solid purple). */
   .topic-member.unlocked { background: var(--accent-light); color: var(--accent); }
   .dl-badge { display: inline-flex; align-items: center; color: var(--accent); margin-left: 6px; vertical-align: middle; }
+  /* App-only: per-card select circle for batch download. Light purple default → dark when selected. */
+  .dl-select { display: inline-block; width: 18px; height: 18px; border-radius: 50%; margin-left: 6px;
+    vertical-align: middle; cursor: pointer; background: var(--accent-light); border: 1.5px solid var(--accent-light);
+    transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+  .dl-select:hover { border-color: var(--accent); }
+  .dl-select.selected { background: var(--accent); border-color: var(--accent); }
+  .dl-select.selected:active { transform: scale(0.9); }
+  .dl-batch-bar { display: none; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md);
+    padding: 0.6rem 0.9rem; margin-bottom: 0.9rem; }
+  .dl-batch-btn { font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: #fff;
+    background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 8px 16px; cursor: pointer; }
+  .dl-batch-btn:hover:not([disabled]) { background: var(--accent-mid); }
+  .dl-batch-btn[disabled] { background: var(--border); color: var(--text-tertiary); cursor: default; }
+  .dl-batch-status { font-size: 13px; color: var(--text-secondary); }
+  .dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); }
 
   /* ── FOOTER ── */
   .site-footer {
@@ -543,6 +559,12 @@
     <button class="filter-tab" onclick="filterAccess('premium', this)">Premium</button>
   </div>
 
+  <!-- App-only batch download (shown by JS when running in the Capacitor app). -->
+  <div class="dl-batch-bar" id="dl-batch-bar">
+    <button class="dl-batch-btn" id="dl-batch-btn" onclick="runBatchDownload()">Download selected</button>
+    <span class="dl-batch-status" id="dl-batch-status"></span>
+    <span class="dl-batch-hint" id="dl-batch-hint">Tap the circle on each topic to choose, then Download.</span>
+  </div>
   <div class="topic-grid" id="topic-grid"></div>
 </section>
 
@@ -619,6 +641,108 @@ function precacheDownloadedPages() {
   }).catch(function () {});
 }
 
+// ── App-only batch download: pick topics on the grid, download them all at once. ──
+// Reuses the same file set / manifest / page-cache as the per-topic Download button, so the
+// topic pages recognise grid-downloaded topics. Entirely hidden on the website.
+const NA_OFFLINE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+  && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem);
+const FS = NA_OFFLINE ? window.Capacitor.Plugins.Filesystem : null;
+const DL_AUDIO_BASE = 'https://audio.thaiear.com';
+const dlSelected = new Map(); // prefix -> { prefix, page, tier }
+let batchRunning = false;
+
+// The select circle for a card (app only, downloadable + not-yet-downloaded topics).
+function selectCircle(audio, page, tier) {
+  if (!NA_OFFLINE || !audio || !page) return '';
+  const on = dlSelected.has(audio) ? ' selected' : '';
+  return '<span class="dl-select' + on + '" data-prefix="' + audio + '" data-page="' + page +
+    '" data-tier="' + (tier || 'free') + '" role="button" aria-label="Select for offline download"></span>';
+}
+
+function dlFileUrl(file, tier) { // free → public CDN; member/premium → signed /api/audio
+  if (tier !== 'member' && tier !== 'premium') return Promise.resolve(DL_AUDIO_BASE + '/' + file);
+  const tok = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken) ? window.ThaiEarAuth.getAccessToken() : null;
+  if (!tok) return Promise.reject({ code: 'noauth' });
+  return fetch('/api/audio?file=' + encodeURIComponent(file), { headers: { Authorization: 'Bearer ' + tok } })
+    .then(function (r) { if (!r.ok) return Promise.reject({ code: r.status }); return r.json(); })
+    .then(function (j) { if (!j || !j.url) return Promise.reject({ code: 'nourl' }); return j.url; });
+}
+// The grid doesn't carry per-sentence nums; read them from the topic page (online).
+function fetchSentenceNums(page) {
+  return fetch(page).then(function (r) { return r.text(); }).then(function (html) {
+    const m = html.match(/sentences\s*:\s*\[([\s\S]*?)\]/);
+    const nums = [];
+    if (m) { const re = /num\s*:\s*(\d+)/g; let x; while ((x = re.exec(m[1]))) nums.push(parseInt(x[1], 10)); }
+    return nums;
+  });
+}
+function topicFileList(prefix, nums) {
+  const files = [prefix + '_TE.mp3', prefix + '_ET.mp3'];
+  nums.forEach(function (n) { files.push(prefix + '_S' + String(n).padStart(2, '0') + '_TH.mp3'); });
+  return files;
+}
+function downloadOne(item) {
+  return fetchSentenceNums(item.page).then(function (nums) {
+    const files = topicFileList(item.prefix, nums);
+    let chain = FS.mkdir({ directory: 'DATA', path: 'offline/' + item.prefix, recursive: true }).catch(function () {});
+    files.forEach(function (file) {
+      chain = chain.then(function () {
+        return dlFileUrl(file, item.tier).then(function (url) {
+          return FS.downloadFile({ url: url, path: 'offline/' + item.prefix + '/' + file, directory: 'DATA', recursive: true });
+        });
+      });
+    });
+    return chain.then(function () {
+      const m = offlineManifest(); m[item.prefix] = { tier: item.tier || 'free', files: files, at: Date.now() };
+      try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {}
+      if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(item.page).catch(function () {}); }).catch(function () {});
+    });
+  });
+}
+function setBatchStatus(msg) { const el = document.getElementById('dl-batch-status'); if (el) el.textContent = msg || ''; }
+function updateBatchBar() {
+  const bar = document.getElementById('dl-batch-bar'); if (!bar) return;
+  if (!NA_OFFLINE) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  const btn = document.getElementById('dl-batch-btn'), hint = document.getElementById('dl-batch-hint');
+  if (btn && !batchRunning) btn.textContent = dlSelected.size ? ('Download selected (' + dlSelected.size + ')') : 'Download selected';
+  if (hint) hint.style.display = (dlSelected.size || batchRunning) ? 'none' : '';
+}
+function runBatchDownload() {
+  if (!NA_OFFLINE || batchRunning) return;
+  if (dlSelected.size === 0) { setBatchStatus('Please select a topic first.'); return; }
+  const items = Array.from(dlSelected.values());
+  let i = 0;
+  batchRunning = true;
+  const btn = document.getElementById('dl-batch-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Downloading…'; }
+  (function next() {
+    if (i >= items.length) {
+      batchRunning = false; if (btn) btn.disabled = false;
+      setBatchStatus('Done — ' + items.length + ' topic' + (items.length > 1 ? 's' : '') + ' saved offline.');
+      dlSelected.clear(); renderGrid(); updateBatchBar();
+      return;
+    }
+    setBatchStatus('Downloading ' + (i + 1) + '/' + items.length + ' — keep this page open');
+    downloadOne(items[i]).then(function () { i++; next(); }).catch(function (err) {
+      batchRunning = false; if (btn) btn.disabled = false;
+      setBatchStatus('Stopped (' + ((err && (err.code || err.message)) || 'error') + '). Keep this page open and retry.');
+      updateBatchBar();
+    });
+  })();
+}
+// Tap a card's circle → toggle selection (without following the card link).
+document.addEventListener('click', function (e) {
+  const c = e.target.closest && e.target.closest('.dl-select');
+  if (!c) return;
+  e.preventDefault(); e.stopPropagation();
+  const prefix = c.getAttribute('data-prefix');
+  if (dlSelected.has(prefix)) { dlSelected.delete(prefix); c.classList.remove('selected'); }
+  else { dlSelected.set(prefix, { prefix: prefix, page: c.getAttribute('data-page'), tier: c.getAttribute('data-tier') }); c.classList.add('selected'); }
+  setBatchStatus(''); updateBatchBar();
+});
+window.addEventListener('beforeunload', function (e) { if (batchRunning) { e.preventDefault(); e.returnValue = ''; } });
+
 // One card. access ∈ free | member | premium. pageHref = the real topic page (or null).
 // member-locked → prompt sign-in (free); premium-locked → subscribe.html; either unlocked
 // (canAccess true) → the page. canAccess() lives in topics.js and respects ENFORCE_SUBSCRIPTION.
@@ -638,12 +762,12 @@ function renderCard(t, label, sentences, access, pageHref, audio) {
               : access === 'member'  ? `<span class="topic-member">${LOCK_SVG}Members</span>`
               : '<span class="coming-soon-label">Coming soon</span>';
   } else if (!gated) {
-    href = pageHref; metaRight = dl ? DL_BADGE : '';
+    href = pageHref; metaRight = dl ? DL_BADGE : selectCircle(audio, pageHref, access);
   } else if (entitled) {
     href = pageHref; // entitled (or downloaded + offline) → straight to the page
     metaRight = (access === 'premium'
       ? '<span class="topic-premium unlocked">Premium</span>'
-      : '<span class="topic-member unlocked">Member</span>') + (dl ? DL_BADGE : '');
+      : '<span class="topic-member unlocked">Member</span>') + (dl ? DL_BADGE : selectCircle(audio, pageHref, access));
   } else if (access === 'premium') {
     href = 'subscribe.html';
     metaRight = `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
@@ -768,6 +892,7 @@ window.addEventListener('thaiear:auth', renderGrid);
 window.addEventListener('online', function () { renderGrid(); precacheDownloadedPages(); });
 window.addEventListener('offline', renderGrid);
 precacheDownloadedPages(); // on load (when online), persist downloaded topics' pages for offline
+updateBatchBar();          // show the batch-download bar in the app (hidden on the website)
 </script>
 <!-- ============================================================
      TOPIC NUMBERING — display vs ID (do not conflate)
