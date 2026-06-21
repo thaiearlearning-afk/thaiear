@@ -22,6 +22,8 @@ export async function onRequestPost(ctx) {
 
 async function handle({ request, env }) {
   const token = bearer(request);
+  const body = await readJson(request);
+  const native = !!(body && body.native); // checkout started inside the Capacitor app?
   const user = await verifyUser(token, env);
   if (!user) return json({ error: 'unauthorized' }, 401);
   if (!env.STRIPE_SECRET_KEY) return json({ error: 'config', detail: 'STRIPE_SECRET_KEY missing (set it in Pages → Production, then redeploy)' }, 500);
@@ -36,8 +38,15 @@ async function handle({ request, env }) {
   p.set('mode', 'subscription');
   p.set('line_items[0][price]', env.STRIPE_PRICE_ID);
   p.set('line_items[0][quantity]', '1');
-  p.set('success_url', site + '/account.html?sub=success');
-  p.set('cancel_url', site + '/subscribe.html');
+  // From the APP, return through a tiny bounce page that deep-links back into the app (Stripe only
+  // accepts http(s) URLs, not a custom scheme). From the WEB, go straight to the normal pages.
+  if (native) {
+    p.set('success_url', site + '/checkout-return.html?status=success');
+    p.set('cancel_url', site + '/checkout-return.html?status=cancel');
+  } else {
+    p.set('success_url', site + '/account.html?sub=success');
+    p.set('cancel_url', site + '/subscribe.html');
+  }
   p.set('client_reference_id', user.id);
   p.set('subscription_data[metadata][user_id]', user.id);
   p.set('allow_promotion_codes', 'true');
@@ -128,6 +137,10 @@ async function createSession(env, p) {
 
 function bearer(request) {
   return (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+}
+
+async function readJson(request) {
+  try { return await request.json(); } catch (_) { return {}; }
 }
 
 async function verifyUser(token, env) {

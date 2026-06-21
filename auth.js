@@ -177,6 +177,19 @@
   function capPlugin(name) {
     return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins[name]) || null;
   }
+  // App-only: Stripe checkout returns via checkout-return.html → the com.thaiear.app://checkout-return
+  // deep link → here. Close the in-app browser, refresh membership, and land on the right page. The
+  // webview never lost its session, so the user is still logged in (the broken bit was the return trip).
+  function handleCheckoutReturn(url) {
+    if (!url || url.indexOf('checkout-return') === -1) return;
+    var Browser = capPlugin('Browser');
+    try { if (Browser && Browser.close) Browser.close(); } catch (_) {}
+    var status = 'success';
+    try { status = (new URLSearchParams(url.split('?')[1] || '')).get('status') || 'success'; } catch (_) {}
+    if (status === 'cancel') { try { window.location.href = '/subscribe.html'; } catch (_) {} return; }
+    refreshSubscription();   // re-read the (now active) subscription, then show the success page
+    try { window.location.href = '/account.html?sub=success'; } catch (_) {}
+  }
   function nativeGoogleSignIn() {
     var Browser = capPlugin('Browser');
     client.auth.signInWithOAuth({
@@ -418,7 +431,11 @@
       if (isNative()) {
         var AppPlugin = capPlugin('App');
         if (AppPlugin && AppPlugin.addListener) {
-          AppPlugin.addListener('appUrlOpen', function (data) { handleAuthDeepLink(data && data.url); });
+          AppPlugin.addListener('appUrlOpen', function (data) {
+            var u = data && data.url;
+            handleAuthDeepLink(u);       // Google OAuth callback
+            handleCheckoutReturn(u);     // Stripe checkout return
+          });
         }
       }
     })

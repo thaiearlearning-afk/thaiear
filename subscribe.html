@@ -157,11 +157,24 @@ function startCheckout() {
   var st = document.getElementById('sub-status');
   btn.disabled = true; btn.textContent = 'Redirecting…';
   var code;
-  fetch('/api/checkout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } })
+  var cap = window.Capacitor;
+  var native = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+  fetch('/api/checkout', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ native: native })   // tells the API to return via the app deep link
+  })
     .then(function (r) { code = r.status; return r.text(); })
     .then(function (t) {
       var j = {}; try { j = JSON.parse(t); } catch (_) {}
-      if (j && j.url) { window.location.href = j.url; return; }
+      if (j && j.url) {
+        // In the app, open Stripe in the in-app browser so we can close it on the deep-link return;
+        // on the web, just navigate. Either way Stripe sends us back via the right success_url.
+        var Browser = native && cap.Plugins && cap.Plugins.Browser;
+        if (Browser && Browser.open) Browser.open({ url: j.url });
+        else window.location.href = j.url;
+        return;
+      }
       btn.disabled = false; btn.textContent = 'Subscribe';
       if (code === 409 || (j && j.error === 'already_subscribed')) {
         st.innerHTML = 'You already have an active membership — <a href="account.html" style="color:var(--accent);font-weight:500;text-decoration:none">manage it here</a>.';
