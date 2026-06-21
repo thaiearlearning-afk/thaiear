@@ -58,7 +58,7 @@ const PRECACHE = [
   '/nav.js', '/topics.js', '/player.js', '/auth.js', '/footer.js',
   '/logo.png', '/logoshort.png', '/favicon.png', '/favicon.ico',
   '/favicon-16.png', '/favicon-32.png', '/apple-touch-icon.png',
-  '/khwai.png', '/meditator.png', '/muaythai.png', '/sakyantelephant.png'
+  '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.png'
 ];
 
 self.addEventListener('install', function (e) {
