@@ -723,7 +723,7 @@ function fetchSentenceNums(page) {
     const i = html.indexOf('window.ThaiEarTopic');
     const nums = [];
     if (i >= 0) {
-      let end = html.indexOf('</script>', i); if (end < 0) end = html.length;
+      let end = html.indexOf('<\/script>', i); if (end < 0) end = html.length;
       const block = html.slice(i, end);
       const re = /\bnum\s*:\s*(\d+)/g; let x;
       while ((x = re.exec(block))) nums.push(parseInt(x[1], 10));
