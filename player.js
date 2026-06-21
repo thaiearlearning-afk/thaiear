@@ -290,6 +290,14 @@
         setOfflineState('error', msg);
       });
   }
+  // Confirm before deleting a download (parity with the grid's Clear-downloads warning).
+  function confirmDelete() {
+    var bar = $('offline-bar'); if (!bar) return;
+    bar.innerHTML = '<span class="offline-status">Delete this download?</span>' +
+      '<button class="offline-btn offline-del" onclick="deleteTopic()">Delete</button>' +
+      '<button class="offline-btn" onclick="cancelDelete()">Keep</button>';
+  }
+  function cancelDelete() { setOfflineState('downloaded'); }
   function deleteTopic() {
     if (!OFFLINE) return;
     Filesystem.rmdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
@@ -302,7 +310,7 @@
       bar.innerHTML = '<span class="offline-status"><span class="prog-spin"></span> Downloading ' + (done || 0) + '/' + (total || '?') + ' — keep this page open</span>';
     } else if (state === 'downloaded') {
       bar.innerHTML = '<span class="offline-status offline-ok">✓ Available offline</span>' +
-        '<button class="offline-btn offline-del" onclick="deleteTopic()">Delete</button>';
+        '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
     } else if (state === 'error') {
       var msg = done ? (': ' + escapeHtml(String(done).slice(0, 160))) : '.';
       bar.innerHTML = '<span class="offline-status">Download failed' + msg + '</span>' +
@@ -1292,7 +1300,7 @@
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow,
     progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn,
     advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat,
-    downloadTopic: downloadTopic, deleteTopic: deleteTopic });
+    downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();

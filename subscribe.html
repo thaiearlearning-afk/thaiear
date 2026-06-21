@@ -155,6 +155,7 @@ function startCheckout() {
   if (!token) { if (a) a.signInWithGoogle(); return; }
   var btn = document.getElementById('subscribe-btn');
   var st = document.getElementById('sub-status');
+  if (!navigator.onLine) { if (st) { st.style.color = '#B00020'; st.textContent = 'You’re offline — reconnect to subscribe.'; } return; }
   btn.disabled = true; btn.textContent = 'Redirecting…';
   var code;
   var cap = window.Capacitor;
