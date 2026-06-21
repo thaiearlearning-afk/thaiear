@@ -69,7 +69,7 @@
   function refreshSubscription() {
     if (!client || !currentUser) {
       currentSubscribed = false; currentSub = null;
-      try { localStorage.removeItem('thaiear_lifetime'); } catch (_) {} // logged out → never lifetime
+      try { localStorage.removeItem('thaiear_lifetime'); localStorage.removeItem('thaiear_sub_cache'); } catch (_) {} // logged out
       notify(); return;
     }
     client.from('subscriptions').select('status,cancel_at_period_end,current_period_end').maybeSingle()
@@ -77,6 +77,9 @@
         currentSub = (res && res.data) || null;
         var s = currentSub && currentSub.status;
         currentSubscribed = (s === 'active' || s === 'trialing');
+        // Persist the last KNOWN-GOOD subscription (only on a clean read) so the account page can show
+        // the real "Premium — active until …" status while OFFLINE (when the live query can't run).
+        try { if (res && !res.error) localStorage.setItem('thaiear_sub_cache', JSON.stringify({ uid: currentUser.id, sub: currentSub })); } catch (_) {}
       })
       .catch(function () { currentSubscribed = false; currentSub = null; })
       .then(function () { notify(); refreshLifetime(); });
