@@ -114,6 +114,11 @@
   function writeNowPlaying() {
     try { localStorage.setItem('thaiear_np', JSON.stringify({ page: mainPage, name: nativeMeta.title, prefix: mainPrefix, mode: currentMode })); } catch (_) {}
   }
+  // Set true once the user starts playback on THIS page's own player. Guards syncToPlayingTrack so a
+  // late "time" tick from the user's OWN audio can't adopt a stale other-topic label (bug: open a fresh
+  // topic, press Play, and the strip showed a different topic). Genuine continuation from another page
+  // (where the user hasn't pressed Play here) still adopts correctly.
+  var userStartedHere = false;
   // On mount, if the engine is already playing (a time tick arrives), sync this page's TOP player to
   // it — adopting another topic's identity if needed — so it shows + controls the live track.
   function syncToPlayingTrack() {
@@ -122,7 +127,9 @@
     if (!np || !np.prefix) return;
     var done = false;
     NA.addListener('time', function () {
-      if (done) return; done = true;
+      if (done) return;
+      if (userStartedHere) { done = true; return; } // user is driving THIS page → never hijack its label
+      done = true;
       if (np.prefix !== mainPrefix) {            // a DIFFERENT topic is playing → adopt it on the top player
         mainPage = np.page; mainPrefix = np.prefix;
         if (np.mode === 'te' || np.mode === 'et') currentMode = np.mode;
@@ -735,6 +742,7 @@
 
   function togglePlay() {
     if (mainAudio.paused) {
+      userStartedHere = true;   // this page's player is now user-driven → sync must not adopt a stale label
       ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); setupMediaSession(); }).catch(function (e) { handleDenied(e, mainTier); });
     } else { mainAudio.pause(); setMainIcon(false); }
     resumeMainAfter = false;   // a manual tap on the top player overrides auto-resume
