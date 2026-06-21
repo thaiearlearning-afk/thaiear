@@ -359,10 +359,30 @@
       return remoteUrl(file, access);
     }
     function npGet() { try { return JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { return null; } }
+    function bareP(p) { return String(p || '').toLowerCase().replace(/\.html$/, ''); }
+    function playable(unit) {                       // genuinely playable now? (same rule as the topic player)
+      if (!unit || !unit.audio) return false;
+      const T = window.ThaiEarTopics;
+      if (navigator.onLine && T && T.canAccess && T.canAccess(unit.access)) return true;
+      return isDl(unit.audio) && canUseOffline(unit.access);
+    }
+    function nextPlayable(fromPage, dir) {          // skip non-playable topics → next that actually plays
+      const T = window.ThaiEarTopics;
+      if (!T || !T.nextAccessible) return null;
+      let page = fromPage, max = (T.liveSequence ? T.liveSequence().length : 60) + 1;
+      for (let i = 0; i < max; i++) {
+        const unit = T.nextAccessible(page, dir);
+        if (!unit || !unit.audio) return null;
+        if (playable(unit)) return unit;
+        if (bareP(unit.page) === bareP(fromPage)) return null;
+        page = unit.page;
+      }
+      return null;
+    }
     function navAdvance(dir) {
-      const T = window.ThaiEarTopics, np = npGet();
-      if (!T || !T.nextAccessible || !np || !np.page) return;
-      const unit = T.nextAccessible(np.page, dir);
+      const np = npGet();
+      if (!np || !np.page) return;
+      const unit = nextPlayable(np.page, dir);      // skip anything that can't actually play now
       if (!unit || !unit.audio) return;
       const file = unit.audio + '_' + (np.mode === 'et' ? 'ET' : 'TE') + '.mp3';
       resolveUrl(file, unit.audio, unit.access).then(function (url) {
