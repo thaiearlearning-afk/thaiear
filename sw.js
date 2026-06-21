@@ -16,8 +16,18 @@
    used as the offline fallback). Google Fonts are cache-first.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = 'thaiear-' + VERSION;
+
+// Topic pages (topic-NN.html) 308-redirect to clean URLs (/topic-NN). A *redirected* Response
+// can't be used for a navigation (the browser throws net::ERR_FAILED), so rebuild a clean,
+// non-redirected copy before caching/serving any such response.
+function cleanRedirect(res) {
+  if (!res || !res.redirected) return Promise.resolve(res);
+  return res.blob().then(function (body) {
+    return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
+  });
+}
 
 // Friendly fallback for an uncached page requested offline (instead of the webview's blank error).
 function offlinePage() {
@@ -90,18 +100,18 @@ self.addEventListener('fetch', function (e) {
     fetch(req).then(function (res) {
       if (res && res.ok && res.type === 'basic') {
         var copy = res.clone();
-        caches.open(CACHE).then(function (c) { c.put(req, copy); });
+        cleanRedirect(copy).then(function (clean) { caches.open(CACHE).then(function (c) { c.put(req, clean); }); });
       }
       return res;
     }).catch(function () {
       return caches.match(req).then(function (hit) {
-        if (hit) return hit;
+        if (hit) return cleanRedirect(hit);   // never hand the browser a redirected response for a nav
         if (req.mode === 'navigate') {
           // Home/index: serve the cached grid from either key so the logo/Home link always works.
           var p = url.pathname;
           if (p === '/' || p === '/index.html' || p === '/index') {
             return caches.match('/index.html').then(function (i) {
-              return i || caches.match('/').then(function (r) { return r || offlinePage(); });
+              return i ? cleanRedirect(i) : caches.match('/').then(function (r) { return r ? cleanRedirect(r) : offlinePage(); });
             });
           }
           return offlinePage(); // any other uncached page → friendly offline notice, not a blank error
