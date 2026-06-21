@@ -27,10 +27,12 @@ function offlinePage() {
     'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#FAFAF8;color:#1A1A1A;text-align:center}' +
     '.b{padding:2rem;max-width:23rem}h1{font-size:1.25rem;margin:0 0 .5rem;font-weight:600}' +
     'p{color:#5A5A5A;line-height:1.6;margin:.25rem 0 1.4rem}' +
-    'a{display:inline-block;background:#4B41AD;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:500}' +
+    'button{display:inline-block;background:#4B41AD;color:#fff;border:none;font:inherit;font-weight:500;padding:10px 18px;border-radius:8px;cursor:pointer}' +
+    '.alt{margin:1rem 0 0}.alt a{color:#4B41AD;text-decoration:none;font-weight:500;font-size:.9rem}' +
     '</style></head><body><div class="b"><h1>You’re offline</h1>' +
-    '<p>This page needs a connection. Topics you’ve downloaded are still available from the home screen.</p>' +
-    '<a href="/index.html">Back to topics</a></div></body></html>';
+    '<p>This page isn’t available without a connection.</p>' +
+    '<button onclick="if(history.length>1){history.back()}else{location.href=&#39;/index.html&#39;}">Go back</button>' +
+    '<p class="alt"><a href="/index.html">Home</a></p></div></body></html>';
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
