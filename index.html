@@ -209,7 +209,18 @@
     gap: 8px;
     transition: border-color 0.15s, box-shadow 0.15s;
     cursor: pointer;
+    position: relative;
   }
+  /* "Now playing" equalizer — app-only cue on the card whose audio is currently playing. */
+  .te-eq { position: absolute; top: 0.85rem; right: 1.05rem; display: none; align-items: flex-end;
+           gap: 2px; height: 13px; pointer-events: none; }
+  .topic-card.playing .te-eq { display: flex; }
+  .te-eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--accent);
+             transform-origin: bottom; animation: te-eq-bounce 0.9s ease-in-out infinite; }
+  .te-eq i:nth-child(2) { animation-delay: 0.3s; }
+  .te-eq i:nth-child(3) { animation-delay: 0.15s; }
+  .te-eq i:nth-child(4) { animation-delay: 0.45s; }
+  @keyframes te-eq-bounce { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
   .topic-card:hover {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-light);
@@ -706,9 +717,17 @@ function dlFileUrl(file, tier) { // free → public CDN; member/premium → sign
 // The grid doesn't carry per-sentence nums; read them from the topic page (online).
 function fetchSentenceNums(page) {
   return fetch(page).then(function (r) { return r.text(); }).then(function (html) {
-    const m = html.match(/sentences\s*:\s*\[([\s\S]*?)\]/);
+    // Pull nums from the whole window.ThaiEarTopic block, NOT a non-greedy sentences[...] match:
+    // each sentence's gloss is a nested array (gloss:[[..],[..]]), so [\s\S]*? stops at the first
+    // ']' (end of sentence 1's gloss) and we'd only ever grab sentence 1's clip.
+    const i = html.indexOf('window.ThaiEarTopic');
     const nums = [];
-    if (m) { const re = /num\s*:\s*(\d+)/g; let x; while ((x = re.exec(m[1]))) nums.push(parseInt(x[1], 10)); }
+    if (i >= 0) {
+      let end = html.indexOf('</script>', i); if (end < 0) end = html.length;
+      const block = html.slice(i, end);
+      const re = /\bnum\s*:\s*(\d+)/g; let x;
+      while ((x = re.exec(block))) nums.push(parseInt(x[1], 10));
+    }
     return nums;
   });
 }
@@ -878,7 +897,8 @@ function renderCard(t, label, sentences, access, pageHref, audio) {
     metaRight = `<span class="topic-member">${LOCK_SVG}Members</span>`;
   }
   const inner =
-      `<div class="topic-card-top">
+      `<span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <div class="topic-card-top">
         <span class="topic-num">${label}</span>
         ${SHOW_LEVEL_PILLS ? levelBadge(t.levels) : ''}
       </div>
@@ -889,7 +909,7 @@ function renderCard(t, label, sentences, access, pageHref, audio) {
       </div>`;
   if (!live) return `<div class="topic-card coming-soon">${inner}</div>`;
   const cls = 'topic-card' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '');
-  return `<a class="${cls}" href="${href}">${inner}</a>`;
+  return `<a class="${cls}" href="${href}" data-audio="${audio || ''}">${inner}</a>`;
 }
 
 // One topic -> one card, or two (a/b) if split. `pos` = 1-based display position.
@@ -984,6 +1004,31 @@ function renderGrid() {
     ? '<h2 class="coming-soon-heading">Coming soon</h2>' + soon.map(o => cardsForTopic(o.t, o.pos)).join('')
     : '';
   grid.innerHTML = liveCards + soonCards;
+  if (typeof applyPlayingCard === 'function') applyPlayingCard(); // re-light the playing card after rebuild
+}
+
+// ---- "Now playing" equalizer cue (app only) -----------------------------------------------------
+// Light up the card whose audio the native engine is currently playing. Driven by native time ticks
+// (liveness), so it also clears on pause/stop/navigation. Re-applied after every renderGrid().
+const NAUDIO = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeAudio) || null;
+let playingPrefix = null, playingTimer = null;
+function applyPlayingCard() {
+  document.querySelectorAll('.topic-card.playing').forEach(function (c) { c.classList.remove('playing'); });
+  if (!playingPrefix) return;
+  const sel = (window.CSS && CSS.escape) ? CSS.escape(playingPrefix) : playingPrefix.replace(/"/g, '\\"');
+  const c = document.querySelector('.topic-card[data-audio="' + sel + '"]');
+  if (c) c.classList.add('playing');
+}
+function npPrefix() { try { return (JSON.parse(localStorage.getItem('thaiear_np') || 'null') || {}).prefix || null; } catch (_) { return null; } }
+if (NAUDIO && NAUDIO.addListener) {
+  NAUDIO.addListener('time', function () {
+    playingPrefix = npPrefix();
+    if (playingTimer) clearTimeout(playingTimer);
+    playingTimer = setTimeout(function () { playingPrefix = null; applyPlayingCard(); }, 1500); // no tick → not playing
+    applyPlayingCard();
+  });
+  NAUDIO.addListener('ended', function () { playingPrefix = null; applyPlayingCard(); });
+  NAUDIO.addListener('playing', function (d) { if (d && d.playing === false) { playingPrefix = null; applyPlayingCard(); } });
 }
 
 renderGrid();
