@@ -373,7 +373,11 @@
   .topic-member svg { width: 11px; height: 11px; }
   /* Entitled view: same soft Beginner-pill palette, no padlock (was a strong solid purple). */
   .topic-member.unlocked { background: var(--accent-light); color: var(--accent); }
-  .dl-badge { display: inline-flex; align-items: center; color: var(--accent); margin-left: 6px; vertical-align: middle; }
+  /* Downloaded tick — app only; tap to select for removal (a lavender ring appears). */
+  .dl-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
+    border-radius: 50%; color: var(--accent); margin-left: 6px; vertical-align: middle; cursor: pointer;
+    border: 2px solid transparent; transition: border-color 0.15s, background 0.15s; }
+  .dl-badge.clear-selected { border-color: #9d92e0; background: var(--accent-light); }
   /* App-only: per-card select circle for batch download. Light purple default → dark when selected. */
   .dl-select { display: inline-block; width: 18px; height: 18px; border-radius: 50%; margin-left: 6px;
     vertical-align: middle; cursor: pointer; background: var(--accent-light); border: 1.5px solid var(--accent-light);
@@ -381,15 +385,30 @@
   .dl-select:hover { border-color: var(--accent); }
   .dl-select.selected { background: var(--accent); border-color: var(--accent); }
   .dl-select.selected:active { transform: scale(0.9); }
-  .dl-batch-bar { display: none; align-items: center; gap: 12px; flex-wrap: wrap;
+  /* While selecting one kind, dim the other so the two modes can't mix. */
+  .mode-download .dl-badge { opacity: 0.4; }
+  .mode-clear .dl-select { opacity: 0.4; }
+  .dl-batch-bar { display: none; flex-direction: column; align-items: stretch; gap: 8px;
     background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md);
-    padding: 0.6rem 0.9rem; margin-bottom: 0.9rem; }
-  .dl-batch-btn { font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: #fff;
-    background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 8px 16px; cursor: pointer; }
+    padding: 0.7rem 0.9rem; margin-bottom: 0.9rem; }
+  .dl-batch-btns { display: flex; gap: 8px; }
+  .dl-batch-btn { flex: 1; font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: #fff;
+    background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 9px 14px; cursor: pointer; }
   .dl-batch-btn:hover:not([disabled]) { background: var(--accent-mid); }
   .dl-batch-btn[disabled] { background: var(--border); color: var(--text-tertiary); cursor: default; }
-  .dl-batch-status { font-size: 13px; color: var(--text-secondary); }
+  .dl-clear-btn { background: var(--surface); color: var(--text-secondary); border: 0.5px solid var(--border-strong); }
+  .dl-clear-btn:hover:not([disabled]) { background: var(--bg); color: var(--accent); border-color: var(--accent); }
+  .dl-batch-status { font-size: 13px; color: var(--text-secondary); min-height: 1.1em; }
   .dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); }
+  /* Confirm dialog (clear downloads). */
+  .dl-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,40,0.55); display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
+  .dl-modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 360px; width: 100%; padding: 1.8rem 1.5rem; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+  .dl-modal-card p { color: var(--text-secondary); font-size: 14.5px; line-height: 1.6; margin-bottom: 1.5rem; }
+  .dl-modal-actions { display: flex; gap: 10px; }
+  .dl-modal-actions button { flex: 1; font-family: var(--font-ui); font-size: 15px; font-weight: 500; border-radius: var(--radius-sm); padding: 11px 16px; cursor: pointer; }
+  .dl-modal-cancel { background: var(--surface); color: var(--text-secondary); border: 0.5px solid var(--border-strong); }
+  .dl-modal-confirm { background: #C0392B; color: #fff; border: none; }
+  .dl-modal-confirm:hover { background: #a93226; }
 
   /* ── FOOTER ── */
   .site-footer {
@@ -559,11 +578,14 @@
     <button class="filter-tab" onclick="filterAccess('premium', this)">Premium</button>
   </div>
 
-  <!-- App-only batch download (shown by JS when running in the Capacitor app). -->
+  <!-- App-only batch download/clear (shown by JS when running in the Capacitor app). -->
   <div class="dl-batch-bar" id="dl-batch-bar">
-    <button class="dl-batch-btn" id="dl-batch-btn" onclick="runBatchDownload()">Download selected</button>
+    <div class="dl-batch-btns">
+      <button class="dl-batch-btn" id="dl-batch-btn" onclick="runBatchDownload()">Download Topic(s)</button>
+      <button class="dl-batch-btn dl-clear-btn" id="dl-clear-btn" onclick="runClearDownloads()">Clear Download(s)</button>
+    </div>
     <span class="dl-batch-status" id="dl-batch-status"></span>
-    <span class="dl-batch-hint" id="dl-batch-hint">Tap the circle on each topic to choose, then Download.</span>
+    <span class="dl-batch-hint" id="dl-batch-hint">Tap a topic's circle to download, or a ✓ to remove — then pick an action.</span>
   </div>
   <div class="topic-grid" id="topic-grid"></div>
 </section>
@@ -641,22 +663,31 @@ function precacheDownloadedPages() {
   }).catch(function () {});
 }
 
-// ── App-only batch download: pick topics on the grid, download them all at once. ──
+// ── App-only batch download / clear: pick topics on the grid, act on them all at once. ──
 // Reuses the same file set / manifest / page-cache as the per-topic Download button, so the
-// topic pages recognise grid-downloaded topics. Entirely hidden on the website.
+// topic pages recognise grid-managed topics. Entirely hidden on the website.
 const NA_OFFLINE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
   && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem);
 const FS = NA_OFFLINE ? window.Capacitor.Plugins.Filesystem : null;
 const DL_AUDIO_BASE = 'https://audio.thaiear.com';
-const dlSelected = new Map(); // prefix -> { prefix, page, tier }
+const dlSelected = new Map();    // undownloaded topics chosen to DOWNLOAD
+const clearSelected = new Map(); // downloaded topics chosen to REMOVE
 let batchRunning = false;
+function cardItem(el) { return { prefix: el.getAttribute('data-prefix'), page: el.getAttribute('data-page'), tier: el.getAttribute('data-tier') }; }
 
-// The select circle for a card (app only, downloadable + not-yet-downloaded topics).
+// Circle for an undownloaded topic (download selection): light purple → dark when selected.
 function selectCircle(audio, page, tier) {
   if (!NA_OFFLINE || !audio || !page) return '';
   const on = dlSelected.has(audio) ? ' selected' : '';
   return '<span class="dl-select' + on + '" data-prefix="' + audio + '" data-page="' + page +
     '" data-tier="' + (tier || 'free') + '" role="button" aria-label="Select for offline download"></span>';
+}
+// Tick for a downloaded topic (clear selection): a lavender ring appears when selected.
+function downloadedTick(audio, page, tier) {
+  const on = clearSelected.has(audio) ? ' clear-selected' : '';
+  return '<span class="dl-badge' + on + '" data-prefix="' + audio + '" data-page="' + (page || '') +
+    '" data-tier="' + (tier || 'free') + '" role="button" title="Downloaded · tap to select for removal" aria-label="Downloaded — tap to select for removal">' +
+    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
 }
 
 function dlFileUrl(file, tier) { // free → public CDN; member/premium → signed /api/audio
@@ -700,46 +731,112 @@ function downloadOne(item) {
   });
 }
 function setBatchStatus(msg) { const el = document.getElementById('dl-batch-status'); if (el) el.textContent = msg || ''; }
+function setBatchBusy(b) {
+  const d = document.getElementById('dl-batch-btn'), c = document.getElementById('dl-clear-btn');
+  if (d) d.disabled = b; if (c) c.disabled = b;
+}
 function updateBatchBar() {
   const bar = document.getElementById('dl-batch-bar'); if (!bar) return;
   if (!NA_OFFLINE) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
-  const btn = document.getElementById('dl-batch-btn'), hint = document.getElementById('dl-batch-hint');
-  if (btn && !batchRunning) btn.textContent = dlSelected.size ? ('Download selected (' + dlSelected.size + ')') : 'Download selected';
-  if (hint) hint.style.display = (dlSelected.size || batchRunning) ? 'none' : '';
+  const dBtn = document.getElementById('dl-batch-btn'), cBtn = document.getElementById('dl-clear-btn'), hint = document.getElementById('dl-batch-hint');
+  if (dBtn && !batchRunning) dBtn.textContent = dlSelected.size ? ('Download Topic(s) (' + dlSelected.size + ')') : 'Download Topic(s)';
+  if (cBtn && !batchRunning) cBtn.textContent = clearSelected.size ? ('Clear Download(s) (' + clearSelected.size + ')') : 'Clear Download(s)';
+  if (hint) hint.style.display = (dlSelected.size || clearSelected.size || batchRunning) ? 'none' : '';
+  const grid = document.getElementById('topic-grid');
+  if (grid) {
+    grid.classList.toggle('mode-download', dlSelected.size > 0);
+    grid.classList.toggle('mode-clear', clearSelected.size > 0);
+  }
 }
 function runBatchDownload() {
   if (!NA_OFFLINE || batchRunning) return;
-  if (dlSelected.size === 0) { setBatchStatus('Please select a topic first.'); return; }
+  if (dlSelected.size === 0) { setBatchStatus('Please select a topic to download first.'); return; }
   const items = Array.from(dlSelected.values());
   let i = 0;
-  batchRunning = true;
+  batchRunning = true; setBatchBusy(true);
   const btn = document.getElementById('dl-batch-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Downloading…'; }
+  if (btn) btn.textContent = 'Downloading…';
   (function next() {
     if (i >= items.length) {
-      batchRunning = false; if (btn) btn.disabled = false;
+      batchRunning = false; setBatchBusy(false);
       setBatchStatus('Done — ' + items.length + ' topic' + (items.length > 1 ? 's' : '') + ' saved offline.');
       dlSelected.clear(); renderGrid(); updateBatchBar();
       return;
     }
     setBatchStatus('Downloading ' + (i + 1) + '/' + items.length + ' — keep this page open');
     downloadOne(items[i]).then(function () { i++; next(); }).catch(function (err) {
-      batchRunning = false; if (btn) btn.disabled = false;
+      batchRunning = false; setBatchBusy(false);
       setBatchStatus('Stopped (' + ((err && (err.code || err.message)) || 'error') + '). Keep this page open and retry.');
       updateBatchBar();
     });
   })();
 }
-// Tap a card's circle → toggle selection (without following the card link).
+function runClearDownloads() {
+  if (!NA_OFFLINE || batchRunning) return;
+  if (clearSelected.size === 0) { setBatchStatus('Please select a downloaded topic to clear first.'); return; }
+  const n = clearSelected.size;
+  showConfirm('Are you sure you want to remove the downloaded topic' + (n > 1 ? 's' : '') +
+    '? You will no longer be able to listen to ' + (n > 1 ? 'them' : 'it') + ' offline.', doClear);
+}
+function doClear() {
+  const items = Array.from(clearSelected.values());
+  let i = 0;
+  batchRunning = true; setBatchBusy(true);
+  const cBtn = document.getElementById('dl-clear-btn');
+  if (cBtn) cBtn.textContent = 'Removing…';
+  (function next() {
+    if (i >= items.length) {
+      batchRunning = false; setBatchBusy(false);
+      setBatchStatus('Removed ' + items.length + ' download' + (items.length > 1 ? 's' : '') + '.');
+      clearSelected.clear(); renderGrid(); updateBatchBar();
+      return;
+    }
+    const it = items[i];
+    const done = function () {
+      const m = offlineManifest(); delete m[it.prefix];
+      try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {}
+      if (window.caches && it.page) caches.open('thaiear-dl').then(function (c) { c.delete(it.page); }).catch(function () {});
+      i++; next();
+    };
+    if (FS) FS.rmdir({ directory: 'DATA', path: 'offline/' + it.prefix, recursive: true }).then(done).catch(done);
+    else done();
+  })();
+}
+// Small confirm dialog (used by Clear Download(s)).
+function showConfirm(message, onConfirm) {
+  const ov = document.createElement('div');
+  ov.className = 'dl-modal';
+  ov.innerHTML = '<div class="dl-modal-card"><p>' + message + '</p><div class="dl-modal-actions">' +
+    '<button class="dl-modal-cancel" type="button">Cancel</button>' +
+    '<button class="dl-modal-confirm" type="button">Remove</button></div></div>';
+  document.body.appendChild(ov);
+  function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+  ov.querySelector('.dl-modal-cancel').addEventListener('click', close);
+  ov.querySelector('.dl-modal-confirm').addEventListener('click', function () { close(); onConfirm(); });
+  ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+}
+// Tap a card's circle (download) or ✓ tick (clear) → toggle, without following the card link.
+// The two modes are mutually exclusive: while one has a selection, the other's taps are blocked.
 document.addEventListener('click', function (e) {
-  const c = e.target.closest && e.target.closest('.dl-select');
-  if (!c) return;
-  e.preventDefault(); e.stopPropagation();
-  const prefix = c.getAttribute('data-prefix');
-  if (dlSelected.has(prefix)) { dlSelected.delete(prefix); c.classList.remove('selected'); }
-  else { dlSelected.set(prefix, { prefix: prefix, page: c.getAttribute('data-page'), tier: c.getAttribute('data-tier') }); c.classList.add('selected'); }
-  setBatchStatus(''); updateBatchBar();
+  if (!e.target.closest) return;
+  const circle = e.target.closest('.dl-select');
+  const tick = e.target.closest('.dl-badge');
+  if (circle) {
+    e.preventDefault(); e.stopPropagation();
+    if (clearSelected.size > 0) { setBatchStatus('Finish or deselect your removal choice first.'); return; }
+    const p = circle.getAttribute('data-prefix');
+    if (dlSelected.has(p)) { dlSelected.delete(p); circle.classList.remove('selected'); }
+    else { dlSelected.set(p, cardItem(circle)); circle.classList.add('selected'); }
+    setBatchStatus(''); updateBatchBar();
+  } else if (tick && tick.getAttribute('data-prefix')) {
+    e.preventDefault(); e.stopPropagation();
+    if (dlSelected.size > 0) { setBatchStatus('Finish or deselect your download choice first.'); return; }
+    const p = tick.getAttribute('data-prefix');
+    if (clearSelected.has(p)) { clearSelected.delete(p); tick.classList.remove('clear-selected'); }
+    else { clearSelected.set(p, cardItem(tick)); tick.classList.add('clear-selected'); }
+    setBatchStatus(''); updateBatchBar();
+  }
 });
 window.addEventListener('beforeunload', function (e) { if (batchRunning) { e.preventDefault(); e.returnValue = ''; } });
 
@@ -762,12 +859,12 @@ function renderCard(t, label, sentences, access, pageHref, audio) {
               : access === 'member'  ? `<span class="topic-member">${LOCK_SVG}Members</span>`
               : '<span class="coming-soon-label">Coming soon</span>';
   } else if (!gated) {
-    href = pageHref; metaRight = dl ? DL_BADGE : selectCircle(audio, pageHref, access);
+    href = pageHref; metaRight = dl ? downloadedTick(audio, pageHref, access) : selectCircle(audio, pageHref, access);
   } else if (entitled) {
     href = pageHref; // entitled (or downloaded + offline) → straight to the page
     metaRight = (access === 'premium'
       ? '<span class="topic-premium unlocked">Premium</span>'
-      : '<span class="topic-member unlocked">Member</span>') + (dl ? DL_BADGE : selectCircle(audio, pageHref, access));
+      : '<span class="topic-member unlocked">Member</span>') + (dl ? downloadedTick(audio, pageHref, access) : selectCircle(audio, pageHref, access));
   } else if (access === 'premium') {
     href = 'subscribe.html';
     metaRight = `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
