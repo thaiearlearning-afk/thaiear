@@ -375,8 +375,11 @@
   .topic-member.unlocked { background: var(--accent-light); color: var(--accent); }
   /* App-only selection controls. The OUTER span is a big, finger-friendly tap target; the inner
      dot/tick is the smaller visible mark — so they're easy to hit without catching the card link. */
-  .dl-select, .dl-badge { display: inline-flex; align-items: center; justify-content: center;
-    width: 42px; height: 36px; margin-left: 2px; vertical-align: middle; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .dl-select, .dl-badge { position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; margin-left: 4px; vertical-align: middle; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  /* Invisible enlarged hit area (~52px, >2× the visual mark) centred on the dot/tick — easy to tap. */
+  .dl-select::before, .dl-badge::before { content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); width: 52px; height: 52px; border-radius: 50%; }
   /* Download select circle: light purple → dark when selected. */
   .dl-dot { width: 23px; height: 23px; border-radius: 50%; background: var(--accent-light);
     border: 1.5px solid var(--accent-light); transition: background 0.15s, border-color 0.15s, transform 0.1s; }
