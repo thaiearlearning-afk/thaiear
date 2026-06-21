@@ -27,10 +27,9 @@ export async function onRequestPost({ request, env }) {
     if (event.type === 'checkout.session.completed') {
       const uid = obj.client_reference_id || (obj.metadata && obj.metadata.user_id);
       if (uid && obj.subscription) {
-        // Expand the coupon so we can detect a "lifetime" (forever-free) grant.
-        const sub = await stripeGet(env, 'subscriptions/' + obj.subscription + '?expand[]=discounts.coupon');
+        const sub = await stripeGet(env, 'subscriptions/' + obj.subscription);
         const row = rowFromSub(uid, sub, obj.customer);
-        if (sub && !sub.error && isLifetimeFromSub(sub)) row.lifetime = true; // STICKY: only ever auto-set true
+        if (await isLifetime(env, sub)) row.lifetime = true; // STICKY: only ever auto-set true
         await upsert(env, row);
       }
     } else if (event.type === 'customer.subscription.updated' ||
@@ -38,14 +37,8 @@ export async function onRequestPost({ request, env }) {
                event.type === 'customer.subscription.deleted') {
       const uid = (obj.metadata && obj.metadata.user_id) || await uidByCustomer(env, obj.customer);
       if (uid) {
-        // Re-fetch with the coupon expanded — the event payload may carry only discount IDs.
-        let full = obj, expanded = false;
-        try {
-          const f = await stripeGet(env, 'subscriptions/' + obj.id + '?expand[]=discounts.coupon');
-          if (f && !f.error) { full = f; expanded = true; }
-        } catch (_) {}
-        const row = rowFromSub(uid, full, obj.customer);
-        if (expanded && isLifetimeFromSub(full)) row.lifetime = true; // STICKY: only ever auto-set true
+        const row = rowFromSub(uid, obj, obj.customer);
+        if (await isLifetime(env, obj)) row.lifetime = true; // STICKY: only ever auto-set true
         await upsert(env, row);
       }
     }
@@ -62,15 +55,46 @@ export async function onRequestPost({ request, env }) {
 // We only ever auto-SET lifetime=true (sticky) — never write false — so a transient/odd event can't
 // strip a genuine lifetime member; ordinary revocation still works via subscription status (canceled →
 // the app denies access regardless of this flag). A normal paying user never matches → never flagged.
-function isLifetimeFromSub(sub) {
-  if (!sub || sub.error) return false;
-  const item = sub.items && sub.items.data && sub.items.data[0];
-  const planAmount = item && item.price && typeof item.price.unit_amount === 'number'
-    ? item.price.unit_amount : null;
-  if (planAmount === 0) return true;                       // genuinely £0 recurring price
+//
+// Robust on two fronts learned the hard way:
+//  - NO `expand[]=discounts.coupon` — a discount's coupon comes back inline, and asking Stripe to
+//    expand an already-inline field 400s and silently kills detection. Plain retrieve is enough.
+//  - A comp is often applied to the CUSTOMER, not the subscription, so we check the customer's
+//    discount too (re-fetching the customer when needed).
+async function isLifetime(env, sub) {
+  if (!sub || sub.error || !sub.id) return false;
+  if (couponMakesFree(sub)) return true;                   // inline on the event payload, if present
+  try {
+    const full = await stripeGet(env, 'subscriptions/' + sub.id);   // plain retrieve → discounts inline
+    if (full && !full.error && couponMakesFree(full)) return true;
+    let custId = (full && full.customer) || sub.customer;
+    if (custId && typeof custId === 'object') custId = custId.id;
+    if (custId) {
+      const cust = await stripeGet(env, 'customers/' + custId);
+      if (cust && !cust.error && discountListMakesFree(discountsOf(cust), planAmountOf(full || sub))) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+function planAmountOf(sub) {
+  const item = sub && sub.items && sub.items.data && sub.items.data[0];
+  return item && item.price && typeof item.price.unit_amount === 'number' ? item.price.unit_amount : null;
+}
+
+function discountsOf(obj) {
   const discs = [];
-  if (Array.isArray(sub.discounts)) for (const d of sub.discounts) discs.push(d);
-  if (sub.discount) discs.push(sub.discount);              // legacy single-discount field
+  if (obj && Array.isArray(obj.discounts)) for (const d of obj.discounts) discs.push(d);
+  if (obj && obj.discount) discs.push(obj.discount);       // legacy single-discount field (sub OR customer)
+  return discs;
+}
+
+function couponMakesFree(sub) {
+  if (planAmountOf(sub) === 0) return true;                // genuinely £0 recurring price
+  return discountListMakesFree(discountsOf(sub), planAmountOf(sub));
+}
+
+function discountListMakesFree(discs, planAmount) {
   for (const d of discs) {
     const c = (d && typeof d === 'object') ? (d.coupon || d) : null;
     if (!c || c.valid === false || c.duration !== 'forever') continue;
