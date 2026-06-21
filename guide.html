@@ -31,14 +31,15 @@
   .fluency-img { width: 195px; max-width: 55%; height: auto; display: block; margin: 0 auto 0.4rem; }
   .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
   .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
-  .fluency-text .dots::after { content: '.'; animation: fluency-dots 1.4s infinite; }
-  @keyframes fluency-dots {
-    0%, 100% { content: '.'; }
-    33%      { content: '..'; }
-    66%      { content: '...'; }
+  /* Reveal three dots by animating WIDTH, not `content` — Chromium (the app webview) can't animate
+     `content`, which froze the ellipsis. steps() shows 1 → 2 → 3 dots in sequence. */
+  .fluency-text .dots::after {
+    content: '...'; display: inline-block; width: 0.35em; overflow: hidden;
+    vertical-align: bottom; animation: fluency-dots 1.4s steps(3, jump-none) infinite;
   }
+  @keyframes fluency-dots { from { width: 0.35em; } to { width: 1.05em; } }
   @media (prefers-reduced-motion: reduce) {
-    .fluency-text .dots::after { animation: none; content: '…'; }
+    .fluency-text .dots::after { animation: none; width: auto; content: '…'; }
   }
   h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 1.25rem; line-height: 1.2; color: var(--navy); }
   p { color: var(--text-secondary); margin-bottom: 0.95rem; }
