@@ -814,10 +814,33 @@
     });
   }
 
+  // Is a topic genuinely playable RIGHT NOW? Online + entitled → stream; otherwise downloaded + licence.
+  function playable(unit) {
+    if (!unit || !unit.audio) return false;
+    var T = window.ThaiEarTopics;
+    if (navigator.onLine && T && T.canAccess && T.canAccess(unit.access)) return true;
+    return isDownloaded(unit.audio) && canUseOffline(unit.access);
+  }
+  // Walk in `dir` PAST any non-playable topics (offline-not-downloaded, expired premium, …) to the
+  // next genuinely playable one — so next/prev never lands you on a topic that won't play. null if none.
+  function nextPlayable(fromPage, dir) {
+    var T = window.ThaiEarTopics;
+    if (!T || !T.nextAccessible) return null;
+    var page = fromPage, max = (T.liveSequence ? T.liveSequence().length : 60) + 1;
+    for (var i = 0; i < max; i++) {
+      var unit = T.nextAccessible(page, dir);
+      if (!unit || !unit.audio) return null;
+      if (playable(unit)) return unit;
+      if (bareKey(unit.page) === bareKey(fromPage)) return null;   // wrapped the whole list → none playable
+      page = unit.page;
+    }
+    return null;
+  }
+
   function advanceTopic(dir) {
     var T = window.ThaiEarTopics;
     if (!T || !T.nextAccessible) return;            // topics.js not present → feature inert
-    var unit = T.nextAccessible(mainPage, dir);
+    var unit = nextPlayable(mainPage, dir);         // skip anything that can't actually play now
     if (!unit || !unit.audio) return;
     // Adopt the target topic's identity for the TOP player only (sentence list unchanged).
     mainPage = String(unit.page || '').toLowerCase();
