@@ -1176,6 +1176,12 @@
     var a = window.ThaiEarAuth;
     if (!a || !(a.getUser && a.getUser())) return;
     if (progLock) return;
+    if (!navigator.onLine) {                 // offline → can't save; brief "Offline" hint, no spinner
+      var ob = $(kind === 'add' ? 'prog-add' : 'prog-remove');
+      if (ob) { var oh = ob.innerHTML; ob.innerHTML = 'Offline'; progLock = true;
+        setTimeout(function () { ob.innerHTML = oh; progLock = false; }, 1000); }
+      return;
+    }
     progLock = true;
     var addBtn = $('prog-add'), remBtn = $('prog-remove'), countEl = $('prog-count');
     var actBtn = kind === 'add' ? addBtn : remBtn;

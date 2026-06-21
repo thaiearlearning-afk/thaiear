@@ -36,6 +36,9 @@
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
   .btn-danger { background: #B00020; color: #fff; border-color: #B00020; }
   .btn-danger:hover { background: #8a0019; }
+  /* Premium gold call-to-action — matches the premium padlock/scheme. */
+  .btn-gold { background: var(--gold); color: #4a3a00; border-color: var(--gold-dark); font-weight: 600; }
+  .btn-gold:hover { background: var(--gold-dark); color: #fff; border-color: var(--gold-dark); }
   /* Membership action buttons — flex row so they align and wrap cleanly. */
   .btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
   /* ── sign-in ── */
@@ -123,6 +126,11 @@ function showModal(opts) {
   });
 }
 function deleteAccount() {
+  if (!navigator.onLine) {
+    var st = document.getElementById('delete-status');
+    if (st) { st.style.color = '#B00020'; st.textContent = 'You’re offline — reconnect to delete your account.'; }
+    return;
+  }
   showModal({
     title: 'Delete your account?',
     body: 'This cancels any membership immediately and permanently erases your data. It cannot be undone.',
@@ -197,8 +205,8 @@ function renderMembershipBox(s) {
         var endStr = '';
         if (s.current_period_end) { try { endStr = new Date(s.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) {} }
         var line = s.cancel_at_period_end
-          ? 'Membership: <strong style="color:var(--accent)">Premium</strong> — active until ' + endStr + ', won’t renew'
-          : 'Membership: <strong style="color:var(--accent)">Premium</strong> (active)';
+          ? 'Membership: <strong style="color:var(--gold-dark)">Premium</strong> — active until ' + endStr + ', won’t renew'
+          : 'Membership: <strong style="color:var(--gold-dark)">Premium</strong> (active)';
         // Cancelling → just offer Resume (no point updating a card that won't be charged).
         // Active → Cancel + Update payment method.
         var action = s.cancel_at_period_end
@@ -216,7 +224,7 @@ function renderMembershipBox(s) {
           '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>';
       } else {
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free member</strong></p>' +
-          '<a class="btn btn-primary" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>';
+          '<a class="btn btn-gold" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>';
       }
   }
 }
@@ -280,6 +288,10 @@ function setEmailConsent(optIn, btnId) {
   var st = document.getElementById('consent-status');
   var btn = document.getElementById(btnId);
   var a = window.ThaiEarAuth;
+  if (!navigator.onLine) {
+    if (st) { st.style.color = '#B00020'; st.textContent = 'You’re offline — reconnect to change this.'; }
+    return;
+  }
   if (!a || typeof a.setMarketingConsent !== 'function') {
     if (st) st.textContent = 'Please hard-refresh the page and try again.'; return;
   }
