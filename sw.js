@@ -16,7 +16,7 @@
    used as the offline fallback). Google Fonts are cache-first.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = 'thaiear-' + VERSION;
 
 // Topic pages (topic-NN.html) 308-redirect to clean URLs (/topic-NN). A *redirected* Response
@@ -115,7 +115,15 @@ self.addEventListener('fetch', function (e) {
               return i ? cleanRedirect(i) : caches.match('/').then(function (r) { return r ? cleanRedirect(r) : offlinePage(); });
             });
           }
-          return offlinePage(); // any other uncached page → friendly offline notice, not a blank error
+          // Downloaded topic pages are persisted by player.js under their CLEAN url (/topic-NN),
+          // because topic-NN.html 308-redirects to it. A card click requests topic-NN.html, so the
+          // exact-key match above misses. Try the toggled .html<->clean variant before giving up —
+          // this is what lets a downloaded topic open offline after an SW version bump.
+          var alt = p.slice(-5) === '.html' ? p.slice(0, -5) : p + '.html';
+          return caches.match(alt, { ignoreSearch: true }).then(function (h2) {
+            if (h2) return cleanRedirect(h2);
+            return offlinePage(); // genuinely uncached → friendly offline notice, not a blank error
+          });
         }
         return Response.error();
       });
