@@ -16,8 +16,23 @@
    used as the offline fallback). Google Fonts are cache-first.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'thaiear-' + VERSION;
+
+// Friendly fallback for an uncached page requested offline (instead of the webview's blank error).
+function offlinePage() {
+  var html = '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline · ThaiEar</title><style>' +
+    'body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;' +
+    'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#FAFAF8;color:#1A1A1A;text-align:center}' +
+    '.b{padding:2rem;max-width:23rem}h1{font-size:1.25rem;margin:0 0 .5rem;font-weight:600}' +
+    'p{color:#5A5A5A;line-height:1.6;margin:.25rem 0 1.4rem}' +
+    'a{display:inline-block;background:#4B41AD;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:500}' +
+    '</style></head><body><div class="b"><h1>You’re offline</h1>' +
+    '<p>This page needs a connection. Topics you’ve downloaded are still available from the home screen.</p>' +
+    '<a href="/index.html">Back to topics</a></div></body></html>';
+  return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
 
 // Best-effort precache so a brand-new install has the shell even before each
 // asset is individually visited. Missing entries are ignored (never fail install).
@@ -77,7 +92,18 @@ self.addEventListener('fetch', function (e) {
       return res;
     }).catch(function () {
       return caches.match(req).then(function (hit) {
-        return hit || (req.mode === 'navigate' ? caches.match('/index.html') : Response.error());
+        if (hit) return hit;
+        if (req.mode === 'navigate') {
+          // Home/index: serve the cached grid from either key so the logo/Home link always works.
+          var p = url.pathname;
+          if (p === '/' || p === '/index.html' || p === '/index') {
+            return caches.match('/index.html').then(function (i) {
+              return i || caches.match('/').then(function (r) { return r || offlinePage(); });
+            });
+          }
+          return offlinePage(); // any other uncached page → friendly offline notice, not a blank error
+        }
+        return Response.error();
       });
     })
   );

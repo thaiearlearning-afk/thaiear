@@ -256,7 +256,8 @@
     const n = seq.length;
     for (let step = 1; step <= n; step++) {
       const j = ((idx + dir * step) % n + n) % n;
-      if (canAccess(seq[j].access)) return seq[j];
+      // Offline, a downloaded topic counts as accessible (the in-page player can use its local audio).
+      if (canAccess(seq[j].access) || (!navigator.onLine && offlineHas(seq[j].audio))) return seq[j];
     }
     return seq[idx]; // nothing else accessible — stay put
   }
@@ -317,6 +318,17 @@
     const found = findByPage(target || '');
     return found ? accessFor(found.topic, found.part) : null;
   }
+  // Is a topic's audio prefix present in the offline-download manifest?
+  function offlineHas(prefix) {
+    if (!prefix) return false;
+    try { return !!JSON.parse(localStorage.getItem('thaiear_offline') || '{}')[prefix]; } catch (_) { return false; }
+  }
+  // The audio prefix for a target page (to check the offline manifest).
+  function navAudioFor(target) {
+    const found = findByPage(target || '');
+    if (!found) return null;
+    return (found.part && found.part.audio) ? found.part.audio : found.topic.audio;
+  }
   function decorateNavBtn(a) {
     const target = navTarget(a);
     const access = navAccessFor(target);
@@ -324,7 +336,9 @@
     const nameEl = a.querySelector('.topic-nav-name');
     const oldIcon = a.querySelector('.topic-nav-lock'); if (oldIcon) oldIcon.remove();
     if (nameEl) nameEl.textContent = nameEl.textContent.replace(/^\s*🔒\s*/, ''); // drop legacy emoji
-    if (access === 'free' || canAccess(access)) {            // open (or entitled) → unlocked
+    // Offline, a downloaded destination is reachable (its page is cached + audio is local).
+    const downloadedOffline = !navigator.onLine && offlineHas(navAudioFor(target));
+    if (access === 'free' || canAccess(access) || downloadedOffline) { // open / entitled / offline-download → unlocked
       a.setAttribute('href', target);
       a.removeAttribute('data-locked-href');
       return;
@@ -347,6 +361,8 @@
     });
   }
   window.addEventListener('thaiear:auth', decorateTopicNav); // re-run when login resolves/changes
+  window.addEventListener('online', decorateTopicNav);       // offline-download unlock follows connectivity
+  window.addEventListener('offline', decorateTopicNav);
 
   // Click-time safety net (auth is always resolved by click; covers cached/late-auth pages):
   // if an entitled user clicks a button whose href is still the gate (decorate hadn't run yet),
