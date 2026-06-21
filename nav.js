@@ -329,6 +329,18 @@
       document.head.appendChild(sc);                           // need the topic list for next/prev
     }
     function isDl(prefix) { try { return !!JSON.parse(localStorage.getItem('thaiear_offline') || '{}')[prefix]; } catch (_) { return false; } }
+    // Same premium offline-licence rule as the topic player — applied here so an expired member can't
+    // advance into a downloaded premium topic from a non-topic page. KEEP OFFLINE_GRACE_MS IN SYNC WITH
+    // player.js (2 min for testing → 30 days for prod).
+    const OFFLINE_GRACE_MS = 2 * 60 * 1000;
+    function canUseOffline(tier) {
+      if (tier !== 'premium') return true;
+      const a = window.ThaiEarAuth, subbed = a && a.isSubscribed && a.isSubscribed();
+      if (navigator.onLine) { if (subbed) return true; if (a && a.isReady) return false; }
+      const last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);
+      const until = parseInt(localStorage.getItem('thaiear_sub_until') || '0', 10);
+      return !!last && (Date.now() - last) < OFFLINE_GRACE_MS && (!until || Date.now() < until);
+    }
     function remoteUrl(file, access) {
       if (access !== 'member' && access !== 'premium') return Promise.resolve(AUDIO_BASE + '/' + file);
       const tok = window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken && window.ThaiEarAuth.getAccessToken();
@@ -339,7 +351,7 @@
     }
     function resolveUrl(file, prefix, access) {
       const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
-      if (FS && isDl(prefix)) {                                // offline: prefer the local download
+      if (FS && isDl(prefix) && canUseOffline(access)) {       // offline: prefer the local download (if licence ok)
         return FS.getUri({ directory: 'DATA', path: 'offline/' + prefix + '/' + file })
           .then(function (r) { return (r && r.uri) ? r.uri : remoteUrl(file, access); })
           .catch(function () { return remoteUrl(file, access); });
