@@ -272,6 +272,54 @@
     const slot = document.getElementById('site-nav-root') || document.querySelector('nav.site-nav');
     if (slot) slot.replaceWith(el);
     wireMenu();
+    setupNowPlayingBar(el);
+  }
+
+  /* ---- "Now playing" bar (Capacitor app only) ----
+     The native player keeps going as you move around the app, so on NON-topic pages (index, account,
+     etc.) show a small bar with the playing topic that links back to it. Topic pages already show it
+     in their player. Liveness comes from the engine's own time ticks, so it works on any page. */
+  function setupNowPlayingBar(navEl) {
+    if (window.ThaiEarTopic) return;          // topic pages display now-playing in the player
+    const NA = (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins.NativeAudio : null;
+    if (!NA || document.getElementById('te-np-bar')) return;   // app only; once
+    if (!document.getElementById('te-np-styles')) {
+      const s = document.createElement('style');
+      s.id = 'te-np-styles';
+      s.textContent =
+        '.te-np-bar{position:sticky;top:54px;z-index:40;display:none;align-items:center;gap:9px;' +
+        'background:var(--accent-light,#EEEDFE);color:var(--accent,#4B41AD);text-decoration:none;' +
+        'padding:9px 14px;font-family:var(--font-ui,system-ui,sans-serif);font-size:13px;font-weight:500;' +
+        'border-bottom:0.5px solid var(--border,rgba(0,0,0,0.1))}' +
+        '.te-np-bar.show{display:flex}' +
+        '.te-np-eq{display:inline-flex;align-items:flex-end;gap:2px;height:13px;flex-shrink:0}' +
+        '.te-np-eq i{width:3px;background:currentColor;border-radius:1px;animation:te-np-eq 0.9s ease-in-out infinite}' +
+        '.te-np-eq i:nth-child(1){height:6px}.te-np-eq i:nth-child(2){height:12px;animation-delay:0.2s}.te-np-eq i:nth-child(3){height:8px;animation-delay:0.4s}' +
+        '@keyframes te-np-eq{0%,100%{transform:scaleY(0.4)}50%{transform:scaleY(1)}}' +
+        '.te-np-text{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.te-np-text strong{font-weight:600}' +
+        '.te-np-go{opacity:0.55;font-size:18px;line-height:1;flex-shrink:0}';
+      document.head.appendChild(s);
+    }
+    const bar = document.createElement('a');
+    bar.id = 'te-np-bar';
+    bar.className = 'te-np-bar';
+    bar.innerHTML = '<span class="te-np-eq"><i></i><i></i><i></i></span><span class="te-np-text"></span><span class="te-np-go">›</span>';
+    navEl.insertAdjacentElement('afterend', bar);
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function update() {
+      let np; try { np = JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { np = null; }
+      if (!np || !np.page || !np.name) { bar.classList.remove('show'); return; }
+      bar.setAttribute('href', np.page);
+      bar.querySelector('.te-np-text').innerHTML = 'Now playing: <strong>' + esc(np.name) + '</strong>';
+      bar.classList.add('show');
+    }
+    let stale = null;
+    function alive() { update(); if (stale) clearTimeout(stale); stale = setTimeout(function () { bar.classList.remove('show'); }, 1600); }
+    function hide() { if (stale) clearTimeout(stale); bar.classList.remove('show'); }
+    NA.addListener('time', alive);                              // a tick = something is playing
+    NA.addListener('ended', hide);
+    NA.addListener('playing', function (d) { if (d && d.playing === false) hide(); });
   }
 
   if (document.readyState === 'loading') {

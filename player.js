@@ -96,12 +96,46 @@
         // resume (same track already prepared) → just play; new track → prepare with metadata first
         if (st.preparedSrc === st.src && st.src) { st.paused = false; return NA.play(); }
         nativeMeta.title = resolveMainTitle();   // ensure the lock screen shows the topic, even on first play
+        writeNowPlaying();                       // share what's now playing across pages (now-playing bar + sync)
         return NA.prepare({ url: st.src, title: nativeMeta.title, subtitle: nativeMeta.subtitle, artwork: nativeMeta.artwork })
           .then(function () { st.preparedSrc = st.src; st.paused = false; return NA.play(); });
       },
       pause: function () { st.paused = true; return NA ? NA.pause() : Promise.resolve(); },
+      // Attach this (fresh-page) shim to a track already playing in the native engine, WITHOUT
+      // re-preparing it — so play/pause/seek control the live track and it doesn't restart.
+      attach: function () { st.src = st.preparedSrc = '__live__'; st.paused = false; },
       addEventListener: function (t, fn) { if (L[t]) L[t].push(fn); }
     };
+  }
+
+  /* ---- shared "now playing" across page loads ----
+     The native engine keeps playing when you navigate, so we stash what it's on (in localStorage)
+     so ANY page can show a now-playing bar and a topic page can sync its top player to the live track. */
+  function writeNowPlaying() {
+    try { localStorage.setItem('thaiear_np', JSON.stringify({ page: mainPage, name: nativeMeta.title, prefix: mainPrefix, mode: currentMode })); } catch (_) {}
+  }
+  // On mount, if the engine is already playing (a time tick arrives), sync this page's TOP player to
+  // it — adopting another topic's identity if needed — so it shows + controls the live track.
+  function syncToPlayingTrack() {
+    if (!NA) return;
+    var np; try { np = JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { np = null; }
+    if (!np || !np.prefix) return;
+    var done = false;
+    NA.addListener('time', function () {
+      if (done) return; done = true;
+      if (np.prefix !== mainPrefix) {            // a DIFFERENT topic is playing → adopt it on the top player
+        mainPage = np.page; mainPrefix = np.prefix;
+        if (np.mode === 'te' || np.mode === 'et') currentMode = np.mode;
+        var T = window.ThaiEarTopics, unit = (T && T.pageUnit) ? T.pageUnit(np.page) : null;
+        if (unit) { mainTier = (unit.access && unit.access !== 'free') ? unit.access : null; mainGated = !!mainTier; }
+        currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
+        nativeMeta.title = np.name || (unit && unit.name) || 'ThaiEar';
+        if (unit) updateNowPlaying(unit);
+      }
+      mainSrcReady = true;
+      if (mainAudio.attach) mainAudio.attach();  // control the live track without restarting it
+      setMainIcon(true);
+    });
   }
 
   /* ---- offline downloads (Capacitor app only) ----
@@ -1185,6 +1219,7 @@
     initFlags();
     initXtraControls();
     renderOfflineBar();
+    syncToPlayingTrack();   // if the engine is already playing another topic, reflect/adopt it
   }
 
   // inline onclick in the injected markup call these by name
