@@ -56,22 +56,33 @@ export async function onRequestPost({ request, env }) {
 // strip a genuine lifetime member; ordinary revocation still works via subscription status (canceled →
 // the app denies access regardless of this flag). A normal paying user never matches → never flagged.
 //
-// Robust on two fronts learned the hard way:
-//  - NO `expand[]=discounts.coupon` — a discount's coupon comes back inline, and asking Stripe to
-//    expand an already-inline field 400s and silently kills detection. Plain retrieve is enough.
-//  - A comp is often applied to the CUSTOMER, not the subscription, so we check the customer's
-//    discount too (re-fetching the customer when needed).
+// Real Stripe shapes (confirmed against live data) handled here:
+//  - subscription.discounts is an array of discount IDs → must expand[]=discounts to get objects.
+//  - on the current API, a discount's coupon is NOT inline; it's an ID under d.source.coupon
+//    ("source":{"coupon":"<id>","type":"coupon"}) → fetch /coupons/{id} to read duration/percent_off.
+//  - legacy shape (d.coupon as an inline Coupon, or a string id) still handled.
+//  - a comp can sit on the CUSTOMER instead of the subscription → check customer.discounts too.
 async function isLifetime(env, sub) {
   if (!sub || sub.error || !sub.id) return false;
-  if (couponMakesFree(sub)) return true;                   // inline on the event payload, if present
   try {
-    const full = await stripeGet(env, 'subscriptions/' + sub.id);   // plain retrieve → discounts inline
-    if (full && !full.error && couponMakesFree(full)) return true;
+    const full = await stripeGet(env, 'subscriptions/' + sub.id + '?expand[]=discounts');
+    const planAmount = planAmountOf(full && !full.error ? full : sub);
+    if (planAmount === 0) return true;                     // genuinely £0 recurring price
+
+    const discs = [];
+    if (full && !full.error && Array.isArray(full.discounts)) for (const d of full.discounts) discs.push(d);
     let custId = (full && full.customer) || sub.customer;
     if (custId && typeof custId === 'object') custId = custId.id;
     if (custId) {
-      const cust = await stripeGet(env, 'customers/' + custId);
-      if (cust && !cust.error && discountListMakesFree(discountsOf(cust), planAmountOf(full || sub))) return true;
+      const cust = await stripeGet(env, 'customers/' + custId + '?expand[]=discounts');
+      if (cust && !cust.error && Array.isArray(cust.discounts)) for (const d of cust.discounts) discs.push(d);
+    }
+
+    for (const d of discs) {
+      const c = await resolveCoupon(env, d);
+      if (!c || c.duration !== 'forever') continue;        // "lifetime" ⇒ the discount must be forever
+      if (c.percent_off === 100) return true;              // 100%-off forever
+      if (c.amount_off && planAmount != null && c.amount_off >= planAmount) return true; // amount covers the price
     }
   } catch (_) {}
   return false;
@@ -82,26 +93,17 @@ function planAmountOf(sub) {
   return item && item.price && typeof item.price.unit_amount === 'number' ? item.price.unit_amount : null;
 }
 
-function discountsOf(obj) {
-  const discs = [];
-  if (obj && Array.isArray(obj.discounts)) for (const d of obj.discounts) discs.push(d);
-  if (obj && obj.discount) discs.push(obj.discount);       // legacy single-discount field (sub OR customer)
-  return discs;
-}
-
-function couponMakesFree(sub) {
-  if (planAmountOf(sub) === 0) return true;                // genuinely £0 recurring price
-  return discountListMakesFree(discountsOf(sub), planAmountOf(sub));
-}
-
-function discountListMakesFree(discs, planAmount) {
-  for (const d of discs) {
-    const c = (d && typeof d === 'object') ? (d.coupon || d) : null;
-    if (!c || c.valid === false || c.duration !== 'forever') continue;
-    if (c.percent_off === 100) return true;                // 100%-off forever
-    if (c.amount_off && planAmount != null && c.amount_off >= planAmount) return true; // amount covers the price, forever
-  }
-  return false;
+// Turn a discount (any shape) into its full Coupon object, fetching by id when it isn't inline.
+async function resolveCoupon(env, d) {
+  if (!d || typeof d === 'string') return null;
+  if (d.coupon && typeof d.coupon === 'object') return d.coupon;            // legacy inline coupon
+  let id = null;
+  if (d.source && typeof d.source.coupon === 'string') id = d.source.coupon; // current: source.coupon = id
+  else if (d.source && d.source.coupon && d.source.coupon.id) id = d.source.coupon.id;
+  else if (typeof d.coupon === 'string') id = d.coupon;                      // legacy: coupon = id
+  if (!id) return null;
+  const c = await stripeGet(env, 'coupons/' + id);
+  return (c && !c.error) ? c : null;
 }
 
 function rowFromSub(uid, sub, customer) {
