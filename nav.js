@@ -335,6 +335,7 @@
     const OFFLINE_GRACE_MS = 1 * 60 * 1000;
     function canUseOffline(tier) {
       if (tier !== 'premium') return true;
+      try { if (localStorage.getItem('thaiear_lifetime') === '1') return true; } catch (_) {} // lifetime → no offline timeout
       const a = window.ThaiEarAuth, subbed = a && a.isSubscribed && a.isSubscribed();
       if (navigator.onLine) { if (subbed) return true; if (a && a.isReady) return false; }
       const last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);

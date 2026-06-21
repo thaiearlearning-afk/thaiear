@@ -202,6 +202,10 @@
   // premium: live subscription when online; else within the verified-online window.
   function canUseOffline(tier) {
     if (tier !== 'premium') return true;
+    // Lifetime members (£0-forever) never time out offline — they may be off-grid for months.
+    // The flag is maintained by auth.js ONLY when the server confirms lifetime+active while online,
+    // so a regular paying user can never reach this early-return.
+    try { if (localStorage.getItem('thaiear_lifetime') === '1') return true; } catch (_) {}
     var a = window.ThaiEarAuth;
     var subbed = a && a.isSubscribed && a.isSubscribed();
     if (navigator.onLine) {
