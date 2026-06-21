@@ -116,17 +116,75 @@
       .then(function () { consentLoaded = true; notify(); });
   }
 
+  // ---- offline-first sync for progress + flags ---------------------------
+  // Edits apply to a LOCAL cache immediately (so progress + flags work with NO connection) and write
+  // through to Supabase; if the write can't happen (offline), it's queued and flushed on reconnect.
+  // This is single-user data, so reconnect is simply last-write-wins (the device's local state wins).
+  // All keys are uid-scoped in localStorage so a different sign-in never reads stale data.
+  function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
+  function uid() { return currentUser && currentUser.id; }
+
+  function persistProgress() { if (uid()) lsSet('thaiear_progress', { uid: uid(), data: currentProgress }); }
+  function loadPersistedProgress() { var c = lsGet('thaiear_progress'); return (c && c.uid === uid()) ? c.data : null; }
+  function progressDirty() { return lsGet('thaiear_progress_dirty') === uid(); }
+  function markProgressDirty() { if (uid()) lsSet('thaiear_progress_dirty', uid()); }
+  function clearProgressDirty() { try { localStorage.removeItem('thaiear_progress_dirty'); } catch (_) {} }
+  function flushProgress() {
+    if (!client || !currentUser || !navigator.onLine || !progressDirty()) return;
+    saveProgress().then(clearProgressDirty).catch(function () {});
+  }
+
+  function persistFlags() { if (uid()) lsSet('thaiear_flags', { uid: uid(), map: currentFlags }); }
+  function loadPersistedFlags() { var c = lsGet('thaiear_flags'); return (c && c.uid === uid()) ? c.map : null; }
+  function pendingFlags() { var c = lsGet('thaiear_flags_pending'); return (c && c.uid === uid()) ? c.ops : {}; }
+  function setPendingFlags(ops) { if (uid()) lsSet('thaiear_flags_pending', { uid: uid(), ops: ops }); }
+  function queueFlag(key, tk, num, nugget, flagged) { var o = pendingFlags(); o[key] = { tk: tk, num: num, nugget: nugget, flagged: flagged }; setPendingFlags(o); }
+  function unqueueFlag(key) { var o = pendingFlags(); delete o[key]; setPendingFlags(o); }
+  function pushFlag(key, tk, num, nugget, flagged) {
+    if (!client || !currentUser) return;
+    var op = flagged
+      ? client.from('sentence_flags').upsert({ user_id: currentUser.id, topic_key: tk, num: num, sentence: nugget, created_at: new Date().toISOString() })
+      : client.from('sentence_flags').delete().eq('user_id', currentUser.id).eq('topic_key', tk).eq('num', num);
+    return op.then(function (res) { if (res && res.error) throw res.error; unqueueFlag(key); }).catch(function () {});
+  }
+  function flushFlags() {
+    if (!client || !currentUser || !navigator.onLine) return;
+    var ops = pendingFlags();
+    Object.keys(ops).forEach(function (key) { var o = ops[key]; pushFlag(key, o.tk, o.num, o.nugget, o.flagged); });
+  }
+  // Overlay any unsynced local flag toggles on top of a freshly-fetched server map.
+  function applyPendingFlags() {
+    var ops = pendingFlags();
+    Object.keys(ops).forEach(function (key) {
+      var o = ops[key];
+      if (o.flagged) currentFlags[key] = { topic_key: o.tk, num: o.num, sentence: o.nugget };
+      else delete currentFlags[key];
+    });
+  }
+  // Flush queued writes whenever the connection returns.
+  window.addEventListener('online', function () { flushProgress(); flushFlags(); });
+
   // ---- listening progress (own `progress` row, RLS) ----------------------
   // One jsonb row per user: { goal, topics:{ topicKey:count } }. Read on demand
   // (topic pages + the progress page), not on every page load. Read-modify-write
   // is fine here — a user only touches their own single row.
   function fetchProgress() {
     if (!client || !currentUser) { currentProgress = { goal: 5, topics: {} }; progressLoaded = true; return Promise.resolve(currentProgress); }
+    if (progressDirty()) {                       // unsynced local edits win — don't let the server clobber them
+      var ld = loadPersistedProgress();
+      if (ld) { currentProgress = ld; progressLoaded = true; flushProgress(); return Promise.resolve(currentProgress); }
+    }
     return client.from('progress').select('goal,topics').maybeSingle()
       .then(function (res) {
         if (res && res.error) throw res.error;
         var d = (res && res.data) || null;
         currentProgress = { goal: (d && d.goal) || 5, topics: (d && d.topics) || {} };
+        progressLoaded = true; persistProgress();
+        return currentProgress;
+      })
+      .catch(function () {                         // offline / error → fall back to the last-known local copy
+        currentProgress = loadPersistedProgress() || { goal: 5, topics: {} };
         progressLoaded = true;
         return currentProgress;
       });
@@ -144,11 +202,21 @@
       return currentProgress;
     });
   }
-  // Ensure the cache is populated, then run fn (which mutates currentProgress) and save.
+  // Ensure the cache is populated, run fn (which mutates currentProgress), update the LOCAL copy
+  // immediately (optimistic), then write through. Offline → stays queued + flushed on reconnect.
   function mutateProgress(fn) {
     if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
     var ready = (progressLoaded && currentProgress) ? Promise.resolve(currentProgress) : fetchProgress();
-    return ready.then(function () { fn(currentProgress); return saveProgress(); });
+    return ready.then(function () {
+      fn(currentProgress);
+      persistProgress(); markProgressDirty();
+      return saveProgress()
+        .then(function () { clearProgressDirty(); return currentProgress; })
+        .catch(function (e) {
+          if (!navigator.onLine) return currentProgress; // offline → optimistic; flushed when back online
+          throw e;                                        // genuine ONLINE failure → surface it (caller reverts)
+        });
+    });
   }
 
   // ---- flagged sentences (own `sentence_flags` rows, RLS) ----------------
@@ -163,6 +231,13 @@
         var map = {};
         (res && res.data || []).forEach(function (r) { map[flagKey(r.topic_key, r.num)] = r; });
         currentFlags = map; flagsLoaded = true;
+        applyPendingFlags();                        // overlay any unsynced local toggles, then push them
+        persistFlags(); flushFlags();
+        return currentFlags;
+      })
+      .catch(function () {                           // offline / error → use the last-known local set
+        currentFlags = loadPersistedFlags() || {};
+        flagsLoaded = true;
         return currentFlags;
       });
   }
@@ -336,28 +411,35 @@
     },
     // Toggle a sentence flag. nugget = { num, preview, thai, english, gloss, cultural, audioPrefix }.
     // Resolves to the new state (true = now flagged, false = now unflagged).
+    // Optimistic: toggle the LOCAL cache + persist immediately (works offline), queue the desired state,
+    // and write through. Resolves to the new state right away; a failed/offline write is flushed later.
     toggleFlag: function (tk, nugget) {
       if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
-      var num = nugget.num;
-      var key = flagKey(tk, num);
+      var num = nugget.num, key = flagKey(tk, num);
       var ready = (flagsLoaded && currentFlags) ? Promise.resolve() : fetchFlags();
       return ready.then(function () {
-        if (currentFlags[key]) {
-          return client.from('sentence_flags').delete()
-            .eq('user_id', currentUser.id).eq('topic_key', tk).eq('num', num)
-            .then(function (res) { if (res && res.error) throw res.error; delete currentFlags[key]; return false; });
-        }
-        var row = { user_id: currentUser.id, topic_key: tk, num: num, sentence: nugget, created_at: new Date().toISOString() };
-        return client.from('sentence_flags').upsert(row)
-          .then(function (res) { if (res && res.error) throw res.error; currentFlags[key] = { topic_key: tk, num: num, sentence: nugget }; return true; });
+        var nowFlagged = !currentFlags[key];
+        if (nowFlagged) currentFlags[key] = { topic_key: tk, num: num, sentence: nugget };
+        else delete currentFlags[key];
+        persistFlags();
+        queueFlag(key, tk, num, nugget, nowFlagged);
+        pushFlag(key, tk, num, nugget, nowFlagged); // write through (clears the queue entry on success)
+        return nowFlagged;
       });
     },
     // Remove a flag by (topicKey, num) — used by the My-sentences page's remove button.
     removeFlag: function (tk, num) {
       if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
-      return client.from('sentence_flags').delete()
-        .eq('user_id', currentUser.id).eq('topic_key', tk).eq('num', num)
-        .then(function (res) { if (res && res.error) throw res.error; if (currentFlags) delete currentFlags[flagKey(tk, num)]; return true; });
+      var key = flagKey(tk, num);
+      var ready = (flagsLoaded && currentFlags) ? Promise.resolve() : fetchFlags();
+      return ready.then(function () {
+        var nugget = (currentFlags[key] && currentFlags[key].sentence) || { num: num };
+        delete currentFlags[key];
+        persistFlags();
+        queueFlag(key, tk, num, nugget, false);
+        pushFlag(key, tk, num, nugget, false);
+        return true;
+      });
     },
     signInWithGoogle: function () {
       if (!client) { console.warn('ThaiEar auth still loading…'); return; }
