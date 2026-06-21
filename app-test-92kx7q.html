@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>ThaiEar — Android test build</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-mid: #534AB7; --accent-light: #EEEDFE; --gold-dark: #C8A030; --gold-light: #FBF5DC;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .wrap { max-width: 440px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  .logo { display: block; width: 56px; height: 56px; margin: 0 auto 1rem; }
+  h1 { font-size: 1.5rem; font-weight: 600; text-align: center; letter-spacing: -0.01em; margin-bottom: 0.4rem; }
+  .lede { text-align: center; color: var(--text-secondary); margin-bottom: 1.75rem; }
+  .eyebrow { display: block; text-align: center; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--gold-dark); margin-bottom: 0.5rem; }
+
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.6rem 1.4rem; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%;
+    font-family: var(--font-ui); font-size: 16px; font-weight: 500; color: #fff; background: var(--accent);
+    border: none; border-radius: var(--radius-sm); padding: 14px 20px; cursor: pointer; text-decoration: none; }
+  .btn:hover { background: var(--accent-mid); }
+  .btn svg { width: 19px; height: 19px; }
+  .meta { text-align: center; font-size: 12.5px; color: var(--text-tertiary); margin-top: 0.7rem; }
+
+  h2 { font-size: 0.95rem; font-weight: 600; margin: 1.9rem 0 0.6rem; }
+  ol { margin: 0 0 0 1.1rem; padding: 0; }
+  ol li { margin-bottom: 0.55rem; color: var(--text-secondary); font-size: 14px; }
+  ol li strong { color: var(--text-primary); font-weight: 500; }
+  .note { margin-top: 1.5rem; font-size: 12.5px; color: var(--text-tertiary); line-height: 1.6;
+    background: var(--accent-light); border-radius: var(--radius-md); padding: 0.85rem 1rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img class="logo" src="apple-touch-icon.png" alt="ThaiEar">
+  <span class="eyebrow">Private test build</span>
+  <h1>ThaiEar for Android</h1>
+  <p class="lede">An early test version, not yet on the Play Store.</p>
+
+  <div class="card">
+    <a class="btn" href="thaiear-92kx7q.apk" download="ThaiEar.apk">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download ThaiEar (Android)
+    </a>
+    <p class="meta">~13 MB · Android 6.0 or newer</p>
+
+    <h2>How to install</h2>
+    <ol>
+      <li>Tap <strong>Download</strong> above, then open the downloaded <strong>ThaiEar.apk</strong> (from the download notification or your Files app).</li>
+      <li>Android will warn it’s from an <strong>unknown source</strong> — tap <strong>Settings</strong> and turn on <strong>“Allow from this source”</strong>, then go back.</li>
+      <li>Tap <strong>Install</strong>. If <strong>Play Protect</strong> pops up, choose <strong>“Install anyway”</strong> (it only flags it because it’s not from the store yet).</li>
+      <li>Open <strong>ThaiEar</strong> and you’re in.</li>
+    </ol>
+
+    <p class="note">This is a private link for testing — please don’t share it around. It’s a normal, safe app; Android just shows those warnings for anything not installed via the Play Store.</p>
+  </div>
+</div>
+</body>
+</html>

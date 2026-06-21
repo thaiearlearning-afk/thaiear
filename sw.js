@@ -93,7 +93,8 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  if (url.pathname.indexOf('/api/') === 0) return; // never cache API calls
+  if (url.pathname.indexOf('/api/') === 0) return;  // never cache API calls
+  if (/\.apk$/i.test(url.pathname)) return;         // don't intercept/cache the APK download
 
   // Same-origin pages + assets: network-first, fall back to cache when offline.
   e.respondWith(
