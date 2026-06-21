@@ -17,16 +17,26 @@ export async function onRequestGet({ request, env }) {
     ? await sg(env, 'subscriptions/' + first.id + '?expand[]=discounts')
     : null;
 
+  // Resolve the coupon behind each discount so we can see duration / percent_off / amount_off.
+  const coupons = [];
+  const discs = (subsExpanded && Array.isArray(subsExpanded.discounts)) ? subsExpanded.discounts : [];
+  for (const d of discs) {
+    let id = null;
+    if (d && d.source && typeof d.source.coupon === 'string') id = d.source.coupon;
+    else if (d && d.coupon && typeof d.coupon === 'object') id = d.coupon.id;
+    else if (d && typeof d.coupon === 'string') id = d.coupon;
+    if (id) { const c = await sg(env, 'coupons/' + id);
+      coupons.push({ id, duration: c && c.duration, percent_off: c && c.percent_off, amount_off: c && c.amount_off, valid: c && c.valid }); }
+  }
+
   const out = {
     customer_id: cust.id,
-    customer_discount: cust.discount || null,
     customer_discounts: cust.discounts || null,
     sub_id: first && first.id,
     sub_status: first && first.status,
     sub_plan_amount: planAmountOf(first),
-    sub_discount_plain: first && first.discount || null,
-    sub_discounts_plain: first && first.discounts || null,
     sub_discounts_expanded: subsExpanded && subsExpanded.discounts || null,
+    resolved_coupons: coupons,
     expand_error: subsExpanded && subsExpanded.error || null,
   };
   return json(out);
