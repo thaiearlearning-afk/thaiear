@@ -373,6 +373,7 @@
   .topic-member svg { width: 11px; height: 11px; }
   /* Entitled view: same soft Beginner-pill palette, no padlock (was a strong solid purple). */
   .topic-member.unlocked { background: var(--accent-light); color: var(--accent); }
+  .dl-badge { display: inline-flex; align-items: center; color: var(--accent); margin-left: 6px; vertical-align: middle; }
 
   /* ── FOOTER ── */
   .site-footer {
@@ -595,12 +596,25 @@ const LOCK_SVG =
   'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 
+// "Downloaded for offline" tick (app only — the manifest is written by the offline download feature).
+const DL_BADGE =
+  '<span class="dl-badge" title="Downloaded for offline">' +
+  '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" ' +
+  'stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
+function offlineManifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
+function isDownloaded(prefix) { return !!(prefix && offlineManifest()[prefix]); }
+
 // One card. access ∈ free | member | premium. pageHref = the real topic page (or null).
 // member-locked → prompt sign-in (free); premium-locked → subscribe.html; either unlocked
 // (canAccess true) → the page. canAccess() lives in topics.js and respects ENFORCE_SUBSCRIPTION.
-function renderCard(t, label, sentences, access, pageHref) {
+function renderCard(t, label, sentences, access, pageHref, audio) {
   const gated = access === 'member' || access === 'premium';
   const live = !!pageHref;
+  const dl = isDownloaded(audio);
+  // Offline, a downloaded topic unlocks its own card (the user was entitled when they downloaded;
+  // playback is still gated by the licence window on the page). Online, normal access rules apply,
+  // so nothing changes for the website or for a connected app.
+  const entitled = canAccess(access) || (dl && !navigator.onLine);
   let href = null, metaRight;
   if (!live) {
     // Not built yet → ALWAYS a faded, non-clickable "coming soon" card, whatever the tier.
@@ -609,12 +623,12 @@ function renderCard(t, label, sentences, access, pageHref) {
               : access === 'member'  ? `<span class="topic-member">${LOCK_SVG}Members</span>`
               : '<span class="coming-soon-label">Coming soon</span>';
   } else if (!gated) {
-    href = pageHref; metaRight = '';
-  } else if (canAccess(access)) {
-    href = pageHref; // entitled → straight to the page
-    metaRight = access === 'premium'
+    href = pageHref; metaRight = dl ? DL_BADGE : '';
+  } else if (entitled) {
+    href = pageHref; // entitled (or downloaded + offline) → straight to the page
+    metaRight = (access === 'premium'
       ? '<span class="topic-premium unlocked">Premium</span>'
-      : '<span class="topic-member unlocked">Member</span>';
+      : '<span class="topic-member unlocked">Member</span>') + (dl ? DL_BADGE : '');
   } else if (access === 'premium') {
     href = 'subscribe.html';
     metaRight = `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
@@ -649,10 +663,11 @@ function cardsForTopic(t, pos) {
       const num  = typeof part === 'number' ? part : part.sentences;
       const href = (part && typeof part === 'object' && part.page) ? part.page : null;
       const name = (part && typeof part === 'object' && part.name) ? part.name : t.name;
-      return renderCard({ ...t, name }, label, num, accessFor(t, part), href);
+      const audio = (part && typeof part === 'object' && part.audio) ? part.audio : t.audio;
+      return renderCard({ ...t, name }, label, num, accessFor(t, part), href, audio);
     }).join('');
   }
-  return renderCard(t, p, t.sentences, accessFor(t, null), liveTopics[t.id] || null);
+  return renderCard(t, p, t.sentences, accessFor(t, null), liveTopics[t.id] || null, t.audio);
 }
 
 // Two independent filter dimensions that combine (AND): level + access tier.
@@ -734,6 +749,9 @@ renderGrid();
 // Premium cards depend on login state, which resolves asynchronously (auth.js, loaded by
 // nav.js). Re-render when it lands or changes so premium topics unlock for entitled users.
 window.addEventListener('thaiear:auth', renderGrid);
+// Re-render when connectivity flips, so downloaded topics unlock/lock on the grid offline.
+window.addEventListener('online', renderGrid);
+window.addEventListener('offline', renderGrid);
 </script>
 <!-- ============================================================
      TOPIC NUMBERING — display vs ID (do not conflate)
