@@ -150,7 +150,20 @@
   function removeDownloaded(prefix) { var m = getManifest(); delete m[prefix]; setManifest(m); }
   function downloadedTier(prefix) { var e = getManifest()[prefix]; return e ? e.tier : null; }
 
-  function stampVerified() { try { localStorage.setItem('thaiear_lastVerified', String(Date.now())); } catch (_) {} }
+  function parseExpiry(v) {
+    if (!v) return 0;
+    if (typeof v === 'number') return v < 1e12 ? v * 1000 : v;  // epoch seconds vs ms
+    var t = Date.parse(v); return isNaN(t) ? 0 : t;             // ISO string
+  }
+  // On each successful online check, record WHEN we checked + the membership's real end date.
+  function stampVerified() {
+    try {
+      localStorage.setItem('thaiear_lastVerified', String(Date.now()));
+      var a = window.ThaiEarAuth, sub = a && a.getSubscription && a.getSubscription();
+      var end = sub && sub.current_period_end;
+      if (end) localStorage.setItem('thaiear_sub_until', String(parseExpiry(end)));
+    } catch (_) {}
+  }
   // May an offline download of this tier be played right now? free/member: always.
   // premium: live subscription when online; else within the verified-online window.
   function canUseOffline(tier) {
@@ -162,8 +175,13 @@
       if (a && a.isReady) return false;   // definitively not subscribed
       // auth still loading → fall through to the window
     }
+    // Offline: must have re-verified within the backstop window (catches mid-period cancellation)
+    // AND the membership's real end date (current_period_end) must not have passed.
     var last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);
-    return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
+    var until = parseInt(localStorage.getItem('thaiear_sub_until') || '0', 10);
+    var withinBackstop = !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
+    var membershipActive = !until || Date.now() < until;   // no end date captured → backstop alone
+    return withinBackstop && membershipActive;
   }
 
   function localUri(prefix, file) {
@@ -174,17 +192,21 @@
   }
   // Main (native) player: local file:// if downloaded + licence ok, else the remote URL.
   function mainSrcFor(file) {
-    if (OFFLINE && isDownloaded(mainPrefix) && canUseOffline(mainTier)) {
-      return localUri(mainPrefix, file).then(function (uri) { return uri || buildUrl(file, mainGated); });
+    if (OFFLINE && isDownloaded(mainPrefix)) {
+      if (canUseOffline(mainTier)) return localUri(mainPrefix, file).then(function (uri) { return uri || buildUrl(file, mainGated); });
+      if (!navigator.onLine) return Promise.reject({ code: 'licence' }); // downloaded premium, offline licence lapsed
     }
     return buildUrl(file, mainGated);
   }
   // Sentence (web <audio>) player: convertFileSrc(local) if downloaded + licence ok, else remote.
   function sentSrcFor(file) {
-    if (OFFLINE && isDownloaded(PREFIX) && canUseOffline(TIER)) {
-      return localUri(PREFIX, file).then(function (uri) {
-        return uri ? (window.Capacitor.convertFileSrc ? window.Capacitor.convertFileSrc(uri) : uri) : buildUrl(file);
-      });
+    if (OFFLINE && isDownloaded(PREFIX)) {
+      if (canUseOffline(TIER)) {
+        return localUri(PREFIX, file).then(function (uri) {
+          return uri ? (window.Capacitor.convertFileSrc ? window.Capacitor.convertFileSrc(uri) : uri) : buildUrl(file);
+        });
+      }
+      if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
     return buildUrl(file);
   }
@@ -254,6 +276,30 @@
     if (dl) cachePage();   // self-heal: re-persist the page whenever we open a downloaded topic online
     setOfflineState(dl ? 'downloaded' : 'idle');
   }
+  // In-page message shown when a downloaded premium topic is played offline after the licence
+  // window has lapsed — friendly, no navigation (the SW would otherwise show the offline page).
+  function showLicenceOverlay() {
+    if (document.getElementById('te-licence-overlay')) return;
+    var ov = document.createElement('div');
+    ov.id = 'te-licence-overlay';
+    ov.className = 'te-licence-overlay';
+    ov.innerHTML =
+      '<div class="te-licence-card">' +
+        '<span class="te-licence-eyebrow">' +
+          '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Premium download</span>' +
+        '<h2>Reconnect to keep listening</h2>' +
+        '<p>To keep your premium downloads playable offline, ThaiEar checks your membership online every so often — and it’s been a while.</p>' +
+        '<p class="te-licence-sub">Connect to the internet once and this topic unlocks again straight away.</p>' +
+        '<button type="button" class="te-licence-btn">Got it</button>' +
+        '<p class="te-licence-note">Free downloads still play offline; your premium downloads return as soon as you reconnect.</p>' +
+      '</div>';
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    var btn = ov.querySelector('.te-licence-btn');
+    if (btn) btn.addEventListener('click', close);
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); }); // tap backdrop to dismiss
+  }
+
   // Refresh the offline licence whenever auth resolves online with an active subscription.
   window.addEventListener('thaiear:auth', function () {
     var a = window.ThaiEarAuth;
@@ -424,6 +470,15 @@
     .offline-btn.offline-del { color: var(--text-secondary); }
     .offline-status { font-size: 13px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 7px; }
     .offline-status.offline-ok { color: var(--accent); font-weight: 500; }
+    .te-licence-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,40,0.55); display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
+    .te-licence-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 360px; width: 100%; padding: 1.9rem 1.6rem; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+    .te-licence-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--gold-dark, #C8A030); background: var(--gold-light, #FBF5DC); padding: 4px 11px; border-radius: 20px; margin-bottom: 0.9rem; }
+    .te-licence-card h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.6rem; color: var(--text-primary); }
+    .te-licence-card p { color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 0 0 0.5rem; }
+    .te-licence-card .te-licence-sub { color: var(--text-tertiary); font-size: 13px; margin-bottom: 1.5rem; }
+    .te-licence-btn { font-family: var(--font-ui); font-size: 15px; font-weight: 500; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 11px 20px; cursor: pointer; width: 100%; }
+    .te-licence-btn:hover { background: var(--accent-mid); }
+    .te-licence-card .te-licence-note { margin-top: 1rem; font-size: 12px; color: var(--text-tertiary); }
     @media (max-width: 600px) {
       /* keep the whole control row on ONE line on phones (portrait) */
       .player-top { gap: 6px; }
@@ -535,6 +590,8 @@
   function handleDenied(err, tier) {
     if (tier == null) tier = TIER;
     var code = err && err.code;
+    // Offline premium download whose licence has lapsed → friendly in-page message (no navigation).
+    if (code === 'licence') { showLicenceOverlay(); return; }
     var gate = (code === 'noauth' || code === 401 || code === 402 || code === 403);
     if (!gate) { console.warn('player.js: audio unavailable', err); return; }
     // Member content is free behind a login → send to the free-membership explainer
