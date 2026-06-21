@@ -87,7 +87,7 @@
         { name: "Clothing & appearance 1", sentences: 22, page: "topic-18a.html", access: "member", audio: "Clothing_BEG" },
         { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html", audio: "Appearance_LI1" } ] },
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Cooking & recipes 1", sentences: 30, page: "topic-19a.html", access: "member", audio: "Cooking_BEG" },
+        { name: "Cooking & recipes 1", sentences: 31, page: "topic-19a.html", access: "member", audio: "Cooking_BEG" },
         { name: "Cooking & recipes 2", sentences: 27, page: "topic-19b.html", audio: "Recipes_LI1" } ] },
     { id: 20, name: "Work & study", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Work & study 1", sentences: 24, page: "topic-20a.html", access: "member", audio: "Job_LI1" },
