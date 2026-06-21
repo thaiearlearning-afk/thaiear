@@ -84,9 +84,10 @@ self.addEventListener('fetch', function (e) {
   var url;
   try { url = new URL(req.url); } catch (_) { return; }
 
-  // Cross-origin: cache Google Fonts (cache-first); leave audio.thaiear.com & everything else alone.
+  // Cross-origin: cache Google Fonts AND the Supabase ESM bundle (esm.sh) cache-first, so auth works
+  // offline (the import is pinned to @2, so a stable cached copy is fine); leave audio & the rest alone.
   if (url.origin !== self.location.origin) {
-    if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+    if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com' || url.hostname === 'esm.sh') {
       e.respondWith(
         caches.open(CACHE).then(function (c) {
           return c.match(req).then(function (hit) {
