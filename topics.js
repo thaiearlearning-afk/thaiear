@@ -78,7 +78,7 @@
         { name: "Feelings & emotions 1", sentences: 28, page: "topic-14a.html", access: "member", audio: "Feelings_BEG" },
         { name: "Feelings & emotions 2", sentences: 34, page: "topic-14b.html", audio: "Feelings_LI1" } ] },
     { id: 15, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 37, access: "premium", audio: "Hobbies_BEG" },
-    { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 36, access: "premium", audio: "SocialLife_BEG" },
+    { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 40, access: "premium", audio: "SocialLife_BEG" },
     { id: 38, name: "Idioms", levels: ["beg","li1"], sentences: 27, access: "premium", audio: "Idiom_BEG" },
     { id: 17, name: "Plans & future", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Plans & future 1", sentences: 28, page: "topic-17a.html", access: "member", audio: "Plans_BEG" },
