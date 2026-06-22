@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Socials</title>
+<meta name="description" content="Follow ThaiEar on Instagram and TikTok, or get in touch by email.">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.7; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 2.75rem 1.5rem 3.5rem; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.6rem; line-height: 1.2; color: #1C124E; }
+  .lede { color: var(--text-secondary); margin-bottom: 1.75rem; }
+
+  /* social link cards */
+  .social-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .social-card {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.15rem; text-decoration: none; color: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .social-card:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .social-icon { flex-shrink: 0; width: 42px; height: 42px; border-radius: 11px;
+    display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+  .social-icon svg { width: 22px; height: 22px; }
+  .social-icon.instagram { background: linear-gradient(45deg, #F58529, #DD2A7B 45%, #8134AF 75%, #515BD4); }
+  .social-icon.tiktok { background: #111; }
+  .social-icon.email { background: var(--accent); }
+  .social-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .social-platform { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .social-handle { font-size: 13px; color: var(--text-secondary); word-break: break-word; }
+  .social-go { margin-left: auto; color: var(--text-tertiary); font-size: 20px; line-height: 1; flex-shrink: 0; }
+
+  .note { font-size: 13px; color: var(--text-tertiary); margin-top: 1.75rem; text-align: center; }
+  @media (max-width: 600px) { .wrap { padding: 2rem 1.1rem 2.5rem; } h1 { font-size: 24px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="wrap">
+  <div class="eyebrow">Socials</div>
+  <h1>Say hello</h1>
+  <p class="lede">Follow along for Thai listening tips, new topics and behind-the-scenes — or drop us a line any time.</p>
+
+  <div class="social-list">
+    <a class="social-card" href="https://www.instagram.com/thaiear.co" target="_blank" rel="noopener">
+      <span class="social-icon instagram" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none"/></svg>
+      </span>
+      <span class="social-text">
+        <span class="social-platform">Instagram</span>
+        <span class="social-handle">@thaiear.co</span>
+      </span>
+      <span class="social-go" aria-hidden="true">›</span>
+    </a>
+
+    <a class="social-card" href="https://www.tiktok.com/@thaiear" target="_blank" rel="noopener">
+      <span class="social-icon tiktok" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.3 2.1 1.5 3.6 3.6 3.9v2.5c-1.3.1-2.5-.3-3.6-1v5.9c0 3.4-2.7 5.8-5.9 5.3-2.6-.4-4.4-2.7-4.2-5.3.2-2.5 2.4-4.4 4.9-4.2.3 0 .5.1.8.1v2.6c-.3-.1-.6-.2-.9-.2-1.2-.1-2.2.8-2.3 2-.1 1.2.8 2.2 2 2.3 1.2.1 2.3-.8 2.3-2.1V3h2.7z"/></svg>
+      </span>
+      <span class="social-text">
+        <span class="social-platform">TikTok</span>
+        <span class="social-handle">@thaiear</span>
+      </span>
+      <span class="social-go" aria-hidden="true">›</span>
+    </a>
+
+    <a class="social-card" href="mailto:hello@thaiear.com">
+      <span class="social-icon email" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>
+      </span>
+      <span class="social-text">
+        <span class="social-platform">Email</span>
+        <span class="social-handle">hello@thaiear.com</span>
+      </span>
+      <span class="social-go" aria-hidden="true">›</span>
+    </a>
+  </div>
+
+  <p class="note">Questions, feedback, or a topic you’d love to see? We read every message.</p>
+</div>
+
+<script src="nav.js" defer></script>
+</body>
+</html>
