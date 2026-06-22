@@ -23,16 +23,31 @@
     return now > START_YEAR ? START_YEAR + '–' + now : String(START_YEAR);
   }
 
+  /* ---- social links (single source; mirrored on socials.html + the index footer) ---- */
+  const SOCIALS = [
+    { label: 'Instagram', href: 'https://www.instagram.com/thaiear.co' },
+    { label: 'TikTok',    href: 'https://www.tiktok.com/@thaiear' },
+    { label: 'Socials',   href: 'socials.html' },
+  ];
+
   /* ---- styles (own them here so it's truly single-source) --------------
      Uses the page's design tokens, which every page defines in :root. */
   const STYLES = `
     .site-copyright {
       text-align: center;
-      padding: 1.1rem 1rem;
+      padding: 1.1rem 1rem 1.3rem;
       font-size: 12px;
       color: var(--text-secondary);
       border-top: 0.5px solid var(--border);
     }
+    .site-copyright-socials {
+      display: flex; justify-content: center; flex-wrap: wrap;
+      gap: 0.4rem 1.1rem; margin-bottom: 0.6rem;
+    }
+    .site-copyright-socials a {
+      font-size: 12px; font-weight: 500; color: var(--text-secondary); text-decoration: none;
+    }
+    .site-copyright-socials a:hover { color: var(--accent); }
   `;
 
   function mount() {
@@ -49,7 +64,13 @@
     const el = document.createElement('footer');
     el.className = 'site-copyright';
     el.id = 'site-copyright';
-    el.innerHTML = '© ' + yearLabel() + ' ' + OWNER + '. All rights reserved.';
+    const socials = SOCIALS.map(function (s) {
+      const ext = /^https?:/.test(s.href) ? ' target="_blank" rel="noopener"' : '';
+      return '<a href="' + s.href + '"' + ext + '>' + s.label + '</a>';
+    }).join('');
+    el.innerHTML =
+      '<nav class="site-copyright-socials">' + socials + '</nav>' +
+      '© ' + yearLabel() + ' ' + OWNER + '. All rights reserved.';
     document.body.appendChild(el);
   }
 

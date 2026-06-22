@@ -58,6 +58,9 @@
     { id: 6,  name: "Time & numbers", levels: ["beg"], sentences: 30, access: "premium", audio: "Time_BEG" },
     { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37, access: "premium", audio: "Dates_BEG" },
     { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38, access: "premium", audio: "Family_BEG" },
+    // ── new topics (not yet built): no page / audio / liveTopics entry → render as locked "coming soon" cards.
+    { id: 40, name: "Animals", levels: ["beg"], access: "premium" },
+    { id: 41, name: "Places around town", levels: ["beg"], access: "premium" },
     { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Food & drink 1", sentences: 39, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
         { name: "Food & drink 2", sentences: 26, page: "topic-09b.html", audio: "Food_LI1" } ] },
@@ -71,6 +74,7 @@
         { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html", access: "member", audio: "Transport_BEG" },
         { name: "Getting around & transport 2", sentences: 24, page: "topic-12b.html", audio: "Transport_LI1" } ] },
     { id: 37, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 40, access: "premium", audio: "Emergency_BEG" },
+    { id: 42, name: "Occupations", levels: ["beg","li1"], access: "premium" },
     { id: 13, name: "Body & health", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Body & health 1", sentences: 28, page: "topic-13a.html", access: "member", audio: "Health_BEG" },
         { name: "Body & health 2", sentences: 25, page: "topic-13b.html", audio: "Health_LI1" } ] },
@@ -100,7 +104,7 @@
     { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Food culture & eating out 1", sentences: 29, page: "topic-22a.html", access: "member", audio: "FoodSocial_LI1" },
         { name: "Food culture & eating out 2", sentences: 22, page: "topic-22b.html", audio: "FoodCulture_LI2" } ] },
-    { id: 23, name: "Nature & animals", levels: ["li1","li2"], sentences: 30, access: "premium" },
+    { id: 23, name: "Nature, environment & conservation", levels: ["li1","li2"], sentences: 30, access: "premium" },
     { id: 24, name: "Technology & communication", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 25, name: "Media & entertainment", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 26, name: "Sport & exercise", levels: ["li1","li2"], sentences: 25, access: "premium" },

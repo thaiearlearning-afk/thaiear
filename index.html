@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ThaiEar — Learn Thai by Listening</title>
-<meta name="description" content="A free Thai language listening platform. 39 topics, 1,000+ sentences, native-speed audio. Learn Thai by listening.">
+<meta name="description" content="A free Thai language listening platform. 42 topics, 1,000+ sentences, native-speed audio. Learn Thai by listening.">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -610,6 +610,9 @@
 <footer class="site-footer">
   <span class="footer-note">thaiear.com · © <span id="copyright-year">2026</span> ThaiEar. All rights reserved.</span>
   <nav class="footer-links">
+    <a href="socials.html">Socials</a>
+    <a href="https://www.instagram.com/thaiear.co" target="_blank" rel="noopener">Instagram</a>
+    <a href="https://www.tiktok.com/@thaiear" target="_blank" rel="noopener">TikTok</a>
     <a href="privacy.html">Privacy</a>
     <a href="terms.html">Terms</a>
     <a href="refunds.html">Refunds</a>
@@ -904,7 +907,7 @@ function renderCard(t, label, sentences, access, pageHref, audio) {
       </div>
       <div class="topic-name">${t.name}</div>
       <div class="topic-meta-row">
-        <span class="topic-sent-count">${sentences} sentences</span>
+        <span class="topic-sent-count">${(typeof sentences === 'number' && sentences > 0) ? `${sentences} sentences` : ''}</span>
         ${metaRight}
       </div>`;
   if (!live) return `<div class="topic-card coming-soon">${inner}</div>`;
