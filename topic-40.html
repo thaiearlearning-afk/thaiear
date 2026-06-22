@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 9: Animals</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Animals</h1>
+  <p class="topic-meta"><strong>37 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-08.html">
+      <span>&larr;</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Family &amp; relationships</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-09a.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Food &amp; drink 1</span>
+        </span>
+        <span>&rarr;</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "premium",
+  audioPrefix: "Animals_BEG",
+  sentences: [
+  { num: 1098, display: 1, preview: "ตัวอะไร", thai: "นั่นตัวอะไรเหรอครับ", english: "What animal is that?", gloss: [["นั่น", "that"], ["ตัว", "(creature)"], ["อะไร", "what"], ["เหรอ", "(question)"], ["ครับ", "polite(m)"]], cultural: "ตัวอะไร = 'what creature?' — ตัว, the everyday animal classifier, doubles as the noun 'creature' here." },
+  { num: 1099, display: 2, preview: "ตุ๊กแก", thai: "นั่นน่าจะเป็นตุ๊กแก ร้องเสียงดังเลย", english: "That's probably a tokay — it calls really loudly.", gloss: [["นั่น", "that"], ["น่าจะ", "probably"], ["เป็น", "is"], ["ตุ๊กแก", "tokay"], ["ร้อง", "calls"], ["เสียงดัง", "loudly"], ["เลย", "(emphasis)"]], cultural: "The tokay gecko (ตุ๊กแก) is named for its loud night-time 'TUK-kae' call, heard all over Thailand; folklore says you can count the calls for luck. น่าจะ = 'probably', softening a guess." },
+  { num: 1100, display: 3, preview: "จิ้งจก", thai: "ตรงกำแพงมีจิ้งจกตัวเล็กๆ", english: "There's a little house gecko on the wall.", gloss: [["ตรง", "at"], ["กำแพง", "wall"], ["มี", "there's"], ["จิ้งจก", "house gecko"], ["ตัว", "(classifier)"], ["เล็กๆ", "tiny"]], cultural: "จิ้งจก, the little house gecko, is a welcome guest in Thai homes — it eats insects, and its soft clicking is a familiar household sound." },
+  { num: 1101, display: 4, preview: "หมา", thai: "ที่บ้านผมมีหมาสองตัวครับ", english: "I have two dogs at home.", gloss: [["ที่บ้าน", "at home"], ["ผม", "I(m)"], ["มี", "have"], ["หมา", "dog"], ["สอง", "two"], ["ตัว", "(classifier)"], ["ครับ", "polite(m)"]], cultural: "" },
+  { num: 1102, display: 5, preview: "แมว", thai: "ว่าแต่ คุณมีแมวกี่ตัวคะ", english: "By the way, how many cats do you have?", gloss: [["ว่าแต่", "by the way"], ["คุณ", "you"], ["มี", "have"], ["แมว", "cat"], ["กี่", "how many"], ["ตัว", "(classifier)"], ["คะ", "polite(f)"]], cultural: "ว่าแต่ = 'by the way' — a casual marker for switching topic." },
+  { num: 1103, display: 6, preview: "สีดำสลับขาว", thai: "แมวของผมสีดำสลับขาว", english: "My cat is black and white.", gloss: [["แมว", "cat"], ["ของ", "of"], ["ผม", "me(m)"], ["สีดำ", "black"], ["สลับ", "mixed w/"], ["ขาว", "white"]], cultural: "สลับ = 'alternating' — สีดำสลับขาว describes a two-tone, black-and-white coat." },
+  { num: 1104, display: 7, preview: "กระต่าย", thai: "ผมอยากเลี้ยงกระต่ายขาวสักตัว", english: "I'd like to keep a white rabbit.", gloss: [["ผม", "I(m)"], ["อยาก", "want to"], ["เลี้ยง", "keep"], ["กระต่าย", "rabbit"], ["ขาว", "white"], ["สัก", "just"], ["ตัว", "one"]], cultural: "เลี้ยง = to raise or keep — used alike for pets, livestock and children. สัก softens สักตัว to 'just one (or so)'." },
+  { num: 1105, display: 8, preview: "กลัวงู", thai: "น้องสาวผมกลัวงูมาก", english: "My little sister is really afraid of snakes.", gloss: [["น้องสาว", "little sister"], ["ผม", "my(m)"], ["กลัว", "afraid of"], ["งู", "snake"], ["มาก", "very"]], cultural: "" },
+  { num: 1106, display: 9, preview: "ช้าง", thai: "ผมชอบช้างที่สุดเลย", english: "I like elephants the most.", gloss: [["ผม", "I(m)"], ["ชอบ", "like"], ["ช้าง", "elephant"], ["ที่สุด", "the most"], ["เลย", "(emphasis)"]], cultural: "" },
+  { num: 1107, display: 10, preview: "ไม่เคยลืม", thai: "ช้างตัวใหญ่จริงๆ และไม่เคยลืมอะไรเลย", english: "Elephants are really big, and they never forget a thing.", gloss: [["ช้าง", "elephant"], ["ตัว", "(classifier)"], ["ใหญ่", "big"], ["จริงๆ", "really"], ["และ", "and"], ["ไม่เคย", "never"], ["ลืม", "forget"], ["อะไร", "anything"], ["เลย", "at all"]], cultural: "The elephant (ช้าง) is Thailand's national animal and a revered symbol in history, Buddhism and royal imagery. ไม่เคย = 'never (have)', the negative of เคย." },
+  { num: 1108, display: 11, preview: "น่ารัก", thai: "กระต่ายน่ารักใช่ไหม", english: "Rabbits are cute, right?", gloss: [["กระต่าย", "rabbit"], ["น่ารัก", "cute"], ["ใช่ไหม", "right?"]], cultural: "ใช่ไหม = a tag question — 'right?' / 'isn't it?' — inviting the listener to agree." },
+  { num: 1109, display: 12, preview: "เสือ", thai: "เสือทั้งดุทั้งอันตราย แต่เหลือน้อย", english: "Tigers are both fierce and dangerous, but few are left.", gloss: [["เสือ", "tiger"], ["ทั้ง", "both"], ["ดุ", "fierce"], ["ทั้ง", "and"], ["อันตราย", "dangerous"], ["แต่", "but"], ["เหลือ", "remain"], ["น้อย", "few"]], cultural: "ทั้ง...ทั้ง = 'both... and...', pairing two qualities (here ดุ 'fierce' and อันตราย 'dangerous')." },
+  { num: 1110, display: 13, preview: "กระรอก", thai: "กระรอกอยู่บนต้นไม้ เพราะมันขี้อายมาก", english: "Squirrels stay in the trees because they're very shy.", gloss: [["กระรอก", "squirrel"], ["อยู่", "stay"], ["บน", "in"], ["ต้นไม้", "trees"], ["เพราะ", "because"], ["มัน", "they"], ["ขี้อาย", "shy"], ["มาก", "very"]], cultural: "เพราะ = 'because', giving a reason. มัน ('it/they') is the normal pronoun for animals." },
+  { num: 1111, display: 14, preview: "สิงโต", thai: "สิงโตเป็นสัตว์กล้าหาญ", english: "The lion is a brave animal.", gloss: [["สิงโต", "lion"], ["เป็น", "is"], ["สัตว์", "animal"], ["กล้าหาญ", "brave"]], cultural: "" },
+  { num: 1112, display: 15, preview: "ควาย", thai: "ควายเชื่อง ไม่ดุเลย", english: "Water buffaloes are tame, not fierce at all.", gloss: [["ควาย", "buffalo"], ["เชื่อง", "tame"], ["ไม่", "not"], ["ดุ", "fierce"], ["เลย", "at all"]], cultural: "The water buffalo (ควาย) is the classic partner of the Thai rice farmer — calm and hardworking. Careful, though: calling a person ควาย is a common insult meaning 'stupid'." },
+  { num: 1113, display: 16, preview: "นกบิน", thai: "ดูสิ นกบินสูงจัง", english: "Look, the bird is flying so high!", gloss: [["ดู", "look"], ["สิ", "(go on)"], ["นก", "bird"], ["บิน", "fly"], ["สูง", "high"], ["จัง", "so"]], cultural: "สิ softens ดู into a friendly 'look!'; จัง = 'so / really', an emphatic ending." },
+  { num: 1114, display: 17, preview: "ปลาทอง", thai: "ปลาทองว่ายวนอยู่ในบ่อ", english: "The goldfish are swimming in circles in the pond.", gloss: [["ปลาทอง", "goldfish"], ["ว่าย", "swim"], ["วน", "in circles"], ["อยู่", "(-ing)"], ["ใน", "in"], ["บ่อ", "pond"]], cultural: "ปลาทอง = 'goldfish' (literally 'gold fish'); ว่ายวน = to swim round and round." },
+  { num: 1115, display: 18, preview: "ม้า", thai: "ม้าวิ่งเร็วมาก", english: "Horses run very fast.", gloss: [["ม้า", "horse"], ["วิ่ง", "run"], ["เร็ว", "fast"], ["มาก", "very"]], cultural: "" },
+  { num: 1116, display: 19, preview: "กบ", thai: "กบรีบกระโดดลงบ่อน้ำนิ่ง", english: "The frog quickly jumps into the still pond.", gloss: [["กบ", "frog"], ["รีบ", "quickly"], ["กระโดด", "jump"], ["ลง", "down into"], ["บ่อน้ำ", "pond"], ["นิ่ง", "still"]], cultural: "" },
+  { num: 1117, display: 20, preview: "จระเข้", thai: "จระเข้มีฟันแหลมคม และกัดแรงมาก", english: "Crocodiles have sharp teeth and a powerful bite.", gloss: [["จระเข้", "crocodile"], ["มี", "has"], ["ฟัน", "teeth"], ["แหลมคม", "sharp"], ["และ", "and"], ["กัด", "bite"], ["แรง", "hard"], ["มาก", "very"]], cultural: "" },
+  { num: 1118, display: 21, preview: "ตะขาบ", thai: "ตะขาบคลานอยู่บนพื้น", english: "A centipede is crawling on the floor.", gloss: [["ตะขาบ", "centipede"], ["คลาน", "crawl"], ["อยู่", "(-ing)"], ["บน", "on"], ["พื้น", "floor"]], cultural: "" },
+  { num: 1119, display: 22, preview: "นอนทั้งวัน", thai: "แมวนอนในสวนทั้งวันเลย", english: "The cat sleeps in the garden all day.", gloss: [["แมว", "cat"], ["นอน", "sleep"], ["ใน", "in"], ["สวน", "garden"], ["ทั้งวัน", "all day"], ["เลย", "(emphasis)"]], cultural: "" },
+  { num: 1120, display: 23, preview: "เต่า", thai: "เต่าเดินช้ามาก", english: "The turtle walks very slowly.", gloss: [["เต่า", "turtle"], ["เดิน", "walk"], ["ช้า", "slow"], ["มาก", "very"]], cultural: "" },
+  { num: 1121, display: 24, preview: "กัดคน", thai: "ระวังนะ หมาตัวนี้กัดคน", english: "Careful — this dog bites.", gloss: [["ระวัง", "careful"], ["นะ", "(softener)"], ["หมา", "dog"], ["ตัว", "(classifier)"], ["นี้", "this"], ["กัด", "bites"], ["คน", "people"]], cultural: "นะ softens ระวัง into a friendly 'careful!'; ตัวนี้ = 'this one', ตัว being the animal classifier." },
+  { num: 1122, display: 25, preview: "มด", thai: "ในครัวมีมดเยอะเลย", english: "There are loads of ants in the kitchen.", gloss: [["ใน", "in"], ["ครัว", "kitchen"], ["มี", "there are"], ["มด", "ants"], ["เยอะ", "lots"], ["เลย", "(emphasis)"]], cultural: "" },
+  { num: 1123, display: 26, preview: "โดนมดกัด", thai: "โดนมดกัดเจ็บนิดหน่อย", english: "Getting bitten by an ant stings a little.", gloss: [["โดน", "get-(passive)"], ["มด", "ant"], ["กัด", "bite"], ["เจ็บ", "hurts"], ["นิดหน่อย", "a little"]], cultural: "โดน marks an adversative passive — 'to get [something done to you]', usually unwanted. โดนมดกัด = 'to get bitten by an ant'." },
+  { num: 1124, display: 27, preview: "ยุง", thai: "กลางคืนยุงเยอะ", english: "There are lots of mosquitoes at night.", gloss: [["กลางคืน", "at night"], ["ยุง", "mosquitoes"], ["เยอะ", "lots"]], cultural: "" },
+  { num: 1125, display: 28, preview: "แมงมุม", thai: "แมงมุมตัวใหญ่อยู่ตรงมุมห้อง น่ากลัวจัง", english: "There's a big spider in the corner of the room — so scary!", gloss: [["แมงมุม", "spider"], ["ตัว", "(classifier)"], ["ใหญ่", "big"], ["อยู่", "is"], ["ตรง", "at"], ["มุม", "corner"], ["ห้อง", "room"], ["น่ากลัว", "scary"], ["จัง", "so"]], cultural: "น่ากลัว = 'scary' (literally 'worth fearing') — น่า + a verb makes 'worth ~ing'. จัง = 'so / really'." },
+  { num: 1126, display: 29, preview: "ผีเสื้อ", thai: "ผีเสื้อชอบเกาะดอกไม้", english: "Butterflies like to land on flowers.", gloss: [["ผีเสื้อ", "butterfly"], ["ชอบ", "like to"], ["เกาะ", "land on"], ["ดอกไม้", "flowers"]], cultural: "" },
+  { num: 1127, display: 30, preview: "หมู", thai: "ที่ฟาร์มเลี้ยงหมูเหม็นหลายตัว", english: "The farm raises lots of smelly pigs.", gloss: [["ที่", "at"], ["ฟาร์ม", "farm"], ["เลี้ยง", "raises"], ["หมู", "pigs"], ["เหม็น", "smelly"], ["หลาย", "many"], ["ตัว", "(classifier)"]], cultural: "" },
+  { num: 1128, display: 31, preview: "แพะ", thai: "แพะตัวนี้สีน้ำตาล", english: "This goat is brown.", gloss: [["แพะ", "goat"], ["ตัว", "(classifier)"], ["นี้", "this"], ["สีน้ำตาล", "brown"]], cultural: "" },
+  { num: 1129, display: 32, preview: "เป็ด", thai: "เป็ดทำรังอยู่ในกอกก", english: "The ducks are nesting in the reeds.", gloss: [["เป็ด", "ducks"], ["ทำ", "make"], ["รัง", "nest"], ["อยู่", "(-ing)"], ["ใน", "in"], ["กอ", "clump of"], ["กก", "reeds"]], cultural: "ทำรัง = to build a nest; กอกก = a clump of กก reeds — common in Thai wetlands and woven into the reed mats (เสื่อ) used in rural homes." },
+  { num: 1130, display: 33, preview: "ไก่ขัน", thai: "ตอนเช้าไก่ขันทุกวัน", english: "The rooster crows every morning.", gloss: [["ตอนเช้า", "morning"], ["ไก่", "rooster"], ["ขัน", "crows"], ["ทุกวัน", "every day"]], cultural: "The rooster's crow (ไก่ขัน) is the traditional countryside 'alarm clock' marking dawn." },
+  { num: 1131, display: 34, preview: "วัว", thai: "วัวกินหญ้าอยู่ในทุ่ง", english: "The cows are eating grass in the field.", gloss: [["วัว", "cows"], ["กิน", "eat"], ["หญ้า", "grass"], ["อยู่", "(-ing)"], ["ใน", "in"], ["ทุ่ง", "field"]], cultural: "" },
+  { num: 1132, display: 35, preview: "สวนสัตว์", thai: "ที่สวนสัตว์มีช้างสิบสี่ตัว", english: "There are fourteen elephants at the zoo.", gloss: [["ที่", "at"], ["สวนสัตว์", "zoo"], ["มี", "there are"], ["ช้าง", "elephants"], ["สิบสี่", "fourteen"], ["ตัว", "(classifier)"]], cultural: "" },
+  { num: 1133, display: 36, preview: "ลิง", thai: "ผมเคยเห็นลิงเป็นสิบตัวเลย", english: "I've seen as many as ten monkeys before!", gloss: [["ผม", "I(m)"], ["เคย", "once"], ["เห็น", "saw"], ["ลิง", "monkeys"], ["เป็นสิบ", "ten-odd"], ["ตัว", "(classifier)"], ["เลย", "(emphasis)"]], cultural: "เคย = experiential 'have (ever) ~'; เป็นสิบ = 'as many as ten / ten-odd', an informal way to stress a big number." },
+  { num: 1134, display: 37, preview: "เจองู", thai: "ถ้าเจองูแล้วไม่แน่ใจ ก็อย่าเข้าใกล้", english: "If you see a snake and aren't sure, don't go near it.", gloss: [["ถ้า", "if"], ["เจอ", "see"], ["งู", "snake"], ["แล้ว", "and"], ["ไม่", "not"], ["แน่ใจ", "sure"], ["ก็", "then"], ["อย่า", "don't"], ["เข้า", "go"], ["ใกล้", "near"]], cultural: "ถ้า...ก็ = the standard 'if... then...' conditional frame; ก็ introduces the consequence." },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

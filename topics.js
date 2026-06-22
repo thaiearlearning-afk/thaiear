@@ -59,7 +59,7 @@
     { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37, access: "premium", audio: "Dates_BEG" },
     { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38, access: "premium", audio: "Family_BEG" },
     // ── new topics (not yet built): no page / audio / liveTopics entry → render as locked "coming soon" cards.
-    { id: 40, name: "Animals", levels: ["beg"], access: "premium" },
+    { id: 40, name: "Animals", levels: ["beg"], sentences: 37, access: "premium", audio: "Animals_BEG" },
     { id: 41, name: "Places around town", levels: ["beg"], access: "premium" },
     { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Food & drink 1", sentences: 39, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
@@ -124,7 +124,7 @@
   ];
 
   // Keyed by FROZEN id (never display position). Add entries as topics go live.
-  const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 6: 'topic-06.html', 7: 'topic-07.html', 8: 'topic-08.html', 10: 'topic-10.html', 11: 'topic-11.html', 15: 'topic-15.html', 16: 'topic-16.html', 37: 'topic-37.html', 38: 'topic-38.html', 39: 'topic-39.html' };
+  const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 6: 'topic-06.html', 7: 'topic-07.html', 8: 'topic-08.html', 10: 'topic-10.html', 11: 'topic-11.html', 15: 'topic-15.html', 16: 'topic-16.html', 37: 'topic-37.html', 38: 'topic-38.html', 39: 'topic-39.html', 40: 'topic-40.html' };
 
   // Level order + labels. Difficulty is a RANGE: a topic's label shows floor -> ceiling.
   const LEVEL_ORDER = ['beg', 'li1', 'li2'];
