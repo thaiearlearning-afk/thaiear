@@ -49,6 +49,18 @@
   .social-go { margin-left: auto; color: var(--text-tertiary); font-size: 20px; line-height: 1; flex-shrink: 0; }
 
   .note { font-size: 13px; color: var(--text-tertiary); margin-top: 1.75rem; text-align: center; }
+
+  /* image + caption with the same animated 1→2→3 dot cycle used across the site */
+  .fluency-block { text-align: center; margin: 1.25rem 0 1.5rem; }
+  .fluency-img { width: 195px; max-width: 55%; height: auto; display: block; margin: 0 auto 0.4rem; }
+  .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
+  .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
+  .fluency-text .dots::after {
+    content: '...'; display: inline-block; width: 0; overflow: hidden;
+    vertical-align: bottom; animation: fluency-dots 1.5s steps(3, start) infinite;
+  }
+  @keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
+
   @media (max-width: 600px) { .wrap { padding: 2rem 1.1rem 2.5rem; } h1 { font-size: 24px; } }
 </style>
 </head>
@@ -60,6 +72,11 @@
   <div class="eyebrow">Socials</div>
   <h1>We’d like to hear from you</h1>
   <p class="lede">Follow along for Thai listening tips, new topics and behind-the-scenes — or drop us a line any time.</p>
+
+  <div class="fluency-block">
+    <img class="fluency-img" src="gecko.png" alt="Gecko" width="200">
+    <div class="fluency-text">Stick around<span class="dots" aria-hidden="true"></span></div>
+  </div>
 
   <div class="social-list">
     <a class="social-card" href="https://www.instagram.com/thaiear.co" target="_blank" rel="noopener">
