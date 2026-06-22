@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Topic 10: Places around town 1</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .topic-subtitle { font-size: 14px; font-weight: 500; color: var(--accent-mid); margin: 2px 0 10px; letter-spacing: -0.01em; }
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
+  .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; font-size: 13px; font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
+  .topic-nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .topic-nav-btn.disabled { color: var(--text-tertiary); border-color: var(--border); pointer-events: none; opacity: 0.4; }
+  .topic-nav-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .topic-nav-name { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .topic-nav-right { text-align: right; }
+  @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
+  @media (max-width: 600px) {
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div class="topic-eyebrow" id="topic-eyebrow"></div>
+  <h1 class="topic-title">Places around town 1</h1>
+  <p class="topic-subtitle">Where is it? Is it open?</p>
+  <p class="topic-meta"><strong>26 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <div id="player-root"></div>
+  <nav class="topic-nav" aria-label="Topic navigation">
+    <a class="topic-nav-btn" href="topic-40.html">
+      <span>&larr;</span>
+      <span>
+        <span class="topic-nav-label">Previous</span><br>
+        <span class="topic-nav-name">Animals</span>
+      </span>
+    </a>
+    <a class="topic-nav-btn topic-nav-right" href="topic-41b.html">
+        <span>
+          <span class="topic-nav-label">Next</span><br>
+          <span class="topic-nav-name">Places around town 2</span>
+        </span>
+        <span>&rarr;</span>
+      </a>
+  </nav>
+</div>
+
+<script>
+window.ThaiEarTopic = {
+  tier: "member",
+  audioPrefix: "Places_BEG",
+  sentences: [
+  { num: 1135, display: 1, preview: "ร้านสะดวกซื้อ", thai: "แถวนี้มีร้านสะดวกซื้อเปิด 24 ชั่วโมงไหมครับ", english: "Is there a 24-hour convenience store around here?", gloss: [["แถวนี้", "around here"], ["มี", "is there"], ["ร้านสะดวกซื้อ", "convenience store"], ["เปิด", "open"], ["24 ชั่วโมง", "24 hours"], ["ไหม", "(question)"], ["ครับ", "polite(m)"]], cultural: "24-hour convenience stores (especially 7-Eleven) are everywhere in Thailand, even in small towns — they double as a default landmark when giving directions." },
+  { num: 1136, display: 2, preview: "ธนาคาร", thai: "ขอโทษค่ะ ธนาคารอยู่ที่ไหน", english: "Excuse me, where's the bank?", gloss: [["ขอโทษ", "excuse me"], ["ค่ะ", "polite(f)"], ["ธนาคาร", "the bank"], ["อยู่", "is at"], ["ที่ไหน", "where"]], cultural: "" },
+  { num: 1137, display: 3, preview: "ไปรษณีย์", thai: "ไปรษณีย์อยู่ตรงหัวมุม", english: "The post office is on the corner.", gloss: [["ไปรษณีย์", "post office"], ["อยู่", "is"], ["ตรง", "right at"], ["หัวมุม", "the corner"]], cultural: "" },
+  { num: 1138, display: 4, preview: "ร้านขายยา", thai: "ร้านขายยาอยู่ข้างๆโรงพยาบาล", english: "The pharmacy is next to the hospital.", gloss: [["ร้านขายยา", "pharmacy"], ["อยู่", "is"], ["ข้างๆ", "next to"], ["โรงพยาบาล", "the hospital"]], cultural: "" },
+  { num: 1139, display: 5, preview: "ห้องน้ำ", thai: "ห้องน้ำสาธารณะอยู่ตรงไหนคะ", english: "Where are the public toilets?", gloss: [["ห้องน้ำ", "toilet"], ["สาธารณะ", "public"], ["อยู่", "is"], ["ตรงไหน", "whereabouts"], ["คะ", "polite(f)"]], cultural: "Public toilets are common in malls, markets and petrol stations; market or street ones often charge a few baht and may be squat-style." },
+  { num: 1140, display: 6, preview: "ตลาดกลางคืน", thai: "ตลาดกลางคืนอยู่ไม่ไกลจากที่นี่", english: "The night market isn't far from here.", gloss: [["ตลาด", "market"], ["กลางคืน", "night"], ["อยู่", "is"], ["ไม่ไกล", "not far"], ["จาก", "from"], ["ที่นี่", "here"]], cultural: "" },
+  { num: 1141, display: 7, preview: "ร้านกาแฟ", thai: "ร้านกาแฟฮิปๆอยู่ชั้นสอง", english: "The trendy coffee shop is on the second floor.", gloss: [["ร้านกาแฟ", "coffee shop"], ["ฮิปๆ", "trendy"], ["อยู่", "is"], ["ชั้นสอง", "2nd floor"]], cultural: "" },
+  { num: 1142, display: 8, preview: "ร้านมือถือ", thai: "ร้านมือถืออยู่ฝั่งตรงข้าม", english: "The phone shop is on the opposite side.", gloss: [["ร้านมือถือ", "phone shop"], ["อยู่", "is"], ["ฝั่งตรงข้าม", "opposite side"]], cultural: "" },
+  { num: 1143, display: 9, preview: "ร้านทำเล็บ", thai: "ร้านทำเล็บอยู่ชั้นล่าง", english: "The nail salon is on the ground floor.", gloss: [["ร้านทำเล็บ", "nail salon"], ["อยู่", "is"], ["ชั้นล่าง", "ground floor"]], cultural: "" },
+  { num: 1144, display: 10, preview: "คลินิก", thai: "คลินิกอยู่ติดกับร้านสะดวกซื้อ", english: "The clinic is right next to the convenience store.", gloss: [["คลินิก", "clinic"], ["อยู่", "is"], ["ติดกับ", "right next to"], ["ร้านสะดวกซื้อ", "convenience store"]], cultural: "" },
+  { num: 1145, display: 11, preview: "สวนสาธารณะ", thai: "สวนสาธารณะอยู่ใกล้บ้าน", english: "The park is near my house.", gloss: [["สวนสาธารณะ", "park"], ["อยู่", "is"], ["ใกล้", "near"], ["บ้าน", "house"]], cultural: "" },
+  { num: 1146, display: 12, preview: "วัด", thai: "วัดเก่าแก่อยู่สุดถนนเส้นนี้", english: "The old temple is at the end of this street.", gloss: [["วัด", "temple"], ["เก่าแก่", "old"], ["อยู่", "is"], ["สุด", "end of"], ["ถนน", "street"], ["เส้นนี้", "this one"]], cultural: "" },
+  { num: 1147, display: 13, preview: "คลินิกทำฟัน", thai: "คลินิกทำฟันอยู่ชั้นสามของห้าง", english: "The dental clinic is on the third floor of the mall.", gloss: [["คลินิกทำฟัน", "dental clinic"], ["อยู่", "is"], ["ชั้นสาม", "3rd floor"], ["ของ", "of"], ["ห้าง", "the mall"]], cultural: "" },
+  { num: 1148, display: 14, preview: "ร้านขายของชำ", thai: "ร้านขายของชำเล็กๆอยู่หัวมุมซอย", english: "There's a little grocery shop on the corner of the soi.", gloss: [["ร้านขายของชำ", "grocery shop"], ["เล็กๆ", "little"], ["อยู่", "is"], ["หัวมุม", "corner"], ["ซอย", "of the soi"]], cultural: "A ซอย is a side-street or lane branching off a main road, numbered (e.g. Sukhumvit Soi 11). Thai addresses and directions lean heavily on soi numbers." },
+  { num: 1149, display: 15, preview: "ร้านทอง", thai: "ร้านทองร้านนี้เก่าแก่มาก", english: "This gold shop is very old and well-established.", gloss: [["ร้านทอง", "gold shop"], ["ร้านนี้", "this one"], ["เก่าแก่", "long-established"], ["มาก", "very"]], cultural: "Gold shops (often Thai-Chinese family businesses) double as informal savings and pawn spots; gold is bought by weight (บาท) and resold easily." },
+  { num: 1150, display: 16, preview: "ร้านนวดแผนไทย", thai: "ร้านนวดแผนไทยอยู่ใกล้ๆนี่เอง", english: "The Thai massage place is right nearby.", gloss: [["ร้านนวดแผนไทย", "Thai massage shop"], ["อยู่", "is"], ["ใกล้ๆ", "nearby"], ["นี่เอง", "right here"]], cultural: "นวดแผนไทย (traditional Thai massage) is widely available in dedicated neighbourhood shops, not just spas — an everyday, affordable thing rather than a luxury." },
+  { num: 1151, display: 17, preview: "สถานีตำรวจ", thai: "สถานีตำรวจน่าจะอยู่เลยธนาคารไปนิดเดียว", english: "The police station is probably just a little further — past the bank.", gloss: [["สถานีตำรวจ", "police station"], ["น่าจะ", "probably"], ["อยู่", "is"], ["เลย", "past"], ["ธนาคาร", "the bank"], ["ไป", "on"], ["นิดเดียว", "just a bit"]], cultural: "น่าจะ softens a statement to 'probably / I reckon' — useful when you're fairly but not fully sure." },
+  { num: 1152, display: 18, preview: "โรงเรียน", thai: "โรงเรียนอยู่ฝั่งตรงข้ามสวนสาธารณะ", english: "The school is opposite the park.", gloss: [["โรงเรียน", "school"], ["อยู่", "is"], ["ฝั่งตรงข้าม", "opposite"], ["สวนสาธารณะ", "the park"]], cultural: "" },
+  { num: 1153, display: 19, preview: "ห้าง", thai: "วันศุกร์ห้างเปิดกี่โมงคะ", english: "What time does the mall open on Fridays?", gloss: [["วันศุกร์", "Friday"], ["ห้าง", "the mall"], ["เปิด", "open"], ["กี่โมง", "what time"], ["คะ", "polite(f)"]], cultural: "" },
+  { num: 1154, display: 20, preview: "สิบโมงเช้า", thai: "ร้านเปิดสิบโมงเช้า", english: "The shop opens at ten in the morning.", gloss: [["ร้าน", "the shop"], ["เปิด", "opens"], ["สิบโมงเช้า", "10 am"]], cultural: "" },
+  { num: 1155, display: 21, preview: "สี่โมงเย็น", thai: "ธนาคารปิดสี่โมงเย็น", english: "The bank closes at four pm.", gloss: [["ธนาคาร", "the bank"], ["ปิด", "closes"], ["สี่โมงเย็น", "4 pm"]], cultural: "" },
+  { num: 1156, display: 22, preview: "วันจันทร์", thai: "ร้านนี้ปิดวันจันทร์", english: "This shop is closed on Mondays.", gloss: [["ร้านนี้", "this shop"], ["ปิด", "closed"], ["วันจันทร์", "Mondays"]], cultural: "" },
+  { num: 1157, display: 23, preview: "ซูเปอร์มาร์เก็ต", thai: "ซูเปอร์มาร์เก็ตเปิดทุกวันจนถึงดึก", english: "The supermarket is open every day until late.", gloss: [["ซูเปอร์มาร์เก็ต", "supermarket"], ["เปิด", "open"], ["ทุกวัน", "every day"], ["จนถึง", "until"], ["ดึก", "late"]], cultural: "" },
+  { num: 1158, display: 24, preview: "ตลาดนัด", thai: "ตลาดนัดเปิดเฉพาะวันเสาร์อาทิตย์", english: "The weekend market is only open at weekends.", gloss: [["ตลาดนัด", "flea market"], ["เปิด", "open"], ["เฉพาะ", "only"], ["วันเสาร์อาทิตย์", "at weekends"]], cultural: "ตลาดนัด are markets that pop up on set days (often weekends) rather than running daily — Bangkok's Chatuchak is the giant example." },
+  { num: 1159, display: 25, preview: "ตลาดสด", thai: "ตลาดสดเปิดตั้งแต่เช้ามืด", english: "The fresh market opens from before dawn.", gloss: [["ตลาดสด", "fresh market"], ["เปิด", "opens"], ["ตั้งแต่", "from"], ["เช้ามืด", "before dawn"]], cultural: "ตลาดสด (a 'wet market') is where many Thais buy produce and meat daily; they open in the small hours and wind down by mid-morning." },
+  { num: 1160, display: 26, preview: "ร้านตัดผม", thai: "ร้านตัดผมปิดแล้วเหรอ", english: "Is the barber's closed already?", gloss: [["ร้านตัดผม", "barber's"], ["ปิด", "closed"], ["แล้ว", "already"], ["เหรอ", "(question)"]], cultural: "" },
+]
+};
+</script>
+<script src="player.js" defer></script>
+<script src="topics.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>
