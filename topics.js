@@ -60,7 +60,9 @@
     { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38, access: "premium", audio: "Family_BEG" },
     // ── new topics (not yet built): no page / audio / liveTopics entry → render as locked "coming soon" cards.
     { id: 40, name: "Animals", levels: ["beg"], sentences: 37, access: "premium", audio: "Animals_BEG" },
-    { id: 41, name: "Places around town", levels: ["beg"], access: "premium" },
+    { id: 41, name: "Places around town", levels: ["beg"], access: "premium", parts: [
+        { name: "Places around town 1", sentences: 26, page: "topic-41a.html", access: "member", audio: "Places_BEG" },
+        { name: "Places around town 2", sentences: 27, page: "topic-41b.html", audio: "Places2_BEG" } ] },
     { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Food & drink 1", sentences: 39, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
         { name: "Food & drink 2", sentences: 26, page: "topic-09b.html", audio: "Food_LI1" } ] },
