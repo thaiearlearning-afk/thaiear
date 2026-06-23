@@ -123,7 +123,8 @@
         { sentences: 22, access: "member" }, { sentences: 28 } ] },
     { id: 35, name: "Buddhism", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Buddhism 1", sentences: 38, page: "topic-35a.html", access: "member", audio: "Buddhism_LI1" },
-        { sentences: 28 } ] },
+        { name: "Buddhism 2", sentences: 42, page: "topic-35b.html", audio: "Dhamma_LI2" },
+        { name: "Buddhism 3", sentences: 30, page: "topic-35c.html", audio: "Monastic_LI2" } ] },
     { id: 36, name: "Romantic relationships & dating", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 19, access: "premium", audio: "ToneTwister_LI1" },
   ];
