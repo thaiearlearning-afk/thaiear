@@ -67,20 +67,20 @@
         { name: "Food & drink 1", sentences: 39, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
         { name: "Food & drink 2", sentences: 26, page: "topic-09b.html", audio: "Food_LI1" } ] },
     { id: 10, name: "Home & daily routine", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Home & daily routine 1", sentences: 24, page: "topic-10a.html", access: "member", audio: "HomeAndDailyRoutine_BEG" },
+        { name: "Home & daily routine 1", sentences: 24, page: "topic-10a.html", audio: "HomeAndDailyRoutine_BEG" },
         { name: "Home & daily routine 2", sentences: 23, page: "topic-10b.html", audio: "HomeAndDailyRoutine2_BEG" } ] },
     { id: 11, name: "Shopping & money", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Shopping & money 1", sentences: 22, page: "topic-11a.html", access: "member", audio: "ShoppingAndMoney_BEG" },
         { name: "Shopping & money 2", sentences: 29, page: "topic-11b.html", audio: "ShoppingAndMoney2_BEG" } ] },
     { id: 12, name: "Getting around & transport", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html", access: "member", audio: "Transport_BEG" },
+        { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html", audio: "Transport_BEG" },
         { name: "Getting around & transport 2", sentences: 24, page: "topic-12b.html", audio: "Transport_LI1" } ] },
     { id: 37, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 40, access: "premium", audio: "Emergency_BEG" },
     { id: 42, name: "Occupations", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Occupations 1", sentences: 30, page: "topic-42a.html", access: "member", audio: "Occupations_BEG" },
         { name: "Occupations 2", sentences: 30, page: "topic-42b.html", audio: "Occupations_LI1" } ] },
     { id: 13, name: "Body & health", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Body & health 1", sentences: 28, page: "topic-13a.html", access: "member", audio: "Health_BEG" },
+        { name: "Body & health 1", sentences: 28, page: "topic-13a.html", audio: "Health_BEG" },
         { name: "Body & health 2", sentences: 25, page: "topic-13b.html", audio: "Health_LI1" } ] },
     { id: 14, name: "Feelings & emotions", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Feelings & emotions 1", sentences: 28, page: "topic-14a.html", access: "member", audio: "Feelings_BEG" },
@@ -95,7 +95,7 @@
         { name: "Clothing & appearance 1", sentences: 22, page: "topic-18a.html", access: "member", audio: "Clothing_BEG" },
         { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html", audio: "Appearance_LI1" } ] },
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Cooking & recipes 1", sentences: 31, page: "topic-19a.html", access: "member", audio: "Cooking_BEG" },
+        { name: "Cooking & recipes 1", sentences: 31, page: "topic-19a.html", audio: "Cooking_BEG" },
         { name: "Cooking & recipes 2", sentences: 27, page: "topic-19b.html", audio: "Recipes_LI1" } ] },
     { id: 20, name: "Work & study", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Work & study 1", sentences: 24, page: "topic-20a.html", access: "member", audio: "Job_LI1" },
