@@ -76,7 +76,9 @@
         { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html", access: "member", audio: "Transport_BEG" },
         { name: "Getting around & transport 2", sentences: 24, page: "topic-12b.html", audio: "Transport_LI1" } ] },
     { id: 37, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 40, access: "premium", audio: "Emergency_BEG" },
-    { id: 42, name: "Occupations", levels: ["beg","li1"], access: "premium" },
+    { id: 42, name: "Occupations", levels: ["beg","li1"], access: "premium", parts: [
+        { name: "Occupations 1", sentences: 30, page: "topic-42a.html", access: "member", audio: "Occupations_BEG" },
+        { name: "Occupations 2", sentences: 30, page: "topic-42b.html", audio: "Occupations_LI1" } ] },
     { id: 13, name: "Body & health", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Body & health 1", sentences: 28, page: "topic-13a.html", access: "member", audio: "Health_BEG" },
         { name: "Body & health 2", sentences: 25, page: "topic-13b.html", audio: "Health_LI1" } ] },
