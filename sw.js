@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = 'thaiear-' + VERSION;
 
 // Topic pages (topic-NN.html) 308-redirect to clean URLs (/topic-NN). A *redirected* Response
@@ -55,7 +55,7 @@ const PRECACHE = [
   // Navigable non-topic "shell" pages — precached so they open offline (each renders its own
   // logged-out/offline state) instead of falling through to the generic offline notice. Topic pages
   // are intentionally NOT here (cached on visit / via the download feature).
-  '/account.html', '/subscribe.html', '/join.html', '/about.html', '/guide.html',
+  '/account.html', '/subscribe.html', '/join.html', '/about.html', '/guide.html', '/socials.html',
   '/progress.html', '/sentences.html', '/privacy.html', '/terms.html', '/refunds.html', '/deleted.html',
   '/nav.js', '/topics.js', '/player.js', '/auth.js', '/footer.js',
   '/logo.png', '/logoshort.png', '/favicon.png', '/favicon.ico',
