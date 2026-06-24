@@ -430,6 +430,7 @@
     .time-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
     .orientation-text { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
     .orientation-text strong { color: var(--text-primary); font-weight: 500; }
+    .orientation-text a { color: var(--accent); font-weight: 500; text-decoration: none; }
     .controls-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
     .reveal-all-btn { font-size: 12px; font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
     .reveal-all-btn:hover { background: var(--surface); }
@@ -603,9 +604,8 @@
     '</div>' +
     '<div class="offline-bar" id="offline-bar" style="display:none"></div>' +
     '<p class="orientation-text">' +
-      '<strong>How to use this topic:</strong> Listen to the <strong>Thai first</strong> audio a couple of times to build familiarity. ' +
-      'Then switch to <strong>English first</strong> to test your recall — hear the English prompt and try to produce the Thai before it plays. Feel free to pause anytime, especially on your first few listens. ' +
-      'Click any sentence below to reveal the Thai, English translation, and word notes. Flag any sentences you want to revisit.' +
+      '<strong>How to use:</strong> Listen to the <strong>Thai-first</strong> audio a few times to get familiar, then switch to <strong>English-first</strong> to test your recall — try to say the Thai before it plays. Pause anytime. ' +
+      '<a href="guide.html">New to ThaiEar? Read the full guide →</a>' +
     '</p>' +
     '<div class="controls-row">' +
       '<button class="reveal-all-btn" id="reveal-all-btn" onclick="toggleAll()">' +
