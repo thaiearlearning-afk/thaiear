@@ -13,10 +13,12 @@
 
    Strategy: same-origin GETs are NETWORK-FIRST (online always gets fresh
    content — the tandem-update model is preserved — and the cache is only
-   used as the offline fallback). Google Fonts are cache-first.
+   used as the offline fallback). Fonts are now self-hosted (same-origin
+   /fonts/*.woff2), so they ride the same network-first path and are also
+   precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = 'thaiear-' + VERSION;
 
 // Topic pages (topic-NN.html) 308-redirect to clean URLs (/topic-NN). A *redirected* Response
@@ -58,7 +60,15 @@ const PRECACHE = [
   '/nav.js', '/topics.js', '/player.js', '/auth.js', '/footer.js',
   '/logo.png', '/logoshort.png', '/favicon.png', '/favicon.ico',
   '/favicon-16.png', '/favicon-32.png', '/apple-touch-icon.png',
-  '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg'
+  '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg',
+  // Self-hosted fonts (replaced Google Fonts 2026-06-24): precache the full used set so a
+  // freshly-downloaded topic renders Sarabun (Thai) + Inter offline, not the system fallback.
+  '/fonts/inter-latin-300.woff2', '/fonts/inter-latin-400.woff2',
+  '/fonts/inter-latin-500.woff2', '/fonts/inter-latin-600.woff2',
+  '/fonts/sarabun-thai-300.woff2', '/fonts/sarabun-thai-400.woff2',
+  '/fonts/sarabun-thai-500.woff2', '/fonts/sarabun-thai-600.woff2',
+  '/fonts/sarabun-latin-300.woff2', '/fonts/sarabun-latin-400.woff2',
+  '/fonts/sarabun-latin-500.woff2', '/fonts/sarabun-latin-600.woff2'
 ];
 
 self.addEventListener('install', function (e) {
@@ -84,10 +94,11 @@ self.addEventListener('fetch', function (e) {
   var url;
   try { url = new URL(req.url); } catch (_) { return; }
 
-  // Cross-origin: cache Google Fonts AND the Supabase ESM bundle (esm.sh) cache-first, so auth works
-  // offline (the import is pinned to @2, so a stable cached copy is fine); leave audio & the rest alone.
+  // Cross-origin: cache the Supabase ESM bundle (esm.sh) cache-first, so auth works offline (the
+  // import is pinned to @2, so a stable cached copy is fine); leave audio & the rest alone.
+  // (Fonts used to be Google-hosted and cached here; they're self-hosted now — handled same-origin.)
   if (url.origin !== self.location.origin) {
-    if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com' || url.hostname === 'esm.sh') {
+    if (url.hostname === 'esm.sh') {
       e.respondWith(
         caches.open(CACHE).then(function (c) {
           return c.match(req).then(function (hit) {

@@ -786,7 +786,16 @@ function precacheDownloadedPages() {
   if (!pages.length) return;
   caches.open('thaiear-dl').then(function (c) {
     pages.forEach(function (pg) { c.add(pg).catch(function () {}); });
-    ['/player.js', '/topics.js', '/nav.js', '/auth.js', '/footer.js'].forEach(function (u) { c.add(u).catch(function () {}); });
+    ['/player.js', '/topics.js', '/nav.js', '/auth.js', '/footer.js',
+     // Self-hosted fonts (2026-06-24) — persist with the page so downloaded topics render
+     // Sarabun (Thai) + Inter offline instead of the system fallback.
+     '/fonts/inter-latin-300.woff2', '/fonts/inter-latin-400.woff2',
+     '/fonts/inter-latin-500.woff2', '/fonts/inter-latin-600.woff2',
+     '/fonts/sarabun-thai-300.woff2', '/fonts/sarabun-thai-400.woff2',
+     '/fonts/sarabun-thai-500.woff2', '/fonts/sarabun-thai-600.woff2',
+     '/fonts/sarabun-latin-300.woff2', '/fonts/sarabun-latin-400.woff2',
+     '/fonts/sarabun-latin-500.woff2', '/fonts/sarabun-latin-600.woff2'
+    ].forEach(function (u) { c.add(u).catch(function () {}); });
   }).catch(function () {});
 }
 
