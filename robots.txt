@@ -1,0 +1,16 @@
+# ThaiEar — robots.txt
+# Public content is open to all crawlers. Private/app/utility pages are blocked
+# (paths given without .html so both /x and /x.html are covered — Cloudflare Pages
+# serves both forms). The API and account/checkout flows are not for indexing.
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /account
+Disallow: /checkout-return
+Disallow: /progress
+Disallow: /sentences
+Disallow: /app-test-92kx7q
+Disallow: /deleted
+
+Sitemap: https://thaiear.com/sitemap.xml
