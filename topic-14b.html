@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ThaiEar — Topic 15: Feelings &amp; emotions 2</title>
+<title>Feelings &amp; Emotions in Thai — Phrases with Audio (Part 2) | ThaiEar</title>
+<meta name="description" content="Listen to 34 natural Thai sentences on Feelings &amp; emotions at native speed, with English translations and word-by-word notes. Thai listening practice from ThaiEar.">
+<link rel="canonical" href="https://thaiear.com/topic-14b.html">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -41,6 +43,18 @@
     .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
   }
   @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+  /* Single-copy accordion (SSR): reveal rows are in the source but collapsed by default
+     (answers never flash before JS; non-JS clients get them collapsed). player.js toggles
+     st-0..st-3 on click; CSS shows the matching rows. */
+  .sentence-card .reveal-row { display: none; }
+  .sentence-card.st-0 .sentence-body { display: none; }
+  .sentence-card.st-1 .row-thai { display: block; }
+  .sentence-card.st-2 .row-thai, .sentence-card.st-2 .row-english { display: block; }
+  .sentence-card.st-3 .row-thai, .sentence-card.st-3 .row-english, .sentence-card.st-3 .row-notes { display: block; }
+  .sentence-card.st-1 .row-thai, .sentence-card.st-2 .row-english { border-bottom: none; }
+  .sentence-card.st-1 .prog-seg:nth-child(1),
+  .sentence-card.st-2 .prog-seg:nth-child(-n+2),
+  .sentence-card.st-3 .prog-seg { background: var(--accent); }
 </style>
 </head>
 <body>
@@ -53,6 +67,522 @@
   <p class="topic-subtitle">Empathy &amp; deeper feelings</p>
   <p class="topic-meta"><strong>34 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
   <div id="player-root"></div>
+
+  <!-- SSR content: static, source-visible accordion cards (collapsed via st-0).
+       player.js (cfg.ssr) hydrates them; reveal toggles st-0..st-3 — same nodes the
+       crawler reads are the ones the user reveals. Revert: remove ssr:true + this block. -->
+  <div id="sentence-list">
+      <div class="sentence-card st-0" id="sc-533">
+        <div class="sentence-header" onclick="cycle(533)" role="button" tabindex="0" aria-label="Sentence 1">
+          <span class="sent-num">1</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,533)" aria-label="Play sentence 1"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,533)" aria-label="Flag sentence 1" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">คิดมาก<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ช่วงนี้คิดมากเกินไปหน่อยครับ</div>
+          <div class="reveal-row row-english">Lately I've been overthinking too much.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ช่วงนี้</span><span class="g-eq">=</span><span class="g-eng">lately</span></span><span class="gloss-chip"><span class="g-thai">คิดมาก</span><span class="g-eq">=</span><span class="g-eng">overthink</span></span><span class="gloss-chip"><span class="g-thai">เกินไป</span><span class="g-eq">=</span><span class="g-eng">too much</span></span><span class="gloss-chip"><span class="g-thai">หน่อย</span><span class="g-eq">=</span><span class="g-eng">a bit</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-534">
+        <div class="sentence-header" onclick="cycle(534)" role="button" tabindex="0" aria-label="Sentence 2">
+          <span class="sent-num">2</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,534)" aria-label="Play sentence 2"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,534)" aria-label="Flag sentence 2" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เหนื่อยใจ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">รู้สึกเหนื่อยใจมากกว่าเหนื่อยกายครับ</div>
+          <div class="reveal-row row-english">I feel more emotionally drained than physically tired.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">รู้สึก</span><span class="g-eq">=</span><span class="g-eng">feel</span></span><span class="gloss-chip"><span class="g-thai">เหนื่อยใจ</span><span class="g-eq">=</span><span class="g-eng">weary at heart</span></span><span class="gloss-chip"><span class="g-thai">มากกว่า</span><span class="g-eq">=</span><span class="g-eng">more than</span></span><span class="gloss-chip"><span class="g-thai">เหนื่อยกาย</span><span class="g-eq">=</span><span class="g-eng">body-tired</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">Thai builds many feeling words with ใจ (heart/mind): เหนื่อยใจ weary at heart, น้อยใจ slighted, โล่งใจ relieved, สบายใจ at ease, ซึ้งใจ touched — the ใจ-word often names a feeling English needs a whole phrase for.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-535">
+        <div class="sentence-header" onclick="cycle(535)" role="button" tabindex="0" aria-label="Sentence 3">
+          <span class="sent-num">3</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,535)" aria-label="Play sentence 3"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,535)" aria-label="Flag sentence 3" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">น้อยใจ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">น้อยใจที่เพื่อนไม่ชวนไปด้วยค่ะ</div>
+          <div class="reveal-row row-english">I feel hurt that my friends didn't invite me along.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">น้อยใจ</span><span class="g-eq">=</span><span class="g-eng">feel slighted</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">เพื่อน</span><span class="g-eq">=</span><span class="g-eng">friends</span></span><span class="gloss-chip"><span class="g-thai">ไม่ชวน</span><span class="g-eq">=</span><span class="g-eng">didn't invite</span></span><span class="gloss-chip"><span class="g-thai">ไปด้วย</span><span class="g-eq">=</span><span class="g-eng">along</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-536">
+        <div class="sentence-header" onclick="cycle(536)" role="button" tabindex="0" aria-label="Sentence 4">
+          <span class="sent-num">4</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,536)" aria-label="Play sentence 4"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,536)" aria-label="Flag sentence 4" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เสียดาย<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เสียดายที่พลาดโอกาสดีๆไป แต่ช่างมันเถอะ</div>
+          <div class="reveal-row row-english">It's a shame I missed a good opportunity — but never mind, let it go.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เสียดาย</span><span class="g-eq">=</span><span class="g-eng">what a shame</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">พลาด</span><span class="g-eq">=</span><span class="g-eng">missed</span></span><span class="gloss-chip"><span class="g-thai">โอกาสดีๆ</span><span class="g-eq">=</span><span class="g-eng">a good opportunity</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-eq">=</span><span class="g-eng">(away)</span></span><span class="gloss-chip"><span class="g-thai">แต่</span><span class="g-eq">=</span><span class="g-eng">but</span></span><span class="gloss-chip"><span class="g-thai">ช่างมันเถอะ</span><span class="g-eq">=</span><span class="g-eng">never mind / let it go</span></span></div><div class="cultural-note">ช่างมัน(เถอะ) = 'never mind / let it go' — releasing something. เสียดาย = regret over a missed chance.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-537">
+        <div class="sentence-header" onclick="cycle(537)" role="button" tabindex="0" aria-label="Sentence 5">
+          <span class="sent-num">5</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,537)" aria-label="Play sentence 5"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,537)" aria-label="Flag sentence 5" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ความรู้สึก<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เข้าใจความรู้สึกนะ เคยเจอแบบนี้เหมือนกัน</div>
+          <div class="reveal-row row-english">I understand how you feel — I've been through this too.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เข้าใจ</span><span class="g-eq">=</span><span class="g-eng">understand</span></span><span class="gloss-chip"><span class="g-thai">ความรู้สึก</span><span class="g-eq">=</span><span class="g-eng">(the) feeling</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">(softener)</span></span><span class="gloss-chip"><span class="g-thai">เคย</span><span class="g-eq">=</span><span class="g-eng">have before</span></span><span class="gloss-chip"><span class="g-thai">เจอ</span><span class="g-eq">=</span><span class="g-eng">been through</span></span><span class="gloss-chip"><span class="g-thai">แบบนี้</span><span class="g-eq">=</span><span class="g-eng">like this</span></span><span class="gloss-chip"><span class="g-thai">เหมือนกัน</span><span class="g-eq">=</span><span class="g-eng">too</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-538">
+        <div class="sentence-header" onclick="cycle(538)" role="button" tabindex="0" aria-label="Sentence 6">
+          <span class="sent-num">6</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,538)" aria-label="Play sentence 6"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,538)" aria-label="Flag sentence 6" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เล่าให้ฟัง<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ไม่ต้องเก็บไว้คนเดียว เล่าให้ฟังสิ</div>
+          <div class="reveal-row row-english">You don't have to keep it to yourself — go on, tell me.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ไม่ต้อง</span><span class="g-eq">=</span><span class="g-eng">no need to</span></span><span class="gloss-chip"><span class="g-thai">เก็บไว้</span><span class="g-eq">=</span><span class="g-eng">keep in</span></span><span class="gloss-chip"><span class="g-thai">คนเดียว</span><span class="g-eq">=</span><span class="g-eng">alone</span></span><span class="gloss-chip"><span class="g-thai">เล่า</span><span class="g-eq">=</span><span class="g-eng">tell</span></span><span class="gloss-chip"><span class="g-thai">ให้ฟัง</span><span class="g-eq">=</span><span class="g-eng">let me hear</span></span><span class="gloss-chip"><span class="g-thai">สิ</span><span class="g-eq">=</span><span class="g-eng">(go on)</span></span></div><div class="cultural-note">สิ softens an imperative into a warm nudge — "go on, tell me" — rather than a blunt command.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-539">
+        <div class="sentence-header" onclick="cycle(539)" role="button" tabindex="0" aria-label="Sentence 7">
+          <span class="sent-num">7</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,539)" aria-label="Play sentence 7"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,539)" aria-label="Flag sentence 7" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">พลอยเศร้า<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เห็นเขาเสียใจแล้วพลอยเศร้าไปด้วยครับ</div>
+          <div class="reveal-row row-english">Seeing them upset made me feel down too.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เห็น</span><span class="g-eq">=</span><span class="g-eng">see</span></span><span class="gloss-chip"><span class="g-thai">เขา</span><span class="g-eq">=</span><span class="g-eng">them</span></span><span class="gloss-chip"><span class="g-thai">เสียใจ</span><span class="g-eq">=</span><span class="g-eng">upset</span></span><span class="gloss-chip"><span class="g-thai">พลอย</span><span class="g-eq">=</span><span class="g-eng">caught up</span></span><span class="gloss-chip"><span class="g-thai">เศร้า</span><span class="g-eq">=</span><span class="g-eng">sad</span></span><span class="gloss-chip"><span class="g-thai">ไปด้วย</span><span class="g-eq">=</span><span class="g-eng">too</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-540">
+        <div class="sentence-header" onclick="cycle(540)" role="button" tabindex="0" aria-label="Sentence 8">
+          <span class="sent-num">8</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,540)" aria-label="Play sentence 8"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,540)" aria-label="Flag sentence 8" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ผิดหวัง<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ผิดหวังนิดหน่อย แต่ก็เข้าใจเหตุผลนะ</div>
+          <div class="reveal-row row-english">A bit disappointed, but I understand the reason.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผิดหวัง</span><span class="g-eq">=</span><span class="g-eng">disappointed</span></span><span class="gloss-chip"><span class="g-thai">นิดหน่อย</span><span class="g-eq">=</span><span class="g-eng">a bit</span></span><span class="gloss-chip"><span class="g-thai">แต่</span><span class="g-eq">=</span><span class="g-eng">but</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-eq">=</span><span class="g-eng">still</span></span><span class="gloss-chip"><span class="g-thai">เข้าใจ</span><span class="g-eq">=</span><span class="g-eng">understand</span></span><span class="gloss-chip"><span class="g-thai">เหตุผล</span><span class="g-eq">=</span><span class="g-eng">the reason</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">(softener)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-541">
+        <div class="sentence-header" onclick="cycle(541)" role="button" tabindex="0" aria-label="Sentence 9">
+          <span class="sent-num">9</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,541)" aria-label="Play sentence 9"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,541)" aria-label="Flag sentence 9" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">โล่งใจ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">โล่งใจที่ทุกอย่างผ่านไปด้วยดี ไม่ต้องห่วงอะไรแล้ว</div>
+          <div class="reveal-row row-english">Relieved that everything turned out fine — nothing to worry about anymore.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">โล่งใจ</span><span class="g-eq">=</span><span class="g-eng">relieved</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">ทุกอย่าง</span><span class="g-eq">=</span><span class="g-eng">everything</span></span><span class="gloss-chip"><span class="g-thai">ผ่านไป</span><span class="g-eq">=</span><span class="g-eng">passed</span></span><span class="gloss-chip"><span class="g-thai">ด้วยดี</span><span class="g-eq">=</span><span class="g-eng">well</span></span><span class="gloss-chip"><span class="g-thai">ไม่ต้อง</span><span class="g-eq">=</span><span class="g-eng">no need to</span></span><span class="gloss-chip"><span class="g-thai">ห่วง</span><span class="g-eq">=</span><span class="g-eng">worry</span></span><span class="gloss-chip"><span class="g-thai">อะไร</span><span class="g-eq">=</span><span class="g-eng">anything</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">anymore</span></span></div><div class="cultural-note">โล่งใจ (lit. 'clear heart') = relieved. ไม่ต้อง…แล้ว = 'no longer need to…'.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-542">
+        <div class="sentence-header" onclick="cycle(542)" role="button" tabindex="0" aria-label="Sentence 10">
+          <span class="sent-num">10</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,542)" aria-label="Play sentence 10"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,542)" aria-label="Flag sentence 10" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">หงุดหงิด<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">หงุดหงิดง่ายเวลานอนไม่พอ</div>
+          <div class="reveal-row row-english">I get irritable easily when I don't sleep enough.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">หงุดหงิด</span><span class="g-eq">=</span><span class="g-eng">irritable</span></span><span class="gloss-chip"><span class="g-thai">ง่าย</span><span class="g-eq">=</span><span class="g-eng">easily</span></span><span class="gloss-chip"><span class="g-thai">เวลา</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">นอน</span><span class="g-eq">=</span><span class="g-eng">sleep</span></span><span class="gloss-chip"><span class="g-thai">ไม่พอ</span><span class="g-eq">=</span><span class="g-eng">not enough</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-543">
+        <div class="sentence-header" onclick="cycle(543)" role="button" tabindex="0" aria-label="Sentence 11">
+          <span class="sent-num">11</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,543)" aria-label="Play sentence 11"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,543)" aria-label="Flag sentence 11" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">น้ำตาไหล<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ดีใจจนน้ำตาไหล ตอนเจอกันอีกครั้ง</div>
+          <div class="reveal-row row-english">I was so happy I teared up when we met again.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ดีใจ</span><span class="g-eq">=</span><span class="g-eng">glad</span></span><span class="gloss-chip"><span class="g-thai">จน</span><span class="g-eq">=</span><span class="g-eng">so much that</span></span><span class="gloss-chip"><span class="g-thai">น้ำตาไหล</span><span class="g-eq">=</span><span class="g-eng">teared up</span></span><span class="gloss-chip"><span class="g-thai">ตอน</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">เจอกัน</span><span class="g-eq">=</span><span class="g-eng">met</span></span><span class="gloss-chip"><span class="g-thai">อีกครั้ง</span><span class="g-eq">=</span><span class="g-eng">again</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-544">
+        <div class="sentence-header" onclick="cycle(544)" role="button" tabindex="0" aria-label="Sentence 12">
+          <span class="sent-num">12</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,544)" aria-label="Play sentence 12"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,544)" aria-label="Flag sentence 12" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ความโกรธ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">อย่าเก็บความโกรธไว้น่า เดี๋ยวไม่สบายใจเปล่าๆ</div>
+          <div class="reveal-row row-english">Come on, don't hold onto your anger — you'll just feel bad for nothing.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">อย่า</span><span class="g-eq">=</span><span class="g-eng">don't</span></span><span class="gloss-chip"><span class="g-thai">เก็บ</span><span class="g-eq">=</span><span class="g-eng">hold in</span></span><span class="gloss-chip"><span class="g-thai">ความโกรธ</span><span class="g-eq">=</span><span class="g-eng">anger</span></span><span class="gloss-chip"><span class="g-thai">ไว้</span><span class="g-eq">=</span><span class="g-eng">(keep)</span></span><span class="gloss-chip"><span class="g-thai">น่า</span><span class="g-eq">=</span><span class="g-eng">(coaxing)</span></span><span class="gloss-chip"><span class="g-thai">เดี๋ยว</span><span class="g-eq">=</span><span class="g-eng">or else</span></span><span class="gloss-chip"><span class="g-thai">ไม่สบายใจ</span><span class="g-eq">=</span><span class="g-eng">feel bad</span></span><span class="gloss-chip"><span class="g-thai">เปล่าๆ</span><span class="g-eq">=</span><span class="g-eng">for nothing</span></span></div><div class="cultural-note">The particle น่า (coaxing "oh, come on now") is separate from the prefix น่า- in น่ารัก/น่าเบื่อ; here it gently pleads.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-545">
+        <div class="sentence-header" onclick="cycle(545)" role="button" tabindex="0" aria-label="Sentence 13">
+          <span class="sent-num">13</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,545)" aria-label="Play sentence 13"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,545)" aria-label="Flag sentence 13" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เห็นใจ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เห็นใจเขานะ ที่ต้องเจอเรื่องหนักขนาดนี้</div>
+          <div class="reveal-row row-english">I really feel for them, having to face something this hard.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เห็นใจ</span><span class="g-eq">=</span><span class="g-eng">feel for</span></span><span class="gloss-chip"><span class="g-thai">เขา</span><span class="g-eq">=</span><span class="g-eng">them</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">(softener)</span></span><span class="gloss-chip"><span class="g-thai">ที่ต้องเจอ</span><span class="g-eq">=</span><span class="g-eng">having to face</span></span><span class="gloss-chip"><span class="g-thai">เรื่อง</span><span class="g-eq">=</span><span class="g-eng">a matter</span></span><span class="gloss-chip"><span class="g-thai">หนัก</span><span class="g-eq">=</span><span class="g-eng">heavy</span></span><span class="gloss-chip"><span class="g-thai">ขนาดนี้</span><span class="g-eq">=</span><span class="g-eng">this much</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-546">
+        <div class="sentence-header" onclick="cycle(546)" role="button" tabindex="0" aria-label="Sentence 14">
+          <span class="sent-num">14</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,546)" aria-label="Play sentence 14"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,546)" aria-label="Flag sentence 14" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">มองต่างมุม<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เข้าใจที่คิดนะ แต่มองต่างมุมกันนิดหน่อย</div>
+          <div class="reveal-row row-english">I see your thinking, but we view it a little differently.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เข้าใจ</span><span class="g-eq">=</span><span class="g-eng">understand</span></span><span class="gloss-chip"><span class="g-thai">ที่คิด</span><span class="g-eq">=</span><span class="g-eng">your thinking</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">(softener)</span></span><span class="gloss-chip"><span class="g-thai">แต่</span><span class="g-eq">=</span><span class="g-eng">but</span></span><span class="gloss-chip"><span class="g-thai">มอง</span><span class="g-eq">=</span><span class="g-eng">view</span></span><span class="gloss-chip"><span class="g-thai">ต่างมุม</span><span class="g-eq">=</span><span class="g-eng">a different angle</span></span><span class="gloss-chip"><span class="g-thai">นิดหน่อย</span><span class="g-eq">=</span><span class="g-eng">a little</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-547">
+        <div class="sentence-header" onclick="cycle(547)" role="button" tabindex="0" aria-label="Sentence 15">
+          <span class="sent-num">15</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,547)" aria-label="Play sentence 15"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,547)" aria-label="Flag sentence 15" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ช่วย<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ว่าแต่ ดูท่าทางไม่ค่อยดีนะ มีอะไรให้ช่วยไหมครับ</div>
+          <div class="reveal-row row-english">By the way, you don't look so good — is there anything I can do?</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ว่าแต่</span><span class="g-eq">=</span><span class="g-eng">by the way</span></span><span class="gloss-chip"><span class="g-thai">ดูท่าทาง</span><span class="g-eq">=</span><span class="g-eng">you look</span></span><span class="gloss-chip"><span class="g-thai">ไม่ค่อยดี</span><span class="g-eq">=</span><span class="g-eng">not so good</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">(softener)</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">is there</span></span><span class="gloss-chip"><span class="g-thai">อะไร</span><span class="g-eq">=</span><span class="g-eng">anything</span></span><span class="gloss-chip"><span class="g-thai">ให้ช่วย</span><span class="g-eq">=</span><span class="g-eng">to help</span></span><span class="gloss-chip"><span class="g-thai">ไหม</span><span class="g-eq">=</span><span class="g-eng">(question)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">ว่าแต่ = 'by the way / anyway' — pivoting to a new concern. ดูท่าทาง… = 'you look/seem…'.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-548">
+        <div class="sentence-header" onclick="cycle(548)" role="button" tabindex="0" aria-label="Sentence 16">
+          <span class="sent-num">16</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,548)" aria-label="Play sentence 16"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,548)" aria-label="Flag sentence 16" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ซึ้งใจ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ซึ้งใจมากที่ทุกคนมาให้กำลังใจกัน</div>
+          <div class="reveal-row row-english">I'm so touched that everyone came to cheer me on.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ซึ้งใจ</span><span class="g-eq">=</span><span class="g-eng">touched</span></span><span class="gloss-chip"><span class="g-thai">มาก</span><span class="g-eq">=</span><span class="g-eng">very</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">ทุกคน</span><span class="g-eq">=</span><span class="g-eng">everyone</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-eq">=</span><span class="g-eng">came</span></span><span class="gloss-chip"><span class="g-thai">ให้กำลังใจ</span><span class="g-eq">=</span><span class="g-eng">cheer on</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-eq">=</span><span class="g-eng">(together)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-549">
+        <div class="sentence-header" onclick="cycle(549)" role="button" tabindex="0" aria-label="Sentence 17">
+          <span class="sent-num">17</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,549)" aria-label="Play sentence 17"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,549)" aria-label="Flag sentence 17" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ประทับใจ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ประทับใจที่เขาใจดีและใจกว้างมากค่ะ</div>
+          <div class="reveal-row row-english">I'm impressed by how kind and generous he is.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ประทับใจ</span><span class="g-eq">=</span><span class="g-eng">impressed</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">เขา</span><span class="g-eq">=</span><span class="g-eng">he</span></span><span class="gloss-chip"><span class="g-thai">ใจดี</span><span class="g-eq">=</span><span class="g-eng">kind</span></span><span class="gloss-chip"><span class="g-thai">และ</span><span class="g-eq">=</span><span class="g-eng">and</span></span><span class="gloss-chip"><span class="g-thai">ใจกว้าง</span><span class="g-eq">=</span><span class="g-eng">generous</span></span><span class="gloss-chip"><span class="g-thai">มาก</span><span class="g-eq">=</span><span class="g-eng">very</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-550">
+        <div class="sentence-header" onclick="cycle(550)" role="button" tabindex="0" aria-label="Sentence 18">
+          <span class="sent-num">18</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,550)" aria-label="Play sentence 18"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,550)" aria-label="Flag sentence 18" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เสียสละ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ชอบคนที่เสียสละ ไม่เห็นแก่ตัวครับ</div>
+          <div class="reveal-row row-english">I like people who are selfless, not selfish.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ชอบ</span><span class="g-eq">=</span><span class="g-eng">like</span></span><span class="gloss-chip"><span class="g-thai">คน</span><span class="g-eq">=</span><span class="g-eng">people</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">who</span></span><span class="gloss-chip"><span class="g-thai">เสียสละ</span><span class="g-eq">=</span><span class="g-eng">selfless</span></span><span class="gloss-chip"><span class="g-thai">ไม่</span><span class="g-eq">=</span><span class="g-eng">not</span></span><span class="gloss-chip"><span class="g-thai">เห็นแก่ตัว</span><span class="g-eq">=</span><span class="g-eng">selfish</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-551">
+        <div class="sentence-header" onclick="cycle(551)" role="button" tabindex="0" aria-label="Sentence 19">
+          <span class="sent-num">19</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,551)" aria-label="Play sentence 19"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,551)" aria-label="Flag sentence 19" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">นับถือ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">นับถือเขามากเลยครับ ที่อดทนมาได้ขนาดนี้</div>
+          <div class="reveal-row row-english">I really respect him for enduring this much.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">นับถือ</span><span class="g-eq">=</span><span class="g-eng">respect</span></span><span class="gloss-chip"><span class="g-thai">เขา</span><span class="g-eq">=</span><span class="g-eng">him</span></span><span class="gloss-chip"><span class="g-thai">มากเลย</span><span class="g-eq">=</span><span class="g-eng">so much</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">อดทน</span><span class="g-eq">=</span><span class="g-eng">endure</span></span><span class="gloss-chip"><span class="g-thai">มาได้</span><span class="g-eq">=</span><span class="g-eng">has managed</span></span><span class="gloss-chip"><span class="g-thai">ขนาดนี้</span><span class="g-eq">=</span><span class="g-eng">this much</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-552">
+        <div class="sentence-header" onclick="cycle(552)" role="button" tabindex="0" aria-label="Sentence 20">
+          <span class="sent-num">20</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,552)" aria-label="Play sentence 20"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,552)" aria-label="Flag sentence 20" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ทึ่ง<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เห็นวิวสวยๆแล้วทึ่งไปเลยค่ะ</div>
+          <div class="reveal-row row-english">Seeing the beautiful view left me in awe.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เห็น</span><span class="g-eq">=</span><span class="g-eng">see</span></span><span class="gloss-chip"><span class="g-thai">วิว</span><span class="g-eq">=</span><span class="g-eng">view</span></span><span class="gloss-chip"><span class="g-thai">สวยๆ</span><span class="g-eq">=</span><span class="g-eng">beautiful</span></span><span class="gloss-chip"><span class="g-thai">ทึ่ง</span><span class="g-eq">=</span><span class="g-eng">in awe</span></span><span class="gloss-chip"><span class="g-thai">ไปเลย</span><span class="g-eq">=</span><span class="g-eng">completely</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-553">
+        <div class="sentence-header" onclick="cycle(553)" role="button" tabindex="0" aria-label="Sentence 21">
+          <span class="sent-num">21</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,553)" aria-label="Play sentence 21"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,553)" aria-label="Flag sentence 21" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">สงสาร<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">สงสารหมาตัวนั้นจังเลย ไม่มีใครดูแลมันเลย</div>
+          <div class="reveal-row row-english">I feel so sorry for that dog — no one takes care of it.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สงสาร</span><span class="g-eq">=</span><span class="g-eng">feel sorry for</span></span><span class="gloss-chip"><span class="g-thai">หมา</span><span class="g-eq">=</span><span class="g-eng">dog</span></span><span class="gloss-chip"><span class="g-thai">ตัวนั้น</span><span class="g-eq">=</span><span class="g-eng">that one</span></span><span class="gloss-chip"><span class="g-thai">จังเลย</span><span class="g-eq">=</span><span class="g-eng">so</span></span><span class="gloss-chip"><span class="g-thai">ไม่มีใคร</span><span class="g-eq">=</span><span class="g-eng">no one</span></span><span class="gloss-chip"><span class="g-thai">ดูแล</span><span class="g-eq">=</span><span class="g-eng">looks after</span></span><span class="gloss-chip"><span class="g-thai">มัน</span><span class="g-eq">=</span><span class="g-eng">it</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-eq">=</span><span class="g-eng">(at all)</span></span></div><div class="cultural-note">สงสาร (compassion/pity) is reached for readily in Thai — often toward animals or the less fortunate — and ties to the Buddhist value of karuṇā (เมตตากรุณา).</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-554">
+        <div class="sentence-header" onclick="cycle(554)" role="button" tabindex="0" aria-label="Sentence 22">
+          <span class="sent-num">22</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,554)" aria-label="Play sentence 22"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,554)" aria-label="Flag sentence 22" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เป็นห่วง<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เห็นเขาเงียบๆไปทั้งวันแล้วเป็นห่วง</div>
+          <div class="reveal-row row-english">Seeing him so quiet all day, I'm worried about him.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เห็น</span><span class="g-eq">=</span><span class="g-eng">see</span></span><span class="gloss-chip"><span class="g-thai">เขา</span><span class="g-eq">=</span><span class="g-eng">him</span></span><span class="gloss-chip"><span class="g-thai">เงียบๆ</span><span class="g-eq">=</span><span class="g-eng">quiet</span></span><span class="gloss-chip"><span class="g-thai">ทั้งวัน</span><span class="g-eq">=</span><span class="g-eng">all day</span></span><span class="gloss-chip"><span class="g-thai">เป็นห่วง</span><span class="g-eq">=</span><span class="g-eng">worried about him</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-555">
+        <div class="sentence-header" onclick="cycle(555)" role="button" tabindex="0" aria-label="Sentence 23">
+          <span class="sent-num">23</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,555)" aria-label="Play sentence 23"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,555)" aria-label="Flag sentence 23" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ระบาย<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ถ้าอยากระบายก็บอกได้นะ ฟังอยู่</div>
+          <div class="reveal-row row-english">If you want to vent, just say — I'm listening.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ถ้า</span><span class="g-eq">=</span><span class="g-eng">if</span></span><span class="gloss-chip"><span class="g-thai">อยาก</span><span class="g-eq">=</span><span class="g-eng">want to</span></span><span class="gloss-chip"><span class="g-thai">ระบาย</span><span class="g-eq">=</span><span class="g-eng">vent</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-eq">=</span><span class="g-eng">then</span></span><span class="gloss-chip"><span class="g-thai">บอกได้</span><span class="g-eq">=</span><span class="g-eng">just say</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">(softener)</span></span><span class="gloss-chip"><span class="g-thai">ฟังอยู่</span><span class="g-eq">=</span><span class="g-eng">I'm listening</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-556">
+        <div class="sentence-header" onclick="cycle(556)" role="button" tabindex="0" aria-label="Sentence 24">
+          <span class="sent-num">24</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,556)" aria-label="Play sentence 24"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,556)" aria-label="Flag sentence 24" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ยอมรับ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ความจริงบางอย่างก็ยากที่จะยอมรับนะ</div>
+          <div class="reveal-row row-english">Some truths are hard to accept.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ความจริง</span><span class="g-eq">=</span><span class="g-eng">truth</span></span><span class="gloss-chip"><span class="g-thai">บางอย่าง</span><span class="g-eq">=</span><span class="g-eng">some</span></span><span class="gloss-chip"><span class="g-thai">ยาก</span><span class="g-eq">=</span><span class="g-eng">hard</span></span><span class="gloss-chip"><span class="g-thai">ที่จะ</span><span class="g-eq">=</span><span class="g-eng">to</span></span><span class="gloss-chip"><span class="g-thai">ยอมรับ</span><span class="g-eq">=</span><span class="g-eng">accept</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">(softener)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-557">
+        <div class="sentence-header" onclick="cycle(557)" role="button" tabindex="0" aria-label="Sentence 25">
+          <span class="sent-num">25</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,557)" aria-label="Play sentence 25"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,557)" aria-label="Flag sentence 25" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">คาดหวัง<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">อย่าคาดหวังมากเกินไป ค่อยๆดูกันไป</div>
+          <div class="reveal-row row-english">Don't expect too much — just see how it goes.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">อย่า</span><span class="g-eq">=</span><span class="g-eng">don't</span></span><span class="gloss-chip"><span class="g-thai">คาดหวัง</span><span class="g-eq">=</span><span class="g-eng">expect</span></span><span class="gloss-chip"><span class="g-thai">มากเกินไป</span><span class="g-eq">=</span><span class="g-eng">too much</span></span><span class="gloss-chip"><span class="g-thai">ค่อยๆ</span><span class="g-eq">=</span><span class="g-eng">gradually</span></span><span class="gloss-chip"><span class="g-thai">ดู</span><span class="g-eq">=</span><span class="g-eng">see</span></span><span class="gloss-chip"><span class="g-thai">กันไป</span><span class="g-eq">=</span><span class="g-eng">how it goes</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-558">
+        <div class="sentence-header" onclick="cycle(558)" role="button" tabindex="0" aria-label="Sentence 26">
+          <span class="sent-num">26</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,558)" aria-label="Play sentence 26"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,558)" aria-label="Flag sentence 26" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">พอใจ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">แค่นี้แหละ พอใจแล้ว ไม่ต้องการอะไรเพิ่ม</div>
+          <div class="reveal-row row-english">This is plenty — I'm content, don't need anything more.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แค่นี้</span><span class="g-eq">=</span><span class="g-eng">this much</span></span><span class="gloss-chip"><span class="g-thai">แหละ</span><span class="g-eq">=</span><span class="g-eng">(that's it)</span></span><span class="gloss-chip"><span class="g-thai">พอใจ</span><span class="g-eq">=</span><span class="g-eng">content</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">ไม่ต้องการ</span><span class="g-eq">=</span><span class="g-eng">don't need</span></span><span class="gloss-chip"><span class="g-thai">อะไรเพิ่ม</span><span class="g-eq">=</span><span class="g-eng">anything more</span></span></div><div class="cultural-note">แหละ marks settled finality — "this and no more, that's it."</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1077">
+        <div class="sentence-header" onclick="cycle(1077)" role="button" tabindex="0" aria-label="Sentence 27">
+          <span class="sent-num">27</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1077)" aria-label="Play sentence 27"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1077)" aria-label="Flag sentence 27" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">รู้สึกผิด<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">รู้สึกผิดที่เผลอพูดแรงกับเขาไปค่ะ</div>
+          <div class="reveal-row row-english">I feel guilty for snapping at him.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">รู้สึกผิด</span><span class="g-eq">=</span><span class="g-eng">feel guilty</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">เผลอ</span><span class="g-eq">=</span><span class="g-eng">accidentally</span></span><span class="gloss-chip"><span class="g-thai">พูดแรง</span><span class="g-eq">=</span><span class="g-eng">speak harshly</span></span><span class="gloss-chip"><span class="g-thai">กับ</span><span class="g-eq">=</span><span class="g-eng">with</span></span><span class="gloss-chip"><span class="g-thai">เขา</span><span class="g-eq">=</span><span class="g-eng">him</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-eq">=</span><span class="g-eng">(did)</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">รู้สึกผิด = 'feel guilty'. เผลอ = to do something without meaning to; พูดแรง = to speak harshly.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1078">
+        <div class="sentence-header" onclick="cycle(1078)" role="button" tabindex="0" aria-label="Sentence 28">
+          <span class="sent-num">28</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1078)" aria-label="Play sentence 28"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1078)" aria-label="Flag sentence 28" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ประหม่า<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เวลาต้องขึ้นพูด ประหม่าจนมือสั่นเลยครับ</div>
+          <div class="reveal-row row-english">When I have to give a talk, I get so nervous my hands shake.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เวลา</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">ต้อง</span><span class="g-eq">=</span><span class="g-eng">have to</span></span><span class="gloss-chip"><span class="g-thai">ขึ้นพูด</span><span class="g-eq">=</span><span class="g-eng">give a talk</span></span><span class="gloss-chip"><span class="g-thai">ประหม่า</span><span class="g-eq">=</span><span class="g-eng">nervous</span></span><span class="gloss-chip"><span class="g-thai">จน</span><span class="g-eq">=</span><span class="g-eng">so…that</span></span><span class="gloss-chip"><span class="g-thai">มือสั่น</span><span class="g-eq">=</span><span class="g-eng">hands shake</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-eq">=</span><span class="g-eng">(emph)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">ประหม่า = nervous/flustered, esp. stage-nerves (distinct from กังวล 'worried'). จน = 'to the point that'.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1079">
+        <div class="sentence-header" onclick="cycle(1079)" role="button" tabindex="0" aria-label="Sentence 29">
+          <span class="sent-num">29</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1079)" aria-label="Play sentence 29"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1079)" aria-label="Flag sentence 29" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ความหวัง<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ส่งใบสมัครไปแล้ว มีความหวังว่าจะได้งานนี้ครับ</div>
+          <div class="reveal-row row-english">I've sent off my application — I'm hopeful I'll get this job.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ส่ง</span><span class="g-eq">=</span><span class="g-eng">send</span></span><span class="gloss-chip"><span class="g-thai">ใบสมัคร</span><span class="g-eq">=</span><span class="g-eng">application</span></span><span class="gloss-chip"><span class="g-thai">ไปแล้ว</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">มีความหวัง</span><span class="g-eq">=</span><span class="g-eng">hopeful</span></span><span class="gloss-chip"><span class="g-thai">ว่า</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">จะได้</span><span class="g-eq">=</span><span class="g-eng">will get</span></span><span class="gloss-chip"><span class="g-thai">งาน</span><span class="g-eq">=</span><span class="g-eng">job</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">มีความหวัง = 'to have hope / be hopeful'. ว่า introduces what's hoped for.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1080">
+        <div class="sentence-header" onclick="cycle(1080)" role="button" tabindex="0" aria-label="Sentence 30">
+          <span class="sent-num">30</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1080)" aria-label="Play sentence 30"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1080)" aria-label="Flag sentence 30" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ใจเย็นๆ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ใจเย็นๆก่อนนะครับ ค่อยๆคิดไปทีละเรื่อง</div>
+          <div class="reveal-row row-english">Take it easy — let's think it through one thing at a time.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ใจเย็นๆ</span><span class="g-eq">=</span><span class="g-eng">calm down</span></span><span class="gloss-chip"><span class="g-thai">ก่อน</span><span class="g-eq">=</span><span class="g-eng">first</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">(softener)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span><span class="gloss-chip"><span class="g-thai">ค่อยๆ</span><span class="g-eq">=</span><span class="g-eng">gradually</span></span><span class="gloss-chip"><span class="g-thai">คิด</span><span class="g-eq">=</span><span class="g-eng">think</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-eq">=</span><span class="g-eng">(along)</span></span><span class="gloss-chip"><span class="g-thai">ทีละ</span><span class="g-eq">=</span><span class="g-eng">one at a time</span></span><span class="gloss-chip"><span class="g-thai">เรื่อง</span><span class="g-eq">=</span><span class="g-eng">thing</span></span></div><div class="cultural-note">ใจเย็นๆ (lit. 'cool heart') = 'calm down / take it easy'. ทีละเรื่อง = 'one matter at a time'.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1081">
+        <div class="sentence-header" onclick="cycle(1081)" role="button" tabindex="0" aria-label="Sentence 31">
+          <span class="sent-num">31</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1081)" aria-label="Play sentence 31"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1081)" aria-label="Flag sentence 31" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">สบายใจ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ช่วงนี้รู้สึกยังไงบ้างคะ สบายใจขึ้นไหม</div>
+          <div class="reveal-row row-english">How've you been feeling lately — any more at ease?</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ช่วงนี้</span><span class="g-eq">=</span><span class="g-eng">lately</span></span><span class="gloss-chip"><span class="g-thai">รู้สึก</span><span class="g-eq">=</span><span class="g-eng">feel</span></span><span class="gloss-chip"><span class="g-thai">ยังไงบ้าง</span><span class="g-eq">=</span><span class="g-eng">how</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span><span class="gloss-chip"><span class="g-thai">สบายใจ</span><span class="g-eq">=</span><span class="g-eng">at ease</span></span><span class="gloss-chip"><span class="g-thai">ขึ้น</span><span class="g-eq">=</span><span class="g-eng">more</span></span><span class="gloss-chip"><span class="g-thai">ไหม</span><span class="g-eq">=</span><span class="g-eng">(question)</span></span></div><div class="cultural-note">สบายใจ (lit. 'comfortable heart') = at ease/untroubled — emotional wellbeing, vs สบาย (physical comfort). …ขึ้น = 'more'.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1082">
+        <div class="sentence-header" onclick="cycle(1082)" role="button" tabindex="0" aria-label="Sentence 32">
+          <span class="sent-num">32</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1082)" aria-label="Play sentence 32"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1082)" aria-label="Flag sentence 32" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ขอบคุณ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">รู้สึกขอบคุณจากใจ ที่คอยอยู่เคียงข้างเสมอค่ะ</div>
+          <div class="reveal-row row-english">I'm grateful from the heart that you're always by my side.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">รู้สึก</span><span class="g-eq">=</span><span class="g-eng">feel</span></span><span class="gloss-chip"><span class="g-thai">ขอบคุณ</span><span class="g-eq">=</span><span class="g-eng">grateful</span></span><span class="gloss-chip"><span class="g-thai">จากใจ</span><span class="g-eq">=</span><span class="g-eng">from the heart</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">คอย</span><span class="g-eq">=</span><span class="g-eng">keep</span></span><span class="gloss-chip"><span class="g-thai">อยู่</span><span class="g-eq">=</span><span class="g-eng">being</span></span><span class="gloss-chip"><span class="g-thai">เคียงข้าง</span><span class="g-eq">=</span><span class="g-eng">by my side</span></span><span class="gloss-chip"><span class="g-thai">เสมอ</span><span class="g-eq">=</span><span class="g-eng">always</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">จากใจ = 'heartfelt'. เคียงข้าง = 'side by side / alongside'.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1083">
+        <div class="sentence-header" onclick="cycle(1083)" role="button" tabindex="0" aria-label="Sentence 33">
+          <span class="sent-num">33</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1083)" aria-label="Play sentence 33"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1083)" aria-label="Flag sentence 33" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">มุ่งมั่น<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">มุ่งมั่นเต็มที่ จะทำให้สำเร็จให้ได้ค่ะ</div>
+          <div class="reveal-row row-english">Fully determined — I'll make it happen.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">มุ่งมั่น</span><span class="g-eq">=</span><span class="g-eng">determined</span></span><span class="gloss-chip"><span class="g-thai">เต็มที่</span><span class="g-eq">=</span><span class="g-eng">fully</span></span><span class="gloss-chip"><span class="g-thai">จะ</span><span class="g-eq">=</span><span class="g-eng">will</span></span><span class="gloss-chip"><span class="g-thai">ทำให้สำเร็จ</span><span class="g-eq">=</span><span class="g-eng">make it succeed</span></span><span class="gloss-chip"><span class="g-thai">ให้ได้</span><span class="g-eq">=</span><span class="g-eng">manage to</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">มุ่งมั่น = determined/resolute. ทำให้ + result = 'make it…'; …ให้ได้ = 'come what may'.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1084">
+        <div class="sentence-header" onclick="cycle(1084)" role="button" tabindex="0" aria-label="Sentence 34">
+          <span class="sent-num">34</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1084)" aria-label="Play sentence 34"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1084)" aria-label="Flag sentence 34" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">รับมือไม่ไหว<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เรื่องเข้ามาพร้อมกันเยอะ รู้สึกรับมือแทบไม่ไหวครับ</div>
+          <div class="reveal-row row-english">So many things at once I feel I can barely cope.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เรื่อง</span><span class="g-eq">=</span><span class="g-eng">things</span></span><span class="gloss-chip"><span class="g-thai">เข้ามา</span><span class="g-eq">=</span><span class="g-eng">come in</span></span><span class="gloss-chip"><span class="g-thai">พร้อมกัน</span><span class="g-eq">=</span><span class="g-eng">at once</span></span><span class="gloss-chip"><span class="g-thai">เยอะ</span><span class="g-eq">=</span><span class="g-eng">a lot</span></span><span class="gloss-chip"><span class="g-thai">รู้สึก</span><span class="g-eq">=</span><span class="g-eng">feel</span></span><span class="gloss-chip"><span class="g-thai">รับมือ</span><span class="g-eq">=</span><span class="g-eng">cope</span></span><span class="gloss-chip"><span class="g-thai">แทบ</span><span class="g-eq">=</span><span class="g-eng">almost</span></span><span class="gloss-chip"><span class="g-thai">ไม่ไหว</span><span class="g-eq">=</span><span class="g-eng">can't</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">รับมือ = to cope with / handle. แทบไม่ไหว = 'can barely manage' — at one's limit.</div></div>
+        </div>
+      </div>
+  </div>
   <nav class="topic-nav" aria-label="Topic navigation">
     <a class="topic-nav-btn" href="topic-14a.html">
       <span>←</span>
@@ -73,6 +603,7 @@
 
 <script>
 window.ThaiEarTopic = {
+  ssr: true,
   tier: "premium",
   audioPrefix: "Feelings_LI1",
   sentences: [
