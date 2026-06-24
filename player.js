@@ -404,6 +404,9 @@
     .prog-tick { display: inline-block; font-weight: 700; animation: prog-tick-pop 0.4s cubic-bezier(0.2,0.8,0.3,1.3) both; }
     @keyframes prog-tick-pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
     @media (max-width: 600px) {
+      /* Reserve the late-loading (auth-gated) progress card's slot so it doesn't shove the
+         player's controls down when it appears (CLS). 73px = its measured mobile height. */
+      .progress-controls { min-height: 73px; }
       .prog-ctl-card { padding: 0.6rem 0.7rem; }
       .prog-ctl-count { font-size: 18px; }
       .prog-ctl-btn { font-size: 12px; padding: 5px 10px; }
