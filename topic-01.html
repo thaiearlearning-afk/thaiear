@@ -22,6 +22,12 @@
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  /* SEO / no-JS mirror: the topic's sentences as static semantic HTML in the served file
+     (crawlers and non-JS clients get the content without running player.js). Visually hidden
+     because the interactive player above is the on-screen UI — users reveal the same text by
+     clicking. Kept in the DOM (not display:none) so it indexes reliably; aria-hidden so screen
+     readers don't hear it twice (the player already exposes it). */
+  .seo-content { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); clip-path: inset(50%); white-space: normal; border: 0; }
   .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
   .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
@@ -51,6 +57,46 @@
   <h1 class="topic-title">Greetings &amp; farewells</h1>
   <p class="topic-meta"><strong>23 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
   <div id="player-root"></div>
+
+  <!-- ============================================================================
+       SEO / no-JS content mirror (TRIAL — topic 1 only).
+       The interactive player above renders these same sentences from
+       window.ThaiEarTopic and reveals them on click. This block puts the identical
+       content into the RAW HTML as semantic markup so search engines (and clients
+       that don't run JS) can read the Thai, English and glosses without executing
+       player.js. It is visually hidden via .seo-content (see <style>); it is NOT a
+       different version of the page's content, so it is not cloaking.
+       To revert: delete this <section> and the .seo-content CSS rule.
+       ============================================================================ -->
+  <section class="seo-content" aria-hidden="true">
+    <h2>All 23 Thai phrases in “Greetings &amp; farewells” — with English translations</h2>
+    <ol>
+      <li><p lang="th">สวัสดีครับ</p><p>Hello.</p><p>สวัสดี = hello / goodbye; ครับ = polite particle (male).</p><p>สวัสดี works for both hello and goodbye at any time of day.</p></li>
+      <li><p lang="th">สวัสดีค่ะ</p><p>Hello.</p><p>สวัสดี = hello / goodbye; ค่ะ = polite particle (female).</p></li>
+      <li><p lang="th">ดีว่ะ เป็นไงบ้าง</p><p>Hey — how’s it going?</p><p>ดี = good; ว่ะ = informal emphatic particle; เป็น = to be; ไง = how; บ้าง = somewhat / any.</p><p>ว่ะ marks this as informal — only use with close friends.</p></li>
+      <li><p lang="th">เป็นยังไงบ้างคะ</p><p>How are you?</p><p>เป็น = to be; ยังไง = how; บ้าง = somewhat / any; คะ = polite particle (female).</p></li>
+      <li><p lang="th">สบายดีครับ ขอบคุณครับ</p><p>I’m well, thank you.</p><p>สบาย = comfortable; ดี = good; ขอบคุณ = thank you; ครับ = polite particle (male).</p></li>
+      <li><p lang="th">ไม่ค่อยสบายค่ะ</p><p>Not feeling great.</p><p>ไม่ = not; ค่อย = very much / particularly; สบาย = comfortable / well.</p></li>
+      <li><p lang="th">ก็โอเคนะครับ ไม่มีอะไรมาก</p><p>I’m OK — nothing much going on.</p><p>ก็ = then / well; โอเค = OK; นะ = softening particle; ไม่มีอะไร = nothing; มาก = much.</p></li>
+      <li><p lang="th">นานมากเลยนะคะ ไม่ได้เจอกัน</p><p>It’s been so long — we haven’t seen each other.</p><p>นาน = long time; มาก = very; เลย = emphasis particle; นะ = softening particle; ไม่ได้ = did not; เจอ = meet; กัน = each other.</p></li>
+      <li><p lang="th">ไปไหนมาครับ</p><p>Where have you been?</p><p>ไปไหน = where have you gone; มา = come (implies return); ครับ = polite particle (male).</p><p>Doubles as a greeting — not always a literal question.</p></li>
+      <li><p lang="th">ยินดีที่ได้รู้จักครับ</p><p>Pleased to meet you.</p><p>ยินดี = pleased / glad; ที่ = that (relative); ได้ = opportunity to; รู้จัก = know (a person).</p></li>
+      <li><p lang="th">ยินดีที่ได้รู้จักเช่นกันค่ะ</p><p>Pleased to meet you too.</p><p>ยินดี = pleased; ที่ได้รู้จัก = to have met; เช่นกัน = likewise / same.</p></li>
+      <li><p lang="th">ดีใจที่ได้เจอครับ</p><p>Glad to meet you.</p><p>ดีใจ = glad / happy; ที่ = that; ได้ = opportunity to; เจอ = meet / encounter.</p><p>Warmer and slightly more casual than ยินดีที่ได้รู้จัก.</p></li>
+      <li><p lang="th">กินข้าวยังคะ</p><p>Have you eaten yet?</p><p>กินข้าว = eat / have a meal; ยัง = yet; คะ = polite particle (female).</p><p>A very common Thai social greeting — not always a literal question about food.</p></li>
+      <li><p lang="th">เป็นไงบ้างช่วงนี้ครับ</p><p>How have things been lately?</p><p>เป็นไงบ้าง = how are things; ช่วงนี้ = lately / these days.</p></li>
+      <li><p lang="th">คิดถึงเหมือนกันค่ะ</p><p>I’ve missed you too.</p><p>คิดถึง = miss / think of; เหมือนกัน = likewise / same / too.</p></li>
+      <li><p lang="th">ลาก่อนครับ</p><p>Goodbye.</p><p>ลา = take leave / say goodbye; ก่อน = first / before; ครับ = polite particle (male).</p></li>
+      <li><p lang="th">แล้วเจอกันใหม่นะคะ</p><p>See you again.</p><p>แล้ว = then / after; เจอกัน = meet each other; ใหม่ = again / new; นะ = softening particle.</p></li>
+      <li><p lang="th">แล้วเจอกันนะครับ</p><p>See you later.</p><p>แล้ว = then; เจอกัน = meet each other; นะ = softening particle.</p></li>
+      <li><p lang="th">แล้วพบกันใหม่นะคะ</p><p>Until we meet again.</p><p>พบ = meet (slightly more formal than เจอ); กัน = each other; ใหม่ = again.</p><p>พบ is slightly more formal than เจอ.</p></li>
+      <li><p lang="th">ขับรถระวังด้วยนะครับ</p><p>Drive carefully.</p><p>ขับรถ = drive; ระวัง = be careful; ด้วย = too / also; นะ = softening particle.</p></li>
+      <li><p lang="th">เดินทางปลอดภัยนะคะ</p><p>Safe travels.</p><p>เดินทาง = travel; ปลอดภัย = safe; นะ = softening particle.</p></li>
+      <li><p lang="th">คืนนี้ฝันดีนะครับ</p><p>Sweet dreams tonight.</p><p>คืนนี้ = tonight; ฝัน = dream; ดี = good; นะ = softening particle.</p></li>
+      <li><p lang="th">คิดถึงนะคะ</p><p>I’ll miss you.</p><p>คิดถึง = miss / think of; นะ = softening particle.</p></li>
+    </ol>
+  </section>
+
   <nav class="topic-nav" aria-label="Topic navigation">
     <span></span>
     <a class="topic-nav-btn topic-nav-right" href="topic-02.html">
