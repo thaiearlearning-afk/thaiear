@@ -1,0 +1,36 @@
+# Cloudflare Pages headers.
+# ---------------------------------------------------------------------------
+# WHY: by default Pages served every asset with `Cache-Control: public,
+# max-age=14400, must-revalidate` (4h browser cache). That left returning
+# visitors running an OLD topics.js after a deploy — so a newly-live topic was
+# missing from the mp3 player's next/prev track, the progress page and "my
+# sentences" (all three read topics.js) until the 4h cache expired. The topic
+# PAGES still loaded (fresh navigation), which made it look half-wired.
+#
+# FIX: the files that carry app logic or SSR content must always revalidate, so
+# a deploy takes effect immediately for everyone. etag makes this cheap (304s,
+# REVALIDATED at the edge). Fonts/images keep the default long cache (stable
+# names, perf budget) — they're not listed here.
+# ---------------------------------------------------------------------------
+
+# Shared single-source scripts (change on most deploys)
+/topics.js
+  Cache-Control: public, max-age=0, must-revalidate
+/player.js
+  Cache-Control: public, max-age=0, must-revalidate
+/nav.js
+  Cache-Control: public, max-age=0, must-revalidate
+/auth.js
+  Cache-Control: public, max-age=0, must-revalidate
+/footer.js
+  Cache-Control: public, max-age=0, must-revalidate
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Homepage + all HTML pages, and topic pages by clean URL (SSR content)
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+/topic-*
+  Cache-Control: public, max-age=0, must-revalidate
