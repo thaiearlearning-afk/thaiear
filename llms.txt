@@ -50,6 +50,8 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Education system 2 in Thai](https://thaiear.com/topic-21b): Lower intermediate → Intermediate, 26 sentences
 - [Food culture & eating out 1 in Thai](https://thaiear.com/topic-22a): Lower intermediate → Intermediate, 29 sentences
 - [Food culture & eating out 2 in Thai](https://thaiear.com/topic-22b): Lower intermediate → Intermediate, 22 sentences
+- [Sport & exercise 1 in Thai](https://thaiear.com/topic-26a): Lower intermediate → Intermediate, 24 sentences
+- [Sport & exercise 2 in Thai](https://thaiear.com/topic-26b): Lower intermediate → Intermediate, 28 sentences
 - [Buddhism 1 in Thai](https://thaiear.com/topic-35a): Lower intermediate → Intermediate, 38 sentences
 - [Buddhism 2 in Thai](https://thaiear.com/topic-35b): Lower intermediate → Intermediate, 42 sentences
 - [Buddhism 3 in Thai](https://thaiear.com/topic-35c): Lower intermediate → Intermediate, 30 sentences

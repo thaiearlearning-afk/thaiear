@@ -111,7 +111,9 @@
     { id: 23, name: "Nature, environment & conservation", levels: ["li1","li2"], sentences: 30, access: "premium" },
     { id: 24, name: "Technology & communication", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 25, name: "Media & entertainment", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 26, name: "Sport & exercise", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 26, name: "Sport & exercise", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Sport & exercise 1", sentences: 24, page: "topic-26a.html", access: "member", audio: "Sport_LI1" },
+        { name: "Sport & exercise 2", sentences: 28, page: "topic-26b.html", audio: "Sport_LI2" } ] },
     { id: 27, name: "Travel & tourism", levels: ["li1","li2"], sentences: 30, access: "premium" },
     { id: 28, name: "Banking & finance", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 29, name: "Community & society", levels: ["li1","li2"], sentences: 25, access: "premium" },
