@@ -41,6 +41,10 @@
   var GATED = !!TIER;
   var PREFIX = cfg.audioPrefix;
   var sentences = cfg.sentences || [];
+  // SSR/hydration mode: when a page sets cfg.ssr, it ships its sentence cards as static,
+  // source-visible HTML and we hydrate them (toggle a stage class) instead of building from
+  // JS. Pages WITHOUT cfg.ssr keep the original build-from-JS path, byte-for-byte unchanged.
+  var SSR = cfg.ssr === true;
 
   /* ---- native (Capacitor app) audio engine ----
      In a browser the TOP player is an HTML5 <audio>. Inside the app that won't play with
@@ -610,7 +614,7 @@
       '</button>' +
       '<span class="sent-count-label">' + sentences.length + ' sentences</span>' +
     '</div>' +
-    '<div id="sentence-list"></div>' +
+    (SSR ? '' : '<div id="sentence-list"></div>') +   // SSR pages provide #sentence-list as static cards
     '<audio id="sent-audio-el" preload="none" style="display:none"></audio>';
 
   /* ---- helpers ---- */
@@ -1125,10 +1129,31 @@
     '</div>';
   }
 
+  // SSR: reflect each card's reveal stage onto its class (st-0..st-3); CSS in the page
+  // <head> shows/hides the matching rows. No innerHTML rebuild → the static text survives.
+  function syncCard(num) {
+    var c = $('sc-' + num);
+    if (c) c.className = 'sentence-card st-' + (states[num] || 0);
+  }
+  // SSR: toggle flag visuals on the existing static buttons (no list rebuild).
+  function syncFlags() {
+    var a = window.ThaiEarAuth;
+    var loggedIn = !!(a && a.getUser && a.getUser());
+    sentences.forEach(function (s) {
+      var b = document.querySelector('#sc-' + s.num + ' .sent-flag-btn');
+      if (!b) return;
+      var flagged = loggedIn && a.isFlagged && a.isFlagged(TOPIC_KEY, s.num);
+      b.classList.toggle('flagged', !!flagged);
+      b.setAttribute('title', flagged ? 'Flagged — click to remove' : (loggedIn ? 'Flag this sentence' : 'Sign in to flag sentences'));
+    });
+  }
+
   function render() {
-    $('sentence-list').innerHTML = sentences.map(cardHtml).join('');
+    if (SSR) sentences.forEach(function (s) { syncCard(s.num); });
+    else $('sentence-list').innerHTML = sentences.map(cardHtml).join('');
     var allOpen = sentences.every(function (s) { return states[s.num] === 3; });
     var btn = $('reveal-all-btn');
+    if (!btn) return;
     btn.innerHTML = allOpen
       ? '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 2l12 12M6.5 6.6A2.5 2.5 0 0 0 10 10.5M1 8s2.5-5 7-5c1 0 2 .2 2.8.6M15 8s-.8 1.6-2.5 3M8 13c-4.5 0-7-5-7-5"/></svg> Collapse all'
       : '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/></svg> Reveal all';
@@ -1237,7 +1262,11 @@
   function flagSent(e, num) {
     e.stopPropagation(); e.preventDefault();
     var a = window.ThaiEarAuth;
-    if (!a || !(a.getUser && a.getUser()) || !a.toggleFlag) return;
+    // SSR pages use one flag button that always calls flagSent; route a signed-out click to
+    // sign-in. Legacy pages render a separate flagSignIn button when signed out, so this branch
+    // only changes SSR behaviour (guarded) and leaves legacy byte-for-byte.
+    if (!a || !(a.getUser && a.getUser())) { return SSR ? flagSignIn(e) : undefined; }
+    if (!a.toggleFlag) return;
     if (flagLock) return;
     flagLock = true;
     var btn = document.querySelector('#sc-' + num + ' .sent-flag-btn');
@@ -1262,13 +1291,15 @@
     });
   }
 
-  // Load the user's flags once, then re-render the list so flag state shows; re-run on auth.
+  // Load the user's flags once, then show flag state; re-run on auth. SSR pages sync flag
+  // classes onto the static buttons; legacy pages re-render the list (cardHtml reads isFlagged).
+  function refreshFlags() { if (SSR) syncFlags(); else render(); }
   function initFlags() {
     var a = window.ThaiEarAuth;
     if (a && a.isReady && a.getUser && a.getUser() && a.loadFlags) {
-      a.loadFlags().then(render).catch(function () {});
+      a.loadFlags().then(refreshFlags).catch(function () {});
     } else {
-      render(); // logged out (or auth gone) → re-render (flags show but route to sign-in)
+      refreshFlags(); // logged out (or auth gone) → show flags (SSR routes to sign-in on click)
     }
   }
   window.addEventListener('thaiear:auth', initFlags);
