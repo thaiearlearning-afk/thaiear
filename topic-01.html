@@ -37,9 +37,9 @@
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
-  /* Single-copy accordion: reveal rows are in the source but collapsed by default
-     (so answers never flash before JS, and non-JS clients get them collapsed).
-     player-ssr.js toggles st-0..st-3 on click; CSS shows the matching rows. */
+  /* Single-copy accordion (SSR): reveal rows are in the source but collapsed by default
+     (answers never flash before JS; non-JS clients get them collapsed). player.js toggles
+     st-0..st-3 on click; CSS shows the matching rows. */
   .sentence-card .reveal-row { display: none; }
   .sentence-card.st-0 .sentence-body { display: none; }
   .sentence-card.st-1 .row-thai { display: block; }
@@ -79,14 +79,9 @@
   <p class="topic-meta"><strong>23 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
   <div id="player-root"></div>
 
-  <!-- ============================================================================
-       SINGLE-COPY hydration content (TRIAL — topic 1 only).
-       These cards ARE the page content: static, semantic, present in the raw HTML
-       (always view-source visible). They render collapsed by default (class st-0);
-       player-ssr.js attaches behaviour and reveal just toggles the stage class
-       st-0..st-3 — the same nodes a crawler reads are the ones a user reveals.
-       No duplicate / aria-hidden mirror. Revert: load player.js + delete this block.
-       ============================================================================ -->
+  <!-- SSR content: static, source-visible accordion cards (collapsed via st-0).
+       player.js (cfg.ssr) hydrates them; reveal toggles st-0..st-3 — same nodes the
+       crawler reads are the ones the user reveals. Revert: remove ssr:true + this block. -->
   <div id="sentence-list">
       <div class="sentence-card st-0" id="sc-1">
         <div class="sentence-header" onclick="cycle(1)" role="button" tabindex="0" aria-label="Sentence 1">
