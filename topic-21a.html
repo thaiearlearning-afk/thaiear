@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ThaiEar — Topic 23: Education system 1</title>
+<title>Education System in Thai — Phrases with Audio (Part 1) | ThaiEar</title>
+<meta name="description" content="Listen to 26 natural Thai sentences on Education system at native speed, with English translations and word-by-word notes. Thai listening practice from ThaiEar.">
+<link rel="canonical" href="https://thaiear.com/topic-21a.html">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -41,6 +43,18 @@
     .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
   }
   @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+  /* Single-copy accordion (SSR): reveal rows are in the source but collapsed by default
+     (answers never flash before JS; non-JS clients get them collapsed). player.js toggles
+     st-0..st-3 on click; CSS shows the matching rows. */
+  .sentence-card .reveal-row { display: none; }
+  .sentence-card.st-0 .sentence-body { display: none; }
+  .sentence-card.st-1 .row-thai { display: block; }
+  .sentence-card.st-2 .row-thai, .sentence-card.st-2 .row-english { display: block; }
+  .sentence-card.st-3 .row-thai, .sentence-card.st-3 .row-english, .sentence-card.st-3 .row-notes { display: block; }
+  .sentence-card.st-1 .row-thai, .sentence-card.st-2 .row-english { border-bottom: none; }
+  .sentence-card.st-1 .prog-seg:nth-child(1),
+  .sentence-card.st-2 .prog-seg:nth-child(-n+2),
+  .sentence-card.st-3 .prog-seg { background: var(--accent); }
 </style>
 </head>
 <body>
@@ -53,6 +67,402 @@
   <p class="topic-subtitle">Schools, levels &amp; entrance</p>
   <p class="topic-meta"><strong>26 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
   <div id="player-root"></div>
+
+  <!-- SSR content: static, source-visible accordion cards (collapsed via st-0).
+       player.js (cfg.ssr) hydrates them; reveal toggles st-0..st-3 — same nodes the
+       crawler reads are the ones the user reveals. Revert: remove ssr:true + this block. -->
+  <div id="sentence-list">
+      <div class="sentence-card st-0" id="sc-925">
+        <div class="sentence-header" onclick="cycle(925)" role="button" tabindex="0" aria-label="Sentence 1">
+          <span class="sent-num">1</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,925)" aria-label="Play sentence 1"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,925)" aria-label="Flag sentence 1" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ประถม<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ลูกชายเพิ่งขึ้นชั้นประถมปีนี้ค่ะ</div>
+          <div class="reveal-row row-english">My son just moved up to primary school this year.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ลูกชาย</span><span class="g-eq">=</span><span class="g-eng">son</span></span><span class="gloss-chip"><span class="g-thai">เพิ่ง</span><span class="g-eq">=</span><span class="g-eng">just</span></span><span class="gloss-chip"><span class="g-thai">ขึ้นชั้น</span><span class="g-eq">=</span><span class="g-eng">moved up a grade</span></span><span class="gloss-chip"><span class="g-thai">ประถม</span><span class="g-eq">=</span><span class="g-eng">primary school</span></span><span class="gloss-chip"><span class="g-thai">ปีนี้</span><span class="g-eq">=</span><span class="g-eng">this year</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-926">
+        <div class="sentence-header" onclick="cycle(926)" role="button" tabindex="0" aria-label="Sentence 2">
+          <span class="sent-num">2</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,926)" aria-label="Play sentence 2"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,926)" aria-label="Flag sentence 2" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">อนุบาล<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">น้องคนเล็กยังอยู่ชั้นอนุบาลอยู่เลย</div>
+          <div class="reveal-row row-english">The youngest is still in kindergarten.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">น้องคนเล็ก</span><span class="g-eq">=</span><span class="g-eng">the youngest</span></span><span class="gloss-chip"><span class="g-thai">ยัง</span><span class="g-eq">=</span><span class="g-eng">still</span></span><span class="gloss-chip"><span class="g-thai">อนุบาล</span><span class="g-eq">=</span><span class="g-eng">kindergarten</span></span><span class="gloss-chip"><span class="g-thai">อยู่เลย</span><span class="g-eq">=</span><span class="g-eng">(emphasis)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-927">
+        <div class="sentence-header" onclick="cycle(927)" role="button" tabindex="0" aria-label="Sentence 3">
+          <span class="sent-num">3</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,927)" aria-label="Play sentence 3"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,927)" aria-label="Flag sentence 3" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">มัธยมต้น<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">อีกสองปีหลานชายก็จะจบมัธยมต้นแล้วครับ</div>
+          <div class="reveal-row row-english">In two more years my nephew will finish lower secondary.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">อีกสองปี</span><span class="g-eq">=</span><span class="g-eng">in two more years</span></span><span class="gloss-chip"><span class="g-thai">หลานชาย</span><span class="g-eq">=</span><span class="g-eng">nephew</span></span><span class="gloss-chip"><span class="g-thai">ก็จะ</span><span class="g-eq">=</span><span class="g-eng">will</span></span><span class="gloss-chip"><span class="g-thai">จบ</span><span class="g-eq">=</span><span class="g-eng">finish</span></span><span class="gloss-chip"><span class="g-thai">มัธยมต้น</span><span class="g-eq">=</span><span class="g-eng">lower secondary</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">(by then)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-928">
+        <div class="sentence-header" onclick="cycle(928)" role="button" tabindex="0" aria-label="Sentence 4">
+          <span class="sent-num">4</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,928)" aria-label="Play sentence 4"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,928)" aria-label="Flag sentence 4" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">มัธยมปลาย<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ที่ไทยเรียนมัธยมปลายสามปีก่อนเข้ามหาวิทยาลัย</div>
+          <div class="reveal-row row-english">In Thailand you do three years of upper secondary before university.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ที่ไทย</span><span class="g-eq">=</span><span class="g-eng">in Thailand</span></span><span class="gloss-chip"><span class="g-thai">เรียน</span><span class="g-eq">=</span><span class="g-eng">you study</span></span><span class="gloss-chip"><span class="g-thai">มัธยมปลาย</span><span class="g-eq">=</span><span class="g-eng">upper secondary</span></span><span class="gloss-chip"><span class="g-thai">สามปี</span><span class="g-eq">=</span><span class="g-eng">three years</span></span><span class="gloss-chip"><span class="g-thai">ก่อน</span><span class="g-eq">=</span><span class="g-eng">before</span></span><span class="gloss-chip"><span class="g-thai">เข้ามหาวิทยาลัย</span><span class="g-eq">=</span><span class="g-eng">entering university</span></span></div><div class="cultural-note">Thai schooling runs อนุบาล (kindergarten) → ป.1–6 (ประถม, primary) → ม.1–3 (มัธยมต้น, lower secondary) → ม.4–6 (มัธยมปลาย, upper secondary) → university. Grades are written ป./ม. plus a number, so 'ม.6' is the final pre-university year.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-929">
+        <div class="sentence-header" onclick="cycle(929)" role="button" tabindex="0" aria-label="Sentence 5">
+          <span class="sent-num">5</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,929)" aria-label="Play sentence 5"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,929)" aria-label="Flag sentence 5" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ค่าเทอม<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">โรงเรียนรัฐบาลกับเอกชนต่างกันที่ค่าเทอม</div>
+          <div class="reveal-row row-english">Government and private schools differ in their fees.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">โรงเรียนรัฐบาล</span><span class="g-eq">=</span><span class="g-eng">government school</span></span><span class="gloss-chip"><span class="g-thai">กับ</span><span class="g-eq">=</span><span class="g-eng">and</span></span><span class="gloss-chip"><span class="g-thai">เอกชน</span><span class="g-eq">=</span><span class="g-eng">private</span></span><span class="gloss-chip"><span class="g-thai">ต่างกัน</span><span class="g-eq">=</span><span class="g-eng">differ</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">in</span></span><span class="gloss-chip"><span class="g-thai">ค่าเทอม</span><span class="g-eq">=</span><span class="g-eng">tuition fees</span></span></div><div class="cultural-note">Thai schools fall into tiers: รัฐบาล (government, low or no fees, often crowded) and เอกชน (private, fee-paying), plus a pricier โรงเรียนนานาชาติ (international) tier teaching in English.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-930">
+        <div class="sentence-header" onclick="cycle(930)" role="button" tabindex="0" aria-label="Sentence 6">
+          <span class="sent-num">6</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,930)" aria-label="Play sentence 6"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,930)" aria-label="Flag sentence 6" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ปริญญาตรี<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">พี่สาวผมเรียนจบปริญญาตรีจากจุฬาฯครับ</div>
+          <div class="reveal-row row-english">My older sister got her bachelor's from Chula.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">พี่สาว</span><span class="g-eq">=</span><span class="g-eng">older sister</span></span><span class="gloss-chip"><span class="g-thai">เรียนจบ</span><span class="g-eq">=</span><span class="g-eng">graduated</span></span><span class="gloss-chip"><span class="g-thai">ปริญญาตรี</span><span class="g-eq">=</span><span class="g-eng">bachelor's degree</span></span><span class="gloss-chip"><span class="g-thai">จาก</span><span class="g-eq">=</span><span class="g-eng">from</span></span><span class="gloss-chip"><span class="g-thai">จุฬาฯ</span><span class="g-eq">=</span><span class="g-eng">Chula</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">จุฬาฯ is Chulalongkorn University, Thailand's oldest and most prestigious (the ฯ is an abbreviation mark). A place at a top public university like Chula or Thammasat carries real social weight.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-931">
+        <div class="sentence-header" onclick="cycle(931)" role="button" tabindex="0" aria-label="Sentence 7">
+          <span class="sent-num">7</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,931)" aria-label="Play sentence 7"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,931)" aria-label="Flag sentence 7" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ประถมสี่<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">พ่อผมจบแค่ชั้นประถมสี่เองครับ</div>
+          <div class="reveal-row row-english">My dad only finished grade four.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">พ่อ</span><span class="g-eq">=</span><span class="g-eng">my dad</span></span><span class="gloss-chip"><span class="g-thai">จบ</span><span class="g-eq">=</span><span class="g-eng">finished</span></span><span class="gloss-chip"><span class="g-thai">แค่</span><span class="g-eq">=</span><span class="g-eng">only</span></span><span class="gloss-chip"><span class="g-thai">ประถมสี่</span><span class="g-eq">=</span><span class="g-eng">grade four</span></span><span class="gloss-chip"><span class="g-thai">เอง</span><span class="g-eq">=</span><span class="g-eng">just that</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Until a few decades ago many older Thais — especially in the countryside — left school after ป.4, then the end of compulsory education. Free schooling now extends to ม.3.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-932">
+        <div class="sentence-header" onclick="cycle(932)" role="button" tabindex="0" aria-label="Sentence 8">
+          <span class="sent-num">8</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,932)" aria-label="Play sentence 8"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,932)" aria-label="Flag sentence 8" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">มหาวิทยาลัย<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">คุณเรียนจบมหาวิทยาลัยไหนมาคะ</div>
+          <div class="reveal-row row-english">Which university did you graduate from?</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คุณ</span><span class="g-eq">=</span><span class="g-eng">you</span></span><span class="gloss-chip"><span class="g-thai">เรียนจบ</span><span class="g-eq">=</span><span class="g-eng">graduated</span></span><span class="gloss-chip"><span class="g-thai">มหาวิทยาลัย</span><span class="g-eq">=</span><span class="g-eng">university</span></span><span class="gloss-chip"><span class="g-thai">ไหน</span><span class="g-eq">=</span><span class="g-eng">which</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-eq">=</span><span class="g-eng">from</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-933">
+        <div class="sentence-header" onclick="cycle(933)" role="button" tabindex="0" aria-label="Sentence 9">
+          <span class="sent-num">9</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,933)" aria-label="Play sentence 9"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,933)" aria-label="Flag sentence 9" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">สอบเข้า<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">มหาวิทยาลัยรัฐสอบเข้ายากกว่าเอกชน</div>
+          <div class="reveal-row row-english">Public universities are harder to get into than private ones.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">มหาวิทยาลัยรัฐ</span><span class="g-eq">=</span><span class="g-eng">public universities</span></span><span class="gloss-chip"><span class="g-thai">สอบเข้า</span><span class="g-eq">=</span><span class="g-eng">entrance exam</span></span><span class="gloss-chip"><span class="g-thai">ยากกว่า</span><span class="g-eq">=</span><span class="g-eng">harder than</span></span><span class="gloss-chip"><span class="g-thai">เอกชน</span><span class="g-eq">=</span><span class="g-eng">private</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-934">
+        <div class="sentence-header" onclick="cycle(934)" role="button" tabindex="0" aria-label="Sentence 10">
+          <span class="sent-num">10</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,934)" aria-label="Play sentence 10"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,934)" aria-label="Flag sentence 10" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เตรียมสอบ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ลูกสาวกำลังเตรียมสอบเข้ามหาวิทยาลัยค่ะ</div>
+          <div class="reveal-row row-english">My daughter is preparing for the university entrance exam.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ลูกสาว</span><span class="g-eq">=</span><span class="g-eng">daughter</span></span><span class="gloss-chip"><span class="g-thai">กำลัง</span><span class="g-eq">=</span><span class="g-eng">is</span></span><span class="gloss-chip"><span class="g-thai">เตรียม</span><span class="g-eq">=</span><span class="g-eng">preparing for</span></span><span class="gloss-chip"><span class="g-thai">สอบเข้ามหาวิทยาลัย</span><span class="g-eq">=</span><span class="g-eng">the uni entrance exam</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-935">
+        <div class="sentence-header" onclick="cycle(935)" role="button" tabindex="0" aria-label="Sentence 11">
+          <span class="sent-num">11</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,935)" aria-label="Play sentence 11"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,935)" aria-label="Flag sentence 11" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">สอบติด<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">สอบติดคณะที่อยากเข้าหรือเปล่าครับ</div>
+          <div class="reveal-row row-english">Did you get into the faculty you wanted?</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สอบติด</span><span class="g-eq">=</span><span class="g-eng">got accepted</span></span><span class="gloss-chip"><span class="g-thai">คณะ</span><span class="g-eq">=</span><span class="g-eng">faculty</span></span><span class="gloss-chip"><span class="g-thai">ที่อยากเข้า</span><span class="g-eq">=</span><span class="g-eng">you wanted</span></span><span class="gloss-chip"><span class="g-thai">หรือเปล่า</span><span class="g-eq">=</span><span class="g-eng">or not?</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-936">
+        <div class="sentence-header" onclick="cycle(936)" role="button" tabindex="0" aria-label="Sentence 12">
+          <span class="sent-num">12</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,936)" aria-label="Play sentence 12"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,936)" aria-label="Flag sentence 12" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">วิศวะ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ลูกพี่ลูกน้องผมเลือกเรียนคณะวิศวะที่มหาวิทยาลัยของรัฐ</div>
+          <div class="reveal-row row-english">My cousin chose to study engineering at a public university.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ลูกพี่ลูกน้อง</span><span class="g-eq">=</span><span class="g-eng">cousin</span></span><span class="gloss-chip"><span class="g-thai">เลือกเรียน</span><span class="g-eq">=</span><span class="g-eng">chose to study</span></span><span class="gloss-chip"><span class="g-thai">คณะวิศวะ</span><span class="g-eq">=</span><span class="g-eng">engineering</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">at</span></span><span class="gloss-chip"><span class="g-thai">มหาวิทยาลัยของรัฐ</span><span class="g-eq">=</span><span class="g-eng">a public university</span></span></div><div class="cultural-note">วิศวะ is the colloquial clip of วิศวกรรมศาสตร์ (engineering). Thais routinely shorten faculty names this way — หมอ for medicine, นิติ for law, บัญชี for accounting.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-937">
+        <div class="sentence-header" onclick="cycle(937)" role="button" tabindex="0" aria-label="Sentence 13">
+          <span class="sent-num">13</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,937)" aria-label="Play sentence 13"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,937)" aria-label="Flag sentence 13" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">คะแนน<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">คะแนนสอบเข้าปีนี้สูงกว่าทุกปีเลย</div>
+          <div class="reveal-row row-english">This year's entrance scores were higher than ever.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คะแนนสอบเข้า</span><span class="g-eq">=</span><span class="g-eng">entrance scores</span></span><span class="gloss-chip"><span class="g-thai">ปีนี้</span><span class="g-eq">=</span><span class="g-eng">this year</span></span><span class="gloss-chip"><span class="g-thai">สูงกว่า</span><span class="g-eq">=</span><span class="g-eng">higher than</span></span><span class="gloss-chip"><span class="g-thai">ทุกปี</span><span class="g-eq">=</span><span class="g-eng">every year</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-eq">=</span><span class="g-eng">(emphasis)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-938">
+        <div class="sentence-header" onclick="cycle(938)" role="button" tabindex="0" aria-label="Sentence 14">
+          <span class="sent-num">14</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,938)" aria-label="Play sentence 14"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,938)" aria-label="Flag sentence 14" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เรียนพิเศษ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">นักเรียนส่วนใหญ่เรียนพิเศษหลังเลิกเรียน</div>
+          <div class="reveal-row row-english">Most students take extra tuition after school.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">นักเรียน</span><span class="g-eq">=</span><span class="g-eng">students</span></span><span class="gloss-chip"><span class="g-thai">ส่วนใหญ่</span><span class="g-eq">=</span><span class="g-eng">most</span></span><span class="gloss-chip"><span class="g-thai">เรียนพิเศษ</span><span class="g-eq">=</span><span class="g-eng">take extra tuition</span></span><span class="gloss-chip"><span class="g-thai">หลังเลิกเรียน</span><span class="g-eq">=</span><span class="g-eng">after school</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-939">
+        <div class="sentence-header" onclick="cycle(939)" role="button" tabindex="0" aria-label="Sentence 15">
+          <span class="sent-num">15</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,939)" aria-label="Play sentence 15"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,939)" aria-label="Flag sentence 15" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">กวดวิชา<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">โรงเรียนกวดวิชาแถวนี้คนเยอะมาก</div>
+          <div class="reveal-row row-english">The cram schools around here are packed.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">โรงเรียนกวดวิชา</span><span class="g-eq">=</span><span class="g-eng">cram schools</span></span><span class="gloss-chip"><span class="g-thai">แถวนี้</span><span class="g-eq">=</span><span class="g-eng">around here</span></span><span class="gloss-chip"><span class="g-thai">คนเยอะมาก</span><span class="g-eq">=</span><span class="g-eng">are very crowded</span></span></div><div class="cultural-note">Cram schools (โรงเรียนกวดวิชา) are a huge private industry: after regular classes, students pay for intensive, exam-focused drilling. เรียนพิเศษ is the broader term for any paid extra tuition; กวดวิชา specifically targets entrance exams.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-940">
+        <div class="sentence-header" onclick="cycle(940)" role="button" tabindex="0" aria-label="Sentence 16">
+          <span class="sent-num">16</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,940)" aria-label="Play sentence 16"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,940)" aria-label="Flag sentence 16" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ค่าเรียนพิเศษ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ค่าเรียนพิเศษแพงขึ้นทุกปีเลยค่ะ</div>
+          <div class="reveal-row row-english">The cost of tutoring goes up every year.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ค่าเรียนพิเศษ</span><span class="g-eq">=</span><span class="g-eng">tutoring fees</span></span><span class="gloss-chip"><span class="g-thai">แพงขึ้น</span><span class="g-eq">=</span><span class="g-eng">get pricier</span></span><span class="gloss-chip"><span class="g-thai">ทุกปี</span><span class="g-eq">=</span><span class="g-eng">every year</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-eq">=</span><span class="g-eng">(emphasis)</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-941">
+        <div class="sentence-header" onclick="cycle(941)" role="button" tabindex="0" aria-label="Sentence 17">
+          <span class="sent-num">17</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,941)" aria-label="Play sentence 17"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,941)" aria-label="Flag sentence 17" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">จ่ายแพง<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">พ่อแม่หลายคนยอมจ่ายแพง เพื่อให้ลูกได้เรียนที่ดีๆ</div>
+          <div class="reveal-row row-english">Many parents will pay a lot for their kids to attend good schools.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">พ่อแม่</span><span class="g-eq">=</span><span class="g-eng">parents</span></span><span class="gloss-chip"><span class="g-thai">หลายคน</span><span class="g-eq">=</span><span class="g-eng">many</span></span><span class="gloss-chip"><span class="g-thai">ยอมจ่ายแพง</span><span class="g-eq">=</span><span class="g-eng">will pay a lot</span></span><span class="gloss-chip"><span class="g-thai">เพื่อให้</span><span class="g-eq">=</span><span class="g-eng">so that</span></span><span class="gloss-chip"><span class="g-thai">ลูก</span><span class="g-eq">=</span><span class="g-eng">their kids</span></span><span class="gloss-chip"><span class="g-thai">ได้เรียน</span><span class="g-eq">=</span><span class="g-eng">attend</span></span><span class="gloss-chip"><span class="g-thai">ที่ดีๆ</span><span class="g-eq">=</span><span class="g-eng">good schools</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-942">
+        <div class="sentence-header" onclick="cycle(942)" role="button" tabindex="0" aria-label="Sentence 18">
+          <span class="sent-num">18</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,942)" aria-label="Play sentence 18"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,942)" aria-label="Flag sentence 18" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ครู<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ครูที่โรงเรียนนี้ดูแลเด็กป.หกดีมากค่ะ</div>
+          <div class="reveal-row row-english">The teachers here look after the year-6 kids really well.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ครู</span><span class="g-eq">=</span><span class="g-eng">teachers</span></span><span class="gloss-chip"><span class="g-thai">ที่โรงเรียนนี้</span><span class="g-eq">=</span><span class="g-eng">at this school</span></span><span class="gloss-chip"><span class="g-thai">ดูแล</span><span class="g-eq">=</span><span class="g-eng">look after</span></span><span class="gloss-chip"><span class="g-thai">เด็กป.หก</span><span class="g-eq">=</span><span class="g-eng">year-6 kids</span></span><span class="gloss-chip"><span class="g-thai">ดีมาก</span><span class="g-eq">=</span><span class="g-eng">really well</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-943">
+        <div class="sentence-header" onclick="cycle(943)" role="button" tabindex="0" aria-label="Sentence 19">
+          <span class="sent-num">19</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,943)" aria-label="Play sentence 19"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,943)" aria-label="Flag sentence 19" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ห้องเรียน<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ห้องเรียนที่โรงเรียนรัฐมีนักเรียนเยอะมาก</div>
+          <div class="reveal-row row-english">Classrooms in government schools have a lot of students.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ห้องเรียน</span><span class="g-eq">=</span><span class="g-eng">classrooms</span></span><span class="gloss-chip"><span class="g-thai">ที่โรงเรียนรัฐ</span><span class="g-eq">=</span><span class="g-eng">in government schools</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">have</span></span><span class="gloss-chip"><span class="g-thai">นักเรียน</span><span class="g-eq">=</span><span class="g-eng">students</span></span><span class="gloss-chip"><span class="g-thai">เยอะมาก</span><span class="g-eq">=</span><span class="g-eng">a lot of</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-944">
+        <div class="sentence-header" onclick="cycle(944)" role="button" tabindex="0" aria-label="Sentence 20">
+          <span class="sent-num">20</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,944)" aria-label="Play sentence 20"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,944)" aria-label="Flag sentence 20" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ชุดนักเรียน<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">นักเรียนไทยต้องใส่ชุดนักเรียนไปโรงเรียนทุกวัน</div>
+          <div class="reveal-row row-english">Thai students have to wear a uniform to school every day.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">นักเรียนไทย</span><span class="g-eq">=</span><span class="g-eng">Thai students</span></span><span class="gloss-chip"><span class="g-thai">ต้องใส่</span><span class="g-eq">=</span><span class="g-eng">must wear</span></span><span class="gloss-chip"><span class="g-thai">ชุดนักเรียน</span><span class="g-eq">=</span><span class="g-eng">a uniform</span></span><span class="gloss-chip"><span class="g-thai">ไปโรงเรียน</span><span class="g-eq">=</span><span class="g-eng">to school</span></span><span class="gloss-chip"><span class="g-thai">ทุกวัน</span><span class="g-eq">=</span><span class="g-eng">every day</span></span></div><div class="cultural-note">Uniforms are compulsory at almost every Thai school — and, unusually to outsiders, at universities too, where even undergraduates wear them.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-945">
+        <div class="sentence-header" onclick="cycle(945)" role="button" tabindex="0" aria-label="Sentence 21">
+          <span class="sent-num">21</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,945)" aria-label="Play sentence 21"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,945)" aria-label="Flag sentence 21" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">อาจารย์<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">อาจารย์มหาวิทยาลัยส่วนใหญ่จบปริญญาเอก</div>
+          <div class="reveal-row row-english">Most university lecturers hold a doctorate.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">อาจารย์มหาวิทยาลัย</span><span class="g-eq">=</span><span class="g-eng">university lecturers</span></span><span class="gloss-chip"><span class="g-thai">ส่วนใหญ่</span><span class="g-eq">=</span><span class="g-eng">most</span></span><span class="gloss-chip"><span class="g-thai">จบ</span><span class="g-eq">=</span><span class="g-eng">hold</span></span><span class="gloss-chip"><span class="g-thai">ปริญญาเอก</span><span class="g-eq">=</span><span class="g-eng">a doctorate</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-946">
+        <div class="sentence-header" onclick="cycle(946)" role="button" tabindex="0" aria-label="Sentence 22">
+          <span class="sent-num">22</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,946)" aria-label="Play sentence 22"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,946)" aria-label="Flag sentence 22" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ปีการศึกษา<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ปีการศึกษาของไทยเริ่มเดือนพฤษภาคม</div>
+          <div class="reveal-row row-english">Thailand's academic year starts in May.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ปีการศึกษา</span><span class="g-eq">=</span><span class="g-eng">the academic year</span></span><span class="gloss-chip"><span class="g-thai">ของไทย</span><span class="g-eq">=</span><span class="g-eng">in Thailand</span></span><span class="gloss-chip"><span class="g-thai">เริ่ม</span><span class="g-eq">=</span><span class="g-eng">starts</span></span><span class="gloss-chip"><span class="g-thai">เดือนพฤษภาคม</span><span class="g-eq">=</span><span class="g-eng">in May</span></span></div><div class="cultural-note">The Thai academic year runs roughly May to March, with the long break falling over April — the hottest month and Songkran (New Year) season — rather than over a Western-style summer.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-947">
+        <div class="sentence-header" onclick="cycle(947)" role="button" tabindex="0" aria-label="Sentence 23">
+          <span class="sent-num">23</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,947)" aria-label="Play sentence 23"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,947)" aria-label="Flag sentence 23" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เข้าเรียน<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เด็กที่นี่เข้าเรียนตั้งแต่อายุสามขวบ</div>
+          <div class="reveal-row row-english">Children here start school from age three.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เด็กที่นี่</span><span class="g-eq">=</span><span class="g-eng">children here</span></span><span class="gloss-chip"><span class="g-thai">เข้าเรียน</span><span class="g-eq">=</span><span class="g-eng">start school</span></span><span class="gloss-chip"><span class="g-thai">ตั้งแต่</span><span class="g-eq">=</span><span class="g-eng">from</span></span><span class="gloss-chip"><span class="g-thai">อายุสามขวบ</span><span class="g-eq">=</span><span class="g-eng">age three</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-948">
+        <div class="sentence-header" onclick="cycle(948)" role="button" tabindex="0" aria-label="Sentence 24">
+          <span class="sent-num">24</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,948)" aria-label="Play sentence 24"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,948)" aria-label="Flag sentence 24" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">นานาชาติ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">โรงเรียนนานาชาติสอนเป็นภาษาอังกฤษทั้งหมด</div>
+          <div class="reveal-row row-english">International schools teach entirely in English.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">โรงเรียนนานาชาติ</span><span class="g-eq">=</span><span class="g-eng">international schools</span></span><span class="gloss-chip"><span class="g-thai">สอน</span><span class="g-eq">=</span><span class="g-eng">teach</span></span><span class="gloss-chip"><span class="g-thai">เป็นภาษาอังกฤษ</span><span class="g-eq">=</span><span class="g-eng">in English</span></span><span class="gloss-chip"><span class="g-thai">ทั้งหมด</span><span class="g-eq">=</span><span class="g-eng">entirely</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-949">
+        <div class="sentence-header" onclick="cycle(949)" role="button" tabindex="0" aria-label="Sentence 25">
+          <span class="sent-num">25</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,949)" aria-label="Play sentence 25"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,949)" aria-label="Flag sentence 25" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">โรงเรียนประจำ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">หลานเพิ่งสอบเข้าโรงเรียนประจำได้ค่ะ</div>
+          <div class="reveal-row row-english">My niece just got into a boarding school.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">หลาน</span><span class="g-eq">=</span><span class="g-eng">niece</span></span><span class="gloss-chip"><span class="g-thai">เพิ่ง</span><span class="g-eq">=</span><span class="g-eng">just</span></span><span class="gloss-chip"><span class="g-thai">สอบเข้า</span><span class="g-eq">=</span><span class="g-eng">got into</span></span><span class="gloss-chip"><span class="g-thai">โรงเรียนประจำ</span><span class="g-eq">=</span><span class="g-eng">a boarding school</span></span><span class="gloss-chip"><span class="g-thai">ได้</span><span class="g-eq">=</span><span class="g-eng">(succeeded)</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-950">
+        <div class="sentence-header" onclick="cycle(950)" role="button" tabindex="0" aria-label="Sentence 26">
+          <span class="sent-num">26</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,950)" aria-label="Play sentence 26"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,950)" aria-label="Flag sentence 26" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">สายอาชีพ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เรียนจบสายอาชีพก็หางานทำง่ายเหมือนกัน</div>
+          <div class="reveal-row row-english">Finishing a vocational track also makes it easy to find work.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เรียนจบ</span><span class="g-eq">=</span><span class="g-eng">graduating from</span></span><span class="gloss-chip"><span class="g-thai">สายอาชีพ</span><span class="g-eq">=</span><span class="g-eng">a vocational track</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-eq">=</span><span class="g-eng">also</span></span><span class="gloss-chip"><span class="g-thai">หางานทำ</span><span class="g-eq">=</span><span class="g-eng">find work</span></span><span class="gloss-chip"><span class="g-thai">ง่าย</span><span class="g-eq">=</span><span class="g-eng">easily</span></span><span class="gloss-chip"><span class="g-thai">เหมือนกัน</span><span class="g-eq">=</span><span class="g-eng">just as</span></span></div></div>
+        </div>
+      </div>
+  </div>
   <nav class="topic-nav" aria-label="Topic navigation">
     <a class="topic-nav-btn" href="topic-20d.html">
       <span>←</span>
@@ -73,6 +483,7 @@
 
 <script>
 window.ThaiEarTopic = {
+  ssr: true,
   tier: "member",
   audioPrefix: "Schooling_LI1",
   sentences: [
