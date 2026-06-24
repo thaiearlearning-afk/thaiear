@@ -38,6 +38,9 @@
 @font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/sarabun-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 @font-face{font-family:'Sarabun';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/sarabun-thai-600.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
 @font-face{font-family:'Sarabun';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/sarabun-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+  /* Topic intro: visible, crawlable lead paragraph under the h1 (SEO + orientation).
+     'Inter' for English, 'Sarabun' fallback for the Thai words. */
+  .topic-intro { font-family: 'Inter', 'Sarabun', system-ui, sans-serif; font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin: 0.6rem 0 1.25rem; }
 </style>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -82,8 +85,8 @@
   .sentence-card.st-3 .prog-seg { background: var(--accent); }
   /* Reserve the audio player's height so the static cards below don't jump when player.js
      injects it (CLS). Set just under the rendered height so it never leaves a visible gap. */
-  #player-root { min-height: 400px; }
-  @media (max-width: 600px) { #player-root { min-height: 560px; } }
+  #player-root { min-height: 350px; }
+  @media (max-width: 600px) { #player-root { min-height: 480px; } }
 </style>
 </head>
 <body>
@@ -93,6 +96,7 @@
 <div class="page-wrap">
   <div class="topic-eyebrow" id="topic-eyebrow"></div>
   <h1 class="topic-title">Hobbies &amp; free time</h1>
+  <p class="topic-intro">Talk about hobbies and free time in Thai. This topic covers what Thai people do to relax — วิ่ง (running), อ่านหนังสือ (reading), ดูหนัง (watching films), ทำอาหาร (cooking), ถ่ายรูป (photography) and ปลูกต้นไม้ (gardening) — plus social pastimes like คาราโอเกะ (karaoke), เทศกาลดนตรี (music festivals), บอร์ดเกม (board games), café-hopping and เดินป่า (hiking). You'll also learn to ask ว่างไหม (are you free?) and suggest doing things together. All 37 sentences come with native-speed audio, English translations and word-by-word notes, so it all sticks by ear.</p>
   <p class="topic-meta"><strong>37 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
   <div id="player-root"></div>
 
