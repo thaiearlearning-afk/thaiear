@@ -197,7 +197,7 @@
     return (
       `<nav class="site-nav">` +
         `<a class="nav-logo" href="index.html">` +
-          `<img src="logoshort.png" alt="ThaiEar logo">` +
+          `<img src="logoshort.png" alt="ThaiEar logo" width="63" height="132">` +
           `<span class="nav-wordmark">Thai<span>Ear</span></span>` +
         `</a>` +
         `<div class="nav-links">${linksHtml()}${menuHtml()}${memberHtml()}</div>` +
