@@ -1,0 +1,62 @@
+# ThaiEar
+
+> A free Thai-language listening platform: real, natural Thai sentences organised by topic and difficulty, with native-speed audio, English translations, and word-by-word notes.
+
+ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every topic ramps from Beginner to Intermediate. Each sentence page shows the Thai, an English translation, and a gloss of each word, with native-speed audio to build listening comprehension.
+
+## Topics
+
+- [Greetings & farewells in Thai](https://thaiear.com/topic-01): Beginner, 23 sentences
+- [Getting to know you in Thai](https://thaiear.com/topic-02): Beginner, 29 sentences
+- [Communication survival in Thai](https://thaiear.com/topic-03): Beginner, 22 sentences
+- [Colours & descriptions 1 in Thai](https://thaiear.com/topic-04a): Beginner, 21 sentences
+- [Colours & descriptions 2 in Thai](https://thaiear.com/topic-04b): Beginner, 21 sentences
+- [Weather & seasons in Thai](https://thaiear.com/topic-05): Beginner, 30 sentences
+- [Time & numbers in Thai](https://thaiear.com/topic-06): Beginner, 30 sentences
+- [Days & months in Thai](https://thaiear.com/topic-07): Beginner, 37 sentences
+- [Family & relationships in Thai](https://thaiear.com/topic-08): Beginner, 38 sentences
+- [Animals in Thai](https://thaiear.com/topic-40): Beginner, 37 sentences
+- [Places around town 1 in Thai](https://thaiear.com/topic-41a): Beginner, 26 sentences
+- [Places around town 2 in Thai](https://thaiear.com/topic-41b): Beginner, 27 sentences
+- [Food & drink 1 in Thai](https://thaiear.com/topic-09a): Beginner → Lower intermediate, 39 sentences
+- [Food & drink 2 in Thai](https://thaiear.com/topic-09b): Beginner → Lower intermediate, 26 sentences
+- [Home & daily routine 1 in Thai](https://thaiear.com/topic-10a): Beginner → Lower intermediate, 24 sentences
+- [Home & daily routine 2 in Thai](https://thaiear.com/topic-10b): Beginner → Lower intermediate, 23 sentences
+- [Shopping & money 1 in Thai](https://thaiear.com/topic-11a): Beginner → Lower intermediate, 22 sentences
+- [Shopping & money 2 in Thai](https://thaiear.com/topic-11b): Beginner → Lower intermediate, 29 sentences
+- [Getting around & transport 1 in Thai](https://thaiear.com/topic-12a): Beginner → Lower intermediate, 26 sentences
+- [Getting around & transport 2 in Thai](https://thaiear.com/topic-12b): Beginner → Lower intermediate, 24 sentences
+- [Asking for help & emergencies in Thai](https://thaiear.com/topic-37): Beginner → Lower intermediate, 40 sentences
+- [Occupations 1 in Thai](https://thaiear.com/topic-42a): Beginner → Lower intermediate, 30 sentences
+- [Occupations 2 in Thai](https://thaiear.com/topic-42b): Beginner → Lower intermediate, 30 sentences
+- [Body & health 1 in Thai](https://thaiear.com/topic-13a): Beginner → Lower intermediate, 28 sentences
+- [Body & health 2 in Thai](https://thaiear.com/topic-13b): Beginner → Lower intermediate, 25 sentences
+- [Feelings & emotions 1 in Thai](https://thaiear.com/topic-14a): Beginner → Lower intermediate, 28 sentences
+- [Feelings & emotions 2 in Thai](https://thaiear.com/topic-14b): Beginner → Lower intermediate, 34 sentences
+- [Hobbies & free time in Thai](https://thaiear.com/topic-15): Beginner → Lower intermediate, 37 sentences
+- [Social life & events in Thai](https://thaiear.com/topic-16): Beginner → Lower intermediate, 40 sentences
+- [Idioms in Thai](https://thaiear.com/topic-38): Beginner → Lower intermediate, 27 sentences
+- [Plans & future 1 in Thai](https://thaiear.com/topic-17a): Beginner → Lower intermediate, 28 sentences
+- [Plans & future 2 in Thai](https://thaiear.com/topic-17b): Beginner → Lower intermediate, 16 sentences
+- [Clothing & appearance 1 in Thai](https://thaiear.com/topic-18a): Beginner → Lower intermediate, 22 sentences
+- [Clothing & appearance 2 in Thai](https://thaiear.com/topic-18b): Beginner → Lower intermediate, 33 sentences
+- [Cooking & recipes 1 in Thai](https://thaiear.com/topic-19a): Beginner → Lower intermediate, 31 sentences
+- [Cooking & recipes 2 in Thai](https://thaiear.com/topic-19b): Beginner → Lower intermediate, 27 sentences
+- [Work & study 1 in Thai](https://thaiear.com/topic-20a): Lower intermediate → Intermediate, 24 sentences
+- [Work & study 2 in Thai](https://thaiear.com/topic-20b): Lower intermediate → Intermediate, 24 sentences
+- [Work & study 3 in Thai](https://thaiear.com/topic-20c): Lower intermediate → Intermediate, 24 sentences
+- [Work & study 4 in Thai](https://thaiear.com/topic-20d): Lower intermediate → Intermediate, 21 sentences
+- [Education system 1 in Thai](https://thaiear.com/topic-21a): Lower intermediate → Intermediate, 26 sentences
+- [Education system 2 in Thai](https://thaiear.com/topic-21b): Lower intermediate → Intermediate, 26 sentences
+- [Food culture & eating out 1 in Thai](https://thaiear.com/topic-22a): Lower intermediate → Intermediate, 29 sentences
+- [Food culture & eating out 2 in Thai](https://thaiear.com/topic-22b): Lower intermediate → Intermediate, 22 sentences
+- [Buddhism 1 in Thai](https://thaiear.com/topic-35a): Lower intermediate → Intermediate, 38 sentences
+- [Buddhism 2 in Thai](https://thaiear.com/topic-35b): Lower intermediate → Intermediate, 42 sentences
+- [Buddhism 3 in Thai](https://thaiear.com/topic-35c): Lower intermediate → Intermediate, 30 sentences
+- [Tone twisters in Thai](https://thaiear.com/topic-39): Lower intermediate → Intermediate, 19 sentences
+
+## Pages
+
+- [About](https://thaiear.com/about): What ThaiEar is and who it's for
+- [Guide](https://thaiear.com/guide): How to use ThaiEar to learn Thai by listening
+- [Membership](https://thaiear.com/subscribe): Free and premium access
