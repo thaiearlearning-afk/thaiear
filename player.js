@@ -377,7 +377,11 @@
   /* ---- styles (the player owns its own CSS; page keeps only chrome) ----
      Depends on the page's :root design tokens, which every page defines. */
   var STYLES = `
-    .progress-controls { margin-bottom: 0.9rem; min-height: 0; }
+    /* Reserve the late-loading (auth-gated) progress card's slot on desktop/tablet too, so it
+       doesn't shove the player's controls down when it appears (CLS). 54px = its measured desktop
+       height (logged-in card; the logged-out card is 45px and sits in the same slot). Mobile
+       overrides to 73px below. */
+    .progress-controls { margin-bottom: 0.9rem; min-height: 54px; }
     .prog-ctl-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
       background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.7rem 0.9rem; }
     .prog-ctl-left { display: flex; align-items: baseline; gap: 7px; }
