@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ThaiEar — Topic 24: Food culture & eating out 2</title>
+<title>Food Culture &amp; Eating Out in Thai — Phrases with Audio (Part 2) | ThaiEar</title>
+<meta name="description" content="Listen to 22 natural Thai sentences on Food culture &amp; eating out at native speed, with English translations and word-by-word notes. Thai listening practice from ThaiEar.">
+<link rel="canonical" href="https://thaiear.com/topic-22b.html">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -41,6 +43,18 @@
     .topic-nav-btn { font-size: 12px; padding: 6px 10px; }
   }
   @media (max-width: 380px) { .topic-title { font-size: 18px; } }
+  /* Single-copy accordion (SSR): reveal rows are in the source but collapsed by default
+     (answers never flash before JS; non-JS clients get them collapsed). player.js toggles
+     st-0..st-3 on click; CSS shows the matching rows. */
+  .sentence-card .reveal-row { display: none; }
+  .sentence-card.st-0 .sentence-body { display: none; }
+  .sentence-card.st-1 .row-thai { display: block; }
+  .sentence-card.st-2 .row-thai, .sentence-card.st-2 .row-english { display: block; }
+  .sentence-card.st-3 .row-thai, .sentence-card.st-3 .row-english, .sentence-card.st-3 .row-notes { display: block; }
+  .sentence-card.st-1 .row-thai, .sentence-card.st-2 .row-english { border-bottom: none; }
+  .sentence-card.st-1 .prog-seg:nth-child(1),
+  .sentence-card.st-2 .prog-seg:nth-child(-n+2),
+  .sentence-card.st-3 .prog-seg { background: var(--accent); }
 </style>
 </head>
 <body>
@@ -53,6 +67,342 @@
   <p class="topic-subtitle">Regional identity & food culture</p>
   <p class="topic-meta"><strong>22 sentences</strong> &middot; Click each sentence to reveal Thai, English, and notes</p>
   <div id="player-root"></div>
+
+  <!-- SSR content: static, source-visible accordion cards (collapsed via st-0).
+       player.js (cfg.ssr) hydrates them; reveal toggles st-0..st-3 — same nodes the
+       crawler reads are the ones the user reveals. Revert: remove ssr:true + this block. -->
+  <div id="sentence-list">
+      <div class="sentence-card st-0" id="sc-1006">
+        <div class="sentence-header" onclick="cycle(1006)" role="button" tabindex="0" aria-label="Sentence 1">
+          <span class="sent-num">1</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1006)" aria-label="Play sentence 1"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1006)" aria-label="Flag sentence 1" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เอกลักษณ์<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">อาหารแต่ละภาคของไทยมีเอกลักษณ์ไม่เหมือนกันค่ะ</div>
+          <div class="reveal-row row-english">Each region of Thailand has its own distinctive food.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">อาหาร</span><span class="g-eq">=</span><span class="g-eng">food</span></span><span class="gloss-chip"><span class="g-thai">แต่ละภาค</span><span class="g-eq">=</span><span class="g-eng">each region</span></span><span class="gloss-chip"><span class="g-thai">ของไทย</span><span class="g-eq">=</span><span class="g-eng">of Thailand</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">เอกลักษณ์</span><span class="g-eq">=</span><span class="g-eng">own identity</span></span><span class="gloss-chip"><span class="g-thai">ไม่เหมือนกัน</span><span class="g-eq">=</span><span class="g-eng">differs</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">Thailand's regions — North, Northeast (Isan), Central and South — have markedly different cuisines shaped by climate, geography and neighbours. "Thai food" is really several regional traditions.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1007">
+        <div class="sentence-header" onclick="cycle(1007)" role="button" tabindex="0" aria-label="Sentence 2">
+          <span class="sent-num">2</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1007)" aria-label="Play sentence 2"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1007)" aria-label="Flag sentence 2" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ปักษ์ใต้<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">อาหารปักษ์ใต้ขึ้นชื่อว่าเผ็ดที่สุดในไทยเลยครับ</div>
+          <div class="reveal-row row-english">Southern food is famed as the spiciest in Thailand.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">อาหาร</span><span class="g-eq">=</span><span class="g-eng">food</span></span><span class="gloss-chip"><span class="g-thai">ปักษ์ใต้</span><span class="g-eq">=</span><span class="g-eng">the South</span></span><span class="gloss-chip"><span class="g-thai">ขึ้นชื่อ</span><span class="g-eq">=</span><span class="g-eng">renowned</span></span><span class="gloss-chip"><span class="g-thai">ว่า</span><span class="g-eq">=</span><span class="g-eng">as</span></span><span class="gloss-chip"><span class="g-thai">เผ็ดที่สุด</span><span class="g-eq">=</span><span class="g-eng">spiciest</span></span><span class="gloss-chip"><span class="g-thai">ในไทย</span><span class="g-eq">=</span><span class="g-eng">in Thailand</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-eq">=</span><span class="g-eng">(emphasis)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">Southern Thai food is famous for fierce heat and bold, salty, turmeric-rich flavours — spicy even by Thai standards.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1008">
+        <div class="sentence-header" onclick="cycle(1008)" role="button" tabindex="0" aria-label="Sentence 3">
+          <span class="sent-num">3</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1008)" aria-label="Play sentence 3"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1008)" aria-label="Flag sentence 3" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ข้าวเหนียว<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">คนเหนือชอบกินข้าวเหนียวเป็นหลักเหมือนคนอีสานค่ะ</div>
+          <div class="reveal-row row-english">Northerners eat sticky rice as a staple, like Isan folk.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คนเหนือ</span><span class="g-eq">=</span><span class="g-eng">Northerners</span></span><span class="gloss-chip"><span class="g-thai">ชอบ</span><span class="g-eq">=</span><span class="g-eng">like</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">ข้าวเหนียว</span><span class="g-eq">=</span><span class="g-eng">sticky rice</span></span><span class="gloss-chip"><span class="g-thai">เป็นหลัก</span><span class="g-eq">=</span><span class="g-eng">as staple</span></span><span class="gloss-chip"><span class="g-thai">เหมือน</span><span class="g-eq">=</span><span class="g-eng">like</span></span><span class="gloss-chip"><span class="g-thai">คนอีสาน</span><span class="g-eq">=</span><span class="g-eng">Isan folk</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">In the North and Northeast, sticky rice — eaten by hand, rolled into balls to dip into dishes — is the staple instead of steamed jasmine rice, and central to regional identity.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1009">
+        <div class="sentence-header" onclick="cycle(1009)" role="button" tabindex="0" aria-label="Sentence 4">
+          <span class="sent-num">4</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1009)" aria-label="Play sentence 4"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1009)" aria-label="Flag sentence 4" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ส้มตำ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ส้มตำกับลาบเป็นอาหารอีสานที่คนทั้งประเทศติดใจค่ะ</div>
+          <div class="reveal-row row-english">Som tam and laab are Isan dishes the whole country's hooked on.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ส้มตำ</span><span class="g-eq">=</span><span class="g-eng">papaya salad</span></span><span class="gloss-chip"><span class="g-thai">กับ</span><span class="g-eq">=</span><span class="g-eng">and</span></span><span class="gloss-chip"><span class="g-thai">ลาบ</span><span class="g-eq">=</span><span class="g-eng">laab</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-eq">=</span><span class="g-eng">are</span></span><span class="gloss-chip"><span class="g-thai">อาหารอีสาน</span><span class="g-eq">=</span><span class="g-eng">Isan food</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">คนทั้งประเทศ</span><span class="g-eq">=</span><span class="g-eng">the whole country</span></span><span class="gloss-chip"><span class="g-thai">ติดใจ</span><span class="g-eq">=</span><span class="g-eng">loves</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">Originally Isan dishes, ส้มตำ (spicy papaya salad) and ลาบ are now loved nationwide — Isan food is arguably Thailand's most popular regional cuisine, found on every corner.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1010">
+        <div class="sentence-header" onclick="cycle(1010)" role="button" tabindex="0" aria-label="Sentence 5">
+          <span class="sent-num">5</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1010)" aria-label="Play sentence 5"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1010)" aria-label="Flag sentence 5" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ขึ้นชื่อ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เวลาไปต่างจังหวัด คนไทยชอบหาของกินขึ้นชื่อของที่นั่นค่ะ</div>
+          <div class="reveal-row row-english">Travelling upcountry, Thais seek out the local specialty.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เวลา</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-eq">=</span><span class="g-eng">go</span></span><span class="gloss-chip"><span class="g-thai">ต่างจังหวัด</span><span class="g-eq">=</span><span class="g-eng">upcountry</span></span><span class="gloss-chip"><span class="g-thai">คนไทย</span><span class="g-eq">=</span><span class="g-eng">Thais</span></span><span class="gloss-chip"><span class="g-thai">ชอบ</span><span class="g-eq">=</span><span class="g-eng">like</span></span><span class="gloss-chip"><span class="g-thai">หา</span><span class="g-eq">=</span><span class="g-eng">seek</span></span><span class="gloss-chip"><span class="g-thai">ของกิน</span><span class="g-eq">=</span><span class="g-eng">food</span></span><span class="gloss-chip"><span class="g-thai">ขึ้นชื่อ</span><span class="g-eq">=</span><span class="g-eng">famous</span></span><span class="gloss-chip"><span class="g-thai">ของที่นั่น</span><span class="g-eq">=</span><span class="g-eng">local</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">Each province has signature dishes, and hunting them down is half the point of travelling. Thais will go far for a town's famous noodle shop or sweet — food is a big part of regional pride.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1011">
+        <div class="sentence-header" onclick="cycle(1011)" role="button" tabindex="0" aria-label="Sentence 6">
+          <span class="sent-num">6</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1011)" aria-label="Play sentence 6"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1011)" aria-label="Flag sentence 6" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ของฝาก<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">กลับจากต่างจังหวัดทีไร ต้องซื้อของฝากเป็นของกินกลับมาเสมอครับ</div>
+          <div class="reveal-row row-english">Every trip back, you always bring food gifts home.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กลับ</span><span class="g-eq">=</span><span class="g-eng">return</span></span><span class="gloss-chip"><span class="g-thai">จาก</span><span class="g-eq">=</span><span class="g-eng">from</span></span><span class="gloss-chip"><span class="g-thai">ต่างจังหวัด</span><span class="g-eq">=</span><span class="g-eng">upcountry</span></span><span class="gloss-chip"><span class="g-thai">ทีไร</span><span class="g-eq">=</span><span class="g-eng">whenever</span></span><span class="gloss-chip"><span class="g-thai">ต้อง</span><span class="g-eq">=</span><span class="g-eng">must</span></span><span class="gloss-chip"><span class="g-thai">ซื้อ</span><span class="g-eq">=</span><span class="g-eng">buy</span></span><span class="gloss-chip"><span class="g-thai">ของฝาก</span><span class="g-eq">=</span><span class="g-eng">food gifts</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-eq">=</span><span class="g-eng">as</span></span><span class="gloss-chip"><span class="g-thai">ของกิน</span><span class="g-eq">=</span><span class="g-eng">food</span></span><span class="gloss-chip"><span class="g-thai">กลับมา</span><span class="g-eq">=</span><span class="g-eng">back</span></span><span class="gloss-chip"><span class="g-thai">เสมอ</span><span class="g-eq">=</span><span class="g-eng">always</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">ของฝาก — a small gift, almost always local food or sweets, brought back from a trip for family, friends or coworkers — is near-obligatory; returning empty-handed can seem thoughtless. Many famous regional snacks exist mainly as ของฝาก.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1012">
+        <div class="sentence-header" onclick="cycle(1012)" role="button" tabindex="0" aria-label="Sentence 7">
+          <span class="sent-num">7</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1012)" aria-label="Play sentence 7"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1012)" aria-label="Flag sentence 7" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ความสัมพันธ์<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">คนไทยถือว่าการกินข้าวด้วยกันช่วยเชื่อมความสัมพันธ์ค่ะ</div>
+          <div class="reveal-row row-english">Thais see eating together as relationship-building.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คนไทย</span><span class="g-eq">=</span><span class="g-eng">Thais</span></span><span class="gloss-chip"><span class="g-thai">ถือว่า</span><span class="g-eq">=</span><span class="g-eng">see as</span></span><span class="gloss-chip"><span class="g-thai">การกินข้าว</span><span class="g-eq">=</span><span class="g-eng">eating</span></span><span class="gloss-chip"><span class="g-thai">ด้วยกัน</span><span class="g-eq">=</span><span class="g-eng">together</span></span><span class="gloss-chip"><span class="g-thai">ช่วย</span><span class="g-eq">=</span><span class="g-eng">helps</span></span><span class="gloss-chip"><span class="g-thai">เชื่อม</span><span class="g-eq">=</span><span class="g-eng">bond</span></span><span class="gloss-chip"><span class="g-thai">ความสัมพันธ์</span><span class="g-eq">=</span><span class="g-eng">relationships</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">Sharing meals is how relationships are built and kept up — business deals, friendships and family ties are all nurtured over food. Eating together both signals and strengthens closeness.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1013">
+        <div class="sentence-header" onclick="cycle(1013)" role="button" tabindex="0" aria-label="Sentence 8">
+          <span class="sent-num">8</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1013)" aria-label="Play sentence 8"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1013)" aria-label="Flag sentence 8" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">น้ำใจ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">การชวนคนมากินข้าวเป็นการแสดงน้ำใจอย่างหนึ่งครับ</div>
+          <div class="reveal-row row-english">Inviting people to eat is a way of showing kindness.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">การชวน</span><span class="g-eq">=</span><span class="g-eng">inviting</span></span><span class="gloss-chip"><span class="g-thai">คน</span><span class="g-eq">=</span><span class="g-eng">people</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-eq">=</span><span class="g-eng">to</span></span><span class="gloss-chip"><span class="g-thai">กินข้าว</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-eq">=</span><span class="g-eng">is</span></span><span class="gloss-chip"><span class="g-thai">การแสดง</span><span class="g-eq">=</span><span class="g-eng">showing</span></span><span class="gloss-chip"><span class="g-thai">น้ำใจ</span><span class="g-eq">=</span><span class="g-eng">kindness</span></span><span class="gloss-chip"><span class="g-thai">อย่างหนึ่ง</span><span class="g-eq">=</span><span class="g-eng">a kind of</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">น้ำใจ — literally "water of the heart" — is generous, thoughtful kindness toward others. Feeding people is one of its clearest expressions, and someone with much น้ำใจ is warmly regarded.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1014">
+        <div class="sentence-header" onclick="cycle(1014)" role="button" tabindex="0" aria-label="Sentence 9">
+          <span class="sent-num">9</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1014)" aria-label="Play sentence 9"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1014)" aria-label="Flag sentence 9" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เจ้าภาพ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เจ้าภาพมักจะเลี้ยงอาหารแขกอย่างดีเสมอค่ะ</div>
+          <div class="reveal-row row-english">A host always feeds their guests generously.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เจ้าภาพ</span><span class="g-eq">=</span><span class="g-eng">host</span></span><span class="gloss-chip"><span class="g-thai">มักจะ</span><span class="g-eq">=</span><span class="g-eng">tend to</span></span><span class="gloss-chip"><span class="g-thai">เลี้ยง</span><span class="g-eq">=</span><span class="g-eng">feed</span></span><span class="gloss-chip"><span class="g-thai">อาหาร</span><span class="g-eq">=</span><span class="g-eng">food</span></span><span class="gloss-chip"><span class="g-thai">แขก</span><span class="g-eq">=</span><span class="g-eng">guests</span></span><span class="gloss-chip"><span class="g-thai">อย่างดี</span><span class="g-eq">=</span><span class="g-eng">well</span></span><span class="gloss-chip"><span class="g-thai">เสมอ</span><span class="g-eq">=</span><span class="g-eng">always</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">A host (เจ้าภาพ) is expected to feed guests well and generously — running out of food, or a guest leaving hungry, would make the host lose face.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1015">
+        <div class="sentence-header" onclick="cycle(1015)" role="button" tabindex="0" aria-label="Sentence 10">
+          <span class="sent-num">10</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1015)" aria-label="Play sentence 10"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1015)" aria-label="Flag sentence 10" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ปฏิเสธ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ถึงจะอิ่มแล้ว แต่ถ้าเจ้าของบ้านชวนกินก็ไม่ควรปฏิเสธครับ</div>
+          <div class="reveal-row row-english">Even if you're full, you shouldn't refuse the host's offer.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ถึงจะ</span><span class="g-eq">=</span><span class="g-eng">even if</span></span><span class="gloss-chip"><span class="g-thai">อิ่ม</span><span class="g-eq">=</span><span class="g-eng">full</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">แต่</span><span class="g-eq">=</span><span class="g-eng">but</span></span><span class="gloss-chip"><span class="g-thai">ถ้า</span><span class="g-eq">=</span><span class="g-eng">if</span></span><span class="gloss-chip"><span class="g-thai">เจ้าของบ้าน</span><span class="g-eq">=</span><span class="g-eng">the host</span></span><span class="gloss-chip"><span class="g-thai">ชวน</span><span class="g-eq">=</span><span class="g-eng">invites</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-eq">=</span><span class="g-eng">then</span></span><span class="gloss-chip"><span class="g-thai">ไม่ควร</span><span class="g-eq">=</span><span class="g-eng">shouldn't</span></span><span class="gloss-chip"><span class="g-thai">ปฏิเสธ</span><span class="g-eq">=</span><span class="g-eng">refuse</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">Accepting at least a little when offered food honours the host's น้ำใจ; flatly refusing can seem cold. The usual compromise is to take a small amount even when full.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1016">
+        <div class="sentence-header" onclick="cycle(1016)" role="button" tabindex="0" aria-label="Sentence 11">
+          <span class="sent-num">11</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1016)" aria-label="Play sentence 11"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1016)" aria-label="Flag sentence 11" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ทักทาย<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เวลาคนไทยถามว่ากินข้าวรึยัง บางทีก็แค่ทักทายเฉยๆค่ะ</div>
+          <div class="reveal-row row-english">When Thais ask 'have you eaten?', sometimes it's just a greeting.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เวลา</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">คนไทย</span><span class="g-eq">=</span><span class="g-eng">Thais</span></span><span class="gloss-chip"><span class="g-thai">ถามว่า</span><span class="g-eq">=</span><span class="g-eng">ask</span></span><span class="gloss-chip"><span class="g-thai">กินข้าว</span><span class="g-eq">=</span><span class="g-eng">eaten</span></span><span class="gloss-chip"><span class="g-thai">รึยัง</span><span class="g-eq">=</span><span class="g-eng">yet</span></span><span class="gloss-chip"><span class="g-thai">บางที</span><span class="g-eq">=</span><span class="g-eng">sometimes</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-eq">=</span><span class="g-eng">just</span></span><span class="gloss-chip"><span class="g-thai">แค่</span><span class="g-eq">=</span><span class="g-eng">only</span></span><span class="gloss-chip"><span class="g-thai">ทักทาย</span><span class="g-eq">=</span><span class="g-eng">a greeting</span></span><span class="gloss-chip"><span class="g-thai">เฉยๆ</span><span class="g-eq">=</span><span class="g-eng">merely</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">"กินข้าวรึยัง?" (eaten yet?) is often pure greeting, like "how's it going?" — not a real question about food or an invitation. A casual "กินแล้ว" closes it.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1017">
+        <div class="sentence-header" onclick="cycle(1017)" role="button" tabindex="0" aria-label="Sentence 12">
+          <span class="sent-num">12</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1017)" aria-label="Play sentence 12"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1017)" aria-label="Flag sentence 12" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">น้ำพริก<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">คนไทยมีสำนวนว่ากินน้ำพริกถ้วยเดียว หมายถึงรักเดียวใจเดียวครับ</div>
+          <div class="reveal-row row-english">The idiom 'eating from one chili-dip bowl' means being faithful to one partner.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คนไทย</span><span class="g-eq">=</span><span class="g-eng">Thais</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">have</span></span><span class="gloss-chip"><span class="g-thai">สำนวน</span><span class="g-eq">=</span><span class="g-eng">an idiom</span></span><span class="gloss-chip"><span class="g-thai">ว่า</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">น้ำพริก</span><span class="g-eq">=</span><span class="g-eng">chili dip</span></span><span class="gloss-chip"><span class="g-thai">ถ้วยเดียว</span><span class="g-eq">=</span><span class="g-eng">one bowl</span></span><span class="gloss-chip"><span class="g-thai">หมายถึง</span><span class="g-eq">=</span><span class="g-eng">means</span></span><span class="gloss-chip"><span class="g-thai">รักเดียวใจเดียว</span><span class="g-eq">=</span><span class="g-eng">faithful</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">น้ำพริก (chili dip eaten with rice and vegetables) is humble everyday food. The idiom "กินน้ำพริกถ้วยเดียว" — sticking to a single bowl — means staying faithful to one partner, content with what you have.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1018">
+        <div class="sentence-header" onclick="cycle(1018)" role="button" tabindex="0" aria-label="Sentence 13">
+          <span class="sent-num">13</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1018)" aria-label="Play sentence 13"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1018)" aria-label="Flag sentence 13" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ส้อม<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">คนไทยกินข้าวด้วยช้อนกับส้อม ไม่ค่อยใช้ตะเกียบค่ะ</div>
+          <div class="reveal-row row-english">Thais eat with a spoon and fork, rarely chopsticks.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คนไทย</span><span class="g-eq">=</span><span class="g-eng">Thais</span></span><span class="gloss-chip"><span class="g-thai">กินข้าว</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">ด้วย</span><span class="g-eq">=</span><span class="g-eng">with</span></span><span class="gloss-chip"><span class="g-thai">ช้อน</span><span class="g-eq">=</span><span class="g-eng">spoon</span></span><span class="gloss-chip"><span class="g-thai">กับ</span><span class="g-eq">=</span><span class="g-eng">and</span></span><span class="gloss-chip"><span class="g-thai">ส้อม</span><span class="g-eq">=</span><span class="g-eng">fork</span></span><span class="gloss-chip"><span class="g-thai">ไม่ค่อย</span><span class="g-eq">=</span><span class="g-eng">rarely</span></span><span class="gloss-chip"><span class="g-thai">ใช้</span><span class="g-eq">=</span><span class="g-eng">use</span></span><span class="gloss-chip"><span class="g-thai">ตะเกียบ</span><span class="g-eq">=</span><span class="g-eng">chopsticks</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">Thais eat most dishes with a spoon (right hand) and fork (left, to push food onto the spoon) — the spoon, not the fork, goes to the mouth. Chopsticks are mainly for noodle dishes.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1019">
+        <div class="sentence-header" onclick="cycle(1019)" role="button" tabindex="0" aria-label="Sentence 14">
+          <span class="sent-num">14</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1019)" aria-label="Play sentence 14"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1019)" aria-label="Flag sentence 14" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เหลือทิ้ง<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ผู้ใหญ่มักสอนว่าอย่ากินข้าวเหลือทิ้งนะครับ</div>
+          <div class="reveal-row row-english">Elders teach you not to waste rice.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผู้ใหญ่</span><span class="g-eq">=</span><span class="g-eng">elders</span></span><span class="gloss-chip"><span class="g-thai">มัก</span><span class="g-eq">=</span><span class="g-eng">often</span></span><span class="gloss-chip"><span class="g-thai">สอนว่า</span><span class="g-eq">=</span><span class="g-eng">teach</span></span><span class="gloss-chip"><span class="g-thai">อย่า</span><span class="g-eq">=</span><span class="g-eng">don't</span></span><span class="gloss-chip"><span class="g-thai">กินข้าว</span><span class="g-eq">=</span><span class="g-eng">eat rice</span></span><span class="gloss-chip"><span class="g-thai">เหลือทิ้ง</span><span class="g-eq">=</span><span class="g-eng">leave wasted</span></span><span class="gloss-chip"><span class="g-thai">นะครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">Children are taught not to leave rice uneaten — partly out of respect for farmers' labour, partly a value of not wasting. A playful warning says leftover grains mean you'll marry someone with a pockmarked face.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1020">
+        <div class="sentence-header" onclick="cycle(1020)" role="button" tabindex="0" aria-label="Sentence 15">
+          <span class="sent-num">15</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1020)" aria-label="Play sentence 15"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1020)" aria-label="Flag sentence 15" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">กับข้าว<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">มื้อหนึ่งของคนไทยมักมีข้าวกับกับข้าวหลายอย่างค่ะ</div>
+          <div class="reveal-row row-english">A Thai meal usually has rice plus several dishes.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">มื้อหนึ่ง</span><span class="g-eq">=</span><span class="g-eng">a meal</span></span><span class="gloss-chip"><span class="g-thai">ของคนไทย</span><span class="g-eq">=</span><span class="g-eng">for Thais</span></span><span class="gloss-chip"><span class="g-thai">มัก</span><span class="g-eq">=</span><span class="g-eng">usually</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">ข้าว</span><span class="g-eq">=</span><span class="g-eng">rice</span></span><span class="gloss-chip"><span class="g-thai">กับ</span><span class="g-eq">=</span><span class="g-eng">plus</span></span><span class="gloss-chip"><span class="g-thai">กับข้าว</span><span class="g-eq">=</span><span class="g-eng">dishes</span></span><span class="gloss-chip"><span class="g-thai">หลายอย่าง</span><span class="g-eq">=</span><span class="g-eng">several</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">A typical meal is rice plus several shared dishes — ideally a balance of flavours and a soup — rather than one main plate. Variety across the table is the ideal.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1021">
+        <div class="sentence-header" onclick="cycle(1021)" role="button" tabindex="0" aria-label="Sentence 16">
+          <span class="sent-num">16</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1021)" aria-label="Play sentence 16"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1021)" aria-label="Flag sentence 16" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ตลาดสด<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">แม่ชอบเดินตลาดสดซื้อกับข้าวสดๆทุกเช้าค่ะ</div>
+          <div class="reveal-row row-english">Mum likes walking the fresh market for ingredients each morning.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แม่</span><span class="g-eq">=</span><span class="g-eng">Mum</span></span><span class="gloss-chip"><span class="g-thai">ชอบ</span><span class="g-eq">=</span><span class="g-eng">likes</span></span><span class="gloss-chip"><span class="g-thai">เดิน</span><span class="g-eq">=</span><span class="g-eng">walk</span></span><span class="gloss-chip"><span class="g-thai">ตลาดสด</span><span class="g-eq">=</span><span class="g-eng">fresh market</span></span><span class="gloss-chip"><span class="g-thai">ซื้อ</span><span class="g-eq">=</span><span class="g-eng">buy</span></span><span class="gloss-chip"><span class="g-thai">กับข้าว</span><span class="g-eq">=</span><span class="g-eng">ingredients</span></span><span class="gloss-chip"><span class="g-thai">สดๆ</span><span class="g-eq">=</span><span class="g-eng">fresh</span></span><span class="gloss-chip"><span class="g-thai">ทุกเช้า</span><span class="g-eq">=</span><span class="g-eng">each morning</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">The ตลาดสด ("fresh market," i.e. wet market) is where many shop daily for fresh produce, meat and fish — bought the morning they're cooked rather than weekly at a supermarket.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1022">
+        <div class="sentence-header" onclick="cycle(1022)" role="button" tabindex="0" aria-label="Sentence 17">
+          <span class="sent-num">17</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1022)" aria-label="Play sentence 17"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1022)" aria-label="Flag sentence 17" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">โซเชียล<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เดี๋ยวนี้หลายคนไปร้านอาหารเพื่อถ่ายรูปลงโซเชียล มากกว่าจะไปกินจริงๆค่ะ</div>
+          <div class="reveal-row row-english">These days many go to restaurants to photograph food for social media more than to actually eat.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดี๋ยวนี้</span><span class="g-eq">=</span><span class="g-eng">nowadays</span></span><span class="gloss-chip"><span class="g-thai">หลายคน</span><span class="g-eq">=</span><span class="g-eng">many</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-eq">=</span><span class="g-eng">go to</span></span><span class="gloss-chip"><span class="g-thai">ร้านอาหาร</span><span class="g-eq">=</span><span class="g-eng">restaurants</span></span><span class="gloss-chip"><span class="g-thai">เพื่อ</span><span class="g-eq">=</span><span class="g-eng">to</span></span><span class="gloss-chip"><span class="g-thai">ถ่ายรูป</span><span class="g-eq">=</span><span class="g-eng">photograph food</span></span><span class="gloss-chip"><span class="g-thai">ลงโซเชียล</span><span class="g-eq">=</span><span class="g-eng">post online</span></span><span class="gloss-chip"><span class="g-thai">มากกว่า</span><span class="g-eq">=</span><span class="g-eng">more than</span></span><span class="gloss-chip"><span class="g-thai">จะ</span><span class="g-eq">=</span><span class="g-eng">to</span></span><span class="gloss-chip"><span class="g-thai">ไปกิน</span><span class="g-eq">=</span><span class="g-eng">actually eat</span></span><span class="gloss-chip"><span class="g-thai">จริงๆ</span><span class="g-eq">=</span><span class="g-eng">really</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">"Instagrammable" cafés and dishes are a big trend; photogenic food and aesthetic cafés can matter as much as taste, and being seen at the right spot is part of the appeal.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1023">
+        <div class="sentence-header" onclick="cycle(1023)" role="button" tabindex="0" aria-label="Sentence 18">
+          <span class="sent-num">18</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1023)" aria-label="Play sentence 18"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1023)" aria-label="Flag sentence 18" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">งานบุญ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">งานบุญทีไรก็มีอาหารเลี้ยงคนเยอะแยะเลยครับ</div>
+          <div class="reveal-row row-english">Merit-making events always lay on lots of food for everyone.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">งานบุญ</span><span class="g-eq">=</span><span class="g-eng">merit events</span></span><span class="gloss-chip"><span class="g-thai">ทีไร</span><span class="g-eq">=</span><span class="g-eng">whenever</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-eq">=</span><span class="g-eng">always</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">have</span></span><span class="gloss-chip"><span class="g-thai">อาหาร</span><span class="g-eq">=</span><span class="g-eng">food</span></span><span class="gloss-chip"><span class="g-thai">เลี้ยงคน</span><span class="g-eq">=</span><span class="g-eng">feed people</span></span><span class="gloss-chip"><span class="g-thai">เยอะแยะ</span><span class="g-eq">=</span><span class="g-eng">loads</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-eq">=</span><span class="g-eng">(emphasis)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">งานบุญ — Buddhist merit-making occasions like ordinations, house blessings, funerals and temple fairs — almost always involve feeding large numbers of guests. Communal cooking and eating are central, and feeding people earns merit.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1024">
+        <div class="sentence-header" onclick="cycle(1024)" role="button" tabindex="0" aria-label="Sentence 19">
+          <span class="sent-num">19</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1024)" aria-label="Play sentence 19"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1024)" aria-label="Flag sentence 19" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">เผื่อ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">คนไทยชอบสั่งเผื่อไว้เยอะๆ เหลือยังดีกว่าขาดค่ะ</div>
+          <div class="reveal-row row-english">Thais like to over-order — better to have extra than run short.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คนไทย</span><span class="g-eq">=</span><span class="g-eng">Thais</span></span><span class="gloss-chip"><span class="g-thai">ชอบ</span><span class="g-eq">=</span><span class="g-eng">like</span></span><span class="gloss-chip"><span class="g-thai">สั่ง</span><span class="g-eq">=</span><span class="g-eng">order</span></span><span class="gloss-chip"><span class="g-thai">เผื่อ</span><span class="g-eq">=</span><span class="g-eng">extra</span></span><span class="gloss-chip"><span class="g-thai">ไว้</span><span class="g-eq">=</span><span class="g-eng">(to spare)</span></span><span class="gloss-chip"><span class="g-thai">เยอะๆ</span><span class="g-eq">=</span><span class="g-eng">lots</span></span><span class="gloss-chip"><span class="g-thai">เหลือ</span><span class="g-eq">=</span><span class="g-eng">leftover</span></span><span class="gloss-chip"><span class="g-thai">ยัง</span><span class="g-eq">=</span><span class="g-eng">still</span></span><span class="gloss-chip"><span class="g-thai">ดีกว่า</span><span class="g-eq">=</span><span class="g-eng">better than</span></span><span class="gloss-chip"><span class="g-thai">ขาด</span><span class="g-eq">=</span><span class="g-eng">short</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">Over-ordering is deliberate generosity — better to have too much (and leftovers or ของฝาก) than to look stingy or leave anyone hungry. "เหลือดีกว่าขาด" — better extra than lacking — sums up the hosting mindset.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1025">
+        <div class="sentence-header" onclick="cycle(1025)" role="button" tabindex="0" aria-label="Sentence 20">
+          <span class="sent-num">20</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1025)" aria-label="Play sentence 20"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1025)" aria-label="Flag sentence 20" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ทั่วโลก<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">อาหารไทยดังไปทั่วโลก จนกลายเป็นหน้าตาของประเทศเลยค่ะ</div>
+          <div class="reveal-row row-english">Thai food is famous worldwide — it's become the face of the country.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">อาหารไทย</span><span class="g-eq">=</span><span class="g-eng">Thai food</span></span><span class="gloss-chip"><span class="g-thai">ดัง</span><span class="g-eq">=</span><span class="g-eng">famous</span></span><span class="gloss-chip"><span class="g-thai">ไปทั่วโลก</span><span class="g-eq">=</span><span class="g-eng">worldwide</span></span><span class="gloss-chip"><span class="g-thai">จน</span><span class="g-eq">=</span><span class="g-eng">so that</span></span><span class="gloss-chip"><span class="g-thai">กลายเป็น</span><span class="g-eq">=</span><span class="g-eng">become</span></span><span class="gloss-chip"><span class="g-thai">หน้าตา</span><span class="g-eq">=</span><span class="g-eng">the face</span></span><span class="gloss-chip"><span class="g-thai">ของประเทศ</span><span class="g-eq">=</span><span class="g-eng">of the country</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-eq">=</span><span class="g-eng">(emphasis)</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">Dishes like pad thai, green curry and tom yum have made Thai food globally beloved; the government has actively promoted it abroad ("gastrodiplomacy"), and Thais take real national pride in it.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1026">
+        <div class="sentence-header" onclick="cycle(1026)" role="button" tabindex="0" aria-label="Sentence 21">
+          <span class="sent-num">21</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1026)" aria-label="Play sentence 21"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1026)" aria-label="Flag sentence 21" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ท้องถิ่น<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">ตามริมทางมีแผงลอยขายอาหารท้องถิ่นหลากหลายค่ะ</div>
+          <div class="reveal-row row-english">Along the roads, stalls sell all sorts of local food.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ตาม</span><span class="g-eq">=</span><span class="g-eng">along</span></span><span class="gloss-chip"><span class="g-thai">ริมทาง</span><span class="g-eq">=</span><span class="g-eng">the roadside</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">are</span></span><span class="gloss-chip"><span class="g-thai">แผงลอย</span><span class="g-eq">=</span><span class="g-eng">stalls</span></span><span class="gloss-chip"><span class="g-thai">ขาย</span><span class="g-eq">=</span><span class="g-eng">selling</span></span><span class="gloss-chip"><span class="g-thai">อาหารท้องถิ่น</span><span class="g-eq">=</span><span class="g-eng">local food</span></span><span class="gloss-chip"><span class="g-thai">หลากหลาย</span><span class="g-eq">=</span><span class="g-eng">all sorts</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">Roadside stalls are where you find a place's true local food — regional specialties and home-style dishes rarely seen in formal restaurants, sold cheaply to locals.</div></div>
+        </div>
+      </div>
+      <div class="sentence-card st-0" id="sc-1027">
+        <div class="sentence-header" onclick="cycle(1027)" role="button" tabindex="0" aria-label="Sentence 22">
+          <span class="sent-num">22</span>
+          <button class="sent-play-btn" onclick="toggleSentPlay(event,1027)" aria-label="Play sentence 22"><svg viewBox="0 0 16 16"><polygon points="4,2 13,8 4,14"/></svg></button>
+          <button class="speed-toggle" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>
+          <button class="sent-flag-btn" onclick="flagSent(event,1027)" aria-label="Flag sentence 22" title="Sign in to flag sentences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>
+          <span class="sent-preview">ต่างชาติ<span class="ell">…</span></span>
+          <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
+        </div>
+        <div class="sentence-body">
+          <div class="reveal-row row-thai">เดี๋ยวนี้คนไทยกินอาหารต่างชาติกันเยอะ ทั้งญี่ปุ่น เกาหลี ฝรั่งค่ะ</div>
+          <div class="reveal-row row-english">These days Thais eat lots of foreign food — Japanese, Korean, Western.</div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดี๋ยวนี้</span><span class="g-eq">=</span><span class="g-eng">nowadays</span></span><span class="gloss-chip"><span class="g-thai">คนไทย</span><span class="g-eq">=</span><span class="g-eng">Thais</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">อาหารต่างชาติ</span><span class="g-eq">=</span><span class="g-eng">foreign food</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-eq">=</span><span class="g-eng">(commonly)</span></span><span class="gloss-chip"><span class="g-thai">เยอะ</span><span class="g-eq">=</span><span class="g-eng">a lot</span></span><span class="gloss-chip"><span class="g-thai">ทั้ง</span><span class="g-eq">=</span><span class="g-eng">both</span></span><span class="gloss-chip"><span class="g-thai">ญี่ปุ่น</span><span class="g-eq">=</span><span class="g-eng">Japanese</span></span><span class="gloss-chip"><span class="g-thai">เกาหลี</span><span class="g-eq">=</span><span class="g-eng">Korean</span></span><span class="gloss-chip"><span class="g-thai">ฝรั่ง</span><span class="g-eq">=</span><span class="g-eng">Western</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">Japanese, Korean and Western food are hugely popular, especially with young city-dwellers — Korean food rode the K-pop wave. (ฝรั่ง means both "Westerner" and Western food — and, confusingly, also guava.)</div></div>
+        </div>
+      </div>
+  </div>
   <nav class="topic-nav" aria-label="Topic navigation">
     <a class="topic-nav-btn" href="topic-22a.html">
       <span>&larr;</span>
@@ -73,6 +423,7 @@
 
 <script>
 window.ThaiEarTopic = {
+  ssr: true,
   tier: "premium",
   audioPrefix: "FoodCulture_LI2",
   sentences: [
