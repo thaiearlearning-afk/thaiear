@@ -597,22 +597,14 @@
     body.premium-topic .prog-ctl-add,
     body.premium-topic .prog-ctl-add:hover:not([disabled]),
     body.premium-topic .repeat-badge { color: #3D2E00; }
-    /* The eyebrow ("<level> · Topic X of Y") and the subheading sit OUTSIDE the player, so the scoped
-       variable above doesn't reach them — recolour to the same gold. (All other thin/icon/text parts
-       inherit the --accent gold #F0CC5C directly, no override.) */
+    /* The eyebrow, subheading and the small player TEXT (progress count + links) are gold too — but a
+       hair darker than the #F0CC5C fills (imperceptibly so) for a touch more legibility on the pale
+       page. The eyebrow/subtitle sit OUTSIDE the player, so they need explicit rules anyway. */
     body.premium-topic .topic-eyebrow,
-    body.premium-topic .topic-subtitle { color: #F0CC5C; }
-    /* Desktop only: the light gold text can be a touch hard to read on the pale page, so give it a
-       1px dark outline (mobile reads fine as-is, so it's left plain there). */
-    @media (min-width: 801px) {
-      body.premium-topic .topic-eyebrow,
-      body.premium-topic .topic-subtitle,
-      body.premium-topic .prog-ctl-count,
-      body.premium-topic .prog-ctl-my,
-      body.premium-topic .prog-ctl-join {
-        text-shadow: -1px -1px 0 #3D2E00, 1px -1px 0 #3D2E00, -1px 1px 0 #3D2E00, 1px 1px 0 #3D2E00;
-      }
-    }
+    body.premium-topic .topic-subtitle,
+    body.premium-topic .prog-ctl-count,
+    body.premium-topic .prog-ctl-my,
+    body.premium-topic .prog-ctl-join { color: #E6C152; }
   `;
 
   /* ---- player markup (transport bar, how-to, controls, list, audio el) ---- */
