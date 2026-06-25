@@ -547,6 +547,9 @@
     .now-playing strong { color: var(--text-primary); font-weight: 600; }
     .now-playing a { color: var(--accent); text-decoration: none; }
     .now-playing a strong { color: var(--accent); }
+    /* Premium track → gold link (same text-gold as the eyebrow/subtitle on premium pages),
+       regardless of the current page's tier (the played topic may differ from this page). */
+    .now-playing a.np-premium, .now-playing a.np-premium strong { color: #E6C152; }
     .now-playing a:hover { text-decoration: underline; }
     .now-playing a.np-return { color: #C0392B; font-weight: 600; margin-left: 8px; white-space: nowrap; }
     .offline-bar { display: flex; align-items: center; gap: 10px; margin: -0.75rem 0 1.25rem; flex-wrap: wrap; }
@@ -1019,7 +1022,8 @@
     if (box) box.classList.toggle('show', !!moved);
     if (txt) {
       var href = escapeHtml(unit.page || '');
-      txt.innerHTML = 'Now playing <a href="' + href + '"><strong>' + escapeHtml(unit.name) + '</strong></a>' + (lvl ? ' · ' + escapeHtml(lvl) : '')
+      var npCls = unit.access === 'premium' ? ' class="np-premium"' : '';
+      txt.innerHTML = 'Now playing <a href="' + href + '"' + npCls + '><strong>' + escapeHtml(unit.name) + '</strong></a>' + (lvl ? ' · ' + escapeHtml(lvl) : '')
         + (moved ? ' <a href="#" class="np-return" id="np-return" title="Bring the player back to this topic">↩ Return</a>' : '');
       var rb = $('np-return'); if (rb) rb.onclick = function (e) { e.preventDefault(); returnToThisTopic(); };
     }

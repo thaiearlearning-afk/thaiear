@@ -91,6 +91,9 @@
   .prog-goto .lock svg { width: 10px; height: 10px; }
   .prog-goto.premium .lock { color: var(--gold-dark); }
   .prog-goto.member .lock { color: var(--accent); }
+  /* Premium rows: gold "Go to topic" (same text-gold as premium topic pages) + gold hover. */
+  .prog-goto.premium { color: #E6C152; }
+  .prog-goto.premium:hover { background: #FBF5DC; border-color: var(--gold-dark); }
   .prog-num { font-size: 12.5px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .prog-bar { width: 100%; height: 9px; background: var(--bg); border: 0.5px solid var(--border); border-radius: 6px; overflow: hidden; }
   .prog-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 6px; transition: width 0.4s cubic-bezier(0.4,0,0.2,1); }
@@ -288,14 +291,17 @@ function render() {
     // Both the title link and the "Go to topic" button use this one destination.
     var access = r.access || 'free';
     var canOpen = !T || access === 'free' || (T.canAccess && T.canAccess(access));
-    var href, btnCls = 'prog-goto', lock = '';
+    // Tier class on EVERY premium/member row (not only locked ones) so the "Go to topic" text
+    // is gold for premium even when the visitor can open it. The lock span is still locked-only.
+    var btnCls = 'prog-goto' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '');
+    var href, lock = '';
     if (canOpen) {
       href = r.page;
     } else if (access === 'premium') {
-      href = 'subscribe.html'; btnCls += ' premium';
+      href = 'subscribe.html';
       lock = '<span class="lock">' + LOCK_SVG + '</span>';
     } else {
-      href = 'join.html?next=' + encodeURIComponent(r.page); btnCls += ' member';
+      href = 'join.html?next=' + encodeURIComponent(r.page);
       lock = '<span class="lock">' + LOCK_SVG + '</span>';
     }
 
