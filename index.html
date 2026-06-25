@@ -249,6 +249,10 @@
     cursor: pointer;
     position: relative;
   }
+  /* Resting accent glow, keyed on access tier (gold = premium, indigo = free/member);
+     the :hover ring shadows below override it on hover. */
+  .topic-card { box-shadow: 0 0 12px rgba(75,65,173,0.16); }
+  .topic-card.premium { box-shadow: 0 0 12px rgba(240,204,92,0.30); }
   /* "Now playing" equalizer — app-only cue on the card whose audio is currently playing. */
   .te-eq { position: absolute; top: 0.85rem; right: 1.05rem; display: none; align-items: flex-end;
            gap: 2px; height: 13px; pointer-events: none; }
