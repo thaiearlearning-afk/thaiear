@@ -18,8 +18,12 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v8';
+const VERSION = 'v9';
 const CACHE = 'thaiear-' + VERSION;
+// Network-first is great online but offline the WebView's fetch can hang for many seconds before it
+// rejects, making cached pages crawl in. If the network hasn't answered within this window and we
+// have the page cached, serve the cache at once (and let the network refresh it in the background).
+const NET_TIMEOUT_MS = 2000;
 
 // Topic pages (topic-NN.html) 308-redirect to clean URLs (/topic-NN). A *redirected* Response
 // can't be used for a navigation (the browser throws net::ERR_FAILED), so rebuild a clean,
@@ -48,6 +52,49 @@ function offlinePage() {
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
+// Positive cache lookup (returns a Response or null — NEVER the offline page), used by the timeout
+// fast-path so we only short-circuit to cache when we genuinely have the resource. Ignores the query
+// string (member links carry ?next/?feature) and tries the .html<->clean variant for downloaded
+// topic pages (persisted under their clean /topic-NN key).
+function positiveCacheMatch(req, url) {
+  return caches.match(req, { ignoreSearch: true }).then(function (hit) {
+    if (hit) return hit;
+    if (req.mode === 'navigate') {
+      var p = url.pathname;
+      var alt = p.slice(-5) === '.html' ? p.slice(0, -5) : p + '.html';
+      return caches.match(alt, { ignoreSearch: true });
+    }
+    return null;
+  });
+}
+
+// Thorough offline fallback, used when the network actually fails: exact match, then the home-grid
+// and pathname/.html<->clean variants, finally the friendly offline page.
+function cacheFallback(req, url) {
+  return caches.match(req).then(function (hit) {
+    if (hit) return cleanRedirect(hit);   // never hand the browser a redirected response for a nav
+    if (req.mode === 'navigate') {
+      // Home/index: serve the cached grid from either key so the logo/Home link always works.
+      var p = url.pathname;
+      if (p === '/' || p === '/index.html' || p === '/index') {
+        return caches.match('/index.html').then(function (i) {
+          return i ? cleanRedirect(i) : caches.match('/').then(function (r) { return r ? cleanRedirect(r) : offlinePage(); });
+        });
+      }
+      // Match by PATHNAME, ignoring any query string (?next=, ?feature=1, ?sub=success…), then the
+      // .html<->clean variant (downloaded topic pages live under their clean /topic-NN key).
+      var alt = p.slice(-5) === '.html' ? p.slice(0, -5) : p + '.html';
+      return caches.match(p, { ignoreSearch: true }).then(function (h1) {
+        if (h1) return cleanRedirect(h1);
+        return caches.match(alt, { ignoreSearch: true }).then(function (h2) {
+          return h2 ? cleanRedirect(h2) : offlinePage();
+        });
+      });
+    }
+    return Response.error();
+  });
+}
+
 // Best-effort precache so a brand-new install has the shell even before each
 // asset is individually visited. Missing entries are ignored (never fail install).
 const PRECACHE = [
@@ -60,7 +107,7 @@ const PRECACHE = [
   '/nav.js', '/topics.js', '/player.js', '/auth.js', '/footer.js',
   '/logo.png', '/logoshort.png', '/favicon.png', '/favicon.ico',
   '/favicon-16.png', '/favicon-32.png', '/apple-touch-icon.png',
-  '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg',
+  '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png',
   // Self-hosted fonts (replaced Google Fonts 2026-06-24): precache the full used set so a
   // freshly-downloaded topic renders Sarabun (Thai) + Inter offline, not the system fallback.
   '/fonts/inter-latin-300.woff2', '/fonts/inter-latin-400.woff2',
@@ -113,42 +160,30 @@ self.addEventListener('fetch', function (e) {
   if (url.pathname.indexOf('/api/') === 0) return;  // never cache API calls
   if (/\.apk$/i.test(url.pathname)) return;         // don't intercept/cache the APK download
 
-  // Same-origin pages + assets: network-first, fall back to cache when offline.
-  e.respondWith(
-    fetch(req).then(function (res) {
+  // Same-origin pages + assets: network-first for freshness (preserves the tandem-update model),
+  // but capped by NET_TIMEOUT_MS. Offline, the WebView's fetch can hang for many seconds before it
+  // rejects — which made cached pages slow to appear. So if the network hasn't answered in time AND
+  // we have the resource cached, serve the cache immediately while the network keeps running in the
+  // background to refresh it (stale-while-revalidate). On a real network failure, fall back fully.
+  e.respondWith((function () {
+    var network = fetch(req).then(function (res) {
       if (res && res.ok && res.type === 'basic') {
         var copy = res.clone();
         cleanRedirect(copy).then(function (clean) { caches.open(CACHE).then(function (c) { c.put(req, clean); }); });
       }
       return res;
-    }).catch(function () {
-      return caches.match(req).then(function (hit) {
-        if (hit) return cleanRedirect(hit);   // never hand the browser a redirected response for a nav
-        if (req.mode === 'navigate') {
-          // Home/index: serve the cached grid from either key so the logo/Home link always works.
-          var p = url.pathname;
-          if (p === '/' || p === '/index.html' || p === '/index') {
-            return caches.match('/index.html').then(function (i) {
-              return i ? cleanRedirect(i) : caches.match('/').then(function (r) { return r ? cleanRedirect(r) : offlinePage(); });
-            });
-          }
-          // Match by PATHNAME, ignoring any query string. Member-feature links carry params
-          // (join.html?feature=1&next=progress.html, account.html?sub=success, ?next=…), and the
-          // exact-key match above misses on those — so a precached page like join.html was wrongly
-          // falling through to the offline notice. Try the bare pathname first, then the
-          // .html<->clean variant (downloaded topic pages are persisted by player.js under their
-          // CLEAN url /topic-NN, because topic-NN.html 308-redirects to it).
-          var alt = p.slice(-5) === '.html' ? p.slice(0, -5) : p + '.html';
-          return caches.match(p, { ignoreSearch: true }).then(function (h1) {
-            if (h1) return cleanRedirect(h1);
-            return caches.match(alt, { ignoreSearch: true }).then(function (h2) {
-              if (h2) return cleanRedirect(h2);
-              return offlinePage(); // genuinely uncached → friendly offline notice, not a blank error
-            });
-          });
-        }
-        return Response.error();
-      });
-    })
-  );
+    });
+    return new Promise(function (resolve) {
+      var settled = false;
+      var timer = setTimeout(function () {
+        positiveCacheMatch(req, url).then(function (hit) {
+          if (hit && !settled) { settled = true; resolve(cleanRedirect(hit)); }
+        });
+      }, NET_TIMEOUT_MS);
+      network.then(
+        function (res) { if (!settled) { settled = true; clearTimeout(timer); resolve(res); } },
+        function () { if (!settled) { settled = true; clearTimeout(timer); resolve(cacheFallback(req, url)); } }
+      );
+    });
+  })());
 });
