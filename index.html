@@ -993,8 +993,10 @@ document.addEventListener('click', function (e) {
 window.addEventListener('beforeunload', function (e) { if (batchRunning) { e.preventDefault(); e.returnValue = ''; } });
 
 // One card. access ∈ free | member | premium. pageHref = the real topic page (or null).
-// member-locked → prompt sign-in (free); premium-locked → subscribe.html; either unlocked
-// (canAccess true) → the page. canAccess() lives in topics.js and respects ENFORCE_SUBSCRIPTION.
+// ALL built topics (incl. locked member/premium) link to their page — a "navigable preview" where
+// the description + preview words are readable, and the page itself gates reveal/flag/play for
+// non-entitled visitors. canAccess() lives in topics.js and respects ENFORCE_SUBSCRIPTION; an
+// entitled visitor additionally gets the download/select controls.
 function renderCard(t, label, sentences, access, pageHref, audio) {
   const gated = access === 'member' || access === 'premium';
   const live = !!pageHref;
@@ -1018,10 +1020,10 @@ function renderCard(t, label, sentences, access, pageHref, audio) {
       ? '<span class="topic-premium unlocked">Premium</span>'
       : '<span class="topic-member unlocked">Member</span>') + (dl ? downloadedTick(audio, pageHref, access) : selectCircle(audio, pageHref, access));
   } else if (access === 'premium') {
-    href = 'subscribe.html';
+    href = pageHref;  // navigable preview: open the page; on-page gating blocks reveal/flag/play
     metaRight = `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
-  } else { // member, locked (signed out) → free-membership explainer, then it unlocks
-    href = 'join.html?next=' + encodeURIComponent(pageHref);
+  } else { // member, locked (signed out)
+    href = pageHref;  // navigable preview: open the page; reveal/flag/play prompt sign-in
     metaRight = `<span class="topic-member">${LOCK_SVG}Members</span>`;
   }
   const inner =
