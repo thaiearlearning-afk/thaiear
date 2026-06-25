@@ -85,7 +85,12 @@
   function refreshSubscription() {
     if (!client || !currentUser) {
       currentSubscribed = false; currentSub = null;
-      try { localStorage.removeItem('thaiear_lifetime'); localStorage.removeItem('thaiear_sub_cache'); } catch (_) {} // logged out
+      // logged out → also drop the premium offline licence stamps (see signOut) so they can't carry
+      // over to a different account that signs in on this device.
+      try {
+        localStorage.removeItem('thaiear_lifetime'); localStorage.removeItem('thaiear_sub_cache');
+        localStorage.removeItem('thaiear_lastVerified'); localStorage.removeItem('thaiear_sub_until');
+      } catch (_) {}
       notify(); return;
     }
     client.from('subscriptions').select('status,cancel_at_period_end,current_period_end').maybeSingle()
@@ -516,7 +521,14 @@
         } catch (_) {}
         currentSession = null; currentUser = null;
         currentSubscribed = false; currentSub = null;
-        try { localStorage.removeItem('thaiear_lifetime'); } catch (_) {}
+        // Clear the premium OFFLINE licence stamps too, so a DIFFERENT account signing in on this
+        // device can't reuse the previous user's verification to play their premium downloads offline.
+        // (A real premium user re-stamps automatically next time they're online — see stampVerified.)
+        try {
+          localStorage.removeItem('thaiear_lifetime');
+          localStorage.removeItem('thaiear_lastVerified');
+          localStorage.removeItem('thaiear_sub_until');
+        } catch (_) {}
         notify();   // re-render nav + account page as logged-out
       };
       var attempt = client.auth.signOut({ scope: 'local' }).catch(function () {});
