@@ -157,9 +157,11 @@
      the subscription was verified online within OFFLINE_GRACE_MS (a lapsed/cancelled member loses
      offline access once that window passes). Free + member topics have no expiry. Guarded on NATIVE;
      the website never shows any of this. */
-  // TESTING VALUE — 1 minute so the failsafe is easy to test. PRODUCTION: 30 days =
-  // 30 * 24 * 60 * 60 * 1000 = 2592000000.  (Keep nav.js OFFLINE_GRACE_MS in sync.)
-  var OFFLINE_GRACE_MS = 1 * 60 * 1000;
+  // PRODUCTION VALUE — 30 days. A member verified online (incl. at download) within this window keeps
+  // offline access; a genuinely lapsed member who stays offline past it is asked to reconnect. (Was
+  // 1 min for testing — too short: a download made >1 min before reopening offline wrongly expired.)
+  // Keep nav.js OFFLINE_GRACE_MS in sync.
+  var OFFLINE_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
   var Filesystem = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
   var OFFLINE = !!(NATIVE && Filesystem);
 
@@ -232,7 +234,10 @@
     // bug). The short backstop window is only a FALLBACK for when no end date was ever captured.
     var last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);
     var until = parseInt(localStorage.getItem('thaiear_sub_until') || '0', 10);
-    if (until) return Date.now() < until;
+    // Entitled if EITHER the captured real end date is still in the future, OR we verified online
+    // within the backstop window. OR (not AND) so a missing/stale end date can't short-circuit a
+    // valid member into denial — the download itself stamps lastVerified, so a recent download plays.
+    if (until && Date.now() < until) return true;
     return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
   }
 

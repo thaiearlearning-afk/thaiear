@@ -337,7 +337,7 @@
     // Same premium offline-licence rule as the topic player — applied here so an expired member can't
     // advance into a downloaded premium topic from a non-topic page. KEEP OFFLINE_GRACE_MS IN SYNC WITH
     // player.js (1 min for testing → 30 days for prod).
-    const OFFLINE_GRACE_MS = 1 * 60 * 1000;
+    const OFFLINE_GRACE_MS = 30 * 24 * 60 * 60 * 1000;   // 30 days (prod) — keep in sync with player.js
     function canUseOffline(tier) {
       if (tier !== 'premium') return true;
       try { if (localStorage.getItem('thaiear_lifetime') === '1') return true; } catch (_) {} // lifetime → no offline timeout
@@ -349,8 +349,8 @@
       // is only a fallback for when no end date was captured. KEEP IN SYNC WITH player.js canUseOffline.
       const last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);
       const until = parseInt(localStorage.getItem('thaiear_sub_until') || '0', 10);
-      if (until) return Date.now() < until;
-      return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
+      if (until && Date.now() < until) return true;   // valid captured end date
+      return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;   // fallback: verified within backstop
     }
     function remoteUrl(file, access) {
       if (access !== 'member' && access !== 'premium') return Promise.resolve(AUDIO_BASE + '/' + file);
