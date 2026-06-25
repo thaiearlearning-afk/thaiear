@@ -251,11 +251,17 @@
     return new Blob([bytes], { type: type || 'audio/mpeg' });
   }
   function localBlobUrl(prefix, file) {
-    if (!Filesystem) return Promise.resolve(null);
+    if (!Filesystem) { SENT_DBG.read = 'no-fs'; return Promise.resolve(null); }
     return Filesystem.readFile({ directory: 'DATA', path: offlineDir(prefix) + '/' + file })
-      .then(function (r) { return (r && r.data) ? URL.createObjectURL(b64ToBlob(r.data, 'audio/mpeg')) : null; })
-      .catch(function () { return null; });
+      .then(function (r) {
+        var n = (r && r.data && r.data.length) || 0;          // DEBUG
+        SENT_DBG.read = 'ok b64len=' + n;                      // DEBUG
+        return n ? URL.createObjectURL(b64ToBlob(r.data, 'audio/mpeg')) : null;
+      })
+      .catch(function (e) { SENT_DBG.read = 'ERR ' + ((e && (e.message || e.errorMessage)) || e); return null; }); // DEBUG
   }
+  // DEBUG (temporary): captures why an offline sentence did/didn't resolve, surfaced via alert below.
+  var SENT_DBG = {};
   // Main (native) player: local file:// if downloaded + licence ok, else the remote URL.
   function mainSrcFor(file) {
     if (OFFLINE && isDownloaded(mainPrefix)) {
@@ -267,12 +273,15 @@
   // Sentence (web <audio>) player: a same-origin blob: URL of the downloaded clip if available
   // (plays reliably across WebViews — see localBlobUrl), else the free CDN / signed remote URL.
   function sentSrcFor(file) {
+    SENT_DBG = { file: file, OFFLINE: OFFLINE, downloaded: isDownloaded(PREFIX), tier: TIER || 'free', online: navigator.onLine, canUseOffline: null, read: null, srcType: null }; // DEBUG
     if (OFFLINE && isDownloaded(PREFIX)) {
-      if (canUseOffline(TIER)) {
-        return localBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file); });
+      SENT_DBG.canUseOffline = canUseOffline(TIER); // DEBUG
+      if (SENT_DBG.canUseOffline) {
+        return localBlobUrl(PREFIX, file).then(function (url) { SENT_DBG.srcType = url ? 'blob' : 'cdn-fallback'; return url || buildUrl(file); }); // DEBUG srcType
       }
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
+    SENT_DBG.srcType = 'remote'; // DEBUG
     return buildUrl(file);
   }
 
@@ -1077,6 +1086,7 @@
       revokeSentBlob();                                    // free the previous clip's object URL
       sa.src = u;
       if (u && u.indexOf('blob:') === 0) sentBlobUrl = u;  // track for revocation on next swap/stop
+      try { alert('SENT DEBUG\n' + JSON.stringify(SENT_DBG) + '\nsrc=' + String(u).slice(0, 64)); } catch (_) {} // DEBUG (temporary)
       sa.load();
       sa.addEventListener('loadedmetadata', function onMeta() {
         sa.removeEventListener('loadedmetadata', onMeta);
@@ -1090,6 +1100,7 @@
       updateSentBtn(num, false);
       if (sentPlaying === num) sentPlaying = null;
       maybeResumeMain();
+      try { alert('SENT PLAY ERR\n' + JSON.stringify(SENT_DBG) + '\nerr: ' + ((err && (err.name + ': ' + err.message)) || JSON.stringify(err))); } catch (_) {} // DEBUG (temporary)
       handleDenied(err);
     });
   }
