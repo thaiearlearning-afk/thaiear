@@ -583,10 +583,10 @@
        Light gold = unselected, brighter gold = selected/active. Web AND app; member topics stay
        purple. ---- */
     body.premium-topic #player-root, body.premium-topic #sentence-list {
-      --accent: #E3B12C;        /* selected / filled — bright gold (was the muddy/tan #C8A030) */
-      --accent-mid: #C99A1C;    /* hover / darker */
-      --accent-light: #FBF1CC;  /* unselected — light gold */
-      --purple-mid: #CFA21E;    /* sentence-flag outline */
+      --accent: #EFBE38;        /* selected / filled — bright gold (brightened up from #C8A030) */
+      --accent-mid: #DCAB26;    /* hover / darker */
+      --accent-light: #FCF3D0;  /* unselected — light gold */
+      --purple-mid: #E0B22A;    /* sentence-flag outline */
     }
     /* Bright-gold FILLS carry DARK text/icons (white would wash out on bright gold). */
     body.premium-topic .play-btn svg,
