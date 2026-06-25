@@ -88,6 +88,14 @@
   .sc-play svg { fill: var(--accent); width: 10px; height: 10px; margin-left: 1px; }
   .sc-play.playing { background: var(--accent); }
   .sc-play.playing svg { fill: #fff; margin-left: 0; }
+  /* Premium-topic sentences: gold play button, matching the premium topic page (gold fill, dark icon
+     when active — white washes out on light gold). */
+  .sc-play.prem { background: #FBF5DC; }
+  .sc-play.prem svg { fill: #F0CC5C; }
+  .sc-play.prem:hover { background: #F0CC5C; }
+  .sc-play.prem:hover svg { fill: #3D2E00; }
+  .sc-play.prem.playing { background: #F0CC5C; }
+  .sc-play.prem.playing svg { fill: #3D2E00; }
   .sc-prev { font-family: var(--font-thai); font-size: 16px; color: var(--text-primary); flex: 1; line-height: 1.4; }
   .sc-prev .ell { color: var(--text-tertiary); }
   .sc-flag { width: 26px; height: 26px; border-radius: 50%; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; transition: background 0.15s, transform 0.15s; }
@@ -274,7 +282,7 @@ function cardHtml(row, rec) {
 
   return '<div class="sc" id="' + esc(id) + '">' +
     '<div class="sc-head" onclick="toggleExpand(\'' + esc(id) + '\')">' +
-      '<button class="sc-play" data-play="' + esc(id) + '" onclick="playFlagged(event,\'' + esc(id) + '\',\'' + esc(s.audioPrefix || '') + '\',' + rec.num + ',' + (gated ? 'true' : 'false') + ')" aria-label="Play sentence">' +
+      '<button class="sc-play' + (row.access === 'premium' ? ' prem' : '') + '" data-play="' + esc(id) + '" onclick="playFlagged(event,\'' + esc(id) + '\',\'' + esc(s.audioPrefix || '') + '\',' + rec.num + ',' + (gated ? 'true' : 'false') + ')" aria-label="Play sentence">' +
         '<svg viewBox="0 0 16 16">' + PLAY_TRI + '</svg>' +
       '</button>' +
       '<span class="sc-prev">' + esc(s.preview || '') + '<span class="ell">…</span></span>' +
