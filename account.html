@@ -227,6 +227,9 @@ function postCancel(resume) {
 function renderMembershipBox(s) {
   var box = document.getElementById('membership');
   if (!box) return;
+  // In the app, hide every upgrade-to-premium / re-subscribe CTA (Google Play reader-app rule: no
+  // in-app purchase or steering to web payment). Cancel/Update of an EXISTING sub stay (account mgmt).
+  var native = !!(window.ThaiEarAuth && window.ThaiEarAuth.isNative && window.ThaiEarAuth.isNative());
   {
       if (s && s.subscribed) {
         var endStr = '';
@@ -237,7 +240,7 @@ function renderMembershipBox(s) {
         // Cancelling → just offer Resume (no point updating a card that won't be charged).
         // Active → Cancel + Update payment method.
         var action = s.cancel_at_period_end
-          ? '<div class="btn-row"><button class="btn btn-gold" onclick="resumeMembership()">Resume membership</button></div>'
+          ? (native ? '' : '<div class="btn-row"><button class="btn btn-gold" onclick="resumeMembership()">Resume membership</button></div>')
           : '<div class="btn-row"><button class="btn btn-ghost" onclick="cancelMembership()">Cancel membership</button>' +
             '<button class="btn btn-ghost" onclick="openPortal()">Update payment method</button></div>';
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">' + line + '</p>' +
@@ -251,7 +254,7 @@ function renderMembershipBox(s) {
           '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>';
       } else {
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free member</strong></p>' +
-          '<a class="btn btn-gold" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>';
+          (native ? '' : '<a class="btn btn-gold" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>');
       }
   }
 }

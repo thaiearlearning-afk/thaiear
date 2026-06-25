@@ -180,6 +180,8 @@ function loadPrice() {
 }
 function startCheckout() {
   var a = window.ThaiEarAuth;
+  // Reader-app compliance: never start web checkout from inside the app (no in-app purchase / steering).
+  if (a && a.isNative && a.isNative()) return;
   var token = a && a.getAccessToken && a.getAccessToken();
   if (!token) { if (a) a.signInWithGoogle(); return; }
   var btn = document.getElementById('subscribe-btn');
@@ -220,6 +222,14 @@ function renderSub() {
   var el = document.getElementById('sub-status');
   if (!btn || !el) return;
   var a = window.ThaiEarAuth;
+  // Reader-app compliance: in the app, no Subscribe CTA at all — just a neutral, non-steering note.
+  // (No in-app link reaches this page now; this is a defensive belt-and-braces.)
+  if (a && a.isNative && a.isNative()) {
+    btn.style.display = 'none';
+    var nu = a.getUser && a.getUser();
+    el.textContent = (nu && a.isSubscribed && a.isSubscribed()) ? 'You’re a premium member ✓' : 'Premium membership unlocks every topic.';
+    return;
+  }
   if (!a || !a.isReady) { btn.textContent = 'Subscribe'; el.textContent = ''; return; }
   var user = a.getUser();
   if (user && a.isSubscribed && a.isSubscribed()) {
