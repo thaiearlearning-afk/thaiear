@@ -169,25 +169,43 @@
   // One jsonb row per user: { goal, topics:{ topicKey:count } }. Read on demand
   // (topic pages + the progress page), not on every page load. Read-modify-write
   // is fine here — a user only touches their own single row.
+  // Offline, the WebView's fetch to Supabase hangs ~8s before rejecting, and navigator.onLine can't
+  // be trusted to detect that (it reports "online" in airplane mode). So for read fetches we RACE the
+  // server query against a short timer: if the server hasn't answered in OFFLINE_FALLBACK_MS, resolve
+  // with the last-known LOCAL copy at once. The query keeps running in the background, so a slow-but-
+  // online client still refreshes the cache for next time. localFn must set the *Loaded flag + cache.
+  var OFFLINE_FALLBACK_MS = 1200;
+  function raceLocal(query, localFn) {
+    return new Promise(function (resolve) {
+      var done = false;
+      var t = setTimeout(function () { if (!done) { done = true; resolve(localFn()); } }, OFFLINE_FALLBACK_MS);
+      query.then(
+        function (v) { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+        function () { if (!done) { done = true; clearTimeout(t); resolve(localFn()); } }
+      );
+    });
+  }
+
   function fetchProgress() {
     if (!client || !currentUser) { currentProgress = { goal: 5, topics: {} }; progressLoaded = true; return Promise.resolve(currentProgress); }
     if (progressDirty()) {                       // unsynced local edits win — don't let the server clobber them
       var ld = loadPersistedProgress();
       if (ld) { currentProgress = ld; progressLoaded = true; flushProgress(); return Promise.resolve(currentProgress); }
     }
-    return client.from('progress').select('goal,topics').maybeSingle()
+    var localProgress = function () {            // offline / slow → last-known local copy (or a fresh default)
+      currentProgress = loadPersistedProgress() || { goal: 5, topics: {} };
+      progressLoaded = true;
+      return currentProgress;
+    };
+    var query = client.from('progress').select('goal,topics').maybeSingle()
       .then(function (res) {
         if (res && res.error) throw res.error;
         var d = (res && res.data) || null;
         currentProgress = { goal: (d && d.goal) || 5, topics: (d && d.topics) || {} };
         progressLoaded = true; persistProgress();
         return currentProgress;
-      })
-      .catch(function () {                         // offline / error → fall back to the last-known local copy
-        currentProgress = loadPersistedProgress() || { goal: 5, topics: {} };
-        progressLoaded = true;
-        return currentProgress;
       });
+    return raceLocal(query, localProgress);
   }
   function saveProgress() {
     if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
@@ -225,7 +243,12 @@
   function flagKey(tk, num) { return tk + ':' + num; }
   function fetchFlags() {
     if (!client || !currentUser) { currentFlags = {}; flagsLoaded = true; return Promise.resolve(currentFlags); }
-    return client.from('sentence_flags').select('topic_key,num,sentence')
+    var localFlags = function () {                  // offline / slow → last-known local set
+      currentFlags = loadPersistedFlags() || {};
+      flagsLoaded = true;
+      return currentFlags;
+    };
+    var query = client.from('sentence_flags').select('topic_key,num,sentence')
       .then(function (res) {
         if (res && res.error) throw res.error;
         var map = {};
@@ -234,12 +257,8 @@
         applyPendingFlags();                        // overlay any unsynced local toggles, then push them
         persistFlags(); flushFlags();
         return currentFlags;
-      })
-      .catch(function () {                           // offline / error → use the last-known local set
-        currentFlags = loadPersistedFlags() || {};
-        flagsLoaded = true;
-        return currentFlags;
       });
+    return raceLocal(query, localFlags);
   }
 
   // ---- Capacitor native OAuth (app only) ---------------------------------
