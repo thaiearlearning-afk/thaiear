@@ -597,15 +597,10 @@
     body.premium-topic .prog-ctl-add,
     body.premium-topic .prog-ctl-add:hover:not([disabled]),
     body.premium-topic .repeat-badge { color: #3D2E00; }
-    /* Thin / icon / text gold on LIGHT backgrounds uses a darker readable gold so it doesn't vanish. */
-    body.premium-topic .sent-play-btn svg { fill: #C8A030; }   /* unselected play icon on pale gold */
-    body.premium-topic .xtra-icon.active,
-    body.premium-topic .xtra-icon:hover,
-    body.premium-topic .skip-btn:hover,
-    body.premium-topic .prog-ctl-count,
-    body.premium-topic .prog-ctl-my,
-    body.premium-topic .prog-ctl-join,
-    body.premium-topic .topic-eyebrow { color: #B0851A; }
+    /* The eyebrow ("<level> · Topic X of Y") sits OUTSIDE the player, so the scoped variable above
+       doesn't reach it — recolour it to the same gold. (All other thin/icon/text parts inherit the
+       --accent gold #F0CC5C directly, no override.) */
+    body.premium-topic .topic-eyebrow { color: #F0CC5C; }
   `;
 
   /* ---- player markup (transport bar, how-to, controls, list, audio el) ---- */
