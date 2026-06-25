@@ -299,6 +299,7 @@ function render() {
     // Tier class on EVERY premium/member row (not only locked ones) so the "Go to topic" text
     // is gold for premium even when the visitor can open it. The lock span is still locked-only.
     var btnCls = 'prog-goto' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '');
+    var rowCls = 'prog-row' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '');
     var href, lock = '';
     if (canOpen) {
       href = r.page;
@@ -310,7 +311,7 @@ function render() {
       lock = '<span class="lock">' + LOCK_SVG + '</span>';
     }
 
-    return '<div class="prog-row">' +
+    return '<div class="' + rowCls + '">' +
       '<div class="prog-row-top">' +
         '<span class="prog-name-wrap">' +
           '<span class="prog-name"><a href="' + href + '">' + esc(r.name) + '</a></span>' +
