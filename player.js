@@ -1329,6 +1329,9 @@
   function progStep(kind) {
     var a = window.ThaiEarAuth;
     if (!a || !(a.getUser && a.getUser())) return;
+    // No audio access to this topic (e.g. a free member on a premium topic) → same preview-only gate
+    // as play/reveal/flag (premium → "preview only" toast in-app; member → sign-in). Don't touch progress.
+    if (!entitledForPage()) { gate(); return; }
     if (progLock) return;
     progLock = true;
     var addBtn = $('prog-add'), remBtn = $('prog-remove'), countEl = $('prog-count');
