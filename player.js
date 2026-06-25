@@ -239,6 +239,23 @@
       .then(function (r) { return (r && r.uri) ? r.uri : null; })
       .catch(function () { return null; });
   }
+  // Read a downloaded clip and hand back a same-origin blob: URL. The sentence <audio> element used
+  // convertFileSrc(file://) URLs, which DON'T play in newer Android WebViews (Android 13+, e.g. the
+  // Pixel) when the page is served from a remote server.url — the localhost scheme is treated as a
+  // cross-origin/opaque media source and silently fails (older WebViews like the Moto are lenient).
+  // A blob: URL is same-origin to the document and plays everywhere. Clips are tiny, so reading them
+  // into memory is cheap. (The combined TE/ET file uses the NATIVE engine, which plays file:// fine.)
+  function b64ToBlob(b64, type) {
+    var bin = atob(b64), len = bin.length, bytes = new Uint8Array(len);
+    for (var i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: type || 'audio/mpeg' });
+  }
+  function localBlobUrl(prefix, file) {
+    if (!Filesystem) return Promise.resolve(null);
+    return Filesystem.readFile({ directory: 'DATA', path: offlineDir(prefix) + '/' + file })
+      .then(function (r) { return (r && r.data) ? URL.createObjectURL(b64ToBlob(r.data, 'audio/mpeg')) : null; })
+      .catch(function () { return null; });
+  }
   // Main (native) player: local file:// if downloaded + licence ok, else the remote URL.
   function mainSrcFor(file) {
     if (OFFLINE && isDownloaded(mainPrefix)) {
@@ -247,13 +264,12 @@
     }
     return buildUrl(file, mainGated);
   }
-  // Sentence (web <audio>) player: convertFileSrc(local) if downloaded + licence ok, else remote.
+  // Sentence (web <audio>) player: a same-origin blob: URL of the downloaded clip if available
+  // (plays reliably across WebViews — see localBlobUrl), else the free CDN / signed remote URL.
   function sentSrcFor(file) {
     if (OFFLINE && isDownloaded(PREFIX)) {
       if (canUseOffline(TIER)) {
-        return localUri(PREFIX, file).then(function (uri) {
-          return uri ? (window.Capacitor.convertFileSrc ? window.Capacitor.convertFileSrc(uri) : uri) : buildUrl(file);
-        });
+        return localBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file); });
       }
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
@@ -683,6 +699,8 @@
   sentences.forEach(function (s) { states[s.num] = 0; });
   var sentPlaying = null;
   var sentLock = false;
+  var sentBlobUrl = null;   // object URL of the clip currently in the sentence <audio>; revoked on swap/stop
+  function revokeSentBlob() { if (sentBlobUrl) { try { URL.revokeObjectURL(sentBlobUrl); } catch (_) {} sentBlobUrl = null; } }
   var slowMode = false;
   var resumeMainAfter = false;   // main-pause coordination: was the top player playing when a sentence took over?
 
@@ -1037,7 +1055,7 @@
 
     // tapping the playing sentence again stops it
     if (sentPlaying === num) {
-      sa.pause(); sa.src = ''; sentPlaying = null; updateSentBtn(num, false);
+      sa.pause(); sa.src = ''; revokeSentBlob(); sentPlaying = null; updateSentBtn(num, false);
       maybeResumeMain();
       return;
     }
@@ -1054,8 +1072,11 @@
     if (sentResetTimer) { clearTimeout(sentResetTimer); sentResetTimer = null; }
     // Resolve the src: local copy if downloaded, else free CDN / signed-URL fetch. Then play.
     sentSrcFor(file).then(function (u) {
-      if (sentPlaying !== num) return;   // user stopped/switched while the URL was resolving
+      // user stopped/switched while the URL was resolving → drop the freshly-made blob to avoid a leak
+      if (sentPlaying !== num) { if (u && u.indexOf('blob:') === 0) { try { URL.revokeObjectURL(u); } catch (_) {} } return; }
+      revokeSentBlob();                                    // free the previous clip's object URL
       sa.src = u;
+      if (u && u.indexOf('blob:') === 0) sentBlobUrl = u;  // track for revocation on next swap/stop
       sa.load();
       sa.addEventListener('loadedmetadata', function onMeta() {
         sa.removeEventListener('loadedmetadata', onMeta);
