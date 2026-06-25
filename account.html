@@ -232,8 +232,8 @@ function renderMembershipBox(s) {
         var endStr = '';
         if (s.current_period_end) { try { endStr = new Date(s.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) {} }
         var line = s.cancel_at_period_end
-          ? 'Membership: <strong style="color:var(--gold-dark)">Premium</strong> — active until ' + endStr + ', won’t renew'
-          : 'Membership: <strong style="color:var(--gold-dark)">Premium</strong> (active)';
+          ? 'Membership: <strong style="color:#B29234">Premium</strong> — active until ' + endStr + ', won’t renew'
+          : 'Membership: <strong style="color:#B29234">Premium</strong> (active)';
         // Cancelling → just offer Resume (no point updating a card that won't be charged).
         // Active → Cancel + Update payment method.
         var action = s.cancel_at_period_end

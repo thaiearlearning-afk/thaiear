@@ -295,7 +295,7 @@
         '.te-np-bar.show{display:flex}' +
         // Premium playing topic → gold bar (eq bars use currentColor, so they follow). Keyed on the
         // played topic's tier stored in thaiear_np, NOT the current page.
-        '.te-np-bar.te-np-premium{background:#FBF5DC;color:var(--gold-dark,#C8A030)}' +
+        '.te-np-bar.te-np-premium{background:#FBF5DC;color:#B29234}' +
         '.te-np-eq{display:inline-flex;align-items:flex-end;gap:2px;height:13px;flex-shrink:0}' +
         '.te-np-eq i{width:3px;background:currentColor;border-radius:1px;animation:te-np-eq 0.9s ease-in-out infinite}' +
         '.te-np-eq i:nth-child(1){height:6px}.te-np-eq i:nth-child(2){height:12px;animation-delay:0.2s}.te-np-eq i:nth-child(3){height:8px;animation-delay:0.4s}' +
@@ -345,9 +345,12 @@
       // Only GRANT on the online fast-path — never DENY from it (navigator.onLine lies in the WebView,
       // reporting online in airplane mode / at cold start). Denial = grace window + end-date below only.
       if (navigator.onLine && subbed) return true;
+      // Trust the captured real end date when present (correct billing semantics); the backstop window
+      // is only a fallback for when no end date was captured. KEEP IN SYNC WITH player.js canUseOffline.
       const last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);
       const until = parseInt(localStorage.getItem('thaiear_sub_until') || '0', 10);
-      return !!last && (Date.now() - last) < OFFLINE_GRACE_MS && (!until || Date.now() < until);
+      if (until) return Date.now() < until;
+      return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
     }
     function remoteUrl(file, access) {
       if (access !== 'member' && access !== 'premium') return Promise.resolve(AUDIO_BASE + '/' + file);

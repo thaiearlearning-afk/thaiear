@@ -253,7 +253,7 @@
   .te-eq { position: absolute; top: 0.85rem; right: 1.05rem; display: none; align-items: flex-end;
            gap: 2px; height: 13px; pointer-events: none; }
   .topic-card.playing .te-eq { display: flex; }
-  .topic-card.premium .te-eq i { background: var(--gold-dark); }
+  .topic-card.premium .te-eq i { background: #F0CC5C; }
   .te-eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--accent);
              transform-origin: bottom; animation: te-eq-bounce 0.9s ease-in-out infinite; }
   .te-eq i:nth-child(2) { animation-delay: 0.3s; }
@@ -438,12 +438,14 @@
   .dl-select:active .dl-dot { transform: scale(0.92); }
   /* Premium topics: gold select circle (light gold → dark gold when selected) instead of purple. */
   .dl-select[data-tier="premium"] .dl-dot { background: var(--gold-light); border-color: var(--gold-light); }
-  .dl-select[data-tier="premium"]:hover .dl-dot { border-color: var(--gold-dark); }
-  .dl-select[data-tier="premium"].selected .dl-dot { background: var(--gold-dark); border-color: var(--gold-dark); }
+  .dl-select[data-tier="premium"]:hover .dl-dot { border-color: #F0CC5C; }
+  .dl-select[data-tier="premium"].selected .dl-dot { background: #F0CC5C; border-color: #F0CC5C; }
   /* Downloaded tick: a lavender ring appears when selected for removal. */
   .dl-tick { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px;
     border-radius: 50%; color: var(--accent); border: 2px solid transparent; transition: border-color 0.15s, background 0.15s; }
   .dl-badge.clear-selected .dl-tick { border-color: #9d92e0; background: var(--accent-light); }
+  /* Premium downloaded topics: gold tick (graphic accent gold), not purple. */
+  .dl-badge[data-tier="premium"] .dl-tick { color: #F0CC5C; }
   /* While selecting one kind, dim the other so the two modes can't mix. */
   .mode-download .dl-badge { opacity: 0.4; }
   .mode-clear .dl-select { opacity: 0.4; }
