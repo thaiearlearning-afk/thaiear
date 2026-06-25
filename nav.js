@@ -88,6 +88,10 @@
       width: 30px; height: 30px; border-radius: 50%; color: var(--text-secondary);
       text-decoration: none; transition: background .15s, color .15s; }
     .nav-person:hover { background: var(--accent-light); color: var(--accent); }
+    /* person icon is also a .nav-menu-btn (dropdown trigger) — keep its accent hover, and don't
+       let .nav-menu-btn's text/gap styles distort the circular icon button. */
+    .nav-person.nav-menu-btn { gap: 0; }
+    .nav-person.nav-menu-btn:hover { color: var(--accent); }
     .nav-person svg { width: 18px; height: 18px; }
     .nav-auth { font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
     .nav-auth:hover { color: var(--accent-mid); }
@@ -126,6 +130,12 @@
     return (location.pathname.split('/').pop() || 'index.html').toLowerCase();
   }
 
+  // True when running inside the Capacitor native app (vs the website in a browser).
+  function isNativeApp() {
+    try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+    catch (_) { return false; }
+  }
+
   function linksHtml() {
     const here = currentPage();
     const onHome = here === 'index.html';
@@ -155,7 +165,14 @@
     { label: 'About', page: 'about.html', public: true },
     { label: 'Guide', page: 'guide.html', public: true },
     { label: 'Socials', page: 'socials.html', public: true },
-    { label: 'ThaiEar App', page: 'app.html', public: true },
+    // Hidden inside the Capacitor app — you're already in the app, so advertising it there
+    // breaks the fourth wall. Shows on the website only (isNativeApp() filter in menuHtml).
+    { label: 'ThaiEar App', page: 'app.html', public: true, hideInApp: true },
+  ];
+  // Personal / account items — these live in the person-icon dropdown (logged in only),
+  // NOT the generic Menu above.
+  const PERSON_ITEMS = [
+    { label: 'Account', page: 'account.html' },
     { label: 'My progress', page: 'progress.html' },
     { label: 'My sentences', page: 'sentences.html' },
   ];
@@ -163,7 +180,8 @@
     if (!FEATURES.members) return '';
     const loggedIn = !!getUser();
     const here = currentPage();
-    const items = MENU_ITEMS.map(it => {
+    const native = isNativeApp();
+    const items = MENU_ITEMS.filter(it => !(it.hideInApp && native)).map(it => {
       const href = (it.public || loggedIn) ? it.page : ('join.html?feature=1&next=' + encodeURIComponent(it.page));
       const active = it.page.toLowerCase() === here ? ' class="active"' : '';
       return `<a href="${href}"${active}>${it.label}</a>`;
@@ -179,14 +197,30 @@
     );
   }
 
+  // Personal/account dropdown hung off the person icon (logged in only): Account, My progress,
+  // My sentences. Generic links live in the separate "Menu" dropdown (MENU_ITEMS).
+  function personMenuHtml() {
+    const here = currentPage();
+    const links = PERSON_ITEMS.map(it => {
+      const active = it.page.toLowerCase() === here ? ' class="active"' : '';
+      return `<a href="${it.page}"${active}>${it.label}</a>`;
+    }).join('');
+    return (
+      `<div class="nav-menu" id="nav-person-menu">` +
+        `<button type="button" class="nav-person nav-menu-btn" id="nav-person-btn" aria-haspopup="true" aria-expanded="false" aria-label="Your account" title="Account">${PERSON_SVG}</button>` +
+        `<div class="nav-menu-drop" id="nav-person-drop" hidden>${links}</div>` +
+      `</div>`
+    );
+  }
+
   function memberHtml() {
     if (!FEATURES.members) return '';
     const user = getUser();
     if (user) {
-      // Logged in: username + person icon, both leading to the account page.
+      // Logged in: username + person-icon dropdown (Account / My progress / My sentences).
       return (
         `<span class="nav-username">${escapeHtml(user.username)}</span>` +
-        `<a class="nav-person" href="${ACCOUNT_HREF}" aria-label="Your account" title="Account">${PERSON_SVG}</a>`
+        personMenuHtml()
       );
     }
     // Logged out: send to the account page, which shows the Terms/Privacy notice next
@@ -206,29 +240,36 @@
     );
   }
 
-  // Open/close the dropdown. Wired fresh each mount (the nav is re-rendered on auth change).
-  function wireMenu() {
-    const btn = document.getElementById('nav-menu-btn');
-    const drop = document.getElementById('nav-menu-drop');
-    if (!btn || !drop) return;
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      const open = drop.hasAttribute('hidden');
-      if (open) { drop.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); }
-      else { drop.setAttribute('hidden', ''); btn.setAttribute('aria-expanded', 'false'); }
+  // Open/close the dropdowns (Menu + person icon). Wired fresh each mount (the nav is re-rendered
+  // on auth change). Generalised over every .nav-menu so both drops work and opening one closes
+  // the other.
+  function wireMenus() {
+    document.querySelectorAll('.nav-menu-btn').forEach(function (btn) {
+      const menu = btn.closest('.nav-menu');
+      const drop = menu ? menu.querySelector('.nav-menu-drop') : null;
+      if (!drop) return;
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const willOpen = drop.hasAttribute('hidden');
+        closeAllMenus();
+        if (willOpen) { drop.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); }
+      });
     });
   }
-  function closeMenu() {
-    const drop = document.getElementById('nav-menu-drop');
-    const btn = document.getElementById('nav-menu-btn');
-    if (drop && !drop.hasAttribute('hidden')) { drop.setAttribute('hidden', ''); if (btn) btn.setAttribute('aria-expanded', 'false'); }
+  function closeAllMenus() {
+    document.querySelectorAll('.nav-menu-drop').forEach(function (drop) {
+      if (drop.hasAttribute('hidden')) return;
+      drop.setAttribute('hidden', '');
+      const menu = drop.closest('.nav-menu');
+      const btn = menu ? menu.querySelector('.nav-menu-btn') : null;
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
   }
   // Close on outside-click / Escape (added once; query elements live so re-mounts are fine).
   document.addEventListener('click', function (e) {
-    const menu = document.getElementById('nav-menu');
-    if (menu && !menu.contains(e.target)) closeMenu();
+    if (!e.target || !e.target.closest || !e.target.closest('.nav-menu')) closeAllMenus();
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAllMenus(); });
 
   /* ---- load the auth layer once (only when members UI is on) ------------
      auth.js wires Supabase, exposes window.ThaiEarAuth, and calls
@@ -273,7 +314,7 @@
     const el = tmp.firstElementChild;
     const slot = document.getElementById('site-nav-root') || document.querySelector('nav.site-nav');
     if (slot) slot.replaceWith(el);
-    wireMenu();
+    wireMenus();
     setupNowPlayingBar(el);
   }
 
