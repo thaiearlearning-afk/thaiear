@@ -578,16 +578,30 @@
       .xtra-icon { width: 26px; height: 26px; }
     }
     /* ---- Premium topic skin: recolour the player + sentence controls purple → GOLD so it's clear
-       at a glance you're on a premium topic. Scoped to the player and sentence list ONLY, by
-       overriding the accent CSS variables there, so the rest of the page (nav, links) stays brand
-       purple. Light gold = unselected, darker gold = selected/active — mirrors the purple states.
-       Applies on web AND in the app; member topics stay purple. ---- */
+       at a glance you're on a premium topic. Scoped to the player and sentence list (variable
+       override) so the rest of the page stays brand purple; the eyebrow is recoloured separately.
+       Light gold = unselected, brighter gold = selected/active. Web AND app; member topics stay
+       purple. ---- */
     body.premium-topic #player-root, body.premium-topic #sentence-list {
-      --accent: #C8A030;        /* selected / filled — strong gold */
-      --accent-mid: #AD8420;    /* hover / darker */
-      --accent-light: #F8F0D2;  /* unselected — light gold */
-      --purple-mid: #C8A030;    /* sentence-flag outline */
+      --accent: #E3B12C;        /* selected / filled — bright gold (was the muddy/tan #C8A030) */
+      --accent-mid: #C99A1C;    /* hover / darker */
+      --accent-light: #FBF1CC;  /* unselected — light gold */
+      --purple-mid: #CFA21E;    /* sentence-flag outline */
     }
+    /* Bright-gold FILLS carry DARK text/icons (white would wash out on bright gold). */
+    body.premium-topic .play-btn svg,
+    body.premium-topic .sent-play-btn.playing svg,
+    body.premium-topic .sent-play-btn:hover svg { fill: #3D2E00; }
+    body.premium-topic .toggle-btn.active,
+    body.premium-topic .xtra-toggle.active,
+    body.premium-topic .prog-ctl-add,
+    body.premium-topic .prog-ctl-add:hover:not([disabled]),
+    body.premium-topic .repeat-badge { color: #3D2E00; }
+    /* Gold used as TEXT (on light backgrounds) is a darker, readable gold — incl. the top eyebrow. */
+    body.premium-topic .prog-ctl-count,
+    body.premium-topic .prog-ctl-my,
+    body.premium-topic .prog-ctl-join,
+    body.premium-topic .topic-eyebrow { color: #B0851A; }
   `;
 
   /* ---- player markup (transport bar, how-to, controls, list, audio el) ---- */
