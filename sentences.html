@@ -43,6 +43,8 @@
 
   .prog-head { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; }
   .prog-head-icon { flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; background: var(--accent-light); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; }
+  /* Premium subscriber → light-gold person icon (text-gold mark on the pale gold badge). */
+  .prog-head-icon.premium-user { background: #FBF5DC; color: #B29234; }
   .prog-head-icon svg { width: 24px; height: 24px; }
   .prog-head-title { font-size: 25px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; color: #1C124E; }
 
@@ -91,6 +93,9 @@
   .sc-flag { width: 26px; height: 26px; border-radius: 50%; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; transition: background 0.15s, transform 0.15s; }
   .sc-flag:hover { background: var(--accent-light); }
   .sc-flag svg { width: 15px; height: 15px; fill: var(--accent); stroke: var(--accent); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  /* Premium-topic sentences: gold flag, matching the gold flags on premium topic pages. */
+  .sc-flag.prem svg { fill: #F0CC5C; stroke: #F0CC5C; }
+  .sc-flag.prem:hover { background: #FBF5DC; }
   .sc-flag.pending { opacity: 0.5; pointer-events: none; }
   .sc-lock { width: 14px; height: 14px; color: var(--text-tertiary); flex-shrink: 0; display: inline-flex; }
   .sc-body { border-top: 0.5px solid var(--border); }
@@ -244,7 +249,7 @@ function cardHtml(row, rec) {
   var id = 'sf-' + row.key + '-' + rec.num;
   var gated = row.access === 'member' || row.access === 'premium';
   var entitled = window.ThaiEarTopics.canAccess(row.access);
-  var flagBtn = '<button class="sc-flag flagged" onclick="removeItem(event,\'' + row.key + '\',' + rec.num + ')" aria-label="Remove from My sentences" title="Remove from My sentences">' + FLAG_SVG + '</button>';
+  var flagBtn = '<button class="sc-flag flagged' + (row.access === 'premium' ? ' prem' : '') + '" onclick="removeItem(event,\'' + row.key + '\',' + rec.num + ')" aria-label="Remove from My sentences" title="Remove from My sentences">' + FLAG_SVG + '</button>';
 
   if (!entitled) {
     return '<div class="sc locked" id="' + esc(id) + '">' +
@@ -311,7 +316,7 @@ function render() {
 
   var head =
     '<div class="prog-head">' +
-      '<span class="prog-head-icon">' + PERSON_SVG + '</span>' +
+      '<span class="prog-head-icon' + (a.isSubscribed && a.isSubscribed() ? ' premium-user' : '') + '">' + PERSON_SVG + '</span>' +
       '<h1 class="prog-head-title">' + esc(user.username) + '’s sentences</h1>' +
     '</div>';
 
