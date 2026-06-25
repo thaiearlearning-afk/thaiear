@@ -583,12 +583,12 @@
        Light gold = unselected, brighter gold = selected/active. Web AND app; member topics stay
        purple. ---- */
     body.premium-topic #player-root, body.premium-topic #sentence-list {
-      --accent: #EFBE38;        /* selected / filled — bright gold (brightened up from #C8A030) */
-      --accent-mid: #DCAB26;    /* hover / darker */
-      --accent-light: #FCF3D0;  /* unselected — light gold */
-      --purple-mid: #E0B22A;    /* sentence-flag outline */
+      --accent: #F0CC5C;        /* the hero Thai-script gold (homepage .hero-thai) */
+      --accent-mid: #E3BC48;    /* hover / darker */
+      --accent-light: #FBF5DC;  /* unselected — brand light gold (--gold-light) */
+      --purple-mid: #D4A82C;    /* sentence-flag outline (visible on the card) */
     }
-    /* Bright-gold FILLS carry DARK text/icons (white would wash out on bright gold). */
+    /* Bright-gold FILLS carry DARK text/icons (white/light washes out on the light gold). */
     body.premium-topic .play-btn svg,
     body.premium-topic .sent-play-btn.playing svg,
     body.premium-topic .sent-play-btn:hover svg { fill: #3D2E00; }
@@ -597,7 +597,11 @@
     body.premium-topic .prog-ctl-add,
     body.premium-topic .prog-ctl-add:hover:not([disabled]),
     body.premium-topic .repeat-badge { color: #3D2E00; }
-    /* Gold used as TEXT (on light backgrounds) is a darker, readable gold — incl. the top eyebrow. */
+    /* Thin / icon / text gold on LIGHT backgrounds uses a darker readable gold so it doesn't vanish. */
+    body.premium-topic .sent-play-btn svg { fill: #C8A030; }   /* unselected play icon on pale gold */
+    body.premium-topic .xtra-icon.active,
+    body.premium-topic .xtra-icon:hover,
+    body.premium-topic .skip-btn:hover,
     body.premium-topic .prog-ctl-count,
     body.premium-topic .prog-ctl-my,
     body.premium-topic .prog-ctl-join,
