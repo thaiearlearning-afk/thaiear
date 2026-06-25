@@ -227,9 +227,11 @@ function postCancel(resume) {
 function renderMembershipBox(s) {
   var box = document.getElementById('membership');
   if (!box) return;
-  // In the app, hide every upgrade-to-premium / re-subscribe CTA (Google Play reader-app rule: no
-  // in-app purchase or steering to web payment). Cancel/Update of an EXISTING sub stay (account mgmt).
+  // In the app, hide every payment/management CTA (Google Play reader-app rule: no in-app purchase or
+  // steering to web payment). Subscribers manage their membership (cancel / update card / resume) on
+  // the WEBSITE; the app just shows a neutral pointer box. Web keeps the full controls.
   var native = !!(window.ThaiEarAuth && window.ThaiEarAuth.isNative && window.ThaiEarAuth.isNative());
+  var manageBox = '<div style="margin-top:1rem;padding:0.85rem 1rem;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:13.5px;color:var(--text-secondary);line-height:1.5">To manage your premium membership, visit <strong style="color:var(--text-primary);font-weight:500">thaiear.com</strong> in your web browser.</div>';
   {
       if (s && s.subscribed) {
         var endStr = '';
@@ -237,12 +239,14 @@ function renderMembershipBox(s) {
         var line = s.cancel_at_period_end
           ? 'Membership: <strong style="color:#B29234">Premium</strong> — active until ' + endStr + ', won’t renew'
           : 'Membership: <strong style="color:#B29234">Premium</strong> (active)';
-        // Cancelling → just offer Resume (no point updating a card that won't be charged).
-        // Active → Cancel + Update payment method.
-        var action = s.cancel_at_period_end
-          ? (native ? '' : '<div class="btn-row"><button class="btn btn-gold" onclick="resumeMembership()">Resume membership</button></div>')
-          : '<div class="btn-row"><button class="btn btn-ghost" onclick="cancelMembership()">Cancel membership</button>' +
-            '<button class="btn btn-ghost" onclick="openPortal()">Update payment method</button></div>';
+        // App → neutral "manage on the website" box (no in-app cancel/update/resume).
+        // Web → full controls: cancelling offers Resume; active offers Cancel + Update payment method.
+        var action = native
+          ? manageBox
+          : (s.cancel_at_period_end
+              ? '<div class="btn-row"><button class="btn btn-gold" onclick="resumeMembership()">Resume membership</button></div>'
+              : '<div class="btn-row"><button class="btn btn-ghost" onclick="cancelMembership()">Cancel membership</button>' +
+                '<button class="btn btn-ghost" onclick="openPortal()">Update payment method</button></div>');
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">' + line + '</p>' +
           action +
           '<p id="cancel-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
@@ -250,8 +254,10 @@ function renderMembershipBox(s) {
       } else if (s && s.needsPayment) {
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong style="color:#B00020">Payment problem</strong> — your last payment didn’t go through.</p>' +
           '<p class="acct-muted" style="font-size:13px;margin-bottom:0.6rem">Update your card to keep your membership — access resumes automatically once it clears. No need to sign up again.</p>' +
-          '<button class="btn btn-primary" onclick="openPortal()">Update payment method</button>' +
-          '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>';
+          (native
+            ? manageBox
+            : '<button class="btn btn-primary" onclick="openPortal()">Update payment method</button>' +
+              '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>');
       } else {
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free member</strong></p>' +
           (native ? '' : '<a class="btn btn-gold" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>');
