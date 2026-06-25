@@ -293,6 +293,9 @@
         'padding:9px 14px;font-family:var(--font-ui,system-ui,sans-serif);font-size:13px;font-weight:500;' +
         'border-bottom:0.5px solid var(--border,rgba(0,0,0,0.1))}' +
         '.te-np-bar.show{display:flex}' +
+        // Premium playing topic → gold bar (eq bars use currentColor, so they follow). Keyed on the
+        // played topic's tier stored in thaiear_np, NOT the current page.
+        '.te-np-bar.te-np-premium{background:#FBF5DC;color:var(--gold-dark,#C8A030)}' +
         '.te-np-eq{display:inline-flex;align-items:flex-end;gap:2px;height:13px;flex-shrink:0}' +
         '.te-np-eq i{width:3px;background:currentColor;border-radius:1px;animation:te-np-eq 0.9s ease-in-out infinite}' +
         '.te-np-eq i:nth-child(1){height:6px}.te-np-eq i:nth-child(2){height:12px;animation-delay:0.2s}.te-np-eq i:nth-child(3){height:8px;animation-delay:0.4s}' +
@@ -313,6 +316,7 @@
       if (!np || !np.page || !np.name) { bar.classList.remove('show'); return; }
       bar.setAttribute('href', np.page);
       bar.querySelector('.te-np-text').innerHTML = 'Now playing: <strong>' + esc(np.name) + '</strong>';
+      bar.classList.toggle('te-np-premium', np.access === 'premium');
       bar.classList.add('show');
     }
     let stale = null;
@@ -338,7 +342,9 @@
       if (tier !== 'premium') return true;
       try { if (localStorage.getItem('thaiear_lifetime') === '1') return true; } catch (_) {} // lifetime → no offline timeout
       const a = window.ThaiEarAuth, subbed = a && a.isSubscribed && a.isSubscribed();
-      if (navigator.onLine) { if (subbed) return true; if (a && a.isReady) return false; }
+      // Only GRANT on the online fast-path — never DENY from it (navigator.onLine lies in the WebView,
+      // reporting online in airplane mode / at cold start). Denial = grace window + end-date below only.
+      if (navigator.onLine && subbed) return true;
       const last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);
       const until = parseInt(localStorage.getItem('thaiear_sub_until') || '0', 10);
       return !!last && (Date.now() - last) < OFFLINE_GRACE_MS && (!until || Date.now() < until);
@@ -392,7 +398,7 @@
           .then(function () { return NA.play(); })
           .then(function () {
             let page = String(unit.page || '').toLowerCase(); if (page && !/\.html$/.test(page)) page += '.html';
-            try { localStorage.setItem('thaiear_np', JSON.stringify({ page: page, name: unit.name, prefix: unit.audio, mode: np.mode || 'te' })); } catch (_) {}
+            try { localStorage.setItem('thaiear_np', JSON.stringify({ page: page, name: unit.name, prefix: unit.audio, mode: np.mode || 'te', access: unit.access || 'free' })); } catch (_) {}
           });
       }).catch(function () {});
     }

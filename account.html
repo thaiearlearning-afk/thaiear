@@ -237,7 +237,7 @@ function renderMembershipBox(s) {
         // Cancelling → just offer Resume (no point updating a card that won't be charged).
         // Active → Cancel + Update payment method.
         var action = s.cancel_at_period_end
-          ? '<div class="btn-row"><button class="btn btn-ghost" onclick="resumeMembership()">Resume membership</button></div>'
+          ? '<div class="btn-row"><button class="btn btn-gold" onclick="resumeMembership()">Resume membership</button></div>'
           : '<div class="btn-row"><button class="btn btn-ghost" onclick="cancelMembership()">Cancel membership</button>' +
             '<button class="btn btn-ghost" onclick="openPortal()">Update payment method</button></div>';
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">' + line + '</p>' +
