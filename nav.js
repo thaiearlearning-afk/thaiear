@@ -155,6 +155,7 @@
     { label: 'About', page: 'about.html', public: true },
     { label: 'Guide', page: 'guide.html', public: true },
     { label: 'Socials', page: 'socials.html', public: true },
+    { label: 'ThaiEar App', page: 'app.html', public: true },
     { label: 'My progress', page: 'progress.html' },
     { label: 'My sentences', page: 'sentences.html' },
   ];
