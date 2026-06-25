@@ -251,32 +251,10 @@
     return new Blob([bytes], { type: type || 'audio/mpeg' });
   }
   function localBlobUrl(prefix, file) {
-    if (!Filesystem) { SENT_DBG.read = 'no-fs'; return Promise.resolve(null); }
+    if (!Filesystem) return Promise.resolve(null);
     return Filesystem.readFile({ directory: 'DATA', path: offlineDir(prefix) + '/' + file })
-      .then(function (r) {
-        var n = (r && r.data && r.data.length) || 0;          // DEBUG
-        SENT_DBG.read = 'ok b64len=' + n;                      // DEBUG
-        return n ? URL.createObjectURL(b64ToBlob(r.data, 'audio/mpeg')) : null;
-      })
-      .catch(function (e) { SENT_DBG.read = 'ERR ' + ((e && (e.message || e.errorMessage)) || e); return null; }); // DEBUG
-  }
-  // DEBUG (temporary): captures why an offline sentence did/didn't resolve, surfaced via an on-page
-  // banner (alert() is suppressed in the Capacitor WebView). Tap the banner to clear it. The version
-  // tag confirms THIS build is actually running on the device (vs a stale cached player.js).
-  var SENT_DBG = {};
-  var PLAYER_DBG_VER = 'dbg3';
-  function dbg(msg) {
-    try {
-      var el = document.getElementById('te-dbg');
-      if (!el) {
-        el = document.createElement('div');
-        el.id = 'te-dbg';
-        el.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:rgba(0,0,0,.88);color:#5f5;font:12px/1.45 monospace;padding:8px;max-height:50vh;overflow:auto;white-space:pre-wrap;';
-        el.addEventListener('click', function () { el.textContent = ''; });
-        document.body.appendChild(el);
-      }
-      el.textContent = '[' + PLAYER_DBG_VER + '] ' + msg + '\n\n' + el.textContent;
-    } catch (_) {}
+      .then(function (r) { return (r && r.data) ? URL.createObjectURL(b64ToBlob(r.data, 'audio/mpeg')) : null; })
+      .catch(function () { return null; });
   }
   // Main (native) player: local file:// if downloaded + licence ok, else the remote URL.
   function mainSrcFor(file) {
@@ -289,15 +267,12 @@
   // Sentence (web <audio>) player: a same-origin blob: URL of the downloaded clip if available
   // (plays reliably across WebViews — see localBlobUrl), else the free CDN / signed remote URL.
   function sentSrcFor(file) {
-    SENT_DBG = { file: file, OFFLINE: OFFLINE, downloaded: isDownloaded(PREFIX), tier: TIER || 'free', online: navigator.onLine, canUseOffline: null, read: null, srcType: null }; // DEBUG
     if (OFFLINE && isDownloaded(PREFIX)) {
-      SENT_DBG.canUseOffline = canUseOffline(TIER); // DEBUG
-      if (SENT_DBG.canUseOffline) {
-        return localBlobUrl(PREFIX, file).then(function (url) { SENT_DBG.srcType = url ? 'blob' : 'cdn-fallback'; return url || buildUrl(file); }); // DEBUG srcType
+      if (canUseOffline(TIER)) {
+        return localBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file); });
       }
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
-    SENT_DBG.srcType = 'remote'; // DEBUG
     return buildUrl(file);
   }
 
@@ -1102,7 +1077,6 @@
       revokeSentBlob();                                    // free the previous clip's object URL
       sa.src = u;
       if (u && u.indexOf('blob:') === 0) sentBlobUrl = u;  // track for revocation on next swap/stop
-      dbg('SET SRC ' + JSON.stringify(SENT_DBG) + ' src=' + String(u).slice(0, 64)); // DEBUG (temporary)
       sa.load();
       sa.addEventListener('loadedmetadata', function onMeta() {
         sa.removeEventListener('loadedmetadata', onMeta);
@@ -1111,12 +1085,11 @@
         sentResetTimer = setTimeout(function () { resetSentBtn(); sentResetTimer = null; }, (duration + 0.5) * 1000);
       });
       sa.playbackRate = slowMode ? 0.75 : 1.0;
-      return sa.play().then(function () { dbg('PLAY OK ' + SENT_DBG.srcType + ' dur=' + sa.duration); }); // DEBUG (temporary)
+      return sa.play();
     }).catch(function (err) {
       updateSentBtn(num, false);
       if (sentPlaying === num) sentPlaying = null;
       maybeResumeMain();
-      dbg('PLAY ERR ' + JSON.stringify(SENT_DBG) + ' err=' + ((err && (err.name + ': ' + err.message)) || JSON.stringify(err))); // DEBUG (temporary)
       handleDenied(err);
     });
   }

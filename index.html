@@ -846,7 +846,11 @@ function fetchSentenceNums(page) {
     if (i >= 0) {
       let end = html.indexOf('<\/script>', i); if (end < 0) end = html.length;
       const block = html.slice(i, end);
-      const re = /\bnum\s*:\s*(\d+)/g; let x;
+      // Match BOTH the compact `num:144` and the pretty-printed-JSON `"num": 144` forms — some topic
+      // pages stringify their data with quoted keys, and the old quote-less regex silently matched
+      // zero sentences for those (→ only TE/ET downloaded, sentence clips missing offline). The `\b`
+      // before num + optional trailing quote keeps it from matching words like `enum`.
+      const re = /\bnum\b"?\s*:\s*(\d+)/g; let x;
       while ((x = re.exec(block))) nums.push(parseInt(x[1], 10));
     }
     return nums;
@@ -859,6 +863,9 @@ function topicFileList(prefix, nums) {
 }
 function downloadOne(item) {
   return fetchSentenceNums(item.page).then(function (nums) {
+    // A topic always has sentences; zero means the scrape failed — fail the download rather than
+    // silently saving only TE/ET and marking it "downloaded" (which left sentence clips missing).
+    if (!nums.length) throw new Error('No sentences found for ' + item.prefix + ' — not downloading');
     const files = topicFileList(item.prefix, nums);
     let chain = FS.mkdir({ directory: 'DATA', path: 'offline/' + item.prefix, recursive: true }).catch(function () {});
     files.forEach(function (file) {
