@@ -430,29 +430,8 @@
       .prog-ctl-card { padding: 0.6rem 0.7rem; }
       .prog-ctl-count { font-size: 18px; }
       .prog-ctl-btn { font-size: 12px; padding: 5px 10px; }
-      /* Mobile keeps the fuller glow on the three main boxes (desktop is 30% gentler — see base rules). */
-      body.member-topic .player-card,
-      body.member-topic .prog-ctl-card, body.member-topic .orientation-text { box-shadow: 0 0 12px rgba(75,65,173,0.16); }
-      body.premium-topic .player-card,
-      body.premium-topic .prog-ctl-card, body.premium-topic .orientation-text { box-shadow: 0 0 12px rgba(240,204,92,0.30); }
     }
     .player-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1rem; margin-bottom: 1.75rem; }
-    /* Subtle accent GLOW, keyed on the PAGE's tier (body.member-topic / body.premium-topic, set once
-       at load), so it stays put even if the player navigates on. Member = indigo, premium = gold.
-       FREE topics (1-3) get NO glow — no body class, so none of these rules match and they look
-       exactly as before. Single source — web, mobile and app alike. The three main boxes (player,
-       progress, how-to) are 30% gentler on DESKTOP; the mobile media query below bumps them back up. */
-    body.member-topic .player-card { box-shadow: 0 0 12px rgba(75,65,173,0.112); }
-    body.premium-topic .player-card { box-shadow: 0 0 12px rgba(240,204,92,0.21); }
-    /* Same glow on the progress box (4a) and the how-to message (4b). */
-    body.member-topic .prog-ctl-card, body.member-topic .orientation-text { box-shadow: 0 0 12px rgba(75,65,173,0.112); }
-    body.premium-topic .prog-ctl-card, body.premium-topic .orientation-text { box-shadow: 0 0 12px rgba(240,204,92,0.21); }
-    /* Individual sentence cards get a smaller glow; hover just INTENSIFIES the glow colour (no
-       border hardening). Free topics keep the original grey-border hover (rule further down). */
-    body.member-topic .sentence-card { box-shadow: 0 0 8px rgba(75,65,173,0.11); }
-    body.premium-topic .sentence-card { box-shadow: 0 0 8px rgba(240,204,92,0.21); }
-    body.member-topic .sentence-card:hover { box-shadow: 0 0 8px rgba(75,65,173,0.24); border-color: var(--border); }
-    body.premium-topic .sentence-card:hover { box-shadow: 0 0 8px rgba(240,204,92,0.44); border-color: var(--border); }
     .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
     .audio-toggle { display: flex; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
     .toggle-btn { font-size: 12px; font-family: var(--font-ui); font-weight: 400; color: var(--text-secondary); background: none; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
@@ -479,7 +458,7 @@
     .reveal-all-btn { font-size: 12px; font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
     .reveal-all-btn:hover { background: var(--surface); }
     .sent-count-label { font-size: 12px; color: var(--text-tertiary); }
-    .sentence-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 7px; overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s; }
+    .sentence-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 7px; overflow: hidden; transition: border-color 0.15s; }
     .sentence-card:hover { border-color: var(--border-strong); }
     .sentence-header { display: flex; align-items: center; gap: 10px; padding: 0.7rem 1rem; cursor: pointer; user-select: none; -webkit-user-select: none; }
     .sent-num { font-size: 11px; font-weight: 500; color: var(--text-tertiary); min-width: 20px; font-variant-numeric: tabular-nums; }
@@ -1438,7 +1417,6 @@
       document.head.appendChild(style);
     }
     if (TIER === 'premium') document.body.classList.add('premium-topic'); // gold-skin the controls
-    else if (TIER === 'member') document.body.classList.add('member-topic'); // indigo glow (free = no class, no glow)
     var root = $('player-root');
     if (root) root.innerHTML = PLAYER_HTML;
     // sync the transport bar if metadata already arrived before mount
