@@ -93,6 +93,19 @@
       } catch (_) {}
       notify(); return;
     }
+    // Seed from the last KNOWN-GOOD cache for THIS user FIRST, so a premium member is recognised
+    // instantly — including OFFLINE, where the live query below hangs ~8s then fails. Without this,
+    // isSubscribed() was false offline and premium topic cards wrongly routed to subscribe.html
+    // instead of opening (or showing the "you're offline" page). The live read confirms/corrects when
+    // online. (Audio is still licence-gated by canUseOffline, so this is UX/routing only.)
+    try {
+      var cached = JSON.parse(localStorage.getItem('thaiear_sub_cache') || 'null');
+      if (cached && cached.uid === currentUser.id && cached.sub) {
+        currentSub = cached.sub;
+        currentSubscribed = (cached.sub.status === 'active' || cached.sub.status === 'trialing');
+      }
+    } catch (_) {}
+    notify(); // reflect the cached status immediately (cards/nav) before the live read returns
     client.from('subscriptions').select('status,cancel_at_period_end,current_period_end').maybeSingle()
       .then(function (res) {
         currentSub = (res && res.data) || null;
@@ -102,7 +115,7 @@
         // the real "Premium — active until …" status while OFFLINE (when the live query can't run).
         try { if (res && !res.error) localStorage.setItem('thaiear_sub_cache', JSON.stringify({ uid: currentUser.id, sub: currentSub })); } catch (_) {}
       })
-      .catch(function () { currentSubscribed = false; currentSub = null; })
+      .catch(function () { /* offline / failed → KEEP the cached seed above; don't blank to not-subscribed */ })
       .then(function () { notify(); refreshLifetime(); });
   }
 
