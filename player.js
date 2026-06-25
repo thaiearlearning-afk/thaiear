@@ -437,6 +437,12 @@
        indigo = everything else. Single source — applies to web, mobile and app alike. */
     .player-card { box-shadow: 0 0 12px rgba(75,65,173,0.16); }
     body.premium-topic .player-card { box-shadow: 0 0 12px rgba(240,204,92,0.30); }
+    /* Same glow on the progress box (4a) and the how-to message (4b). */
+    .prog-ctl-card, .orientation-text { box-shadow: 0 0 12px rgba(75,65,173,0.16); }
+    body.premium-topic .prog-ctl-card, body.premium-topic .orientation-text { box-shadow: 0 0 12px rgba(240,204,92,0.30); }
+    /* Individual sentence cards get a smaller glow (~30% less reach/intensity). */
+    .sentence-card { box-shadow: 0 0 8px rgba(75,65,173,0.11); }
+    body.premium-topic .sentence-card { box-shadow: 0 0 8px rgba(240,204,92,0.21); }
     .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
     .audio-toggle { display: flex; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
     .toggle-btn { font-size: 12px; font-family: var(--font-ui); font-weight: 400; color: var(--text-secondary); background: none; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
