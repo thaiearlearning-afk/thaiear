@@ -577,6 +577,17 @@
       .xtra-lbl-short { display: none; }   /* tightest phones: autoplay icon only */
       .xtra-icon { width: 26px; height: 26px; }
     }
+    /* ---- Premium topic skin: recolour the player + sentence controls purple → GOLD so it's clear
+       at a glance you're on a premium topic. Scoped to the player and sentence list ONLY, by
+       overriding the accent CSS variables there, so the rest of the page (nav, links) stays brand
+       purple. Light gold = unselected, darker gold = selected/active — mirrors the purple states.
+       Applies on web AND in the app; member topics stay purple. ---- */
+    body.premium-topic #player-root, body.premium-topic #sentence-list {
+      --accent: #C8A030;        /* selected / filled — strong gold */
+      --accent-mid: #AD8420;    /* hover / darker */
+      --accent-light: #F8F0D2;  /* unselected — light gold */
+      --purple-mid: #C8A030;    /* sentence-flag outline */
+    }
   `;
 
   /* ---- player markup (transport bar, how-to, controls, list, audio el) ---- */
@@ -1385,6 +1396,7 @@
       style.textContent = STYLES;
       document.head.appendChild(style);
     }
+    if (TIER === 'premium') document.body.classList.add('premium-topic'); // gold-skin the controls
     var root = $('player-root');
     if (root) root.innerHTML = PLAYER_HTML;
     // sync the transport bar if metadata already arrived before mount

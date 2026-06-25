@@ -882,7 +882,11 @@ function downloadOne(item) {
     });
   });
 }
-function setBatchStatus(msg) { const el = document.getElementById('dl-batch-status'); if (el) el.textContent = msg || ''; }
+function setBatchStatus(msg, offline) {
+  const el = document.getElementById('dl-batch-status'); if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = offline ? '#B00020' : '';   // red "you're offline" message, matching the account page
+}
 function setBatchBusy(b) {
   const d = document.getElementById('dl-batch-btn'), c = document.getElementById('dl-clear-btn');
   if (d) d.disabled = b; if (c) c.disabled = b;
@@ -904,6 +908,7 @@ function updateBatchBar() {
 function runBatchDownload() {
   if (!NA_OFFLINE || batchRunning) return;
   if (dlSelected.size === 0) { setBatchStatus('Please select a topic to download first.'); return; }
+  if (!navigator.onLine) { setBatchStatus('You’re offline — reconnect to download topics.', true); return; }
   const items = Array.from(dlSelected.values());
   let i = 0;
   batchRunning = true; setBatchBusy(true);
@@ -919,7 +924,14 @@ function runBatchDownload() {
     setBatchStatus('Downloading ' + (i + 1) + '/' + items.length + ' — keep this page open');
     downloadOne(items[i]).then(function () { i++; next(); }).catch(function (err) {
       batchRunning = false; setBatchBusy(false);
-      setBatchStatus('Stopped (' + ((err && (err.code || err.message)) || 'error') + '). Keep this page open and retry.');
+      // navigator.onLine lies in the WebView (often "online" in airplane mode), so also treat a
+      // network/fetch failure as offline → show the same polished red message, not "failed to fetch".
+      const m = (err && (err.message || '')) || '';
+      if (!navigator.onLine || /failed to fetch|load failed|network/i.test(m)) {
+        setBatchStatus('You’re offline — reconnect to download topics.', true);
+      } else {
+        setBatchStatus('Stopped (' + ((err && (err.code || err.message)) || 'error') + '). Keep this page open and retry.');
+      }
       updateBatchBar();
     });
   })();
