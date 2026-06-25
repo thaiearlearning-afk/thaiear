@@ -357,10 +357,11 @@
       a.removeAttribute('data-locked-href');
       return;
     }
-    a.setAttribute('href', access === 'premium'              // locked → route to the right gate
-      ? 'subscribe.html'
-      : 'join.html?next=' + encodeURIComponent(target));
-    a.setAttribute('data-locked-href', target);
+    // Navigable-preview model: gated topics are still reachable by anyone — point prev/next at the
+    // REAL page (never the paywall, and never steer to subscribe in the app). The padlock icon below
+    // still signals the tier; the on-page gating (reveal/flag/play) enforces the actual restriction.
+    a.setAttribute('href', target);
+    a.removeAttribute('data-locked-href');
     injectNavLockStyles();
     if (nameEl) {
       const span = document.createElement('span');
@@ -392,7 +393,7 @@
     if (entitled && a.getAttribute('href') !== target) { // stale gate href → correct it
       e.preventDefault();
       window.location.href = target;
-    } // locked + not entitled → let the default (join/subscribe) href proceed
+    } // gated buttons now also point at `target` (navigable preview) → default proceeds to the page
   });
 
   function init() { fillEyebrow(); decorateTopicNav(); }

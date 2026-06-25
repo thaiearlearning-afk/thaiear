@@ -666,25 +666,60 @@
       return j.url;
     });
   }
-  // Not entitled (logged out / no access) → send to the paywall. Transient errors just log;
-  // the play button is already reset by the caller.
+  // ── Access gating (the "navigable preview" model) ─────────────────────────────────────────────
+  // Gated topics (member/premium) are reachable by ANYONE so they can read the description + preview
+  // words, but the gated INTERACTIONS — revealing a sentence, flagging, and playing (sentence or the
+  // main TE/ET) — are blocked for non-entitled visitors.
+  //
+  // entitledForPage(): may THIS visitor use the gated interactions on this page?
+  function entitledForPage() {
+    if (TIER !== 'member' && TIER !== 'premium') return true;   // free topic → open
+    if (OFFLINE && isDownloaded(PREFIX)) return true;           // they downloaded it → were entitled (licence flow handles lapse)
+    var a = window.ThaiEarAuth;
+    if (!a || !a.isReady) return true;                          // auth still resolving → don't wrongly gate a paying user
+    if (TIER === 'member') return !!(a.getUser && a.getUser()); // member = any signed-in user
+    return !!(a.isSubscribed && a.isSubscribed());              // premium = active subscription
+  }
+  // gate(): what a non-entitled tap does. Member → the free sign-in page (web AND app — login is not
+  // payment steering). Premium → the paywall on the WEBSITE, but in the APP a non-steering locked note
+  // instead (Google Play forbids steering to outside payment).
+  function gate(tier) {
+    if (tier == null) tier = TIER;
+    if (tier === 'member') { window.location.href = 'join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE); return; }
+    if (NATIVE) { lockedToast(); return; }
+    window.location.href = 'subscribe.html';
+  }
+  var _lockToastTimer = null;
+  function lockedToast() {
+    try {
+      var t = document.getElementById('te-locked-toast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = 'te-locked-toast';
+        t.style.cssText = 'position:fixed;left:50%;bottom:104px;transform:translateX(-50%);z-index:99999;' +
+          'background:rgba(26,26,26,.92);color:#fff;font:14px/1.4 var(--font-ui,system-ui,sans-serif);' +
+          'padding:10px 16px;border-radius:10px;max-width:82%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.28);' +
+          'opacity:0;transition:opacity .2s;pointer-events:none;';
+        document.body.appendChild(t);
+      }
+      t.textContent = '🔒 Premium topic — preview only';
+      t.style.opacity = '0';
+      requestAnimationFrame(function () { t.style.opacity = '1'; });
+      if (_lockToastTimer) clearTimeout(_lockToastTimer);
+      _lockToastTimer = setTimeout(function () { t.style.opacity = '0'; }, 2200);
+    } catch (_) {}
+  }
+
+  // Audio denied by the server (or licence lapse). Transient errors just log; the play button is
+  // already reset by the caller. The actual gate/redirect is shared with the interaction gating.
   function handleDenied(err, tier) {
     if (tier == null) tier = TIER;
     var code = err && err.code;
     // Offline premium download whose licence has lapsed → friendly in-page message (no navigation).
     if (code === 'licence') { showLicenceOverlay(); return; }
-    var gate = (code === 'noauth' || code === 401 || code === 402 || code === 403);
-    if (!gate) { console.warn('player.js: audio unavailable', err); return; }
-    // Member content is free behind a login → send to the free-membership explainer
-    // (which has the Google sign-in), with ?next back to this topic page.
-    if (tier === 'member') {
-      var page = (location.pathname.split('/').pop() || '');
-      if (!/\.html$/.test(page)) page += '.html';   // clean URLs (/topic-02) → topic-02.html
-      window.location.href = 'join.html?next=' + encodeURIComponent(page);
-      return;
-    }
-    // Premium (or any other denial) → the paywall.
-    window.location.href = 'subscribe.html';
+    var isGate = (code === 'noauth' || code === 401 || code === 402 || code === 403);
+    if (!isGate) { console.warn('player.js: audio unavailable', err); return; }
+    gate(tier);
   }
 
   var PLAY_TRI  = '<polygon points="5,2 14,8 5,14"/>';
@@ -779,6 +814,7 @@
 
   function togglePlay() {
     if (mainAudio.paused) {
+      if (!entitledForPage()) { gate(mainTier); return; }   // gated topic + not entitled → no playback
       userStartedHere = true;   // this page's player is now user-driven → sync must not adopt a stale label
       ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); setupMediaSession(); }).catch(function (e) { handleDenied(e, mainTier); });
     } else { mainAudio.pause(); setMainIcon(false); }
@@ -1048,6 +1084,7 @@
   function toggleSentPlay(e, num) {
     e.stopPropagation();
     e.preventDefault();
+    if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no sentence audio
     if (sentLock) return;
     sentLock = true;
     setTimeout(function () { sentLock = false; }, 300);
@@ -1187,9 +1224,13 @@
       : '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/></svg> Reveal all';
   }
 
-  function cycle(num) { states[num] = (states[num] + 1) % 4; render(); }
+  function cycle(num) {
+    if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no reveal
+    states[num] = (states[num] + 1) % 4; render();
+  }
 
   function toggleAll() {
+    if (!entitledForPage()) { gate(); return; }
     var allOpen = sentences.every(function (s) { return states[s.num] === 3; });
     sentences.forEach(function (s) { states[s.num] = allOpen ? 0 : 3; });
     render();
@@ -1285,10 +1326,14 @@
   // Logged-out flag click → the feature sign-in page, with ?next back to this topic.
   function flagSignIn(e) {
     e.stopPropagation(); e.preventDefault();
+    // On a gated topic an un-entitled flag tap follows the same gate (premium → paywall/locked,
+    // member → sign-in). On a FREE topic it's just "sign in to flag".
+    if (!entitledForPage()) { gate(); return; }
     window.location.href = 'join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE);
   }
   function flagSent(e, num) {
     e.stopPropagation(); e.preventDefault();
+    if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no flagging
     var a = window.ThaiEarAuth;
     // SSR pages use one flag button that always calls flagSent; route a signed-out click to
     // sign-in. Legacy pages render a separate flagSignIn button when signed out, so this branch
