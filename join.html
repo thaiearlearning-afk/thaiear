@@ -144,7 +144,7 @@
     </button>
     <p class="sub-status" id="join-status"></p>
     <p class="sub-note" style="margin-top:0.6rem">By continuing you agree to our <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
-    <p class="sub-note">Want everything? <a href="subscribe.html">See premium membership →</a></p>
+    <p class="sub-note" id="premium-note">Want everything? <a href="subscribe.html">See premium membership →</a></p>
   </div>
 
   <a class="sub-back" href="index.html">← Back to all topics</a>
@@ -154,6 +154,12 @@
 /* Free-membership explainer (member tier). Member topics are gated server-side
    (/api/audio), so the value is the login. ?next=<page> sends the visitor to the
    topic they wanted once signed in. */
+
+// Reader-app compliance: in the Capacitor app, hide the "See premium membership" link (it leads to
+// the web checkout). Direct Capacitor check so it applies immediately, before auth.js resolves.
+if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+  var pn = document.getElementById('premium-note'); if (pn) pn.style.display = 'none';
+}
 
 // Arrived via a member FEATURE (e.g. flagging a sentence) rather than a locked topic?
 // Show feature-oriented copy under the same "Sign in to unlock — it's free" heading.

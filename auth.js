@@ -392,6 +392,9 @@
     // The real gate is server-side (/api/audio); this just drives the unlocked/locked UX.
     isSubscribed: function () { return currentSubscribed; },
     getSubscription: function () { return currentSub; }, // {status, cancel_at_period_end, current_period_end}
+    // True inside the Capacitor app. Pages use this to HIDE any upgrade-to-premium / checkout CTA
+    // (Google Play reader-app rule: no in-app purchase or steering to web payment). Web is unaffected.
+    isNative: function () { return isNative(); },
     // Marketing-email consent (cached). setMarketingConsent upserts the profiles row.
     getMarketingConsent: function () { return currentConsent; },
     // Has the consent flag finished loading from the profiles row? Lets the account

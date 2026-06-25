@@ -265,6 +265,9 @@ function render() {
   var goal = data.goal || 5;
   var topics = data.topics || {};
   var rows = liveRows();
+  // In the app, a premium-locked "Go to topic" opens the page (navigable preview) instead of steering
+  // to subscribe.html (reader-app compliance). On the web it still routes to subscribe.
+  var native = !!(a && a.isNative && a.isNative());
 
   var head =
     '<div class="prog-head">' +
@@ -304,7 +307,7 @@ function render() {
     if (canOpen) {
       href = r.page;
     } else if (access === 'premium') {
-      href = 'subscribe.html';
+      href = native ? r.page : 'subscribe.html';
       lock = '<span class="lock">' + LOCK_SVG + '</span>';
     } else {
       href = 'join.html?next=' + encodeURIComponent(r.page);
