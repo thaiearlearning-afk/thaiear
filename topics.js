@@ -315,7 +315,10 @@
       '.topic-nav-lock{display:inline-flex;align-items:center;vertical-align:-2px;margin-right:4px}' +
       '.topic-nav-lock svg{width:11px;height:11px}' +
       '.topic-nav-lock.premium{color:var(--gold-dark)}' +   // gold = subscription
-      '.topic-nav-lock.member{color:var(--accent)}';        // purple = sign-in
+      '.topic-nav-lock.member{color:var(--accent)}' +       // purple = sign-in
+      // A prev/next button INTO a premium topic lights up light-gold on hover instead of purple
+      // (keyed on the destination tier, set by decorateNavBtn → tracks topics.js access).
+      '.topic-nav-btn.nav-to-premium:hover{background:#FBF5DC;border-color:var(--gold-dark)}';
     (document.head || document.documentElement).appendChild(s);
   }
   // The button's real destination page, stored once on data-target so it survives re-runs
@@ -347,6 +350,10 @@
     const target = navTarget(a);
     const access = navAccessFor(target);
     if (access === null) return; // not a topic link (e.g. back-to-index) — leave alone
+    // Tier-tint the hover regardless of lock state: a button INTO a premium topic lights up gold,
+    // others purple. Reads the destination's access (above), so it follows topics.js automatically.
+    injectNavLockStyles();
+    a.classList.toggle('nav-to-premium', access === 'premium');
     const nameEl = a.querySelector('.topic-nav-name');
     const oldIcon = a.querySelector('.topic-nav-lock'); if (oldIcon) oldIcon.remove();
     if (nameEl) nameEl.textContent = nameEl.textContent.replace(/^\s*🔒\s*/, ''); // drop legacy emoji
