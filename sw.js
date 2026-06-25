@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v10';
+const VERSION = 'v11';
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
@@ -107,7 +107,7 @@ const PRECACHE = [
   '/nav.js', '/topics.js', '/player.js', '/auth.js', '/footer.js',
   '/logo.png', '/logoshort.png', '/favicon.png', '/favicon.ico',
   '/favicon-16.png', '/favicon-32.png', '/apple-touch-icon.png',
-  '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png',
+  '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png', '/hornbill.png',
   // Self-hosted fonts (replaced Google Fonts 2026-06-24): precache the full used set so a
   // freshly-downloaded topic renders Sarabun (Thai) + Inter offline, not the system fallback.
   '/fonts/inter-latin-300.woff2', '/fonts/inter-latin-400.woff2',

@@ -70,7 +70,22 @@
 
   .note { font-size: 13px; color: var(--text-tertiary); margin-top: 1.75rem; text-align: center; }
 
-  @media (max-width: 600px) { .wrap { padding: 2rem 1.1rem 2.5rem; } h1 { font-size: 24px; } }
+  /* mascot image + caption with the same animated 1→2→3 dot ellipsis used across the site.
+     Desktop uses the smaller base width; mobile bumps it up (same treatment as muaythai). */
+  .fluency-block { text-align: center; margin: 1.25rem 0 1.5rem; }
+  .fluency-img { width: 158px; max-width: 42%; height: auto; display: block; margin: 0 auto 0.4rem; }
+  .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
+  .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
+  .fluency-text .dots::after {
+    content: '...'; display: inline-block; width: 0; overflow: hidden;
+    vertical-align: bottom; animation: fluency-dots 1.5s steps(3, start) infinite;
+  }
+  @keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
+
+  @media (max-width: 600px) {
+    .wrap { padding: 2rem 1.1rem 2.5rem; } h1 { font-size: 24px; }
+    .fluency-img { width: 210px; }   /* keep the phone size; desktop uses the smaller base width */
+  }
 </style>
 </head>
 <body>
@@ -81,6 +96,11 @@
   <div class="eyebrow">ThaiEar App</div>
   <h1>Take ThaiEar with you</h1>
   <p class="lede">Download our free app to keep learning Thai offline when you’re on the go.</p>
+
+  <div class="fluency-block">
+    <img class="fluency-img" src="hornbill.png" alt="Hornbill" width="450" height="535">
+    <div class="fluency-text">Take to the skies<span class="dots" aria-hidden="true"></span></div>
+  </div>
 
   <div class="store-list">
     <div class="store-card">
