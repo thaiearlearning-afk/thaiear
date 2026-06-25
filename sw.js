@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CACHE = 'thaiear-' + VERSION;
 
 // Topic pages (topic-NN.html) 308-redirect to clean URLs (/topic-NN). A *redirected* Response
@@ -132,14 +132,19 @@ self.addEventListener('fetch', function (e) {
               return i ? cleanRedirect(i) : caches.match('/').then(function (r) { return r ? cleanRedirect(r) : offlinePage(); });
             });
           }
-          // Downloaded topic pages are persisted by player.js under their CLEAN url (/topic-NN),
-          // because topic-NN.html 308-redirects to it. A card click requests topic-NN.html, so the
-          // exact-key match above misses. Try the toggled .html<->clean variant before giving up —
-          // this is what lets a downloaded topic open offline after an SW version bump.
+          // Match by PATHNAME, ignoring any query string. Member-feature links carry params
+          // (join.html?feature=1&next=progress.html, account.html?sub=success, ?next=…), and the
+          // exact-key match above misses on those — so a precached page like join.html was wrongly
+          // falling through to the offline notice. Try the bare pathname first, then the
+          // .html<->clean variant (downloaded topic pages are persisted by player.js under their
+          // CLEAN url /topic-NN, because topic-NN.html 308-redirects to it).
           var alt = p.slice(-5) === '.html' ? p.slice(0, -5) : p + '.html';
-          return caches.match(alt, { ignoreSearch: true }).then(function (h2) {
-            if (h2) return cleanRedirect(h2);
-            return offlinePage(); // genuinely uncached → friendly offline notice, not a blank error
+          return caches.match(p, { ignoreSearch: true }).then(function (h1) {
+            if (h1) return cleanRedirect(h1);
+            return caches.match(alt, { ignoreSearch: true }).then(function (h2) {
+              if (h2) return cleanRedirect(h2);
+              return offlinePage(); // genuinely uncached → friendly offline notice, not a blank error
+            });
           });
         }
         return Response.error();
