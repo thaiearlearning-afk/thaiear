@@ -597,10 +597,22 @@
     body.premium-topic .prog-ctl-add,
     body.premium-topic .prog-ctl-add:hover:not([disabled]),
     body.premium-topic .repeat-badge { color: #3D2E00; }
-    /* The eyebrow ("<level> · Topic X of Y") sits OUTSIDE the player, so the scoped variable above
-       doesn't reach it — recolour it to the same gold. (All other thin/icon/text parts inherit the
-       --accent gold #F0CC5C directly, no override.) */
-    body.premium-topic .topic-eyebrow { color: #F0CC5C; }
+    /* The eyebrow ("<level> · Topic X of Y") and the subheading sit OUTSIDE the player, so the scoped
+       variable above doesn't reach them — recolour to the same gold. (All other thin/icon/text parts
+       inherit the --accent gold #F0CC5C directly, no override.) */
+    body.premium-topic .topic-eyebrow,
+    body.premium-topic .topic-subtitle { color: #F0CC5C; }
+    /* Desktop only: the light gold text can be a touch hard to read on the pale page, so give it a
+       1px dark outline (mobile reads fine as-is, so it's left plain there). */
+    @media (min-width: 801px) {
+      body.premium-topic .topic-eyebrow,
+      body.premium-topic .topic-subtitle,
+      body.premium-topic .prog-ctl-count,
+      body.premium-topic .prog-ctl-my,
+      body.premium-topic .prog-ctl-join {
+        text-shadow: -1px -1px 0 #3D2E00, 1px -1px 0 #3D2E00, -1px 1px 0 #3D2E00, 1px 1px 0 #3D2E00;
+      }
+    }
   `;
 
   /* ---- player markup (transport bar, how-to, controls, list, audio el) ---- */
