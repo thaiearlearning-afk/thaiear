@@ -314,7 +314,7 @@
     s.textContent =
       '.topic-nav-lock{display:inline-flex;align-items:center;vertical-align:-2px;margin-right:4px}' +
       '.topic-nav-lock svg{width:11px;height:11px}' +
-      '.topic-nav-lock.premium{color:var(--gold-dark)}' +   // gold = subscription
+      '.topic-nav-lock.premium{color:#B29234}' +            // premium text-gold (matches index pill)
       '.topic-nav-lock.member{color:var(--accent)}' +       // purple = sign-in
       // A prev/next button INTO a premium topic lights up light-gold on hover instead of purple
       // (keyed on the destination tier, set by decorateNavBtn → tracks topics.js access).

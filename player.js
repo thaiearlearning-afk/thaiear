@@ -224,13 +224,16 @@
     // deny here wrongly blocked a just-verified member who reopened the app offline. Denial is driven
     // purely by the grace window + real end-date below, so a genuinely lapsed member still expires.
     if (navigator.onLine && subbed) { stampVerified(); return true; }
-    // Offline: must have re-verified within the backstop window (catches mid-period cancellation)
-    // AND the membership's real end date (current_period_end) must not have passed.
+    // Offline (or online-but-not-freshly-confirmed). Trust the membership's REAL end date when we
+    // captured one: a paid member can play offline right through their current period without needing
+    // a recent re-verify — that's correct subscription billing (cancel = access until period end). The
+    // download stamps this end date, so a member who downloads then immediately goes offline keeps
+    // access for the whole period (fixes the "reconnect straight away if you never opened the player"
+    // bug). The short backstop window is only a FALLBACK for when no end date was ever captured.
     var last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);
     var until = parseInt(localStorage.getItem('thaiear_sub_until') || '0', 10);
-    var withinBackstop = !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
-    var membershipActive = !until || Date.now() < until;   // no end date captured → backstop alone
-    return withinBackstop && membershipActive;
+    if (until) return Date.now() < until;
+    return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
   }
 
   function localUri(prefix, file) {
@@ -553,7 +556,7 @@
     /* Colour the link by the PLAYED topic's tier, not the page's. The link sits inside #player-root,
        where a premium PAGE remaps --accent to gold — so member/free destinations are pinned to the
        literal brand purple here to defeat that, and premium destinations to the text-gold. */
-    .now-playing a.np-premium, .now-playing a.np-premium strong { color: #E6C152; }
+    .now-playing a.np-premium, .now-playing a.np-premium strong { color: #B29234; }
     .now-playing a.np-member, .now-playing a.np-member strong { color: #4B41AD; }
     .now-playing a:hover { text-decoration: underline; }
     .now-playing a.np-return { color: #C0392B; font-weight: 600; margin-left: 8px; white-space: nowrap; }
@@ -565,7 +568,7 @@
     .offline-status.offline-ok { color: var(--accent); font-weight: 500; }
     .te-licence-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,40,0.55); display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
     .te-licence-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 360px; width: 100%; padding: 1.9rem 1.6rem; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
-    .te-licence-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--gold-dark, #C8A030); background: var(--gold-light, #FBF5DC); padding: 4px 11px; border-radius: 20px; margin-bottom: 0.9rem; }
+    .te-licence-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: #B29234; background: var(--gold-light, #FBF5DC); padding: 4px 11px; border-radius: 20px; margin-bottom: 0.9rem; }
     .te-licence-card h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.6rem; color: var(--text-primary); }
     .te-licence-card p { color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 0 0 0.5rem; }
     .te-licence-card .te-licence-sub { color: var(--text-tertiary); font-size: 13px; margin-bottom: 1.5rem; }
@@ -608,14 +611,18 @@
     body.premium-topic .prog-ctl-add,
     body.premium-topic .prog-ctl-add:hover:not([disabled]),
     body.premium-topic .repeat-badge { color: #3D2E00; }
-    /* The eyebrow, subheading and the small player TEXT (progress count + links) are gold too — but a
-       hair darker than the #F0CC5C fills (imperceptibly so) for a touch more legibility on the pale
-       page. The eyebrow/subtitle sit OUTSIDE the player, so they need explicit rules anyway. */
+    /* The eyebrow, subheading and the small player TEXT (progress count + links) use the canonical
+       gold-TEXT tone #B29234 (the "Premium" index-pill colour) — readable on the pale page, distinct
+       from the brighter #F0CC5C used for FILLS/graphics. The eyebrow/subtitle sit OUTSIDE the player,
+       so they need explicit rules anyway. See the premium-gold-palette memory for the full standard. */
     body.premium-topic .topic-eyebrow,
     body.premium-topic .topic-subtitle,
     body.premium-topic .prog-ctl-count,
     body.premium-topic .prog-ctl-my,
-    body.premium-topic .prog-ctl-join { color: #E6C152; }
+    body.premium-topic .prog-ctl-join,
+    body.premium-topic .orientation-text a,
+    body.premium-topic .offline-btn,
+    body.premium-topic .offline-status.offline-ok { color: #B29234; }
   `;
 
   /* ---- player markup (transport bar, how-to, controls, list, audio el) ---- */
