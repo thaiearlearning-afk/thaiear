@@ -80,9 +80,6 @@
   /* progress rows + bars */
   .prog-list { display: flex; flex-direction: column; gap: 0.85rem; }
   .prog-row { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.85rem 1rem; }
-  /* Resting accent glow keyed on access tier (gold = premium, indigo = member). Free rows = no glow. */
-  .prog-row.member  { box-shadow: 0 0 12px rgba(75,65,173,0.16); }
-  .prog-row.premium { box-shadow: 0 0 12px rgba(240,204,92,0.30); }
   .prog-row-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 0.55rem; }
   .prog-name-wrap { display: flex; align-items: center; gap: 9px; min-width: 0; flex-wrap: wrap; }
   .prog-name { font-size: 14px; font-weight: 500; }
@@ -302,8 +299,7 @@ function render() {
       lock = '<span class="lock">' + LOCK_SVG + '</span>';
     }
 
-    var rowCls = 'prog-row' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '');
-    return '<div class="' + rowCls + '">' +
+    return '<div class="prog-row">' +
       '<div class="prog-row-top">' +
         '<span class="prog-name-wrap">' +
           '<span class="prog-name"><a href="' + href + '">' + esc(r.name) + '</a></span>' +
