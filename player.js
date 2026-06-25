@@ -435,8 +435,8 @@
     /* Subtle accent GLOW around the player. Keyed on the PAGE's tier (body.premium-topic, set once at
        load), so it stays put even if the player navigates to another topic. Gold = premium page,
        indigo = everything else. Single source — applies to web, mobile and app alike. */
-    .player-card { box-shadow: 0 0 22px rgba(75,65,173,0.22); }
-    body.premium-topic .player-card { box-shadow: 0 0 24px rgba(240,204,92,0.55); }
+    .player-card { box-shadow: 0 0 12px rgba(75,65,173,0.16); }
+    body.premium-topic .player-card { box-shadow: 0 0 12px rgba(240,204,92,0.30); }
     .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
     .audio-toggle { display: flex; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
     .toggle-btn { font-size: 12px; font-family: var(--font-ui); font-weight: 400; color: var(--text-secondary); background: none; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
