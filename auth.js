@@ -82,6 +82,20 @@
 
   // Read the user's own subscription row (RLS) and cache active/not, then re-notify
   // so cards/pages re-render once we know. Logged out → not subscribed.
+  // Write the offline-licence markers read by player.js/nav.js canUseOffline: WHEN we last confirmed
+  // the membership online + its real end date. Mirrors player.js stampVerified but lives here so it
+  // fires on any page the moment auth confirms an active sub — including the index grid download path,
+  // where player.js never loads. (current_period_end may be an ISO string or epoch s/ms.)
+  function stampOfflineLicence() {
+    try {
+      localStorage.setItem('thaiear_lastVerified', String(Date.now()));
+      var end = currentSub && currentSub.current_period_end;
+      if (end != null && end !== '') {
+        var t = (typeof end === 'number') ? (end < 1e12 ? end * 1000 : end) : Date.parse(end);
+        if (t && !isNaN(t)) localStorage.setItem('thaiear_sub_until', String(t));
+      }
+    } catch (_) {}
+  }
   function refreshSubscription() {
     if (!client || !currentUser) {
       currentSubscribed = false; currentSub = null;
@@ -114,6 +128,11 @@
         // Persist the last KNOWN-GOOD subscription (only on a clean read) so the account page can show
         // the real "Premium — active until …" status while OFFLINE (when the live query can't run).
         try { if (res && !res.error) localStorage.setItem('thaiear_sub_cache', JSON.stringify({ uid: currentUser.id, sub: currentSub })); } catch (_) {}
+        // Stamp the offline-licence markers on EVERY page (not just when player.js is loaded) so a
+        // member who downloads from the index grid — without ever opening a topic page — can still play
+        // offline. player.js/nav.js's canUseOffline reads these. Only on a clean ONLINE read of an
+        // active membership; offline failures (catch below) leave the existing stamps intact.
+        if (res && !res.error && currentSubscribed) stampOfflineLicence();
       })
       .catch(function () { /* offline / failed → KEEP the cached seed above; don't blank to not-subscribed */ })
       .then(function () { notify(); refreshLifetime(); });
