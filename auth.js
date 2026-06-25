@@ -59,6 +59,22 @@
     };
   }
 
+  // Read the persisted Supabase session straight from localStorage (key: sb-<ref>-auth-token). Used
+  // as an OFFLINE fallback for init: client.auth.getSession() fires a network token-refresh when the
+  // access token is expired, which hangs ~8s offline before returning. supabase-js@2 stores the
+  // session object directly (older builds wrapped it in { currentSession }).
+  var SB_REF = (SUPABASE_URL.match(/\/\/([^.]+)\./) || [])[1] || '';
+  var SB_STORAGE_KEY = 'sb-' + SB_REF + '-auth-token';
+  function readStoredSession() {
+    try {
+      var raw = localStorage.getItem(SB_STORAGE_KEY);
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      var s = (o && o.currentSession) ? o.currentSession : o;
+      return (s && s.user) ? s : null;
+    } catch (_) { return null; }
+  }
+
   function notify() {
     try { if (window.ThaiEarNav && window.ThaiEarNav.refresh) window.ThaiEarNav.refresh(); } catch (e) {}
     try { window.dispatchEvent(new CustomEvent('thaiear:auth', { detail: currentUser })); } catch (e) {}
@@ -512,10 +528,21 @@
   import(SUPABASE_ESM)
     .then(function (mod) {
       client = mod.createClient(SUPABASE_URL, SUPABASE_KEY);
-      return client.auth.getSession();
+      // getSession() fires a network token-refresh when the access token is expired, which hangs
+      // ~8s offline (and navigator.onLine can't detect that in the WebView). Race it against a short
+      // timer that restores the session from localStorage, so the app becomes ready fast offline.
+      // Any later refresh / sign-in change still propagates via onAuthStateChange below.
+      var gs = client.auth.getSession().then(
+        function (res) { return (res && res.data && res.data.session) || null; },
+        function () { return readStoredSession(); }
+      );
+      var timer = new Promise(function (resolve) {
+        setTimeout(function () { resolve(readStoredSession()); }, OFFLINE_FALLBACK_MS);
+      });
+      return Promise.race([gs, timer]);
     })
-    .then(function (res) {
-      currentSession = (res && res.data && res.data.session) || null;
+    .then(function (session) {
+      currentSession = session || null;
       currentUser = userFromSession(currentSession);
       window.ThaiEarAuth.isReady = true;
       notify();
