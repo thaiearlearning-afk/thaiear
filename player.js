@@ -278,6 +278,9 @@
 
   function downloadTopic() {
     if (!OFFLINE) return;
+    // Gated topic + not entitled → same preview-only gate as play/reveal/flag (premium → "preview
+    // only" toast in-app; member → sign-in), instead of attempting the download and erroring on /api/audio.
+    if (!entitledForPage()) { gate(TIER); return; }
     var files = topicFiles();
     var done = 0;
     downloadingNow = true;
