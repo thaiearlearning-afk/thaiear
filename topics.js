@@ -3,10 +3,9 @@
    ------------------------------------------------------------
    ONE list, consumed by two places:
      • index.html  — renders the topic grid (cards, levels, lock).
-     • every topic page — derives its eyebrow ("<level> · Topic X
-       of N") from this list, so positions and the total update
-       automatically. Add / remove / reorder a topic HERE ONLY —
-       no per-page edits, exactly like nav.js owns the top bar.
+     • every topic page — derives its eyebrow (the difficulty, e.g.
+       "BEGINNER") from this list. Add / remove / reorder a topic HERE
+       ONLY — no per-page edits, exactly like nav.js owns the top bar.
 
    To use on a topic page:
      1. have  <div class="topic-eyebrow" id="topic-eyebrow"></div>
@@ -288,7 +287,7 @@
     liveSequence, pageUnit, nextAccessible
   };
 
-  // ---- topic-page eyebrow: "<level> · Topic X of N", derived from the list ----
+  // ---- topic-page eyebrow: the difficulty (e.g. "BEGINNER"), derived from the list ----
   function currentPage() {
     return (location.pathname.split('/').pop() || 'index.html').toLowerCase();
   }
@@ -297,7 +296,9 @@
     if (!el) return; // not a topic page (e.g. index) — nothing to fill
     const found = findByPage(currentPage());
     if (!found) return; // page not in the list yet — leave the element as-is
-    el.textContent = `${levelText(found.topic.levels)} · Topic ${found.pos} of ${topics.length}`;
+    // Difficulty only (CSS uppercases it, e.g. "BEGINNER"). The "Topic X of Y" counter was
+    // dropped — the position number carried no learner value and just added visual noise.
+    el.textContent = levelText(found.topic.levels);
   }
 
   // ---- prev/next nav: derive each button's lock state from its target's access ----

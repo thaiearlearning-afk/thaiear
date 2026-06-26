@@ -522,8 +522,8 @@
       .gloss-chip { font-size: 11px; padding: 2px 7px; }
       .cultural-note { font-size: 11px; }
       .orientation-text { font-size: 12px; }
-      /* nudge the page eyebrow ("<level> · Topic N of N") up a hair on phones — applies to ALL
-         topic pages (player.js loads on every one) for consistency; overrides their 10px rule. */
+      /* nudge the page eyebrow (the difficulty, e.g. "BEGINNER") up a hair on phones — applies to
+         ALL topic pages (player.js loads on every one) for consistency; overrides their 10px rule. */
       .topic-eyebrow { font-size: 10.5px; }
     }
     @media (max-width: 380px) {
