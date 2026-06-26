@@ -229,6 +229,11 @@
     border-color: var(--accent);
     color: white;
   }
+  /* Per-tier access pills: hover matches the tier palette of the topic cards below (grey for
+     Non-member, gold for Premium) instead of the default purple. Scoped :not(.active) so the
+     selected pill keeps its solid styling. Member + All access stay purple by design. */
+  .filter-tab.tab-free:not(.active):hover { border-color: var(--text-tertiary); color: var(--text-primary); }
+  .filter-tab.tab-premium:not(.active):hover { border-color: var(--gold-dark); color: #B29234; }
 
   /* ── TOPIC GRID ── */
   .topic-grid {
@@ -260,9 +265,11 @@
   .te-eq i:nth-child(3) { animation-delay: 0.15s; }
   .te-eq i:nth-child(4) { animation-delay: 0.45s; }
   @keyframes te-eq-bounce { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+  /* Default hover = the NON-MEMBER (free) tier: neutral grey, matching the grey tier chip.
+     Member + premium cards override this below with their own purple / gold hovers. */
   .topic-card:hover {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-light);
+    border-color: var(--text-tertiary);
+    box-shadow: 0 0 0 3px #F0F0F3;
   }
   .topic-card.coming-soon {
     opacity: 0.48;
@@ -645,9 +652,9 @@
 
   <div class="filter-tabs">
     <button class="filter-tab active" onclick="filterAccess('all', this)">All access</button>
-    <button class="filter-tab" onclick="filterAccess('free', this)">Non-member</button>
+    <button class="filter-tab tab-free" onclick="filterAccess('free', this)">Non-member</button>
     <button class="filter-tab" onclick="filterAccess('member', this)">Free member</button>
-    <button class="filter-tab" onclick="filterAccess('premium', this)">Premium</button>
+    <button class="filter-tab tab-premium" onclick="filterAccess('premium', this)">Premium</button>
   </div>
 
   <!-- App-only batch download/clear (shown by JS when running in the Capacitor app). -->
