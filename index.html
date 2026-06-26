@@ -233,6 +233,7 @@
      Non-member, gold for Premium) instead of the default purple. Scoped :not(.active) so the
      selected pill keeps its solid styling. Member + All access stay purple by design. */
   .filter-tab.tab-free:not(.active):hover { border-color: var(--text-tertiary); color: var(--text-primary); }
+  .filter-tab.tab-member:not(.active):hover { border-color: var(--purple-mid); color: #1C124E; }
   .filter-tab.tab-premium:not(.active):hover { border-color: var(--gold-dark); color: #B29234; }
 
   /* ── TOPIC GRID ── */
@@ -408,7 +409,7 @@
 
   /* ── MEMBER (login-only) CARD — accent (purple), distinct from gold premium ── */
   .topic-card.member:hover {
-    border-color: var(--accent);
+    border-color: var(--purple-mid);
     box-shadow: 0 0 0 3px var(--accent-light);
   }
   .topic-member {
@@ -418,7 +419,7 @@
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.02em;
-    color: var(--accent);
+    color: #1C124E;
     background: var(--accent-light);
     padding: 2px 9px 2px 7px;
     border-radius: 20px;
@@ -426,7 +427,7 @@
   }
   .topic-member svg { width: 11px; height: 11px; }
   /* Entitled view: same soft Beginner-pill palette, no padlock (was a strong solid purple). */
-  .topic-member.unlocked { background: var(--accent-light); color: var(--accent); }
+  .topic-member.unlocked { background: var(--accent-light); color: #1C124E; }
   /* ── NON-MEMBER (free, open) CARD — neutral grey chip, for parity with the tier pills ── */
   .topic-nonmember {
     display: inline-flex;
@@ -653,7 +654,7 @@
   <div class="filter-tabs">
     <button class="filter-tab active" onclick="filterAccess('all', this)">All access</button>
     <button class="filter-tab tab-free" onclick="filterAccess('free', this)">Non-member</button>
-    <button class="filter-tab" onclick="filterAccess('member', this)">Free member</button>
+    <button class="filter-tab tab-member" onclick="filterAccess('member', this)">Free member</button>
     <button class="filter-tab tab-premium" onclick="filterAccess('premium', this)">Premium</button>
   </div>
 
