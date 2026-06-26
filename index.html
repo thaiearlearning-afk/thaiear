@@ -763,11 +763,11 @@ const { topics, liveTopics, levelBadge, matchesFilter, canAccess, accessFor, lev
    per-card level pill + the top level-filter row are hidden (the access filter
    stays). None of that code is deleted — flip these flags (and uncomment the
    level-filter <div> in the markup) to restore the previous per-pill layout. */
-const SHOW_LEVEL_PILLS   = false;   // per-card "Beginner"/"Lower int" badge in renderCard
+const SHOW_LEVEL_PILLS   = false;   // per-card "Beginner"/"Lower intermediate" badge in renderCard
 const GROUP_LIVE_BY_LEVEL = true;   // group live topics under difficulty headings
 
 // Full-text difficulty band label for a topic's levels, e.g. "Beginner" or
-// "Beginner → Lower intermediate" (headings use the full names, not the abbreviations).
+// "Beginner → Lower intermediate" (labels are always spelled out in full, never abbreviated).
 function bandHeading(levels) {
   const [floor, ceiling] = levelBounds(levels);
   return floor === ceiling ? LEVEL_FULL[floor] : `${LEVEL_FULL[floor]} → ${LEVEL_FULL[ceiling]}`;

@@ -20,7 +20,7 @@
    level present (floor) to its highest (ceiling).
      Level order: beg < li1 < li2 < adv   (adv = Advanced: tertiary / niche)
      - floor == ceiling -> single label   e.g. "Beginner"
-     - floor != ceiling -> range          e.g. "Beginner -> Lower int"
+     - floor != ceiling -> range          e.g. "Beginner -> Lower intermediate"
                                                 "Intermediate -> Advanced"
    NEVER collapse a two-level topic to "Mixed levels" — "Mixed" is the
    label that erased the intermediate tier. The eyebrow on each topic
@@ -140,13 +140,15 @@
   const LEVEL_ORDER = ['beg', 'li1', 'li2', 'adv'];
   const LEVEL_CLASS = { beg: 'badge-beg', li1: 'badge-li1', li2: 'badge-li2', adv: 'badge-adv' };
   const LEVEL_FULL  = { beg: 'Beginner', li1: 'Lower intermediate', li2: 'Intermediate', adv: 'Advanced' };
-  const LEVEL_SHORT = { beg: 'Beginner', li1: 'Lower int', li2: 'Intermediate', adv: 'Advanced' };
+  // User-facing labels are NEVER abbreviated — "Lower int" is internal shorthand only. LEVEL_SHORT
+  // therefore matches LEVEL_FULL (kept as a separate export for back-compat / future tweaks).
+  const LEVEL_SHORT = { beg: 'Beginner', li1: 'Lower intermediate', li2: 'Intermediate', adv: 'Advanced' };
 
   function levelBounds(levels) {
     const present = LEVEL_ORDER.filter(l => levels.includes(l));
     return [present[0], present[present.length - 1]]; // [floor, ceiling]
   }
-  // Plain text of the level label, e.g. "Beginner" or "Beginner → Lower int".
+  // Plain text of the level label, e.g. "Beginner" or "Beginner → Lower intermediate".
   // Both the index badge AND the topic-page eyebrow use this — so they always match.
   function levelText(levels) {
     const [floor, ceiling] = levelBounds(levels);
