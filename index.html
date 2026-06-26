@@ -54,13 +54,13 @@
     --text-primary: #1A1A1A;
     --text-secondary: #5A5A5A;
     --text-tertiary: #9A9A9A;
-    --accent: #6A37A0;
-    --accent-mid: #8350BE;
-    --accent-light: #F2EAF8;
+    --accent: #4B41AD;
+    --accent-mid: #534AB7;
+    --accent-light: #EEEDFE;
     --gold: #F0CC5C;
     --gold-dark: #C8A030;
     --gold-light: #FBF5DC;
-    --purple-mid: #9E6FCE;
+    --purple-mid: #7F77DD;
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 14px;
@@ -95,7 +95,7 @@
 
   /* ── HERO ── */
   .hero {
-    background: #6A37A0;
+    background: #4B41AD;
     overflow: hidden;
     text-align: center;
   }
@@ -233,7 +233,6 @@
      Non-member, gold for Premium) instead of the default purple. Scoped :not(.active) so the
      selected pill keeps its solid styling. Member + All access stay purple by design. */
   .filter-tab.tab-free:not(.active):hover { border-color: var(--text-tertiary); color: var(--text-primary); }
-  .filter-tab.tab-member:not(.active):hover { border-color: var(--purple-mid); color: var(--accent); }
   .filter-tab.tab-premium:not(.active):hover { border-color: var(--gold-dark); color: #B29234; }
 
   /* ── TOPIC GRID ── */
@@ -313,7 +312,7 @@
     font-size: 18px;
     font-weight: 600;
     letter-spacing: -0.01em;
-    color: #3B1E63;
+    color: #1C124E;
     margin: 2.25rem 0 0.9rem;
     padding-top: 1.6rem;
     border-top: 0.5px solid var(--border);
@@ -343,8 +342,8 @@
     color: #B87A00;
   }
   .badge-li2 {
-    background: #F2EAF8;
-    color: #6A45A8;
+    background: #F0EFFD;
+    color: #534AB7;
   }
   /* Advanced (tertiary / niche) — deep crimson, distinct from the cooler lower tiers. */
   .badge-adv {
@@ -409,7 +408,7 @@
 
   /* ── MEMBER (login-only) CARD — accent (purple), distinct from gold premium ── */
   .topic-card.member:hover {
-    border-color: var(--purple-mid);
+    border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-light);
   }
   .topic-member {
@@ -654,7 +653,7 @@
   <div class="filter-tabs">
     <button class="filter-tab active" onclick="filterAccess('all', this)">All access</button>
     <button class="filter-tab tab-free" onclick="filterAccess('free', this)">Non-member</button>
-    <button class="filter-tab tab-member" onclick="filterAccess('member', this)">Free member</button>
+    <button class="filter-tab" onclick="filterAccess('member', this)">Free member</button>
     <button class="filter-tab tab-premium" onclick="filterAccess('premium', this)">Premium</button>
   </div>
 
