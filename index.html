@@ -54,13 +54,13 @@
     --text-primary: #1A1A1A;
     --text-secondary: #5A5A5A;
     --text-tertiary: #9A9A9A;
-    --accent: #4B41AD;
-    --accent-mid: #534AB7;
-    --accent-light: #EEEDFE;
+    --accent: #6A37A0;
+    --accent-mid: #8350BE;
+    --accent-light: #F2EAF8;
     --gold: #F0CC5C;
     --gold-dark: #C8A030;
     --gold-light: #FBF5DC;
-    --purple-mid: #7F77DD;
+    --purple-mid: #9E6FCE;
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 14px;
@@ -95,7 +95,7 @@
 
   /* ── HERO ── */
   .hero {
-    background: #4B41AD;
+    background: #6A37A0;
     overflow: hidden;
     text-align: center;
   }
@@ -233,7 +233,7 @@
      Non-member, gold for Premium) instead of the default purple. Scoped :not(.active) so the
      selected pill keeps its solid styling. Member + All access stay purple by design. */
   .filter-tab.tab-free:not(.active):hover { border-color: var(--text-tertiary); color: var(--text-primary); }
-  .filter-tab.tab-member:not(.active):hover { border-color: var(--purple-mid); color: #1C124E; }
+  .filter-tab.tab-member:not(.active):hover { border-color: var(--purple-mid); color: var(--accent); }
   .filter-tab.tab-premium:not(.active):hover { border-color: var(--gold-dark); color: #B29234; }
 
   /* ── TOPIC GRID ── */
@@ -313,7 +313,7 @@
     font-size: 18px;
     font-weight: 600;
     letter-spacing: -0.01em;
-    color: #1C124E;
+    color: #3B1E63;
     margin: 2.25rem 0 0.9rem;
     padding-top: 1.6rem;
     border-top: 0.5px solid var(--border);
@@ -343,8 +343,8 @@
     color: #B87A00;
   }
   .badge-li2 {
-    background: #F0EFFD;
-    color: #534AB7;
+    background: #F2EAF8;
+    color: #6A45A8;
   }
   /* Advanced (tertiary / niche) — deep crimson, distinct from the cooler lower tiers. */
   .badge-adv {
@@ -419,7 +419,7 @@
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.02em;
-    color: #1C124E;
+    color: var(--accent);
     background: var(--accent-light);
     padding: 2px 9px 2px 7px;
     border-radius: 20px;
@@ -427,7 +427,7 @@
   }
   .topic-member svg { width: 11px; height: 11px; }
   /* Entitled view: same soft Beginner-pill palette, no padlock (was a strong solid purple). */
-  .topic-member.unlocked { background: var(--accent-light); color: #1C124E; }
+  .topic-member.unlocked { background: var(--accent-light); color: var(--accent); }
   /* ── NON-MEMBER (free, open) CARD — neutral grey chip, for parity with the tier pills ── */
   .topic-nonmember {
     display: inline-flex;
