@@ -19,9 +19,10 @@
    topic ramps its own sentences Beginner -> LI1 -> LI2, and most
    span two levels. So a topic's label shows a RANGE from its lowest
    level present (floor) to its highest (ceiling).
-     Level order: beg < li1 < li2
+     Level order: beg < li1 < li2 < adv   (adv = Advanced: tertiary / niche)
      - floor == ceiling -> single label   e.g. "Beginner"
      - floor != ceiling -> range          e.g. "Beginner -> Lower int"
+                                                "Intermediate -> Advanced"
    NEVER collapse a two-level topic to "Mixed levels" — "Mixed" is the
    label that erased the intermediate tier. The eyebrow on each topic
    page uses this SAME text, so page and index card always agree.
@@ -123,7 +124,7 @@
     { id: 33, name: "Ceremonies & rites of passage", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 34, name: "Thai culture & customs", levels: ["li1","li2"], access: "premium", parts: [
         { sentences: 22, access: "member" }, { sentences: 28 } ] },
-    { id: 35, name: "Buddhism", levels: ["li1","li2"], access: "premium", parts: [
+    { id: 35, name: "Buddhism", levels: ["li2","adv"], access: "premium", parts: [
         { name: "Buddhism 1", sentences: 38, page: "topic-35a.html", access: "member", audio: "Buddhism_LI1" },
         { name: "Buddhism 2", sentences: 42, page: "topic-35b.html", audio: "Dhamma_LI2" },
         { name: "Buddhism 3", sentences: 30, page: "topic-35c.html", audio: "Monastic_LI2" } ] },
@@ -135,10 +136,12 @@
   const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 6: 'topic-06.html', 7: 'topic-07.html', 8: 'topic-08.html', 10: 'topic-10.html', 11: 'topic-11.html', 15: 'topic-15.html', 16: 'topic-16.html', 37: 'topic-37.html', 38: 'topic-38.html', 39: 'topic-39.html', 40: 'topic-40.html' };
 
   // Level order + labels. Difficulty is a RANGE: a topic's label shows floor -> ceiling.
-  const LEVEL_ORDER = ['beg', 'li1', 'li2'];
-  const LEVEL_CLASS = { beg: 'badge-beg', li1: 'badge-li1', li2: 'badge-li2' };
-  const LEVEL_FULL  = { beg: 'Beginner', li1: 'Lower intermediate', li2: 'Intermediate' };
-  const LEVEL_SHORT = { beg: 'Beginner', li1: 'Lower int', li2: 'Intermediate' };
+  // `adv` (Advanced) is the tertiary tier — niche / highly specialised topics whose
+  // sentences are a genuine step up (e.g. Buddhism). Added after li2.
+  const LEVEL_ORDER = ['beg', 'li1', 'li2', 'adv'];
+  const LEVEL_CLASS = { beg: 'badge-beg', li1: 'badge-li1', li2: 'badge-li2', adv: 'badge-adv' };
+  const LEVEL_FULL  = { beg: 'Beginner', li1: 'Lower intermediate', li2: 'Intermediate', adv: 'Advanced' };
+  const LEVEL_SHORT = { beg: 'Beginner', li1: 'Lower int', li2: 'Intermediate', adv: 'Advanced' };
 
   function levelBounds(levels) {
     const present = LEVEL_ORDER.filter(l => levels.includes(l));
