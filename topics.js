@@ -108,7 +108,9 @@
     { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Food culture & eating out 1", sentences: 29, page: "topic-22a.html", access: "member", audio: "FoodSocial_LI1" },
         { name: "Food culture & eating out 2", sentences: 22, page: "topic-22b.html", audio: "FoodCulture_LI2" } ] },
-    { id: 23, name: "Nature, environment & conservation", levels: ["li1","li2"], sentences: 30, access: "premium" },
+    { id: 23, name: "Nature, environment & conservation", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Nature, environment & conservation 1", sentences: 30, page: "topic-23a.html", access: "member", audio: "Nature_LI1" },
+        { name: "Nature, environment & conservation 2", sentences: 34, page: "topic-23b.html", audio: "Nature_LI2" } ] },
     { id: 24, name: "Technology & communication", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 25, name: "Media & entertainment", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 26, name: "Sport & exercise", levels: ["li1","li2"], access: "premium", parts: [
