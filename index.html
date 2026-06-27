@@ -299,6 +299,31 @@
     padding-top: 1.5rem;
     border-top: 0.5px solid var(--border);
   }
+  /* Not-yet-built topics render as ONE compact multi-column list (not faded cards): far less
+     vertical space, and it reads as a quiet "what's planned" footnote rather than a wall of
+     placeholders. One line PER TOPIC — a future a/b split only surfaces at build time. */
+  .soon-block { grid-column: 1 / -1; }
+  .soon-block .coming-soon-heading { margin-bottom: 0.7rem; }
+  .soon-items {
+    list-style: none;
+    columns: 3;
+    column-gap: 34px;
+    margin: 0;
+  }
+  .soon-items li {
+    break-inside: avoid;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 13.5px;
+    line-height: 1.3;
+    color: var(--text-secondary);
+  }
+  .soon-lk { display: inline-flex; flex-shrink: 0; opacity: 0.7; }
+  .soon-lk svg { width: 12px; height: 12px; }
+  .soon-lk.premium { color: #B29234; }
+  .soon-lk.member  { color: var(--accent); }
   .grid-msg {
     grid-column: 1 / -1;
     color: var(--text-tertiary);
@@ -527,6 +552,7 @@
     .topic-grid {
       grid-template-columns: repeat(2, 1fr);
     }
+    .soon-items { columns: 2; }
     .hero-thai { font-size: 36px; }
     .hero-stats { gap: 2.5rem; }
   }
@@ -536,7 +562,8 @@
     .topic-grid {
       grid-template-columns: 1fr;
     }
-    
+    .soon-items { columns: 1; }
+
     
     
     .hero-inner { padding: 2.5rem 1.25rem 0; }
@@ -723,20 +750,25 @@
       <a class="topic-card member" href="topic-35a.html" data-audio="Buddhism_LI1"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-member"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Members</span></div><div class="topic-name">Buddhism 1</div><div class="topic-meta-row"><span class="topic-sent-count">38 sentences</span></div></a>
       <a class="topic-card premium" href="topic-35b.html" data-audio="Dhamma_LI2"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Buddhism 2</div><div class="topic-meta-row"><span class="topic-sent-count">42 sentences</span></div></a>
       <a class="topic-card premium" href="topic-35c.html" data-audio="Monastic_LI2"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Buddhism 3</div><div class="topic-meta-row"><span class="topic-sent-count">30 sentences</span></div></a>
-    <h2 class="coming-soon-heading">Coming soon</h2>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Nature, environment & conservation</div><div class="topic-meta-row"><span class="topic-sent-count">30 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Technology & communication</div><div class="topic-meta-row"><span class="topic-sent-count">25 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Media & entertainment</div><div class="topic-meta-row"><span class="topic-sent-count">25 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Travel & tourism</div><div class="topic-meta-row"><span class="topic-sent-count">30 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Banking & finance</div><div class="topic-meta-row"><span class="topic-sent-count">25 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Community & society</div><div class="topic-meta-row"><span class="topic-sent-count">25 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Agriculture & rural life</div><div class="topic-meta-row"><span class="topic-sent-count">25 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Crime, law & justice</div><div class="topic-meta-row"><span class="topic-sent-count">25 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Thai geography & regions</div><div class="topic-meta-row"><span class="topic-sent-count">25 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Ceremonies & rites of passage</div><div class="topic-meta-row"><span class="topic-sent-count">25 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-member"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Members</span></div><div class="topic-name">Thai culture & customs</div><div class="topic-meta-row"><span class="topic-sent-count">22 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Thai culture & customs</div><div class="topic-meta-row"><span class="topic-sent-count">28 sentences</span></div></div>
-      <div class="topic-card coming-soon"><span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div class="topic-card-top"><span class="topic-premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Premium</span></div><div class="topic-name">Romantic relationships & dating</div><div class="topic-meta-row"><span class="topic-sent-count">25 sentences</span></div></div>
+    <div class="soon-block">
+      <h2 class="coming-soon-heading">Coming soon</h2>
+      <ul class="soon-items">
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Nature, environment & conservation</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Technology & communication</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Media & entertainment</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Travel & tourism</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Banking & finance</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Community & society</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Agriculture & rural life</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Crime, law & justice</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Thai geography & regions</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Ceremonies & rites of passage</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Thai culture & customs</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Romantic relationships & dating</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Muay Thai</span></li>
+        <li><span class="soon-lk premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>Humour</span></li>
+      </ul>
+    </div>
   </div>
 </section>
 
@@ -1104,6 +1136,22 @@ function cardsForTopic(t, pos) {
   return renderCard(t, p, t.sentences, accessFor(t, null), liveTopics[t.id] || null, t.audio);
 }
 
+// Not-yet-built topics render as ONE compact list, not faded cards — far less vertical space.
+// One <li> PER TOPIC regardless of any future a/b parts (the split only surfaces at build time),
+// so a multi-part coming-soon topic shows once by its base name. The padlock = the topic's
+// headline access tier (gold premium / purple member); free → no icon.
+function soonItem(t) {
+  const access = accessFor(t, null);
+  const lk = access === 'premium' ? `<span class="soon-lk premium">${LOCK_SVG}</span>`
+           : access === 'member'  ? `<span class="soon-lk member">${LOCK_SVG}</span>`
+           : '';
+  return `<li>${lk}<span>${t.name}</span></li>`;
+}
+function soonList(soon) {
+  return '<div class="soon-block"><h2 class="coming-soon-heading">Coming soon</h2>'
+       + '<ul class="soon-items">' + soon.map(o => soonItem(o.t)).join('') + '</ul></div>';
+}
+
 // Two independent filter dimensions that combine (AND): level + access tier.
 let activeFilter = 'all';   // level: all | beg | li1 | li2
 let activeAccess = 'all';   // tier:  all | free (non-member) | member | premium
@@ -1173,9 +1221,7 @@ function renderGrid() {
     liveCards = liveList.map(o => cardsForTopic(o.t, o.pos)).join('');
   }
 
-  const soonCards = soon.length
-    ? '<h2 class="coming-soon-heading">Coming soon</h2>' + soon.map(o => cardsForTopic(o.t, o.pos)).join('')
-    : '';
+  const soonCards = soon.length ? soonList(soon) : '';
   grid.innerHTML = liveCards + soonCards;
   if (typeof applyPlayingCard === 'function') applyPlayingCard(); // re-light the playing card after rebuild
 }

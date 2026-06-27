@@ -129,6 +129,11 @@
         { name: "Buddhism 3", sentences: 30, page: "topic-35c.html", audio: "Monastic_LI2" } ] },
     { id: 36, name: "Romantic relationships & dating", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 19, access: "premium", audio: "ToneTwister_LI1" },
+    // ── parked ideas promoted to "coming soon" (TOPIC_IDEAS.md). Not yet built / scoped, so no
+    //    sentence count yet; shown as a SINGLE list entry — any future a/b split only surfaces at
+    //    build time. Fresh frozen IDs, appended (no renumber).
+    { id: 43, name: "Muay Thai", levels: ["li1","li2"], access: "premium" },
+    { id: 44, name: "Humour", levels: ["beg","li1"], access: "premium" },
   ];
 
   // Keyed by FROZEN id (never display position). Add entries as topics go live.
