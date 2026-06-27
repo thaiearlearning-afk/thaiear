@@ -173,7 +173,7 @@
     if (!window.caches || !navigator.onLine) return;
     try {
       caches.open(DL_PAGE_CACHE).then(function (c) {
-        [location.href, '/player.js', '/topics.js', '/nav.js', '/auth.js', '/footer.js'].forEach(function (u) {
+        [location.href, '/player.js', '/topics.js', '/nav.js', '/auth.js', '/footer.js', '/audio-versions.json'].forEach(function (u) {
           c.add(u).catch(function () {});
         });
       }).catch(function () {});
@@ -193,17 +193,18 @@
   function getManifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
   function setManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
   function isDownloaded(prefix) { return !!getManifest()[prefix]; }
-  function markDownloaded(prefix, tier, files, ver) { var m = getManifest(); m[prefix] = { tier: tier || 'free', files: files, at: Date.now(), ver: ver || '' }; setManifest(m); }
+  // av: '' = no stamp for this topic yet · 'x' = a real stamp · null = couldn't read the map at
+  // download (kept null, NOT '', so a later successful load adopts the real stamp instead of false-flagging).
+  function markDownloaded(prefix, tier, files, ver, av) { var m = getManifest(); m[prefix] = { tier: tier || 'free', files: files, at: Date.now(), ver: ver || '', av: (av == null ? null : av) }; setManifest(m); }
   function removeDownloaded(prefix) { var m = getManifest(); delete m[prefix]; setManifest(m); }
   function downloadedTier(prefix) { var e = getManifest()[prefix]; return e ? e.tier : null; }
 
-  // Content fingerprint of the CURRENT page's sentences (num + thai + english — the fields that
-  // drive the audio: the TH clips and the spoken-both TE/ET combined files; adds/removes change the
-  // num set, edits change the text). Stored in the manifest at download time; on each online open we
-  // recompute and compare, so a topic whose content was regenerated online is flagged stale and the
-  // user can re-download instead of silently playing the old audio under the refreshed page text.
-  // (voice routing isn't carried in the page data, so a pure male/female swap with identical text
-  // isn't caught — that's a rare edge.) cyrb53 — fast, dependency-free, plenty for change-detection.
+  // Content fingerprint of the CURRENT page's sentences (num + thai + english). This is the
+  // can't-drift backstop: the text lives in the page, which self-heals online, so any change to the
+  // sentences is caught even if audio-versions.json is ever missed. It does NOT see a pure audio
+  // re-render with unchanged text (e.g. an English TE/ET fix, or a voice swap) — that's what the
+  // audio stamp (loadAudioVers/currentAv) covers. Stored in the manifest at download time and
+  // compared on each open. cyrb53 — fast, dependency-free, plenty for change-detection.
   function contentHash() {
     var str = sentences.map(function (x) {
       return [x.num, x.thai || '', x.english || ''].join('');
@@ -218,6 +219,23 @@
     h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
   }
+
+  // audio-versions.json (written by generate_topic_audio.py, keyed by {Short}_{Level}) fingerprints
+  // each topic's COMBINED audio. It catches the one thing contentHash can't: a pure audio re-render
+  // with unchanged page text (e.g. fixing the English TE/ET clips). Fetched once per page; SW-caches
+  // network-first and cachePage() persists it in 'thaiear-dl', so a downloaded topic still resolves
+  // it offline. Any failure → null, which makes currentAv() return null and the audio-staleness check
+  // is skipped (never a false positive offline). The text hash remains the can't-drift backstop.
+  var _audioVers;   // undefined = not loaded yet · object = loaded · null = load failed
+  function loadAudioVers() {
+    if (_audioVers !== undefined) return Promise.resolve(_audioVers);
+    return fetch('/audio-versions.json')
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (m) { _audioVers = (m && typeof m === 'object') ? m : {}; return _audioVers; })
+      .catch(function () { _audioVers = null; return null; });
+  }
+  // '' = loaded but no stamp for this topic yet · null = map unavailable (→ skip the audio check).
+  function currentAv() { return _audioVers ? (_audioVers[PREFIX] || '') : null; }
 
   function parseExpiry(v) {
     if (!v) return 0;
@@ -329,8 +347,9 @@
         });
         return chain;
       })
+      .then(function () { return loadAudioVers(); })   // capture the audio stamp as the download's baseline
       .then(function () {
-        markDownloaded(PREFIX, TIER || 'free', files, contentHash());
+        markDownloaded(PREFIX, TIER || 'free', files, contentHash(), currentAv());
         stampVerified();                      // they were online + entitled at download time
         cachePage();                          // persist the page so it opens offline (survives SW updates)
         downloadingNow = false;
@@ -399,18 +418,25 @@
     if (!OFFLINE) { bar.style.display = 'none'; return; }  // website / non-app: never shown
     bar.style.display = 'flex';
     var ent = getManifest()[PREFIX];
-    if (ent) {
-      cachePage();   // self-heal: re-persist the page whenever we open a downloaded topic online
-      var cur = contentHash();
-      if (!ent.ver) {
-        // Download made before content-versioning shipped: adopt the current hash rather than
-        // false-flag it stale. (Only affects pre-feature downloads; new ones always carry a ver.)
-        ent.ver = cur; var m = getManifest(); m[PREFIX] = ent; setManifest(m);
-      } else if (ent.ver !== cur) {
-        setOfflineState('stale'); return;
-      }
-    }
-    setOfflineState(ent ? 'downloaded' : 'idle');
+    if (!ent) { setOfflineState('idle'); return; }
+    cachePage();                       // self-heal: re-persist the page whenever we open a downloaded topic online
+    setOfflineState('downloaded');     // show immediately; the checks below can upgrade it to 'stale'
+    var curHash = contentHash();
+    // TEXT check — synchronous and offline-safe (the text is in the page itself, which self-heals
+    // online). Catches any change that alters the sentences. Skipped for pre-feature downloads (no ver).
+    if (ent.ver && ent.ver !== curHash) { setOfflineState('stale'); return; }
+    // AUDIO check — needs the versions map; do it async so the bar never waits on the fetch. Catches a
+    // pure audio re-render with unchanged text. Adopts a baseline for downloads that predate either
+    // mechanism rather than false-flag; only compares when both stamps are actually known.
+    loadAudioVers().then(function () {
+      var m = getManifest(), e = m[PREFIX]; if (!e) return;
+      var av = currentAv();            // string, or null if the map couldn't be loaded
+      var changed = false;
+      if (!e.ver) { e.ver = curHash; changed = true; }                 // adopt text baseline
+      if (e.av == null && av != null) { e.av = av; changed = true; }   // adopt/backfill audio baseline
+      if (changed) { m[PREFIX] = e; setManifest(m); return; }          // just established a baseline → no nag
+      if (av != null && e.av != null && av !== e.av) setOfflineState('stale');
+    });
   }
   // In-page message shown when a downloaded premium topic is played offline after the licence
   // window has lapsed — friendly, no navigation (the SW would otherwise show the offline page).
