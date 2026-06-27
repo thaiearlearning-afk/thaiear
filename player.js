@@ -193,9 +193,31 @@
   function getManifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
   function setManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
   function isDownloaded(prefix) { return !!getManifest()[prefix]; }
-  function markDownloaded(prefix, tier, files) { var m = getManifest(); m[prefix] = { tier: tier || 'free', files: files, at: Date.now() }; setManifest(m); }
+  function markDownloaded(prefix, tier, files, ver) { var m = getManifest(); m[prefix] = { tier: tier || 'free', files: files, at: Date.now(), ver: ver || '' }; setManifest(m); }
   function removeDownloaded(prefix) { var m = getManifest(); delete m[prefix]; setManifest(m); }
   function downloadedTier(prefix) { var e = getManifest()[prefix]; return e ? e.tier : null; }
+
+  // Content fingerprint of the CURRENT page's sentences (num + thai + english — the fields that
+  // drive the audio: the TH clips and the spoken-both TE/ET combined files; adds/removes change the
+  // num set, edits change the text). Stored in the manifest at download time; on each online open we
+  // recompute and compare, so a topic whose content was regenerated online is flagged stale and the
+  // user can re-download instead of silently playing the old audio under the refreshed page text.
+  // (voice routing isn't carried in the page data, so a pure male/female swap with identical text
+  // isn't caught — that's a rare edge.) cyrb53 — fast, dependency-free, plenty for change-detection.
+  function contentHash() {
+    var str = sentences.map(function (x) {
+      return [x.num, x.thai || '', x.english || ''].join('');
+    }).join('');
+    var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (var i = 0, ch; i < str.length; i++) {
+      ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
 
   function parseExpiry(v) {
     if (!v) return 0;
@@ -308,7 +330,7 @@
         return chain;
       })
       .then(function () {
-        markDownloaded(PREFIX, TIER || 'free', files);
+        markDownloaded(PREFIX, TIER || 'free', files, contentHash());
         stampVerified();                      // they were online + entitled at download time
         cachePage();                          // persist the page so it opens offline (survives SW updates)
         downloadingNow = false;
@@ -329,6 +351,14 @@
       '<button class="offline-btn" onclick="cancelDelete()">Keep</button>';
   }
   function cancelDelete() { setOfflineState('downloaded'); }
+  // Re-download after the content was regenerated online: wipe the stale folder (so files for any
+  // removed sentences don't linger) then re-run the normal download, which re-stamps the new hash.
+  function refreshTopic() {
+    if (!OFFLINE || !navigator.onLine) return;
+    Filesystem.rmdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
+      .catch(function () {})
+      .then(function () { removeDownloaded(PREFIX); downloadTopic(); });
+  }
   function deleteTopic() {
     if (!OFFLINE) return;
     Filesystem.rmdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
@@ -342,6 +372,18 @@
     } else if (state === 'downloaded') {
       bar.innerHTML = '<span class="offline-status offline-ok">✓ Available offline</span>' +
         '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
+    } else if (state === 'stale') {
+      // Content was regenerated online since this topic was downloaded (page text refreshed via the
+      // self-heal, but the stored audio didn't). Don't block playback — old audio beats nothing
+      // offline — just warn, and offer a re-download when there's a connection to fetch it.
+      if (navigator.onLine) {
+        bar.innerHTML = '<span class="offline-status">⟳ Updated content available</span>' +
+          '<button class="offline-btn" onclick="refreshTopic()">Re-download</button>' +
+          '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
+      } else {
+        bar.innerHTML = '<span class="offline-status">⚠ This download may be out of date — reconnect to update</span>' +
+          '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
+      }
     } else if (state === 'error') {
       var msg = done ? (': ' + escapeHtml(String(done).slice(0, 160))) : '.';
       bar.innerHTML = '<span class="offline-status">Download failed' + msg + '</span>' +
@@ -356,9 +398,19 @@
     var bar = $('offline-bar'); if (!bar) return;
     if (!OFFLINE) { bar.style.display = 'none'; return; }  // website / non-app: never shown
     bar.style.display = 'flex';
-    var dl = isDownloaded(PREFIX);
-    if (dl) cachePage();   // self-heal: re-persist the page whenever we open a downloaded topic online
-    setOfflineState(dl ? 'downloaded' : 'idle');
+    var ent = getManifest()[PREFIX];
+    if (ent) {
+      cachePage();   // self-heal: re-persist the page whenever we open a downloaded topic online
+      var cur = contentHash();
+      if (!ent.ver) {
+        // Download made before content-versioning shipped: adopt the current hash rather than
+        // false-flag it stale. (Only affects pre-feature downloads; new ones always carry a ver.)
+        ent.ver = cur; var m = getManifest(); m[PREFIX] = ent; setManifest(m);
+      } else if (ent.ver !== cur) {
+        setOfflineState('stale'); return;
+      }
+    }
+    setOfflineState(ent ? 'downloaded' : 'idle');
   }
   // In-page message shown when a downloaded premium topic is played offline after the licence
   // window has lapsed — friendly, no navigation (the SW would otherwise show the offline page).
@@ -1460,7 +1512,7 @@
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow,
     progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn,
     advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat,
-    downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete });
+    downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete, refreshTopic: refreshTopic });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
