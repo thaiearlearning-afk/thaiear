@@ -134,7 +134,11 @@
         { name: "Buddhism 3", sentences: 19, page: "topic-35c.html", audio: "Dhamma_LI2" },
         { name: "Buddhism 4", sentences: 23, page: "topic-35d.html", audio: "Meditation_LI2" },
         { name: "Buddhism 5", sentences: 30, page: "topic-35e.html", audio: "Monastic_LI2" } ] },
-    { id: 36, name: "Romantic relationships & dating", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 36, name: "Romantic relationships & dating", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Romantic relationships & dating 1", sentences: 22, page: "topic-36a.html", access: "member", audio: "Romance_LI1" },
+        { name: "Romantic relationships & dating 2", sentences: 26, page: "topic-36b.html", audio: "Romance2_LI1" },
+        { name: "Romantic relationships & dating 3", sentences: 25, page: "topic-36c.html", audio: "Romance3_LI1" },
+        { name: "Romantic relationships & dating 4", sentences: 28, page: "topic-36d.html", audio: "Romance4_LI1" } ] },
     { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 19, access: "premium", audio: "ToneTwister_LI1" },
     // ── parked ideas promoted to "coming soon" (TOPIC_IDEAS.md). Not yet built / scoped, so no
     //    sentence count yet; shown as a SINGLE list entry — any future a/b split only surfaces at
