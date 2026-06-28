@@ -324,6 +324,38 @@
     return buildUrl(file);
   }
 
+  // A native downloadFile has no built-in deadline, so a stalled connection (slow network, or
+  // contention from playing audio mid-download) would hang the whole sequential chain forever with
+  // no error and no recovery. Cap each file with the native connect/read timeouts — Capacitor aborts
+  // and rejects cleanly, so a retry to the SAME path is safe (no two concurrent writers) — plus a
+  // generous app-level race as a backstop in case the native timeout is ever a no-op, and retry a few
+  // times with a short backoff before failing the whole download. buildUrl() is re-minted per attempt
+  // so an expired signed URL (or a transient /api/audio blip) also recovers.
+  var DL_CONNECT_TIMEOUT_MS = 15000;
+  var DL_READ_TIMEOUT_MS = 20000;
+  var DL_RACE_TIMEOUT_MS = 45000;   // backstop, set > the native timeouts so the clean native abort wins
+  var DL_MAX_TRIES = 3;
+  function downloadFileWithRetry(file) {
+    var dest = offlineDir(PREFIX) + '/' + file;
+    function attempt(tryNo) {
+      return buildUrl(file, GATED).then(function (url) {
+        var dl = Filesystem.downloadFile({
+          url: url, path: dest, directory: 'DATA', recursive: true,
+          connectTimeout: DL_CONNECT_TIMEOUT_MS, readTimeout: DL_READ_TIMEOUT_MS
+        });
+        var backstop = new Promise(function (_, reject) {
+          setTimeout(function () { reject(new Error('download timed out: ' + file)); }, DL_RACE_TIMEOUT_MS);
+        });
+        return Promise.race([dl, backstop]);
+      }).catch(function (err) {
+        if (tryNo >= DL_MAX_TRIES) throw err;
+        console.warn('player.js: download retry ' + (tryNo + 1) + '/' + DL_MAX_TRIES + ' for ' + file, err);
+        return new Promise(function (r) { setTimeout(r, 600 * tryNo); }).then(function () { return attempt(tryNo + 1); });
+      });
+    }
+    return attempt(1);
+  }
+
   function downloadTopic() {
     if (!OFFLINE) return;
     // Gated topic + not entitled → same preview-only gate as play/reveal/flag (premium → "preview
@@ -340,9 +372,7 @@
         var chain = Promise.resolve();
         files.forEach(function (file) {
           chain = chain.then(function () {
-            return buildUrl(file, GATED).then(function (url) {
-              return Filesystem.downloadFile({ url: url, path: offlineDir(PREFIX) + '/' + file, directory: 'DATA', recursive: true });
-            }).then(function () { done++; setOfflineState('downloading', done, files.length); });
+            return downloadFileWithRetry(file).then(function () { done++; setOfflineState('downloading', done, files.length); });
           });
         });
         return chain;
