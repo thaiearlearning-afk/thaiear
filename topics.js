@@ -116,7 +116,10 @@
     { id: 26, name: "Sport & exercise", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Sport & exercise 1", sentences: 24, page: "topic-26a.html", access: "member", audio: "Sport_LI1" },
         { name: "Sport & exercise 2", sentences: 28, page: "topic-26b.html", audio: "Sport_LI2" } ] },
-    { id: 27, name: "Travel & tourism", levels: ["li1","li2"], sentences: 30, access: "premium" },
+    { id: 27, name: "Travel & tourism", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Travel & tourism 1", sentences: 25, page: "topic-27a.html", audio: "Travel_LI1" },
+        { name: "Travel & tourism 2", sentences: 27, page: "topic-27b.html", audio: "Travel2_LI1" },
+        { name: "Travel & tourism 3", sentences: 26, page: "topic-27c.html", audio: "Travel_LI2" } ] },
     { id: 28, name: "Banking & finance", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 29, name: "Community & society", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 30, name: "Agriculture & rural life", levels: ["li1","li2"], sentences: 25, access: "premium" },
