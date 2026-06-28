@@ -104,6 +104,20 @@
   .divider { height: 1px; background: var(--border); border: 0; margin: 2.25rem 0; }
   .stores-lead { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.75rem; }
 
+  /* Offline-downloads beta toggle — only shown in the installed home-screen PWA (see the script at
+     the foot of the page). Lets a home-screen install enable web/PWA offline audio without an address
+     bar to type ?webdl=1 into. Invisible on the normal website. */
+  .beta-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.15rem; margin-bottom: 1.75rem; }
+  .beta-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .beta-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+  .beta-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+  .beta-desc { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+  .beta-switch { flex-shrink: 0; width: 46px; height: 28px; border-radius: 999px; border: none; background: var(--border-strong); position: relative; cursor: pointer; transition: background .15s; margin-top: 2px; }
+  .beta-switch.on { background: var(--accent); }
+  .beta-knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: left .15s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .beta-switch.on .beta-knob { left: 21px; }
+  .beta-status { font-size: 12px; color: var(--text-tertiary); margin-top: 9px; line-height: 1.5; }
+
   @media (max-width: 600px) {
     .wrap { padding: 2rem 1.1rem 2.5rem; } h1 { font-size: 24px; }
     .fluency-img { width: 210px; }   /* keep the phone size; desktop uses the smaller base width */
@@ -118,6 +132,21 @@
   <div class="eyebrow">ThaiEar App</div>
   <h1>Take ThaiEar with you</h1>
   <p class="lede">Download our free app to keep learning Thai offline when you’re on the go.</p>
+
+  <!-- Offline-downloads beta toggle: revealed only in the installed home-screen PWA (script at foot). -->
+  <div class="beta-card" id="offline-beta" hidden>
+    <div class="beta-eyebrow">Beta · installed app</div>
+    <div class="beta-row">
+      <div>
+        <div class="beta-title">Offline downloads</div>
+        <div class="beta-desc">Save topics to listen with no internet. Experimental on iPhone — the system may clear downloads when storage runs low.</div>
+      </div>
+      <button class="beta-switch" id="offline-beta-switch" type="button" role="switch" aria-checked="false" aria-label="Toggle offline downloads">
+        <span class="beta-knob"></span>
+      </button>
+    </div>
+    <div class="beta-status" id="offline-beta-status"></div>
+  </div>
 
   <div class="fluency-block">
     <img class="fluency-img" src="hornbill.png" alt="Hornbill" width="450" height="535">
@@ -170,5 +199,39 @@
 </div>
 
 <script src="nav.js" defer></script>
+<script>
+/* Offline-downloads beta toggle. Shown ONLY when running as an installed standalone PWA (iOS
+   home-screen app or an installed PWA elsewhere) and NOT inside the native Capacitor app — so the
+   normal website never sees it. It flips the thaiear_webdl flag that player.js reads at load to show
+   the per-topic "Download for offline" button. The standalone app has no address bar to type
+   ?webdl=1, so this is the way a home-screen install enables web/PWA offline audio. */
+(function () {
+  try {
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+      || window.navigator.standalone === true;
+    var native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if (!standalone || native) return;
+    var card = document.getElementById('offline-beta');
+    var sw = document.getElementById('offline-beta-switch');
+    var status = document.getElementById('offline-beta-status');
+    if (!card || !sw || !status) return;
+    card.hidden = false;
+    function isOn() { try { return localStorage.getItem('thaiear_webdl') === '1'; } catch (_) { return false; } }
+    function render() {
+      var on = isOn();
+      sw.classList.toggle('on', on);
+      sw.setAttribute('aria-checked', on ? 'true' : 'false');
+      status.textContent = on
+        ? 'On — open any topic and tap “Download for offline”. If a topic is already open, reload it first.'
+        : 'Off — turn on to get a “Download for offline” button on each topic page.';
+    }
+    sw.addEventListener('click', function () {
+      try { localStorage.setItem('thaiear_webdl', isOn() ? '0' : '1'); } catch (_) {}
+      render();
+    });
+    render();
+  } catch (_) {}
+})();
+</script>
 </body>
 </html>
