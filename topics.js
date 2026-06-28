@@ -127,7 +127,8 @@
     { id: 32, name: "Thai geography & regions", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 33, name: "Ceremonies & rites of passage", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 34, name: "Thai culture & customs", levels: ["li1","li2"], access: "premium", parts: [
-        { sentences: 22, access: "member" }, { sentences: 28 } ] },
+        { name: "Thai culture & customs 1", sentences: 22, page: "topic-34a.html", access: "member", audio: "ThaiCulture_LI1" },
+        { name: "Thai culture & customs 2", sentences: 23, page: "topic-34b.html", audio: "ThaiCulture_LI2" } ] },
     { id: 35, name: "Buddhism", levels: ["li2","adv"], access: "premium", parts: [
         { name: "Buddhism 1", sentences: 20, page: "topic-35a.html", access: "member", audio: "Temple_LI1" },
         { name: "Buddhism 2", sentences: 18, page: "topic-35b.html", audio: "HolyDays_LI1" },
