@@ -111,7 +111,10 @@
     { id: 23, name: "Nature, environment & conservation", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Nature, environment & conservation 1", sentences: 30, page: "topic-23a.html", access: "member", audio: "Nature_LI1" },
         { name: "Nature, environment & conservation 2", sentences: 34, page: "topic-23b.html", audio: "Nature_LI2" } ] },
-    { id: 24, name: "Technology & communication", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 24, name: "Technology & communication", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Technology & communication 1", sentences: 23, page: "topic-24a.html", access: "member", audio: "Tech_LI1" },
+        { name: "Technology & communication 2", sentences: 23, page: "topic-24b.html", audio: "Tech2_LI1" },
+        { name: "Technology & communication 3", sentences: 23, page: "topic-24c.html", audio: "Tech3_LI1" } ] },
     { id: 25, name: "Media & entertainment", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 26, name: "Sport & exercise", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Sport & exercise 1", sentences: 24, page: "topic-26a.html", access: "member", audio: "Sport_LI1" },
