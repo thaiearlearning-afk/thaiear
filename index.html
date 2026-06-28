@@ -876,6 +876,20 @@ function precacheDownloadedPages() {
 const NA_OFFLINE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
   && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem);
 const FS = NA_OFFLINE ? window.Capacitor.Plugins.Filesystem : null;
+// Web/PWA offline (the browser equivalent of NA_OFFLINE): the SAME thaiear_webdl beta flag player.js
+// reads, so the "Offline downloads (beta)" toggle turns on BOTH the per-topic Download button and
+// this grid's download controls together. Never in the native app (uses NA_OFFLINE/Filesystem) and
+// never on the plain website (the flag is unset for normal visitors). Stores into the SAME Cache
+// Storage bucket + thaiear_offline manifest the topic page reads, so a grid download plays on the page.
+const WEB_DL_PWA = (function () {
+  try {
+    const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    return !native && !!window.caches && localStorage.getItem('thaiear_webdl') === '1';
+  } catch (_) { return false; }
+})();
+const OFFLINE_UI = NA_OFFLINE || WEB_DL_PWA;   // drives the select circles + the batch download bar
+const AUDIO_DL_CACHE = 'thaiear-audio-dl';     // must match player.js
+function webCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; } // must match player.js
 const DL_AUDIO_BASE = 'https://audio.thaiear.com';
 const dlSelected = new Map();    // undownloaded topics chosen to DOWNLOAD
 const clearSelected = new Map(); // downloaded topics chosen to REMOVE
@@ -884,7 +898,7 @@ function cardItem(el) { return { prefix: el.getAttribute('data-prefix'), page: e
 
 // Circle for an undownloaded topic (download selection): light purple → dark when selected.
 function selectCircle(audio, page, tier) {
-  if (!NA_OFFLINE || !audio || !page) return '';
+  if (!OFFLINE_UI || !audio || !page) return '';
   const on = dlSelected.has(audio) ? ' selected' : '';
   return '<span class="dl-select' + on + '" data-prefix="' + audio + '" data-page="' + page +
     '" data-tier="' + (tier || 'free') + '" role="button" aria-label="Select for offline download"><span class="dl-dot"></span></span>';
@@ -937,6 +951,33 @@ function downloadOne(item) {
     // silently saving only TE/ET and marking it "downloaded" (which left sentence clips missing).
     if (!nums.length) throw new Error('No sentences found for ' + item.prefix + ' — not downloading');
     const files = topicFileList(item.prefix, nums);
+    // Shared completion: write the manifest entry the topic page reads + cache the page for offline.
+    const finish = function () {
+      const m = offlineManifest(); m[item.prefix] = { tier: item.tier || 'free', files: files, at: Date.now() };
+      try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {}
+      if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(item.page).catch(function () {}); }).catch(function () {});
+    };
+    // Web/PWA: fetch each file (signed URL for premium) → Cache Storage under the SAME key player.js
+    // plays from. cors-mode fetch rejects without the CORS header, so a CORS gap fails cleanly.
+    if (WEB_DL_PWA) {
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {}
+      return caches.open(AUDIO_DL_CACHE).then(function (cache) {
+        let chain = Promise.resolve();
+        files.forEach(function (file) {
+          chain = chain.then(function () {
+            return dlFileUrl(file, item.tier).then(function (url) {
+              return fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (res) {
+                if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
+                if (res.type === 'opaque') throw new Error('CORS not enabled for ' + file);
+                return cache.put(webCacheKey(item.prefix, file), res);
+              });
+            });
+          });
+        });
+        return chain;
+      }).then(finish);
+    }
+    // Native (Capacitor Filesystem).
     let chain = FS.mkdir({ directory: 'DATA', path: 'offline/' + item.prefix, recursive: true }).catch(function () {});
     files.forEach(function (file) {
       chain = chain.then(function () {
@@ -945,11 +986,7 @@ function downloadOne(item) {
         });
       });
     });
-    return chain.then(function () {
-      const m = offlineManifest(); m[item.prefix] = { tier: item.tier || 'free', files: files, at: Date.now() };
-      try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {}
-      if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(item.page).catch(function () {}); }).catch(function () {});
-    });
+    return chain.then(finish);
   });
 }
 function setBatchStatus(msg, offline) {
@@ -963,7 +1000,7 @@ function setBatchBusy(b) {
 }
 function updateBatchBar() {
   const bar = document.getElementById('dl-batch-bar'); if (!bar) return;
-  if (!NA_OFFLINE) { bar.style.display = 'none'; return; }
+  if (!OFFLINE_UI) { bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
   const dBtn = document.getElementById('dl-batch-btn'), cBtn = document.getElementById('dl-clear-btn'), hint = document.getElementById('dl-batch-hint');
   if (dBtn && !batchRunning) dBtn.textContent = dlSelected.size ? ('Download Topic(s) (' + dlSelected.size + ')') : 'Download Topic(s)';
@@ -976,7 +1013,7 @@ function updateBatchBar() {
   }
 }
 function runBatchDownload() {
-  if (!NA_OFFLINE || batchRunning) return;
+  if (!OFFLINE_UI || batchRunning) return;
   if (dlSelected.size === 0) { setBatchStatus('Please select a topic to download first.'); return; }
   if (!navigator.onLine) { setBatchStatus('You’re offline — reconnect to download topics.', true); return; }
   const items = Array.from(dlSelected.values());
@@ -1007,7 +1044,7 @@ function runBatchDownload() {
   })();
 }
 function runClearDownloads() {
-  if (!NA_OFFLINE || batchRunning) return;
+  if (!OFFLINE_UI || batchRunning) return;
   if (clearSelected.size === 0) { setBatchStatus('Please select a downloaded topic to clear first.'); return; }
   const n = clearSelected.size;
   showConfirm('Are you sure you want to remove the downloaded topic' + (n > 1 ? 's' : '') +
@@ -1033,7 +1070,12 @@ function doClear() {
       if (window.caches && it.page) caches.open('thaiear-dl').then(function (c) { c.delete(it.page); }).catch(function () {});
       i++; next();
     };
-    if (FS) FS.rmdir({ directory: 'DATA', path: 'offline/' + it.prefix, recursive: true }).then(done).catch(done);
+    if (WEB_DL_PWA && window.caches) {
+      const fl = (offlineManifest()[it.prefix] && offlineManifest()[it.prefix].files) || [];
+      caches.open(AUDIO_DL_CACHE).then(function (c) {
+        return Promise.all(fl.map(function (f) { return c.delete(webCacheKey(it.prefix, f)).catch(function () {}); }));
+      }).then(done).catch(done);
+    } else if (FS) FS.rmdir({ directory: 'DATA', path: 'offline/' + it.prefix, recursive: true }).then(done).catch(done);
     else done();
   })();
 }
