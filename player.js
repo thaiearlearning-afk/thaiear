@@ -149,6 +149,59 @@
     });
   }
 
+  /* ---- web-only cross-page resume ----
+     On the website there is no native engine, so a full page navigation destroys the <audio>: clicking
+     the now-playing topic link used to restart that topic from 0:00. We stash the TOP player's live
+     position + side (keyed by audio-prefix); when a page boots onto the SAME topic that was just
+     playing, we seek back and continue. The app keeps playing across nav (native engine), so this is
+     web-only and guarded on !NATIVE. */
+  var lastResumeWrite = 0;
+  function writeWebResume(force) {
+    if (NATIVE) return;
+    var now = Date.now();
+    if (!force && now - lastResumeWrite < 1000) return;   // throttle the timeupdate firehose
+    lastResumeWrite = now;
+    try {
+      localStorage.setItem('thaiear_resume', JSON.stringify({
+        prefix: mainPrefix, mode: currentMode,
+        t: mainAudio.currentTime || 0, playing: !mainAudio.paused, ts: now
+      }));
+    } catch (_) {}
+  }
+  function maybeWebResume() {
+    if (NATIVE) return;
+    var r; try { r = JSON.parse(localStorage.getItem('thaiear_resume') || 'null'); } catch (_) { r = null; }
+    if (!r || r.prefix !== PREFIX) return;          // only continue THIS page's own topic
+    if (!r.playing) return;                         // only auto-continue something that was actually playing
+    if (Date.now() - (r.ts || 0) > 60000) return;   // stale → ignore (don't hijack a much later visit)
+    if (!(r.t > 1)) return;                         // negligible position
+    if (mainGated && !entitledForPage()) return;    // gated + not entitled → leave it to the gate
+    try { localStorage.removeItem('thaiear_resume'); } catch (_) {}   // consume; live playback re-stamps it
+    // restore the TE/ET side if it differed from this page's default
+    if ((r.mode === 'te' || r.mode === 'et') && r.mode !== currentMode) {
+      currentMode = r.mode;
+      currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
+      mainSrcReady = false;
+      if (!mainGated && !OFFLINE) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
+      var bte = $('btn-te'), bet = $('btn-et');
+      if (bte) bte.classList.toggle('active', currentMode === 'te');
+      if (bet) bet.classList.toggle('active', currentMode === 'et');
+    }
+    var target = r.t;
+    ensureMainSrc().then(function () {
+      function seekAndPlay() {
+        try { mainAudio.currentTime = Math.max(0, Math.min(target, mainAudio.duration || target)); } catch (_) {}
+        userStartedHere = true;
+        mainAudio.play().then(function () { setMainIcon(true); setupMediaSession(); })
+          .catch(function () { setMainIcon(false); });   // autoplay blocked → stay paused at the restored spot
+      }
+      if (mainAudio.readyState >= 1 && isFinite(mainAudio.duration)) seekAndPlay();
+      else mainAudio.addEventListener('loadedmetadata', seekAndPlay, { once: true });
+    }).catch(function () {});
+  }
+  // capture the exact spot at the moment we navigate away (web)
+  window.addEventListener('pagehide', function () { writeWebResume(true); });
+
   /* ---- offline downloads (Capacitor app only) ----
      A topic can be downloaded for offline listening: the two combined files (_TE/_ET) plus every
      per-sentence clip, stored in app-private storage (Filesystem DATA). Playback then prefers the
@@ -952,6 +1005,7 @@
     var pct = mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
     var f = $('scrubber-fill'); if (f) f.style.width = pct + '%';
     var c = $('time-cur'); if (c) c.textContent = formatTime(mainAudio.currentTime);
+    writeWebResume();   // keep the cross-page resume position fresh while playing (web only, throttled)
   });
   mainAudio.addEventListener('ended', function () {
     setMainIcon(false);
@@ -976,7 +1030,7 @@
       if (!entitledForPage()) { gate(mainTier); return; }   // gated topic + not entitled → no playback
       userStartedHere = true;   // this page's player is now user-driven → sync must not adopt a stale label
       ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); setupMediaSession(); }).catch(function (e) { handleDenied(e, mainTier); });
-    } else { mainAudio.pause(); setMainIcon(false); }
+    } else { mainAudio.pause(); setMainIcon(false); writeWebResume(true); }
     resumeMainAfter = false;   // a manual tap on the top player overrides auto-resume
   }
 
@@ -1561,6 +1615,7 @@
     initXtraControls();
     renderOfflineBar();
     syncToPlayingTrack();   // if the engine is already playing another topic, reflect/adopt it
+    maybeWebResume();       // web: if we navigated here from the now-playing link, continue from where it was
   }
 
   // inline onclick in the injected markup call these by name
