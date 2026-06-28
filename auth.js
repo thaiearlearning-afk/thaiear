@@ -281,12 +281,13 @@
     return ready.then(function () {
       fn(currentProgress);
       persistProgress(); markProgressDirty();
-      return saveProgress()
-        .then(function () { clearProgressDirty(); return currentProgress; })
-        .catch(function (e) {
-          if (!navigator.onLine) return currentProgress; // offline → optimistic; flushed when back online
-          throw e;                                        // genuine ONLINE failure → surface it (caller reverts)
-        });
+      // Optimistic: resolve IMMEDIATELY on the local cache so the button never hangs offline, then
+      // write through in the BACKGROUND. If the write fails/offline, the dirty flag keeps it queued
+      // and the 'online' event flushes it (flushProgress). Mirrors toggleFlag. (Previously this
+      // AWAITED saveProgress(), so offline the button spun ~8s while the WebView's Supabase fetch
+      // hung — and could even revert when navigator.onLine wrongly reported "online" in airplane mode.)
+      saveProgress().then(clearProgressDirty).catch(function () {});
+      return currentProgress;
     });
   }
 
