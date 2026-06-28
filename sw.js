@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v13';
+const VERSION = 'v14';
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
@@ -105,8 +105,11 @@ const PRECACHE = [
   '/account.html', '/subscribe.html', '/join.html', '/about.html', '/guide.html', '/socials.html', '/app.html',
   '/progress.html', '/sentences.html', '/privacy.html', '/terms.html', '/refunds.html', '/deleted.html',
   '/nav.js', '/topics.js', '/player.js', '/auth.js', '/footer.js',
+  // PWA install vehicle: manifest + its icons, so "Add to Home Screen" works and the
+  // installed app has its launch icon available offline.
+  '/manifest.json', '/icon-512.png', '/icon-512-maskable.png',
   '/logo.png', '/logoshort.png', '/favicon.png', '/favicon.ico',
-  '/favicon-16.png', '/favicon-32.png', '/apple-touch-icon.png',
+  '/favicon-16.png', '/favicon-32.png', '/favicon-192.png', '/apple-touch-icon.png',
   '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png', '/hornbill.png',
   // Self-hosted fonts (replaced Google Fonts 2026-06-24): precache the full used set so a
   // freshly-downloaded topic renders Sarabun (Thai) + Inter offline, not the system fallback.
@@ -129,8 +132,10 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys()
-      // Keep the current shell cache AND the persistent downloaded-pages cache ('thaiear-dl').
-      .then(function (keys) { return Promise.all(keys.filter(function (k) { return k !== CACHE && k !== 'thaiear-dl'; }).map(function (k) { return caches.delete(k); })); })
+      // Keep the current shell cache, the persistent downloaded-PAGES cache ('thaiear-dl'), and the
+      // downloaded-AUDIO cache ('thaiear-audio-dl', the web/PWA offline-audio store) — neither
+      // downloads cache is ever version-wiped, so offline content survives an SW update.
+      .then(function (keys) { return Promise.all(keys.filter(function (k) { return k !== CACHE && k !== 'thaiear-dl' && k !== 'thaiear-audio-dl'; }).map(function (k) { return caches.delete(k); })); })
       .then(function () { return self.clients.claim(); })
   );
 });

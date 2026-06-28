@@ -182,7 +182,7 @@
       currentMode = r.mode;
       currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
       mainSrcReady = false;
-      if (!mainGated && !OFFLINE) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
+      if (!mainGated && !OFFLINE && !(WEB_DL && isDownloaded(mainPrefix))) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
       var bte = $('btn-te'), bet = $('btn-et');
       if (bte) bte.classList.toggle('active', currentMode === 'te');
       if (bet) bet.classList.toggle('active', currentMode === 'et');
@@ -217,6 +217,33 @@
   var OFFLINE_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
   var Filesystem = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
   var OFFLINE = !!(NATIVE && Filesystem);
+
+  /* ---- web / PWA offline downloads (the browser equivalent of the native engine above) ----
+     iPhones can't install the native app, so the iOS route to offline listening is "Add to Home
+     Screen" + this Cache-Storage port: a browser "Download" button fetch()es the same MP3s and
+     stores them in a dedicated Cache Storage bucket (thaiear-audio-dl), preserved across SW
+     updates. Playback then serves a same-origin blob: URL from the cache (seekable). It reuses ALL
+     the shared bookkeeping below — the thaiear_offline manifest, contentHash/audio-version staleness,
+     and the premium offline LICENCE (canUseOffline / 30-day grace) — only the storage backend
+     differs (Cache Storage instead of @capacitor/filesystem).
+
+     A cross-origin fetch needs CORS on the audio (Access-Control-Allow-Origin) or it rejects; that's
+     enabled on both R2 buckets. Gated behind a flag (off by default) so it can ship dark and be
+     proven on a real iPhone before going live: enable with ?webdl=1 (sticky, survives navigation)
+     or localStorage thaiear_webdl='1'. Never active in the native app (which uses Filesystem). */
+  var WEB_DL_FLAG = (function () {
+    try {
+      var m = location.search.match(/[?&]webdl=([01])/);
+      if (m) localStorage.setItem('thaiear_webdl', m[1]);   // sticky toggle for on-device testing
+      return localStorage.getItem('thaiear_webdl') === '1';
+    } catch (_) { return false; }
+  })();
+  var CACHES = (window.caches && window.isSecureContext) ? window.caches : null;
+  var WEB_DL = !NATIVE && !!CACHES && WEB_DL_FLAG;
+  var AUDIO_DL_CACHE = 'thaiear-audio-dl';
+  // Same-origin string used purely as a Cache Storage key (never actually fetched from this path),
+  // so the stored entry is stable even though a premium file's signed source URL changes each mint.
+  function webCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; }
 
   // Persist a downloaded topic's PAGE (+ shared scripts) in a cache the service worker never
   // version-wipes, so the page still opens offline after an SW update. Self-heals whenever we're
@@ -357,11 +384,25 @@
       .then(function (r) { return (r && r.data) ? URL.createObjectURL(b64ToBlob(r.data, 'audio/mpeg')) : null; })
       .catch(function () { return null; });
   }
+  // Web/PWA equivalent: read a downloaded clip out of Cache Storage and hand back a same-origin
+  // blob: URL (plays AND seeks offline). Null if not cached, so callers fall back to the remote URL.
+  function cachedBlobUrl(prefix, file) {
+    if (!CACHES) return Promise.resolve(null);
+    return caches.open(AUDIO_DL_CACHE)
+      .then(function (c) { return c.match(webCacheKey(prefix, file)); })
+      .then(function (res) { return res ? res.blob() : null; })
+      .then(function (blob) { return blob ? URL.createObjectURL(blob) : null; })
+      .catch(function () { return null; });
+  }
   // Main (native) player: local file:// if downloaded + licence ok, else the remote URL.
   function mainSrcFor(file) {
     if (OFFLINE && isDownloaded(mainPrefix)) {
       if (canUseOffline(mainTier)) return localUri(mainPrefix, file).then(function (uri) { return uri || buildUrl(file, mainGated); });
       if (!navigator.onLine) return Promise.reject({ code: 'licence' }); // downloaded premium, offline licence lapsed
+    }
+    if (WEB_DL && isDownloaded(mainPrefix)) {
+      if (canUseOffline(mainTier)) return cachedBlobUrl(mainPrefix, file).then(function (url) { return url || buildUrl(file, mainGated); });
+      if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
     return buildUrl(file, mainGated);
   }
@@ -371,6 +412,12 @@
     if (OFFLINE && isDownloaded(PREFIX)) {
       if (canUseOffline(TIER)) {
         return localBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file); });
+      }
+      if (!navigator.onLine) return Promise.reject({ code: 'licence' });
+    }
+    if (WEB_DL && isDownloaded(PREFIX)) {
+      if (canUseOffline(TIER)) {
+        return cachedBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file); });
       }
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
@@ -409,8 +456,74 @@
     return attempt(1);
   }
 
+  // Web/PWA download of one file: fetch the remote MP3 (signed URL for premium) and store the
+  // RESPONSE in Cache Storage under its stable same-origin key. With the default cors fetch mode a
+  // missing Access-Control-Allow-Origin REJECTS the fetch (no silent opaque entry), so a CORS gap
+  // surfaces as a clean error → retry → "Download failed" rather than caching an unseekable blob.
+  // Mirrors the native retry policy (DL_MAX_TRIES, backoff, per-file deadline, URL re-minted/attempt).
+  function webDownloadFileWithRetry(cache, file) {
+    function attempt(tryNo) {
+      return buildUrl(file, GATED).then(function (url) {
+        var ctrl = new AbortController();
+        var timer = setTimeout(function () { ctrl.abort(); }, DL_RACE_TIMEOUT_MS);
+        return fetch(url, { mode: 'cors', cache: 'no-store', signal: ctrl.signal }).then(function (res) {
+          clearTimeout(timer);
+          if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
+          if (res.type === 'opaque') throw new Error('CORS not enabled (opaque) for ' + file);
+          return cache.put(webCacheKey(PREFIX, file), res);
+        }, function (e) { clearTimeout(timer); throw e; });
+      }).catch(function (err) {
+        if (tryNo >= DL_MAX_TRIES) throw err;
+        console.warn('player.js: web download retry ' + (tryNo + 1) + '/' + DL_MAX_TRIES + ' for ' + file, err);
+        return new Promise(function (r) { setTimeout(r, 600 * tryNo); }).then(function () { return attempt(tryNo + 1); });
+      });
+    }
+    return attempt(1);
+  }
+
+  function webDownloadTopic(files) {
+    var done = 0;
+    // Ask the browser to make this origin's storage durable so iOS/WebKit is less likely to evict
+    // the downloads under storage pressure. Best-effort — may be denied; we still proceed.
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {}
+    caches.open(AUDIO_DL_CACHE).then(function (cache) {
+      var chain = Promise.resolve();
+      files.forEach(function (file) {
+        chain = chain.then(function () {
+          return webDownloadFileWithRetry(cache, file).then(function () { done++; setOfflineState('downloading', done, files.length); });
+        });
+      });
+      return chain;
+    })
+      .then(function () { return loadAudioVers(); })   // capture the audio stamp as the download's baseline
+      .then(function () {
+        markDownloaded(PREFIX, TIER || 'free', files, contentHash(), currentAv());
+        stampVerified();                      // they were online + entitled at download time
+        cachePage();                          // persist the page so it opens offline (survives SW updates)
+        downloadingNow = false;
+        setOfflineState('downloaded');
+      })
+      .catch(function (err) {
+        var msg = (err && (err.message || err.errorMessage)) || String(err);
+        console.warn('player.js: web offline download failed', err);
+        downloadingNow = false;
+        setOfflineState('error', msg);
+      });
+  }
+
+  // Delete a web download: drop every cached clip for this topic (from the manifest's file list,
+  // falling back to the current file set) out of the audio cache.
+  function webDeleteTopic() {
+    if (!CACHES) return Promise.resolve();
+    var ent = getManifest()[PREFIX];
+    var files = (ent && ent.files) || topicFiles();
+    return caches.open(AUDIO_DL_CACHE).then(function (c) {
+      return Promise.all(files.map(function (file) { return c.delete(webCacheKey(PREFIX, file)).catch(function () {}); }));
+    }).catch(function () {});
+  }
+
   function downloadTopic() {
-    if (!OFFLINE) return;
+    if (!OFFLINE && !WEB_DL) return;
     // Gated topic + not entitled → same preview-only gate as play/reveal/flag (premium → "preview
     // only" toast in-app; member → sign-in), instead of attempting the download and erroring on /api/audio.
     if (!entitledForPage()) { gate(TIER); return; }
@@ -418,6 +531,8 @@
     var done = 0;
     downloadingNow = true;
     setOfflineState('downloading', 0, files.length);
+    if (WEB_DL) { webDownloadTopic(files); return; }   // browser/PWA path (Cache Storage)
+    // ---- native (Capacitor) path ----
     // Create the topic's folder first (downloadFile won't always make parent dirs).
     Filesystem.mkdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
       .catch(function () {})                  // already exists → fine
@@ -456,13 +571,15 @@
   // Re-download after the content was regenerated online: wipe the stale folder (so files for any
   // removed sentences don't linger) then re-run the normal download, which re-stamps the new hash.
   function refreshTopic() {
-    if (!OFFLINE || !navigator.onLine) return;
+    if ((!OFFLINE && !WEB_DL) || !navigator.onLine) return;
+    if (WEB_DL) { webDeleteTopic().then(function () { removeDownloaded(PREFIX); downloadTopic(); }); return; }
     Filesystem.rmdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
       .catch(function () {})
       .then(function () { removeDownloaded(PREFIX); downloadTopic(); });
   }
   function deleteTopic() {
-    if (!OFFLINE) return;
+    if (!OFFLINE && !WEB_DL) return;
+    if (WEB_DL) { webDeleteTopic().then(function () { removeDownloaded(PREFIX); setOfflineState('idle'); }); return; }
     Filesystem.rmdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
       .catch(function () {})
       .then(function () { removeDownloaded(PREFIX); setOfflineState('idle'); });
@@ -498,7 +615,7 @@
   }
   function renderOfflineBar() {
     var bar = $('offline-bar'); if (!bar) return;
-    if (!OFFLINE) { bar.style.display = 'none'; return; }  // website / non-app: never shown
+    if (!OFFLINE && !WEB_DL) { bar.style.display = 'none'; return; }  // plain website (no app, flag off): never shown
     bar.style.display = 'flex';
     var ent = getManifest()[PREFIX];
     if (!ent) { setOfflineState('idle'); return; }
@@ -886,7 +1003,7 @@
   // entitledForPage(): may THIS visitor use the gated interactions on this page?
   function entitledForPage() {
     if (TIER !== 'member' && TIER !== 'premium') return true;   // free topic → open
-    if (OFFLINE && isDownloaded(PREFIX)) return true;           // they downloaded it → were entitled (licence flow handles lapse)
+    if ((OFFLINE || WEB_DL) && isDownloaded(PREFIX)) return true; // they downloaded it → were entitled (licence flow handles lapse)
     var a = window.ThaiEarAuth;
     if (!a || !a.isReady) return true;                          // auth still resolving → don't wrongly gate a paying user
     if (TIER === 'member') return !!(a.getUser && a.getUser()); // member = any signed-in user
@@ -986,12 +1103,16 @@
   // play (we need the session token, and we don't want to burn a signed URL on page load).
   // Free + web: set the public src now so duration shows. In the app, defer to ensureMainSrc so a
   // downloaded local copy can be used (offline-aware).
-  if (!mainGated && !OFFLINE) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
+  if (!mainGated && !OFFLINE && !(WEB_DL && isDownloaded(mainPrefix))) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
 
   // Resolve + attach the current main file's src if not already done (premium- and offline-aware).
+  // Web offline serves a blob: URL; revoke the previous one on each swap so it doesn't leak.
+  var mainBlobUrl = null;
   function ensureMainSrc() {
     if (mainSrcReady) return Promise.resolve();
     return mainSrcFor(currentMainFile).then(function (u) {
+      if (mainBlobUrl && mainBlobUrl !== u) { try { URL.revokeObjectURL(mainBlobUrl); } catch (_) {} mainBlobUrl = null; }
+      if (u && u.indexOf('blob:') === 0) mainBlobUrl = u;
       mainAudio.src = u; mainAudio.load(); mainSrcReady = true;
     });
   }
@@ -1095,7 +1216,7 @@
     setMainIcon(false);
     currentMainFile = mainPrefix + '_' + mode.toUpperCase() + '.mp3';
     mainSrcReady = false;                 // new file → re-resolve (premium needs a fresh signed URL)
-    if (!mainGated && !OFFLINE) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
+    if (!mainGated && !OFFLINE && !(WEB_DL && isDownloaded(mainPrefix))) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
     var f = $('scrubber-fill'); if (f) f.style.width = '0%';
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
