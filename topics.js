@@ -121,7 +121,9 @@
         { name: "Travel & tourism 2", sentences: 27, page: "topic-27b.html", audio: "Travel2_LI1" },
         { name: "Travel & tourism 3", sentences: 26, page: "topic-27c.html", audio: "Travel_LI2" } ] },
     { id: 28, name: "Banking & finance", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 29, name: "Community & society", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 29, name: "Community & society", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Community & society 1", sentences: 31, page: "topic-29a.html", access: "member", audio: "Community_LI1" },
+        { name: "Community & society 2", sentences: 29, page: "topic-29b.html", audio: "Community_LI2" } ] },
     { id: 30, name: "Agriculture & rural life", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 31, name: "Crime, law & justice", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 32, name: "Thai geography & regions", levels: ["li1","li2"], access: "premium", parts: [
