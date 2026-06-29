@@ -679,6 +679,13 @@
     return;
   }
 
+  // Self-heal the visible "N sentences" count in the static <p class="topic-meta"> from the
+  // real data, so it can never drift even if a page shipped without re-running ssrify. ssrify
+  // also sets this at build time (single source = sentences.length); this is the runtime
+  // backstop. No visible flash when the static value is already correct.
+  var metaCount = document.querySelector('.topic-meta strong');
+  if (metaCount) metaCount.textContent = sentences.length + (sentences.length === 1 ? ' sentence' : ' sentences');
+
   /* ---- styles (the player owns its own CSS; page keeps only chrome) ----
      Depends on the page's :root design tokens, which every page defines. */
   var STYLES = `
