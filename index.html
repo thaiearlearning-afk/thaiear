@@ -1187,6 +1187,12 @@ function cardsForTopic(t, pos) {
   const p = String(pos).padStart(2, '0');
   if (t.parts) {
     return t.parts.map((part, i) => {
+      // Under an access filter, emit ONLY the parts whose own tier matches. A split topic can
+      // mix tiers (member taster + premium rest), and matchesAccess() admits it if ANY part
+      // matches — so without this guard its member AND premium cards would both render under
+      // BOTH the "Free member" and "Premium" tabs (the mixed-tier bug). Tier is read live from
+      // accessFor(), so this stays correct automatically when a topic's access changes.
+      if (activeAccess !== 'all' && accessFor(t, part) !== activeAccess) return '';
       const label = p + String.fromCharCode(97 + i); // a, b, c, d … (supports >2 parts)
       const num  = typeof part === 'number' ? part : part.sentences;
       const href = (part && typeof part === 'object' && part.page) ? part.page : null;
