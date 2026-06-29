@@ -124,7 +124,9 @@
     { id: 29, name: "Community & society", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 30, name: "Agriculture & rural life", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 31, name: "Crime, law & justice", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 32, name: "Thai geography & regions", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 32, name: "Thai geography & regions", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Thai geography & regions 1", sentences: 25, page: "topic-32a.html", access: "member", audio: "GeoRegions_LI1" },
+        { name: "Thai geography & regions 2", sentences: 28, page: "topic-32b.html", audio: "GeoRegions_LI2" } ] },
     { id: 33, name: "Ceremonies & rites of passage", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 34, name: "Thai culture & customs", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Thai culture & customs 1", sentences: 22, page: "topic-34a.html", access: "member", audio: "ThaiCulture_LI1" },
