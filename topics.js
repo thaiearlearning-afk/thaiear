@@ -102,9 +102,6 @@
         { name: "Work & study 2", sentences: 24, page: "topic-20b.html", audio: "Workplace_LI1" },
         { name: "Work & study 3", sentences: 24, page: "topic-20c.html", audio: "Career_LI2" },
         { name: "Work & study 4", sentences: 21, page: "topic-20d.html", audio: "Study_LI1" } ] },
-    { id: 21, name: "Education system", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Education system 1", sentences: 26, page: "topic-21a.html", access: "member", audio: "Schooling_LI1" },
-        { name: "Education system 2", sentences: 26, page: "topic-21b.html", audio: "System_LI2" } ] },
     { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Food culture & eating out 1", sentences: 29, page: "topic-22a.html", access: "member", audio: "FoodSocial_LI1" },
         { name: "Food culture & eating out 2", sentences: 22, page: "topic-22b.html", audio: "FoodCulture_LI2" } ] },
@@ -132,6 +129,9 @@
     { id: 34, name: "Thai culture & customs", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Thai culture & customs 1", sentences: 22, page: "topic-34a.html", access: "member", audio: "ThaiCulture_LI1" },
         { name: "Thai culture & customs 2", sentences: 23, page: "topic-34b.html", audio: "ThaiCulture_LI2" } ] },
+    { id: 21, name: "Education system", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Education system 1", sentences: 26, page: "topic-21a.html", access: "member", audio: "Schooling_LI1" },
+        { name: "Education system 2", sentences: 26, page: "topic-21b.html", audio: "System_LI2" } ] },
     { id: 35, name: "Buddhism", levels: ["li2","adv"], access: "premium", parts: [
         { name: "Buddhism 1", sentences: 20, page: "topic-35a.html", access: "member", audio: "Temple_LI1" },
         { name: "Buddhism 2", sentences: 18, page: "topic-35b.html", audio: "HolyDays_LI1" },

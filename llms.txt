@@ -46,8 +46,6 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Work & study 2 in Thai](https://thaiear.com/topic-20b): Lower intermediate → Intermediate, 24 sentences
 - [Work & study 3 in Thai](https://thaiear.com/topic-20c): Lower intermediate → Intermediate, 24 sentences
 - [Work & study 4 in Thai](https://thaiear.com/topic-20d): Lower intermediate → Intermediate, 21 sentences
-- [Education system 1 in Thai](https://thaiear.com/topic-21a): Lower intermediate → Intermediate, 26 sentences
-- [Education system 2 in Thai](https://thaiear.com/topic-21b): Lower intermediate → Intermediate, 26 sentences
 - [Food culture & eating out 1 in Thai](https://thaiear.com/topic-22a): Lower intermediate → Intermediate, 29 sentences
 - [Food culture & eating out 2 in Thai](https://thaiear.com/topic-22b): Lower intermediate → Intermediate, 22 sentences
 - [Nature, environment & conservation 1 in Thai](https://thaiear.com/topic-23a): Lower intermediate → Intermediate, 30 sentences
@@ -62,6 +60,8 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Travel & tourism 3 in Thai](https://thaiear.com/topic-27c): Lower intermediate → Intermediate, 26 sentences
 - [Thai culture & customs 1 in Thai](https://thaiear.com/topic-34a): Lower intermediate → Intermediate, 22 sentences
 - [Thai culture & customs 2 in Thai](https://thaiear.com/topic-34b): Lower intermediate → Intermediate, 23 sentences
+- [Education system 1 in Thai](https://thaiear.com/topic-21a): Lower intermediate → Intermediate, 26 sentences
+- [Education system 2 in Thai](https://thaiear.com/topic-21b): Lower intermediate → Intermediate, 26 sentences
 - [Buddhism 1 in Thai](https://thaiear.com/topic-35a): Intermediate → Advanced, 20 sentences
 - [Buddhism 2 in Thai](https://thaiear.com/topic-35b): Intermediate → Advanced, 18 sentences
 - [Buddhism 3 in Thai](https://thaiear.com/topic-35c): Intermediate → Advanced, 19 sentences
