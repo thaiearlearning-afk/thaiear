@@ -14,3 +14,7 @@
 # 2026-06-21: topic 10 "Home & daily routine" split into 10a/10b. Old single page → first part.
 /topic-10        /topic-10a  301
 /topic-10.html   /topic-10a  301
+# 2026-06-29: topic 20 "Work & study" renamed to "Working life"; its study/university part (20d)
+# moved to new topic 45 (School and University, part 45b "Campus"). Old 20d URL → 45b.
+/topic-20d       /topic-45b  301
+/topic-20d.html  /topic-45b  301

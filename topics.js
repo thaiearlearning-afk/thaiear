@@ -98,11 +98,13 @@
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Cooking & recipes 1", sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG" },
         { name: "Cooking & recipes 2", sentences: 28, page: "topic-19b.html", audio: "Recipes_LI1" } ] },
-    { id: 20, name: "Work & study", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Work & study 1", sentences: 24, page: "topic-20a.html", access: "member", audio: "Job_LI1" },
-        { name: "Work & study 2", sentences: 24, page: "topic-20b.html", audio: "Workplace_LI1" },
-        { name: "Work & study 3", sentences: 24, page: "topic-20c.html", audio: "Career_LI2" },
-        { name: "Work & study 4", sentences: 21, page: "topic-20d.html", audio: "Study_LI1" } ] },
+    { id: 20, name: "Working life", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Working life 1", sentences: 24, page: "topic-20a.html", access: "member", audio: "Job_LI1" },
+        { name: "Working life 2", sentences: 24, page: "topic-20b.html", audio: "Workplace_LI1" },
+        { name: "Working life 3", sentences: 24, page: "topic-20c.html", audio: "Career_LI2" } ] },
+    { id: 45, name: "School and University", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "School and University 1", sentences: 26, page: "topic-45a.html", audio: "School_LI1" },
+        { name: "School and University 2", sentences: 32, page: "topic-45b.html", audio: "Campus_LI1" } ] },
     { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Food culture & eating out 1", sentences: 29, page: "topic-22a.html", access: "member", audio: "FoodSocial_LI1" },
         { name: "Food culture & eating out 2", sentences: 22, page: "topic-22b.html", audio: "FoodCulture_LI2" } ] },

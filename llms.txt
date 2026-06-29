@@ -43,10 +43,11 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Clothing & appearance 2 in Thai](https://thaiear.com/topic-18b): Beginner → Lower intermediate, 33 sentences
 - [Cooking & recipes 1 in Thai](https://thaiear.com/topic-19a): Beginner → Lower intermediate, 34 sentences
 - [Cooking & recipes 2 in Thai](https://thaiear.com/topic-19b): Beginner → Lower intermediate, 28 sentences
-- [Work & study 1 in Thai](https://thaiear.com/topic-20a): Lower intermediate → Intermediate, 24 sentences
-- [Work & study 2 in Thai](https://thaiear.com/topic-20b): Lower intermediate → Intermediate, 24 sentences
-- [Work & study 3 in Thai](https://thaiear.com/topic-20c): Lower intermediate → Intermediate, 24 sentences
-- [Work & study 4 in Thai](https://thaiear.com/topic-20d): Lower intermediate → Intermediate, 21 sentences
+- [Working life 1 in Thai](https://thaiear.com/topic-20a): Lower intermediate → Intermediate, 24 sentences
+- [Working life 2 in Thai](https://thaiear.com/topic-20b): Lower intermediate → Intermediate, 24 sentences
+- [Working life 3 in Thai](https://thaiear.com/topic-20c): Lower intermediate → Intermediate, 24 sentences
+- [School and University 1 in Thai](https://thaiear.com/topic-45a): Lower intermediate → Intermediate, 26 sentences
+- [School and University 2 in Thai](https://thaiear.com/topic-45b): Lower intermediate → Intermediate, 32 sentences
 - [Food culture & eating out 1 in Thai](https://thaiear.com/topic-22a): Lower intermediate → Intermediate, 29 sentences
 - [Food culture & eating out 2 in Thai](https://thaiear.com/topic-22b): Lower intermediate → Intermediate, 22 sentences
 - [Nature, environment & conservation 1 in Thai](https://thaiear.com/topic-23a): Lower intermediate → Intermediate, 30 sentences
