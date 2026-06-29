@@ -93,7 +93,7 @@
         { name: "Plans & future 1", sentences: 28, page: "topic-17a.html", access: "member", audio: "Plans_BEG" },
         { name: "Plans & future 2", sentences: 16, page: "topic-17b.html", audio: "Plans_LI1" } ] },
     { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Clothing & appearance 1", sentences: 22, page: "topic-18a.html", access: "member", audio: "Clothing_BEG" },
+        { name: "Clothing & appearance 1", sentences: 37, page: "topic-18a.html", access: "member", audio: "Clothing_BEG" },
         { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html", audio: "Appearance_LI1" } ] },
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Cooking & recipes 1", sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG" },
