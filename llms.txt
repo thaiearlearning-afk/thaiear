@@ -30,8 +30,9 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Asking for help & emergencies in Thai](https://thaiear.com/topic-37): Beginner → Lower intermediate, 40 sentences
 - [Occupations 1 in Thai](https://thaiear.com/topic-42a): Beginner → Lower intermediate, 30 sentences
 - [Occupations 2 in Thai](https://thaiear.com/topic-42b): Beginner → Lower intermediate, 30 sentences
-- [Body & health 1 in Thai](https://thaiear.com/topic-13a): Beginner → Lower intermediate, 28 sentences
-- [Body & health 2 in Thai](https://thaiear.com/topic-13b): Beginner → Lower intermediate, 25 sentences
+- [Body & health 1 in Thai](https://thaiear.com/topic-13a): Beginner → Lower intermediate, 41 sentences
+- [Body & health 2 in Thai](https://thaiear.com/topic-13b): Beginner → Lower intermediate, 28 sentences
+- [Body & health 3 in Thai](https://thaiear.com/topic-13c): Beginner → Lower intermediate, 25 sentences
 - [Feelings & emotions 1 in Thai](https://thaiear.com/topic-14a): Beginner → Lower intermediate, 28 sentences
 - [Feelings & emotions 2 in Thai](https://thaiear.com/topic-14b): Beginner → Lower intermediate, 34 sentences
 - [Hobbies & free time in Thai](https://thaiear.com/topic-15): Beginner → Lower intermediate, 37 sentences
@@ -39,7 +40,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Idioms in Thai](https://thaiear.com/topic-38): Beginner → Lower intermediate, 27 sentences
 - [Plans & future 1 in Thai](https://thaiear.com/topic-17a): Beginner → Lower intermediate, 28 sentences
 - [Plans & future 2 in Thai](https://thaiear.com/topic-17b): Beginner → Lower intermediate, 16 sentences
-- [Clothing & appearance 1 in Thai](https://thaiear.com/topic-18a): Beginner → Lower intermediate, 22 sentences
+- [Clothing & appearance 1 in Thai](https://thaiear.com/topic-18a): Beginner → Lower intermediate, 37 sentences
 - [Clothing & appearance 2 in Thai](https://thaiear.com/topic-18b): Beginner → Lower intermediate, 33 sentences
 - [Cooking & recipes 1 in Thai](https://thaiear.com/topic-19a): Beginner → Lower intermediate, 34 sentences
 - [Cooking & recipes 2 in Thai](https://thaiear.com/topic-19b): Beginner → Lower intermediate, 28 sentences
