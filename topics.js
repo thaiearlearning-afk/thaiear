@@ -64,7 +64,7 @@
         { name: "Places around town 1", sentences: 26, page: "topic-41a.html", access: "member", audio: "Places_BEG" },
         { name: "Places around town 2", sentences: 27, page: "topic-41b.html", audio: "Places2_BEG" } ] },
     { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Food & drink 1", sentences: 39, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
+        { name: "Food & drink 1", sentences: 42, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
         { name: "Food & drink 2", sentences: 26, page: "topic-09b.html", audio: "Food_LI1" } ] },
     { id: 10, name: "Home & daily routine", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Home & daily routine 1", sentences: 24, page: "topic-10a.html", audio: "HomeAndDailyRoutine_BEG" },
@@ -95,8 +95,8 @@
         { name: "Clothing & appearance 1", sentences: 22, page: "topic-18a.html", access: "member", audio: "Clothing_BEG" },
         { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html", audio: "Appearance_LI1" } ] },
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Cooking & recipes 1", sentences: 31, page: "topic-19a.html", audio: "Cooking_BEG" },
-        { name: "Cooking & recipes 2", sentences: 27, page: "topic-19b.html", audio: "Recipes_LI1" } ] },
+        { name: "Cooking & recipes 1", sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG" },
+        { name: "Cooking & recipes 2", sentences: 28, page: "topic-19b.html", audio: "Recipes_LI1" } ] },
     { id: 20, name: "Work & study", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Work & study 1", sentences: 24, page: "topic-20a.html", access: "member", audio: "Job_LI1" },
         { name: "Work & study 2", sentences: 24, page: "topic-20b.html", audio: "Workplace_LI1" },
