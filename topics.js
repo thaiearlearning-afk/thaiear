@@ -63,6 +63,7 @@
     { id: 41, name: "Places around town", levels: ["beg"], access: "premium", parts: [
         { name: "Places around town 1", sentences: 26, page: "topic-41a.html", access: "member", audio: "Places_BEG" },
         { name: "Places around town 2", sentences: 27, page: "topic-41b.html", audio: "Places2_BEG" } ] },
+    { id: 46, name: "Groceries", levels: ["beg"], sentences: 38, access: "premium", audio: "Groceries_BEG" },
     { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Food & drink 1", sentences: 42, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
         { name: "Food & drink 2", sentences: 26, page: "topic-09b.html", audio: "Food_LI1" } ] },
@@ -156,7 +157,7 @@
   ];
 
   // Keyed by FROZEN id (never display position). Add entries as topics go live.
-  const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 6: 'topic-06.html', 7: 'topic-07.html', 8: 'topic-08.html', 10: 'topic-10.html', 11: 'topic-11.html', 15: 'topic-15.html', 16: 'topic-16.html', 37: 'topic-37.html', 38: 'topic-38.html', 39: 'topic-39.html', 40: 'topic-40.html' };
+  const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 6: 'topic-06.html', 7: 'topic-07.html', 8: 'topic-08.html', 10: 'topic-10.html', 11: 'topic-11.html', 15: 'topic-15.html', 16: 'topic-16.html', 37: 'topic-37.html', 38: 'topic-38.html', 39: 'topic-39.html', 40: 'topic-40.html', 46: 'topic-46.html' };
 
   // Level order + labels. Difficulty is a RANGE: a topic's label shows floor -> ceiling.
   // `adv` (Advanced) is the tertiary tier — niche / highly specialised topics whose

@@ -18,7 +18,8 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Animals in Thai](https://thaiear.com/topic-40): Beginner, 37 sentences
 - [Places around town 1 in Thai](https://thaiear.com/topic-41a): Beginner, 26 sentences
 - [Places around town 2 in Thai](https://thaiear.com/topic-41b): Beginner, 27 sentences
-- [Food & drink 1 in Thai](https://thaiear.com/topic-09a): Beginner → Lower intermediate, 39 sentences
+- [Groceries in Thai](https://thaiear.com/topic-46): Beginner, 38 sentences
+- [Food & drink 1 in Thai](https://thaiear.com/topic-09a): Beginner → Lower intermediate, 42 sentences
 - [Food & drink 2 in Thai](https://thaiear.com/topic-09b): Beginner → Lower intermediate, 26 sentences
 - [Home & daily routine 1 in Thai](https://thaiear.com/topic-10a): Beginner → Lower intermediate, 24 sentences
 - [Home & daily routine 2 in Thai](https://thaiear.com/topic-10b): Beginner → Lower intermediate, 23 sentences
@@ -40,8 +41,8 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Plans & future 2 in Thai](https://thaiear.com/topic-17b): Beginner → Lower intermediate, 16 sentences
 - [Clothing & appearance 1 in Thai](https://thaiear.com/topic-18a): Beginner → Lower intermediate, 22 sentences
 - [Clothing & appearance 2 in Thai](https://thaiear.com/topic-18b): Beginner → Lower intermediate, 33 sentences
-- [Cooking & recipes 1 in Thai](https://thaiear.com/topic-19a): Beginner → Lower intermediate, 31 sentences
-- [Cooking & recipes 2 in Thai](https://thaiear.com/topic-19b): Beginner → Lower intermediate, 27 sentences
+- [Cooking & recipes 1 in Thai](https://thaiear.com/topic-19a): Beginner → Lower intermediate, 34 sentences
+- [Cooking & recipes 2 in Thai](https://thaiear.com/topic-19b): Beginner → Lower intermediate, 28 sentences
 - [Work & study 1 in Thai](https://thaiear.com/topic-20a): Lower intermediate → Intermediate, 24 sentences
 - [Work & study 2 in Thai](https://thaiear.com/topic-20b): Lower intermediate → Intermediate, 24 sentences
 - [Work & study 3 in Thai](https://thaiear.com/topic-20c): Lower intermediate → Intermediate, 24 sentences
