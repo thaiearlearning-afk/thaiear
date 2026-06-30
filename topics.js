@@ -99,7 +99,7 @@
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Cooking & recipes 1", sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG" },
         { name: "Cooking & recipes 2", sentences: 28, page: "topic-19b.html", audio: "Recipes_LI1" } ] },
-    { id: 47, name: "Homes & housing", levels: ["li1"], sentences: 29, access: "premium", audio: "HomesAndHousing_LI1" },
+    { id: 47, name: "Homes & housing", levels: ["li1","li2"], sentences: 29, access: "premium", audio: "HomesAndHousing_LI1" },
     { id: 20, name: "Working life", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Working life 1", sentences: 24, page: "topic-20a.html", access: "member", audio: "Job_LI1" },
         { name: "Working life 2", sentences: 24, page: "topic-20b.html", audio: "Workplace_LI1" },
