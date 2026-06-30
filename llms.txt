@@ -58,6 +58,8 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Technology & communication 1 in Thai](https://thaiear.com/topic-24a): Lower intermediate → Intermediate, 23 sentences
 - [Technology & communication 2 in Thai](https://thaiear.com/topic-24b): Lower intermediate → Intermediate, 23 sentences
 - [Technology & communication 3 in Thai](https://thaiear.com/topic-24c): Lower intermediate → Intermediate, 23 sentences
+- [Media & entertainment 1 in Thai](https://thaiear.com/topic-25a): Lower intermediate → Intermediate, 37 sentences
+- [Media & entertainment 2 in Thai](https://thaiear.com/topic-25b): Lower intermediate → Intermediate, 29 sentences
 - [Sport & exercise 1 in Thai](https://thaiear.com/topic-26a): Lower intermediate → Intermediate, 24 sentences
 - [Sport & exercise 2 in Thai](https://thaiear.com/topic-26b): Lower intermediate → Intermediate, 28 sentences
 - [Travel & tourism 1 in Thai](https://thaiear.com/topic-27a): Lower intermediate → Intermediate, 25 sentences

@@ -118,7 +118,9 @@
         { name: "Technology & communication 1", sentences: 23, page: "topic-24a.html", access: "member", audio: "Tech_LI1" },
         { name: "Technology & communication 2", sentences: 23, page: "topic-24b.html", audio: "Tech2_LI1" },
         { name: "Technology & communication 3", sentences: 23, page: "topic-24c.html", audio: "Tech3_LI1" } ] },
-    { id: 25, name: "Media & entertainment", levels: ["li1","li2"], sentences: 25, access: "premium" },
+    { id: 25, name: "Media & entertainment", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Media & entertainment 1", sentences: 37, page: "topic-25a.html", audio: "Media_LI1" },
+        { name: "Media & entertainment 2", sentences: 29, page: "topic-25b.html", audio: "Media2_LI1" } ] },
     { id: 26, name: "Sport & exercise", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Sport & exercise 1", sentences: 24, page: "topic-26a.html", access: "member", audio: "Sport_LI1" },
         { name: "Sport & exercise 2", sentences: 28, page: "topic-26b.html", audio: "Sport_LI2" } ] },
