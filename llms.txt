@@ -44,6 +44,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Clothing & appearance 2 in Thai](https://thaiear.com/topic-18b): Beginner → Lower intermediate, 33 sentences
 - [Cooking & recipes 1 in Thai](https://thaiear.com/topic-19a): Beginner → Lower intermediate, 34 sentences
 - [Cooking & recipes 2 in Thai](https://thaiear.com/topic-19b): Beginner → Lower intermediate, 28 sentences
+- [Homes & housing in Thai](https://thaiear.com/topic-47): Lower intermediate, 29 sentences
 - [Working life 1 in Thai](https://thaiear.com/topic-20a): Lower intermediate → Intermediate, 24 sentences
 - [Working life 2 in Thai](https://thaiear.com/topic-20b): Lower intermediate → Intermediate, 24 sentences
 - [Working life 3 in Thai](https://thaiear.com/topic-20c): Lower intermediate → Intermediate, 24 sentences
