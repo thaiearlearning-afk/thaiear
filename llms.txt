@@ -21,8 +21,8 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Groceries in Thai](https://thaiear.com/topic-46): Beginner, 38 sentences
 - [Food & drink 1 in Thai](https://thaiear.com/topic-09a): Beginner → Lower intermediate, 42 sentences
 - [Food & drink 2 in Thai](https://thaiear.com/topic-09b): Beginner → Lower intermediate, 26 sentences
-- [Home & daily routine 1 in Thai](https://thaiear.com/topic-10a): Beginner → Lower intermediate, 24 sentences
-- [Home & daily routine 2 in Thai](https://thaiear.com/topic-10b): Beginner → Lower intermediate, 23 sentences
+- [Home & daily routine 1 in Thai](https://thaiear.com/topic-10a): Beginner → Lower intermediate, 32 sentences
+- [Home & daily routine 2 in Thai](https://thaiear.com/topic-10b): Beginner → Lower intermediate, 32 sentences
 - [Shopping & money 1 in Thai](https://thaiear.com/topic-11a): Beginner → Lower intermediate, 22 sentences
 - [Shopping & money 2 in Thai](https://thaiear.com/topic-11b): Beginner → Lower intermediate, 29 sentences
 - [Getting around & transport 1 in Thai](https://thaiear.com/topic-12a): Beginner → Lower intermediate, 26 sentences

@@ -68,8 +68,8 @@
         { name: "Food & drink 1", sentences: 42, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
         { name: "Food & drink 2", sentences: 26, page: "topic-09b.html", audio: "Food_LI1" } ] },
     { id: 10, name: "Home & daily routine", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Home & daily routine 1", sentences: 24, page: "topic-10a.html", audio: "HomeAndDailyRoutine_BEG" },
-        { name: "Home & daily routine 2", sentences: 23, page: "topic-10b.html", audio: "HomeAndDailyRoutine2_BEG" } ] },
+        { name: "Home & daily routine 1", sentences: 32, page: "topic-10a.html", audio: "HomeAndDailyRoutine_BEG" },
+        { name: "Home & daily routine 2", sentences: 32, page: "topic-10b.html", audio: "HomeAndDailyRoutine2_BEG" } ] },
     { id: 11, name: "Shopping & money", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Shopping & money 1", sentences: 22, page: "topic-11a.html", access: "member", audio: "ShoppingAndMoney_BEG" },
         { name: "Shopping & money 2", sentences: 29, page: "topic-11b.html", audio: "ShoppingAndMoney2_BEG" } ] },
