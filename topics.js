@@ -99,6 +99,9 @@
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Cooking & recipes 1", sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG" },
         { name: "Cooking & recipes 2", sentences: 28, page: "topic-19b.html", audio: "Recipes_LI1" } ] },
+    { id: 49, name: "Compliments & opinions", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Compliments & opinions 1", sentences: 31, page: "topic-49a.html", audio: "Compliments_LI1" },
+        { name: "Compliments & opinions 2", sentences: 32, page: "topic-49b.html", audio: "Opinions_LI1" } ] },
     { id: 47, name: "Homes & housing", levels: ["li1","li2"], sentences: 29, access: "premium", audio: "HomesAndHousing_LI1" },
     { id: 48, name: "Household supplies", levels: ["li1","li2"], sentences: 37, access: "premium", audio: "HouseholdSupplies_BEG" },
     { id: 20, name: "Working life", levels: ["li1","li2"], access: "premium", parts: [
