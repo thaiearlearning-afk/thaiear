@@ -61,7 +61,7 @@
     // ── new topics (not yet built): no page / audio / liveTopics entry → render as locked "coming soon" cards.
     { id: 40, name: "Animals", levels: ["beg"], sentences: 37, access: "premium", audio: "Animals_BEG" },
     { id: 41, name: "Places around town", levels: ["beg"], access: "premium", parts: [
-        { name: "Places around town 1", sentences: 26, page: "topic-41a.html", access: "member", audio: "Places_BEG" },
+        { name: "Places around town 1", sentences: 26, page: "topic-41a.html", audio: "Places_BEG" },
         { name: "Places around town 2", sentences: 27, page: "topic-41b.html", audio: "Places2_BEG" } ] },
     { id: 46, name: "Groceries", levels: ["beg"], sentences: 38, access: "premium", audio: "Groceries_BEG" },
     { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
@@ -91,10 +91,10 @@
     { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 40, access: "premium", audio: "SocialLife_BEG" },
     { id: 38, name: "Idioms", levels: ["beg","li1"], sentences: 27, access: "premium", audio: "Idiom_BEG" },
     { id: 17, name: "Plans & future", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Plans & future 1", sentences: 28, page: "topic-17a.html", access: "member", audio: "Plans_BEG" },
+        { name: "Plans & future 1", sentences: 28, page: "topic-17a.html", audio: "Plans_BEG" },
         { name: "Plans & future 2", sentences: 16, page: "topic-17b.html", audio: "Plans_LI1" } ] },
     { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Clothing & appearance 1", sentences: 37, page: "topic-18a.html", access: "member", audio: "Clothing_BEG" },
+        { name: "Clothing & appearance 1", sentences: 37, page: "topic-18a.html", audio: "Clothing_BEG" },
         { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html", audio: "Appearance_LI1" } ] },
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Cooking & recipes 1", sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG" },
@@ -105,17 +105,17 @@
     { id: 47, name: "Homes & housing", levels: ["li1","li2"], sentences: 29, access: "premium", audio: "HomesAndHousing_LI1" },
     { id: 48, name: "Household supplies", levels: ["li1","li2"], sentences: 37, access: "premium", audio: "HouseholdSupplies_BEG" },
     { id: 20, name: "Working life", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Working life 1", sentences: 24, page: "topic-20a.html", access: "member", audio: "Job_LI1" },
+        { name: "Working life 1", sentences: 24, page: "topic-20a.html", audio: "Job_LI1" },
         { name: "Working life 2", sentences: 24, page: "topic-20b.html", audio: "Workplace_LI1" },
         { name: "Working life 3", sentences: 24, page: "topic-20c.html", audio: "Career_LI2" } ] },
     { id: 45, name: "School and University", levels: ["li1","li2"], access: "premium", parts: [
         { name: "School and University 1", sentences: 26, page: "topic-45a.html", audio: "School_LI1" },
         { name: "School and University 2", sentences: 32, page: "topic-45b.html", audio: "Campus_LI1" } ] },
     { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Food culture & eating out 1", sentences: 29, page: "topic-22a.html", access: "member", audio: "FoodSocial_LI1" },
+        { name: "Food culture & eating out 1", sentences: 29, page: "topic-22a.html", audio: "FoodSocial_LI1" },
         { name: "Food culture & eating out 2", sentences: 22, page: "topic-22b.html", audio: "FoodCulture_LI2" } ] },
     { id: 23, name: "Nature, environment & conservation", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Nature, environment & conservation 1", sentences: 30, page: "topic-23a.html", access: "member", audio: "Nature_LI1" },
+        { name: "Nature, environment & conservation 1", sentences: 30, page: "topic-23a.html", audio: "Nature_LI1" },
         { name: "Nature, environment & conservation 2", sentences: 34, page: "topic-23b.html", audio: "Nature_LI2" } ] },
     { id: 24, name: "Technology & communication", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Technology & communication 1", sentences: 23, page: "topic-24a.html", access: "member", audio: "Tech_LI1" },
@@ -125,7 +125,7 @@
         { name: "Media & entertainment 1", sentences: 37, page: "topic-25a.html", audio: "Media_LI1" },
         { name: "Media & entertainment 2", sentences: 29, page: "topic-25b.html", audio: "Media2_LI1" } ] },
     { id: 26, name: "Sport & exercise", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Sport & exercise 1", sentences: 24, page: "topic-26a.html", access: "member", audio: "Sport_LI1" },
+        { name: "Sport & exercise 1", sentences: 24, page: "topic-26a.html", audio: "Sport_LI1" },
         { name: "Sport & exercise 2", sentences: 28, page: "topic-26b.html", audio: "Sport_LI2" } ] },
     { id: 27, name: "Travel & tourism", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Travel & tourism 1", sentences: 25, page: "topic-27a.html", audio: "Travel_LI1" },
@@ -133,19 +133,19 @@
         { name: "Travel & tourism 3", sentences: 26, page: "topic-27c.html", audio: "Travel_LI2" } ] },
     { id: 28, name: "Banking & finance", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 29, name: "Community & society", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Community & society 1", sentences: 31, page: "topic-29a.html", access: "member", audio: "Community_LI1" },
+        { name: "Community & society 1", sentences: 31, page: "topic-29a.html", audio: "Community_LI1" },
         { name: "Community & society 2", sentences: 29, page: "topic-29b.html", audio: "Community_LI2" } ] },
     { id: 30, name: "Agriculture & rural life", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 31, name: "Crime, law & justice", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 32, name: "Thai geography & regions", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Thai geography & regions 1", sentences: 25, page: "topic-32a.html", access: "member", audio: "GeoRegions_LI1" },
+        { name: "Thai geography & regions 1", sentences: 25, page: "topic-32a.html", audio: "GeoRegions_LI1" },
         { name: "Thai geography & regions 2", sentences: 28, page: "topic-32b.html", audio: "GeoRegions_LI2" } ] },
     { id: 33, name: "Ceremonies & rites of passage", levels: ["li1","li2"], sentences: 25, access: "premium" },
     { id: 34, name: "Thai culture & customs", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Thai culture & customs 1", sentences: 22, page: "topic-34a.html", access: "member", audio: "ThaiCulture_LI1" },
         { name: "Thai culture & customs 2", sentences: 23, page: "topic-34b.html", audio: "ThaiCulture_LI2" } ] },
     { id: 21, name: "Education system", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Education system 1", sentences: 26, page: "topic-21a.html", access: "member", audio: "Schooling_LI1" },
+        { name: "Education system 1", sentences: 26, page: "topic-21a.html", audio: "Schooling_LI1" },
         { name: "Education system 2", sentences: 26, page: "topic-21b.html", audio: "System_LI2" } ] },
     { id: 35, name: "Buddhism", levels: ["li2","adv"], access: "premium", parts: [
         { name: "Buddhism 1", sentences: 20, page: "topic-35a.html", access: "member", audio: "Temple_LI1" },
