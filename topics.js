@@ -21,7 +21,7 @@
      Level order: beg < li1 < li2 < adv   (adv = Advanced: tertiary / niche)
      - floor == ceiling -> single label   e.g. "Beginner"
      - floor != ceiling -> range          e.g. "Beginner -> Lower intermediate"
-                                                "Intermediate -> Advanced"
+                                                "Upper intermediate -> Advanced"
    NEVER collapse a two-level topic to "Mixed levels" — "Mixed" is the
    label that erased the intermediate tier. The eyebrow on each topic
    page uses this SAME text, so page and index card always agree.
@@ -80,10 +80,6 @@
     { id: 42, name: "Occupations", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Occupations 1", sentences: 30, page: "topic-42a.html", access: "member", audio: "Occupations_BEG" },
         { name: "Occupations 2", sentences: 30, page: "topic-42b.html", audio: "Occupations_LI1" } ] },
-    { id: 13, name: "Body & health", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Body & health 1", sentences: 41, page: "topic-13a.html", audio: "BodyHealth_BEG" },
-        { name: "Body & health 2", sentences: 28, page: "topic-13b.html", audio: "Health_BEG" },
-        { name: "Body & health 3", sentences: 25, page: "topic-13c.html", audio: "Health_LI1" } ] },
     { id: 14, name: "Feelings & emotions", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Feelings & emotions 1", sentences: 28, page: "topic-14a.html", access: "member", audio: "Feelings_BEG" },
         { name: "Feelings & emotions 2", sentences: 34, page: "topic-14b.html", audio: "Feelings_LI1" } ] },
@@ -99,6 +95,13 @@
     { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
         { name: "Cooking & recipes 1", sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG" },
         { name: "Cooking & recipes 2", sentences: 28, page: "topic-19b.html", audio: "Recipes_LI1" } ] },
+    // Body & health leads the upper-intermediate band: a 3rd part made it a step up, so it sits
+    // here (out of the beginner run) rather than deterring beginners. Audio prefixes keep their
+    // original BEG/LI1 handles — the levels array is display/grouping only.
+    { id: 13, name: "Body & health", levels: ["li1","li2"], access: "premium", parts: [
+        { name: "Body & health 1", sentences: 41, page: "topic-13a.html", audio: "BodyHealth_BEG" },
+        { name: "Body & health 2", sentences: 28, page: "topic-13b.html", audio: "Health_BEG" },
+        { name: "Body & health 3", sentences: 25, page: "topic-13c.html", audio: "Health_LI1" } ] },
     { id: 49, name: "Compliments & opinions", levels: ["li1","li2"], access: "premium", parts: [
         { name: "Compliments & opinions 1", sentences: 31, page: "topic-49a.html", audio: "Compliments_LI1" },
         { name: "Compliments & opinions 2", sentences: 32, page: "topic-49b.html", audio: "Opinions_LI1" } ] },
@@ -174,10 +177,10 @@
   // sentences are a genuine step up (e.g. Buddhism). Added after li2.
   const LEVEL_ORDER = ['beg', 'li1', 'li2', 'adv'];
   const LEVEL_CLASS = { beg: 'badge-beg', li1: 'badge-li1', li2: 'badge-li2', adv: 'badge-adv' };
-  const LEVEL_FULL  = { beg: 'Beginner', li1: 'Lower intermediate', li2: 'Intermediate', adv: 'Advanced' };
+  const LEVEL_FULL  = { beg: 'Beginner', li1: 'Lower intermediate', li2: 'Upper intermediate', adv: 'Advanced' };
   // User-facing labels are NEVER abbreviated — "Lower int" is internal shorthand only. LEVEL_SHORT
   // therefore matches LEVEL_FULL (kept as a separate export for back-compat / future tweaks).
-  const LEVEL_SHORT = { beg: 'Beginner', li1: 'Lower intermediate', li2: 'Intermediate', adv: 'Advanced' };
+  const LEVEL_SHORT = { beg: 'Beginner', li1: 'Lower intermediate', li2: 'Upper intermediate', adv: 'Advanced' };
 
   function levelBounds(levels) {
     const present = LEVEL_ORDER.filter(l => levels.includes(l));
