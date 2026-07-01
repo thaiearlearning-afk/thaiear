@@ -54,7 +54,9 @@
     return {
       id: u.id,
       email: u.email || '',
-      username: meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member'),
+      // TEMP (screenshots only — REVERT after): app users show a generic "User" so the
+      // real logged-in name doesn't appear in store screenshots. Website is unaffected.
+      username: isNative() ? 'User' : (meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member')),
       avatar: meta.avatar_url || ''
     };
   }
