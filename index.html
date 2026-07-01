@@ -134,7 +134,7 @@
   .hero-tagline {
     font-family: var(--font-serif);
     font-size: 12px;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: rgba(255,255,255,0.50);
     margin-bottom: 1.4rem;
@@ -146,17 +146,6 @@
     margin: 0 auto 1.4rem;
     opacity: 0.55;
   }
-  .hero-desc {
-    font-family: var(--font-thai);
-    font-size: 15px;
-    font-weight: 300;
-    color: rgba(255,255,255,0.72);
-    line-height: 1.85;
-    letter-spacing: 0.02em;
-    max-width: 440px;
-    margin: 0 auto;
-  }
-  .hero-desc strong { color: rgba(255,255,255,0.96); font-weight: 500; }
   .hero-stats-band {
     background: rgba(0,0,0,0.14);
     border-top: 0.5px solid rgba(255,255,255,0.09);
@@ -185,11 +174,24 @@
     text-transform: uppercase;
   }
 
+  /* ── PAGE INTRO (gold accent bar) ── */
+  .page-intro { max-width: 900px; margin: 0 auto; padding: 2.6rem 1.5rem 0.4rem; }
+  .intro-lead {
+    max-width: 660px;
+    font-size: 17px;
+    line-height: 1.72;
+    color: var(--text-secondary);
+    padding: 0.15rem 0 0.15rem 1.1rem;
+    border-left: 3px solid var(--gold);
+  }
+  /* Bold emphasis only — kept black/dark-grey (not indigo), per request. */
+  .intro-lead strong { color: var(--text-primary); font-weight: 500; }
+
     /* ── TOPICS SECTION ── */
   .topics-section {
     max-width: 900px;
     margin: 0 auto;
-    padding: 2.5rem 1.5rem 5rem;
+    padding: 1.4rem 1.5rem 5rem;
   }
   .section-header {
     display: flex;
@@ -578,7 +580,6 @@
     .hero-logo { width: 91px; margin-bottom: 1.25rem; }
     .hero-thai { font-size: 30px; }
     .hero-tagline { font-size: 11px; letter-spacing: 0.16em; }
-    .hero-desc { font-size: 14px; }
     .hero-stats { gap: 2rem; padding: 1.25rem 1.25rem; flex-wrap: wrap; }
     .hero-stat-num { font-size: 20px; }
     .topics-section {
@@ -629,7 +630,6 @@
     .hero-thai { margin-bottom: 0.3rem; }      /* tagline sits closer under the Thai script */
     .hero-tagline { margin-bottom: 0.7rem; }   /* less space above the gold rule */
     .hero-rule { margin-bottom: 0.7rem; }      /* less space below the gold rule */
-    .hero-desc { line-height: 1.55; }
     .hero-stats-band { margin-top: 0.3rem; }
     .hero-stats { padding: 0.5rem 2rem; }      /* shorter band so the gold labels clear the fold */
   }
@@ -646,9 +646,8 @@
     <h1 class="visually-hidden">Learn Thai by Listening — free Thai sentences with native-speed audio, English translations and word-by-word notes.</h1>
     <img class="hero-logo" src="logo.png" alt="ThaiEar logo" width="360" height="1172">
     <div class="hero-thai">หูภาษาไทย</div>
-    <div class="hero-tagline">Listen · Repeat · Understand</div>
+    <div class="hero-tagline">Learn Thai by Ear</div>
     <div class="hero-rule"></div>
-    <p class="hero-desc">A Thai listening platform built around <strong>complete sentences</strong> — not vocabulary lists. Hear native-speed audio at home or on the go to build <strong>listening comprehension</strong> and <strong>fluency</strong>.</p>
   </div>
   <div class="hero-stats-band">
     <div class="hero-stats">
@@ -666,6 +665,11 @@
       </div>
     </div>
   </div>
+</section>
+
+<!-- ── INTRO ── -->
+<section class="page-intro">
+  <p class="intro-lead">A Thai listening platform built around <strong>complete sentences</strong> — not vocabulary lists. Hear native-speed audio at home or on the go to build <strong>listening comprehension</strong> and <strong>fluency</strong>.</p>
 </section>
 
 <!-- ── TOPICS ── -->
