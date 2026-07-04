@@ -99,12 +99,14 @@
   function refreshSubscription() {
     if (!client || !currentUser) {
       currentSubscribed = false; currentSub = null;
-      // logged out → also drop the premium offline licence stamps (see signOut) so they can't carry
-      // over to a different account that signs in on this device.
-      try {
-        localStorage.removeItem('thaiear_lifetime'); localStorage.removeItem('thaiear_sub_cache');
-        localStorage.removeItem('thaiear_lastVerified'); localStorage.removeItem('thaiear_sub_until');
-      } catch (_) {}
+      // Drop only the cached subscription STATUS here (so the nav/account render logged-out). Do NOT
+      // clear the premium OFFLINE licence stamps (thaiear_lifetime/lastVerified/sub_until) on a bare
+      // currentUser == null: supabase-js emits a null-session auth change when it can't refresh an
+      // EXPIRED access token OFFLINE (~1h in — the JWT lifetime), which is NOT a real sign-out. Wiping
+      // the stamps here locked a signed-in (even lifetime) member out of their downloads mid-flight.
+      // A deliberate sign-out still scrubs them via signOut()'s forceLocal; a different account signing
+      // in re-derives them online (stampOfflineLicence/refreshLifetime). See onAuthStateChange guard.
+      try { localStorage.removeItem('thaiear_sub_cache'); } catch (_) {}
       notify(); return;
     }
     // Seed from the last KNOWN-GOOD cache for THIS user FIRST, so a premium member is recognised
@@ -598,8 +600,15 @@
       refreshProfile();      // marketing-consent flag
       // keep in sync on login / logout / token refresh
       client.auth.onAuthStateChange(function (_event, session) {
+        var user = userFromSession(session);
+        // Offline, supabase-js can't refresh an expired access token, so ~1h in it fires a null-session
+        // change even though the user never signed out. If the persisted session is STILL on disk this
+        // is that transient blip — keep the current user (so downloads + offline licence survive and the
+        // nav doesn't flip to logged-out). A real signOut() purges the stored session (forceLocal), so
+        // readStoredSession() returns null there and we fall through to genuine logout handling.
+        if (!user && readStoredSession()) return;
         currentSession = session || null;
-        currentUser = userFromSession(session);
+        currentUser = user;
         currentProgress = null; progressLoaded = false; // re-fetch for the new (or no) user
         currentFlags = null; flagsLoaded = false;
         notify();
