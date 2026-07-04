@@ -186,6 +186,7 @@
       var bte = $('btn-te'), bet = $('btn-et');
       if (bte) bte.classList.toggle('active', currentMode === 'te');
       if (bet) bet.classList.toggle('active', currentMode === 'et');
+      applyDirClass();   // restored ET side → reveal order should open English-first too
     }
     var target = r.t;
     ensureMainSrc().then(function () {
@@ -803,6 +804,22 @@
     .sentence-body { border-top: 0.5px solid var(--border); }
     .reveal-row { padding: 0.6rem 1rem; border-bottom: 0.5px solid var(--border); }
     .reveal-row:last-child { border-bottom: none; }
+    /* ---- direction-aware reveal order ----
+       Default (Thai-first / no dir class): the page's own reveal CSS opens Thai → English → notes.
+       When English-first (et) is selected we override just enough to open English → Thai → notes and
+       put English on top. Keyed on #sentence-list.dir-et (id → beats the page's class-only rules), so
+       the static SSR cards + st-0..3 stages stay untouched. Only ET needs overrides; TE is unchanged. */
+    #sentence-list.dir-et .sentence-body { display: flex; flex-direction: column; }
+    #sentence-list.dir-et .row-english { order: 1; }
+    #sentence-list.dir-et .row-thai { order: 2; }
+    #sentence-list.dir-et .row-notes { order: 3; }
+    /* stage 1: show English (not Thai) first */
+    #sentence-list.dir-et .sentence-card.st-1 .row-thai { display: none; }
+    #sentence-list.dir-et .sentence-card.st-1 .row-english { display: block; }
+    /* bottom-border tidy: no rule under the visually-last row at each stage (English@1, Thai@2) */
+    #sentence-list.dir-et .sentence-card.st-1 .row-english { border-bottom: none; }
+    #sentence-list.dir-et .sentence-card.st-2 .row-english { border-bottom: 0.5px solid var(--border); }
+    #sentence-list.dir-et .sentence-card.st-2 .row-thai { border-bottom: none; }
     .row-thai { font-family: var(--font-thai); font-size: 19px; font-weight: 400; color: var(--text-primary); line-height: 1.5; }
     .row-english { font-size: 14px; color: var(--text-secondary); }
     .row-notes { background: var(--bg); }
@@ -1378,6 +1395,17 @@
     track.addEventListener('pointercancel', endDrag);
   }
 
+  // Reveal order follows the chosen audio direction. Thai-first (te): the accordion opens Thai →
+  // English → notes (the default). English-first (et): it opens English → Thai → notes, and English
+  // is reordered above Thai. Driven by a class on #sentence-list that the injected reveal CSS keys off
+  // — the static cards and st-0..3 stages are unchanged, so it stays SSR/crawlable.
+  function applyDirClass() {
+    var list = $('sentence-list');
+    if (!list) return;
+    list.classList.toggle('dir-et', currentMode === 'et');
+    list.classList.toggle('dir-te', currentMode !== 'et');
+  }
+
   function switchAudio(mode) {
     if (currentMode === mode) return;
     currentMode = mode;
@@ -1392,6 +1420,7 @@
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
     $('btn-et').classList.toggle('active', mode === 'et');
+    applyDirClass();                      // flip the accordion reveal order to match the new direction
     if (wasPlaying) ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(function (e) { handleDenied(e, mainTier); });
   }
 
@@ -1734,6 +1763,8 @@
   function render() {
     if (SSR) sentences.forEach(function (s) { syncCard(s.num); });
     else $('sentence-list').innerHTML = sentences.map(cardHtml).join('');
+    applyDirClass();   // keep the reveal order in sync with the current TE/ET direction
+
     var allOpen = sentences.every(function (s) { return states[s.num] === 3; });
     var btn = $('reveal-all-btn');
     if (!btn) return;
