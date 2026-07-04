@@ -1062,7 +1062,7 @@
 
   /* ---- helpers ---- */
   function dispNum(s) { return s.display != null ? s.display : s.num; }
-  function cleanThai(thai) { return thai.replace(/ \| /g, ' '); }
+  function cleanThai(thai) { return thai.replace(/\s*\|\s*/g, ' '); }   // spaced " | " OR bare "|"
   function $(id) { return document.getElementById(id); }
 
   /* ---- audio URL resolution (free = public CDN; premium = signed via the gate) ----
