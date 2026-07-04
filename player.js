@@ -1646,8 +1646,10 @@
     // stop any other sentence (top player stays paused — don't resume between clips)
     if (sentPlaying !== null) { sa.pause(); updateSentBtn(sentPlaying, false); sentPlaying = null; }
 
-    // main-pause coordination: if the top player is going, pause it and remember to resume
-    if (!mainAudio.paused) { resumeMainAfter = true; mainAudio.pause(); setMainIcon(false); }
+    // If the top player is going, pause it — but DON'T auto-resume when the clip ends. The user
+    // restarts the main track themselves in their own time. (Was: resumeMainAfter = true, which
+    // resumed the top player once the sentence finished.)
+    if (!mainAudio.paused) { mainAudio.pause(); setMainIcon(false); }
 
     var sid = String(num).padStart(2, '0');
     var file = PREFIX + '_S' + sid + '_TH.mp3';
