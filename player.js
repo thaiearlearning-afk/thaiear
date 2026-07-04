@@ -189,11 +189,31 @@
     }
     var target = r.t;
     ensureMainSrc().then(function () {
-      function seekAndPlay() {
+      // Paint the scrubber + time label at the restored spot straight away. A manual currentTime set
+      // fires 'seeked', not 'timeupdate', and the bar is only painted on 'timeupdate' (during playback)
+      // — so when iOS blocks autoplay after a navigation the bar would read 0:00 even though the
+      // position IS restored, which reads as "lost my place". Painting here makes it visible while paused.
+      function paintAt(t) {
+        if (mainAudio.duration) { var f = $('scrubber-fill'); if (f) f.style.width = ((t / mainAudio.duration) * 100) + '%'; }
+        var c = $('time-cur'); if (c) c.textContent = formatTime(t);
+      }
+      function applySeek() {
         try { mainAudio.currentTime = Math.max(0, Math.min(target, mainAudio.duration || target)); } catch (_) {}
+        paintAt(target);
+      }
+      function seekAndPlay() {
+        applySeek();
         userStartedHere = true;
         mainAudio.play().then(function () { setMainIcon(true); setupMediaSession(); })
-          .catch(function () { setMainIcon(false); });   // autoplay blocked → stay paused at the restored spot
+          .catch(function () { setMainIcon(false); paintAt(target); });   // autoplay blocked → show restored spot, paused
+        // iOS drops a currentTime set on a not-yet-buffered NETWORK stream (only metadata loaded) and
+        // snaps back to ~0. A downloaded topic is a fully-cached blob that always seeks, which is why
+        // this only bit non-downloaded topics. Re-verify once enough data is buffered and re-seek if
+        // the position drifted away from where we asked.
+        mainAudio.addEventListener('canplay', function reseek() {
+          mainAudio.removeEventListener('canplay', reseek);
+          if (mainAudio.currentTime < target - 1.5) applySeek();
+        });
       }
       if (mainAudio.readyState >= 1 && isFinite(mainAudio.duration)) seekAndPlay();
       else mainAudio.addEventListener('loadedmetadata', seekAndPlay, { once: true });
