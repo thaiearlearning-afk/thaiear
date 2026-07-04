@@ -939,7 +939,7 @@
        translated off the top + non-interactive, kept in the DOM so show/hide can transition. */
     .te-mini {
       position: fixed; top: 54px; left: 0; right: 0; z-index: 60;
-      display: flex; align-items: center; gap: 10px;
+      display: flex; flex-direction: column;
       max-width: 640px; margin: 0 auto; padding: 8px 12px;
       background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
       border: 0.5px solid var(--border, rgba(0,0,0,0.1)); border-radius: 0 0 14px 14px;
@@ -949,6 +949,7 @@
       transition: transform 0.22s ease, opacity 0.22s ease;
     }
     .te-mini.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    .te-mini-row { display: flex; align-items: center; gap: 10px; }
     .te-mini button { border: 0; background: transparent; color: inherit; cursor: pointer;
       display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     .te-mini-play { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
@@ -958,11 +959,21 @@
     .te-mini-skip svg { width: 22px; height: 22px; }
     .te-mini-skip .skip-num { position: absolute; top: 53%; left: 0; right: 0; transform: translateY(-50%);
       font-size: 8px; font-weight: 700; text-align: center; }
-    .te-mini-bar { flex: 1; min-width: 40px; height: 4px; border-radius: 2px;
-      background: rgba(0,0,0,0.12); overflow: hidden; }
+    /* Big, easy-to-grab seek zone: 44px tall hit area around a 4px visible track. touch-action:pan-y
+       lets the page still scroll vertically while horizontal drags scrub. Stays inside the controls
+       row, so it never overlaps the now-playing link below. */
+    .te-mini-scrub { flex: 1; min-width: 40px; min-height: 44px; align-self: stretch;
+      display: flex; align-items: center; cursor: pointer; touch-action: pan-y; }
+    .te-mini-bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(0,0,0,0.12); overflow: hidden; }
     .te-mini-fill { height: 100%; width: 0%; border-radius: 2px; background: var(--accent, #4B41AD); }
-    .te-mini-x { width: 26px; height: 26px; flex-shrink: 0; opacity: 0.55; font-size: 20px; line-height: 1; }
+    .te-mini-x { width: 26px; height: 26px; flex-shrink: 0; opacity: 0.55; font-size: 20px; line-height: 1; align-self: center; }
     .te-mini-x:hover { opacity: 1; }
+    /* "Now playing <other topic>" caption — a separate row beneath the controls, its own click target. */
+    .te-mini-np { display: none; margin: 2px 4px 0; padding: 2px 0; text-align: center;
+      font-size: 12px; line-height: 1.3; color: inherit; text-decoration: none; opacity: 0.85; }
+    .te-mini-np.show { display: block; }
+    .te-mini-np strong { font-weight: 700; }
+    .te-mini-np:hover strong { text-decoration: underline; }
     body.premium-topic .te-mini { background: #FBF5DC; color: #B29234; }
     body.premium-topic .te-mini-play { background: #F0CC5C; }
     body.premium-topic .te-mini-play svg { fill: #3D2E00; }
@@ -1147,6 +1158,31 @@
     if (show) syncMini();   // make sure glyph/progress are current the moment it slides in
     bar.classList.toggle('show', show);
   }
+  // Drag/tap-to-seek on the mini progress bar. The hit zone (.te-mini-scrub) is much TALLER than the
+  // 4px visible track so it's easy to grab on touch; the position maps to the visible bar's width.
+  // Confined to the controls row, so it never overlaps the "now playing" link row beneath it.
+  function initMiniScrub() {
+    var scrub = $('te-mini-scrub'); if (!scrub) return;
+    var track = scrub.querySelector('.te-mini-bar');
+    var dragging = false;
+    function seekTo(clientX) {
+      if (!mainAudio.duration || !isFinite(mainAudio.duration)) return;
+      var r = track.getBoundingClientRect();
+      var pct = r.width ? (clientX - r.left) / r.width : 0;
+      pct = Math.max(0, Math.min(1, pct));
+      try { mainAudio.currentTime = pct * mainAudio.duration; } catch (_) {}
+      var mf = $('te-mini-fill'); if (mf) mf.style.width = (pct * 100) + '%';
+    }
+    scrub.addEventListener('pointerdown', function (e) {
+      dragging = true;
+      try { scrub.setPointerCapture(e.pointerId); } catch (_) {}
+      seekTo(e.clientX); e.preventDefault();
+    });
+    scrub.addEventListener('pointermove', function (e) { if (dragging) seekTo(e.clientX); });
+    function end(e) { dragging = false; try { scrub.releasePointerCapture(e.pointerId); } catch (_) {} }
+    scrub.addEventListener('pointerup', end);
+    scrub.addEventListener('pointercancel', end);
+  }
   function initMiniPlayer() {
     if (!$('player-root') || $('te-mini')) return;   // topic pages only; once
     var bar = document.createElement('div');
@@ -1155,24 +1191,31 @@
     bar.setAttribute('role', 'region');
     bar.setAttribute('aria-label', 'Mini audio player');
     bar.innerHTML =
-      '<button class="te-mini-skip" id="te-mini-back" aria-label="Back 10 seconds" title="Back 10 seconds">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>' +
-        '<span class="skip-num">10</span>' +
-      '</button>' +
-      '<button class="te-mini-play" id="te-mini-play" aria-label="Play or pause audio">' +
-        '<svg id="te-mini-icon" viewBox="0 0 16 16">' + PLAY_TRI + '</svg>' +
-      '</button>' +
-      '<button class="te-mini-skip" id="te-mini-fwd" aria-label="Forward 10 seconds" title="Forward 10 seconds">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>' +
-        '<span class="skip-num">10</span>' +
-      '</button>' +
-      '<div class="te-mini-bar" aria-hidden="true"><div class="te-mini-fill" id="te-mini-fill"></div></div>' +
-      '<button class="te-mini-x" id="te-mini-x" aria-label="Hide mini player" title="Hide">&times;</button>';
+      '<div class="te-mini-row">' +
+        '<button class="te-mini-skip" id="te-mini-back" aria-label="Back 10 seconds" title="Back 10 seconds">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>' +
+          '<span class="skip-num">10</span>' +
+        '</button>' +
+        '<button class="te-mini-play" id="te-mini-play" aria-label="Play or pause audio">' +
+          '<svg id="te-mini-icon" viewBox="0 0 16 16">' + PLAY_TRI + '</svg>' +
+        '</button>' +
+        '<button class="te-mini-skip" id="te-mini-fwd" aria-label="Forward 10 seconds" title="Forward 10 seconds">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>' +
+          '<span class="skip-num">10</span>' +
+        '</button>' +
+        '<div class="te-mini-scrub" id="te-mini-scrub" role="slider" aria-label="Seek">' +
+          '<div class="te-mini-bar"><div class="te-mini-fill" id="te-mini-fill"></div></div>' +
+        '</div>' +
+        '<button class="te-mini-x" id="te-mini-x" aria-label="Hide mini player" title="Hide">&times;</button>' +
+      '</div>' +
+      // Shown only when the player has drifted onto ANOTHER topic (autoplay/next); links there.
+      '<a class="te-mini-np" id="te-mini-np" href="#"></a>';
     document.body.appendChild(bar);
     $('te-mini-play').addEventListener('click', function () { togglePlay(); });
     $('te-mini-back').addEventListener('click', function () { skip(-10); });
     $('te-mini-fwd').addEventListener('click', function () { skip(10); });
     $('te-mini-x').addEventListener('click', function () { miniDismissed = true; updateMiniVisibility(); });
+    initMiniScrub();
     // Show the mini exactly when the real player leaves the viewport. The negative top rootMargin trips
     // it as the player tucks under the sticky nav (~54px), not only once it's fully off-screen.
     if ('IntersectionObserver' in window) {
@@ -1454,6 +1497,18 @@
       txt.innerHTML = 'Now playing <a href="' + href + '"' + npCls + '><strong>' + escapeHtml(unit.name) + '</strong></a>' + (lvl ? ' · ' + escapeHtml(lvl) : '')
         + (moved ? ' <a href="#" class="np-return" id="np-return" title="Bring the player back to this topic">↩ Return</a>' : '');
       var rb = $('np-return'); if (rb) rb.onclick = function (e) { e.preventDefault(); returnToThisTopic(); };
+    }
+    // Mirror onto the floating mini: a "Now playing <other topic>" link, shown only when the top
+    // player has drifted off THIS page's topic. Its own row/click target (never the seek zone's).
+    var mnp = $('te-mini-np');
+    if (mnp) {
+      if (moved) {
+        mnp.setAttribute('href', unit.page || '#');
+        mnp.innerHTML = 'Now playing <strong>' + escapeHtml(unit.name) + '</strong>';
+        mnp.classList.add('show');
+      } else {
+        mnp.classList.remove('show');
+      }
     }
     if (unit.name) document.title = unit.name + ' · ThaiEar';
     updateMediaSession(unit, lvl);
