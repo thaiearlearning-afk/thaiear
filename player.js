@@ -933,6 +933,42 @@
     body.premium-topic .orientation-text a,
     body.premium-topic .offline-btn,
     body.premium-topic .offline-status.offline-ok { color: #B29234; }
+    /* ---- floating mini transport ----
+       Slim play/pause + ±10 + progress bar that sticks under the nav once the user has started the
+       TE/ET track and the real player is scrolled off. Fixed overlay (no layout shift). Hidden state =
+       translated off the top + non-interactive, kept in the DOM so show/hide can transition. */
+    .te-mini {
+      position: fixed; top: 54px; left: 0; right: 0; z-index: 60;
+      display: flex; align-items: center; gap: 10px;
+      max-width: 640px; margin: 0 auto; padding: 8px 12px;
+      background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
+      border: 0.5px solid var(--border, rgba(0,0,0,0.1)); border-radius: 0 0 14px 14px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      font-family: var(--font-ui, system-ui, sans-serif);
+      transform: translateY(-130%); opacity: 0; pointer-events: none;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+    }
+    .te-mini.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    .te-mini button { border: 0; background: transparent; color: inherit; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+    .te-mini-play { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent, #4B41AD); color: #fff; }
+    .te-mini-play svg { width: 15px; height: 15px; fill: #fff; }
+    .te-mini-skip { position: relative; width: 30px; height: 30px; flex-shrink: 0; }
+    .te-mini-skip svg { width: 22px; height: 22px; }
+    .te-mini-skip .skip-num { position: absolute; top: 53%; left: 0; right: 0; transform: translateY(-50%);
+      font-size: 8px; font-weight: 700; text-align: center; }
+    .te-mini-bar { flex: 1; min-width: 40px; height: 4px; border-radius: 2px;
+      background: rgba(0,0,0,0.12); overflow: hidden; }
+    .te-mini-fill { height: 100%; width: 0%; border-radius: 2px; background: var(--accent, #4B41AD); }
+    .te-mini-x { width: 26px; height: 26px; flex-shrink: 0; opacity: 0.55; font-size: 20px; line-height: 1; }
+    .te-mini-x:hover { opacity: 1; }
+    body.premium-topic .te-mini { background: #FBF5DC; color: #B29234; }
+    body.premium-topic .te-mini-play { background: #F0CC5C; }
+    body.premium-topic .te-mini-play svg { fill: #3D2E00; }
+    body.premium-topic .te-mini-fill { background: #E3BC48; }
+    @media (max-width: 480px) { .te-mini { border-radius: 0; } }
+    @media (prefers-reduced-motion: reduce) { .te-mini { transition: opacity 0.15s ease; } }
   `;
 
   /* ---- player markup (transport bar, how-to, controls, list, audio el) ---- */
@@ -1082,7 +1118,71 @@
   var PLAY_BARS = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
   function setMainIcon(playing) {
     var i = $('play-icon'); if (i) i.innerHTML = playing ? PLAY_BARS : PLAY_TRI;
+    var mi = $('te-mini-icon'); if (mi) mi.innerHTML = playing ? PLAY_BARS : PLAY_TRI;
+    // Starting the main TE/ET track latches the floating mini transport on for the rest of the visit
+    // (it then shows whenever the real player scrolls out of view). Pausing keeps it latched.
+    if (playing) miniActivated = true;
+    updateMiniVisibility();
     if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = playing ? 'playing' : 'paused'; } catch (_) {} }
+  }
+
+  /* ---- floating mini transport ----
+     Once the user starts the main TE/ET track, a slim play/pause + ±10 bar sticks under the nav
+     whenever the real player is scrolled out of view, so transport stays reachable while reading the
+     sentence cards. It mirrors the SAME mainAudio (no second engine): play/pause → togglePlay(), skip
+     → skip(±10), glyph driven by setMainIcon(), progress by the timeupdate handler. Pausing keeps it
+     up; only ✕ hides it, and only for this page visit (resets on reload). Fixed overlay → no layout
+     shift (preserves the topic-page CLS). Web / PWA / app all load this file, so it lands on all three. */
+  var miniActivated = false;   // has the main TE/ET been started this page-load? (latches on)
+  var miniDismissed = false;   // did the user ✕ the bar this visit?
+  var mainInView = true;       // is #player-root currently on screen? (IntersectionObserver)
+  function syncMini() {
+    var mi = $('te-mini-icon'); if (mi) mi.innerHTML = mainAudio.paused ? PLAY_TRI : PLAY_BARS;
+    var mf = $('te-mini-fill');
+    if (mf) mf.style.width = (mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0) + '%';
+  }
+  function updateMiniVisibility() {
+    var bar = $('te-mini'); if (!bar) return;
+    var show = miniActivated && !mainInView && !miniDismissed;
+    if (show) syncMini();   // make sure glyph/progress are current the moment it slides in
+    bar.classList.toggle('show', show);
+  }
+  function initMiniPlayer() {
+    if (!$('player-root') || $('te-mini')) return;   // topic pages only; once
+    var bar = document.createElement('div');
+    bar.className = 'te-mini';
+    bar.id = 'te-mini';
+    bar.setAttribute('role', 'region');
+    bar.setAttribute('aria-label', 'Mini audio player');
+    bar.innerHTML =
+      '<button class="te-mini-skip" id="te-mini-back" aria-label="Back 10 seconds" title="Back 10 seconds">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>' +
+        '<span class="skip-num">10</span>' +
+      '</button>' +
+      '<button class="te-mini-play" id="te-mini-play" aria-label="Play or pause audio">' +
+        '<svg id="te-mini-icon" viewBox="0 0 16 16">' + PLAY_TRI + '</svg>' +
+      '</button>' +
+      '<button class="te-mini-skip" id="te-mini-fwd" aria-label="Forward 10 seconds" title="Forward 10 seconds">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>' +
+        '<span class="skip-num">10</span>' +
+      '</button>' +
+      '<div class="te-mini-bar" aria-hidden="true"><div class="te-mini-fill" id="te-mini-fill"></div></div>' +
+      '<button class="te-mini-x" id="te-mini-x" aria-label="Hide mini player" title="Hide">&times;</button>';
+    document.body.appendChild(bar);
+    $('te-mini-play').addEventListener('click', function () { togglePlay(); });
+    $('te-mini-back').addEventListener('click', function () { skip(-10); });
+    $('te-mini-fwd').addEventListener('click', function () { skip(10); });
+    $('te-mini-x').addEventListener('click', function () { miniDismissed = true; updateMiniVisibility(); });
+    // Show the mini exactly when the real player leaves the viewport. The negative top rootMargin trips
+    // it as the player tucks under the sticky nav (~54px), not only once it's fully off-screen.
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        mainInView = entries[entries.length - 1].isIntersecting;
+        updateMiniVisibility();
+      }, { rootMargin: '-56px 0px 0px 0px', threshold: 0 });
+      io.observe($('player-root'));
+    }
+    syncMini();
   }
 
   /* ---- state ---- */
@@ -1153,6 +1253,7 @@
     var pct = mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
     var f = $('scrubber-fill'); if (f) f.style.width = pct + '%';
     var c = $('time-cur'); if (c) c.textContent = formatTime(mainAudio.currentTime);
+    var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';   // mirror onto the floating mini bar
     writeWebResume();   // keep the cross-page resume position fresh while playing (web only, throttled)
   });
   mainAudio.addEventListener('ended', function () {
@@ -1761,6 +1862,7 @@
     initProgress();
     initFlags();
     initXtraControls();
+    initMiniPlayer();       // floating mini transport (shows when the main player scrolls out of view)
     renderOfflineBar();
     syncToPlayingTrack();   // if the engine is already playing another topic, reflect/adopt it
     maybeWebResume();       // web: if we navigated here from the now-playing link, continue from where it was
