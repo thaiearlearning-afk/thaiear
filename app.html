@@ -78,6 +78,29 @@
 
   .note { font-size: 13px; color: var(--text-tertiary); margin-top: 1.75rem; text-align: center; }
 
+  /* iPhone "Add to Home Screen" walkthrough. Reuses the .dl-section type scale; adds a numbered
+     step list with an inline share glyph and a highlighted "how to turn on offline" sub-block. */
+  .ios-lead { color: var(--text-secondary); margin-bottom: 1rem; }
+  .ios-steps { list-style: none; counter-reset: step; margin: 0 0 1rem; padding: 0; }
+  .ios-steps li {
+    position: relative; counter-increment: step; padding-left: 2.4rem; margin-bottom: 0.85rem;
+    color: var(--text-secondary); line-height: 1.65;
+  }
+  .ios-steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 0.05rem;
+    width: 1.65rem; height: 1.65rem; border-radius: 50%;
+    background: var(--accent-light); color: var(--accent);
+    font-size: 12.5px; font-weight: 700; line-height: 1.65rem; text-align: center;
+  }
+  .ios-steps strong { color: var(--text-primary); font-weight: 600; }
+  .ios-share { display: inline-flex; vertical-align: -0.22em; width: 1.05em; height: 1.05em; color: var(--accent); }
+  .ios-substep { margin-top: 0.35rem; font-size: 13.5px; color: var(--text-tertiary); }
+  .ios-tip {
+    background: var(--accent-light); border-radius: var(--radius-md);
+    padding: 0.85rem 1rem; font-size: 13.5px; color: #3B3488; line-height: 1.6; margin: 0.25rem 0 0.5rem;
+  }
+  .ios-tip strong { color: #2A2470; }
+
   /* mascot image + caption with the same animated 1→2→3 dot ellipsis used across the site.
      Desktop uses the smaller base width; mobile bumps it up (same treatment as muaythai). */
   .fluency-block { text-align: center; margin: 1.25rem 0 1.5rem; }
@@ -131,15 +154,15 @@
 <div class="wrap">
   <div class="eyebrow">ThaiEar App</div>
   <h1>Take ThaiEar with you</h1>
-  <p class="lede">Download our free app to keep learning Thai offline when you’re on the go.</p>
+  <p class="lede">Add ThaiEar to your phone for free and keep learning Thai offline — download whole topics and listen with no internet, on the train, on a flight, or off-grid. There’s a way in for both <strong>iPhone</strong> and <strong>Android</strong> below.</p>
 
   <!-- Offline-downloads beta toggle: revealed only in the installed home-screen PWA (script at foot). -->
   <div class="beta-card" id="offline-beta" hidden>
-    <div class="beta-eyebrow">Beta · installed app</div>
+    <div class="beta-eyebrow">Home Screen · offline</div>
     <div class="beta-row">
       <div>
         <div class="beta-title">Offline downloads</div>
-        <div class="beta-desc">Save topics to listen with no internet. Experimental on iPhone — the system may clear downloads when storage runs low.</div>
+        <div class="beta-desc">You’ve added ThaiEar to your Home Screen — nice one. Switch this on to save topics and listen with no internet.</div>
       </div>
       <button class="beta-switch" id="offline-beta-switch" type="button" role="switch" aria-checked="false" aria-label="Toggle offline downloads">
         <span class="beta-knob"></span>
@@ -152,6 +175,33 @@
     <img class="fluency-img" src="hornbill.png" alt="Hornbill" width="450" height="535">
     <div class="fluency-text">Take to the skies<span class="dots" aria-hidden="true"></span></div>
   </div>
+
+  <div class="dl-section ios-section">
+    <h2>Listen offline on iPhone &amp; iPad</h2>
+    <p class="ios-lead">On iPhone you don’t need to install anything to listen offline. Add ThaiEar to your Home Screen straight from Safari, and you can download whole topics to listen with no internet. It’s free and takes about a minute.</p>
+    <ol class="ios-steps">
+      <li>Open <strong>thaiear.com</strong> in <strong>Safari</strong>.<div class="ios-substep">This only works in Safari — not Chrome or another browser.</div></li>
+      <li>Tap the <strong>Share</strong> button
+        <span class="ios-share" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M6 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></svg></span>
+        — the square with an arrow pointing up. It’s at the bottom of the screen on an iPhone, or the top on an iPad.</li>
+      <li>Scroll down the list and tap <strong>Add to Home Screen</strong>.</li>
+      <li>Tap <strong>Add</strong> in the top corner. The ThaiEar icon now sits on your Home Screen.</li>
+      <li>Open <strong>ThaiEar</strong> from your Home Screen — it opens full-screen, ready to go.</li>
+    </ol>
+
+    <h2>Then turn on offline downloads</h2>
+    <p class="ios-lead">Do this once, from the ThaiEar you just added to your Home Screen:</p>
+    <ol class="ios-steps">
+      <li>Open ThaiEar from your Home Screen, tap the <strong>menu</strong> (top-right) and choose <strong>ThaiEar App</strong> to come back to this page.</li>
+      <li>Switch on <strong>Offline downloads</strong> in the box at the top of the page.<div class="ios-substep">That box only appears when you’ve opened ThaiEar from your Home Screen — so if you can’t see it, you’re still in Safari.</div></li>
+      <li>Open any topic and tap <strong>Download for offline</strong> — or, on the home page, tap the circle on each topic you want and hit <strong>Download</strong>.</li>
+    </ol>
+    <div class="ios-tip">
+      Downloaded topics play with <strong>no internet</strong> — even in airplane mode. On iPhone these are kept in the app’s own storage; if your phone runs very low on space, iOS may clear them, and you can simply reconnect and tap Download again. Our full <strong>App Store</strong> app, with permanent offline storage, is on the way.
+    </div>
+  </div>
+
+  <hr class="divider">
 
   <div class="dl-section">
     <h2>Download ThaiEar for Android — available now</h2>
