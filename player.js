@@ -1101,32 +1101,63 @@
     return !!(a.isSubscribed && a.isSubscribed());              // premium = active subscription
   }
   // gate(): what a non-entitled tap does. Member → the free sign-in page (web AND app — login is not
-  // payment steering). Premium → the paywall on the WEBSITE, but in the APP a non-steering locked note
+  // payment steering). Premium → the paywall on the WEBSITE, but in the APP an informational sheet
   // instead (Google Play forbids steering to outside payment).
   function gate(tier) {
     if (tier == null) tier = TIER;
     if (tier === 'member') { window.location.href = 'join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE); return; }
-    if (NATIVE) { lockedToast(); return; }
+    if (NATIVE) { premiumInfoSheet(); return; }
     window.location.href = 'subscribe.html';
   }
-  var _lockToastTimer = null;
-  function lockedToast() {
+  // premiumInfoSheet(): compliance-safe explainer shown IN THE APP when a non-entitled visitor taps a
+  // gated interaction on a premium topic. Google Play's reader-app rule forbids steering users to any
+  // outside payment method, so this NEVER shows a price, the website, or a subscribe/checkout path — it
+  // only explains what Premium unlocks, plus a Sign in for an existing subscriber who isn't signed in
+  // (login is not payment steering). Replaces the old auto-dismiss "preview only" toast, which read as a
+  // dead tap with no information. Web keeps its normal paywall redirect (subscribe.html), above.
+  function premiumInfoSheet() {
     try {
-      var t = document.getElementById('te-locked-toast');
-      if (!t) {
-        t = document.createElement('div');
-        t.id = 'te-locked-toast';
-        t.style.cssText = 'position:fixed;left:50%;bottom:104px;transform:translateX(-50%);z-index:99999;' +
-          'background:rgba(26,26,26,.92);color:#fff;font:14px/1.4 var(--font-ui,system-ui,sans-serif);' +
-          'padding:10px 16px;border-radius:10px;max-width:82%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.28);' +
-          'opacity:0;transition:opacity .2s;pointer-events:none;';
-        document.body.appendChild(t);
-      }
-      t.textContent = '🔒 Premium topic — preview only';
-      t.style.opacity = '0';
-      requestAnimationFrame(function () { t.style.opacity = '1'; });
-      if (_lockToastTimer) clearTimeout(_lockToastTimer);
-      _lockToastTimer = setTimeout(function () { t.style.opacity = '0'; }, 2200);
+      if (document.getElementById('te-premium-sheet')) return;   // already open — don't stack
+      var a = window.ThaiEarAuth;
+      var signedIn = !!(a && a.getUser && a.getUser());
+      var ov = document.createElement('div');
+      ov.id = 'te-premium-sheet';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;' +
+        'justify-content:center;padding:20px;background:rgba(20,16,48,.5);opacity:0;transition:opacity .18s;';
+      // Two non-entitled states reach this sheet (a subscribed visitor is never gated):
+      //   • signed OUT — might be an existing subscriber who just isn't logged in → offer Sign in.
+      //   • signed IN on a free account — login won't help and we can't steer to payment in-app, so
+      //     no button, just a neutral note stating their state. Both only ever explain, never sell.
+      var signInBtn = signedIn ? '' :
+        '<button id="te-ps-signin" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
+        'padding:11px 14px;border-radius:8px;border:0;background:#4B41AD;color:#fff;cursor:pointer;">Sign in</button>';
+      var stateNote = signedIn
+        ? 'You’re signed in on a free account.'
+        : 'Already a Premium member? Sign in to listen.';
+      ov.innerHTML =
+        '<div role="dialog" aria-modal="true" style="background:#fff;border-radius:14px;max-width:360px;width:100%;' +
+          'padding:22px 20px 18px;box-shadow:0 12px 40px rgba(0,0,0,.25);font-family:var(--font-ui,system-ui,sans-serif);">' +
+          '<div style="font:600 17px var(--font-ui,system-ui,sans-serif);color:#B29234;margin-bottom:8px;">🔒 Premium topic</div>' +
+          '<p style="font-size:14px;color:#5A5A5A;line-height:1.55;margin:0 0 12px;">' +
+            'You’re previewing this topic. A ThaiEar Premium membership unlocks:</p>' +
+          '<ul style="list-style:none;margin:0 0 16px;padding:0;font-size:14px;color:#1A1A1A;line-height:1.9;">' +
+            '<li>✓ Every topic and level</li>' +
+            '<li>✓ All sentence and full-topic audio</li>' +
+            '<li>✓ Offline downloads</li></ul>' +
+          '<p style="font-size:13px;color:#9A9A9A;line-height:1.5;margin:0 0 14px;">' + stateNote + '</p>' +
+          '<div style="display:flex;gap:8px;">' +
+            signInBtn +
+            '<button id="te-ps-close" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
+              'padding:11px 14px;border-radius:8px;border:.5px solid rgba(0,0,0,.18);background:#fff;color:#5A5A5A;cursor:pointer;">Got it</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(ov);
+      requestAnimationFrame(function () { ov.style.opacity = '1'; });
+      function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      var c = ov.querySelector('#te-ps-close'); if (c) c.addEventListener('click', close);
+      var s = ov.querySelector('#te-ps-signin');
+      if (s) s.addEventListener('click', function () { window.location.href = 'account.html'; });
     } catch (_) {}
   }
 

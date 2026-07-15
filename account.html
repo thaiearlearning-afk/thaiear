@@ -440,11 +440,12 @@ function renderAccount() {
   if (!user) {
     el.innerHTML =
       '<div class="login-box">' +
-        '<p style="margin-bottom:1.2rem">Sign in to manage your membership and unlock premium topics.</p>' +
+        '<p style="margin-bottom:1.2rem">Sign in or create your account to manage your membership and unlock premium topics.</p>' +
         '<button class="btn btn-primary login-btn" onclick="ThaiEarAuth.signInWithGoogle()">Continue with Google</button>' +
         '<div class="login-sep">or</div>' +
         '<input id="login-email-input" class="login-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">' +
         '<button class="btn btn-ghost login-btn" id="login-link-btn" onclick="sendLoginLink()">Email me a sign-in link</button>' +
+        '<p class="acct-muted" style="margin-top:8px;font-size:12.5px;line-height:1.5">New here? No separate sign-up needed — just enter your email and we’ll create your account automatically. No password to remember.</p>' +
         '<p id="login-email-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
         '<p class="acct-muted login-terms">By continuing you agree to our ' +
           '<a href="terms.html" style="color:var(--accent);text-decoration:none">Terms</a> and ' +
