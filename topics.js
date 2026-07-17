@@ -99,6 +99,11 @@
     // enough to be the fun, inviting thing they are, but never fronting the corpus as if they were the
     // easiest pages on the site. Owner decision 2026-07-17. Keep them here and keep them adjacent;
     // Idioms first (they were one topic, ID 38, before the 38/39 split).
+    // BOTH were also re-badged to ['beg'] (from beg/li1 and li1/li2) so they group into this band —
+    // that makes 10 re-badges in total, not the 8 you get by counting the inline markers below.
+    // ⚠ Tone twisters' AUDIO stays `ToneTwister_LI1` and its JSON stays `level: LI1`. That is CORRECT
+    // and must not be "fixed" to match this badge: the level in an audio handle is a frozen filename
+    // component, not a difficulty claim. Renaming it 404s every R2 URL. Same for Idioms (`Idiom_BEG`).
     { id: 38, name: "Idioms", levels: ['beg'], sentences: 27, page: "topic-38.html", audio: "Idiom_BEG", access: "premium",
       keywords: ['idiom','สำนวน','saying','expression','proverb','figure of speech','phrase','metaphor','สุภาษิต','colloquial'] },
     { id: 39, name: "Tone twisters", levels: ['beg'], sentences: 19, page: "topic-39.html", audio: "ToneTwister_LI1", access: "premium",
