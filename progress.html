@@ -180,21 +180,13 @@ function bare(f) { return String(f || '').toLowerCase().replace(/\.html$/, ''); 
 function liveRows() {
   var T = window.ThaiEarTopics;
   if (!T) return [];
-  var rows = [];
-  T.topics.forEach(function (t) {
-    if (t.parts) {
-      t.parts.forEach(function (part) {
-        if (part && typeof part === 'object' && part.page) {
-          // A split part uses its OWN access tier when set (member first part, premium rest),
-          // else the parent topic's — same rule as the index grid (accessFor in topics.js).
-          rows.push({ key: bare(part.page), name: part.name || t.name, page: part.page, access: T.accessFor(t, part) });
-        }
-      });
-    } else if (T.liveTopics[t.id]) {
-      rows.push({ key: bare(T.liveTopics[t.id]), name: t.name, page: T.liveTopics[t.id], access: t.access || 'free' });
-    }
+  // topics.js's liveSequence() already IS "every live, playable page in display order, split
+  // parts as their own entries, tier resolved" — which is exactly this list. Using it directly
+  // (instead of re-flattening t.parts here) means the progress page, the sentences page, the
+  // index grid and the player's prev/next all read one function and can't drift apart.
+  return T.liveSequence().map(function (u) {
+    return { key: bare(u.page), name: u.name, page: u.page, access: u.access };
   });
-  return rows;
 }
 function maxOf(topics) { var m = 0; for (var k in topics) { if (topics[k] > m) m = topics[k]; } return m; }
 

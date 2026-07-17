@@ -178,19 +178,10 @@ function pad2(n) { return String(n).padStart(2, '0'); }
 function liveRows() {
   var T = window.ThaiEarTopics;
   if (!T) return [];
-  var rows = [];
-  T.topics.forEach(function (t) {
-    if (t.parts) {
-      t.parts.forEach(function (part) {
-        if (part && typeof part === 'object' && part.page) {
-          rows.push({ key: bare(part.page), name: part.name || t.name, page: part.page, access: T.accessFor(t, part) });
-        }
-      });
-    } else if (T.liveTopics[t.id]) {
-      rows.push({ key: bare(T.liveTopics[t.id]), name: t.name, page: T.liveTopics[t.id], access: t.access || 'free' });
-    }
+  // Same single source as the progress page + index grid — see the note in progress.html.
+  return T.liveSequence().map(function (u) {
+    return { key: bare(u.page), name: u.name, page: u.page, access: u.access };
   });
-  return rows;
 }
 
 /* ---- per-sentence audio (mirrors player.js: free = public CDN, gated = signed /api/audio) ---- */

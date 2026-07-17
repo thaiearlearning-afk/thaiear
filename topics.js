@@ -1,185 +1,276 @@
 /* ============================================================
    topics.js — SINGLE SOURCE OF TRUTH for the ThaiEar topic list.
    ------------------------------------------------------------
-   ONE list, consumed by two places:
-     • index.html  — renders the topic grid (cards, levels, lock).
-     • every topic page — derives its eyebrow (the difficulty, e.g.
-       "BEGINNER") from this list. Add / remove / reorder a topic HERE
-       ONLY — no per-page edits, exactly like nav.js owns the top bar.
+   ONE list, consumed by:
+     • index.html  — renders the topic grid (cards, levels, lock, search).
+     • every topic page — derives its eyebrow (the difficulty) from this list.
+     • progress.html / sentences.html — per-topic rows.
+     • player.js — continuous-playback sequence + prev/next.
+   Add / remove / reorder HERE ONLY — no per-page edits, exactly like nav.js
+   owns the top bar.
 
-   To use on a topic page:
-     1. have  <div class="topic-eyebrow" id="topic-eyebrow"></div>
-     2. load  <script src="topics.js" defer></script>
-   This file finds the topic whose page == the current filename and
-   fills that eyebrow. index.html instead reads window.ThaiEarTopics.
+   ── THE UNIT MODEL (changed 2026-07-17 — read this) ──
+   The array is a flat list of UNITS. A unit = ONE playable page. A split
+   topic's parts are SEPARATE units, each with its own `part` index, its own
+   `levels`, and its own `access`. They are NO LONGER nested under a `parts`
+   array, and they NO LONGER have to sit next to each other in the grid.
+
+   Why: difficulty is a property of the SENTENCE, so a "part 2" often ramps a
+   whole band above its part 1 (e.g. Getting around & transport 2 averages
+   42.0 Thai chars vs part 1's 27.6 — a bigger gap than most topic pairs).
+   Nesting forced them to share a level and a slot, which mis-sold both.
+
+   INVARIANTS (enforced by the 2026-07-17 re-order; keep them true):
+     • Array order = DISPLAY order.
+     • `id` is the FROZEN internal handle (spreadsheet #, topic-{id}.html,
+       audio handle). NEVER renumber it. Reordering the array is free precisely
+       BECAUSE ids/filenames/audio prefixes are position-independent.
+     • A part NEVER precedes a lower-numbered part of the same id. Parts may be
+       far apart, but part 1 always comes first. (Body & health and Romantic
+       relationships were both kept contiguous for narrative reasons — their
+       vocabulary/arc depends on the earlier part.)
+     • The first three units are the free tier. Don't displace them.
 
    ── LEVEL DISPLAY — difficulty is a RANGE, not a single badge ──
-   Difficulty is a property of the SENTENCE, not the topic: each
-   topic ramps its own sentences Beginner -> LI1 -> LI2, and most
-   span two levels. So a topic's label shows a RANGE from its lowest
-   level present (floor) to its highest (ceiling).
+   A unit's label shows a RANGE from its lowest level present (floor) to its
+   highest (ceiling).
      Level order: beg < li1 < li2 < adv   (adv = Advanced: tertiary / niche)
      - floor == ceiling -> single label   e.g. "Beginner"
      - floor != ceiling -> range          e.g. "Beginner -> Lower intermediate"
-                                                "Upper intermediate -> Advanced"
-   NEVER collapse a two-level topic to "Mixed levels" — "Mixed" is the
-   label that erased the intermediate tier. The eyebrow on each topic
-   page uses this SAME text, so page and index card always agree.
+   NEVER collapse a two-level unit to "Mixed levels" — "Mixed" is the label that
+   erased the intermediate tier. The eyebrow on each topic page uses this SAME
+   text, so page and index card always agree.
+
+   ── ACCESS ──
+   access: "member" (any signed-in user) or "premium" (active subscription);
+   omitting it (or "free") = open. THIS ARRAY IS THE SINGLE SOURCE OF TRUTH for
+   the free/member/premium split — it drives the index cards AND the prev/next
+   buttons. You do NOT hand-lock prev/next: decorateTopicNav() reads each
+   button's destination unit and locks/unlocks to match. Backend enforcement of
+   the audio is server-side (functions/api/audio.js); this layer is UX only.
+
+   ── SEARCH ──
+   Each unit carries an authored `keywords` array (synonyms + key Thai terms).
+   searchUnits() requires EVERY typed token to match (AND, never OR) — that is
+   what stops a two-word query returning half the site. See searchUnits() below.
    ============================================================ */
 
 (function () {
   'use strict';
 
-  // Array order = DISPLAY order. `id` is the FROZEN internal handle (spreadsheet #,
-  // topic-{id}.html filename, liveTopics key). The card number shown is the 1-based
-  // POSITION in this array, computed at render — never the id.
-  //
-  // access: "member" (any signed-in user) or "premium" (active subscription) gates a
-  // topic; omitting it (or "free") = open. THIS ARRAY IS THE SINGLE SOURCE OF TRUTH for
-  // the free/member/premium split — it drives the index cards AND the prev/next buttons.
-  // You do NOT hand-lock the prev/next buttons: decorateTopicNav() (below) reads each
-  // button's destination topic, looks up its access here, and locks/unlocks it to match
-  // (gold padlock = premium → subscribe.html; purple padlock = member → join.html).
-  // So setting a topic's access here locks its card, the "Next" on the previous topic,
-  // and the "Prev" on the next topic all at once — and unrestricting it (back to free)
-  // removes those padlocks automatically. NEVER edit lock state into the page HTML.
-  // Backend enforcement of the audio is Phase 3 (server-side; this layer is UX only).
-  //
-  // The list (names / levels / counts) is built from the master Content Plan — the
-  // single source of truth. Do NOT hand-maintain it or carry over the old taxonomy.
+  // A unit = one page. `part` present only for split topics. `keywords` = authored
+  // search synonyms (DRAFT 2026-07-17 — pending an owner review pass).
   const topics = [
-    { id: 1,  name: "Greetings & farewells", levels: ["beg"], sentences: 23, audio: "Greetings_BEG" },
-    { id: 2,  name: "Getting to know you", levels: ["beg"], sentences: 29, audio: "GettingToKnow_BEG" },
-    { id: 3,  name: "Communication survival", levels: ["beg"], sentences: 22, audio: "CommSurvival_BEG" },
-    { id: 4,  name: "Colours & descriptions", levels: ["beg"], access: "premium", parts: [
-        { name: "Colours & descriptions 1", sentences: 21, page: "topic-04a.html", access: "member", audio: "ColoursAndDescriptions_BEG" },
-        { name: "Colours & descriptions 2", sentences: 21, page: "topic-04b.html", audio: "ColoursAndDescriptions2_BEG" } ] },
-    { id: 5,  name: "Weather & seasons", levels: ["beg"], sentences: 30, access: "premium", audio: "Weather_BEG" },
-    { id: 6,  name: "Time & numbers", levels: ["beg"], sentences: 30, access: "premium", audio: "Time_BEG" },
-    { id: 7,  name: "Days & months", levels: ["beg"], sentences: 37, access: "premium", audio: "Dates_BEG" },
-    { id: 8,  name: "Family & relationships", levels: ["beg"], sentences: 38, access: "premium", audio: "Family_BEG" },
-    // ── new topics (not yet built): no page / audio / liveTopics entry → render as locked "coming soon" cards.
-    { id: 40, name: "Animals", levels: ["beg"], sentences: 37, access: "premium", audio: "Animals_BEG" },
-    { id: 41, name: "Places around town", levels: ["beg"], access: "premium", parts: [
-        { name: "Places around town 1", sentences: 26, page: "topic-41a.html", audio: "Places_BEG" },
-        { name: "Places around town 2", sentences: 27, page: "topic-41b.html", audio: "Places2_BEG" } ] },
-    { id: 46, name: "Groceries", levels: ["beg"], sentences: 38, access: "premium", audio: "Groceries_BEG" },
-    { id: 9,  name: "Food & drink", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Food & drink 1", sentences: 42, page: "topic-09a.html", access: "member", audio: "Food_BEG" },
-        { name: "Food & drink 2", sentences: 26, page: "topic-09b.html", audio: "Food_LI1" } ] },
-    { id: 10, name: "Home & daily routine", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Home & daily routine 1", sentences: 32, page: "topic-10a.html", audio: "HomeAndDailyRoutine_BEG" },
-        { name: "Home & daily routine 2", sentences: 32, page: "topic-10b.html", audio: "HomeAndDailyRoutine2_BEG" } ] },
-    { id: 11, name: "Shopping & money", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Shopping & money 1", sentences: 22, page: "topic-11a.html", access: "member", audio: "ShoppingAndMoney_BEG" },
-        { name: "Shopping & money 2", sentences: 29, page: "topic-11b.html", audio: "ShoppingAndMoney2_BEG" } ] },
-    { id: 12, name: "Getting around & transport", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Getting around & transport 1", sentences: 26, page: "topic-12a.html", audio: "Transport_BEG" },
-        { name: "Getting around & transport 2", sentences: 24, page: "topic-12b.html", audio: "Transport_LI1" } ] },
-    { id: 37, name: "Asking for help & emergencies", levels: ["beg","li1"], sentences: 40, access: "premium", audio: "Emergency_BEG" },
-    { id: 42, name: "Occupations", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Occupations 1", sentences: 30, page: "topic-42a.html", access: "member", audio: "Occupations_BEG" },
-        { name: "Occupations 2", sentences: 30, page: "topic-42b.html", audio: "Occupations_LI1" } ] },
-    { id: 14, name: "Feelings & emotions", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Feelings & emotions 1", sentences: 28, page: "topic-14a.html", access: "member", audio: "Feelings_BEG" },
-        { name: "Feelings & emotions 2", sentences: 34, page: "topic-14b.html", audio: "Feelings_LI1" } ] },
-    { id: 15, name: "Hobbies & free time", levels: ["beg","li1"], sentences: 37, access: "premium", audio: "Hobbies_BEG" },
-    { id: 16, name: "Social life & events", levels: ["beg","li1"], sentences: 40, access: "premium", audio: "SocialLife_BEG" },
-    { id: 38, name: "Idioms", levels: ["beg","li1"], sentences: 27, access: "premium", audio: "Idiom_BEG" },
-    { id: 17, name: "Plans & future", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Plans & future 1", sentences: 28, page: "topic-17a.html", audio: "Plans_BEG" },
-        { name: "Plans & future 2", sentences: 16, page: "topic-17b.html", audio: "Plans_LI1" } ] },
-    { id: 18, name: "Clothing & appearance", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Clothing & appearance 1", sentences: 37, page: "topic-18a.html", audio: "Clothing_BEG" },
-        { name: "Clothing & appearance 2", sentences: 33, page: "topic-18b.html", audio: "Appearance_LI1" } ] },
-    { id: 19, name: "Cooking & recipes", levels: ["beg","li1"], access: "premium", parts: [
-        { name: "Cooking & recipes 1", sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG" },
-        { name: "Cooking & recipes 2", sentences: 28, page: "topic-19b.html", audio: "Recipes_LI1" } ] },
-    // Body & health leads the upper-intermediate band: a 3rd part made it a step up, so it sits
-    // here (out of the beginner run) rather than deterring beginners. Audio prefixes keep their
-    // original BEG/LI1 handles — the levels array is display/grouping only.
-    { id: 13, name: "Body & health", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Body & health 1", sentences: 41, page: "topic-13a.html", audio: "BodyHealth_BEG" },
-        { name: "Body & health 2", sentences: 28, page: "topic-13b.html", audio: "Health_BEG" },
-        { name: "Body & health 3", sentences: 25, page: "topic-13c.html", audio: "Health_LI1" } ] },
-    { id: 49, name: "Compliments & opinions", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Compliments & opinions 1", sentences: 31, page: "topic-49a.html", audio: "Compliments_LI1" },
-        { name: "Compliments & opinions 2", sentences: 32, page: "topic-49b.html", audio: "Opinions_LI1" } ] },
-    { id: 47, name: "Homes & housing", levels: ["li1","li2"], sentences: 29, access: "premium", audio: "HomesAndHousing_LI1" },
-    { id: 48, name: "Household supplies", levels: ["li1","li2"], sentences: 37, access: "premium", audio: "HouseholdSupplies_BEG" },
-    { id: 20, name: "Working life", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Working life 1", sentences: 24, page: "topic-20a.html", audio: "Job_LI1" },
-        { name: "Working life 2", sentences: 24, page: "topic-20b.html", audio: "Workplace_LI1" },
-        { name: "Working life 3", sentences: 24, page: "topic-20c.html", audio: "Career_LI2" } ] },
-    { id: 45, name: "School and University", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "School and University 1", sentences: 26, page: "topic-45a.html", audio: "School_LI1" },
-        { name: "School and University 2", sentences: 32, page: "topic-45b.html", audio: "Campus_LI1" } ] },
-    { id: 22, name: "Food culture & eating out", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Food culture & eating out 1", sentences: 29, page: "topic-22a.html", audio: "FoodSocial_LI1" },
-        { name: "Food culture & eating out 2", sentences: 22, page: "topic-22b.html", audio: "FoodCulture_LI2" } ] },
-    { id: 23, name: "Nature, environment & conservation", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Nature, environment & conservation 1", sentences: 30, page: "topic-23a.html", audio: "Nature_LI1" },
-        { name: "Nature, environment & conservation 2", sentences: 34, page: "topic-23b.html", audio: "Nature_LI2" } ] },
-    { id: 24, name: "Technology & communication", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Technology & communication 1", sentences: 23, page: "topic-24a.html", access: "member", audio: "Tech_LI1" },
-        { name: "Technology & communication 2", sentences: 23, page: "topic-24b.html", audio: "Tech2_LI1" },
-        { name: "Technology & communication 3", sentences: 23, page: "topic-24c.html", audio: "Tech3_LI1" } ] },
-    { id: 25, name: "Media & entertainment", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Media & entertainment 1", sentences: 37, page: "topic-25a.html", audio: "Media_LI1" },
-        { name: "Media & entertainment 2", sentences: 29, page: "topic-25b.html", audio: "Media2_LI1" } ] },
-    { id: 26, name: "Sport & exercise", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Sport & exercise 1", sentences: 24, page: "topic-26a.html", audio: "Sport_LI1" },
-        { name: "Sport & exercise 2", sentences: 28, page: "topic-26b.html", audio: "Sport_LI2" } ] },
-    { id: 27, name: "Travel & tourism", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Travel & tourism 1", sentences: 25, page: "topic-27a.html", audio: "Travel_LI1" },
-        { name: "Travel & tourism 2", sentences: 27, page: "topic-27b.html", audio: "Travel2_LI1" },
-        { name: "Travel & tourism 3", sentences: 26, page: "topic-27c.html", audio: "Travel_LI2" } ] },
-    { id: 28, name: "Banking & finance", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 29, name: "Community & society", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Community & society 1", sentences: 31, page: "topic-29a.html", audio: "Community_LI1" },
-        { name: "Community & society 2", sentences: 29, page: "topic-29b.html", audio: "Community_LI2" } ] },
-    { id: 30, name: "Agriculture & rural life", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 31, name: "Crime, law & justice", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 32, name: "Thai geography & regions", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Thai geography & regions 1", sentences: 25, page: "topic-32a.html", audio: "GeoRegions_LI1" },
-        { name: "Thai geography & regions 2", sentences: 28, page: "topic-32b.html", audio: "GeoRegions_LI2" } ] },
-    { id: 33, name: "Ceremonies & rites of passage", levels: ["li1","li2"], sentences: 25, access: "premium" },
-    { id: 34, name: "Thai culture & customs", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Thai culture & customs 1", sentences: 22, page: "topic-34a.html", access: "member", audio: "ThaiCulture_LI1" },
-        { name: "Thai culture & customs 2", sentences: 23, page: "topic-34b.html", audio: "ThaiCulture_LI2" } ] },
-    { id: 21, name: "Education system", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Education system 1", sentences: 26, page: "topic-21a.html", audio: "Schooling_LI1" },
-        { name: "Education system 2", sentences: 26, page: "topic-21b.html", audio: "System_LI2" } ] },
-    { id: 35, name: "Buddhism", levels: ["li2","adv"], access: "premium", parts: [
-        { name: "Buddhism 1", sentences: 20, page: "topic-35a.html", access: "member", audio: "Temple_LI1" },
-        { name: "Buddhism 2", sentences: 18, page: "topic-35b.html", audio: "HolyDays_LI1" },
-        { name: "Buddhism 3", sentences: 19, page: "topic-35c.html", audio: "Dhamma_LI2" },
-        { name: "Buddhism 4", sentences: 23, page: "topic-35d.html", audio: "Meditation_LI2" },
-        { name: "Buddhism 5", sentences: 30, page: "topic-35e.html", audio: "Monastic_LI2" } ] },
-    { id: 36, name: "Romantic relationships & dating", levels: ["li1","li2"], access: "premium", parts: [
-        { name: "Romantic relationships & dating 1", sentences: 22, page: "topic-36a.html", access: "member", audio: "Romance_LI1" },
-        { name: "Romantic relationships & dating 2", sentences: 26, page: "topic-36b.html", audio: "Romance2_LI1" },
-        { name: "Romantic relationships & dating 3", sentences: 29, page: "topic-36c.html", audio: "Romance3_LI1" },
-        { name: "Romantic relationships & dating 4", sentences: 29, page: "topic-36d.html", audio: "Romance4_LI1" } ] },
-    { id: 39, name: "Tone twisters", levels: ["li1","li2"], sentences: 19, access: "premium", audio: "ToneTwister_LI1" },
-    // ── parked ideas promoted to "coming soon" (TOPIC_IDEAS.md). Not yet built / scoped, so no
-    //    sentence count yet; shown as a SINGLE list entry — any future a/b split only surfaces at
-    //    build time. Fresh frozen IDs, appended (no renumber).
-    { id: 43, name: "Muay Thai", levels: ["li1","li2"], access: "premium" },
-    { id: 44, name: "Humour", levels: ["beg","li1"], access: "premium" },
+    // ── BEGINNER ────────────────────────────────────
+    { id: 1, name: "Greetings & farewells", levels: ['beg'], sentences: 23, page: "topic-01.html", audio: "Greetings_BEG",
+      keywords: ['hello','hi','goodbye','greeting','sawasdee','สวัสดี','polite','thanks','ขอบคุณ','sorry','bye','wai','introduction'] },
+    { id: 2, name: "Getting to know you", levels: ['beg'], sentences: 29, page: "topic-02.html", audio: "GettingToKnow_BEG",
+      keywords: ['introduce','name','nationality','age','where from','meeting people','small talk','ชื่อ','อายุ','getting acquainted'] },
+    { id: 3, name: "Communication survival", levels: ['beg'], sentences: 22, page: "topic-03.html", audio: "CommSurvival_BEG",
+      keywords: ['survival','understand','repeat','slowly','dont understand','ไม่เข้าใจ','help me','speak','พูด','translate','confused','again'] },
+    { id: 11, part: 1, name: "Shopping & money 1", levels: ['beg'], sentences: 22, page: "topic-11a.html", audio: "ShoppingAndMoney_BEG", access: "member",
+      keywords: ['shopping','money','price','buy','cost','เท่าไหร่','how much','บาท','baht','cheap','expensive','pay','แพง'] },   // re-badged by the 2026-07-17 length audit
+    { id: 4, part: 1, name: "Colours & descriptions 1", levels: ['beg'], sentences: 21, page: "topic-04a.html", audio: "ColoursAndDescriptions_BEG", access: "member",
+      keywords: ['colour','color','red','blue','green','สี','describe','description','adjective','big','small','แดง'] },
+    { id: 4, part: 2, name: "Colours & descriptions 2", levels: ['beg'], sentences: 21, page: "topic-04b.html", audio: "ColoursAndDescriptions2_BEG", access: "premium",
+      keywords: ['colour','color','shade','describe','description','adjective','pattern','dark','light','สี','bright'] },
+    { id: 40, name: "Animals", levels: ['beg'], sentences: 37, page: "topic-40.html", audio: "Animals_BEG", access: "premium",
+      keywords: ['animal','สัตว์','dog','หมา','cat','แมว','pet','elephant','ช้าง','bird','นก','fish','zoo','wildlife','buffalo','ควาย'] },
+    { id: 6, name: "Time & numbers", levels: ['beg'], sentences: 30, page: "topic-06.html", audio: "Time_BEG", access: "premium",
+      keywords: ['time','number','clock','hour','นาฬิกา','เวลา','count','counting','นับ','oclock','minute','how many','เลข'] },
+    { id: 9, part: 1, name: "Food & drink 1", levels: ['beg'], sentences: 42, page: "topic-09a.html", audio: "Food_BEG", access: "member",
+      keywords: ['food','eat','drink','กิน','อาหาร','rice','ข้าว','water','น้ำ','hungry','หิว','delicious','อร่อย','meal','restaurant'] },   // re-badged by the 2026-07-17 length audit
+    { id: 41, part: 1, name: "Places around town 1", levels: ['beg'], sentences: 26, page: "topic-41a.html", audio: "Places_BEG", access: "premium",
+      keywords: ['place','town','city','เมือง','where','bank','post office','market','ตลาด','shop','ร้าน','location','directions','around town'] },
+    { id: 46, name: "Groceries", levels: ['beg'], sentences: 38, page: "topic-46.html", audio: "Groceries_BEG", access: "premium",
+      keywords: ['grocery','groceries','supermarket','market','ตลาด','shopping list','vegetable','ผัก','fruit','ผลไม้','meat','เนื้อ','egg','ไข่','milk'] },
+    { id: 8, name: "Family & relationships", levels: ['beg'], sentences: 38, page: "topic-08.html", audio: "Family_BEG", access: "premium",
+      keywords: ['family','ครอบครัว','mother','แม่','father','พ่อ','brother','sister','พี่','น้อง','relative','parents','children','ลูก','relationship'] },
+    { id: 41, part: 2, name: "Places around town 2", levels: ['beg'], sentences: 27, page: "topic-41b.html", audio: "Places2_BEG", access: "premium",
+      keywords: ['place','town','city','เมือง','building','directions','ทาง','landmark','hospital','โรงพยาบาล','school','โรงเรียน','temple','วัด','around town'] },
+    { id: 5, name: "Weather & seasons", levels: ['beg'], sentences: 30, page: "topic-05.html", audio: "Weather_BEG", access: "premium",
+      keywords: ['weather','อากาศ','rain','ฝน','hot','ร้อน','cold','หนาว','season','ฤดู','sun','แดด','storm','cool','humid','climate'] },
+    { id: 7, name: "Days & months", levels: ['beg'], sentences: 37, page: "topic-07.html", audio: "Dates_BEG", access: "premium",
+      keywords: ['day','month','วัน','เดือน','date','calendar','week','อาทิตย์','year','ปี','today','วันนี้','tomorrow','พรุ่งนี้','yesterday','birthday'] },
+
+    // The two SPECIALS close the Beginner band. Length is the wrong instrument for both — an idiom
+    // and a tone twister are short strings that are hard for reasons character count can't see — so
+    // they are NOT length-sorted like everything else. They sit at the END of the beginner run: early
+    // enough to be the fun, inviting thing they are, but never fronting the corpus as if they were the
+    // easiest pages on the site. Owner decision 2026-07-17. Keep them here and keep them adjacent;
+    // Idioms first (they were one topic, ID 38, before the 38/39 split).
+    { id: 38, name: "Idioms", levels: ['beg'], sentences: 27, page: "topic-38.html", audio: "Idiom_BEG", access: "premium",
+      keywords: ['idiom','สำนวน','saying','expression','proverb','figure of speech','phrase','metaphor','สุภาษิต','colloquial'] },
+    { id: 39, name: "Tone twisters", levels: ['beg'], sentences: 19, page: "topic-39.html", audio: "ToneTwister_LI1", access: "premium",
+      keywords: ['tone','tone twister','tongue twister','pronunciation','drill','practice','เสียง','vowel','minimal pair','ear training','accent'] },
+
+    // ── BEGINNER → LOWER INTERMEDIATE ───────────────
+    { id: 9, part: 2, name: "Food & drink 2", levels: ['beg','li1'], sentences: 26, page: "topic-09b.html", audio: "Food_LI1", access: "premium",
+      keywords: ['food','drink','อาหาร','order','ordering','menu','เมนู','taste','รสชาติ','spicy','เผ็ด','sweet','หวาน','snack','fruit'] },
+    { id: 19, part: 1, name: "Cooking & recipes 1", levels: ['beg','li1'], sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG", access: "premium",
+      keywords: ['cook','cooking','ทำอาหาร','kitchen','ครัว','fry','ผัด','boil','ต้ม','ingredient','pan','pot','chop','recipe','stove'] },
+    { id: 12, part: 1, name: "Getting around & transport 1", levels: ['beg','li1'], sentences: 26, page: "topic-12a.html", audio: "Transport_BEG", access: "premium",
+      keywords: ['transport','travel','getting around','bus','รถเมล์','taxi','แท็กซี่','train','รถไฟ','motorbike','มอเตอร์ไซค์','tuk tuk','ride','fare','bts','mrt'] },
+    { id: 37, name: "Asking for help & emergencies", levels: ['beg','li1'], sentences: 40, page: "topic-37.html", audio: "Emergency_BEG", access: "premium",
+      keywords: ['help','emergency','ช่วย','ฉุกเฉิน','police','ตำรวจ','ambulance','accident','อุบัติเหตุ','fire','ไฟไหม้','danger','hospital','lost','urgent','สายด่วน'] },
+    { id: 14, part: 1, name: "Feelings & emotions 1", levels: ['beg','li1'], sentences: 28, page: "topic-14a.html", audio: "Feelings_BEG", access: "member",
+      keywords: ['feeling','emotion','อารมณ์','happy','ดีใจ','sad','เสียใจ','angry','โกรธ','tired','เหนื่อย','mood','รู้สึก','scared','worried'] },
+    { id: 42, part: 1, name: "Occupations 1", levels: ['beg','li1'], sentences: 30, page: "topic-42a.html", audio: "Occupations_BEG", access: "member",
+      keywords: ['job','occupation','อาชีพ','work','งาน','teacher','ครู','doctor','หมอ','farmer','ชาวนา','profession','police','nurse','engineer'] },
+    { id: 11, part: 2, name: "Shopping & money 2", levels: ['beg','li1'], sentences: 29, page: "topic-11b.html", audio: "ShoppingAndMoney2_BEG", access: "premium",
+      keywords: ['shopping','money','เงิน','bargain','ต่อรอง','discount','ลด','change','ทอน','market','ตลาด','receipt','pay','จ่าย','cash'] },
+    { id: 19, part: 2, name: "Cooking & recipes 2", levels: ['beg','li1'], sentences: 28, page: "topic-19b.html", audio: "Recipes_LI1", access: "premium",
+      keywords: ['recipe','สูตร','cooking','ingredient','ส่วนผสม','step','measure','instructions','dish','เมนู','prepare','mix','season'] },
+    { id: 18, part: 1, name: "Clothing & appearance 1", levels: ['beg','li1'], sentences: 37, page: "topic-18a.html", audio: "Clothing_BEG", access: "premium",
+      keywords: ['clothes','clothing','เสื้อผ้า','shirt','เสื้อ','trousers','กางเกง','shoes','รองเท้า','wear','ใส่','dress','size','fashion'] },
+    { id: 42, part: 2, name: "Occupations 2", levels: ['beg','li1'], sentences: 30, page: "topic-42b.html", audio: "Occupations_LI1", access: "premium",
+      keywords: ['job','occupation','อาชีพ','work','career','งาน','skill','profession','employ','duties','role','workplace'] },
+    { id: 10, part: 1, name: "Home & daily routine 1", levels: ['beg','li1'], sentences: 32, page: "topic-10a.html", audio: "HomeAndDailyRoutine_BEG", access: "premium",
+      keywords: ['home','house','บ้าน','daily routine','wake up','ตื่นนอน','shower','อาบน้ำ','bedroom','ห้องนอน','kitchen','bathroom','ห้องน้ำ','morning','sleep','นอน'] },
+    { id: 17, part: 1, name: "Plans & future 1", levels: ['beg','li1'], sentences: 28, page: "topic-17a.html", audio: "Plans_BEG", access: "premium",
+      keywords: ['plan','แผน','future','อนาคต','will','จะ','intend','tomorrow','schedule','appointment','นัด','arrange','soon'] },
+    { id: 18, part: 2, name: "Clothing & appearance 2", levels: ['beg','li1'], sentences: 33, page: "topic-18b.html", audio: "Appearance_LI1", access: "premium",
+      keywords: ['appearance','หน้าตา','look','describe','handsome','หล่อ','beautiful','สวย','hair','ผม','tall','สูง','style','face'] },
+    { id: 14, part: 2, name: "Feelings & emotions 2", levels: ['beg','li1'], sentences: 34, page: "topic-14b.html", audio: "Feelings_LI1", access: "premium",
+      keywords: ['feeling','emotion','อารมณ์','stress','เครียด','lonely','เหงา','excited','ตื่นเต้น','disappointed','ผิดหวัง','mood','express','empathy'] },
+    { id: 10, part: 2, name: "Home & daily routine 2", levels: ['beg','li1'], sentences: 32, page: "topic-10b.html", audio: "HomeAndDailyRoutine2_BEG", access: "premium",
+      keywords: ['home','house','บ้าน','housework','chores','งานบ้าน','clean','ทำความสะอาด','laundry','ซักผ้า','wash','routine','tidy','evening'] },
+    { id: 16, name: "Social life & events", levels: ['beg','li1'], sentences: 40, page: "topic-16.html", audio: "SocialLife_BEG", access: "premium",
+      keywords: ['social','party','ปาร์ตี้','event','งาน','invite','ชวน','friends','เพื่อน','meet','นัด','celebrate','ฉลอง','birthday','wedding','งานแต่ง'] },
+
+    // ── LOWER → UPPER INTERMEDIATE ──────────────────
+    { id: 49, part: 1, name: "Compliments & opinions 1", levels: ['li1','li2'], sentences: 31, page: "topic-49a.html", audio: "Compliments_LI1", access: "premium",
+      keywords: ['compliment','ชม','praise','nice','good','เก่ง','well done','flatter','admire','kind words','ชมเชย'] },
+    { id: 13, part: 1, name: "Body & health 1", levels: ['li1','li2'], sentences: 41, page: "topic-13a.html", audio: "BodyHealth_BEG", access: "premium",
+      keywords: ['body','ร่างกาย','body parts','head','หัว','eye','ตา','ear','หู','hand','มือ','leg','ขา','anatomy','knee','เข่า'] },
+    { id: 13, part: 2, name: "Body & health 2", levels: ['li1','li2'], sentences: 28, page: "topic-13b.html", audio: "Health_BEG", access: "premium",
+      keywords: ['sick','ill','illness','ป่วย','symptom','อาการ','headache','ปวดหัว','fever','ไข้','cold','หวัด','pharmacy','ยา','medicine','sore throat','pain','ปวด'] },
+    { id: 13, part: 3, name: "Body & health 3", levels: ['li1','li2'], sentences: 25, page: "topic-13c.html", audio: "Health_LI1", access: "premium",
+      keywords: ['doctor','หมอ','hospital','โรงพยาบาล','clinic','check up','ตรวจสุขภาพ','appointment','test results','allergy','แพ้ยา','health','wellbeing','treatment'] },
+    { id: 49, part: 2, name: "Compliments & opinions 2", levels: ['li1','li2'], sentences: 32, page: "topic-49b.html", audio: "Opinions_LI1", access: "premium",
+      keywords: ['opinion','ความเห็น','think','คิด','agree','เห็นด้วย','disagree','argue','view','believe','เชื่อ','discuss','debate'] },
+    { id: 36, part: 1, name: "Romantic relationships & dating 1", levels: ['li1','li2'], sentences: 22, page: "topic-36a.html", audio: "Romance_LI1", access: "member",
+      keywords: ['dating','เดท','single','โสด','dating app','แอปหาคู่','swipe','ปัดขวา','match','romance','meet someone','love life'] },
+    { id: 36, part: 2, name: "Romantic relationships & dating 2", levels: ['li1','li2'], sentences: 26, page: "topic-36b.html", audio: "Romance2_LI1", access: "premium",
+      keywords: ['crush','แอบชอบ','flirt','จีบ','love','รัก','confess','บอกรัก','relationship','แฟน','girlfriend','boyfriend','fall in love','romance'] },
+    { id: 36, part: 3, name: "Romantic relationships & dating 3", levels: ['li1','li2'], sentences: 29, page: "topic-36c.html", audio: "Romance3_LI1", access: "premium",
+      keywords: ['love','รัก','commitment','soulmate','เนื้อคู่','in laws','marriage','แต่งงาน','devotion','milestone','partner','romance'] },
+    { id: 36, part: 4, name: "Romantic relationships & dating 4", levels: ['li1','li2'], sentences: 29, page: "topic-36d.html", audio: "Romance4_LI1", access: "premium",
+      keywords: ['jealousy','หึง','trust','ไว้ใจ','argue','ทะเลาะ','fight','เถียง','breakup','เลิก','unfaithful','นอกใจ','conflict','sulk','งอน','romance'] },
+    { id: 20, part: 1, name: "Working life 1", levels: ['li1','li2'], sentences: 24, page: "topic-20a.html", audio: "Job_LI1", access: "premium",
+      keywords: ['job','work','งาน','apply','สมัคร','interview','สัมภาษณ์','employer','salary','เงินเดือน','hire','resume','working life'] },
+    { id: 21, part: 1, name: "Education system 1", levels: ['li1','li2'], sentences: 26, page: "topic-21a.html", audio: "Schooling_LI1", access: "premium",
+      keywords: ['education','การศึกษา','school','โรงเรียน','study','เรียน','teacher','ครู','student','นักเรียน','class','subject','วิชา','schooling'] },
+    { id: 22, part: 1, name: "Food culture & eating out 1", levels: ['li1','li2'], sentences: 29, page: "topic-22a.html", audio: "FoodSocial_LI1", access: "premium",
+      keywords: ['restaurant','ร้านอาหาร','eating out','order','สั่ง','menu','เมนู','waiter','bill','เช็คบิล','table','จอง','food culture','dining'] },
+    { id: 24, part: 1, name: "Technology & communication 1", levels: ['li1','li2'], sentences: 23, page: "topic-24a.html", audio: "Tech_LI1", access: "member",
+      keywords: ['technology','เทคโนโลยี','phone','โทรศัพท์','internet','อินเทอร์เน็ต','app','แอป','computer','คอมพิวเตอร์','online','message','ข้อความ','digital'] },
+    { id: 23, part: 1, name: "Nature, environment & conservation 1", levels: ['li1','li2'], sentences: 30, page: "topic-23a.html", audio: "Nature_LI1", access: "premium",
+      keywords: ['nature','ธรรมชาติ','environment','สิ่งแวดล้อม','tree','ต้นไม้','forest','ป่า','river','แม่น้ำ','mountain','ภูเขา','sea','ทะเล','outdoors'] },
+    { id: 45, part: 1, name: "School and University 1", levels: ['li1','li2'], sentences: 26, page: "topic-45a.html", audio: "School_LI1", access: "premium",
+      keywords: ['school','โรงเรียน','university','มหาวิทยาลัย','study','เรียน','exam','สอบ','homework','การบ้าน','student','นักศึกษา','class','lecture'] },
+    { id: 45, part: 2, name: "School and University 2", levels: ['li1','li2'], sentences: 32, page: "topic-45b.html", audio: "Campus_LI1", access: "premium",
+      keywords: ['university','มหาวิทยาลัย','campus','แคมปัส','student life','faculty','คณะ','degree','ปริญญา','dorm','graduate','จบ','lecture'] },
+    { id: 27, part: 1, name: "Travel & tourism 1", levels: ['li1','li2'], sentences: 25, page: "topic-27a.html", audio: "Travel_LI1", access: "premium",
+      keywords: ['travel','เที่ยว','tourism','ท่องเที่ยว','trip','ทริป','holiday','วันหยุด','hotel','โรงแรม','book','จอง','flight','เครื่องบิน','sightseeing'] },
+    { id: 27, part: 2, name: "Travel & tourism 2", levels: ['li1','li2'], sentences: 27, page: "topic-27b.html", audio: "Travel2_LI1", access: "premium",
+      keywords: ['travel','เที่ยว','tourism','sightseeing','attraction','สถานที่','beach','ทะเล','island','เกาะ','tour','ทัวร์','guide','itinerary','holiday'] },
+    { id: 15, name: "Hobbies & free time", levels: ['li1','li2'], sentences: 37, page: "topic-15.html", audio: "Hobbies_BEG", access: "premium",
+      keywords: ['hobby','งานอดิเรก','free time','ว่าง','pastime','interest','relax','พักผ่อน','music','เพลง','read','อ่าน','game','เกม','leisure','weekend'] },   // re-badged by the 2026-07-17 length audit
+    { id: 21, part: 2, name: "Education system 2", levels: ['li1','li2'], sentences: 26, page: "topic-21b.html", audio: "System_LI2", access: "premium",
+      keywords: ['education','การศึกษา','system','ระบบ','curriculum','หลักสูตร','exam','สอบ','policy','university','degree','ปริญญา','schooling','reform'] },
+    { id: 12, part: 2, name: "Getting around & transport 2", levels: ['li1','li2'], sentences: 24, page: "topic-12b.html", audio: "Transport_LI1", access: "premium",
+      keywords: ['transport','travel','getting around','traffic','รถติด','directions','ทาง','route','journey','เดินทาง','driving','ขับรถ','station','สถานี','commute'] },   // re-badged by the 2026-07-17 length audit
+    { id: 20, part: 2, name: "Working life 2", levels: ['li1','li2'], sentences: 24, page: "topic-20b.html", audio: "Workplace_LI1", access: "premium",
+      keywords: ['workplace','ที่ทำงาน','office','ออฟฟิศ','colleague','เพื่อนร่วมงาน','meeting','ประชุม','boss','เจ้านาย','deadline','email','work'] },
+    { id: 17, part: 2, name: "Plans & future 2", levels: ['li1','li2'], sentences: 16, page: "topic-17b.html", audio: "Plans_LI1", access: "premium",
+      keywords: ['plan','แผน','future','อนาคต','goal','เป้าหมาย','ambition','dream','ฝัน','long term','intend','prospect','career plan'] },   // re-badged by the 2026-07-17 length audit
+    { id: 24, part: 2, name: "Technology & communication 2", levels: ['li1','li2'], sentences: 23, page: "topic-24b.html", audio: "Tech2_LI1", access: "premium",
+      keywords: ['technology','เทคโนโลยี','social media','โซเชียล','post','โพสต์','account','บัญชี','password','รหัสผ่าน','wifi','ไวไฟ','device','digital'] },
+    { id: 24, part: 3, name: "Technology & communication 3", levels: ['li1','li2'], sentences: 23, page: "topic-24c.html", audio: "Tech3_LI1", access: "premium",
+      keywords: ['technology','เทคโนโลยี','ai','online','scam','หลอกลวง','privacy','ความเป็นส่วนตัว','data','ข้อมูล','software','update','digital','future tech'] },
+    { id: 26, part: 1, name: "Sport & exercise 1", levels: ['li1','li2'], sentences: 24, page: "topic-26a.html", audio: "Sport_LI1", access: "premium",
+      keywords: ['sport','กีฬา','exercise','ออกกำลังกาย','football','ฟุตบอล','run','วิ่ง','gym','ยิม','play','เล่น','fitness','swim','ว่ายน้ำ'] },
+    { id: 48, name: "Household supplies", levels: ['li1','li2'], sentences: 37, page: "topic-48.html", audio: "HouseholdSupplies_BEG", access: "premium",
+      keywords: ['household','supplies','ของใช้','soap','สบู่','detergent','ผงซักฟอก','tissue','cleaning','shop','ร้าน','home goods','toiletries','แชมพู'] },
+    { id: 26, part: 2, name: "Sport & exercise 2", levels: ['li1','li2'], sentences: 28, page: "topic-26b.html", audio: "Sport_LI2", access: "premium",
+      keywords: ['sport','กีฬา','exercise','competition','แข่ง','team','ทีม','match','training','ฝึก','muay thai','มวยไทย','athlete','นักกีฬา','fitness'] },
+    { id: 34, part: 1, name: "Thai culture & customs 1", levels: ['li1','li2'], sentences: 22, page: "topic-34a.html", audio: "ThaiCulture_LI1", access: "member",
+      keywords: ['thai culture','วัฒนธรรม','custom','ประเพณี','tradition','wai','ไหว้','respect','เคารพ','etiquette','มารยาท','manners','face','เกรงใจ'] },
+    { id: 29, part: 1, name: "Community & society 1", levels: ['li1','li2'], sentences: 31, page: "topic-29a.html", audio: "Community_LI1", access: "premium",
+      keywords: ['community','ชุมชน','society','สังคม','neighbour','เพื่อนบ้าน','village','หมู่บ้าน','local','volunteer','อาสา','help','public'] },
+    { id: 20, part: 3, name: "Working life 3", levels: ['li1','li2'], sentences: 24, page: "topic-20c.html", audio: "Career_LI2", access: "premium",
+      keywords: ['career','อาชีพ','promotion','เลื่อนตำแหน่ง','ambition','resign','ลาออก','experience','ประสบการณ์','professional','work','development'] },
+    { id: 27, part: 3, name: "Travel & tourism 3", levels: ['li1','li2'], sentences: 26, page: "topic-27c.html", audio: "Travel_LI2", access: "premium",
+      keywords: ['travel','เที่ยว','tourism','ท่องเที่ยว','abroad','ต่างประเทศ','visa','วีซ่า','culture shock','backpack','trip','airport','สนามบิน','journey'] },
+    { id: 47, name: "Homes & housing", levels: ['li1','li2'], sentences: 29, page: "topic-47.html", audio: "HomesAndHousing_LI1", access: "premium",
+      keywords: ['house','บ้าน','housing','rent','เช่า','condo','คอนโด','apartment','อพาร์ตเมนต์','landlord','เจ้าของบ้าน','move','ย้าย','property','lease','deposit'] },
+    { id: 23, part: 2, name: "Nature, environment & conservation 2", levels: ['li1','li2'], sentences: 34, page: "topic-23b.html", audio: "Nature_LI2", access: "premium",
+      keywords: ['environment','สิ่งแวดล้อม','conservation','อนุรักษ์','pollution','มลพิษ','recycle','รีไซเคิล','climate','โลกร้อน','waste','ขยะ','nature','sustainability','wildlife'] },
+    { id: 34, part: 2, name: "Thai culture & customs 2", levels: ['li1','li2'], sentences: 23, page: "topic-34b.html", audio: "ThaiCulture_LI2", access: "premium",
+      keywords: ['thai culture','วัฒนธรรม','custom','ประเพณี','tradition','festival','เทศกาล','songkran','สงกรานต์','loy krathong','ลอยกระทง','belief','ความเชื่อ','superstition'] },
+    { id: 22, part: 2, name: "Food culture & eating out 2", levels: ['li1','li2'], sentences: 22, page: "topic-22b.html", audio: "FoodCulture_LI2", access: "premium",
+      keywords: ['food culture','อาหาร','cuisine','regional','ภาค','street food','สตรีทฟู้ด','dish','เมนู','flavour','รสชาติ','eating out','tradition','isaan','อีสาน'] },
+    { id: 32, part: 1, name: "Thai geography & regions 1", levels: ['li1','li2'], sentences: 25, page: "topic-32a.html", audio: "GeoRegions_LI1", access: "premium",
+      keywords: ['geography','ภูมิศาสตร์','region','ภาค','province','จังหวัด','thailand','ประเทศไทย','north','เหนือ','south','ใต้','map','area','isaan','อีสาน'] },
+    { id: 25, part: 1, name: "Media & entertainment 1", levels: ['li1','li2'], sentences: 37, page: "topic-25a.html", audio: "Media_LI1", access: "premium",
+      keywords: ['media','สื่อ','entertainment','บันเทิง','tv','ทีวี','film','หนัง','movie','music','เพลง','series','ละคร','watch','ดู','show'] },
+
+    // ── UPPER INTERMEDIATE → ADVANCED ───────────────
+    { id: 29, part: 2, name: "Community & society 2", levels: ['li2','adv'], sentences: 29, page: "topic-29b.html", audio: "Community_LI2", access: "premium",
+      keywords: ['society','สังคม','community','ชุมชน','inequality','เหลื่อมล้ำ','social issue','ปัญหาสังคม','welfare','public','politics','การเมือง','citizen','civic'] },   // re-badged by the 2026-07-17 length audit
+    { id: 35, part: 1, name: "Buddhism 1", levels: ['li2','adv'], sentences: 20, page: "topic-35a.html", audio: "Temple_LI1", access: "member",
+      keywords: ['buddhism','พุทธ','temple','วัด','monk','พระ','merit','ทำบุญ','offering','ใส่บาตร','pray','religion','ศาสนา','shrine'] },
+    { id: 35, part: 2, name: "Buddhism 2", levels: ['li2','adv'], sentences: 18, page: "topic-35b.html", audio: "HolyDays_LI1", access: "premium",
+      keywords: ['buddhism','พุทธ','holy day','วันพระ','festival','เทศกาล','ceremony','พิธี','vesak','วิสาขบูชา','religion','ศาสนา','observance','lent','เข้าพรรษา'] },
+    { id: 35, part: 3, name: "Buddhism 3", levels: ['li2','adv'], sentences: 19, page: "topic-35c.html", audio: "Dhamma_LI2", access: "premium",
+      keywords: ['buddhism','พุทธ','dhamma','ธรรมะ','teaching','คำสอน','karma','กรรม','precept','ศีล','philosophy','ปรัชญา','religion','doctrine'] },
+    { id: 35, part: 4, name: "Buddhism 4", levels: ['li2','adv'], sentences: 23, page: "topic-35d.html", audio: "Meditation_LI2", access: "premium",
+      keywords: ['meditation','สมาธิ','buddhism','พุทธ','mindfulness','สติ','vipassana','วิปัสสนา','retreat','breathe','calm','สงบ','practice','religion'] },
+    { id: 35, part: 5, name: "Buddhism 5", levels: ['li2','adv'], sentences: 30, page: "topic-35e.html", audio: "Monastic_LI2", access: "premium",
+      keywords: ['monastic','สงฆ์','monk','พระ','ordination','บวช','temple','วัด','monastery','robe','จีวร','buddhism','พุทธ','religion','novice','เณร'] },
+    { id: 25, part: 2, name: "Media & entertainment 2", levels: ['li2','adv'], sentences: 29, page: "topic-25b.html", audio: "Media2_LI1", access: "premium",
+      keywords: ['media','สื่อ','entertainment','บันเทิง','news','ข่าว','celebrity','ดารา','journalism','นักข่าว','critique','review','วิจารณ์','industry'] },   // re-badged by the 2026-07-17 length audit
+    { id: 32, part: 2, name: "Thai geography & regions 2", levels: ['li2','adv'], sentences: 28, page: "topic-32b.html", audio: "GeoRegions_LI2", access: "premium",
+      keywords: ['geography','ภูมิศาสตร์','region','ภาค','province','จังหวัด','landscape','climate','ภูมิอากาศ','terrain','border','ชายแดน','thailand','economy','resources'] },   // re-badged by the 2026-07-17 length audit
+
+    // ── COMING SOON (not built: no page/audio → rendered as the compact list, not cards) ──
+    { id: 28, name: "Banking & finance", levels: ['li1','li2'], sentences: 25, access: "premium",
+      keywords: ['bank','ธนาคาร','finance','money','เงิน','account','บัญชี','atm','transfer','โอน','loan','savings','interest'] },
+    { id: 30, name: "Agriculture & rural life", levels: ['li1','li2'], sentences: 25, access: "premium",
+      keywords: ['agriculture','เกษตร','farm','ฟาร์ม','rice','ข้าว','rural','ชนบท','crop','พืช','farmer','ชาวนา','harvest','เก็บเกี่ยว','village'] },
+    { id: 31, name: "Crime, law & justice", levels: ['li1','li2'], sentences: 25, access: "premium",
+      keywords: ['crime','อาชญากรรม','law','กฎหมาย','justice','ยุติธรรม','police','ตำรวจ','court','ศาล','lawyer','ทนาย','arrest','จับ','prison','คุก'] },
+    { id: 33, name: "Ceremonies & rites of passage", levels: ['li1','li2'], sentences: 25, access: "premium",
+      keywords: ['ceremony','พิธี','rites','ประเพณี','wedding','งานแต่ง','funeral','งานศพ','ordination','บวช','birth','ritual','tradition','milestone'] },
+    { id: 43, name: "Muay Thai", levels: ['li1','li2'], access: "premium",
+      keywords: ['muay thai','มวยไทย','boxing','ชก','fight','แข่ง','ring','เวที','training','ฝึก','kick','เตะ','martial arts','sport','กีฬา'] },
+    { id: 44, name: "Humour", levels: ['beg','li1'], access: "premium",
+      keywords: ['humour','humor','ตลก','joke','มุก','funny','ขำ','laugh','หัวเราะ','comedy','pun','เล่นคำ','wit','banter'] },
   ];
 
-  // Keyed by FROZEN id (never display position). Add entries as topics go live.
-  const liveTopics = { 1: 'topic-01.html', 2: 'topic-02.html', 3: 'topic-03.html', 4: 'topic-04.html', 5: 'topic-05.html', 6: 'topic-06.html', 7: 'topic-07.html', 8: 'topic-08.html', 10: 'topic-10.html', 11: 'topic-11.html', 15: 'topic-15.html', 16: 'topic-16.html', 37: 'topic-37.html', 38: 'topic-38.html', 39: 'topic-39.html', 40: 'topic-40.html', 46: 'topic-46.html', 47: 'topic-47.html', 48: 'topic-48.html' };
+  // ---- back-compat: a derived {id: page} map for NON-split units --------------------
+  // The old hand-maintained liveTopics map is gone (it had stale entries pointing at
+  // files that never existed, e.g. topic-04/10/11.html). "Live" is now simply: the unit
+  // has a page. This is derived so it can never drift.
+  const liveTopics = {};
+  topics.forEach(function (u) { if (u.page && !u.part) liveTopics[u.id] = u.page; });
 
-  // Level order + labels. Difficulty is a RANGE: a topic's label shows floor -> ceiling.
-  // `adv` (Advanced) is the tertiary tier — niche / highly specialised topics whose
-  // sentences are a genuine step up (e.g. Buddhism). Added after li2.
+  function isLive(u) { return !!u.page; }
+  // Distinct TOPICS that are live (not units) — the hero "Topics" stat counts topics,
+  // so a 2-part topic counts once.
+  function liveTopicCount() {
+    const s = {};
+    topics.forEach(function (u) { if (u.page) s[u.id] = 1; });
+    return Object.keys(s).length;
+  }
+
+  // Level order + labels. `adv` (Advanced) is the tertiary tier — niche / highly
+  // specialised units whose sentences are a genuine step up (e.g. Buddhism).
   const LEVEL_ORDER = ['beg', 'li1', 'li2', 'adv'];
   const LEVEL_CLASS = { beg: 'badge-beg', li1: 'badge-li1', li2: 'badge-li2', adv: 'badge-adv' };
   const LEVEL_FULL  = { beg: 'Beginner', li1: 'Lower intermediate', li2: 'Upper intermediate', adv: 'Advanced' };
-  // User-facing labels are NEVER abbreviated — "Lower int" is internal shorthand only. LEVEL_SHORT
-  // therefore matches LEVEL_FULL (kept as a separate export for back-compat / future tweaks).
+  // User-facing labels are NEVER abbreviated — "Lower int" is internal shorthand only.
   const LEVEL_SHORT = { beg: 'Beginner', li1: 'Lower intermediate', li2: 'Upper intermediate', adv: 'Advanced' };
 
   function levelBounds(levels) {
@@ -198,7 +289,7 @@
     const [floor] = levelBounds(levels);
     return `<div class="level-badges"><span class="level-badge ${LEVEL_CLASS[floor]}">${levelText(levels)}</span></div>`;
   }
-  // A filter tab matches when its level lies WITHIN the topic's [floor, ceiling] range.
+  // A filter tab matches when its level lies WITHIN the unit's [floor, ceiling] range.
   function matchesFilter(levels, filter) {
     if (filter === 'all') return true;
     const [floor, ceiling] = levelBounds(levels);
@@ -206,34 +297,24 @@
     return f >= LEVEL_ORDER.indexOf(floor) && f <= LEVEL_ORDER.indexOf(ceiling);
   }
 
-  // Find the topic (and split part, if any) whose page == filename, plus its
-  // 1-based display position. Returns null if the page isn't in the list.
+  // Find the unit whose page == filename, plus its 1-based display position.
   // Compare WITHOUT the .html extension — Cloudflare Pages serves clean URLs
   // (location is /topic-03, not /topic-03.html), so we must match either form.
+  // Returns { pos, topic, unit, part } — `topic`/`part` kept for back-compat with
+  // callers written against the old nested shape.
   function bare(f) { return String(f || '').toLowerCase().replace(/\.html$/, ''); }
   function findByPage(file) {
     file = bare(file);
     for (let i = 0; i < topics.length; i++) {
-      const t = topics[i];
-      if (t.parts) {
-        for (const part of t.parts) {
-          if (part && part.page && bare(part.page) === file) {
-            return { pos: i + 1, topic: t, part };
-          }
-        }
-      } else if (bare(liveTopics[t.id]) === file) {
-        return { pos: i + 1, topic: t, part: null };
-      }
+      const u = topics[i];
+      if (u.page && bare(u.page) === file) return { pos: i + 1, topic: u, unit: u, part: null };
     }
     return null;
   }
 
   // ---- access tiers (free / member / premium) ----------------------------------
-  // free (or undefined): open to all. member: any signed-in user. premium: an active
-  // subscription. ENFORCE_SUBSCRIPTION gates the premium check: while false, premium
-  // behaves like member (signed-in is enough) so nothing breaks before Stripe is live.
-  // Flip it to true at the Phase-4 cutover, together with the server ENFORCE_SUBSCRIPTION
-  // env on /api/audio. (Real enforcement is server-side; this only drives the UX.)
+  // ENFORCE_SUBSCRIPTION gates the premium check: while false, premium behaves like
+  // member (signed-in is enough). Real enforcement is server-side; this drives UX.
   const ENFORCE_SUBSCRIPTION = true;
   function authState() {
     const a = window.ThaiEarAuth || {};
@@ -242,17 +323,13 @@
       subscribed: !!(a.isSubscribed && a.isSubscribed()),
     };
   }
-  // Effective access for a topic OR one of its split parts. A part may carry its OWN
-  // `access` (e.g. a split topic whose first part is a free member taster while the rest
-  // stay premium); when it doesn't, it inherits the topic's access. Returns
-  // 'free' | 'member' | 'premium'. This is the single rule both the index cards and the
-  // prev/next nav use, so a part's tier is consistent everywhere.
-  function accessFor(topic, part) {
-    if (part && part.access) return part.access;
-    return (topic && topic.access) || 'free';
+  // Effective access for a unit. Second arg is ignored — kept so old two-arg callers
+  // accessFor(topic, part) keep working against the flat model.
+  function accessFor(unit, _part) {
+    return (unit && unit.access) || 'free';
   }
 
-  // Can the current visitor open this topic? (drives card links + prev/next unlock)
+  // Can the current visitor open this unit? (drives card links + prev/next unlock)
   function canAccess(access) {
     if (access === 'premium') {
       const s = authState();
@@ -262,32 +339,90 @@
     return true; // free / undefined
   }
 
+  // ---- SEARCH -----------------------------------------------------------------------
+  // Ranked, thresholded, capped — NOT a filter. The rules that keep it precise:
+  //   1. AND, never OR: EVERY typed token must score against the same unit. This is the
+  //      single thing that stops "food market" returning everything food + everything
+  //      market. Tokens narrow, never widen.
+  //   2. No fuzzy / edit-distance matching — that is exactly what makes a search feel
+  //      broad and wrong. Prefix matching already gives cook -> cooking.
+  //   3. Single-char tokens are ignored (stops "a" matching everything).
+  //   4. Hard cap + score floor, so even a pathological query can't flood the grid.
+  const SEARCH_CAP = 12, SEARCH_FLOOR = 25;
+  function norm(s) { return String(s || '').toLowerCase().trim(); }
+  // "&" and "and" are the SAME word here. Most topic names use an ampersand ("Food & drink 2"),
+  // but people type what they say — "food and drink 2" — and used to get zero results, which
+  // reads as "that topic doesn't exist". Expanding & -> " and " on BOTH sides (names, keywords
+  // and the query) makes the two spellings interchangeable, so "food and drink 2", "food & drink 2"
+  // and "food&drink 2" all land on the same card.
+  function expand(s) { return norm(s).replace(/&/g, ' and ').replace(/\s+/g, ' ').trim(); }
+  // Tokens: drop 1-char noise ("a" would match everything) but KEEP single DIGITS, so the part
+  // number in "food and drink 2" is a real, narrowing token rather than silently discarded.
+  function tokenize(q) {
+    return expand(q).split(/[\s,]+/).filter(t => t.length > 1 || /^[0-9]$/.test(t));
+  }
+
+  // Score ONE token against ONE unit. 0 = no match (which kills the whole unit, by AND).
+  function scoreToken(u, tok) {
+    const name = expand(u.name);              // "Food & drink 2" -> "food and drink 2"
+    if (name === tok) return 100;
+    if (name.indexOf(tok) === 0) return 80;
+    // word-start inside the name, e.g. "trans" -> "Getting around & transport 1"
+    if (new RegExp('(^|[^a-z0-9฀-๿])' + tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(name)) return 60;
+    if (name.indexOf(tok) !== -1) return 45;
+    let best = 0;
+    for (const k of (u.keywords || [])) {
+      const kw = expand(k);
+      if (kw === tok) { best = Math.max(best, 40); continue; }
+      if (kw.indexOf(tok) === 0) best = Math.max(best, 25);
+    }
+    return best;
+    // NOTE: keyword matching is exact-or-PREFIX only — deliberately never "contains".
+    // Thai writes without spaces, so a substring test makes short Thai words match inside
+    // unrelated longer ones: วัด (temple) would hit หวัด (a cold) and จังหวัด (province),
+    // returning Body & health and Thai geography for a temple search. Prefix-only keeps
+    // วัด → Buddhism / Places around town, which is what the user meant.
+  }
+
+  // Search the units. `pool` lets the caller pre-restrict to whatever the filter pills
+  // currently allow, so search can never surface a topic the pills exclude.
+  // Returns [{ unit, pos, score }] best-first, capped.
+  function searchUnits(query, pool) {
+    const toks = tokenize(query);
+    if (!toks.length) return null;                 // null = "not searching" (≠ no results)
+    const list = pool || topics.map((u, i) => ({ u, pos: i + 1 }));
+    const hits = [];
+    for (const item of list) {
+      const u = item.u || item;
+      const pos = item.pos;
+      let total = 0, ok = true;
+      for (const t of toks) {
+        const s = scoreToken(u, t);
+        if (!s) { ok = false; break; }             // AND: one miss disqualifies the unit
+        total += s;
+      }
+      if (ok && total >= SEARCH_FLOOR) hits.push({ unit: u, pos: pos, score: total });
+    }
+    hits.sort((a, b) => b.score - a.score || a.pos - b.pos);
+    return hits.slice(0, SEARCH_CAP);
+  }
+
   // ---- continuous-playback sequence (drives the player's autoplay + prev/next) -------
-  // A "unit" is one playable page: a non-split topic, or one part of a split topic. The
-  // player swaps between these (same audio element, no page reload) so playback survives a
-  // locked screen. Built straight from this list so it stays a single source of truth.
-  // A unit must have BOTH a page (it's built/live) and an `audio` prefix to be playable.
-  function unitOf(topic, part, pos) {
+  // A "unit" here is one playable page. Built straight from the list so it stays a
+  // single source of truth. A unit must have BOTH a page and an `audio` prefix.
+  function unitOf(u, pos) {
     return {
-      pos: pos,
-      id: topic.id,
-      page: part ? part.page : liveTopics[topic.id],
-      name: part ? (part.name || topic.name) : topic.name,
-      audio: part ? part.audio : topic.audio,
-      access: accessFor(topic, part),
-      levels: topic.levels
+      pos: pos, id: u.id, part: u.part || null,
+      page: u.page, name: u.name, audio: u.audio,
+      access: accessFor(u), levels: u.levels
     };
   }
-  // All live, playable units in DISPLAY order (split topics expanded into their parts).
+  // All live, playable units in DISPLAY order.
   function liveSequence() {
     const seq = [];
     for (let i = 0; i < topics.length; i++) {
-      const t = topics[i];
-      if (t.parts) {
-        t.parts.forEach(function (p) { if (p && p.page && p.audio) seq.push(unitOf(t, p, i + 1)); });
-      } else if (liveTopics[t.id] && t.audio) {
-        seq.push(unitOf(t, null, i + 1));
-      }
+      const u = topics[i];
+      if (u.page && u.audio) seq.push(unitOf(u, i + 1));
     }
     return seq;
   }
@@ -299,9 +434,7 @@
     return null;
   }
   // Walk the sequence from `page` in `dir` (+1 next / -1 prev), wrapping last<->first,
-  // skipping any unit the current visitor can't access. Returns the next accessible unit,
-  // or the current page's unit if it's the only accessible one, or null if `page` isn't in
-  // the sequence. canAccess() reads live auth, so this is correct per visitor tier.
+  // skipping any unit the current visitor can't access.
   function nextAccessible(page, dir) {
     const seq = liveSequence();
     if (!seq.length) return null;
@@ -321,10 +454,12 @@
   // Shared surface for index.html (grid render) and anything else that needs the data.
   window.ThaiEarTopics = {
     topics, liveTopics, total: topics.length,
+    isLive, liveTopicCount,
     LEVEL_ORDER, LEVEL_CLASS, LEVEL_FULL, LEVEL_SHORT,
     levelBounds, levelText, levelBadge, matchesFilter, findByPage,
     canAccess, accessFor, authState, ENFORCE_SUBSCRIPTION,
-    liveSequence, pageUnit, nextAccessible
+    liveSequence, pageUnit, nextAccessible,
+    searchUnits, tokenize
   };
 
   // ---- topic-page eyebrow: the difficulty (e.g. "BEGINNER"), derived from the list ----
@@ -336,17 +471,10 @@
     if (!el) return; // not a topic page (e.g. index) — nothing to fill
     const found = findByPage(currentPage());
     if (!found) return; // page not in the list yet — leave the element as-is
-    // Difficulty only (CSS uppercases it, e.g. "BEGINNER"). The "Topic X of Y" counter was
-    // dropped — the position number carried no learner value and just added visual noise.
-    el.textContent = levelText(found.topic.levels);
+    el.textContent = levelText(found.unit.levels);
   }
 
   // ---- prev/next nav: derive each button's lock state from its target's access ----
-  // The buttons are NOT hand-locked. For each one we resolve its real destination topic
-  // (data-target, else legacy data-locked-href, else href), look up that topic's access
-  // in the list, and lock/unlock to match — exactly like the index cards. canAccess()
-  // respects login/subscription (+ ENFORCE_SUBSCRIPTION), so this also unlocks for
-  // entitled visitors. Gold padlock = premium → subscribe.html; purple = member → join.html.
   const NAV_LOCK_SVG =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -360,26 +488,21 @@
       '.topic-nav-lock svg{width:11px;height:11px}' +
       '.topic-nav-lock.premium{color:#B29234}' +            // premium text-gold (matches index pill)
       '.topic-nav-lock.member{color:var(--accent)}' +       // purple = sign-in
-      // A prev/next button INTO a premium topic lights up light-gold on hover instead of purple
-      // (keyed on the destination tier, set by decorateNavBtn → tracks topics.js access).
       '.topic-nav-btn.nav-to-premium:hover{background:#FBF5DC;border-color:var(--gold-dark)}';
     (document.head || document.documentElement).appendChild(s);
   }
-  // The button's real destination page, stored once on data-target so it survives re-runs
-  // (after locking, href points at join/subscribe, not the topic).
+  // The button's real destination page, stored once on data-target so it survives re-runs.
   function navTarget(a) {
     let t = a.getAttribute('data-target') || a.getAttribute('data-locked-href') || a.getAttribute('href');
     if (t && !a.getAttribute('data-target')) a.setAttribute('data-target', t);
     return t;
   }
-  // access of the topic (or specific split PART) a button points INTO; null if it isn't a
-  // topic page (skip it). Uses the part's own tier when it has one, so a "Next" pointing at
-  // a premium second part locks gold even though the topic's first part is member.
+  // access of the unit a button points INTO; null if it isn't a topic page (skip it).
   function navAccessFor(target) {
     const found = findByPage(target || '');
-    return found ? accessFor(found.topic, found.part) : null;
+    return found ? accessFor(found.unit) : null;
   }
-  // Is a topic's audio prefix present in the offline-download manifest?
+  // Is a unit's audio prefix present in the offline-download manifest?
   function offlineHas(prefix) {
     if (!prefix) return false;
     try { return !!JSON.parse(localStorage.getItem('thaiear_offline') || '{}')[prefix]; } catch (_) { return false; }
@@ -387,15 +510,12 @@
   // The audio prefix for a target page (to check the offline manifest).
   function navAudioFor(target) {
     const found = findByPage(target || '');
-    if (!found) return null;
-    return (found.part && found.part.audio) ? found.part.audio : found.topic.audio;
+    return found ? (found.unit.audio || null) : null;
   }
   function decorateNavBtn(a) {
     const target = navTarget(a);
     const access = navAccessFor(target);
     if (access === null) return; // not a topic link (e.g. back-to-index) — leave alone
-    // Tier-tint the hover regardless of lock state: a button INTO a premium topic lights up gold,
-    // others purple. Reads the destination's access (above), so it follows topics.js automatically.
     injectNavLockStyles();
     a.classList.toggle('nav-to-premium', access === 'premium');
     const nameEl = a.querySelector('.topic-nav-name');
@@ -409,11 +529,10 @@
       return;
     }
     // Navigable-preview model: gated topics are still reachable by anyone — point prev/next at the
-    // REAL page (never the paywall, and never steer to subscribe in the app). The padlock icon below
-    // still signals the tier; the on-page gating (reveal/flag/play) enforces the actual restriction.
+    // REAL page (never the paywall). The padlock icon still signals the tier; the on-page gating
+    // (reveal/flag/play) enforces the actual restriction.
     a.setAttribute('href', target);
     a.removeAttribute('data-locked-href');
-    injectNavLockStyles();
     if (nameEl) {
       const span = document.createElement('span');
       span.className = 'topic-nav-lock ' + access;
@@ -430,10 +549,7 @@
   window.addEventListener('online', decorateTopicNav);       // offline-download unlock follows connectivity
   window.addEventListener('offline', decorateTopicNav);
 
-  // Click-time safety net (auth is always resolved by click; covers cached/late-auth pages):
-  // if an entitled user clicks a button whose href is still the gate (decorate hadn't run yet),
-  // send them to the real topic. Only intervenes when the href is actually stale, and never on
-  // modified clicks — so normal links keep native behaviour (ctrl/cmd/middle-click → new tab).
+  // Click-time safety net (auth is always resolved by click; covers cached/late-auth pages).
   document.addEventListener('click', function (e) {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     const a = e.target.closest ? e.target.closest('a.topic-nav-btn[data-target]') : null;
@@ -444,7 +560,7 @@
     if (entitled && a.getAttribute('href') !== target) { // stale gate href → correct it
       e.preventDefault();
       window.location.href = target;
-    } // gated buttons now also point at `target` (navigable preview) → default proceeds to the page
+    }
   });
 
   function init() { fillEyebrow(); decorateTopicNav(); }
