@@ -66,7 +66,7 @@
       keywords: ['hello','hi','goodbye','greeting','sawasdee','สวัสดี','polite','thanks','ขอบคุณ','sorry','bye','wai','introduction'] },
     { id: 2, name: "Getting to know you", levels: ['beg'], sentences: 29, page: "topic-02.html", audio: "GettingToKnow_BEG",
       keywords: ['introduce','name','nationality','age','where from','meeting people','small talk','ชื่อ','อายุ','getting acquainted'] },
-    { id: 3, name: "Communication survival", levels: ['beg'], sentences: 22, page: "topic-03.html", audio: "CommSurvival_BEG",
+    { id: 3, name: "Communication survival", levels: ['beg'], sentences: 25, page: "topic-03.html", audio: "CommSurvival_BEG",
       keywords: ['survival','understand','repeat','slowly','dont understand','ไม่เข้าใจ','help me','speak','พูด','translate','confused','again'] },
     { id: 11, part: 1, name: "Shopping & money 1", levels: ['beg'], sentences: 22, page: "topic-11a.html", audio: "ShoppingAndMoney_BEG", access: "member",
       keywords: ['shopping','money','price','buy','cost','เท่าไหร่','how much','บาท','baht','cheap','expensive','pay','แพง'] },   // re-badged by the 2026-07-17 length audit
@@ -147,7 +147,7 @@
       keywords: ['sick','ill','illness','ป่วย','symptom','อาการ','headache','ปวดหัว','fever','ไข้','cold','หวัด','pharmacy','ยา','medicine','sore throat','pain','ปวด'] },
     { id: 13, part: 3, name: "Body & health 3", levels: ['li1','li2'], sentences: 25, page: "topic-13c.html", audio: "Health_LI1", access: "premium",
       keywords: ['doctor','หมอ','hospital','โรงพยาบาล','clinic','check up','ตรวจสุขภาพ','appointment','test results','allergy','แพ้ยา','health','wellbeing','treatment'] },
-    { id: 49, part: 2, name: "Compliments & opinions 2", levels: ['li1','li2'], sentences: 32, page: "topic-49b.html", audio: "Opinions_LI1", access: "premium",
+    { id: 49, part: 2, name: "Compliments & opinions 2", levels: ['li1','li2'], sentences: 34, page: "topic-49b.html", audio: "Opinions_LI1", access: "premium",
       keywords: ['opinion','ความเห็น','think','คิด','agree','เห็นด้วย','disagree','argue','view','believe','เชื่อ','discuss','debate'] },
     { id: 36, part: 1, name: "Romantic relationships & dating 1", levels: ['li1','li2'], sentences: 22, page: "topic-36a.html", audio: "Romance_LI1", access: "member",
       keywords: ['dating','เดท','single','โสด','dating app','แอปหาคู่','swipe','ปัดขวา','match','romance','meet someone','love life'] },

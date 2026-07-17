@@ -8,7 +8,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 
 - [Greetings & farewells in Thai](https://thaiear.com/topic-01): Beginner, 23 sentences
 - [Getting to know you in Thai](https://thaiear.com/topic-02): Beginner, 29 sentences
-- [Communication survival in Thai](https://thaiear.com/topic-03): Beginner, 22 sentences
+- [Communication survival in Thai](https://thaiear.com/topic-03): Beginner, 25 sentences
 - [Shopping & money 1 in Thai](https://thaiear.com/topic-11a): Beginner, 22 sentences
 - [Colours & descriptions 1 in Thai](https://thaiear.com/topic-04a): Beginner, 21 sentences
 - [Colours & descriptions 2 in Thai](https://thaiear.com/topic-04b): Beginner, 21 sentences
@@ -43,7 +43,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Body & health 1 in Thai](https://thaiear.com/topic-13a): Lower intermediate → Upper intermediate, 41 sentences
 - [Body & health 2 in Thai](https://thaiear.com/topic-13b): Lower intermediate → Upper intermediate, 28 sentences
 - [Body & health 3 in Thai](https://thaiear.com/topic-13c): Lower intermediate → Upper intermediate, 25 sentences
-- [Compliments & opinions 2 in Thai](https://thaiear.com/topic-49b): Lower intermediate → Upper intermediate, 32 sentences
+- [Compliments & opinions 2 in Thai](https://thaiear.com/topic-49b): Lower intermediate → Upper intermediate, 34 sentences
 - [Romantic relationships & dating 1 in Thai](https://thaiear.com/topic-36a): Lower intermediate → Upper intermediate, 22 sentences
 - [Romantic relationships & dating 2 in Thai](https://thaiear.com/topic-36b): Lower intermediate → Upper intermediate, 26 sentences
 - [Romantic relationships & dating 3 in Thai](https://thaiear.com/topic-36c): Lower intermediate → Upper intermediate, 29 sentences
