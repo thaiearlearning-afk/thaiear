@@ -145,10 +145,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-16b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://thaiear.com/topic-49a</loc>
     <priority>0.8</priority>
   </url>
@@ -222,6 +218,10 @@
   </url>
   <url>
     <loc>https://thaiear.com/topic-27b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-16b</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -329,10 +329,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-32c</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://thaiear.com/topic-35a</loc>
     <priority>0.8</priority>
   </url>
@@ -358,6 +354,10 @@
   </url>
   <url>
     <loc>https://thaiear.com/topic-35g</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-32c</loc>
     <priority>0.8</priority>
   </url>
   <url>

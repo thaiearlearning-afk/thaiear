@@ -146,8 +146,6 @@
       keywords: ['home','house','บ้าน','housework','chores','งานบ้าน','clean','ทำความสะอาด','laundry','ซักผ้า','wash','routine','tidy','evening'] },
     { id: 16, part: 1, name: "Social life & events 1", levels: ['beg','li1'], sentences: 21, page: "topic-16.html", audio: "SocialLife_BEG", access: "premium",
       keywords: ['social','party','ปาร์ตี้','event','งาน','invite','ชวน','friends','เพื่อน','meet','นัด','celebrate','ฉลอง','birthday','wedding','งานแต่ง'] },
-    { id: 16, part: 2, name: "Social life & events 2", levels: ['beg','li1'], sentences: 19, page: "topic-16b.html", audio: "SocialLife2_BEG", access: "premium",
-      keywords: ['social','party','ปาร์ตี้','event','งาน','invite','ชวน','friends','เพื่อน','meet','นัด','celebrate','ฉลอง','birthday','wedding','งานแต่ง'] },
 
     // ── LOWER → UPPER INTERMEDIATE ──────────────────
     { id: 49, part: 1, name: "Compliments & opinions 1", levels: ['li1','li2'], sentences: 33, page: "topic-49a.html", audio: "Compliments_LI1", access: "premium",
@@ -188,6 +186,8 @@
       keywords: ['travel','เที่ยว','tourism','ท่องเที่ยว','trip','ทริป','holiday','วันหยุด','hotel','โรงแรม','book','จอง','flight','เครื่องบิน','sightseeing'] },
     { id: 27, part: 2, name: "Travel & tourism 2", levels: ['li1','li2'], sentences: 27, page: "topic-27b.html", audio: "Travel2_LI1", access: "premium",
       keywords: ['travel','เที่ยว','tourism','sightseeing','attraction','สถานที่','beach','ทะเล','island','เกาะ','tour','ทัวร์','guide','itinerary','holiday'] },
+    { id: 16, part: 2, name: "Social life & events 2", levels: ['li1','li2'], sentences: 19, page: "topic-16b.html", audio: "SocialLife2_BEG", access: "premium",
+      keywords: ['social','party','ปาร์ตี้','event','งาน','invite','ชวน','friends','เพื่อน','meet','นัด','celebrate','ฉลอง','birthday','wedding','งานแต่ง'] },
     { id: 15, part: 1, name: "Hobbies & free time 1", levels: ['li1','li2'], sentences: 19, page: "topic-15.html", audio: "Hobbies_BEG", access: "premium",
       keywords: ['hobby','งานอดิเรก','free time','ว่าง','pastime','interest','relax','พักผ่อน','music','เพลง','read','อ่าน','game','เกม','leisure','weekend'] },   // re-badged by the 2026-07-17 length audit
     { id: 15, part: 2, name: "Hobbies & free time 2", levels: ['li1','li2'], sentences: 18, page: "topic-15b.html", audio: "Hobbies2_BEG", access: "premium",
@@ -240,8 +240,6 @@
       keywords: ['media','สื่อ','entertainment','บันเทิง','tv','ทีวี','film','หนัง','movie','music','เพลง','series','ละคร','watch','ดู','show'] },
     { id: 47, part: 2, name: "Homes & housing 2", levels: ['li1','li2'], sentences: 13, page: "topic-47b.html", audio: "HomesAndHousing2_LI1", access: "premium",
       keywords: ['house','บ้าน','housing','rent','เช่า','condo','คอนโด','apartment','อพาร์ตเมนต์','landlord','เจ้าของบ้าน','move','ย้าย','property','lease','deposit'] },
-    { id: 32, part: 2, name: "Thai geography & regions 2", levels: ['li1','li2'], sentences: 16, page: "topic-32c.html", audio: "GeoRegions2_LI1", access: "premium",
-      keywords: ['geography','ภูมิศาสตร์','region','ภาค','province','จังหวัด','thailand','ประเทศไทย','north','เหนือ','south','ใต้','map','area','isaan','อีสาน'] },
 
     // ── UPPER INTERMEDIATE → ADVANCED ───────────────
     { id: 35, part: 1, name: "Buddhism 1", levels: ['li2','adv'], sentences: 21, page: "topic-35a.html", audio: "Temple_LI1", access: "member",
@@ -258,6 +256,8 @@
       keywords: ['monastic','สงฆ์','monk','พระ','ordination','บวช','temple','วัด','monastery','robe','จีวร','buddhism','พุทธ','religion','novice','เณร'] },
     { id: 35, part: 6, name: "Buddhism 6", levels: ['li2','adv'], sentences: 15, page: "topic-35g.html", audio: "Monastic2_LI2", access: "premium",
       keywords: ['monastic','สงฆ์','monk','พระ','ordination','บวช','temple','วัด','monastery','robe','จีวร','buddhism','พุทธ','religion','novice','เณร'] },
+    { id: 32, part: 2, name: "Thai geography & regions 2", levels: ['li2','adv'], sentences: 16, page: "topic-32c.html", audio: "GeoRegions2_LI1", access: "premium",
+      keywords: ['geography','ภูมิศาสตร์','region','ภาค','province','จังหวัด','thailand','ประเทศไทย','north','เหนือ','south','ใต้','map','area','isaan','อีสาน'] },
     { id: 25, part: 3, name: "Media & entertainment 3", levels: ['li2','adv'], sentences: 15, page: "topic-25b.html", audio: "Media2_LI1", access: "premium",
       keywords: ['media','สื่อ','entertainment','บันเทิง','news','ข่าว','celebrity','ดารา','journalism','นักข่าว','critique','review','วิจารณ์','industry'] },   // re-badged by the 2026-07-17 length audit
     { id: 35, part: 7, name: "Buddhism 7", levels: ['li2','adv'], sentences: 10, page: "topic-35d.html", audio: "Meditation_LI2", access: "premium",

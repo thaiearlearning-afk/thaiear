@@ -41,7 +41,6 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Feelings & emotions 2 in Thai](https://thaiear.com/topic-14b): Beginner → Lower intermediate, 30 sentences
 - [Home & daily routine 2 in Thai](https://thaiear.com/topic-10b): Beginner → Lower intermediate, 32 sentences
 - [Social life & events 1 in Thai](https://thaiear.com/topic-16): Beginner → Lower intermediate, 21 sentences
-- [Social life & events 2 in Thai](https://thaiear.com/topic-16b): Beginner → Lower intermediate, 19 sentences
 - [Compliments & opinions 1 in Thai](https://thaiear.com/topic-49a): Lower intermediate → Upper intermediate, 33 sentences
 - [Body & health 1 in Thai](https://thaiear.com/topic-13a): Lower intermediate → Upper intermediate, 26 sentences
 - [Body & health 2 in Thai](https://thaiear.com/topic-13b): Lower intermediate → Upper intermediate, 30 sentences
@@ -61,6 +60,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [School and University 2 in Thai](https://thaiear.com/topic-45b): Lower intermediate → Upper intermediate, 30 sentences
 - [Travel & tourism 1 in Thai](https://thaiear.com/topic-27a): Lower intermediate → Upper intermediate, 27 sentences
 - [Travel & tourism 2 in Thai](https://thaiear.com/topic-27b): Lower intermediate → Upper intermediate, 27 sentences
+- [Social life & events 2 in Thai](https://thaiear.com/topic-16b): Lower intermediate → Upper intermediate, 19 sentences
 - [Hobbies & free time 1 in Thai](https://thaiear.com/topic-15): Lower intermediate → Upper intermediate, 19 sentences
 - [Hobbies & free time 2 in Thai](https://thaiear.com/topic-15b): Lower intermediate → Upper intermediate, 18 sentences
 - [Education system 2 in Thai](https://thaiear.com/topic-21b): Lower intermediate → Upper intermediate, 24 sentences
@@ -87,7 +87,6 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Media & entertainment 1 in Thai](https://thaiear.com/topic-25a): Lower intermediate → Upper intermediate, 17 sentences
 - [Media & entertainment 2 in Thai](https://thaiear.com/topic-25c): Lower intermediate → Upper intermediate, 20 sentences
 - [Homes & housing 2 in Thai](https://thaiear.com/topic-47b): Lower intermediate → Upper intermediate, 13 sentences
-- [Thai geography & regions 2 in Thai](https://thaiear.com/topic-32c): Lower intermediate → Upper intermediate, 16 sentences
 - [Buddhism 1 in Thai](https://thaiear.com/topic-35a): Upper intermediate → Advanced, 21 sentences
 - [Buddhism 2 in Thai](https://thaiear.com/topic-35b): Upper intermediate → Advanced, 18 sentences
 - [Community & society 3 in Thai](https://thaiear.com/topic-29b): Upper intermediate → Advanced, 19 sentences
@@ -95,6 +94,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Buddhism 4 in Thai](https://thaiear.com/topic-35f): Upper intermediate → Advanced, 13 sentences
 - [Buddhism 5 in Thai](https://thaiear.com/topic-35e): Upper intermediate → Advanced, 15 sentences
 - [Buddhism 6 in Thai](https://thaiear.com/topic-35g): Upper intermediate → Advanced, 15 sentences
+- [Thai geography & regions 2 in Thai](https://thaiear.com/topic-32c): Upper intermediate → Advanced, 16 sentences
 - [Media & entertainment 3 in Thai](https://thaiear.com/topic-25b): Upper intermediate → Advanced, 15 sentences
 - [Buddhism 7 in Thai](https://thaiear.com/topic-35d): Upper intermediate → Advanced, 10 sentences
 - [Thai geography & regions 3 in Thai](https://thaiear.com/topic-32b): Upper intermediate → Advanced, 16 sentences
