@@ -20,7 +20,10 @@
   'use strict';
   if (window.ThaiEarAuth) return; // load once
 
-  var SUPABASE_URL = 'https://pyfyyiegmxwmfshgwvze.supabase.co';
+  // Custom auth domain (Supabase custom-domain add-on) so the Google OAuth consent
+  // screen shows a ThaiEar-branded host instead of the raw project domain. The old
+  // pyfyyiegmxwmfshgwvze.supabase.co URL still works server-side (functions use it via env).
+  var SUPABASE_URL = 'https://auth.thaiear.com';
   var SUPABASE_KEY = 'sb_publishable_Msf5wsXw0KdugHGd5C2-mA_TNxbhT0e';
   var SUPABASE_ESM = 'https://esm.sh/@supabase/supabase-js@2';
 

@@ -1178,6 +1178,9 @@
   function setMainIcon(playing) {
     var i = $('play-icon'); if (i) i.innerHTML = playing ? PLAY_BARS : PLAY_TRI;
     var mi = $('te-mini-icon'); if (mi) mi.innerHTML = playing ? PLAY_BARS : PLAY_TRI;
+    // Screen readers should hear the action the button will take, not a static label.
+    var pb = $('play-btn'); if (pb) pb.setAttribute('aria-label', playing ? 'Pause audio' : 'Play audio');
+    var mp = $('te-mini-play'); if (mp) mp.setAttribute('aria-label', playing ? 'Pause audio' : 'Play audio');
     // Starting the main TE/ET track latches the floating mini transport on for the rest of the visit
     // (it then shows whenever the real player scrolls out of view). Pausing keeps it latched.
     if (playing) miniActivated = true;
@@ -1344,6 +1347,14 @@
     var pct = mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
     var f = $('scrubber-fill'); if (f) f.style.width = pct + '%';
     var c = $('time-cur'); if (c) c.textContent = formatTime(mainAudio.currentTime);
+    // Adopting an already-playing track (syncToPlayingTrack → attach) never fires
+    // 'loadedmetadata' — duration arrives via the native time ticks instead — so the
+    // total label painted there would stay "0:00" forever. Repaint it here when stale.
+    var tt = $('time-total');
+    if (tt && mainAudio.duration && isFinite(mainAudio.duration)) {
+      var tot = formatTime(mainAudio.duration);
+      if (tt.textContent !== tot) tt.textContent = tot;
+    }
     var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';   // mirror onto the floating mini bar
     writeWebResume();   // keep the cross-page resume position fresh while playing (web only, throttled)
   });

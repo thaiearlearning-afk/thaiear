@@ -150,6 +150,15 @@ function showModal(opts) {
     opts.onConfirm();
   });
 }
+// An accidental tap shouldn't end the session (signing back in costs a full Google round-trip).
+function confirmLogout() {
+  showModal({
+    title: 'Log out?',
+    body: 'You’ll need to sign in with Google again to see your membership and progress.',
+    confirmText: 'Log out', cancelText: 'Stay signed in',
+    onConfirm: function () { ThaiEarAuth.signOut(); },
+  });
+}
 function deleteAccount() {
   if (!navigator.onLine) {
     var st = document.getElementById('delete-status');
@@ -472,7 +481,7 @@ function renderAccount() {
     '<div id="membership" style="min-height:80px"></div>' +
     consentHtml +
     resetHtml +
-    '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="ThaiEarAuth.signOut()">Log out</button></p>' +
+    '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="confirmLogout()">Log out</button></p>' +
     '<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">' +
       '<button class="btn" onclick="deleteAccount()" style="font-size:12px;color:#B00020;background:none;border-color:rgba(176,0,32,0.35)">Delete my account</button>' +
       '<p id="delete-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
