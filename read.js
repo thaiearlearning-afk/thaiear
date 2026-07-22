@@ -1244,7 +1244,7 @@
       '<div class="key-grid">' + D.toneKey.map(function (k) {
         return '<div class="key-item"><div class="k-mark">' + k.mark + '</div><div class="k-name">' + k.name + ' tone</div></div>';
       }).join('') + '</div>' +
-      '<p style="margin-top:0.8rem">So <span class="th">ม้า</span> <em>máa</em> is high, <span class="th">หมา</span> <em>mǎa</em> is rising.</p></div>' +
+      '</div>' +
 
       '<div class="section-header" style="margin-top:2rem"><span class="section-title" style="font-size:13px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary)">The learning path — test yourself at every step</span></div>' +
       '<div class="read-path">' + teach.map(function (s, i) {
