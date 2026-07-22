@@ -52,6 +52,12 @@
   /* Topic intro: visible, crawlable lead paragraph under the h1 (SEO + orientation).
      'Inter' for English, 'Sarabun' fallback for the Thai words. */
   .topic-intro { font-family: 'Inter', 'Sarabun', system-ui, sans-serif; font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin: 0.6rem 0 1.25rem; }
+  /* Transliteration (topics shipping per-sentence 'translit', currently 01–03): the line lives
+     INSIDE row-thai so it reveals/collapses with the Thai script in both TE and ET directions.
+     Default ON; player.js's pill adds .translit-off on #sentence-list to hide it. */
+  .thai-translit { font-family: var(--font-ui); font-size: 13px; color: var(--text-tertiary); line-height: 1.55; margin-top: 1px; }
+  .g-tl { color: var(--text-secondary); margin-left: 4px; }
+  #sentence-list.translit-off .thai-translit, #sentence-list.translit-off .g-tl { display: none; }
 </style>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -125,9 +131,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">สวัสดีครับ</div>
+          <div class="reveal-row row-thai">สวัสดีครับ<div class="thai-translit">sà-wàt-dii khráp</div></div>
           <div class="reveal-row row-english">Hello.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สวัสดี</span><span class="g-eq">=</span><span class="g-eng">hello / goodbye</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">สวัสดี works for both hello and goodbye at any time of day.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สวัสดี</span><span class="g-tl">/ sà-wàt-dii</span><span class="g-eq">=</span><span class="g-eng">hello / goodbye</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">สวัสดี works for both hello and goodbye at any time of day.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-2">
@@ -140,9 +146,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">สวัสดีค่ะ</div>
+          <div class="reveal-row row-thai">สวัสดีค่ะ<div class="thai-translit">sà-wàt-dii khâ</div></div>
           <div class="reveal-row row-english">Hello.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สวัสดี</span><span class="g-eq">=</span><span class="g-eng">hello / goodbye</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สวัสดี</span><span class="g-tl">/ sà-wàt-dii</span><span class="g-eq">=</span><span class="g-eng">hello / goodbye</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-3">
@@ -155,9 +161,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ดีว่ะ เป็นไงบ้าง</div>
+          <div class="reveal-row row-thai">ดีว่ะ เป็นไงบ้าง<div class="thai-translit">dii wâ bpen ngai bâang</div></div>
           <div class="reveal-row row-english">Hey — how's it going?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ดี</span><span class="g-eq">=</span><span class="g-eng">good</span></span><span class="gloss-chip"><span class="g-thai">ว่ะ</span><span class="g-eq">=</span><span class="g-eng">informal emphatic particle</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-eq">=</span><span class="g-eng">to be</span></span><span class="gloss-chip"><span class="g-thai">ไง</span><span class="g-eq">=</span><span class="g-eng">how</span></span><span class="gloss-chip"><span class="g-thai">บ้าง</span><span class="g-eq">=</span><span class="g-eng">somewhat / any</span></span></div><div class="cultural-note">ว่ะ marks this as informal — only use with close friends.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ดี</span><span class="g-tl">/ dii</span><span class="g-eq">=</span><span class="g-eng">good</span></span><span class="gloss-chip"><span class="g-thai">ว่ะ</span><span class="g-tl">/ wâ</span><span class="g-eq">=</span><span class="g-eng">informal emphatic particle</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-tl">/ bpen</span><span class="g-eq">=</span><span class="g-eng">to be</span></span><span class="gloss-chip"><span class="g-thai">ไง</span><span class="g-tl">/ ngai</span><span class="g-eq">=</span><span class="g-eng">how</span></span><span class="gloss-chip"><span class="g-thai">บ้าง</span><span class="g-tl">/ bâang</span><span class="g-eq">=</span><span class="g-eng">somewhat / any</span></span></div><div class="cultural-note">ว่ะ marks this as informal — only use with close friends.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-4">
@@ -170,9 +176,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เป็นยังไงบ้างคะ</div>
+          <div class="reveal-row row-thai">เป็นยังไงบ้างคะ<div class="thai-translit">bpen yang-ngai bâang khá</div></div>
           <div class="reveal-row row-english">How are you?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-eq">=</span><span class="g-eng">to be</span></span><span class="gloss-chip"><span class="g-thai">ยังไง</span><span class="g-eq">=</span><span class="g-eng">how</span></span><span class="gloss-chip"><span class="g-thai">บ้าง</span><span class="g-eq">=</span><span class="g-eng">somewhat / any</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-tl">/ bpen</span><span class="g-eq">=</span><span class="g-eng">to be</span></span><span class="gloss-chip"><span class="g-thai">ยังไง</span><span class="g-tl">/ yang-ngai</span><span class="g-eq">=</span><span class="g-eng">how</span></span><span class="gloss-chip"><span class="g-thai">บ้าง</span><span class="g-tl">/ bâang</span><span class="g-eq">=</span><span class="g-eng">somewhat / any</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-5">
@@ -185,9 +191,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">สบายดีครับ ขอบคุณครับ</div>
+          <div class="reveal-row row-thai">สบายดีครับ ขอบคุณครับ<div class="thai-translit">sà-baai dii khráp khàwp-khun khráp</div></div>
           <div class="reveal-row row-english">I'm well, thank you.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สบาย</span><span class="g-eq">=</span><span class="g-eng">comfortable</span></span><span class="gloss-chip"><span class="g-thai">ดี</span><span class="g-eq">=</span><span class="g-eng">good</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span><span class="gloss-chip"><span class="g-thai">ขอบคุณ</span><span class="g-eq">=</span><span class="g-eng">thank you</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สบาย</span><span class="g-tl">/ sà-baai</span><span class="g-eq">=</span><span class="g-eng">comfortable</span></span><span class="gloss-chip"><span class="g-thai">ดี</span><span class="g-tl">/ dii</span><span class="g-eq">=</span><span class="g-eng">good</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span><span class="gloss-chip"><span class="g-thai">ขอบคุณ</span><span class="g-tl">/ khàwp-khun</span><span class="g-eq">=</span><span class="g-eng">thank you</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-6">
@@ -200,9 +206,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ไม่ค่อยสบายค่ะ</div>
+          <div class="reveal-row row-thai">ไม่ค่อยสบายค่ะ<div class="thai-translit">mâi khôi sà-baai khâ</div></div>
           <div class="reveal-row row-english">Not feeling great.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ไม่</span><span class="g-eq">=</span><span class="g-eng">not</span></span><span class="gloss-chip"><span class="g-thai">ค่อย</span><span class="g-eq">=</span><span class="g-eng">very much / particularly</span></span><span class="gloss-chip"><span class="g-thai">สบาย</span><span class="g-eq">=</span><span class="g-eng">comfortable / well</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ไม่</span><span class="g-tl">/ mâi</span><span class="g-eq">=</span><span class="g-eng">not</span></span><span class="gloss-chip"><span class="g-thai">ค่อย</span><span class="g-tl">/ khôi</span><span class="g-eq">=</span><span class="g-eng">very much / particularly</span></span><span class="gloss-chip"><span class="g-thai">สบาย</span><span class="g-tl">/ sà-baai</span><span class="g-eq">=</span><span class="g-eng">comfortable / well</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-7">
@@ -215,9 +221,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ก็โอเคนะครับ ไม่มีอะไรมาก</div>
+          <div class="reveal-row row-thai">ก็โอเคนะครับ ไม่มีอะไรมาก<div class="thai-translit">gâw oo-khee ná khráp mâi mii à-rai mâak</div></div>
           <div class="reveal-row row-english">I'm OK — nothing much going on.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-eq">=</span><span class="g-eng">then / well</span></span><span class="gloss-chip"><span class="g-thai">โอเค</span><span class="g-eq">=</span><span class="g-eng">OK</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span><span class="gloss-chip"><span class="g-thai">ไม่มีอะไร</span><span class="g-eq">=</span><span class="g-eng">nothing</span></span><span class="gloss-chip"><span class="g-thai">มาก</span><span class="g-eq">=</span><span class="g-eng">much</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-tl">/ gâw</span><span class="g-eq">=</span><span class="g-eng">then / well</span></span><span class="gloss-chip"><span class="g-thai">โอเค</span><span class="g-tl">/ oo-khee</span><span class="g-eq">=</span><span class="g-eng">OK</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span><span class="gloss-chip"><span class="g-thai">ไม่มีอะไร</span><span class="g-tl">/ mâi mii à-rai</span><span class="g-eq">=</span><span class="g-eng">nothing</span></span><span class="gloss-chip"><span class="g-thai">มาก</span><span class="g-tl">/ mâak</span><span class="g-eq">=</span><span class="g-eng">much</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-8">
@@ -230,9 +236,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">นานมากเลยนะคะ ไม่ได้เจอกัน</div>
+          <div class="reveal-row row-thai">นานมากเลยนะคะ ไม่ได้เจอกัน<div class="thai-translit">naan mâak loei ná khá mâi dâi juhr gan</div></div>
           <div class="reveal-row row-english">It's been so long — we haven't seen each other.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">นาน</span><span class="g-eq">=</span><span class="g-eng">long time</span></span><span class="gloss-chip"><span class="g-thai">มาก</span><span class="g-eq">=</span><span class="g-eng">very</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-eq">=</span><span class="g-eng">emphasis particle</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span><span class="gloss-chip"><span class="g-thai">ไม่ได้</span><span class="g-eq">=</span><span class="g-eng">did not</span></span><span class="gloss-chip"><span class="g-thai">เจอ</span><span class="g-eq">=</span><span class="g-eng">meet</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-eq">=</span><span class="g-eng">each other</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">นาน</span><span class="g-tl">/ naan</span><span class="g-eq">=</span><span class="g-eng">long time</span></span><span class="gloss-chip"><span class="g-thai">มาก</span><span class="g-tl">/ mâak</span><span class="g-eq">=</span><span class="g-eng">very</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-tl">/ loei</span><span class="g-eq">=</span><span class="g-eng">emphasis particle</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span><span class="gloss-chip"><span class="g-thai">ไม่ได้</span><span class="g-tl">/ mâi dâi</span><span class="g-eq">=</span><span class="g-eng">did not</span></span><span class="gloss-chip"><span class="g-thai">เจอ</span><span class="g-tl">/ juhr</span><span class="g-eq">=</span><span class="g-eng">meet</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-tl">/ gan</span><span class="g-eq">=</span><span class="g-eng">each other</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-9">
@@ -245,9 +251,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ไปไหนมาครับ</div>
+          <div class="reveal-row row-thai">ไปไหนมาครับ<div class="thai-translit">bpai nǎi maa khráp</div></div>
           <div class="reveal-row row-english">Where have you been?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ไปไหน</span><span class="g-eq">=</span><span class="g-eng">where have you gone</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-eq">=</span><span class="g-eng">come (implies return)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Doubles as a greeting — not always a literal question.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ไปไหน</span><span class="g-tl">/ bpai nǎi</span><span class="g-eq">=</span><span class="g-eng">where have you gone</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-tl">/ maa</span><span class="g-eq">=</span><span class="g-eng">come (implies return)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Doubles as a greeting — not always a literal question.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-10">
@@ -260,9 +266,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ยินดีที่ได้รู้จักครับ</div>
+          <div class="reveal-row row-thai">ยินดีที่ได้รู้จักครับ<div class="thai-translit">yin-dii thîi dâi rúu-jàk khráp</div></div>
           <div class="reveal-row row-english">Pleased to meet you.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ยินดี</span><span class="g-eq">=</span><span class="g-eng">pleased / glad</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that (relative)</span></span><span class="gloss-chip"><span class="g-thai">ได้</span><span class="g-eq">=</span><span class="g-eng">opportunity to</span></span><span class="gloss-chip"><span class="g-thai">รู้จัก</span><span class="g-eq">=</span><span class="g-eng">know (a person)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ยินดี</span><span class="g-tl">/ yin-dii</span><span class="g-eq">=</span><span class="g-eng">pleased / glad</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-tl">/ thîi</span><span class="g-eq">=</span><span class="g-eng">that (relative)</span></span><span class="gloss-chip"><span class="g-thai">ได้</span><span class="g-tl">/ dâi</span><span class="g-eq">=</span><span class="g-eng">opportunity to</span></span><span class="gloss-chip"><span class="g-thai">รู้จัก</span><span class="g-tl">/ rúu-jàk</span><span class="g-eq">=</span><span class="g-eng">know (a person)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-11">
@@ -275,9 +281,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ยินดีที่ได้รู้จักเช่นกันค่ะ</div>
+          <div class="reveal-row row-thai">ยินดีที่ได้รู้จักเช่นกันค่ะ<div class="thai-translit">yin-dii thîi dâi rúu-jàk chên-gan khâ</div></div>
           <div class="reveal-row row-english">Pleased to meet you too.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ยินดี</span><span class="g-eq">=</span><span class="g-eng">pleased</span></span><span class="gloss-chip"><span class="g-thai">ที่ได้รู้จัก</span><span class="g-eq">=</span><span class="g-eng">to have met</span></span><span class="gloss-chip"><span class="g-thai">เช่นกัน</span><span class="g-eq">=</span><span class="g-eng">likewise / same</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ยินดี</span><span class="g-tl">/ yin-dii</span><span class="g-eq">=</span><span class="g-eng">pleased</span></span><span class="gloss-chip"><span class="g-thai">ที่ได้รู้จัก</span><span class="g-tl">/ thîi dâi rúu-jàk</span><span class="g-eq">=</span><span class="g-eng">to have met</span></span><span class="gloss-chip"><span class="g-thai">เช่นกัน</span><span class="g-tl">/ chên-gan</span><span class="g-eq">=</span><span class="g-eng">likewise / same</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-12">
@@ -290,9 +296,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ดีใจที่ได้เจอครับ</div>
+          <div class="reveal-row row-thai">ดีใจที่ได้เจอครับ<div class="thai-translit">dii-jai thîi dâi juhr khráp</div></div>
           <div class="reveal-row row-english">Glad to meet you.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ดีใจ</span><span class="g-eq">=</span><span class="g-eng">glad / happy</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">ได้</span><span class="g-eq">=</span><span class="g-eng">opportunity to</span></span><span class="gloss-chip"><span class="g-thai">เจอ</span><span class="g-eq">=</span><span class="g-eng">meet / encounter</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Warmer and slightly more casual than ยินดีที่ได้รู้จัก.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ดีใจ</span><span class="g-tl">/ dii-jai</span><span class="g-eq">=</span><span class="g-eng">glad / happy</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-tl">/ thîi</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">ได้</span><span class="g-tl">/ dâi</span><span class="g-eq">=</span><span class="g-eng">opportunity to</span></span><span class="gloss-chip"><span class="g-thai">เจอ</span><span class="g-tl">/ juhr</span><span class="g-eq">=</span><span class="g-eng">meet / encounter</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Warmer and slightly more casual than ยินดีที่ได้รู้จัก.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-13">
@@ -305,9 +311,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">กินข้าวยังคะ</div>
+          <div class="reveal-row row-thai">กินข้าวยังคะ<div class="thai-translit">gin khâao yang khá</div></div>
           <div class="reveal-row row-english">Have you eaten yet?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กินข้าว</span><span class="g-eq">=</span><span class="g-eng">eat / have a meal</span></span><span class="gloss-chip"><span class="g-thai">ยัง</span><span class="g-eq">=</span><span class="g-eng">yet</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">A very common Thai social greeting — not always a literal question about food.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กินข้าว</span><span class="g-tl">/ gin khâao</span><span class="g-eq">=</span><span class="g-eng">eat / have a meal</span></span><span class="gloss-chip"><span class="g-thai">ยัง</span><span class="g-tl">/ yang</span><span class="g-eq">=</span><span class="g-eng">yet</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">A very common Thai social greeting — not always a literal question about food.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-14">
@@ -320,9 +326,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เป็นไงบ้างช่วงนี้ครับ</div>
+          <div class="reveal-row row-thai">เป็นไงบ้างช่วงนี้ครับ<div class="thai-translit">bpen ngai bâang chûang-níi khráp</div></div>
           <div class="reveal-row row-english">How have things been lately?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เป็นไงบ้าง</span><span class="g-eq">=</span><span class="g-eng">how are things</span></span><span class="gloss-chip"><span class="g-thai">ช่วงนี้</span><span class="g-eq">=</span><span class="g-eng">lately / these days</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เป็นไงบ้าง</span><span class="g-tl">/ bpen ngai bâang</span><span class="g-eq">=</span><span class="g-eng">how are things</span></span><span class="gloss-chip"><span class="g-thai">ช่วงนี้</span><span class="g-tl">/ chûang-níi</span><span class="g-eq">=</span><span class="g-eng">lately / these days</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-15">
@@ -335,9 +341,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">คิดถึงเหมือนกันค่ะ</div>
+          <div class="reveal-row row-thai">คิดถึงเหมือนกันค่ะ<div class="thai-translit">khít-thǔeng mǔean-gan khâ</div></div>
           <div class="reveal-row row-english">I've missed you too.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คิดถึง</span><span class="g-eq">=</span><span class="g-eng">miss / think of</span></span><span class="gloss-chip"><span class="g-thai">เหมือนกัน</span><span class="g-eq">=</span><span class="g-eng">likewise / same / too</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คิดถึง</span><span class="g-tl">/ khít-thǔeng</span><span class="g-eq">=</span><span class="g-eng">miss / think of</span></span><span class="gloss-chip"><span class="g-thai">เหมือนกัน</span><span class="g-tl">/ mǔean-gan</span><span class="g-eq">=</span><span class="g-eng">likewise / same / too</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-16">
@@ -350,9 +356,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ลาก่อนครับ</div>
+          <div class="reveal-row row-thai">ลาก่อนครับ<div class="thai-translit">laa gàwn khráp</div></div>
           <div class="reveal-row row-english">Goodbye.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ลา</span><span class="g-eq">=</span><span class="g-eng">take leave / say goodbye</span></span><span class="gloss-chip"><span class="g-thai">ก่อน</span><span class="g-eq">=</span><span class="g-eng">first / before</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ลา</span><span class="g-tl">/ laa</span><span class="g-eq">=</span><span class="g-eng">take leave / say goodbye</span></span><span class="gloss-chip"><span class="g-thai">ก่อน</span><span class="g-tl">/ gàwn</span><span class="g-eq">=</span><span class="g-eng">first / before</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-17">
@@ -365,9 +371,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">แล้วเจอกันใหม่นะคะ</div>
+          <div class="reveal-row row-thai">แล้วเจอกันใหม่นะคะ<div class="thai-translit">láaeo juhr gan mài ná khá</div></div>
           <div class="reveal-row row-english">See you again.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">then / after</span></span><span class="gloss-chip"><span class="g-thai">เจอกัน</span><span class="g-eq">=</span><span class="g-eng">meet each other</span></span><span class="gloss-chip"><span class="g-thai">ใหม่</span><span class="g-eq">=</span><span class="g-eng">again / new</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-tl">/ láaeo</span><span class="g-eq">=</span><span class="g-eng">then / after</span></span><span class="gloss-chip"><span class="g-thai">เจอกัน</span><span class="g-tl">/ juhr gan</span><span class="g-eq">=</span><span class="g-eng">meet each other</span></span><span class="gloss-chip"><span class="g-thai">ใหม่</span><span class="g-tl">/ mài</span><span class="g-eq">=</span><span class="g-eng">again / new</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-18">
@@ -380,9 +386,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">แล้วเจอกันนะครับ</div>
+          <div class="reveal-row row-thai">แล้วเจอกันนะครับ<div class="thai-translit">láaeo juhr gan ná khráp</div></div>
           <div class="reveal-row row-english">See you later.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">then</span></span><span class="gloss-chip"><span class="g-thai">เจอกัน</span><span class="g-eq">=</span><span class="g-eng">meet each other</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-tl">/ láaeo</span><span class="g-eq">=</span><span class="g-eng">then</span></span><span class="gloss-chip"><span class="g-thai">เจอกัน</span><span class="g-tl">/ juhr gan</span><span class="g-eq">=</span><span class="g-eng">meet each other</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-19">
@@ -395,9 +401,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">แล้วพบกันใหม่นะคะ</div>
+          <div class="reveal-row row-thai">แล้วพบกันใหม่นะคะ<div class="thai-translit">láaeo phóp gan mài ná khá</div></div>
           <div class="reveal-row row-english">Until we meet again.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">then / after</span></span><span class="gloss-chip"><span class="g-thai">พบ</span><span class="g-eq">=</span><span class="g-eng">meet (slightly more formal than เจอ)</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-eq">=</span><span class="g-eng">each other</span></span><span class="gloss-chip"><span class="g-thai">ใหม่</span><span class="g-eq">=</span><span class="g-eng">again</span></span><span class="gloss-chip"><span class="g-thai">นะคะ</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">พบ is slightly more formal than เจอ.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-tl">/ láaeo</span><span class="g-eq">=</span><span class="g-eng">then / after</span></span><span class="gloss-chip"><span class="g-thai">พบ</span><span class="g-tl">/ phóp</span><span class="g-eq">=</span><span class="g-eng">meet (slightly more formal than เจอ)</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-tl">/ gan</span><span class="g-eq">=</span><span class="g-eng">each other</span></span><span class="gloss-chip"><span class="g-thai">ใหม่</span><span class="g-tl">/ mài</span><span class="g-eq">=</span><span class="g-eng">again</span></span><span class="gloss-chip"><span class="g-thai">นะคะ</span><span class="g-tl">/ ná khá</span><span class="g-eq">=</span><span class="g-eng">polite(f)</span></span></div><div class="cultural-note">พบ is slightly more formal than เจอ.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-20">
@@ -410,9 +416,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ขับรถระวังด้วยนะครับ</div>
+          <div class="reveal-row row-thai">ขับรถระวังด้วยนะครับ<div class="thai-translit">khàp rót rá-wang dûai ná khráp</div></div>
           <div class="reveal-row row-english">Drive carefully.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขับรถ</span><span class="g-eq">=</span><span class="g-eng">drive</span></span><span class="gloss-chip"><span class="g-thai">ระวัง</span><span class="g-eq">=</span><span class="g-eng">be careful</span></span><span class="gloss-chip"><span class="g-thai">ด้วย</span><span class="g-eq">=</span><span class="g-eng">too / also</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขับรถ</span><span class="g-tl">/ khàp rót</span><span class="g-eq">=</span><span class="g-eng">drive</span></span><span class="gloss-chip"><span class="g-thai">ระวัง</span><span class="g-tl">/ rá-wang</span><span class="g-eq">=</span><span class="g-eng">be careful</span></span><span class="gloss-chip"><span class="g-thai">ด้วย</span><span class="g-tl">/ dûai</span><span class="g-eq">=</span><span class="g-eng">too / also</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-21">
@@ -425,9 +431,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เดินทางปลอดภัยนะคะ</div>
+          <div class="reveal-row row-thai">เดินทางปลอดภัยนะคะ<div class="thai-translit">doen-thaang bplàwt-phai ná khá</div></div>
           <div class="reveal-row row-english">Safe travels.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดินทาง</span><span class="g-eq">=</span><span class="g-eng">travel</span></span><span class="gloss-chip"><span class="g-thai">ปลอดภัย</span><span class="g-eq">=</span><span class="g-eng">safe</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดินทาง</span><span class="g-tl">/ doen-thaang</span><span class="g-eq">=</span><span class="g-eng">travel</span></span><span class="gloss-chip"><span class="g-thai">ปลอดภัย</span><span class="g-tl">/ bplàwt-phai</span><span class="g-eq">=</span><span class="g-eng">safe</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-22">
@@ -440,9 +446,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">คืนนี้ฝันดีนะครับ</div>
+          <div class="reveal-row row-thai">คืนนี้ฝันดีนะครับ<div class="thai-translit">khuuen-níi fǎn dii ná khráp</div></div>
           <div class="reveal-row row-english">Sweet dreams tonight.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คืนนี้</span><span class="g-eq">=</span><span class="g-eng">tonight</span></span><span class="gloss-chip"><span class="g-thai">ฝัน</span><span class="g-eq">=</span><span class="g-eng">dream</span></span><span class="gloss-chip"><span class="g-thai">ดี</span><span class="g-eq">=</span><span class="g-eng">good</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คืนนี้</span><span class="g-tl">/ khuuen-níi</span><span class="g-eq">=</span><span class="g-eng">tonight</span></span><span class="gloss-chip"><span class="g-thai">ฝัน</span><span class="g-tl">/ fǎn</span><span class="g-eq">=</span><span class="g-eng">dream</span></span><span class="gloss-chip"><span class="g-thai">ดี</span><span class="g-tl">/ dii</span><span class="g-eq">=</span><span class="g-eng">good</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-23">
@@ -455,9 +461,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">คิดถึงนะคะ</div>
+          <div class="reveal-row row-thai">คิดถึงนะคะ<div class="thai-translit">khít-thǔeng ná khá</div></div>
           <div class="reveal-row row-english">I'll miss you.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คิดถึง</span><span class="g-eq">=</span><span class="g-eng">miss / think of</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คิดถึง</span><span class="g-tl">/ khít-thǔeng</span><span class="g-eq">=</span><span class="g-eng">miss / think of</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
   </div>
@@ -478,30 +484,30 @@ window.ThaiEarTopic = {
   ssr: true,
   audioPrefix: "Greetings_BEG",
   sentences: [
-  { num:  1, preview: 'สวัสดี',   thai: 'สวัสดีครับ',                    english: 'Hello.',                                              gloss: [['สวัสดี','hello / goodbye'],['ครับ','polite particle (male)']],                                                                          cultural: 'สวัสดี works for both hello and goodbye at any time of day.' },
-  { num:  2, preview: 'สวัสดี',   thai: 'สวัสดีค่ะ',                      english: 'Hello.',                                              gloss: [['สวัสดี','hello / goodbye'],['ค่ะ','polite particle (female)']],                                                                         cultural: '' },
-  { num:  3, preview: 'ดีว่ะ',    thai: 'ดีว่ะ เป็นไงบ้าง',              english: "Hey — how's it going?",                              gloss: [['ดี','good'],['ว่ะ','informal emphatic particle'],['เป็น','to be'],['ไง','how'],['บ้าง','somewhat / any']],                              cultural: 'ว่ะ marks this as informal — only use with close friends.' },
-  { num:  4, preview: 'เป็น',     thai: 'เป็นยังไงบ้างคะ',              english: 'How are you?',                                        gloss: [['เป็น','to be'],['ยังไง','how'],['บ้าง','somewhat / any'],['คะ','polite particle (female)']],                                             cultural: '' },
-  { num:  5, preview: 'สบาย',    thai: 'สบายดีครับ ขอบคุณครับ',          english: "I'm well, thank you.",                               gloss: [['สบาย','comfortable'],['ดี','good'],['ครับ','polite particle (male)'],['ขอบคุณ','thank you'],['ครับ','polite particle (male)']],                                            cultural: '' },
-  { num:  6, preview: 'สบาย',     thai: 'ไม่ค่อยสบายค่ะ',                english: 'Not feeling great.',                                  gloss: [['ไม่','not'],['ค่อย','very much / particularly'],['สบาย','comfortable / well'],['ค่ะ','polite particle (female)']],                                                             cultural: '' },
-  { num:  7, preview: 'โอเค',      thai: 'ก็โอเคนะครับ ไม่มีอะไรมาก',      english: "I'm OK — nothing much going on.",               gloss: [['ก็','then / well'],['โอเค','OK'],['นะ','softening particle'],['ครับ','polite particle (male)'],['ไม่มีอะไร','nothing'],['มาก','much']],                                   cultural: '' },
-  { num:  8, preview: 'นาน',     thai: 'นานมากเลยนะคะ ไม่ได้เจอกัน',   english: "It's been so long — we haven't seen each other.",    gloss: [['นาน','long time'],['มาก','very'],['เลย','emphasis particle'],['นะ','softening particle'],['คะ','polite particle (female)'],['ไม่ได้','did not'],['เจอ','meet'],['กัน','each other']], cultural: '' },
-  { num:  9, preview: 'ไป',      thai: 'ไปไหนมาครับ',                    english: 'Where have you been?',                                gloss: [['ไปไหน','where have you gone'],['มา','come (implies return)'],['ครับ','polite particle (male)']],                                          cultural: 'Doubles as a greeting — not always a literal question.' },
-  { num: 10, preview: 'ยินดี',   thai: 'ยินดีที่ได้รู้จักครับ',           english: 'Pleased to meet you.',                               gloss: [['ยินดี','pleased / glad'],['ที่','that (relative)'],['ได้','opportunity to'],['รู้จัก','know (a person)'],['ครับ','polite particle (male)']],                               cultural: '' },
-  { num: 11, preview: 'ยินดี',   thai: 'ยินดีที่ได้รู้จักเช่นกันค่ะ',    english: 'Pleased to meet you too.',                           gloss: [['ยินดี','pleased'],['ที่ได้รู้จัก','to have met'],['เช่นกัน','likewise / same'],['ค่ะ','polite particle (female)']],                                                          cultural: '' },
-  { num: 12, preview: 'ดีใจ',    thai: 'ดีใจที่ได้เจอครับ',              english: 'Glad to meet you.',                           gloss: [['ดีใจ','glad / happy'],['ที่','that'],['ได้','opportunity to'],['เจอ','meet / encounter'],['ครับ','polite particle (male)']],                                               cultural: 'Warmer and slightly more casual than ยินดีที่ได้รู้จัก.' },
-  { num: 13, preview: 'กิน',     thai: 'กินข้าวยังคะ',                 english: 'Have you eaten yet?',                                 gloss: [['กินข้าว','eat / have a meal'],['ยัง','yet'],['คะ','polite particle (female)']],                                                           cultural: 'A very common Thai social greeting — not always a literal question about food.' },
-  { num: 14, preview: 'เป็น',    thai: 'เป็นไงบ้างช่วงนี้ครับ',          english: 'How have things been lately?',                        gloss: [['เป็นไงบ้าง','how are things'],['ช่วงนี้','lately / these days'],['ครับ','polite particle (male)']],                                                                           cultural: '' },
-  { num: 15, preview: 'คิดถึง',  thai: 'คิดถึงเหมือนกันค่ะ',            english: "I've missed you too.",                               gloss: [['คิดถึง','miss / think of'],['เหมือนกัน','likewise / same / too'],['ค่ะ','polite particle (female)']],                                                                          cultural: '' },
-  { num: 16, preview: 'ลา',      thai: 'ลาก่อนครับ',                     english: 'Goodbye.',                                            gloss: [['ลา','take leave / say goodbye'],['ก่อน','first / before'],['ครับ','polite particle (male)']],                                             cultural: '' },
-  { num: 17, preview: 'เจอกัน',    thai: 'แล้วเจอกันใหม่นะคะ',           english: 'See you again.',                                      gloss: [['แล้ว','then / after'],['เจอกัน','meet each other'],['ใหม่','again / new'],['นะ','softening particle'],['คะ','polite particle (female)']],                                   cultural: '' },
-  { num: 18, preview: 'เจอกัน',    thai: 'แล้วเจอกันนะครับ',               english: 'See you later.',                                      gloss: [['แล้ว','then'],['เจอกัน','meet each other'],['นะ','softening particle'],['ครับ','polite particle (male)']],                                                                  cultural: '' },
-  { num: 19, preview: 'พบ',    thai: 'แล้วพบกันใหม่นะคะ',            english: 'Until we meet again.',                               gloss: [['แล้ว','then / after'],['พบ','meet (slightly more formal than เจอ)'],['กัน','each other'],['ใหม่','again'],['นะคะ','polite(f)']],                                                         cultural: 'พบ is slightly more formal than เจอ.' },
-  { num: 20, preview: 'ขับรถ',     thai: 'ขับรถระวังด้วยนะครับ',           english: 'Drive carefully.',                                       gloss: [['ขับรถ','drive'],['ระวัง','be careful'],['ด้วย','too / also'],['นะ','softening particle'],['ครับ','polite particle (male)']],                                                  cultural: '' },
-  { num: 21, preview: 'เดินทาง', thai: 'เดินทางปลอดภัยนะคะ',           english: 'Safe travels.',                                       gloss: [['เดินทาง','travel'],['ปลอดภัย','safe'],['นะ','softening particle'],['คะ','polite particle (female)']],                                                                          cultural: '' },
-  { num: 22, preview: 'ฝันดี',  thai: 'คืนนี้ฝันดีนะครับ',              english: 'Sweet dreams tonight.',                               gloss: [['คืนนี้','tonight'],['ฝัน','dream'],['ดี','good'],['นะ','softening particle'],['ครับ','polite particle (male)']],                                                              cultural: '' },
-  { num: 23, preview: 'คิดถึง',  thai: 'คิดถึงนะคะ',                   english: "I'll miss you.",                                      gloss: [['คิดถึง','miss / think of'],['นะ','softening particle'],['คะ','polite particle (female)']],                                                                                    cultural: '' },
-]
+  {"num":1,"preview":"สวัสดี","thai":"สวัสดีครับ","translit":"sà-wàt-dii khráp","english":"Hello.","gloss":[["สวัสดี","hello / goodbye","sà-wàt-dii"],["ครับ","polite particle (male)","khráp"]],"cultural":"สวัสดี works for both hello and goodbye at any time of day."},
+  {"num":2,"preview":"สวัสดี","thai":"สวัสดีค่ะ","translit":"sà-wàt-dii khâ","english":"Hello.","gloss":[["สวัสดี","hello / goodbye","sà-wàt-dii"],["ค่ะ","polite particle (female)","khâ"]],"cultural":""},
+  {"num":3,"preview":"ดีว่ะ","thai":"ดีว่ะ เป็นไงบ้าง","translit":"dii wâ | bpen ngai bâang","english":"Hey — how's it going?","gloss":[["ดี","good","dii"],["ว่ะ","informal emphatic particle","wâ"],["เป็น","to be","bpen"],["ไง","how","ngai"],["บ้าง","somewhat / any","bâang"]],"cultural":"ว่ะ marks this as informal — only use with close friends."},
+  {"num":4,"preview":"เป็น","thai":"เป็นยังไงบ้างคะ","translit":"bpen yang-ngai bâang khá","english":"How are you?","gloss":[["เป็น","to be","bpen"],["ยังไง","how","yang-ngai"],["บ้าง","somewhat / any","bâang"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":5,"preview":"สบาย","thai":"สบายดีครับ ขอบคุณครับ","translit":"sà-baai dii khráp | khàwp-khun khráp","english":"I'm well, thank you.","gloss":[["สบาย","comfortable","sà-baai"],["ดี","good","dii"],["ครับ","polite particle (male)","khráp"],["ขอบคุณ","thank you","khàwp-khun"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":6,"preview":"สบาย","thai":"ไม่ค่อยสบายค่ะ","translit":"mâi khôi sà-baai khâ","english":"Not feeling great.","gloss":[["ไม่","not","mâi"],["ค่อย","very much / particularly","khôi"],["สบาย","comfortable / well","sà-baai"],["ค่ะ","polite particle (female)","khâ"]],"cultural":""},
+  {"num":7,"preview":"โอเค","thai":"ก็โอเคนะครับ ไม่มีอะไรมาก","translit":"gâw oo-khee ná khráp | mâi mii à-rai mâak","english":"I'm OK — nothing much going on.","gloss":[["ก็","then / well","gâw"],["โอเค","OK","oo-khee"],["นะ","softening particle","ná"],["ครับ","polite particle (male)","khráp"],["ไม่มีอะไร","nothing","mâi mii à-rai"],["มาก","much","mâak"]],"cultural":""},
+  {"num":8,"preview":"นาน","thai":"นานมากเลยนะคะ ไม่ได้เจอกัน","translit":"naan mâak loei ná khá | mâi dâi juhr gan","english":"It's been so long — we haven't seen each other.","gloss":[["นาน","long time","naan"],["มาก","very","mâak"],["เลย","emphasis particle","loei"],["นะ","softening particle","ná"],["คะ","polite particle (female)","khá"],["ไม่ได้","did not","mâi dâi"],["เจอ","meet","juhr"],["กัน","each other","gan"]],"cultural":""},
+  {"num":9,"preview":"ไป","thai":"ไปไหนมาครับ","translit":"bpai nǎi maa khráp","english":"Where have you been?","gloss":[["ไปไหน","where have you gone","bpai nǎi"],["มา","come (implies return)","maa"],["ครับ","polite particle (male)","khráp"]],"cultural":"Doubles as a greeting — not always a literal question."},
+  {"num":10,"preview":"ยินดี","thai":"ยินดีที่ได้รู้จักครับ","translit":"yin-dii thîi dâi rúu-jàk khráp","english":"Pleased to meet you.","gloss":[["ยินดี","pleased / glad","yin-dii"],["ที่","that (relative)","thîi"],["ได้","opportunity to","dâi"],["รู้จัก","know (a person)","rúu-jàk"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":11,"preview":"ยินดี","thai":"ยินดีที่ได้รู้จักเช่นกันค่ะ","translit":"yin-dii thîi dâi rúu-jàk chên-gan khâ","english":"Pleased to meet you too.","gloss":[["ยินดี","pleased","yin-dii"],["ที่ได้รู้จัก","to have met","thîi dâi rúu-jàk"],["เช่นกัน","likewise / same","chên-gan"],["ค่ะ","polite particle (female)","khâ"]],"cultural":""},
+  {"num":12,"preview":"ดีใจ","thai":"ดีใจที่ได้เจอครับ","translit":"dii-jai thîi dâi juhr khráp","english":"Glad to meet you.","gloss":[["ดีใจ","glad / happy","dii-jai"],["ที่","that","thîi"],["ได้","opportunity to","dâi"],["เจอ","meet / encounter","juhr"],["ครับ","polite particle (male)","khráp"]],"cultural":"Warmer and slightly more casual than ยินดีที่ได้รู้จัก."},
+  {"num":13,"preview":"กิน","thai":"กินข้าวยังคะ","translit":"gin khâao yang khá","english":"Have you eaten yet?","gloss":[["กินข้าว","eat / have a meal","gin khâao"],["ยัง","yet","yang"],["คะ","polite particle (female)","khá"]],"cultural":"A very common Thai social greeting — not always a literal question about food."},
+  {"num":14,"preview":"เป็น","thai":"เป็นไงบ้างช่วงนี้ครับ","translit":"bpen ngai bâang chûang-níi khráp","english":"How have things been lately?","gloss":[["เป็นไงบ้าง","how are things","bpen ngai bâang"],["ช่วงนี้","lately / these days","chûang-níi"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":15,"preview":"คิดถึง","thai":"คิดถึงเหมือนกันค่ะ","translit":"khít-thǔeng mǔean-gan khâ","english":"I've missed you too.","gloss":[["คิดถึง","miss / think of","khít-thǔeng"],["เหมือนกัน","likewise / same / too","mǔean-gan"],["ค่ะ","polite particle (female)","khâ"]],"cultural":""},
+  {"num":16,"preview":"ลา","thai":"ลาก่อนครับ","translit":"laa gàwn khráp","english":"Goodbye.","gloss":[["ลา","take leave / say goodbye","laa"],["ก่อน","first / before","gàwn"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":17,"preview":"เจอกัน","thai":"แล้วเจอกันใหม่นะคะ","translit":"láaeo juhr gan mài ná khá","english":"See you again.","gloss":[["แล้ว","then / after","láaeo"],["เจอกัน","meet each other","juhr gan"],["ใหม่","again / new","mài"],["นะ","softening particle","ná"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":18,"preview":"เจอกัน","thai":"แล้วเจอกันนะครับ","translit":"láaeo juhr gan ná khráp","english":"See you later.","gloss":[["แล้ว","then","láaeo"],["เจอกัน","meet each other","juhr gan"],["นะ","softening particle","ná"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":19,"preview":"พบ","thai":"แล้วพบกันใหม่นะคะ","translit":"láaeo phóp gan mài ná khá","english":"Until we meet again.","gloss":[["แล้ว","then / after","láaeo"],["พบ","meet (slightly more formal than เจอ)","phóp"],["กัน","each other","gan"],["ใหม่","again","mài"],["นะคะ","polite(f)","ná khá"]],"cultural":"พบ is slightly more formal than เจอ."},
+  {"num":20,"preview":"ขับรถ","thai":"ขับรถระวังด้วยนะครับ","translit":"khàp rót rá-wang dûai ná khráp","english":"Drive carefully.","gloss":[["ขับรถ","drive","khàp rót"],["ระวัง","be careful","rá-wang"],["ด้วย","too / also","dûai"],["นะ","softening particle","ná"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":21,"preview":"เดินทาง","thai":"เดินทางปลอดภัยนะคะ","translit":"doen-thaang bplàwt-phai ná khá","english":"Safe travels.","gloss":[["เดินทาง","travel","doen-thaang"],["ปลอดภัย","safe","bplàwt-phai"],["นะ","softening particle","ná"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":22,"preview":"ฝันดี","thai":"คืนนี้ฝันดีนะครับ","translit":"khuuen-níi fǎn dii ná khráp","english":"Sweet dreams tonight.","gloss":[["คืนนี้","tonight","khuuen-níi"],["ฝัน","dream","fǎn"],["ดี","good","dii"],["นะ","softening particle","ná"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":23,"preview":"คิดถึง","thai":"คิดถึงนะคะ","translit":"khít-thǔeng ná khá","english":"I'll miss you.","gloss":[["คิดถึง","miss / think of","khít-thǔeng"],["นะ","softening particle","ná"],["คะ","polite particle (female)","khá"]],"cultural":""}
+  ]
 };
 </script>
 <script src="player.js" defer></script>

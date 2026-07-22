@@ -41,6 +41,8 @@
   var GATED = !!TIER;
   var PREFIX = cfg.audioPrefix;
   var sentences = cfg.sentences || [];
+  // Topics that ship a per-sentence transliteration (currently 01–03) get the toggle pill.
+  var HAS_TRANSLIT = sentences.some(function (s) { return !!s.translit; });
   // SSR/hydration mode: when a page sets cfg.ssr, it ships its sentence cards as static,
   // source-visible HTML and we hydrate them (toggle a stage class) instead of building from
   // JS. Pages WITHOUT cfg.ssr keep the original build-from-JS path, byte-for-byte unchanged.
@@ -774,6 +776,18 @@
     .controls-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
     .reveal-all-btn { font-size: 12px; font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
     .reveal-all-btn:hover { background: var(--surface); }
+    /* ---- transliteration toggle (topics shipping per-sentence translit, currently 01–03) ----
+       Default ON (new visitors should see it exists); .translit-off on #sentence-list hides both
+       the under-Thai line and the chips' translit. Choice remembered per device via localStorage. */
+    .controls-left { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .translit-btn { font-size: 12px; font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    .translit-btn:hover { background: var(--surface); }
+    .translit-btn.on { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+    .translit-btn .tl-ico { font-size: 11px; }
+    .translit-btn .tl-ico .th { font-family: var(--font-thai); }
+    .thai-translit { font-family: var(--font-ui); font-size: 13px; color: var(--text-tertiary); line-height: 1.55; margin-top: 1px; }
+    .g-tl { color: var(--text-secondary); margin-left: 4px; }
+    #sentence-list.translit-off .thai-translit, #sentence-list.translit-off .g-tl { display: none; }
     .sent-count-label { font-size: 12px; color: var(--text-tertiary); }
     .sentence-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 7px; overflow: hidden; transition: border-color 0.15s; }
     .sentence-card:hover { border-color: var(--border-strong); }
@@ -837,6 +851,7 @@
       .play-btn { width: 34px; height: 34px; }
       .controls-row { margin-bottom: 0.5rem; }
       .reveal-all-btn { font-size: 11px; padding: 4px 10px; }
+      .translit-btn { font-size: 11px; padding: 4px 10px; }
       .sentence-header { padding: 0.6rem 0.85rem; }
       .sent-preview { font-size: 15px; }
       .row-thai { font-size: 17px; }
@@ -1051,10 +1066,17 @@
       '<a href="guide.html">New to ThaiEar? Read the full guide →</a>' +
     '</p>' +
     '<div class="controls-row">' +
-      '<button class="reveal-all-btn" id="reveal-all-btn" onclick="toggleAll()">' +
-        '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/></svg>' +
-        ' Reveal all' +
-      '</button>' +
+      '<div class="controls-left">' +
+        '<button class="reveal-all-btn" id="reveal-all-btn" onclick="toggleAll()">' +
+          '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/></svg>' +
+          ' Reveal all' +
+        '</button>' +
+        (HAS_TRANSLIT
+          ? '<button class="translit-btn" id="translit-btn" onclick="toggleTranslit()" title="Show pronunciation under the Thai script">' +
+              '<span class="tl-ico"><span class="th">ก</span>→a</span> Transliteration' +
+            '</button>'
+          : '') +
+      '</div>' +
       '<span class="sent-count-label">' + sentences.length + ' sentences</span>' +
     '</div>' +
     (SSR ? '' : '<div id="sentence-list"></div>') +   // SSR pages provide #sentence-list as static cards
@@ -1448,6 +1470,22 @@
     list.classList.toggle('dir-te', currentMode !== 'et');
   }
 
+  // ---- transliteration toggle (topics with per-sentence `translit`) ----
+  // Default ON so new visitors discover it; the choice is remembered per device in
+  // localStorage (works signed-out and offline/in the app — same key on every topic).
+  function translitOn() { try { return localStorage.getItem('thaiear_translit') !== '0'; } catch (_) { return true; } }
+  function applyTranslitClass() {
+    if (!HAS_TRANSLIT) return;
+    var list = $('sentence-list');
+    if (list) list.classList.toggle('translit-off', !translitOn());
+    var b = $('translit-btn');
+    if (b) b.classList.toggle('on', translitOn());
+  }
+  function toggleTranslit() {
+    try { localStorage.setItem('thaiear_translit', translitOn() ? '0' : '1'); } catch (_) {}
+    applyTranslitClass();
+  }
+
   function switchAudio(mode) {
     if (currentMode === mode) return;
     currentMode = mode;
@@ -1736,7 +1774,8 @@
 
   function chipHtml(gloss) {
     return gloss.map(function (pair) {
-      return '<span class="gloss-chip"><span class="g-thai">' + pair[0] + '</span><span class="g-eq">=</span><span class="g-eng">' + pair[1] + '</span></span>';
+      var tl = pair[2] ? '<span class="g-tl">/ ' + pair[2] + '</span>' : '';
+      return '<span class="gloss-chip"><span class="g-thai">' + pair[0] + '</span>' + tl + '<span class="g-eq">=</span><span class="g-eng">' + pair[1] + '</span></span>';
     }).join('');
   }
 
@@ -1775,7 +1814,7 @@
         '<div class="prog-wrap" aria-hidden="true">' + seg(st >= 1) + seg(st >= 2) + seg(st >= 3) + '</div>' +
       '</div>' +
       (st > 0 ? '<div class="sentence-body">' +
-        '<div class="reveal-row row-thai">' + displayThai + '</div>' +
+        '<div class="reveal-row row-thai">' + displayThai + (s.translit ? '<div class="thai-translit">' + cleanThai(s.translit) + '</div>' : '') + '</div>' +
         (st >= 2 ? '<div class="reveal-row row-english">' + s.english + '</div>' : '') +
         (st >= 3 ? '<div class="reveal-row row-notes">' +
           '<div class="gloss-row">' + chipHtml(s.gloss) + '</div>' +
@@ -1808,6 +1847,7 @@
     if (SSR) sentences.forEach(function (s) { syncCard(s.num); });
     else $('sentence-list').innerHTML = sentences.map(cardHtml).join('');
     applyDirClass();   // keep the reveal order in sync with the current TE/ET direction
+    applyTranslitClass();   // reflect the stored transliteration preference (default on)
 
     var allOpen = sentences.every(function (s) { return states[s.num] === 3; });
     var btn = $('reveal-all-btn');
@@ -2000,7 +2040,7 @@
 
   // inline onclick in the injected markup call these by name
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
-    toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow,
+    toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow, toggleTranslit: toggleTranslit,
     progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn,
     advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat,
     downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete, refreshTopic: refreshTopic });
