@@ -16,6 +16,12 @@
 # Shared single-source scripts (change on most deploys)
 /topics.js
   Cache-Control: public, max-age=0, must-revalidate
+/read.js
+  Cache-Control: public, max-age=0, must-revalidate
+/read-data.js
+  Cache-Control: public, max-age=0, must-revalidate
+/read.css
+  Cache-Control: public, max-age=0, must-revalidate
 /player.js
   Cache-Control: public, max-age=0, must-revalidate
 /nav.js
