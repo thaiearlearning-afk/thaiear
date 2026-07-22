@@ -19,6 +19,10 @@
   // Reading audio lives in the public R2 bucket under read/ (deployed 2026-07-22).
   // Localhost override: define window.ThaiEarReadAudioBase = 'read-audio/' before this loads.
   var AUDIO_BASE = window.ThaiEarReadAudioBase || 'https://audio.thaiear.com/read/';
+  // BUMP ON EVERY AUDIO RELEASE: the zone's 4h Browser Cache TTL means replaced
+  // same-name clips play stale from users' browsers — a new query string is a
+  // new URL, so every cache (edge + browser) misses and fetches fresh.
+  var AUDIO_VER = '?v=2';
 
   /* ── audio ─────────────────────────────────────────────── */
   var player = new Audio();
@@ -41,7 +45,7 @@
       while (active < MAX && i < queue.length) {
         (function (id) {
           active++;
-          fetch(AUDIO_BASE + id + '.mp3')
+          fetch(AUDIO_BASE + id + '.mp3' + AUDIO_VER)
             .then(function (r) { return r.ok ? r.blob() : null; })
             .then(function (b) { if (b) blobUrls[id] = URL.createObjectURL(b); })
             .catch(function () {})
@@ -88,7 +92,7 @@
 
   function play(id, el) {
     stopHighlight();
-    player.src = blobUrls[id] || (AUDIO_BASE + id + '.mp3');
+    player.src = blobUrls[id] || (AUDIO_BASE + id + '.mp3' + AUDIO_VER);
     player.play().catch(function () {});
     if (el) { el.classList.add('playing'); playingEl = el; }
   }
