@@ -55,7 +55,9 @@
     // the top bar uncramped on mobile. (Home is redundant anyway — the logo links
     // to the index page.)
     // The learn-to-read on-ramp — also reachable via the big toggle on the index.
-    { label: 'Read Thai', href: 'read.html' },
+    // Top bar on DESKTOP only; on mobile/app it moves into the Menu dropdown
+    // (no room in the bar) — see .nav-read-top / .menu-read-mobile CSS below.
+    { label: 'Read Thai', href: 'read.html', cls: 'nav-read-top' },
     // { label: 'Blog',  href: 'blog.html' },
   ];
 
@@ -117,10 +119,14 @@
     .nav-menu-drop a.active { color: var(--accent); }
     .nav-menu-drop[hidden] { display: none; }
 
+    /* Read Thai: top bar on desktop, Menu dropdown on mobile/app */
+    .nav-menu-drop .menu-read-mobile { display: none; }
     @media (max-width: 600px) {
       .site-nav { padding: 0 1rem; }
       .nav-links { gap: 1rem; }
       .nav-links a { font-size: 12px; }
+      .nav-links > a.nav-read-top { display: none; }
+      .nav-menu-drop .menu-read-mobile { display: block; }
     }
     @media (max-width: 380px) {
       .nav-wordmark { font-size: 18px; }
@@ -145,8 +151,8 @@
       // No "Home" link while you're on the home page (you only need it elsewhere).
       .filter(l => !(onHome && l.href.toLowerCase() === 'index.html'))
       .map(l => {
-        const active = l.href.toLowerCase() === here ? ' class="active"' : '';
-        return `<a href="${l.href}"${active}>${l.label}</a>`;
+        const classes = [l.cls || '', l.href.toLowerCase() === here ? 'active' : ''].filter(Boolean).join(' ');
+        return `<a href="${l.href}"${classes ? ` class="${classes}"` : ''}>${l.label}</a>`;
       }).join('');
   }
 
@@ -164,6 +170,9 @@
   // login page (join.html) which bounces back via ?next after sign-in.
   const MENU_ITEMS = [
     { label: 'Home', page: 'index.html', public: true },
+    // Mobile/app home for the Read Thai link (hidden on desktop, where it
+    // lives in the top bar) — keeps the cramped phone bar clean.
+    { label: 'Read Thai', page: 'read.html', public: true, cls: 'menu-read-mobile' },
     { label: 'About', page: 'about.html', public: true },
     { label: 'Guide', page: 'guide.html', public: true },
     { label: 'Socials', page: 'socials.html', public: true },
@@ -185,8 +194,8 @@
     const native = isNativeApp();
     const items = MENU_ITEMS.filter(it => !(it.hideInApp && native)).map(it => {
       const href = (it.public || loggedIn) ? it.page : ('join.html?feature=1&next=' + encodeURIComponent(it.page));
-      const active = it.page.toLowerCase() === here ? ' class="active"' : '';
-      return `<a href="${href}"${active}>${it.label}</a>`;
+      const classes = [it.cls || '', it.page.toLowerCase() === here ? 'active' : ''].filter(Boolean).join(' ');
+      return `<a href="${href}"${classes ? ` class="${classes}"` : ''}>${it.label}</a>`;
     }).join('');
     return (
       `<div class="nav-menu" id="nav-menu">` +
