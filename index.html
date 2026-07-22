@@ -187,6 +187,19 @@
   /* Bold emphasis only — kept black/dark-grey (not indigo), per request. */
   .intro-lead strong { color: var(--text-primary); font-weight: 500; }
 
+  /* ── SENTENCES ⇄ READ THAI MODE TOGGLE ──
+     The site's two arms: topic-sentence listening (this page) and the
+     learn-to-read section (read.html). Mirrored on read.html via read.css. */
+  .mode-toggle-wrap { display: flex; justify-content: flex-start; margin: 0 0 1.5rem; }
+  .mode-toggle { display: flex; background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 14px; padding: 4px; gap: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .mt-btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; padding: 9px 20px; border-radius: 10px; transition: background 0.15s, color 0.15s; }
+  .mt-btn:hover { color: var(--accent); }
+  .mt-btn.active { background: var(--accent); color: #fff; }
+  .mt-btn.active:hover { color: #fff; }
+  .mt-ico { font-family: var(--font-thai); font-weight: 600; font-size: 15px; line-height: 1; }
+  .mt-btn svg { width: 15px; height: 15px; }
+  @media (max-width: 480px) { .mt-btn { font-size: 12.5px; padding: 8px 12px; gap: 6px; } }
+
     /* ── TOPICS SECTION ── */
   .topics-section {
     max-width: 900px;
@@ -728,6 +741,21 @@
 <section class="topics-section">
   <div class="section-header">
     <span class="section-title">All topics <span class="section-title-soon">— more coming soon…</span></span>
+  </div>
+
+  <!-- ── MODE TOGGLE: sentence listening ⇄ learn to read.
+       Sits above the access pills + search, left-aligned with them. ── -->
+  <div class="mode-toggle-wrap">
+    <div class="mode-toggle">
+      <a class="mt-btn active" href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+        Topic Sentences
+      </a>
+      <a class="mt-btn" href="read.html">
+        <span class="mt-ico">ก</span>
+        Read Thai — Alphabet &amp; Tones
+      </a>
+    </div>
   </div>
 
   <!-- TEMP-DISABLED (level filter): live topics are now grouped under difficulty

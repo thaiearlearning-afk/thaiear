@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v21';   // v21: topics.js re-ordered to a flat unit list + index search (2026-07-17)
+const VERSION = 'v22';   // v22: Read Thai section (read*.html + read.js/read-data.js/read.css + betta) (2026-07-22)
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
@@ -104,6 +104,13 @@ const PRECACHE = [
   // are intentionally NOT here (cached on visit / via the download feature).
   '/account.html', '/subscribe.html', '/join.html', '/about.html', '/guide.html', '/socials.html', '/app.html',
   '/progress.html', '/sentences.html', '/privacy.html', '/terms.html', '/refunds.html', '/deleted.html',
+  // Read Thai section (learn-to-read on-ramp, 2026-07-22): hub + 13 sub-pages + its
+  // shared assets. Audio is NOT precached (208 clips on the CDN — cached on play).
+  '/read.html', '/read-mid.html', '/read-high.html', '/read-low1.html', '/read-low2.html',
+  '/read-vowels-long.html', '/read-vowels-short.html', '/read-vowels-special.html',
+  '/read-finals.html', '/read-sounds.html', '/read-tones.html', '/read-clusters.html',
+  '/read-quiz.html', '/read-results.html',
+  '/read.js', '/read-data.js', '/read.css', '/betta.png',
   '/nav.js', '/topics.js', '/player.js', '/auth.js', '/footer.js',
   // PWA install vehicle: manifest + its icons, so "Add to Home Screen" works and the
   // installed app has its launch icon available offline.

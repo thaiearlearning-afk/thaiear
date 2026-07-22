@@ -78,6 +78,11 @@
   @keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
   h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 1.25rem; line-height: 1.2; color: var(--navy); }
   p { color: var(--text-secondary); margin-bottom: 0.95rem; }
+  p a { color: var(--accent); text-decoration: none; }
+  p a:hover { text-decoration: underline; }
+  /* Read Thai callout — a deliberate aside from the article flow */
+  .readthai-box { background: var(--accent-light); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; margin-bottom: 0.95rem; }
+  .readthai-box p { margin: 0; color: #3B3488; }
   strong { color: var(--text-primary); font-weight: 600; }
   em { font-style: italic; }
   .signoff { margin-top: 1.8rem; }
@@ -98,17 +103,23 @@
   <p>The ThaiEar syllabus is designed to take a <strong>relative beginner</strong> who is familiar with the
     Thai script to an <strong>intermediate level</strong> of speaking.</p>
 
+  <div class="readthai-box">
+    <p>Not familiar with the script yet? Start with our <a href="read.html"><strong>Read Thai</strong></a>
+    section. It teaches the alphabet, the vowels and the tone rules from zero, with audio for every letter
+    and a test at every step. Learn to read first — the script is what tells you each word's tone.</p>
+  </div>
+
   <div class="fluency-block">
     <img class="fluency-img" src="khwai.jpg" alt="Water buffalo" width="200">
     <div class="fluency-text">Chewing it over<span class="dots" aria-hidden="true"></span></div>
   </div>
 
-  <p>For most users, ThaiEar could represent a <strong>year</strong> or even <strong>two years</strong> of
+  <p>For most learners, ThaiEar could represent a <strong>year</strong> or even <strong>two years</strong> of
     quality study material. <strong>A key message</strong> of this guide is to discourage you from rushing,
     hopping from one topic to the next. <em>If you chase two rabbits, you will catch neither.</em></p>
 
-  <p>Our material is divided into <strong>20 to 40</strong> sentences per topic or subtopic. A topic could therefore represent
-    anywhere between <strong>20 and 80</strong> new words for you — a worthy challenge. So how to rise to this
+  <p>Our material is divided into <strong>10 to 40</strong> sentences per topic or subtopic. A topic could therefore represent
+    anywhere between <strong>10 and 80</strong> new words for you — a worthy challenge. So how to rise to this
     challenge?</p>
 
   <p>Language learning is best reinforced with <strong>spaced repetition</strong>, which means revisiting the

@@ -377,6 +377,58 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://thaiear.com/read</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-mid</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-high</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-low1</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-low2</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-vowels-long</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-vowels-short</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-vowels-special</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-finals</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-sounds</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-tones</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-clusters</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/read-quiz</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://thaiear.com/guide</loc>
     <priority>0.6</priority>
   </url>

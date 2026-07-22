@@ -54,6 +54,8 @@
     // 'Home' and 'About' now live in the Menu dropdown (see MENU_ITEMS) to keep
     // the top bar uncramped on mobile. (Home is redundant anyway — the logo links
     // to the index page.)
+    // The learn-to-read on-ramp — also reachable via the big toggle on the index.
+    { label: 'Read Thai', href: 'read.html' },
     // { label: 'Blog',  href: 'blog.html' },
   ];
 
