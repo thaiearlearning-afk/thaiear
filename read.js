@@ -22,7 +22,7 @@
   // BUMP ON EVERY AUDIO RELEASE: the zone's 4h Browser Cache TTL means replaced
   // same-name clips play stale from users' browsers — a new query string is a
   // new URL, so every cache (edge + browser) misses and fetches fresh.
-  var AUDIO_VER = '?v=2';
+  var AUDIO_VER = '?v=3';
 
   /* ── audio ─────────────────────────────────────────────── */
   var player = new Audio();
