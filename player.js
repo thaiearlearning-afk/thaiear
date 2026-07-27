@@ -1235,7 +1235,7 @@
   }
   function updateMiniVisibility() {
     var bar = $('te-mini'); if (!bar) return;
-    var show = miniActivated && !mainInView && !miniDismissed;
+    var show = miniActivated && !mainInView && !miniDismissed && !(DYN && dynSel);   // select mode: yield to the bottom bar
     if (show) syncMini();   // make sure glyph/progress are current the moment it slides in
     bar.classList.toggle('show', show);
   }
@@ -1574,7 +1574,9 @@
   }
   // Status line under the transport. text=null hides it; dots=true appends the animated dots
   // (plus a live n/m counter span the build progress writes into).
+  var dynStatusSeq = 0;   // bumped on every status change so auto-hide timers can't clobber a newer message
   function dynStatus(text, dots) {
+    dynStatusSeq++;
     var el = $('dyn-status');
     if (!el) return;
     if (text == null) { el.hidden = true; el.innerHTML = ''; return; }
@@ -1655,20 +1657,186 @@
     }).then(function () { setMainIcon(true); })
       .catch(function (e) { handleDenied(e, (t.tier === 'member' || t.tier === 'premium') ? t.tier : null); });
   }
+  /* -- batch add-to-playlist (select mode) --
+     dyn-addpl-btn → playlist chooser modal → SELECT MODE: card taps toggle a tick instead of
+     the reveal-cycle (play/tortoise still work, so a sentence can be previewed while choosing),
+     a fixed bottom bar shows the count, Done diffs against what the playlist already holds for
+     this topic and saves adds/removes sequentially. */
+  var dynSel = null;          // { id, name, pre: {num:true}, now: {num:true} } while selecting
+  var dynSelListener = null;  // the capture-phase click hijacker on #sentence-list
+  function dynTopicKey() { return cfg.dynKey || PREFIX; }
+  function dynAddPlClick() {
+    var a = window.ThaiEarAuth;
+    if (!a || !(a.getUser && a.getUser())) { alert('Sign in to use playlists.'); return; }
+    var PL = a.playlists;
+    if (!PL || !PL.load) { alert('Playlists unavailable'); return; }
+    PL.load().then(function (lists) { dynShowChooser(lists || []); })
+      .catch(function (e) { alert('Couldn’t load playlists: ' + ((e && (e.message || e.code)) || 'unknown error')); });
+  }
+  // Playlist chooser (reuses the dyn-pl-* popup styling from player-dyn.css, linked on dyn pages).
+  function dynShowChooser(lists) {
+    var old = document.getElementById('dyn-pl-pop'); if (old) old.remove();
+    var wrap = document.createElement('div');
+    wrap.id = 'dyn-pl-pop';
+    var rows = lists.length
+      ? lists.map(function (p, i) {
+          return '<button type="button" class="dyn-pl-row" data-i="' + i + '">' +
+            '<span class="dyn-pl-name">' + escapeHtml(p.name) + '</span>' +
+            '<span class="dyn-pl-count">' + ((p.items && p.items.length) || 0) + '</span></button>';
+        }).join('')
+      : '<div class="dyn-pl-empty">No playlists yet — create one in <a href="playlists.html">My Playlists</a> first.</div>';
+    wrap.innerHTML = '<div class="dyn-pl-card"><div class="dyn-pl-head">' +
+        (lists.length ? 'Add sentences to…' : 'Playlists') + '</div>' +
+      '<div class="dyn-pl-body">' + rows + '</div>' +
+      '<div class="dyn-pl-foot"><button type="button" class="dyn-pl-done">' + (lists.length ? 'Cancel' : 'OK') + '</button></div></div>';
+    document.body.appendChild(wrap);
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) wrap.remove(); });
+    wrap.querySelector('.dyn-pl-done').addEventListener('click', function () { wrap.remove(); });
+    wrap.querySelectorAll('.dyn-pl-row').forEach(function (rowBtn) {
+      rowBtn.addEventListener('click', function () {
+        var p = lists[+rowBtn.getAttribute('data-i')];
+        wrap.remove();
+        if (p) dynEnterSelect(p);
+      });
+    });
+  }
+  function dynSelBar() {
+    var bar = $('dyn-sel-bar');
+    if (bar) return bar;
+    bar = document.createElement('div');
+    bar.id = 'dyn-sel-bar';
+    bar.innerHTML = '<span id="dyn-sel-count"></span>' +
+      '<span style="display:flex;gap:10px">' +
+        '<button type="button" class="dyn-sel-cancel">Cancel</button>' +
+        '<button type="button" class="dyn-sel-done">Done</button>' +
+      '</span>';
+    document.body.appendChild(bar);
+    bar.querySelector('.dyn-sel-cancel').addEventListener('click', dynExitSelect);
+    bar.querySelector('.dyn-sel-done').addEventListener('click', dynSelDone);
+    return bar;
+  }
+  function dynSelCountPaint() {
+    var c = $('dyn-sel-count'); if (!c || !dynSel) return;
+    var n = 0; for (var k in dynSel.now) { if (dynSel.now[k]) n++; }
+    c.textContent = n + ' selected';
+  }
+  function dynEnterSelect(p) {
+    var tk = dynTopicKey();
+    var pre = {};
+    (p.items || []).forEach(function (it) { if (it.topic_key === tk) pre[it.num] = true; });
+    var now = {};
+    for (var k in pre) now[k] = true;
+    dynSel = { id: p.id, name: p.name, pre: pre, now: now };
+    var list = $('sentence-list');
+    if (list) {
+      list.classList.add('dyn-selecting');
+      dynSelListener = function (e) {
+        var el = e.target;
+        if (!el || !el.closest) return;
+        // sentence preview + tortoise stay usable while selecting
+        if (el.closest('.sent-play-btn') || el.closest('.speed-toggle')) return;
+        var card = el.closest('.sentence-card');
+        if (!card) return;
+        e.preventDefault(); e.stopPropagation();   // swallow reveal-cycle / flag clicks
+        var num = +String(card.id).replace('sc-', '');
+        if (dynSel.now[num]) delete dynSel.now[num]; else dynSel.now[num] = true;
+        var t = card.querySelector('.dyn-tick');
+        if (t) t.classList.toggle('on', !!dynSel.now[num]);
+        dynSelCountPaint();
+      };
+      list.addEventListener('click', dynSelListener, true);
+    }
+    sentences.forEach(function (s) {
+      var t = document.querySelector('#sc-' + s.num + ' .dyn-tick');
+      if (t) t.classList.toggle('on', !!dynSel.now[s.num]);
+    });
+    dynSelBar().classList.add('show');
+    dynSelCountPaint();
+    updateMiniVisibility();   // the mini transport yields to the selection bar
+  }
+  function dynExitSelect() {
+    var list = $('sentence-list');
+    if (list) {
+      list.classList.remove('dyn-selecting');
+      if (dynSelListener) list.removeEventListener('click', dynSelListener, true);
+    }
+    dynSelListener = null;
+    dynSel = null;
+    var bar = $('dyn-sel-bar');
+    if (bar) {
+      bar.classList.remove('show');
+      var db = bar.querySelector('.dyn-sel-done'); if (db) db.disabled = false;
+    }
+    updateMiniVisibility();
+  }
+  function dynSelDone() {
+    if (!dynSel) return;
+    var a = window.ThaiEarAuth, PL = a && a.playlists;
+    if (!PL) { alert('Playlists unavailable'); return; }
+    var tk = dynTopicKey();
+    var adds = [], removes = [], k;
+    for (k in dynSel.now) { if (dynSel.now[k] && !dynSel.pre[k]) adds.push(+k); }
+    for (k in dynSel.pre) { if (dynSel.pre[k] && !dynSel.now[k]) removes.push(+k); }
+    var id = dynSel.id, name = dynSel.name;
+    var db = document.querySelector('#dyn-sel-bar .dyn-sel-done');
+    if (db) db.disabled = true;
+    var chain = Promise.resolve();
+    adds.forEach(function (num) {
+      chain = chain.then(function () {
+        var s = null;
+        for (var i = 0; i < sentences.length; i++) { if (sentences[i].num === num) { s = sentences[i]; break; } }
+        if (!s) return;
+        return PL.addItem(id, { topic_key: tk, num: num, prefix: PREFIX, tier: TIER || 'free',
+          thai: s.thai, translit: s.translit || null, english: s.english });
+      });
+    });
+    removes.forEach(function (num) {
+      chain = chain.then(function () { return PL.removeItem(id, tk, num); });
+    });
+    chain.then(function () {
+      dynExitSelect();
+      dynStatus('“' + name + '” updated — ' + adds.length + ' added, ' + removes.length + ' removed', false);
+      var seq = dynStatusSeq;
+      setTimeout(function () { if (seq === dynStatusSeq) dynStatus(null); }, 2500);
+    }).catch(function (e) {
+      if (db) db.disabled = false;   // stay in select mode so nothing chosen is lost
+      alert('Couldn’t save: ' + ((e && (e.message || e.code)) || 'unknown error'));
+    });
+  }
   var DYN_STYLES =
     '.dyn-status{text-align:center;font-size:13px;font-weight:500;color:var(--accent);padding:4px 0;}' +
     '.dyn-dots{display:inline-block;width:1.1em;text-align:left}' +
     ".dyn-dots::after{content:'...';display:inline-block;width:0;overflow:hidden;vertical-align:bottom;animation:dyn-dots 1.2s steps(3,start) infinite}" +
     '@keyframes dyn-dots{from{width:0}to{width:1.05em}}' +
     '.dyn-sent-btn{width:34px;height:34px}' +
-    '.dyn-slider{display:flex;align-items:center;justify-content:center;gap:10px;font-size:12.5px;color:var(--text-tertiary);margin-top:8px}' +
-    '.dyn-slider input{width:150px;accent-color:var(--accent)}' +
+    /* owner 2026-07-27: the ±10 buttons are clutter in dyn mode (sentence skip covers it) */
+    '.audio-row button[onclick="skip(-10)"],.audio-row button[onclick="skip(10)"]{display:none}' +
+    /* owner 2026-07-27: emphasis swap — the playback scrubber gets BIG, the pauses slider small */
+    '.scrubber{height:8px;border-radius:4px}' +
+    '.scrubber-fill{border-radius:4px}' +
+    '.scrubber-fill::after{width:18px;height:18px;right:-9px}' +
+    '.dyn-slider{display:flex;align-items:center;justify-content:center;gap:8px;font-size:11.5px;color:var(--text-tertiary);margin-top:8px}' +
+    '.dyn-slider input{width:90px;accent-color:var(--accent);height:3px}' +
     '.sentence-card.dyn-off{opacity:.55;border-style:dashed}' +
     '.sentence-card.dyn-off .sent-preview{text-decoration:line-through}' +
     '.dyn-card-btn{width:26px;height:26px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}' +
     '.dyn-card-btn svg{width:13px;height:13px}' +
     '.dyn-card-btn:hover{color:var(--accent);border-color:var(--accent)}' +
-    '.sentence-card.dyn-live{border-color:var(--accent);}';
+    '.sentence-card.dyn-live{border-color:var(--accent);}' +
+    '.dyn-addpl{display:block;margin:10px auto 0;font-family:var(--font-ui);font-size:13px;font-weight:600;color:#fff;background:var(--accent);border:none;border-radius:18px;padding:9px 18px;cursor:pointer}' +
+    '.dyn-addpl:hover{background:var(--accent-mid)}' +
+    '.dyn-pl-link{display:block;text-align:center;font-size:12px;margin-top:6px;color:var(--text-tertiary);text-decoration:none}' +
+    '.dyn-pl-link:hover{color:var(--accent)}' +
+    '.dyn-tick{display:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border-strong);flex-shrink:0;margin-right:2px;position:relative}' +
+    '#sentence-list.dyn-selecting .dyn-tick{display:inline-block}' +
+    '.dyn-tick.on{background:var(--accent);border-color:var(--accent)}' +
+    '.dyn-tick.on.gold{background:#B29234;border-color:#B29234}' +
+    ".dyn-tick.on::after{content:'';position:absolute;left:6px;top:2.5px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}" +
+    '#dyn-sel-bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:.5px solid var(--border);padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:12px;z-index:250}' +
+    '#dyn-sel-bar.show{display:flex}' +
+    '#dyn-sel-bar button{font-family:var(--font-ui);font-size:13px;font-weight:600;border-radius:18px;padding:8px 20px;cursor:pointer}' +
+    '#dyn-sel-bar .dyn-sel-done{color:#fff;background:var(--accent);border:none}' +
+    '#dyn-sel-bar .dyn-sel-cancel{color:var(--text-secondary);background:var(--surface);border:.5px solid var(--border-strong)}';
   // Mount-time DOM injection: status line + pause slider + sentence-skip transport buttons
   // + the per-card playlist/exclude buttons. Only ever called when DYN.
   function initDyn() {
@@ -1713,23 +1881,32 @@
       if (skips[0]) row.insertBefore(prevB, skips[0]);
       if (skips[1]) row.insertBefore(nextB, skips[1].nextSibling);
     }
+    // "Add sentences to a playlist" entry point. Dyn pages hide the shared How-to-use
+    // orientation box AT RUNTIME (markup/CSS stay untouched for the live pages) and put the
+    // playlist button + link in its place.
+    var orient = root.querySelector('.orientation-text');
+    var aplAnchor = orient || $('offline-bar');   // fall back to after the offline bar if the box ever moves
+    if (aplAnchor) {
+      var apl = document.createElement('button');
+      apl.id = 'dyn-addpl-btn'; apl.className = 'dyn-addpl'; apl.type = 'button';
+      apl.textContent = '＋ Add sentences from this topic to a playlist';
+      apl.addEventListener('click', dynAddPlClick);
+      if (orient) { orient.parentNode.insertBefore(apl, orient); orient.style.display = 'none'; }
+      else aplAnchor.parentNode.insertBefore(apl, aplAnchor.nextSibling);
+      var pll = document.createElement('a');
+      pll.className = 'dyn-pl-link'; pll.href = 'playlists.html';
+      pll.textContent = '🎵 My Playlists';
+      apl.parentNode.insertBefore(pll, apl.nextSibling);
+    }
     sentences.forEach(function (s) {
       var hdr = document.querySelector('#sc-' + s.num + ' .sentence-header');
       if (!hdr) return;
       var flag = hdr.querySelector('.sent-flag-btn');
-      var nb = document.createElement('button');
-      nb.className = 'dyn-card-btn dyn-note-btn';
-      nb.setAttribute('aria-label', 'Add to playlist'); nb.title = 'Add to playlist';
-      nb.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg>';
-      nb.addEventListener('click', function (e) {
-        e.stopPropagation(); e.preventDefault();
-        if (window.ThaiEarDyn && window.ThaiEarDyn.openPopup) {
-          window.ThaiEarDyn.openPopup(TIER === 'premium' ? 'premium' : 'std', {
-            topic_key: (cfg.dynKey || ''), num: s.num, prefix: PREFIX, tier: TIER || 'free',
-            thai: s.thai, translit: s.translit || null, english: s.english
-          });
-        } else alert('Playlists unavailable');
-      });
+      // Select-mode tick (batch add-to-playlist): hidden until #sentence-list gets .dyn-selecting.
+      var tick = document.createElement('span');
+      tick.className = 'dyn-tick' + (TIER === 'premium' ? ' gold' : '');
+      tick.setAttribute('aria-hidden', 'true');
+      hdr.insertBefore(tick, hdr.querySelector('.sent-num') || hdr.firstChild);
       var xb = document.createElement('button');
       xb.className = 'dyn-card-btn dyn-x-btn';
       function xPaint() {
@@ -1748,8 +1925,7 @@
         xPaint();
         dynInvalidate();
       });
-      hdr.insertBefore(nb, flag ? flag.nextSibling : null);
-      hdr.insertBefore(xb, nb.nextSibling);
+      hdr.insertBefore(xb, flag ? flag.nextSibling : null);
       if (dynExcluded[s.num]) {
         var card0 = document.getElementById('sc-' + s.num);
         if (card0) card0.classList.add('dyn-off');
