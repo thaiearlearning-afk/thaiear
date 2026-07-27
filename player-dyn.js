@@ -335,6 +335,7 @@
           '<div class="dyn-th">' + esc(dispThai(s)) + '</div>' +
           (s.translit ? '<div class="dyn-tr">' + esc(s.translit) + '</div>' : '') +
           '<div class="dyn-en">' + esc(s.english) + '</div>' +
+          (off ? '<span class="dyn-off-tag">Excluded — tap + to restore</span>' : '') +
         '</div>' +
         '<button class="dyn-x" type="button" aria-label="' + (off ? 'Include sentence' : 'Exclude sentence') + '">' +
           (off ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
