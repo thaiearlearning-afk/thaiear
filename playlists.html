@@ -144,7 +144,10 @@
     var name = prompt('Playlist name:');
     if (!name || !name.trim()) return;
     PL().create(name.trim().slice(0, 60)).then(function (p) { openId = p.id; render(); })
-      .catch(function () { alert('Couldn’t create the playlist — are the playlist tables set up? (playlists_schema.sql)'); });
+      .catch(function (e) {
+        var msg = (e && (e.message || e.details || e.hint)) || JSON.stringify(e);
+        alert('Couldn’t create the playlist.\n\nError: ' + msg + '\n\nIf it says the relation does not exist, playlists_schema.sql was likely run in the wrong Supabase project — check the project ref is pyfyyiegmxwmfshgwvze.');
+      });
   });
 
   function boot() {

@@ -15,6 +15,8 @@
 .dyn-skip { width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .dyn-skip:hover { color: var(--accent); border-color: var(--accent); }
 .dyn-skip svg { width: 16px; height: 16px; }
+.dyn-topic-btn { width: 34px; height: 34px; }
+.dyn-topic-btn svg { width: 14px; height: 14px; }
 
 .dyn-build { text-align: center; font-size: 13px; font-weight: 500; color: var(--accent); padding: 4px 0 8px; }
 .dyn-dots { display: inline-block; width: 1.1em; text-align: left; }

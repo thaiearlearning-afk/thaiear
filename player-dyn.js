@@ -230,7 +230,14 @@
             var b64 = String(fr.result).split(',')[1];
             FS.writeFile({ path: 'dyn-session.wav', data: b64, directory: 'CACHE' })
               .then(function () { return FS.getUri({ path: 'dyn-session.wav', directory: 'CACHE' }); })
-              .then(function (u) { return NA.prepare({ url: u.uri, title: opts.name || 'ThaiEar', subtitle: 'ThaiEar', artwork: 'https://thaiear.com/apple-touch-icon.png', mode: 'dyn' }); })
+              .then(function (u) {
+                return NA.prepare({
+                  url: u.uri, title: opts.name || 'ThaiEar', subtitle: 'ThaiEar',
+                  artwork: 'https://thaiear.com/apple-touch-icon.png', mode: 'dyn',
+                  // sentence start-times → native lock-screen sentence skip (JS is suspended when locked)
+                  marks: session.map.map(function (m) { return m.start; })
+                });
+              })
               .then(function () { playing = true; return NA.play(); })
               .then(resolve, reject);
           };
@@ -315,9 +322,11 @@
         '<div class="dyn-player' + (TIER === 'premium' ? ' tier-premium' : '') + '">' +
           '<div class="dyn-mode" role="group"><button type="button" data-mode="TE">Thai first</button><button type="button" data-mode="ET">English first</button></div>' +
           '<div class="dyn-main">' +
+            ((nav.prevHref || nav.onPrev) ? '<button class="dyn-skip dyn-topic-btn" id="dyn-tprev" type="button" aria-label="Previous topic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h2v14H4z"/><path d="M13 5v14l-7-7zM21 5v14l-7-7z"/></svg></button>' : '') +
             '<button class="dyn-skip" id="dyn-prev" type="button" aria-label="Previous sentence"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14l-10-7z"/></svg></button>' +
             '<button class="dyn-play" id="dyn-play" type="button" aria-label="Play"><svg id="dyn-play-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>' +
             '<button class="dyn-skip" id="dyn-next" type="button" aria-label="Next sentence"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l10-7z"/></svg></button>' +
+            ((nav.nextHref || nav.onNext) ? '<button class="dyn-skip dyn-topic-btn" id="dyn-tnext" type="button" aria-label="Next topic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 5h2v14h-2z"/><path d="M3 5v14l7-7zM11 5v14l7-7z"/></svg></button>' : '') +
           '</div>' +
           '<div class="dyn-build" id="dyn-build" hidden>Constructing dynamic mp3 file<span class="dyn-dots" aria-hidden="true"></span><span id="dyn-build-n"></span></div>' +
           '<div class="dyn-seek" id="dyn-seek"><div class="dyn-seek-bar" id="dyn-seek-bar"><i id="dyn-seek-fill"></i></div><div class="dyn-seek-t"><span id="dyn-t-cur">0:00</span><span id="dyn-t-tot">–:––</span></div></div>' +
@@ -340,6 +349,9 @@
       el('#dyn-play').addEventListener('click', togglePlay);
       el('#dyn-prev').addEventListener('click', function () { inst.prevSentence(); });
       el('#dyn-next').addEventListener('click', function () { inst.nextSentence(); });
+      var tp = el('#dyn-tprev'), tn = el('#dyn-tnext');
+      if (tp) tp.addEventListener('click', function () { inst._navGo(-1); });
+      if (tn) tn.addEventListener('click', function () { inst._navGo(1); });
       el('#dyn-now').addEventListener('click', function () {
         var b = curBlock();
         if (b < 0 || !session) return;
