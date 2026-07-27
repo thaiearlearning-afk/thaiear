@@ -40,3 +40,22 @@
   Cache-Control: public, max-age=0, must-revalidate
 /topic-*
   Cache-Control: public, max-age=0, must-revalidate
+
+# Dynamic-player TEST SPACE (2026-07-28): these iterate many times a day during the
+# owner's test rounds — always revalidate so a deploy reaches the owner immediately.
+/player-dyn.js
+  Cache-Control: public, max-age=0, must-revalidate
+/player-dyn.css
+  Cache-Control: public, max-age=0, must-revalidate
+/playlists.html
+  Cache-Control: public, max-age=0, must-revalidate
+/playlists
+  Cache-Control: public, max-age=0, must-revalidate
+/topic-test.html
+  Cache-Control: public, max-age=0, must-revalidate
+/topic-test
+  Cache-Control: public, max-age=0, must-revalidate
+/topic-test2.html
+  Cache-Control: public, max-age=0, must-revalidate
+/topic-test2
+  Cache-Control: public, max-age=0, must-revalidate
