@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Dynamic player test — ThaiEar</title>
+<script>
+/* Owner test page — soft gate. Reached from the owner-only index link (?k=…) or by password.
+   Keep-out-casuals only, not security: the audio behind it is the free public topic 3. */
+(function () {
+  var ok = false;
+  try { ok = sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
+  if (!ok && /[?&]k=cu38961y(&|$)/.test(location.search)) ok = true;
+  if (!ok) ok = (prompt('Test page password:') === 'cu38961y');
+  if (ok) { try { sessionStorage.setItem('te_test_ok', '1'); } catch (_) {} }
+  else location.replace('index.html');
+})();
+</script>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="/fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/sarabun-thai-400.woff2" as="font" type="font/woff2" crossorigin>
+<style id="te-fonts">
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/inter-latin-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/inter-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/inter-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/sarabun-thai-400.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/sarabun-thai-500.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+  .lede { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 1.5rem; }
+
+  .dyn-player { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.15rem 1.25rem 1rem; }
+  .dyn-mode { display: flex; gap: 0; border: 0.5px solid var(--border-strong); border-radius: 20px; overflow: hidden; width: max-content; margin: 0 auto 1rem; }
+  .dyn-mode button { font-family: var(--font-ui); font-size: 13px; font-weight: 500; padding: 7px 18px; border: none; background: var(--surface); color: var(--text-secondary); cursor: pointer; }
+  .dyn-mode button.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .dyn-main { display: flex; align-items: center; justify-content: center; gap: 1.4rem; margin-bottom: 0.85rem; }
+  .dyn-play { width: 60px; height: 60px; border-radius: 50%; border: none; background: var(--accent); color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .dyn-play:hover { background: var(--accent-mid); }
+  .dyn-play svg { width: 26px; height: 26px; }
+  .dyn-skip { width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .dyn-skip:hover { color: var(--accent); border-color: var(--accent); }
+  .dyn-skip svg { width: 16px; height: 16px; }
+  .dyn-now { display: block; width: 100%; text-align: center; font-family: var(--font-ui); font-size: 13px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 4px 0; margin-bottom: 0.5rem; }
+  .dyn-now:hover { color: var(--accent); }
+  .dyn-slider { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 12.5px; color: var(--text-tertiary); }
+  .dyn-slider input { width: 160px; accent-color: var(--accent); }
+  #dyn-pf-val { min-width: 34px; color: var(--text-secondary); font-weight: 500; }
+
+  .dyn-pills { display: flex; gap: 8px; margin: 1.25rem 0 0.9rem; }
+  .dyn-pills button { font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; padding: 6px 14px; border-radius: 18px; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); cursor: pointer; }
+  .dyn-pills button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .dyn-list { display: flex; flex-direction: column; gap: 9px; }
+  .dyn-card { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 0.8rem 0.95rem; transition: border-color 0.15s, background 0.15s, opacity 0.15s; }
+  .dyn-card .dyn-txt { flex: 1; cursor: pointer; min-width: 0; }
+  .dyn-th { font-family: var(--font-thai); font-size: 19px; line-height: 1.55; }
+  .dyn-tr { font-size: 12px; color: var(--text-tertiary); margin-top: 1px; }
+  .dyn-en { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .dyn-card.playing { border-color: var(--accent); background: var(--accent-light); }
+  .dyn-card.off { opacity: 0.45; }
+  .dyn-card.off .dyn-txt { cursor: default; }
+  .dyn-x { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-tertiary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .dyn-x:hover { color: var(--accent); border-color: var(--accent); }
+  .dyn-x svg { width: 14px; height: 14px; }
+  .dyn-empty { text-align: center; color: var(--text-tertiary); font-size: 13px; padding: 1.5rem 0; }
+  .test-note { font-size: 11.5px; color: var(--text-tertiary); margin-top: 2rem; text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="wrap">
+  <div class="eyebrow">Owner test build · not public</div>
+  <h1>Dynamic player — Communication survival</h1>
+  <p class="lede">Sentences are sequenced live from individual clips (no combined file). Tap a sentence to start from it; use − to exclude it from the session. Pauses follow the standard formulas × the slider.</p>
+
+  <div id="dyn-root"></div>
+
+  <p class="test-note">Test build — see DYNAMIC_PLAYER_PLAN.md. Audio: topic 3 (free/public). Exclusions, direction and pause length persist on this device.</p>
+</div>
+
+<script>
+window.ThaiEarTopic = { test: true };  /* suppresses nav.js's now-playing/autoplay handlers on this page */
+window.ThaiEarTest = {
+  name: 'Communication survival (test)',
+  audioBase: 'https://audio.thaiear.com/',
+  prefix: 'CommSurvival_BEG',
+  sentences: [{"num":53,"thai":"ขอโทษนะคะ | โทษรบกวนหน่อยได้ไหมคะ","translit":"khǎw-thôot ná khá | thôot róp-guan nòi dâi mǎi khá","english":"Excuse me — sorry to bother you."},{"num":54,"thai":"รอสักครู่นะครับ","translit":"raw sàk-khrûu ná khráp","english":"Wait a moment, please."},{"num":55,"thai":"ขอโทษค่ะ | ไม่เข้าใจเลย","translit":"khǎw-thôot khâ | mâi khâo-jai luhry","english":"Sorry — I don't understand at all."},{"num":56,"thai":"ไม่ค่อยเข้าใจครับ","translit":"mâi khôi khâo-jai khráp","english":"I don't quite understand."},{"num":57,"thai":"เข้าใจแล้วค่ะ","translit":"khâo-jai láaeo khâ","english":"I understand now."},{"num":58,"thai":"ผมไม่ทันฟังครับ | พูดซ้ำอีกทีได้ไหมครับ","translit":"phǒm mâi than fang khráp | phûut sám ìik thii dâi mǎi khráp","english":"I didn't catch that — could you say it again?"},{"num":59,"thai":"พูดช้าลงหน่อยได้ไหมคะ","translit":"phûut cháa long nòi dâi mǎi khá","english":"Could you speak more slowly?"},{"num":60,"thai":"พูดดังขึ้นหน่อยได้ไหมครับ","translit":"phûut dang khûen nòi dâi mǎi khráp","english":"Could you speak a bit louder?"},{"num":61,"thai":"ช่วยพูดให้ชัดขึ้นหน่อยได้ไหมคะ","translit":"chûai phûut hâi chát khûen nòi dâi mǎi khá","english":"Could you speak more clearly?"},{"num":62,"thai":"เขียนให้ดูได้ไหมครับ","translit":"khǐan hâi duu dâi mǎi khráp","english":"Could you write it down for me?"},{"num":63,"thai":"แปลว่าอะไรคะ","translit":"bplaae wâa à-rai khá","english":"What does it mean?"},{"num":64,"thai":"ภาษาไทยเรียกว่าอะไรครับ","translit":"phaa-sǎa thai rîak wâa à-rai khráp","english":"What is it called in Thai?"},{"num":65,"thai":"พูดถูกไหมคะ","translit":"phûut thùuk mǎi khá","english":"Did I say that correctly?"},{"num":66,"thai":"พูดอีกแบบได้ไหมครับ","translit":"phûut ìik bàaep dâi mǎi khráp","english":"Could you say it another way?"},{"num":67,"thai":"ผมพูดภาษาไทยได้นิดหน่อยครับ | แต่อ่านไม่ออก","translit":"phǒm phûut phaa-sǎa thai dâi nít-nòi khráp | dtàae àan mâi àwk","english":"I can speak a little Thai but I can't read it."},{"num":68,"thai":"ภาษาไทยผมยังไม่เก่งเลยครับ","translit":"phaa-sǎa thai phǒm yang mâi gèng luhry khráp","english":"My Thai still isn't good at all."},{"num":69,"thai":"นึกคำไม่ออกค่ะ","translit":"núek kham mâi àwk khâ","english":"I can't think of the word."},{"num":70,"thai":"ลืมคำว่าอะไรครับ","translit":"luuem kham wâa à-rai khráp","english":"I've forgotten what the word is."},{"num":71,"thai":"ช่วยหน่อยได้ไหมคะ","translit":"chûai nòi dâi mǎi khá","english":"Could you help me please?"},{"num":72,"thai":"ไม่เป็นไรครับ","translit":"mâi bpen rai khráp","english":"It's okay."},{"num":73,"thai":"ขอบคุณมากเลยค่ะที่ช่วย","translit":"khàwp-khun mâak luhry khâ thîi chûai","english":"Thank you so much for your help."},{"num":74,"thai":"ไม่ต้องขอบคุณครับ | ยินดีเลย","translit":"mâi dtâwng khàwp-khun khráp | yin-dii luhry","english":"No need to thank me — my pleasure."},{"num":2232,"thai":"ประโยคนี้มีความหมายว่าอะไรครับ","translit":"bprà-yòok níi mii khwaam-mǎai wâa à-rai khráp","english":"What does this sentence mean?"},{"num":2233,"thai":"คุณหมายความว่ายังไงครับ","translit":"khun mǎai-khwaam wâa yang-ngai khráp","english":"What do you mean?"},{"num":2234,"thai":"คำว่าเด็กเขียนยังไงคะ","translit":"kham wâa dèk khǐan yang-ngai khá","english":"How do you write the word \"child\"?"}]
+};
+</script>
+<script src="player-dyn.js"></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

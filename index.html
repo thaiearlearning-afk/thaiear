@@ -1505,6 +1505,34 @@ window.addEventListener('online', function () { renderGrid(); precacheDownloaded
 window.addEventListener('offline', renderGrid);
 precacheDownloadedPages(); // on load (when online), persist downloaded topics' pages for offline
 updateBatchBar();          // show the batch-download bar in the app (hidden on the website)
+
+// Owner-only link to the dynamic-player test page (DYNAMIC_PLAYER_PLAN.md). Gated on a
+// SHA-256 of the signed-in email so the deployed JS carries no address; invisible to
+// everyone else. Appended AFTER the grid section so renderGrid() re-renders never wipe it.
+(function () {
+  var OWNER_HASH = 'f158e8ba0177149ebd33d06f08ac400709d39133f9f366f7bdb3ac17bcb1c171';
+  function maybeShow() {
+    if (document.getElementById('owner-test-link')) return;
+    var u = window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser();
+    if (!u || !u.email || !window.crypto || !crypto.subtle) return;
+    crypto.subtle.digest('SHA-256', new TextEncoder().encode(u.email.toLowerCase()))
+      .then(function (buf) {
+        var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) {
+          return ('0' + b.toString(16)).slice(-2);
+        }).join('');
+        if (hex !== OWNER_HASH || document.getElementById('owner-test-link')) return;
+        var a = document.createElement('a');
+        a.id = 'owner-test-link';
+        a.href = 'topic-test.html?k=cu38961y';
+        a.textContent = '🧪 Dynamic player test (owner preview)';
+        a.style.cssText = 'display:block;text-align:center;margin:2.25rem auto 0;font-size:13px;color:var(--text-tertiary);text-decoration:none;';
+        var sec = document.querySelector('.topics-section');
+        if (sec) sec.appendChild(a);
+      }).catch(function () {});
+  }
+  window.addEventListener('thaiear:auth', maybeShow);
+  maybeShow();
+})();
 </script>
 <!-- ============================================================
      TOPIC NUMBERING — display vs ID (do not conflate)
