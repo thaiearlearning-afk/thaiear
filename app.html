@@ -59,13 +59,17 @@
   h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.6rem; line-height: 1.2; color: #1C124E; }
   .lede { color: var(--text-secondary); margin-bottom: 1.75rem; }
 
-  /* store cards — same visual language as the socials cards (icon + label), but not yet links. */
+  /* store cards — same visual language as the socials cards (icon + label). Google Play is a
+     live link (<a>); App Store stays a plain card until it ships. */
   .store-list { display: flex; flex-direction: column; gap: 0.75rem; }
   .store-card {
     display: flex; align-items: center; gap: 14px;
     background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
     padding: 1rem 1.15rem; cursor: default;
   }
+  a.store-card { cursor: pointer; text-decoration: none; transition: border-color .15s; }
+  a.store-card:hover { border-color: var(--accent); }
+  .store-status.live { color: var(--accent); font-weight: 500; }
   .store-icon { flex-shrink: 0; width: 42px; height: 42px; border-radius: 11px;
     display: inline-flex; align-items: center; justify-content: center; color: #fff; }
   .store-icon svg { width: 22px; height: 22px; }
@@ -205,15 +209,17 @@
   <hr class="divider">
 
   <div class="dl-section">
-    <h2>Download ThaiEar for Android — available now</h2>
-    <p>ThaiEar for Android is ready ahead of our Google Play launch. We’ve released it early because offline listening matters most to the learners who travel, commute, or study off-grid — so you don’t have to wait.</p>
-    <a class="dl-cta" href="https://audio.thaiear.com/ThaiEar.apk">Download ThaiEar for Android</a>
-    <p class="dl-meta">Version 1.0 · 8.2 MB · Android 7.0+</p>
+    <h2>Download ThaiEar for Android — now on Google Play</h2>
+    <p>ThaiEar for Android is on the Play Store. Install it like any other app and keep learning offline — download whole topics and listen with no internet, with lock-screen controls and background playback.</p>
+    <a class="dl-cta" href="https://play.google.com/store/apps/details?id=com.thaiear.app">Get ThaiEar on Google Play</a>
+    <p class="dl-meta">Free · Android 7.0+</p>
 
-    <h2>Installing outside the Play Store</h2>
-    <p>Because this version isn’t on the Play Store yet, your phone will show a security warning when you install it — that’s completely normal for any app installed directly. Here’s how:</p>
+    <h2>Prefer a direct download?</h2>
+    <p>You can also install ThaiEar directly, without the Play Store — handy on phones without Google services. Your phone will show a security warning when you install it — that’s completely normal for any app installed this way. Here’s how:</p>
+    <a class="dl-cta" href="https://audio.thaiear.com/ThaiEar.apk">Download ThaiEar for Android (.apk)</a>
+    <p class="dl-meta">Version 1.0 · 8.2 MB · Android 7.0+</p>
     <ol class="dl-steps">
-      <li>Tap <strong>Download ThaiEar for Android</strong> above.</li>
+      <li>Tap <strong>Download ThaiEar for Android (.apk)</strong> above.</li>
       <li>When it finishes, open the file. Android will ask to allow installs from your browser — tap <strong>Settings → Allow from this source</strong>, then go back and tap <strong>Install</strong>.</li>
       <li>If you see “Unsafe app blocked” or a Play Protect prompt, tap <strong>More details → Install anyway</strong>.</li>
       <li>Open ThaiEar and sign in as normal.</li>
@@ -223,17 +229,17 @@
 
   <hr class="divider">
 
-  <p class="stores-lead">On the way to the app stores:</p>
+  <p class="stores-lead">Find ThaiEar on the app stores:</p>
   <div class="store-list">
-    <div class="store-card">
+    <a class="store-card" href="https://play.google.com/store/apps/details?id=com.thaiear.app">
       <span class="store-icon googleplay" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3.5 19 12 5 20.5z"/></svg>
       </span>
       <span class="store-text">
         <span class="store-platform">Google Play</span>
-        <span class="store-status soon">Coming soon…</span>
+        <span class="store-status live">Available now — get the app</span>
       </span>
-    </div>
+    </a>
 
     <div class="store-card">
       <span class="store-icon appstore" aria-hidden="true">
