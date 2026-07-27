@@ -104,7 +104,12 @@
         nativeMeta.title = resolveMainTitle();   // ensure the lock screen shows the topic, even on first play
         writeNowPlaying();                       // share what's now playing across pages (now-playing bar + sync)
         var prep = { url: st.src, title: nativeMeta.title, subtitle: nativeMeta.subtitle, artwork: nativeMeta.artwork };
-        if (DYN) { prep.mode = 'dyn'; prep.marks = dynSession ? dynSession.map.map(function (m) { return m.start; }) : []; }
+        if (DYN) {
+          // dyn session (this page's, or an adopted neighbour's persisted one) → 'dyn' + marks;
+          // adopted static placeholder (no session) → plain 'std'.
+          if (dynSession && !dynStdRemote) { prep.mode = 'dyn'; prep.marks = dynSession.map.map(function (m) { return m.start; }); }
+          else prep.mode = 'std';
+        }
         return NA.prepare(prep)
           .then(function () { st.preparedSrc = st.src; st.paused = false; return NA.play(); });
       },
@@ -1349,6 +1354,62 @@
   var dynBuilding = null;     // { key, p } while a build is in flight
   var dynClipCache = {};      // decoded AudioBuffer per clip filename (survives invalidation)
   var dynLastLive = null;     // sentence num currently highlighted by the timeupdate handler
+  var dynSessionIsLocal = true; // does dynSession belong to THIS page's sentences? (card highlight guard)
+  var dynAdopted = null;      // cross-topic nav: the dynNav target descriptor the top player adopted
+  var dynStdRemote = false;   // adopted target is playing its STATIC combined file (no session/map)
+  var DYN_KEY_NS = cfg.dynKey || PREFIX;   // namespace for exclusions + persisted sessions
+
+  /* -- session persistence (per topic, per mode) --
+     A successfully built session is stored so a revisit (or the neighbour test page) doesn't
+     reconstruct: audio in the durable 'thaiear-audio-dl' Cache Storage cache on web, or a
+     per-topic WAV in the app CACHE dir on native; {key,map,duration} metadata in localStorage.
+     Stale entries are never deleted eagerly — a key mismatch just misses and rebuilds. */
+  function dynMetaLsKey(dk, mode) { return 'te_dyn_meta_' + dk + '_' + mode; }
+  function dynCachePath(dk, mode) { return '/dyn/' + dk + '/' + mode + '.wav'; }
+  function dynNativeFile(dk, mode) { return 'dyn-' + dk + '-' + mode + '.wav'; }
+  function dynReadMeta(dk, mode) {
+    try {
+      var m = JSON.parse(localStorage.getItem(dynMetaLsKey(dk, mode)) || 'null');
+      if (m && m.key && m.map && m.map.length && m.duration) return m;
+    } catch (_) {}
+    return null;
+  }
+  function dynPersistSession(sess, mode) {
+    try {
+      localStorage.setItem(dynMetaLsKey(DYN_KEY_NS, mode),
+        JSON.stringify({ key: sess.key, map: sess.map, duration: sess.duration }));
+    } catch (_) {}
+    // Native: the WAV was already written under the per-topic filename during the build.
+    if (!NATIVE && window.caches) {
+      caches.open(AUDIO_DL_CACHE).then(function (c) {
+        return c.put(dynCachePath(DYN_KEY_NS, mode),
+          new Response(sess.blob, { headers: { 'Content-Type': 'audio/wav' } }));
+      }).catch(function () {});
+    }
+  }
+  // Rehydrate a persisted session's audio (meta comes from dynReadMeta). Resolves null on any
+  // miss — evicted cache entry, missing native file — so callers fall back to building.
+  function dynRestoreSession(dk, mode, meta) {
+    if (NATIVE) {
+      var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+      if (!FS) return Promise.resolve(null);
+      var path = dynNativeFile(dk, mode);
+      return FS.stat({ path: path, directory: 'CACHE' })
+        .then(function () { return FS.getUri({ path: path, directory: 'CACHE' }); })
+        .then(function (r) {
+          if (!r || !r.uri) return null;
+          return { url: null, fileUri: r.uri, blob: null, map: meta.map, key: meta.key, duration: meta.duration };
+        }).catch(function () { return null; });
+    }
+    if (!window.caches) return Promise.resolve(null);
+    return caches.open(AUDIO_DL_CACHE)
+      .then(function (c) { return c.match(dynCachePath(dk, mode)); })
+      .then(function (res) { return res ? res.blob() : null; })
+      .then(function (blob) {
+        if (!blob) return null;
+        return { url: URL.createObjectURL(blob), blob: blob, map: meta.map, key: meta.key, duration: meta.duration };
+      }).catch(function () { return null; });
+  }
 
   // Pause lengths are derived from a crude syllable estimate of the Thai (len/3 after
   // stripping the pause markers, whitespace and the zero-ish chars ๆ ็ ์).
@@ -1404,6 +1465,7 @@
     var inc = dynIncluded();
     if (!inc.length) return Promise.reject({ code: 'empty' });
     var key = dynKey();
+    var mode = currentMode;   // captured: the key/filename must match the mode this build is FOR
     var files = [];
     inc.forEach(function (s) { files.push(dynClipFile(s.num, 'TH')); files.push(dynClipFile(s.num, 'EN')); });
     var done = 0;
@@ -1446,29 +1508,46 @@
       }).then(function (b64) {
         var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
         if (!FS) return sess;
-        return FS.writeFile({ path: 'dyn-session.wav', data: b64, directory: 'CACHE' })
-          .then(function () { return FS.getUri({ path: 'dyn-session.wav', directory: 'CACHE' }); })
+        var wavPath = dynNativeFile(DYN_KEY_NS, mode);   // per-topic+mode so sessions don't overwrite each other
+        return FS.writeFile({ path: wavPath, data: b64, directory: 'CACHE' })
+          .then(function () { return FS.getUri({ path: wavPath, directory: 'CACHE' }); })
           .then(function (r) { sess.fileUri = (r && r.uri) || null; return sess; });
       });
     });
   }
   function dynEnsureSession(onProg) {
     var key = dynKey();
-    if (dynSession && dynSession.key === key) return Promise.resolve(dynSession);
+    if (dynSession && dynSessionIsLocal && dynSession.key === key) return Promise.resolve(dynSession);
     if (dynBuilding && dynBuilding.key === key) return dynBuilding.p;
-    var p = dynBuildSession(onProg).then(function (sess) {
-      if (dynSession && dynSession.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
-      dynSession = sess;
-      dynBuilding = null;
-      return sess;
-    }).catch(function (e) { dynBuilding = null; return Promise.reject(e); });
+    var mode = currentMode;
+    var meta = dynReadMeta(DYN_KEY_NS, mode);
+    var p = ((meta && meta.key === key) ? dynRestoreSession(DYN_KEY_NS, mode, meta) : Promise.resolve(null))
+      .then(function (restored) {
+        if (restored) return restored;   // persisted hit → no fetch, no decode, no status line
+        dynStatus('Constructing dynamic mp3 file', true);   // only a REAL build shows the status
+        return dynBuildSession(onProg).then(function (sess) { dynPersistSession(sess, mode); return sess; });
+      })
+      .then(function (sess) {
+        if (dynSession && dynSession.url && dynSession.url !== sess.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
+        dynSession = sess;
+        dynSessionIsLocal = true;
+        dynStdRemote = false;
+        dynBuilding = null;
+        return sess;
+      }).catch(function (e) { dynBuilding = null; return Promise.reject(e); });
     dynBuilding = { key: key, p: p };
     return p;
   }
-  // The DYN branch of ensureMainSrc: build (or reuse) the session and point mainAudio at it.
+  // The DYN branch of ensureMainSrc: build (restore, or reuse) the session and point mainAudio
+  // at it. When the top player has ADOPTED a neighbour topic (dyn cross-topic nav), re-resolve
+  // that adoption instead — e.g. after a TE/ET switch reset mainSrcReady.
   function dynEnsureMainSrc() {
-    if (mainSrcReady && dynSession && dynSession.key === dynKey()) return Promise.resolve();
-    dynStatus('Constructing dynamic mp3 file', true);
+    if (dynAdopted) {
+      if (mainSrcReady) return Promise.resolve();
+      var adoptedT = dynAdopted;
+      return dynResolveAdopt(adoptedT).then(function (r) { dynApplyAdopt(adoptedT, r); });
+    }
+    if (mainSrcReady && dynSession && dynSessionIsLocal && dynSession.key === dynKey()) return Promise.resolve();
     return dynEnsureSession(function (done, total) {
       var c = $('dyn-status-count'); if (c) c.textContent = done + '/' + total;
     }).then(function (sess) {
@@ -1524,6 +1603,57 @@
     if (dynLastLive != null) { var prev = document.getElementById('sc-' + dynLastLive); if (prev) prev.classList.remove('dyn-live'); }
     if (num != null) { var cur = document.getElementById('sc-' + num); if (cur) cur.classList.add('dyn-live'); }
     dynLastLive = num;
+  }
+  /* -- cross-topic nav with autoplay (dyn pages) --
+     Mirrors classic advanceTopic: stay on the page and swap the top player onto the dynNav
+     target. Source priority: (a) the TARGET topic's own persisted dyn session for the current
+     mode — accepted as-is, its stored key is authoritative (this page's exclusions are
+     irrelevant to it); (b) the pre-rendered static combined TE/ET file as a placeholder.
+     A second next/prev from the adopted state falls back to real page navigation. */
+  function dynResolveAdopt(t) {
+    var mode = currentMode;
+    var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;
+    return (meta ? dynRestoreSession(t.dynKey, mode, meta) : Promise.resolve(null)).then(function (sess) {
+      if (sess) return { src: (NATIVE && sess.fileUri) ? sess.fileUri : sess.url, std: false, sess: sess };
+      var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
+      return buildUrl(file, t.tier === 'member' || t.tier === 'premium')
+        .then(function (u) { return { src: u, std: true, sess: null }; });
+    });
+  }
+  function dynApplyAdopt(t, r) {
+    if (dynSession && dynSession.url && (!r.sess || r.sess.url !== dynSession.url)) {
+      try { URL.revokeObjectURL(dynSession.url); } catch (_) {}
+    }
+    dynSession = r.sess;            // null for the static placeholder → sentence-skip no-ops, shim sends 'std'
+    dynSessionIsLocal = false;
+    dynStdRemote = r.std;
+    dynAdopted = t;
+    // Adopt the target's identity like classic advanceTopic (denial routing, TE/ET switches).
+    mainPage = t.page;
+    mainPrefix = t.prefix;
+    mainTier = (t.tier === 'member' || t.tier === 'premium') ? t.tier : null;
+    mainGated = !!mainTier;
+    currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
+    if (dynLastLive != null) { var pc = document.getElementById('sc-' + dynLastLive); if (pc) pc.classList.remove('dyn-live'); dynLastLive = null; }
+    mainAudio.src = r.src;
+    mainAudio.load();
+    mainSrcReady = true;
+    // Now-playing strip, set directly — topics.js can't resolve test pages.
+    var box = $('now-playing'), txt = $('now-playing-text');
+    if (box) box.classList.add('show');
+    if (txt) txt.innerHTML = 'Now playing <strong>' + escapeHtml(t.name) + '</strong>' + (r.std ? ' — standard audio' : '');
+  }
+  function dynAdvance(t) {
+    if (!mainAudio.paused) mainAudio.pause();
+    setMainIcon(false);
+    dynResolveAdopt(t).then(function (r) {
+      dynApplyAdopt(t, r);
+      var f = $('scrubber-fill'); if (f) f.style.width = '0%';
+      var c = $('time-cur'); if (c) c.textContent = '0:00';
+      var tt = $('time-total'); if (tt) tt.textContent = '0:00';
+      return mainAudio.play();
+    }).then(function () { setMainIcon(true); })
+      .catch(function (e) { handleDenied(e, (t.tier === 'member' || t.tier === 'premium') ? t.tier : null); });
   }
   var DYN_STYLES =
     '.dyn-status{text-align:center;font-size:13px;font-weight:500;color:var(--accent);padding:4px 0;}' +
@@ -1688,7 +1818,7 @@
       if (tt.textContent !== tot) tt.textContent = tot;
     }
     var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';   // mirror onto the floating mini bar
-    if (DYN && dynSession) dynHighlight(mainAudio.currentTime);       // dyn: highlight the playing sentence's card
+    if (DYN && dynSession && dynSessionIsLocal) dynHighlight(mainAudio.currentTime);   // dyn: highlight the playing card (this page's session only)
     writeWebResume();   // keep the cross-page resume position fresh while playing (web only, throttled)
   });
   mainAudio.addEventListener('ended', function () {
@@ -1849,9 +1979,14 @@
   }
 
   function advanceTopic(dir) {
-    // Dyn test pages navigate between each other instead of swapping audio in place —
-    // each page rebuilds its own fresh session.
-    if (DYN && cfg.dynNav) { var dynDest = dir > 0 ? cfg.dynNav.next : cfg.dynNav.prev; if (dynDest) location.href = dynDest; return; }
+    // Dyn pages: adopt the dynNav neighbour in place (persisted session or static placeholder).
+    // A SECOND hop from an adopted state navigates for real — the user has moved two steps.
+    if (DYN && cfg.dynNav) {
+      if (dynAdopted) { location.href = dynAdopted.page; return; }
+      var dynT = dir > 0 ? cfg.dynNav.next : cfg.dynNav.prev;
+      if (dynT) dynAdvance(dynT);
+      return;
+    }
     var T = window.ThaiEarTopics;
     if (!T || !T.nextAccessible) return;            // topics.js not present → feature inert
     var unit = nextPlayable(mainPage, dir);         // skip anything that can't actually play now
