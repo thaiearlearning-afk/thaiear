@@ -93,6 +93,8 @@
 .pl-box.open .pl-box-chev { transform: rotate(180deg); }
 .pl-box-body { display: none; padding: 0 1.15rem 1.15rem; }
 .pl-box.open .pl-box-body { display: block; }
+.pl-addsent { font-family: var(--font-ui); font-size: 12px; color: var(--accent); background: none; border: 0.5px solid var(--accent); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; margin-right: 8px; }
+.pl-addsent:hover { background: var(--accent-light); }
 .pl-del { font-family: var(--font-ui); font-size: 12px; color: var(--text-tertiary); background: none; border: 0.5px solid var(--border-strong); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; }
 .pl-del:hover { color: #B03030; border-color: #B03030; }
 .pl-note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }

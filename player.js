@@ -1337,6 +1337,10 @@
   var DYN_SR = 24000;
   var dynFactor = 1;
   try { var _dynPf = parseFloat(localStorage.getItem('te_dyn_pf')); if (isFinite(_dynPf) && _dynPf > 0) dynFactor = _dynPf; } catch (_) {}
+  var dynRepeats = 2;   // Thai repeat count 1–4 (2 = the original behaviour)
+  try { var _dynRp = parseInt(localStorage.getItem('te_dyn_rp'), 10); if (_dynRp >= 1 && _dynRp <= 4) dynRepeats = _dynRp; } catch (_) {}
+  var dynEnglish = true;   // TE mode only: include the English clip after the repeats (ET always has it)
+  try { dynEnglish = localStorage.getItem('te_dyn_en') !== '0'; } catch (_) {}
   var DYN_EXCL_KEY = 'te_dyn_excl_' + (cfg.dynKey || PREFIX);
   var dynExcluded = {};
   try {
@@ -1366,7 +1370,16 @@
      Stale entries are never deleted eagerly — a key mismatch just misses and rebuilds. */
   function dynMetaLsKey(dk, mode) { return 'te_dyn_meta_' + dk + '_' + mode; }
   function dynCachePath(dk, mode) { return '/dyn/' + dk + '/' + mode + '.wav'; }
-  function dynNativeFile(dk, mode) { return 'dyn-' + dk + '-' + mode + '.wav'; }
+  // Native WAV filenames are UNIQUE PER BUILD (persisted counter): the native shim resumes
+  // instead of re-preparing when src is unchanged, so rebuilding under the SAME file:// path
+  // made the app keep playing the OLD audio after an exclusion. The meta records the actual
+  // filename; the superseded file is deleted after a successful persist.
+  function dynNextSeq() {
+    var n = 1;
+    try { n = (parseInt(localStorage.getItem('te_dyn_seq'), 10) || 0) + 1; localStorage.setItem('te_dyn_seq', String(n)); } catch (_) {}
+    return n;
+  }
+  function dynNativeFile(dk, mode, seq) { return 'dyn-' + dk + '-' + mode + (seq ? '-' + seq : '') + '.wav'; }
   function dynReadMeta(dk, mode) {
     try {
       var m = JSON.parse(localStorage.getItem(dynMetaLsKey(dk, mode)) || 'null');
@@ -1375,12 +1388,21 @@
     return null;
   }
   function dynPersistSession(sess, mode) {
+    var oldMeta = dynReadMeta(DYN_KEY_NS, mode);   // read BEFORE overwriting: we sweep its file below
     try {
       localStorage.setItem(dynMetaLsKey(DYN_KEY_NS, mode),
-        JSON.stringify({ key: sess.key, map: sess.map, duration: sess.duration }));
+        JSON.stringify({ key: sess.key, map: sess.map, duration: sess.duration, file: sess.file || null }));
     } catch (_) {}
-    // Native: the WAV was already written under the per-topic filename during the build.
-    if (!NATIVE && window.caches) {
+    if (NATIVE) {
+      // The WAV was already written (unique per-build name) during the build; delete the
+      // superseded build's file so the cache dir doesn't accumulate. Errors ignored.
+      var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+      if (FS && oldMeta && oldMeta.file && oldMeta.file !== sess.file) {
+        try { FS.deleteFile({ path: oldMeta.file, directory: 'CACHE' }).catch(function () {}); } catch (_) {}
+      }
+      return;
+    }
+    if (window.caches) {
       caches.open(AUDIO_DL_CACHE).then(function (c) {
         return c.put(dynCachePath(DYN_KEY_NS, mode),
           new Response(sess.blob, { headers: { 'Content-Type': 'audio/wav' } }));
@@ -1393,7 +1415,7 @@
     if (NATIVE) {
       var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
       if (!FS) return Promise.resolve(null);
-      var path = dynNativeFile(dk, mode);
+      var path = meta.file || dynNativeFile(dk, mode);   // legacy metas (pre-unique-names) have no file field
       return FS.stat({ path: path, directory: 'CACHE' })
         .then(function () { return FS.getUri({ path: path, directory: 'CACHE' }); })
         .then(function (r) {
@@ -1421,7 +1443,10 @@
     return sentences.filter(function (s) { return !dynExcluded[s.num]; });
   }
   function dynKey() {
-    return currentMode + '|' + dynFactor + '|' + dynIncluded().map(function (s) { return s.num; }).join(',');
+    // English is EFFECTIVE-value keyed: ET always includes English, so toggling the TE-only
+    // checkbox must not churn ET sessions.
+    var en = (currentMode === 'et' || dynEnglish) ? 1 : 0;
+    return currentMode + '|' + dynFactor + '|r' + dynRepeats + '|e' + en + '|' + dynIncluded().map(function (s) { return s.num; }).join(',');
   }
   function dynClipFile(num, side) {
     return PREFIX + '_S' + String(num).padStart(2, '0') + '_' + side + '.mp3';
@@ -1466,8 +1491,9 @@
     if (!inc.length) return Promise.reject({ code: 'empty' });
     var key = dynKey();
     var mode = currentMode;   // captured: the key/filename must match the mode this build is FOR
+    var needEn = (mode === 'et') || dynEnglish;   // TE with English off never touches the _EN clips
     var files = [];
-    inc.forEach(function (s) { files.push(dynClipFile(s.num, 'TH')); files.push(dynClipFile(s.num, 'EN')); });
+    inc.forEach(function (s) { files.push(dynClipFile(s.num, 'TH')); if (needEn) files.push(dynClipFile(s.num, 'EN')); });
     var done = 0;
     return Promise.all(files.map(function (f) {
       return dynFetchClip(f).then(function (b) { done++; if (onProg) onProg(done, files.length); return b; });
@@ -1479,14 +1505,21 @@
       function pushSil(sec) { var n = Math.round(sec * DYN_SR); parts.push(n); pos += n; }
       inc.forEach(function (s) {
         var th = dynClipCache[dynClipFile(s.num, 'TH')];
-        var en = dynClipCache[dynClipFile(s.num, 'EN')];
+        var en = needEn ? dynClipCache[dynClipFile(s.num, 'EN')] : null;
         var syl = dynSyllables(s.thai);
         var repeat = Math.max(3.0, syl * 0.5) * dynFactor;
         var recall = Math.max(4.5, syl * 0.7) * dynFactor;
         var gap = 3.0 * dynFactor;
         var start = pos / DYN_SR;
-        if (currentMode === 'et') { pushBuf(en); pushSil(recall); pushBuf(th); pushSil(repeat); pushBuf(th); }
-        else { pushBuf(th); pushSil(repeat); pushBuf(th); pushSil(repeat); pushBuf(en); }
+        var r;
+        if (mode === 'et') {
+          pushBuf(en); pushSil(recall); pushBuf(th);
+          for (r = 1; r < dynRepeats; r++) { pushSil(repeat); pushBuf(th); }
+        } else {
+          pushBuf(th);
+          for (r = 1; r < dynRepeats; r++) { pushSil(repeat); pushBuf(th); }
+          if (dynEnglish) { pushSil(repeat); pushBuf(en); }
+        }
         pushSil(gap);
         map.push({ num: s.num, start: start, end: pos / DYN_SR });
       });
@@ -1508,10 +1541,12 @@
       }).then(function (b64) {
         var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
         if (!FS) return sess;
-        var wavPath = dynNativeFile(DYN_KEY_NS, mode);   // per-topic+mode so sessions don't overwrite each other
+        // Unique per-build filename — a rebuild must present a NEW file:// src or the native
+        // shim resumes the previously prepared (stale) audio. See dynNextSeq.
+        var wavPath = dynNativeFile(DYN_KEY_NS, mode, dynNextSeq());
         return FS.writeFile({ path: wavPath, data: b64, directory: 'CACHE' })
           .then(function () { return FS.getUri({ path: wavPath, directory: 'CACHE' }); })
-          .then(function (r) { sess.fileUri = (r && r.uri) || null; return sess; });
+          .then(function (r) { sess.fileUri = (r && r.uri) || null; sess.file = wavPath; return sess; });
       });
     });
   }
@@ -1571,6 +1606,13 @@
     if (dynSession && dynSession.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
     dynSession = null;
     dynStatus('Changes saved — your session will reconstruct on next play.', false);
+  }
+  // Show/hide the TE-only English checkbox to match the current direction (ET always has English).
+  function dynSyncEnToggle() {
+    var w = $('dyn-en-wrap'), sp = $('dyn-en-sep');
+    var hide = currentMode === 'et';
+    if (w) w.style.display = hide ? 'none' : '';
+    if (sp) sp.style.display = hide ? 'none' : '';
   }
   // Status line under the transport. text=null hides it; dots=true appends the animated dots
   // (plus a live n/m counter span the build progress writes into).
@@ -1662,9 +1704,39 @@
      the reveal-cycle (play/tortoise still work, so a sentence can be previewed while choosing),
      a fixed bottom bar shows the count, Done diffs against what the playlist already holds for
      this topic and saves adds/removes sequentially. */
-  var dynSel = null;          // { id, name, pre: {num:true}, now: {num:true} } while selecting
-  var dynSelListener = null;  // the capture-phase click hijacker on #sentence-list
+  var dynSel = null;          // { id, name, pre:{num:true}, real:{num:true}, now:{num:true}, plsel, pend } while selecting
+  var dynSelListener = null;  // the capture-phase click filter on #sentence-list
+  // PLSEL mode: the page was opened from playlists.html's "Add sentences" flow (?plsel=id&pln=name).
+  // Select mode auto-starts for that playlist and diffs travel across topic pages via sessionStorage.
+  var dynPlsel = null;
+  if (DYN) {
+    var _plm = /[?&]plsel=([^&]+)/.exec(location.search);
+    if (_plm) {
+      var _pln = /[?&]pln=([^&]*)/.exec(location.search);
+      try { dynPlsel = { id: decodeURIComponent(_plm[1]), name: _pln ? decodeURIComponent(_pln[1]) : 'Playlist' }; } catch (_) { dynPlsel = null; }
+    }
+  }
   function dynTopicKey() { return cfg.dynKey || PREFIX; }
+  function dynSentByNum(num) {
+    for (var i = 0; i < sentences.length; i++) { if (sentences[i].num === num) return sentences[i]; }
+    return null;
+  }
+  function dynItemPayload(num) {
+    var s = dynSentByNum(num);
+    if (!s) return null;
+    return { topic_key: dynTopicKey(), num: num, prefix: PREFIX, tier: TIER || 'free',
+      thai: s.thai, translit: s.translit || null, english: s.english };
+  }
+  // Cross-page pending state for the plsel flow.
+  function dynPendRead() {
+    try {
+      var p = JSON.parse(sessionStorage.getItem('te_plsel') || 'null');
+      if (p && p.id && p.adds && p.removes) return p;
+    } catch (_) {}
+    return null;
+  }
+  function dynPendWrite(p) { try { sessionStorage.setItem('te_plsel', JSON.stringify(p)); } catch (_) {} }
+  function dynPendClear() { try { sessionStorage.removeItem('te_plsel'); } catch (_) {} }
   function dynAddPlClick() {
     var a = window.ThaiEarAuth;
     if (!a || !(a.getUser && a.getUser())) { alert('Sign in to use playlists.'); return; }
@@ -1700,49 +1772,88 @@
       });
     });
   }
-  function dynSelBar() {
+  // Bottom action bar — content depends on mode (plsel adds ‹ Topic / Topic › nav buttons),
+  // so it's (re)built on every select-mode entry.
+  function dynSelBarBuild(plsel) {
     var bar = $('dyn-sel-bar');
-    if (bar) return bar;
-    bar = document.createElement('div');
-    bar.id = 'dyn-sel-bar';
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'dyn-sel-bar';
+      document.body.appendChild(bar);
+    }
+    var navBtns = '';
+    if (plsel) {
+      if (cfg.dynNav && cfg.dynNav.prev) navBtns += '<button type="button" class="dyn-sel-nav" id="dyn-sel-prev">‹ Topic</button>';
+      if (cfg.dynNav && cfg.dynNav.next) navBtns += '<button type="button" class="dyn-sel-nav" id="dyn-sel-next">Topic ›</button>';
+    }
     bar.innerHTML = '<span id="dyn-sel-count"></span>' +
-      '<span style="display:flex;gap:10px">' +
+      '<span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">' + navBtns +
         '<button type="button" class="dyn-sel-cancel">Cancel</button>' +
         '<button type="button" class="dyn-sel-done">Done</button>' +
       '</span>';
-    document.body.appendChild(bar);
-    bar.querySelector('.dyn-sel-cancel').addEventListener('click', dynExitSelect);
+    bar.querySelector('.dyn-sel-cancel').addEventListener('click', plsel ? dynPlselCancel : dynExitSelect);
     bar.querySelector('.dyn-sel-done').addEventListener('click', dynSelDone);
+    var pb = bar.querySelector('#dyn-sel-prev'); if (pb) pb.addEventListener('click', function () { dynPlselNav(-1); });
+    var nb = bar.querySelector('#dyn-sel-next'); if (nb) nb.addEventListener('click', function () { dynPlselNav(1); });
     return bar;
   }
   function dynSelCountPaint() {
     var c = $('dyn-sel-count'); if (!c || !dynSel) return;
-    var n = 0; for (var k in dynSel.now) { if (dynSel.now[k]) n++; }
+    var k;
+    if (dynSel.plsel && dynSel.pend) {
+      // Live running total: playlist size at flow start + all pending diffs, with THIS
+      // page's stored diff replaced by the current live one.
+      var tk = dynTopicKey(), pend = dynSel.pend, addsN = 0, remsN = 0;
+      for (k in pend.adds) { if (k !== tk) addsN += pend.adds[k].length; }
+      for (k in pend.removes) { if (k !== tk) remsN += pend.removes[k].length; }
+      for (k in dynSel.now) { if (!dynSel.real[k]) addsN++; }
+      for (k in dynSel.real) { if (!dynSel.now[k]) remsN++; }
+      c.textContent = '「' + dynSel.name + '」 · ' + (pend.base + addsN - remsN) + ' sentences';
+      return;
+    }
+    var n = 0;
+    for (k in dynSel.now) { if (dynSel.now[k]) n++; }
     c.textContent = n + ' selected';
   }
-  function dynEnterSelect(p) {
+  function dynSelToggle(card, tickEl) {
+    if (!dynSel) return;
+    var num = +String(card.id).replace('sc-', '');
+    if (dynSel.now[num]) delete dynSel.now[num]; else dynSel.now[num] = true;
+    if (tickEl) tickEl.classList.toggle('on', !!dynSel.now[num]);
+    dynSelCountPaint();
+  }
+  // pend (optional) = the cross-page plsel state; its presence switches on plsel behaviour.
+  function dynEnterSelect(p, pend) {
     var tk = dynTopicKey();
+    var real = {}, k;
+    (p.items || []).forEach(function (it) { if (it.topic_key === tk) real[it.num] = true; });
+    // pre-ticks = the playlist's real items for this topic, adjusted by any pending diffs
     var pre = {};
-    (p.items || []).forEach(function (it) { if (it.topic_key === tk) pre[it.num] = true; });
+    for (k in real) pre[k] = true;
+    if (pend) {
+      (pend.adds[tk] || []).forEach(function (it) { pre[it.num] = true; });
+      (pend.removes[tk] || []).forEach(function (num) { delete pre[num]; });
+    }
     var now = {};
-    for (var k in pre) now[k] = true;
-    dynSel = { id: p.id, name: p.name, pre: pre, now: now };
+    for (k in pre) now[k] = true;
+    dynSel = { id: p.id, name: p.name || (pend && pend.name) || '', pre: pre, real: real, now: now, plsel: !!pend, pend: pend || null };
     var list = $('sentence-list');
     if (list) {
       list.classList.add('dyn-selecting');
       dynSelListener = function (e) {
         var el = e.target;
         if (!el || !el.closest) return;
-        // sentence preview + tortoise stay usable while selecting
-        if (el.closest('.sent-play-btn') || el.closest('.speed-toggle')) return;
-        var card = el.closest('.sentence-card');
-        if (!card) return;
-        e.preventDefault(); e.stopPropagation();   // swallow reveal-cycle / flag clicks
-        var num = +String(card.id).replace('sc-', '');
-        if (dynSel.now[num]) delete dynSel.now[num]; else dynSel.now[num] = true;
-        var t = card.querySelector('.dyn-tick');
-        if (t) t.classList.toggle('on', !!dynSel.now[num]);
-        dynSelCountPaint();
+        // ticking happens ONLY on the tick circle itself
+        var tick = el.closest('.dyn-tick');
+        if (tick) {
+          e.preventDefault(); e.stopPropagation();
+          var card = tick.closest('.sentence-card');
+          if (card) dynSelToggle(card, tick);
+          return;
+        }
+        // flag + exclude are disabled during selection (also dimmed via CSS)
+        if (el.closest('.sent-flag-btn') || el.closest('.dyn-card-btn')) { e.preventDefault(); e.stopPropagation(); return; }
+        // everything else — reveal-cycle, sentence play, tortoise — behaves normally
       };
       list.addEventListener('click', dynSelListener, true);
     }
@@ -1750,7 +1861,8 @@
       var t = document.querySelector('#sc-' + s.num + ' .dyn-tick');
       if (t) t.classList.toggle('on', !!dynSel.now[s.num]);
     });
-    dynSelBar().classList.add('show');
+    dynSelBarBuild(!!pend).classList.add('show');
+    if (pend) document.body.classList.add('dyn-plsel');   // lockdown: nav hidden, topic links inert
     dynSelCountPaint();
     updateMiniVisibility();   // the mini transport yields to the selection bar
   }
@@ -1762,44 +1874,112 @@
     }
     dynSelListener = null;
     dynSel = null;
+    document.body.classList.remove('dyn-plsel');
     var bar = $('dyn-sel-bar');
     if (bar) {
       bar.classList.remove('show');
-      var db = bar.querySelector('.dyn-sel-done'); if (db) db.disabled = false;
+      bar.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
     }
     updateMiniVisibility();
+  }
+  // Fold THIS page's live diff (now vs the playlist's REAL items) into the sessionStorage
+  // pending state — item payloads must be captured here, while this page's sentences exist.
+  function dynPlselStash() {
+    if (!dynSel || !dynSel.plsel) return;
+    var pend = dynSel.pend || dynPendRead();
+    if (!pend) return;
+    var tk = dynTopicKey(), adds = [], removes = [], k;
+    for (k in dynSel.now) { if (!dynSel.real[k]) { var pl = dynItemPayload(+k); if (pl) adds.push(pl); } }
+    for (k in dynSel.real) { if (!dynSel.now[k]) removes.push(+k); }
+    if (adds.length) pend.adds[tk] = adds; else delete pend.adds[tk];
+    if (removes.length) pend.removes[tk] = removes; else delete pend.removes[tk];
+    dynPendWrite(pend);
+    dynSel.pend = pend;
+  }
+  function dynPlselNav(dir) {
+    if (!dynSel || !dynSel.plsel) return;
+    var t = dir > 0 ? (cfg.dynNav && cfg.dynNav.next) : (cfg.dynNav && cfg.dynNav.prev);
+    if (!t || !t.page) return;
+    dynPlselStash();
+    location.href = t.page + '?plsel=' + encodeURIComponent(dynSel.id) +
+      '&pln=' + encodeURIComponent(dynSel.name) + '&k=cu38961y';
+  }
+  function dynPlselCancel() {
+    dynPendClear();
+    location.href = 'playlists.html';
+  }
+  // Auto-entry for the plsel flow: wait for auth + playlists, then open select mode.
+  function dynPlselBoot() {
+    var tries = 0;
+    (function wait() {
+      var a = window.ThaiEarAuth;
+      if (!a || !a.isReady) {
+        if (++tries < 60) setTimeout(wait, 250);
+        return;
+      }
+      if (!(a.getUser && a.getUser())) { alert('Sign in to use playlists.'); dynPendClear(); location.href = 'playlists.html'; return; }
+      var PL = a.playlists;
+      if (!PL || !PL.load) { alert('Playlists unavailable'); return; }
+      PL.load().then(function (lists) {
+        var p = null;
+        (lists || []).forEach(function (x) { if (String(x.id) === String(dynPlsel.id)) p = x; });
+        if (!p) { alert('Playlist not found.'); dynPendClear(); location.href = 'playlists.html'; return; }
+        var pend = dynPendRead();
+        if (!pend || String(pend.id) !== String(p.id)) {
+          // First page of the flow: baseline the running total on the playlist's current size.
+          pend = { id: p.id, name: p.name || dynPlsel.name, adds: {}, removes: {}, base: (p.items || []).length };
+          dynPendWrite(pend);
+        }
+        dynEnterSelect(p, pend);
+      }).catch(function () { alert('Couldn’t load playlists — check your connection.'); });
+    })();
   }
   function dynSelDone() {
     if (!dynSel) return;
     var a = window.ThaiEarAuth, PL = a && a.playlists;
     if (!PL) { alert('Playlists unavailable'); return; }
-    var tk = dynTopicKey();
-    var adds = [], removes = [], k;
-    for (k in dynSel.now) { if (dynSel.now[k] && !dynSel.pre[k]) adds.push(+k); }
-    for (k in dynSel.pre) { if (dynSel.pre[k] && !dynSel.now[k]) removes.push(+k); }
+    var plsel = dynSel.plsel;
     var id = dynSel.id, name = dynSel.name;
-    var db = document.querySelector('#dyn-sel-bar .dyn-sel-done');
-    if (db) db.disabled = true;
+    var ops = [], k;
+    if (plsel) {
+      dynPlselStash();   // fold this page's diff in, then apply EVERYTHING pending
+      var pend = dynSel.pend;
+      for (k in pend.adds) {
+        pend.adds[k].forEach(function (pl) { ops.push({ add: pl }); });
+      }
+      for (k in pend.removes) {
+        (function (tk2) {
+          pend.removes[tk2].forEach(function (num) { ops.push({ rmTk: tk2, rmNum: num }); });
+        })(k);
+      }
+    } else {
+      var tk = dynTopicKey();
+      for (k in dynSel.now) { if (!dynSel.real[k]) { var pl = dynItemPayload(+k); if (pl) ops.push({ add: pl }); } }
+      for (k in dynSel.real) { if (!dynSel.now[k]) ops.push({ rmTk: tk, rmNum: +k }); }
+    }
+    var addsN = 0;
+    ops.forEach(function (o) { if (o.add) addsN++; });
+    var remsN = ops.length - addsN;
+    var bar = $('dyn-sel-bar');
+    var btns = bar ? bar.querySelectorAll('button') : [];
+    btns.forEach(function (b) { b.disabled = true; });   // Done + Cancel (+ nav) locked while saving
+    var cnt = $('dyn-sel-count');
     var chain = Promise.resolve();
-    adds.forEach(function (num) {
+    ops.forEach(function (op, i) {
       chain = chain.then(function () {
-        var s = null;
-        for (var i = 0; i < sentences.length; i++) { if (sentences[i].num === num) { s = sentences[i]; break; } }
-        if (!s) return;
-        return PL.addItem(id, { topic_key: tk, num: num, prefix: PREFIX, tier: TIER || 'free',
-          thai: s.thai, translit: s.translit || null, english: s.english });
+        if (cnt) cnt.textContent = 'Saving… ' + (i + 1) + ' of ' + ops.length;
+        return op.add ? PL.addItem(id, op.add) : PL.removeItem(id, op.rmTk, op.rmNum);
       });
     });
-    removes.forEach(function (num) {
-      chain = chain.then(function () { return PL.removeItem(id, tk, num); });
-    });
     chain.then(function () {
+      if (plsel) { dynPendClear(); location.href = 'playlists.html'; return; }
       dynExitSelect();
-      dynStatus('“' + name + '” updated — ' + adds.length + ' added, ' + removes.length + ' removed', false);
+      dynStatus('“' + name + '” updated — ' + addsN + ' added, ' + remsN + ' removed', false);
       var seq = dynStatusSeq;
       setTimeout(function () { if (seq === dynStatusSeq) dynStatus(null); }, 2500);
     }).catch(function (e) {
-      if (db) db.disabled = false;   // stay in select mode so nothing chosen is lost
+      btns.forEach(function (b) { b.disabled = false; });   // stay in select mode so nothing chosen is lost
+      dynSelCountPaint();
       alert('Couldn’t save: ' + ((e && (e.message || e.code)) || 'unknown error'));
     });
   }
@@ -1815,20 +1995,30 @@
     '.scrubber{height:8px;border-radius:4px}' +
     '.scrubber-fill{border-radius:4px}' +
     '.scrubber-fill::after{width:18px;height:18px;right:-9px}' +
-    '.dyn-slider{display:flex;align-items:center;justify-content:center;gap:8px;font-size:11.5px;color:var(--text-tertiary);margin-top:8px}' +
-    '.dyn-slider input{width:90px;accent-color:var(--accent);height:3px}' +
+    '.dyn-slider{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;font-size:11.5px;color:var(--text-tertiary);margin-top:8px}' +
+    '.dyn-slider input[type=range]{width:90px;accent-color:var(--accent);height:3px}' +
+    '.dyn-ctl-sep{color:var(--border-strong)}' +
+    '.dyn-reps{display:inline-flex;gap:3px}' +
+    '.dyn-rep-btn{width:20px;height:20px;border-radius:5px;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);font:600 10.5px var(--font-ui);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}' +
+    '.dyn-rep-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}' +
+    '.dyn-en-lbl{display:inline-flex;align-items:center;gap:4px;cursor:pointer}' +
+    '.dyn-en-lbl input{accent-color:var(--accent);margin:0;width:13px;height:13px}' +
     '.sentence-card.dyn-off{opacity:.55;border-style:dashed}' +
     '.sentence-card.dyn-off .sent-preview{text-decoration:line-through}' +
     '.dyn-card-btn{width:26px;height:26px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}' +
     '.dyn-card-btn svg{width:13px;height:13px}' +
     '.dyn-card-btn:hover{color:var(--accent);border-color:var(--accent)}' +
     '.sentence-card.dyn-live{border-color:var(--accent);}' +
-    '.dyn-addpl{display:block;margin:10px auto 0;font-family:var(--font-ui);font-size:13px;font-weight:600;color:#fff;background:var(--accent);border:none;border-radius:18px;padding:9px 18px;cursor:pointer}' +
-    '.dyn-addpl:hover{background:var(--accent-mid)}' +
-    '.dyn-pl-link{display:block;text-align:center;font-size:12px;margin-top:6px;color:var(--text-tertiary);text-decoration:none}' +
+    /* owner 2026-07-27: quiet card look (was a solid accent pill — garish next to its neighbours) */
+    '.dyn-addpl{display:block;margin:10px auto 0;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:7px 14px;cursor:pointer}' +
+    '.dyn-addpl:hover{background:var(--accent-light)}' +
+    '.dyn-pl-link{display:block;text-align:center;font-size:12px;margin:6px 0 14px;color:var(--text-tertiary);text-decoration:none}' +
     '.dyn-pl-link:hover{color:var(--accent)}' +
-    '.dyn-tick{display:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border-strong);flex-shrink:0;margin-right:2px;position:relative}' +
+    '.dyn-tick{display:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border-strong);flex-shrink:0;margin-right:2px;position:relative;cursor:pointer}' +
+    ".dyn-tick::before{content:'';position:absolute;inset:-7px}" +   /* ~34px tap target */
     '#sentence-list.dyn-selecting .dyn-tick{display:inline-block}' +
+    /* select mode: flag + exclude are out of play (the capture listener also swallows them) */
+    '#sentence-list.dyn-selecting .sent-flag-btn,#sentence-list.dyn-selecting .dyn-card-btn{opacity:.35;pointer-events:none}' +
     '.dyn-tick.on{background:var(--accent);border-color:var(--accent)}' +
     '.dyn-tick.on.gold{background:#B29234;border-color:#B29234}' +
     ".dyn-tick.on::after{content:'';position:absolute;left:6px;top:2.5px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}" +
@@ -1836,7 +2026,12 @@
     '#dyn-sel-bar.show{display:flex}' +
     '#dyn-sel-bar button{font-family:var(--font-ui);font-size:13px;font-weight:600;border-radius:18px;padding:8px 20px;cursor:pointer}' +
     '#dyn-sel-bar .dyn-sel-done{color:#fff;background:var(--accent);border:none}' +
-    '#dyn-sel-bar .dyn-sel-cancel{color:var(--text-secondary);background:var(--surface);border:.5px solid var(--border-strong)}';
+    '#dyn-sel-bar .dyn-sel-cancel{color:var(--text-secondary);background:var(--surface);border:.5px solid var(--border-strong)}' +
+    '#dyn-sel-bar .dyn-sel-nav{color:var(--text-secondary);background:var(--surface);border:.5px solid var(--border-strong);padding:8px 12px}' +
+    /* plsel lockdown: the bar's ‹ Topic / Topic › buttons are the ONLY navigation */
+    'body.dyn-plsel #site-nav-root{display:none}' +
+    'body.dyn-plsel .topic-nav{display:none}' +
+    'body.dyn-plsel #btn-prev-topic,body.dyn-plsel #btn-next-topic{opacity:.35;pointer-events:none}';
   // Mount-time DOM injection: status line + pause slider + sentence-skip transport buttons
   // + the per-card playlist/exclude buttons. Only ever called when DYN.
   function initDyn() {
@@ -1854,7 +2049,11 @@
       row.parentNode.insertBefore(stEl, row.nextSibling);
       var sl = document.createElement('div');
       sl.className = 'dyn-slider';
-      sl.innerHTML = 'Pauses <input id="dyn-pf" type="range" min="0.5" max="2" step="0.25"> <span id="dyn-pf-val">1×</span>';
+      sl.innerHTML = 'Pauses <input id="dyn-pf" type="range" min="0.5" max="2" step="0.25"> <span id="dyn-pf-val">1×</span>' +
+        '<span class="dyn-ctl-sep">·</span>' +
+        'Repeats <span class="dyn-reps" id="dyn-reps"></span>' +
+        '<span class="dyn-ctl-sep" id="dyn-en-sep">·</span>' +
+        '<label class="dyn-en-lbl" id="dyn-en-wrap"><input type="checkbox" id="dyn-en"> English</label>';
       stEl.parentNode.insertBefore(sl, stEl.nextSibling);
       var pf = sl.querySelector('#dyn-pf'), pv = sl.querySelector('#dyn-pf-val');
       pf.value = String(dynFactor);
@@ -1866,6 +2065,32 @@
         pv.textContent = dynFactor + '×';
         dynInvalidate();
       });
+      // Thai repeat count: 1–4 segmented mini-buttons
+      var reps = sl.querySelector('#dyn-reps');
+      [1, 2, 3, 4].forEach(function (n) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = String(n);
+        b.className = 'dyn-rep-btn' + (n === dynRepeats ? ' on' : '');
+        b.setAttribute('aria-label', n + ' Thai repeat' + (n === 1 ? '' : 's'));
+        b.addEventListener('click', function () {
+          if (dynRepeats === n) return;
+          dynRepeats = n;
+          try { localStorage.setItem('te_dyn_rp', String(n)); } catch (_) {}
+          reps.querySelectorAll('.dyn-rep-btn').forEach(function (x) { x.classList.toggle('on', x.textContent === String(n)); });
+          dynInvalidate();
+        });
+        reps.appendChild(b);
+      });
+      // English on/off — TE mode only (ET always includes English; toggle hidden there)
+      var enCb = sl.querySelector('#dyn-en');
+      enCb.checked = dynEnglish;
+      enCb.addEventListener('change', function () {
+        dynEnglish = enCb.checked;
+        try { localStorage.setItem('te_dyn_en', dynEnglish ? '1' : '0'); } catch (_) {}
+        dynInvalidate();
+      });
+      dynSyncEnToggle();
       var skips = row.querySelectorAll('.skip-btn');   // [back-10, fwd-10] (dyn buttons not yet inserted)
       var DIGIT1 = '<path d="M12.36 15.94v-4.27h-.09l-1.77.63v.69l1.01-.31v3.26h.85z"/>';
       var prevB = document.createElement('button');
@@ -1931,6 +2156,7 @@
         if (card0) card0.classList.add('dyn-off');
       }
     });
+    if (dynPlsel) dynPlselBoot();   // opened from playlists.html "Add sentences" → auto-enter select mode
   }
 
   /* ---- main player ----
@@ -2117,6 +2343,7 @@
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
     $('btn-et').classList.toggle('active', mode === 'et');
+    if (DYN) dynSyncEnToggle();           // dyn: the English checkbox is TE-only — hide it in ET
     applyDirClass();                      // flip the accordion reveal order to match the new direction
     if (wasPlaying) ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(function (e) { handleDenied(e, mainTier); });
   }
@@ -2453,7 +2680,12 @@
   // <head> shows/hides the matching rows. No innerHTML rebuild → the static text survives.
   function syncCard(num) {
     var c = $('sc-' + num);
-    if (c) c.className = 'sentence-card st-' + (states[num] || 0);
+    if (!c) return;
+    var cls = 'sentence-card st-' + (states[num] || 0);
+    // DYN: this wholesale className rewrite must not wipe the dyn state classes
+    if (DYN && dynExcluded[num]) cls += ' dyn-off';
+    if (DYN && dynLastLive === num) cls += ' dyn-live';
+    c.className = cls;
   }
   // SSR: toggle flag visuals on the existing static buttons (no list rebuild).
   function syncFlags() {

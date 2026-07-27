@@ -90,6 +90,7 @@
           '<span class="pl-box-chev" aria-hidden="true">⌄</span>' +
         '</button>' +
         '<div class="pl-box-body"><div class="pl-player dyn-wrap"></div>' +
+          '<button class="pl-addsent" type="button">＋ Add sentences</button>' +
           '<button class="pl-del" type="button">Delete playlist</button>' +
         '</div></div>';
     }).join('');
@@ -99,6 +100,12 @@
       box.querySelector('.pl-box-head').addEventListener('click', function () {
         openId = (openId === id) ? null : id;
         render();
+      });
+      box.querySelector('.pl-addsent').addEventListener('click', function () {
+        // Fresh flow: clear any pending diffs from an abandoned run, then hand off to the
+        // topic pages' plsel select mode (diffs travel via sessionStorage 'te_plsel').
+        try { sessionStorage.removeItem('te_plsel'); } catch (_) {}
+        location.href = 'topic-test.html?plsel=' + encodeURIComponent(id) + '&pln=' + encodeURIComponent(p.name) + '&k=cu38961y';
       });
       box.querySelector('.pl-del').addEventListener('click', function () {
         if (!window.confirm('Delete "' + p.name + '"? This can’t be undone — the sentences themselves are not affected.')) return;
@@ -133,8 +140,18 @@
           .catch(function () { alert('Couldn’t remove — check your connection.'); });
       },
       nav: {
-        onPrev: prev ? function () { openId = prev.id; render(); } : null,
-        onNext: next ? function () { openId = next.id; render(); } : null
+        // If audio was playing (incl. lock-screen ⏮/⏭ in the app), keep it playing on the
+        // adjacent playlist — expand-only reads as a dead button from the lock screen.
+        onPrev: prev ? function () {
+          var was = instances[p.id] && instances[p.id].isPlaying();
+          openId = prev.id; render();
+          if (was && instances[prev.id]) instances[prev.id].play();
+        } : null,
+        onNext: next ? function () {
+          var was = instances[p.id] && instances[p.id].isPlaying();
+          openId = next.id; render();
+          if (was && instances[next.id]) instances[next.id].play();
+        } : null
       }
     });
   }
