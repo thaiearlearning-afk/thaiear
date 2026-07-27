@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>My Playlists (test) — ThaiEar</title>
+<script>
+(function () {
+  var ok = false;
+  try { ok = sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
+  if (!ok && /[?&]k=cu38961y(&|$)/.test(location.search)) ok = true;
+  if (!ok) ok = (prompt('Test page password:') === 'cu38961y');
+  if (ok) { try { sessionStorage.setItem('te_test_ok', '1'); } catch (_) {} }
+  else location.replace('index.html');
+})();
+</script>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="/fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/sarabun-thai-400.woff2" as="font" type="font/woff2" crossorigin>
+<style id="te-fonts">
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/inter-latin-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/inter-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/inter-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/sarabun-thai-400.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/sarabun-thai-500.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+  .lede { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 1.4rem; }
+  .test-links { font-size: 12.5px; margin-bottom: 1.25rem; }
+  .test-links a { color: var(--accent); text-decoration: none; font-weight: 500; }
+</style>
+<link rel="stylesheet" href="player-dyn.css">
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="wrap">
+  <div class="eyebrow">Owner test build</div>
+  <h1>My Playlists</h1>
+  <p class="lede">Build custom sessions from any sentences you've added with the ♪ button. Expand a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
+  <p class="test-links">← <a href="topic-test.html">Communication survival (test)</a> · <a href="topic-test2.html">Shopping &amp; money 1 (test)</a></p>
+
+  <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
+  <div id="pl-root"><p class="pl-note">Loading…</p></div>
+</div>
+
+<script>window.ThaiEarTopic = { test: true };</script>
+<script src="player-dyn.js"></script>
+<script>
+(function () {
+  var root = document.getElementById('pl-root');
+  var openId = null;
+  var instances = {};
+
+  function PL() { return window.ThaiEarAuth && window.ThaiEarAuth.playlists; }
+  function user() { return window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser(); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  function render() {
+    var lists = PL() ? (PL().get() || []) : [];
+    if (!user()) {
+      root.innerHTML = '<p class="pl-note">Sign in (via the Menu) to create and play playlists. Playlists are free for every account.</p>';
+      return;
+    }
+    if (!lists.length) {
+      root.innerHTML = '<p class="pl-note">No playlists yet. Tap <strong>＋ Add playlist</strong>, then use the ♪ button on any sentence to add it here.</p>';
+      return;
+    }
+    root.innerHTML = lists.map(function (p) {
+      return '<div class="pl-box' + (p.id === openId ? ' open' : '') + '" data-id="' + p.id + '">' +
+        '<button class="pl-box-head" type="button">' +
+          '<span class="pl-box-name">' + esc(p.name) + '</span>' +
+          '<span class="pl-box-meta">' + p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') + '</span>' +
+          '<span class="pl-box-chev" aria-hidden="true">⌄</span>' +
+        '</button>' +
+        '<div class="pl-box-body"><div class="pl-player dyn-wrap"></div>' +
+          '<button class="pl-del" type="button">Delete playlist</button>' +
+        '</div></div>';
+    }).join('');
+    root.querySelectorAll('.pl-box').forEach(function (box) {
+      var id = box.getAttribute('data-id');
+      var p = lists.filter(function (x) { return x.id === id; })[0];
+      box.querySelector('.pl-box-head').addEventListener('click', function () {
+        openId = (openId === id) ? null : id;
+        render();
+      });
+      box.querySelector('.pl-del').addEventListener('click', function () {
+        if (!window.confirm('Delete "' + p.name + '"? This can’t be undone — the sentences themselves are not affected.')) return;
+        PL().remove(id).then(function () { if (openId === id) openId = null; render(); })
+          .catch(function () { alert('Couldn’t delete — check your connection.'); });
+      });
+      if (p.id === openId) mountPlayer(box, p, lists);
+    });
+  }
+
+  function mountPlayer(box, p, lists) {
+    var mountEl = box.querySelector('.pl-player');
+    if (!p.items.length) {
+      mountEl.innerHTML = '<p class="pl-note">This playlist is empty — use the ♪ button on any sentence (in the test topics) to add it.</p>';
+      return;
+    }
+    var idx = lists.indexOf(p);
+    var prev = idx > 0 ? lists[idx - 1] : null;
+    var next = idx < lists.length - 1 ? lists[idx + 1] : null;
+    instances[p.id] = ThaiEarDyn.create(mountEl, {
+      name: p.name,
+      topicKey: 'playlist',
+      prefix: '',
+      tier: 'free',
+      sentences: p.items.map(function (i) {
+        return { num: i.num, thai: i.thai, translit: i.translit, english: i.english, prefix: i.prefix, tier: i.tier, topic_key: i.topic_key };
+      }),
+      features: { removeItem: true },
+      onRemoveItem: function (s) {
+        if (!window.confirm('Remove this sentence from "' + p.name + '"?')) return;
+        PL().removeItem(p.id, s.topic_key, s.num).then(function () { render(); })
+          .catch(function () { alert('Couldn’t remove — check your connection.'); });
+      },
+      nav: {
+        onPrev: prev ? function () { openId = prev.id; render(); } : null,
+        onNext: next ? function () { openId = next.id; render(); } : null
+      }
+    });
+  }
+
+  document.getElementById('pl-add').addEventListener('click', function () {
+    if (!user()) { alert('Sign in first (via the Menu) to create playlists.'); return; }
+    var name = prompt('Playlist name:');
+    if (!name || !name.trim()) return;
+    PL().create(name.trim().slice(0, 60)).then(function (p) { openId = p.id; render(); })
+      .catch(function () { alert('Couldn’t create the playlist — are the playlist tables set up? (playlists_schema.sql)'); });
+  });
+
+  function boot() {
+    if (window.ThaiEarAuth && window.ThaiEarAuth.isReady) {
+      if (PL()) PL().load().then(render); else render();
+    } else {
+      setTimeout(boot, 250);
+    }
+  }
+  window.addEventListener('thaiear:auth', function () { if (PL()) PL().load(true).then(render); });
+  boot();
+})();
+</script>
+<script src="nav.js" defer></script>
+</body>
+</html>

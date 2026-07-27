@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Dynamic player test 2 — ThaiEar</title>
+<script>
+(function () {
+  var ok = false;
+  try { ok = sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
+  if (!ok && /[?&]k=cu38961y(&|$)/.test(location.search)) ok = true;
+  if (!ok) ok = (prompt('Test page password:') === 'cu38961y');
+  if (ok) { try { sessionStorage.setItem('te_test_ok', '1'); } catch (_) {} }
+  else location.replace('index.html');
+})();
+</script>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="/fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/sarabun-thai-400.woff2" as="font" type="font/woff2" crossorigin>
+<style id="te-fonts">
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/inter-latin-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/inter-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/inter-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/sarabun-thai-400.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/sarabun-thai-500.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+  .lede { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 1rem; }
+  .test-links { font-size: 12.5px; margin-bottom: 1.25rem; }
+  .test-links a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .test-note { font-size: 11.5px; color: var(--text-tertiary); margin-top: 2rem; text-align: center; line-height: 1.6; }
+</style>
+<link rel="stylesheet" href="player-dyn.css">
+</head>
+<body>
+
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="wrap">
+  <div class="eyebrow">Owner test build · Member topic (gated audio)</div>
+  <h1>Shopping &amp; money 1 — dynamic</h1>
+  <p class="lede">Same engine, but every clip is fetched through the <strong>/api/audio</strong> gate (private bucket) — you must be signed in with an entitled account for the session to construct. Tests the gated-stitching path end to end.</p>
+  <p class="test-links">🎵 <a href="playlists.html">My Playlists (test)</a></p>
+
+  <div id="dyn-root" class="dyn-wrap"></div>
+
+  <p class="test-note">Test build — see DYNAMIC_PLAYER_PLAN.md. Audio: topic 11a (member/private bucket via /api/audio).</p>
+</div>
+
+<script>
+window.ThaiEarTopic = { test: true };
+window.ThaiEarTestData = {
+  name: 'Shopping & money 1 (test)',
+  topicKey: 'topic-11a',
+  prefix: 'ShoppingAndMoney_BEG',
+  tier: 'member',
+  sentences: [{"num":323,"thai":"อันนี้ราคาเท่าไหร่ครับ","english":"What's the price of this one?"},{"num":324,"thai":"มะม่วงกิโลละเท่าไหร่คะ","english":"How much per kilo for mangoes?"},{"num":325,"thai":"ทั้งหมดกี่บาทครับ","english":"How much altogether?"},{"num":326,"thai":"โอ้โห แพงไปหน่อยนะคะ","english":"Wow, that's a bit too expensive."},{"num":327,"thai":"ลดได้อีกไหมครับ","english":"Can you lower it any more?"},{"num":328,"thai":"เอาร้อยเดียวได้ไหมคะ","english":"Could you do it for just a hundred?"},{"num":329,"thai":"เอาอันนี้สองอันค่ะ","english":"I'll take two of these."},{"num":330,"thai":"ขอครึ่งกิโลพอครับ","english":"Can I just get half a kilo?"},{"num":331,"thai":"ผมจะซื้อรูปปั้นนี้เพื่อเป็นของที่ระลึกครับ","english":"I'll buy this statue to keep as a souvenir."},{"num":332,"thai":"จ่ายเงินตรงไหนคะ","english":"Where do I pay?"},{"num":333,"thai":"รับบัตรไหมครับ","english":"Do you take card?"},{"num":334,"thai":"พี่ทอนเงินผิดนะคะ","english":"You gave me the wrong change."},{"num":341,"thai":"สแกนจ่ายได้ไหมครับ","english":"Can I pay by QR scan?"},{"num":342,"thai":"ราคานี้ขาดตัวแล้วค่ะ","english":"This is the lowest price already."},{"num":343,"thai":"รับถุงไหมคะ","english":"Would you like a bag?"},{"num":1046,"thai":"มีแต่แบงค์พัน|ทอนได้ไหมครับ","english":"I've only got a 1000 — can you make change?"},{"num":1049,"thai":"ขอใบเสร็จด้วยครับ","english":"Can I have a receipt too?"},{"num":1050,"thai":"ลดอีกนิดได้ไหม|ไม่งั้นเงินไม่พอค่ะ","english":"Can you knock a little more off? Otherwise I won't have enough."},{"num":1051,"thai":"ราคาแพงเกินไป|ต่อรองได้ไหมครับ","english":"Too expensive — can I negotiate?"},{"num":1052,"thai":"จ่ายด้วยบัตรได้ไหมครับ|ไม่ได้พกเงินสด","english":"Can I pay by card? I didn't bring cash."},{"num":1053,"thai":"ราคานี้รวมค่าส่งด้วยไหมคะ","english":"Does this price include delivery?"},{"num":1055,"thai":"ตู้กดเงินอยู่แถวไหนคะ","english":"Where's an ATM around here?"}]
+};
+</script>
+<script src="player-dyn.js"></script>
+<script>
+ThaiEarDyn.create(document.getElementById('dyn-root'), {
+  name: window.ThaiEarTestData.name,
+  topicKey: window.ThaiEarTestData.topicKey,
+  prefix: window.ThaiEarTestData.prefix,
+  tier: window.ThaiEarTestData.tier,
+  sentences: window.ThaiEarTestData.sentences,
+  storageNs: 'topic-11a',
+  features: { exclude: true, playlist: true },
+  nav: { prevLabel: 'Communication survival (test)', prevHref: 'topic-test.html' }
+});
+</script>
+<script src="nav.js" defer></script>
+</body>
+</html>

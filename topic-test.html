@@ -7,7 +7,7 @@
 <title>Dynamic player test — ThaiEar</title>
 <script>
 /* Owner test page — soft gate. Reached from the owner-only index link (?k=…) or by password.
-   Keep-out-casuals only, not security: the audio behind it is the free public topic 3. */
+   Keep-out-casuals only, not security. */
 (function () {
   var ok = false;
   try { ok = sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
@@ -42,84 +42,51 @@
   .wrap { max-width: 680px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; }
   .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
-  .lede { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 1.5rem; }
-
-  .dyn-player { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.15rem 1.25rem 1rem; }
-  .dyn-mode { display: flex; gap: 0; border: 0.5px solid var(--border-strong); border-radius: 20px; overflow: hidden; width: max-content; margin: 0 auto 1rem; }
-  .dyn-mode button { font-family: var(--font-ui); font-size: 13px; font-weight: 500; padding: 7px 18px; border: none; background: var(--surface); color: var(--text-secondary); cursor: pointer; }
-  .dyn-mode button.on { background: var(--accent); color: #fff; font-weight: 600; }
-  .dyn-main { display: flex; align-items: center; justify-content: center; gap: 1.4rem; margin-bottom: 0.85rem; }
-  .dyn-play { width: 60px; height: 60px; border-radius: 50%; border: none; background: var(--accent); color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s; }
-  .dyn-play:hover { background: var(--accent-mid); }
-  .dyn-play svg { width: 26px; height: 26px; }
-  .dyn-skip { width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
-  .dyn-skip:hover { color: var(--accent); border-color: var(--accent); }
-  .dyn-skip svg { width: 16px; height: 16px; }
-  /* "Constructing dynamic mp3 file…" — same width-reveal dots animation the site uses
-     (animating `content` doesn't work in the app webview; steps(3,start) shows . .. ...) */
-  .dyn-build { text-align: center; font-size: 13px; font-weight: 500; color: var(--accent); padding: 4px 0 8px; }
-  .dyn-dots { display: inline-block; width: 1.1em; text-align: left; }
-  .dyn-dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom; animation: dyn-dots 1.2s steps(3, start) infinite; }
-  @keyframes dyn-dots { from { width: 0; } to { width: 1.05em; } }
-  #dyn-build-n { color: var(--text-tertiary); font-weight: 400; margin-left: 6px; }
-
-  .dyn-seek { margin: 2px 4px 8px; visibility: hidden; }
-  .dyn-seek-bar { height: 6px; border-radius: 3px; background: var(--accent-light); cursor: pointer; position: relative; overflow: hidden; }
-  .dyn-seek-bar i { display: block; position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); border-radius: 3px; }
-  .dyn-seek-t { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
-
-  .dyn-now { display: block; width: 100%; text-align: center; font-family: var(--font-ui); font-size: 13px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 4px 0; margin-bottom: 0.5rem; }
-  .dyn-now:hover { color: var(--accent); }
-  .dyn-slider { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 12.5px; color: var(--text-tertiary); }
-  .dyn-slider input { width: 160px; accent-color: var(--accent); }
-  #dyn-pf-val { min-width: 34px; color: var(--text-secondary); font-weight: 500; }
-
-  .dyn-pills { display: flex; gap: 8px; margin: 1.25rem 0 0.9rem; }
-  .dyn-pills button { font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; padding: 6px 14px; border-radius: 18px; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); cursor: pointer; }
-  .dyn-pills button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-  .dyn-list { display: flex; flex-direction: column; gap: 9px; }
-  .dyn-card { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 0.8rem 0.95rem; transition: border-color 0.15s, background 0.15s, opacity 0.15s; }
-  .dyn-card .dyn-txt { flex: 1; cursor: pointer; min-width: 0; }
-  .dyn-th { font-family: var(--font-thai); font-size: 19px; line-height: 1.55; }
-  .dyn-tr { font-size: 12px; color: var(--text-tertiary); margin-top: 1px; }
-  .dyn-en { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
-  .dyn-card.playing { border-color: var(--accent); background: var(--accent-light); }
-  .dyn-card.off { opacity: 0.55; background: transparent; border-style: dashed; }
-  .dyn-card.off .dyn-txt { cursor: default; }
-  .dyn-card.off .dyn-th { text-decoration: line-through; text-decoration-color: rgba(0,0,0,0.35); }
-  .dyn-off-tag { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-tertiary); border: 0.5px solid var(--border-strong); border-radius: 9px; padding: 1px 7px; margin-top: 4px; }
-  .dyn-x { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-tertiary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
-  .dyn-x:hover { color: var(--accent); border-color: var(--accent); }
-  .dyn-x svg { width: 14px; height: 14px; }
-  .dyn-empty { text-align: center; color: var(--text-tertiary); font-size: 13px; padding: 1.5rem 0; }
+  .lede { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 1rem; }
+  .test-links { font-size: 12.5px; margin-bottom: 1.25rem; }
+  .test-links a { color: var(--accent); text-decoration: none; font-weight: 500; }
   .test-note { font-size: 11.5px; color: var(--text-tertiary); margin-top: 2rem; text-align: center; line-height: 1.6; }
 </style>
+<link rel="stylesheet" href="player-dyn.css">
 </head>
 <body>
 
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap">
-  <div class="eyebrow">Owner test build · not public</div>
-  <h1>Dynamic player — Communication survival</h1>
-  <p class="lede">On play, the session file is constructed on your device from the individual sentence clips — then plays as one continuous track (offline-robust, scrubbable). Tap a sentence to start from it; use − to exclude it. Pauses follow the standard formulas × the slider.</p>
+  <div class="eyebrow">Owner test build · Free topic</div>
+  <h1>Communication survival — dynamic</h1>
+  <p class="lede">The session file is constructed on your device, then plays as one continuous track. Tap a sentence to start from it; − excludes it; ♪ adds it to a playlist.</p>
+  <p class="test-links">🎵 <a href="playlists.html">My Playlists (test)</a></p>
 
-  <div id="dyn-root"></div>
+  <div id="dyn-root" class="dyn-wrap"></div>
 
-  <p class="test-note">Test build — see DYNAMIC_PLAYER_PLAN.md. Audio: topic 3 (free/public). Exclusions, direction and pause length persist on this device.</p>
+  <p class="test-note">Test build — see DYNAMIC_PLAYER_PLAN.md. Audio: topic 3 (free/public bucket).</p>
 </div>
 
 <script>
-window.ThaiEarTopic = { test: true };  /* suppresses nav.js's now-playing/autoplay handlers on this page */
-window.ThaiEarTest = {
+window.ThaiEarTopic = { test: true };  /* suppresses nav.js's now-playing/autoplay handlers */
+window.ThaiEarTestData = {
   name: 'Communication survival (test)',
-  audioBase: 'https://audio.thaiear.com/',
+  topicKey: 'topic-03',
   prefix: 'CommSurvival_BEG',
+  tier: 'free',
   sentences: [{"num":53,"thai":"ขอโทษนะคะ | โทษรบกวนหน่อยได้ไหมคะ","translit":"khǎw-thôot ná khá | thôot róp-guan nòi dâi mǎi khá","english":"Excuse me — sorry to bother you."},{"num":54,"thai":"รอสักครู่นะครับ","translit":"raw sàk-khrûu ná khráp","english":"Wait a moment, please."},{"num":55,"thai":"ขอโทษค่ะ | ไม่เข้าใจเลย","translit":"khǎw-thôot khâ | mâi khâo-jai luhry","english":"Sorry — I don't understand at all."},{"num":56,"thai":"ไม่ค่อยเข้าใจครับ","translit":"mâi khôi khâo-jai khráp","english":"I don't quite understand."},{"num":57,"thai":"เข้าใจแล้วค่ะ","translit":"khâo-jai láaeo khâ","english":"I understand now."},{"num":58,"thai":"ผมไม่ทันฟังครับ | พูดซ้ำอีกทีได้ไหมครับ","translit":"phǒm mâi than fang khráp | phûut sám ìik thii dâi mǎi khráp","english":"I didn't catch that — could you say it again?"},{"num":59,"thai":"พูดช้าลงหน่อยได้ไหมคะ","translit":"phûut cháa long nòi dâi mǎi khá","english":"Could you speak more slowly?"},{"num":60,"thai":"พูดดังขึ้นหน่อยได้ไหมครับ","translit":"phûut dang khûen nòi dâi mǎi khráp","english":"Could you speak a bit louder?"},{"num":61,"thai":"ช่วยพูดให้ชัดขึ้นหน่อยได้ไหมคะ","translit":"chûai phûut hâi chát khûen nòi dâi mǎi khá","english":"Could you speak more clearly?"},{"num":62,"thai":"เขียนให้ดูได้ไหมครับ","translit":"khǐan hâi duu dâi mǎi khráp","english":"Could you write it down for me?"},{"num":63,"thai":"แปลว่าอะไรคะ","translit":"bplaae wâa à-rai khá","english":"What does it mean?"},{"num":64,"thai":"ภาษาไทยเรียกว่าอะไรครับ","translit":"phaa-sǎa thai rîak wâa à-rai khráp","english":"What is it called in Thai?"},{"num":65,"thai":"พูดถูกไหมคะ","translit":"phûut thùuk mǎi khá","english":"Did I say that correctly?"},{"num":66,"thai":"พูดอีกแบบได้ไหมครับ","translit":"phûut ìik bàaep dâi mǎi khráp","english":"Could you say it another way?"},{"num":67,"thai":"ผมพูดภาษาไทยได้นิดหน่อยครับ | แต่อ่านไม่ออก","translit":"phǒm phûut phaa-sǎa thai dâi nít-nòi khráp | dtàae àan mâi àwk","english":"I can speak a little Thai but I can't read it."},{"num":68,"thai":"ภาษาไทยผมยังไม่เก่งเลยครับ","translit":"phaa-sǎa thai phǒm yang mâi gèng luhry khráp","english":"My Thai still isn't good at all."},{"num":69,"thai":"นึกคำไม่ออกค่ะ","translit":"núek kham mâi àwk khâ","english":"I can't think of the word."},{"num":70,"thai":"ลืมคำว่าอะไรครับ","translit":"luuem kham wâa à-rai khráp","english":"I've forgotten what the word is."},{"num":71,"thai":"ช่วยหน่อยได้ไหมคะ","translit":"chûai nòi dâi mǎi khá","english":"Could you help me please?"},{"num":72,"thai":"ไม่เป็นไรครับ","translit":"mâi bpen rai khráp","english":"It's okay."},{"num":73,"thai":"ขอบคุณมากเลยค่ะที่ช่วย","translit":"khàwp-khun mâak luhry khâ thîi chûai","english":"Thank you so much for your help."},{"num":74,"thai":"ไม่ต้องขอบคุณครับ | ยินดีเลย","translit":"mâi dtâwng khàwp-khun khráp | yin-dii luhry","english":"No need to thank me — my pleasure."},{"num":2232,"thai":"ประโยคนี้มีความหมายว่าอะไรครับ","translit":"bprà-yòok níi mii khwaam-mǎai wâa à-rai khráp","english":"What does this sentence mean?"},{"num":2233,"thai":"คุณหมายความว่ายังไงครับ","translit":"khun mǎai-khwaam wâa yang-ngai khráp","english":"What do you mean?"},{"num":2234,"thai":"คำว่าเด็กเขียนยังไงคะ","translit":"kham wâa dèk khǐan yang-ngai khá","english":"How do you write the word \"child\"?"}]
 };
 </script>
 <script src="player-dyn.js"></script>
+<script>
+ThaiEarDyn.create(document.getElementById('dyn-root'), {
+  name: window.ThaiEarTestData.name,
+  topicKey: window.ThaiEarTestData.topicKey,
+  prefix: window.ThaiEarTestData.prefix,
+  tier: window.ThaiEarTestData.tier,
+  sentences: window.ThaiEarTestData.sentences,
+  storageNs: 'topic-03',
+  features: { exclude: true, playlist: true },
+  nav: { nextLabel: 'Shopping & money 1 (test)', nextHref: 'topic-test2.html' }
+});
+</script>
 <script src="nav.js" defer></script>
 </body>
 </html>

@@ -578,6 +578,94 @@
     }
   };
 
+  // ---- playlists (2026-07-27, DYNAMIC_PLAYER_PLAN.md → PLAYLISTS) -----------------------------
+  // Free feature for ANY signed-in account (not premium-gated). Tables playlists/playlist_items
+  // (top-level playlists_schema.sql, RLS on user_id). Items carry a display nugget
+  // (thai/translit/english) + prefix/tier so playlist pages render and build audio without
+  // loading topic pages. Cached in localStorage (thaiear_playlists) for offline reads.
+  // All methods are additive and guarded — if the tables don't exist yet, load() degrades to
+  // the local cache and the UI just shows what it has.
+  var plCache = null;
+  function plStore() { try { localStorage.setItem('thaiear_playlists', JSON.stringify(plCache)); } catch (_) {} }
+  function plLocal() { try { return JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) { return null; } }
+  window.ThaiEarAuth.playlists = {
+    // Resolves [{id, name, position, items:[{topic_key,num,prefix,tier,thai,translit,english}]}]
+    load: function (force) {
+      if (plCache && !force) return Promise.resolve(plCache);
+      if (!client || !currentUser) { plCache = plLocal() || []; return Promise.resolve(plCache); }
+      return client.from('playlists').select('id,name,position').order('position').order('created_at')
+        .then(function (r) {
+          if (r.error) throw r.error;
+          var lists = r.data || [];
+          if (!lists.length) { plCache = []; plStore(); return plCache; }
+          return client.from('playlist_items')
+            .select('id,playlist_id,topic_key,num,prefix,tier,thai,translit,english,position')
+            .order('position').order('created_at')
+            .then(function (ri) {
+              if (ri.error) throw ri.error;
+              var by = {};
+              lists.forEach(function (p) { p.items = []; by[p.id] = p; });
+              (ri.data || []).forEach(function (it) { if (by[it.playlist_id]) by[it.playlist_id].items.push(it); });
+              plCache = lists; plStore(); return plCache;
+            });
+        })
+        .catch(function () { plCache = plLocal() || []; return plCache; });
+    },
+    get: function () { return plCache; },
+    create: function (name) {
+      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+      return client.from('playlists')
+        .insert({ user_id: currentUser.id, name: name, position: (plCache || []).length })
+        .select('id,name,position').single()
+        .then(function (r) {
+          if (r.error) throw r.error;
+          r.data.items = [];
+          (plCache = plCache || []).push(r.data); plStore();
+          return r.data;
+        });
+    },
+    remove: function (id) {
+      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+      return client.from('playlists').delete().eq('id', id).then(function (r) {
+        if (r.error) throw r.error;
+        if (plCache) { plCache = plCache.filter(function (p) { return p.id !== id; }); plStore(); }
+      });
+    },
+    addItem: function (id, item) {
+      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+      var p = (plCache || []).filter(function (x) { return x.id === id; })[0];
+      var row = {
+        playlist_id: id, topic_key: item.topic_key, num: item.num,
+        prefix: item.prefix, tier: item.tier || 'free',
+        thai: item.thai, translit: item.translit || null, english: item.english,
+        position: p ? p.items.length : 0
+      };
+      return client.from('playlist_items').upsert(row, { onConflict: 'playlist_id,topic_key,num' })
+        .then(function (r) {
+          if (r.error) throw r.error;
+          if (p && !p.items.some(function (i) { return i.topic_key === row.topic_key && i.num === row.num; })) {
+            p.items.push(row); plStore();
+          }
+        });
+    },
+    removeItem: function (id, topicKey, num) {
+      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+      return client.from('playlist_items').delete()
+        .eq('playlist_id', id).eq('topic_key', topicKey).eq('num', num)
+        .then(function (r) {
+          if (r.error) throw r.error;
+          var p = (plCache || []).filter(function (x) { return x.id === id; })[0];
+          if (p) { p.items = p.items.filter(function (i) { return !(i.topic_key === topicKey && i.num === num); }); plStore(); }
+        });
+    },
+    // Which playlists contain this sentence? (from cache — call load() first)
+    idsFor: function (topicKey, num) {
+      return (plCache || []).filter(function (p) {
+        return p.items.some(function (i) { return i.topic_key === topicKey && i.num === num; });
+      }).map(function (p) { return p.id; });
+    }
+  };
+
   import(SUPABASE_ESM)
     .then(function (mod) {
       client = mod.createClient(SUPABASE_URL, SUPABASE_KEY);
