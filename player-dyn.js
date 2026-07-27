@@ -83,7 +83,17 @@
   } else {
     var audio = new Audio();
     audio.preload = 'auto';
-    audio.addEventListener('ended', stepEnded);
+    audio.addEventListener('ended', function () { errRun = 0; stepEnded(); });
+    // A clip that fails to load must SKIP, not stall the whole chain (first-load network
+    // hiccups otherwise freeze the session and invite replay-mashing). A run of failures
+    // means we're truly offline past the prefetch buffer — stop cleanly instead of
+    // sprinting silently through the rest of the playlist.
+    var errRun = 0;
+    audio.addEventListener('error', function () {
+      if (!playing) return;
+      if (++errRun >= 5) { playing = false; errRun = 0; updateUI(); return; }
+      stepEnded();
+    });
     out = {
       play: function (url) { audio.src = blobCache[url] || url; return audio.play(); },
       pause: function () { audio.pause(); },
@@ -97,6 +107,12 @@
         navigator.mediaSession.setActionHandler('nexttrack', function () { nextSentence(); });
         navigator.mediaSession.setActionHandler('previoustrack', function () { prevSentence(); });
       } catch (_) {}
+      // The session is a chain of tiny clips; a per-clip scrubber on the lock screen races
+      // and resets constantly, which reads as broken. Clearing position state asks the OS
+      // to show stable metadata with no progress bar. (Best-effort — iOS may ignore it.)
+      audio.addEventListener('loadedmetadata', function () {
+        try { navigator.mediaSession.setPositionState(); } catch (_) {}
+      });
     }
   }
   // Prefetch-ahead (web only): the next few steps ride as blobs, so a brief connection
@@ -284,4 +300,5 @@
   renderPills();
   renderList();
   updateUI();
+  prefetchAhead(-1);   // web only (no-op native): warm the opening steps so first play starts clean
 })();
