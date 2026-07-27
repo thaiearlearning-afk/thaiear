@@ -42,6 +42,29 @@
     });
   }
 
+  // iPhone/web: after lock/unlock the OS can pause (or keep playing) the <audio> while the
+  // page was hidden — the UI's `playing` flag goes stale ("Ready…" while audio still plays).
+  // Re-sync the active instance from the element's real state whenever we become visible.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && active && active._resync) active._resync();
+  });
+
+  // Bounded-concurrency runner — Safari throttles big parallel fetch bursts (the iOS
+  // slow-build culprit), so clip fetches (and the /api/audio mints inside them) run at most
+  // POOL_N at a time instead of one unbounded Promise.all.
+  var POOL_N = 6;
+  function pool(items, worker) {
+    var i = 0, results = new Array(items.length);
+    function lane() {
+      if (i >= items.length) return Promise.resolve();
+      var idx = i++;
+      return worker(items[idx], idx).then(function (r) { results[idx] = r; return lane(); });
+    }
+    var lanes = [];
+    for (var l = 0; l < Math.min(POOL_N, items.length); l++) lanes.push(lane());
+    return Promise.all(lanes).then(function () { return results; });
+  }
+
   /* pause model — generate_topic_audio.py, ported verbatim (× slider, exact) */
   function syllables(thai) {
     var c = String(thai).replace(/\|/g, '').replace(/\s/g, '').replace(/[ๆ็์]/g, '');
@@ -142,6 +165,10 @@
     var NS = opts.storageNs || TOPIC_KEY || 'dyn';
     var mode = lsGet('te_dyn_mode', 'TE');
     var factor = parseFloat(lsGet('te_dyn_pf', '1')) || 1;
+    // Same keys as the topic dyn player (player.js) — the two UIs share these settings.
+    var repeats = parseInt(lsGet('te_dyn_rp', '2'), 10);
+    if (!(repeats >= 1 && repeats <= 4)) repeats = 2;
+    var english = lsGet('te_dyn_en', '1') !== '0';   // TE only; ET always includes English
     var excluded = {};
     if (FEAT.exclude) {
       try { (JSON.parse(lsGet('te_dyn_excl_' + NS, '[]')) || []).forEach(function (n) { excluded[n] = 1; }); } catch (_) {}
@@ -155,26 +182,34 @@
     function included() { return SENTS.filter(function (s) { return !excluded[s.num]; }); }
     function repeatPause(s) { return Math.max(3.0, syllables(s.thai) * 0.5) * factor; }
     function recallPause(s) { return Math.max(4.5, syllables(s.thai) * 0.7) * factor; }
-    function sessionKey() { return mode + '|' + factor + '|' + included().map(function (s) { return s.num; }).join(','); }
+    function needEnglish() { return mode === 'ET' || english; }
+    // English is EFFECTIVE-value keyed (ET always has it) so the TE-only toggle doesn't churn ET sessions.
+    function sessionKey() { return mode + '|' + factor + '|r' + repeats + '|e' + (needEnglish() ? 1 : 0) + '|' + included().map(function (s) { return s.num; }).join(','); }
 
     function buildSession(onProg) {
       var inc = included();
       var octx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, SR);
-      var jobs = [], got = 0, total = inc.length * 2;
-      inc.forEach(function (s) {
-        ['TH', 'EN'].forEach(function (k) {
-          jobs.push(fetchDecode(s, k, TIER, octx).then(function (b) { got++; if (onProg) onProg(got, total); return b; }));
-        });
-      });
-      return Promise.all(jobs).then(function () {
+      var needEn = needEnglish();
+      var files = [];
+      inc.forEach(function (s) { files.push([s, 'TH']); if (needEn) files.push([s, 'EN']); });
+      var got = 0, total = files.length;
+      return pool(files, function (f) {
+        return fetchDecode(f[0], f[1], TIER, octx).then(function (b) { got++; if (onProg) onProg(got, total); return b; });
+      }).then(function () {
         var chunks = [], map = [], t = 0;
         function addBuf(b) { chunks.push(b.getChannelData(0)); t += b.getChannelData(0).length / SR; }
         function addSil(sec) { var n = Math.round(sec * SR); chunks.push(new Float32Array(n)); t += n / SR; }
         inc.forEach(function (s) {
-          var th = pcmCache[s.prefix + '_S' + s.num + '_TH'], en = pcmCache[s.prefix + '_S' + s.num + '_EN'];
-          var start = t;
-          if (mode === 'TE') { addBuf(th); addSil(repeatPause(s)); addBuf(th); addSil(repeatPause(s)); addBuf(en); }
-          else { addBuf(en); addSil(recallPause(s)); addBuf(th); addSil(repeatPause(s)); addBuf(th); }
+          var th = pcmCache[s.prefix + '_S' + s.num + '_TH'], en = needEn ? pcmCache[s.prefix + '_S' + s.num + '_EN'] : null;
+          var start = t, r;
+          if (mode === 'TE') {
+            addBuf(th);
+            for (r = 1; r < repeats; r++) { addSil(repeatPause(s)); addBuf(th); }
+            if (english) { addSil(repeatPause(s)); addBuf(en); }
+          } else {
+            addBuf(en); addSil(recallPause(s)); addBuf(th);
+            for (r = 1; r < repeats; r++) { addSil(repeatPause(s)); addBuf(th); }
+          }
           addSil(3.0 * factor);
           map.push({ num: s.num, topic_key: s.topic_key, start: start, end: t });
         });
@@ -197,6 +232,14 @@
       audio.addEventListener('play', function () { playing = true; updateUI(); });
       audio.addEventListener('pause', function () { if (!audio.ended) { playing = false; updateUI(); } });
     }
+    // Called by the module visibilitychange listener when we return to the foreground:
+    // adopt the <audio> element's REAL state (web; the native path gets 'playing' events).
+    inst._resync = function () {
+      if (NA || !audio) return;
+      playing = !audio.paused && !audio.ended;
+      curTime = audio.currentTime || curTime;
+      updateUI();
+    };
     inst._onTime = function (t) { curTime = t; tickUI(); };
     inst._onEnded = function () { playing = false; curTime = 0; updateUI(); };
     inst._onPlaying = function (p) { playing = p; updateUI(); };
@@ -331,7 +374,10 @@
           '<div class="dyn-build" id="dyn-build" hidden>Constructing dynamic mp3 file<span class="dyn-dots" aria-hidden="true"></span><span id="dyn-build-n"></span></div>' +
           '<div class="dyn-seek" id="dyn-seek"><div class="dyn-seek-bar" id="dyn-seek-bar"><i id="dyn-seek-fill"></i></div><div class="dyn-seek-t"><span id="dyn-t-cur">0:00</span><span id="dyn-t-tot">–:––</span></div></div>' +
           '<button class="dyn-now" id="dyn-now" type="button">Ready</button>' +
-          '<div class="dyn-slider"><span>Pauses</span><input id="dyn-pf" type="range" min="0.5" max="2" step="0.25" value="' + factor + '"><span id="dyn-pf-val">' + factor + '×</span></div>' +
+          '<div class="dyn-slider"><span>Pauses</span><input id="dyn-pf" type="range" min="0.5" max="2" step="0.25" value="' + factor + '"><span id="dyn-pf-val">' + factor + '×</span>' +
+            '<span class="dyn-ctl-sep">·</span><span>Thai sentence repeats</span><span class="dyn-reps" id="dyn-reps"></span>' +
+            '<span class="dyn-ctl-sep" id="dyn-en-sep">·</span><label class="dyn-en-lbl" id="dyn-en-wrap"><input type="checkbox" id="dyn-en"' + (english ? ' checked' : '') + '> English</label>' +
+          '</div>' +
         '</div>' +
         (FEAT.exclude ? '<div class="dyn-pills" id="dyn-pills"></div>' : '') +
         '<div class="dyn-list" id="dyn-list"></div>' +
@@ -361,6 +407,28 @@
       var pf = el('#dyn-pf');
       pf.addEventListener('input', function () { el('#dyn-pf-val').textContent = pf.value + '×'; });
       pf.addEventListener('change', function () { factor = parseFloat(pf.value) || 1; lsSet('te_dyn_pf', String(factor)); invalidate(); });
+      // Thai repeat count 1–4 (shared localStorage key with the topic dyn player)
+      var repsEl = el('#dyn-reps');
+      [1, 2, 3, 4].forEach(function (n) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = String(n);
+        b.className = 'dyn-rep-btn' + (n === repeats ? ' on' : '');
+        b.setAttribute('aria-label', n + ' Thai repeat' + (n === 1 ? '' : 's'));
+        b.addEventListener('click', function () {
+          if (repeats === n) return;
+          repeats = n; lsSet('te_dyn_rp', String(n));
+          repsEl.querySelectorAll('.dyn-rep-btn').forEach(function (x) { x.classList.toggle('on', x.textContent === String(n)); });
+          invalidate();
+        });
+        repsEl.appendChild(b);
+      });
+      // English on/off — TE only (hidden in ET via updateUI)
+      var enCb = el('#dyn-en');
+      enCb.addEventListener('change', function () {
+        english = enCb.checked; lsSet('te_dyn_en', english ? '1' : '0');
+        invalidate();
+      });
       el('#dyn-seek-bar').addEventListener('click', function (ev) {
         if (!session) return;
         var r = ev.currentTarget.getBoundingClientRect();
@@ -455,6 +523,10 @@
     function updateUI() {
       if (!el('#dyn-play-ico')) return;
       root.querySelectorAll('.dyn-mode button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-mode') === mode); });
+      // English toggle is TE-only (ET always includes English)
+      var enW = el('#dyn-en-wrap'), enS = el('#dyn-en-sep');
+      if (enW) enW.style.display = (mode === 'ET') ? 'none' : '';
+      if (enS) enS.style.display = (mode === 'ET') ? 'none' : '';
       el('#dyn-play-ico').innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
       el('#dyn-build').hidden = !building;
       if (building) el('#dyn-now').textContent = '';

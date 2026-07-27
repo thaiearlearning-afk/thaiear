@@ -1451,6 +1451,21 @@
   function dynClipFile(num, side) {
     return PREFIX + '_S' + String(num).padStart(2, '0') + '_' + side + '.mp3';
   }
+  // Bounded-concurrency runner: Safari throttles huge parallel fetch bursts (the iOS
+  // 2-minute-build culprit), so clip fetches — and the /api/audio URL mints inside them —
+  // run at most DYN_POOL at a time instead of one unbounded Promise.all.
+  var DYN_POOL = 6;
+  function dynPool(items, worker) {
+    var i = 0, results = new Array(items.length);
+    function lane() {
+      if (i >= items.length) return Promise.resolve();
+      var idx = i++;
+      return worker(items[idx], idx).then(function (r) { results[idx] = r; return lane(); });
+    }
+    var lanes = [];
+    for (var l = 0; l < Math.min(DYN_POOL, items.length); l++) lanes.push(lane());
+    return Promise.all(lanes).then(function () { return results; });
+  }
   // Fetch + decode one clip to a mono 24 kHz AudioBuffer (decodeAudioData resamples to the
   // OfflineAudioContext's rate). Decoded buffers are cached for the life of the page.
   function dynFetchClip(file) {
@@ -1495,9 +1510,9 @@
     var files = [];
     inc.forEach(function (s) { files.push(dynClipFile(s.num, 'TH')); if (needEn) files.push(dynClipFile(s.num, 'EN')); });
     var done = 0;
-    return Promise.all(files.map(function (f) {
+    return dynPool(files, function (f) {
       return dynFetchClip(f).then(function (b) { done++; if (onProg) onProg(done, files.length); return b; });
-    })).then(function () {
+    }).then(function () {
       var parts = [];   // AudioBuffer, or a number = silence length in samples
       var map = [];
       var pos = 0;      // running length in samples
@@ -1654,14 +1669,36 @@
      mode — accepted as-is, its stored key is authoritative (this page's exclusions are
      irrelevant to it); (b) the pre-rendered static combined TE/ET file as a placeholder.
      A second next/prev from the adopted state falls back to real page navigation. */
+  // iPhone fix: the lock-screen/media-session next-track handler can't afford network
+  // round-trips, so both neighbours' placeholder URLs are pre-resolved at init (and on mode
+  // switch) into this cache, and the persisted-session meta is pre-checked synchronously.
+  var dynAdoptCache = {};   // t.page → { mode, src }
+  function dynPrefetchNeighbours() {
+    if (!cfg.dynNav) return;
+    ['prev', 'next'].forEach(function (side) {
+      var t = cfg.dynNav[side];
+      if (!t || !t.prefix) return;
+      var mode = currentMode;
+      var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
+      buildUrl(file, t.tier === 'member' || t.tier === 'premium')
+        .then(function (u) { dynAdoptCache[t.page] = { mode: mode, src: u }; })
+        .catch(function () {});   // signed-out on a gated neighbour etc. — adopt falls back to a live mint
+    });
+  }
+  function dynAdoptPlaceholder(t, mode) {
+    var c = dynAdoptCache[t.page];
+    if (c && c.mode === mode && c.src) return Promise.resolve({ src: c.src, std: true, sess: null });
+    var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
+    return buildUrl(file, t.tier === 'member' || t.tier === 'premium')
+      .then(function (u) { return { src: u, std: true, sess: null }; });
+  }
   function dynResolveAdopt(t) {
     var mode = currentMode;
-    var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;
-    return (meta ? dynRestoreSession(t.dynKey, mode, meta) : Promise.resolve(null)).then(function (sess) {
+    var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;   // synchronous pre-check
+    if (!meta) return dynAdoptPlaceholder(t, mode);             // no persisted session → cached placeholder path
+    return dynRestoreSession(t.dynKey, mode, meta).then(function (sess) {
       if (sess) return { src: (NATIVE && sess.fileUri) ? sess.fileUri : sess.url, std: false, sess: sess };
-      var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
-      return buildUrl(file, t.tier === 'member' || t.tier === 'premium')
-        .then(function (u) { return { src: u, std: true, sess: null }; });
+      return dynAdoptPlaceholder(t, mode);
     });
   }
   function dynApplyAdopt(t, r) {
@@ -1772,8 +1809,8 @@
       });
     });
   }
-  // Bottom action bar — content depends on mode (plsel adds ‹ Topic / Topic › nav buttons),
-  // so it's (re)built on every select-mode entry.
+  // Bottom action bar — (re)built on every select-mode entry (plsel changes the count text
+  // and the Cancel destination; topic movement happens via "Back to topic selection", not here).
   function dynSelBarBuild(plsel) {
     var bar = $('dyn-sel-bar');
     if (!bar) {
@@ -1781,20 +1818,13 @@
       bar.id = 'dyn-sel-bar';
       document.body.appendChild(bar);
     }
-    var navBtns = '';
-    if (plsel) {
-      if (cfg.dynNav && cfg.dynNav.prev) navBtns += '<button type="button" class="dyn-sel-nav" id="dyn-sel-prev">‹ Topic</button>';
-      if (cfg.dynNav && cfg.dynNav.next) navBtns += '<button type="button" class="dyn-sel-nav" id="dyn-sel-next">Topic ›</button>';
-    }
     bar.innerHTML = '<span id="dyn-sel-count"></span>' +
-      '<span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">' + navBtns +
+      '<span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">' +
         '<button type="button" class="dyn-sel-cancel">Cancel</button>' +
         '<button type="button" class="dyn-sel-done">Done</button>' +
       '</span>';
     bar.querySelector('.dyn-sel-cancel').addEventListener('click', plsel ? dynPlselCancel : dynExitSelect);
     bar.querySelector('.dyn-sel-done').addEventListener('click', dynSelDone);
-    var pb = bar.querySelector('#dyn-sel-prev'); if (pb) pb.addEventListener('click', function () { dynPlselNav(-1); });
-    var nb = bar.querySelector('#dyn-sel-next'); if (nb) nb.addEventListener('click', function () { dynPlselNav(1); });
     return bar;
   }
   function dynSelCountPaint() {
@@ -1862,7 +1892,18 @@
       if (t) t.classList.toggle('on', !!dynSel.now[s.num]);
     });
     dynSelBarBuild(!!pend).classList.add('show');
-    if (pend) document.body.classList.add('dyn-plsel');   // lockdown: nav hidden, topic links inert
+    if (pend) {
+      // Lockdown: everything above the sentence list hides (body class, CSS below); the only
+      // ways out are the bar's Done/Cancel and this back-to-topic-selection button.
+      document.body.classList.add('dyn-plsel');
+      if (list && !$('dyn-plsel-back')) {
+        var backB = document.createElement('button');
+        backB.id = 'dyn-plsel-back'; backB.type = 'button';
+        backB.textContent = '← Back to topic selection';
+        backB.addEventListener('click', dynPlselBack);
+        list.parentNode.insertBefore(backB, list);
+      }
+    }
     dynSelCountPaint();
     updateMiniVisibility();   // the mini transport yields to the selection bar
   }
@@ -1875,6 +1916,7 @@
     dynSelListener = null;
     dynSel = null;
     document.body.classList.remove('dyn-plsel');
+    var backB = $('dyn-plsel-back'); if (backB) backB.parentNode.removeChild(backB);
     var bar = $('dyn-sel-bar');
     if (bar) {
       bar.classList.remove('show');
@@ -1896,12 +1938,12 @@
     dynPendWrite(pend);
     dynSel.pend = pend;
   }
-  function dynPlselNav(dir) {
+  // "← Back to topic selection": stash this page's diffs, reopen playlists.html's
+  // topic-selection view for the same playlist.
+  function dynPlselBack() {
     if (!dynSel || !dynSel.plsel) return;
-    var t = dir > 0 ? (cfg.dynNav && cfg.dynNav.next) : (cfg.dynNav && cfg.dynNav.prev);
-    if (!t || !t.page) return;
     dynPlselStash();
-    location.href = t.page + '?plsel=' + encodeURIComponent(dynSel.id) +
+    location.href = 'playlists.html?plsel=' + encodeURIComponent(dynSel.id) +
       '&pln=' + encodeURIComponent(dynSel.name) + '&k=cu38961y';
   }
   function dynPlselCancel() {
@@ -2027,11 +2069,18 @@
     '#dyn-sel-bar button{font-family:var(--font-ui);font-size:13px;font-weight:600;border-radius:18px;padding:8px 20px;cursor:pointer}' +
     '#dyn-sel-bar .dyn-sel-done{color:#fff;background:var(--accent);border:none}' +
     '#dyn-sel-bar .dyn-sel-cancel{color:var(--text-secondary);background:var(--surface);border:.5px solid var(--border-strong)}' +
-    '#dyn-sel-bar .dyn-sel-nav{color:var(--text-secondary);background:var(--surface);border:.5px solid var(--border-strong);padding:8px 12px}' +
-    /* plsel lockdown: the bar's ‹ Topic / Topic › buttons are the ONLY navigation */
+    /* plsel lockdown: ONLY the sentence list + back button + bottom bar — everything above
+       the list (nav, eyebrow, title, intro, the whole player card) hides */
     'body.dyn-plsel #site-nav-root{display:none}' +
     'body.dyn-plsel .topic-nav{display:none}' +
-    'body.dyn-plsel #btn-prev-topic,body.dyn-plsel #btn-next-topic{opacity:.35;pointer-events:none}';
+    'body.dyn-plsel #player-root{display:none}' +
+    'body.dyn-plsel .topic-eyebrow{display:none}' +
+    'body.dyn-plsel .topic-title{display:none}' +
+    'body.dyn-plsel .topic-subtitle{display:none}' +
+    'body.dyn-plsel .topic-intro{display:none}' +
+    'body.dyn-plsel #btn-prev-topic,body.dyn-plsel #btn-next-topic{opacity:.35;pointer-events:none}' +
+    '#dyn-plsel-back{display:block;margin:10px 0 14px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:8px 14px;cursor:pointer}' +
+    '#dyn-plsel-back:hover{background:var(--accent-light)}';
   // Mount-time DOM injection: status line + pause slider + sentence-skip transport buttons
   // + the per-card playlist/exclude buttons. Only ever called when DYN.
   function initDyn() {
@@ -2051,7 +2100,7 @@
       sl.className = 'dyn-slider';
       sl.innerHTML = 'Pauses <input id="dyn-pf" type="range" min="0.5" max="2" step="0.25"> <span id="dyn-pf-val">1×</span>' +
         '<span class="dyn-ctl-sep">·</span>' +
-        'Repeats <span class="dyn-reps" id="dyn-reps"></span>' +
+        'Thai sentence repeats <span class="dyn-reps" id="dyn-reps"></span>' +
         '<span class="dyn-ctl-sep" id="dyn-en-sep">·</span>' +
         '<label class="dyn-en-lbl" id="dyn-en-wrap"><input type="checkbox" id="dyn-en"> English</label>';
       stEl.parentNode.insertBefore(sl, stEl.nextSibling);
@@ -2156,6 +2205,7 @@
         if (card0) card0.classList.add('dyn-off');
       }
     });
+    dynPrefetchNeighbours();        // iPhone: neighbours' placeholder URLs ready before any lock-screen skip
     if (dynPlsel) dynPlselBoot();   // opened from playlists.html "Add sentences" → auto-enter select mode
   }
 
@@ -2233,6 +2283,13 @@
     }
     if (autoplayOn) advanceTopic(1);
   });
+  // Dyn + web: after a lock/unlock the OS may have paused the <audio> without our icon ever
+  // hearing about it — re-sync the play glyph from the element's real state on return.
+  if (DYN && !NATIVE) {
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') setMainIcon(!mainAudio.paused);
+    });
+  }
 
   function formatTime(secs) {
     if (!secs || isNaN(secs)) return '0:00';
@@ -2343,7 +2400,7 @@
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
     $('btn-et').classList.toggle('active', mode === 'et');
-    if (DYN) dynSyncEnToggle();           // dyn: the English checkbox is TE-only — hide it in ET
+    if (DYN) { dynSyncEnToggle(); dynPrefetchNeighbours(); }   // dyn: English checkbox is TE-only; re-resolve neighbour placeholders for the new mode
     applyDirClass();                      // flip the accordion reveal order to match the new direction
     if (wasPlaying) ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(function (e) { handleDenied(e, mainTier); });
   }
