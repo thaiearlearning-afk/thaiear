@@ -177,6 +177,7 @@
     var filter = 'all';
     var session = null, building = false, buildFailed = null;
     var playing = false, curTime = 0;
+    var removing = null;   // { marked: {tk|num: item} } while batch-remove tick mode is active
     var inst = {};
 
     function included() { return SENTS.filter(function (s) { return !excluded[s.num]; }); }
@@ -357,6 +358,67 @@
       updateUI();
     }
 
+    /* ── batch-remove tick mode (features.batchRemove) ──
+       Entered via inst.enterRemoveMode() (playlists.html's "Remove sentences" button). Every
+       item card gets a tick circle; all start UNTICKED and ticking marks FOR REMOVAL. A fixed
+       bottom bar shows 'N to remove · Cancel / Done'; Done runs opts.onBatchRemoveItem(item)
+       sequentially with 'Removing… i of N' progress, then exits and calls opts.onBatchRemoveDone(). */
+    function rmKey(tk, num) { return tk + '|' + num; }
+    function rmBar() { return document.getElementById('dyn-rm-bar'); }
+    function rmCount() {
+      var c = document.getElementById('dyn-rm-count');
+      if (!c || !removing) return;
+      var n = 0; for (var k in removing.marked) n++;
+      c.textContent = n + ' to remove';
+    }
+    function exitRemoveMode() {
+      removing = null;
+      var bar = rmBar();
+      if (bar) bar.parentNode.removeChild(bar);
+      renderList();
+    }
+    function rmDone() {
+      if (!removing) return;
+      var items = [];
+      for (var k in removing.marked) items.push(removing.marked[k]);
+      if (!items.length) { exitRemoveMode(); return; }
+      var bar = rmBar();
+      var btns = bar ? bar.querySelectorAll('button') : [];
+      btns.forEach(function (b) { b.disabled = true; });
+      var cnt = document.getElementById('dyn-rm-count');
+      var chain = Promise.resolve();
+      items.forEach(function (it, i) {
+        chain = chain.then(function () {
+          if (cnt) cnt.textContent = 'Removing… ' + (i + 1) + ' of ' + items.length;
+          return opts.onBatchRemoveItem ? opts.onBatchRemoveItem(it) : Promise.resolve();
+        });
+      });
+      chain.then(function () {
+        exitRemoveMode();
+        if (opts.onBatchRemoveDone) opts.onBatchRemoveDone();   // host re-renders (fresh instance)
+      }).catch(function () {
+        btns.forEach(function (b) { b.disabled = false; });
+        rmCount();
+        alert('Couldn’t remove — check your connection.');
+      });
+    }
+    inst.enterRemoveMode = function () {
+      if (!FEAT.batchRemove || removing || !SENTS.length) return;
+      if (playing) inst.pause();
+      removing = { marked: {} };
+      var bar = rmBar();
+      if (!bar) { bar = document.createElement('div'); bar.id = 'dyn-rm-bar'; document.body.appendChild(bar); }
+      bar.innerHTML = '<span id="dyn-rm-count"></span>' +
+        '<span style="display:flex;gap:8px">' +
+          '<button type="button" class="dyn-rm-cancel">Cancel</button>' +
+          '<button type="button" class="dyn-rm-done">Done</button></span>';
+      bar.querySelector('.dyn-rm-cancel').addEventListener('click', exitRemoveMode);
+      bar.querySelector('.dyn-rm-done').addEventListener('click', rmDone);
+      bar.classList.add('show');
+      renderList();
+      rmCount();
+    };
+
     /* UI */
     function el(sel) { return root.querySelector(sel); }
     function render() {
@@ -462,6 +524,7 @@
                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg>') + '</button>';
         if (FEAT.removeItem) btns += '<button class="dyn-x" type="button" aria-label="Remove from playlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V5h6v2m-8 0 1 13h8l1-13"/></svg></button>';
         return '<div class="dyn-card' + (off ? ' off' : '') + '" data-num="' + s.num + '" data-tk="' + esc(s.topic_key) + '">' +
+          (removing ? '<span class="dyn-tick' + (removing.marked[rmKey(s.topic_key, s.num)] ? ' on' : '') + '" aria-hidden="true"></span>' : '') +
           '<div class="dyn-txt">' +
             '<div class="dyn-th">' + esc(String(s.thai).replace(/\s*\|\s*/g, ' ')) + '</div>' +
             (s.translit ? '<div class="dyn-tr">' + esc(s.translit) + '</div>' : '') +
@@ -469,9 +532,22 @@
             (off ? '<span class="dyn-off-tag">Excluded — tap + to restore</span>' : '') +
           '</div><div class="dyn-btns">' + btns + '</div></div>';
       }).join('') || '<div class="dyn-empty">Nothing here yet.</div>';
+      l.classList.toggle('removing', !!removing);
       l.querySelectorAll('.dyn-card').forEach(function (card) {
         var num = parseInt(card.getAttribute('data-num'), 10);
         var s = SENTS.filter(function (x) { return x.num === num && x.topic_key === card.getAttribute('data-tk'); })[0];
+        if (removing) {
+          // remove-tick mode: the whole card toggles its mark; play/exclude/bin are suspended
+          card.addEventListener('click', function () {
+            var key = rmKey(card.getAttribute('data-tk'), num);
+            if (removing.marked[key]) delete removing.marked[key];
+            else removing.marked[key] = { topic_key: card.getAttribute('data-tk'), num: num };
+            var t = card.querySelector('.dyn-tick');
+            if (t) t.classList.toggle('on', !!removing.marked[key]);
+            rmCount();
+          });
+          return;
+        }
         card.querySelector('.dyn-txt').addEventListener('click', function () { playFrom(num); });
         var xb = card.querySelector('.dyn-x');
         if (xb && FEAT.exclude) xb.addEventListener('click', function (ev) {

@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v33';   // v33: dyn round 6 - plsel topic-selection redesign, factory control parity, iOS fixes (2026-07-27)
+const VERSION = 'v34';   // v34: dyn round 7 - simplified playlists, DATA-dir persistence, classic-shape adoption (2026-07-27)
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we

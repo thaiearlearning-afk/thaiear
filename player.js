@@ -1398,7 +1398,7 @@
       // superseded build's file so the cache dir doesn't accumulate. Errors ignored.
       var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
       if (FS && oldMeta && oldMeta.file && oldMeta.file !== sess.file) {
-        try { FS.deleteFile({ path: oldMeta.file, directory: 'CACHE' }).catch(function () {}); } catch (_) {}
+        try { FS.deleteFile({ path: oldMeta.file, directory: 'DATA' }).catch(function () {}); } catch (_) {}
       }
       return;
     }
@@ -1415,9 +1415,12 @@
     if (NATIVE) {
       var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
       if (!FS) return Promise.resolve(null);
-      var path = meta.file || dynNativeFile(dk, mode);   // legacy metas (pre-unique-names) have no file field
-      return FS.stat({ path: path, directory: 'CACHE' })
-        .then(function () { return FS.getUri({ path: path, directory: 'CACHE' }); })
+      // Round-7: session WAVs live in DATA (Android clears CACHE — owner lost every session).
+      // Metas without a file field predate that and necessarily point at a purged CACHE file → miss.
+      if (!meta.file) return Promise.resolve(null);
+      var path = meta.file;
+      return FS.stat({ path: path, directory: 'DATA' })
+        .then(function () { return FS.getUri({ path: path, directory: 'DATA' }); })
         .then(function (r) {
           if (!r || !r.uri) return null;
           return { url: null, fileUri: r.uri, blob: null, map: meta.map, key: meta.key, duration: meta.duration };
@@ -1559,8 +1562,9 @@
         // Unique per-build filename — a rebuild must present a NEW file:// src or the native
         // shim resumes the previously prepared (stale) audio. See dynNextSeq.
         var wavPath = dynNativeFile(DYN_KEY_NS, mode, dynNextSeq());
-        return FS.writeFile({ path: wavPath, data: b64, directory: 'CACHE' })
-          .then(function () { return FS.getUri({ path: wavPath, directory: 'CACHE' }); })
+        // DATA, not CACHE: Android clears the cache dir, which wiped every persisted session (round-7).
+        return FS.writeFile({ path: wavPath, data: b64, directory: 'DATA' })
+          .then(function () { return FS.getUri({ path: wavPath, directory: 'DATA' }); })
           .then(function (r) { sess.fileUri = (r && r.uri) || null; sess.file = wavPath; return sess; });
       });
     });
@@ -1595,7 +1599,15 @@
     if (dynAdopted) {
       if (mainSrcReady) return Promise.resolve();
       var adoptedT = dynAdopted;
-      return dynResolveAdopt(adoptedT).then(function (r) { dynApplyAdopt(adoptedT, r); });
+      return dynResolveAdopt(adoptedT).then(function (r) {
+        if (dynAdopted !== adoptedT) return;
+        dynSession = r.sess;
+        dynStdRemote = r.std;
+        dynStripPaint(adoptedT, r.std);
+        mainAudio.src = r.src;
+        mainAudio.load();
+        mainSrcReady = true;
+      });
     }
     if (mainSrcReady && dynSession && dynSessionIsLocal && dynSession.key === dynKey()) return Promise.resolve();
     return dynEnsureSession(function (done, total) {
@@ -1672,17 +1684,25 @@
   // iPhone fix: the lock-screen/media-session next-track handler can't afford network
   // round-trips, so both neighbours' placeholder URLs are pre-resolved at init (and on mode
   // switch) into this cache, and the persisted-session meta is pre-checked synchronously.
-  var dynAdoptCache = {};   // t.page → { mode, src }
+  var dynAdoptCache = {};   // t.page → { mode, src (placeholder URL), sess (restored persisted session) }
   function dynPrefetchNeighbours() {
     if (!cfg.dynNav) return;
     ['prev', 'next'].forEach(function (side) {
       var t = cfg.dynNav[side];
       if (!t || !t.prefix) return;
       var mode = currentMode;
+      var old = dynAdoptCache[t.page];
+      if (old && old.sess && old.sess.url && old.sess !== dynSession) { try { URL.revokeObjectURL(old.sess.url); } catch (_) {} }
+      var entry = { mode: mode, src: null, sess: null };
+      dynAdoptCache[t.page] = entry;
       var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
       buildUrl(file, t.tier === 'member' || t.tier === 'premium')
-        .then(function (u) { dynAdoptCache[t.page] = { mode: mode, src: u }; })
+        .then(function (u) { entry.src = u; })
         .catch(function () {});   // signed-out on a gated neighbour etc. — adopt falls back to a live mint
+      // Round-7 (item 10): restore the neighbour's PERSISTED session eagerly too, so a
+      // lock-screen hop resolves synchronously (same shape as classic advanceTopic).
+      var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;
+      if (meta) dynRestoreSession(t.dynKey, mode, meta).then(function (sess) { if (sess) entry.sess = sess; }).catch(function () {});
     });
   }
   function dynAdoptPlaceholder(t, mode) {
@@ -1694,46 +1714,63 @@
   }
   function dynResolveAdopt(t) {
     var mode = currentMode;
+    var c = dynAdoptCache[t.page];
+    if (c && c.mode === mode) {   // fully pre-resolved (session or placeholder) → synchronous resolve
+      if (c.sess) return Promise.resolve({ src: (NATIVE && c.sess.fileUri) ? c.sess.fileUri : c.sess.url, std: false, sess: c.sess });
+      if (c.src) return Promise.resolve({ src: c.src, std: true, sess: null });
+    }
     var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;   // synchronous pre-check
-    if (!meta) return dynAdoptPlaceholder(t, mode);             // no persisted session → cached placeholder path
+    if (!meta) return dynAdoptPlaceholder(t, mode);
     return dynRestoreSession(t.dynKey, mode, meta).then(function (sess) {
       if (sess) return { src: (NATIVE && sess.fileUri) ? sess.fileUri : sess.url, std: false, sess: sess };
       return dynAdoptPlaceholder(t, mode);
     });
   }
-  function dynApplyAdopt(t, r) {
-    if (dynSession && dynSession.url && (!r.sess || r.sess.url !== dynSession.url)) {
-      try { URL.revokeObjectURL(dynSession.url); } catch (_) {}
-    }
-    dynSession = r.sess;            // null for the static placeholder → sentence-skip no-ops, shim sends 'std'
+  // Now-playing strip, set directly — topics.js can't resolve test pages. The name is a LINK
+  // to the playing topic's page (round-7 item 9); the strip's existing `a` styling (accent,
+  // no underline) covers it.
+  function dynStripPaint(t, std) {
+    var box = $('now-playing'), txt = $('now-playing-text');
+    if (box) box.classList.add('show');
+    if (txt) txt.innerHTML = '<a class="dyn-np-link" href="' + escapeHtml(t.page) + '">Now playing: <strong>' + escapeHtml(t.name) + '</strong></a>' + (std ? ' — standard audio' : '');
+  }
+  // SYNCHRONOUS half of adoption — mirrors classic advanceTopic's sync identity swap.
+  function dynApplyAdoptState(t) {
+    if (dynSession && dynSession.url && dynSessionIsLocal) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
+    dynSession = null;              // the resolve step lands the target's session (if it has one)
     dynSessionIsLocal = false;
-    dynStdRemote = r.std;
+    dynStdRemote = true;
     dynAdopted = t;
-    // Adopt the target's identity like classic advanceTopic (denial routing, TE/ET switches).
     mainPage = t.page;
     mainPrefix = t.prefix;
     mainTier = (t.tier === 'member' || t.tier === 'premium') ? t.tier : null;
     mainGated = !!mainTier;
     currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
+    mainSrcReady = false;
     if (dynLastLive != null) { var pc = document.getElementById('sc-' + dynLastLive); if (pc) pc.classList.remove('dyn-live'); dynLastLive = null; }
-    mainAudio.src = r.src;
-    mainAudio.load();
-    mainSrcReady = true;
-    // Now-playing strip, set directly — topics.js can't resolve test pages.
-    var box = $('now-playing'), txt = $('now-playing-text');
-    if (box) box.classList.add('show');
-    if (txt) txt.innerHTML = 'Now playing <strong>' + escapeHtml(t.name) + '</strong>' + (r.std ? ' — standard audio' : '');
+    dynStripPaint(t, true);
   }
   function dynAdvance(t) {
+    // Round-7 item 10: structurally IDENTICAL shape to classic advanceTopic (which works from
+    // the iPhone lock screen): synchronous state swap + transport reset, then ONE promise hop
+    // that sets src → load → play. dynResolveAdopt resolves synchronously when the neighbour
+    // was pre-resolved at initDyn (placeholder URL and/or restored persisted session).
     if (!mainAudio.paused) mainAudio.pause();
     setMainIcon(false);
+    dynApplyAdoptState(t);
+    var f = $('scrubber-fill'); if (f) f.style.width = '0%';
+    var c = $('time-cur'); if (c) c.textContent = '0:00';
+    var tt = $('time-total'); if (tt) tt.textContent = '0:00';
     dynResolveAdopt(t).then(function (r) {
-      dynApplyAdopt(t, r);
-      var f = $('scrubber-fill'); if (f) f.style.width = '0%';
-      var c = $('time-cur'); if (c) c.textContent = '0:00';
-      var tt = $('time-total'); if (tt) tt.textContent = '0:00';
+      if (dynAdopted !== t) return;                 // superseded by a newer hop
+      dynSession = r.sess;
+      dynStdRemote = r.std;
+      if (!r.std) dynStripPaint(t, false);
+      mainAudio.src = r.src;
+      mainAudio.load();
+      mainSrcReady = true;
       return mainAudio.play();
-    }).then(function () { setMainIcon(true); })
+    }).then(function () { if (dynAdopted === t) setMainIcon(true); })
       .catch(function (e) { handleDenied(e, (t.tier === 'member' || t.tier === 'premium') ? t.tier : null); });
   }
   /* -- batch add-to-playlist (select mode) --
@@ -1743,6 +1780,7 @@
      this topic and saves adds/removes sequentially. */
   var dynSel = null;          // { id, name, pre:{num:true}, real:{num:true}, now:{num:true}, plsel, pend } while selecting
   var dynSelListener = null;  // the capture-phase click filter on #sentence-list
+  var dynSelPrevStates = null; // reveal stages saved on select-mode entry (cards force st-3 while selecting)
   // PLSEL mode: the page was opened from playlists.html's "Add sentences" flow (?plsel=id&pln=name).
   // Select mode auto-starts for that playlist and diffs travel across topic pages via sessionStorage.
   var dynPlsel = null;
@@ -1887,7 +1925,12 @@
       };
       list.addEventListener('click', dynSelListener, true);
     }
+    // Round-7: cards open FULLY REVEALED (st-3) while selecting; previous stages restored on exit.
+    dynSelPrevStates = {};
     sentences.forEach(function (s) {
+      dynSelPrevStates[s.num] = states[s.num] || 0;
+      states[s.num] = 3;
+      syncCard(s.num);
       var t = document.querySelector('#sc-' + s.num + ' .dyn-tick');
       if (t) t.classList.toggle('on', !!dynSel.now[s.num]);
     });
@@ -1915,6 +1958,13 @@
     }
     dynSelListener = null;
     dynSel = null;
+    // restore the reveal stages the cards had before select mode forced them open
+    if (dynSelPrevStates) {
+      sentences.forEach(function (s) {
+        if (Object.prototype.hasOwnProperty.call(dynSelPrevStates, s.num)) { states[s.num] = dynSelPrevStates[s.num]; syncCard(s.num); }
+      });
+      dynSelPrevStates = null;
+    }
     document.body.classList.remove('dyn-plsel');
     var backB = $('dyn-plsel-back'); if (backB) backB.parentNode.removeChild(backB);
     var bar = $('dyn-sel-bar');
@@ -2016,7 +2066,7 @@
     chain.then(function () {
       if (plsel) { dynPendClear(); location.href = 'playlists.html'; return; }
       dynExitSelect();
-      dynStatus('“' + name + '” updated — ' + addsN + ' added, ' + remsN + ' removed', false);
+      dynStatus('“' + name + '” updated — ' + addsN + ' selected, ' + remsN + ' removed', false);
       var seq = dynStatusSeq;
       setTimeout(function () { if (seq === dynStatusSeq) dynStatus(null); }, 2500);
     }).catch(function (e) {
@@ -2081,6 +2131,10 @@
     'body.dyn-plsel #btn-prev-topic,body.dyn-plsel #btn-next-topic{opacity:.35;pointer-events:none}' +
     '#dyn-plsel-back{display:block;margin:10px 0 14px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:8px 14px;cursor:pointer}' +
     '#dyn-plsel-back:hover{background:var(--accent-light)}';
+  // The circular-① sentence-skip glyphs (shared by the audio-row buttons and the dyn mini player).
+  var DYN_DIGIT1 = '<path d="M12.36 15.94v-4.27h-.09l-1.77.63v.69l1.01-.31v3.26h.85z"/>';
+  var DYN_SVG_PREV = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>' + DYN_DIGIT1 + '</svg>';
+  var DYN_SVG_NEXT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 13c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6v4l5-5-5-5v4c-4.4 0-8 3.6-8 8z"/>' + DYN_DIGIT1 + '</svg>';
   // Mount-time DOM injection: status line + pause slider + sentence-skip transport buttons
   // + the per-card playlist/exclude buttons. Only ever called when DYN.
   function initDyn() {
@@ -2141,20 +2195,30 @@
       });
       dynSyncEnToggle();
       var skips = row.querySelectorAll('.skip-btn');   // [back-10, fwd-10] (dyn buttons not yet inserted)
-      var DIGIT1 = '<path d="M12.36 15.94v-4.27h-.09l-1.77.63v.69l1.01-.31v3.26h.85z"/>';
       var prevB = document.createElement('button');
       prevB.id = 'dyn-sent-prev'; prevB.className = 'skip-btn dyn-sent-btn';
       prevB.setAttribute('aria-label', 'Previous sentence'); prevB.title = 'Previous sentence';
-      prevB.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>' + DIGIT1 + '</svg>';
+      prevB.innerHTML = DYN_SVG_PREV;
       prevB.addEventListener('click', function () { dynSentSkip(-1); });
       var nextB = document.createElement('button');
       nextB.id = 'dyn-sent-next'; nextB.className = 'skip-btn dyn-sent-btn';
       nextB.setAttribute('aria-label', 'Next sentence'); nextB.title = 'Next sentence';
-      nextB.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 13c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6v4l5-5-5-5v4c-4.4 0-8 3.6-8 8z"/>' + DIGIT1 + '</svg>';
+      nextB.innerHTML = DYN_SVG_NEXT;
       nextB.addEventListener('click', function () { dynSentSkip(1); });
       if (skips[0]) row.insertBefore(prevB, skips[0]);
       if (skips[1]) row.insertBefore(nextB, skips[1].nextSibling);
     }
+    // Mini player (scroll follower): in dyn mode its ±10 buttons become sentence prev/next
+    // with the same circular-① glyphs (round-7 item 11). cloneNode(false) drops the old
+    // skip(±10) listener while keeping id/class, then the ① markup + handler go on fresh.
+    [['te-mini-back', -1, DYN_SVG_PREV, 'Previous sentence'], ['te-mini-fwd', 1, DYN_SVG_NEXT, 'Next sentence']].forEach(function (m) {
+      var b = $(m[0]); if (!b) return;
+      var nb = b.cloneNode(false);
+      nb.innerHTML = m[2];
+      nb.setAttribute('aria-label', m[3]); nb.title = m[3];
+      nb.addEventListener('click', function () { dynSentSkip(m[1]); });
+      b.parentNode.replaceChild(nb, b);
+    });
     // "Add sentences to a playlist" entry point. Dyn pages hide the shared How-to-use
     // orientation box AT RUNTIME (markup/CSS stay untouched for the live pages) and put the
     // playlist button + link in its place.

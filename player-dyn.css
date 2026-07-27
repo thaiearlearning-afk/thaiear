@@ -62,6 +62,21 @@
 .dyn-x svg, .dyn-note svg { width: 14px; height: 14px; }
 .dyn-empty { text-align: center; color: var(--text-tertiary); font-size: 13px; padding: 1.5rem 0; }
 
+/* batch-remove tick mode (factory) */
+.dyn-card .dyn-tick { display: inline-block; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border-strong); flex-shrink: 0; position: relative; cursor: pointer; }
+.dyn-card .dyn-tick::before { content: ''; position: absolute; inset: -7px; }   /* generous tap target */
+.dyn-card .dyn-tick.on { background: var(--accent); border-color: var(--accent); }
+.dyn-card .dyn-tick.on::after { content: ''; position: absolute; left: 6px; top: 2.5px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.dyn-list.removing .dyn-btns { display: none; }
+.dyn-list.removing .dyn-card { cursor: pointer; }
+.dyn-list.removing .dyn-txt { cursor: pointer; }
+#dyn-rm-bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 0.5px solid var(--border); padding: 10px 16px; display: none; align-items: center; justify-content: space-between; gap: 12px; z-index: 250; }
+#dyn-rm-bar.show { display: flex; }
+#dyn-rm-bar button { font-family: var(--font-ui); font-size: 13px; font-weight: 600; border-radius: 18px; padding: 8px 20px; cursor: pointer; }
+#dyn-rm-bar .dyn-rm-done { color: #fff; background: #B03030; border: none; }
+#dyn-rm-bar .dyn-rm-cancel { color: var(--text-secondary); background: var(--surface); border: 0.5px solid var(--border-strong); }
+#dyn-rm-count { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+
 /* prev/next topic (or playlist) footer nav — mirrors the topic pages' read-nav look */
 .dyn-topicnav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem; padding-top: 1.25rem; border-top: 0.5px solid var(--border); }
 .dyn-tn { display: inline-flex; flex-direction: column; gap: 2px; max-width: 46%; font-size: 13px; color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; }
@@ -99,17 +114,9 @@
 .pl-box.open .pl-box-chev { transform: rotate(180deg); }
 .pl-box-body { display: none; padding: 0 1.15rem 1.15rem; }
 .pl-box.open .pl-box-body { display: block; }
-.pl-addsent { font-family: var(--font-ui); font-size: 12px; color: var(--accent); background: none; border: 0.5px solid var(--accent); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; margin-right: 8px; }
-.pl-addsent:hover { background: var(--accent-light); }
-/* plsel topic-selection view (playlists.html) */
-.pl-topic-card { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; text-align: left; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; margin-bottom: 0.7rem; cursor: pointer; font-family: var(--font-ui); }
-.pl-topic-card:hover { border-color: var(--accent); background: var(--accent-light); }
-.pl-topic-name { font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
-.pl-topic-meta { font-size: 12px; color: var(--text-tertiary); flex-shrink: 0; }
-.pl-sel-actions { display: flex; gap: 10px; margin-top: 0.6rem; }
-.pl-sel-btn { font-family: var(--font-ui); font-size: 13px; font-weight: 600; border-radius: 18px; padding: 8px 20px; cursor: pointer; }
-.pl-sel-btn.primary { color: #fff; background: var(--accent); border: none; }
-.pl-sel-btn.plain { color: var(--text-secondary); background: var(--surface); border: 0.5px solid var(--border-strong); }
+/* "Remove sentences" (batch-remove entry) — quiet pill like .pl-del, accent-leaning */
+.pl-remsent { font-family: var(--font-ui); font-size: 12px; color: var(--accent); background: none; border: 0.5px solid var(--accent); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; margin-right: 8px; }
+.pl-remsent:hover { background: var(--accent-light); }
 .pl-del { font-family: var(--font-ui); font-size: 12px; color: var(--text-tertiary); background: none; border: 0.5px solid var(--border-strong); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; }
 .pl-del:hover { color: #B03030; border-color: #B03030; }
 .pl-note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }

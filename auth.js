@@ -612,6 +612,9 @@
         .catch(function () { plCache = plLocal() || []; return plCache; });
     },
     get: function () { return plCache; },
+    // Read-only view of the localStorage copy — safe to call BEFORE the client/auth resolve
+    // and never touches plCache (playlists.html uses it for an instant cache-first paint).
+    peek: function () { return plLocal(); },
     create: function (name) {
       if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
       return client.from('playlists')

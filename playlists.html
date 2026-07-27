@@ -41,6 +41,19 @@
   .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
   .lede { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 1.4rem; }
+  /* ── modal (pattern copied from account.html's delete-account modal) ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(20,16,48,0.45); display: flex; align-items: center; justify-content: center; padding: 1.25rem; z-index: 1000; }
+  .modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 400px; width: 100%; padding: 1.5rem 1.5rem 1.35rem; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
+  .modal-card h2 { font-size: 18px; font-weight: 600; margin-bottom: 0.5rem; }
+  .modal-card p { font-size: 14px; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.55; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn { font-family: var(--font-ui); font-size: 14px; font-weight: 500; border-radius: var(--radius-sm); padding: 9px 18px; cursor: pointer; border: 0.5px solid var(--border-strong); transition: background 0.15s, border-color 0.15s, color 0.15s; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent-mid); }
+  .btn-ghost { background: var(--surface); color: var(--text-secondary); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: #B00020; color: #fff; border-color: #B00020; }
+  .btn-danger:hover { background: #8a0019; }
 </style>
 <link rel="stylesheet" href="player-dyn.css">
 </head>
@@ -51,7 +64,7 @@
 <div class="wrap">
   <div class="eyebrow">Owner test build</div>
   <h1>My Playlists</h1>
-  <p class="lede">Build custom sessions from any sentences you've added with the ♪ button. Expand a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
+  <p class="lede">Build custom sessions from sentences you've added on any topic page. Expand a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
   <div id="pl-root"><p class="pl-note">Loading…</p></div>
 </div>
@@ -68,105 +81,58 @@
   function user() { return window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser(); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 
-  // ── plsel: "Add sentences" topic-selection view ──
-  // Test space = the two test topics (hardcoded; mirrors topics.js order).
-  var TOPICS = [
-    { page: 'topic-test.html', dynKey: 'topic-03', name: 'Communication survival', prefix: 'CommSurvival_BEG', tier: 'free', total: 25 },
-    { page: 'topic-test2.html', dynKey: 'topic-11a', name: 'Shopping & money 1', prefix: 'ShoppingAndMoney_BEG', tier: 'member', total: 22 }
-  ];
-  var plselView = null;   // { id, name } while the topic-selection view is open
-  (function () {          // topic pages reopen this view via playlists.html?plsel=…&pln=…
-    var m = /[?&]plsel=([^&]+)/.exec(location.search);
-    if (!m) return;
-    var n = /[?&]pln=([^&]*)/.exec(location.search);
-    try { plselView = { id: decodeURIComponent(m[1]), name: n ? decodeURIComponent(n[1]) : '' }; } catch (_) {}
-  })();
-  function pendRead() {
-    try { var p = JSON.parse(sessionStorage.getItem('te_plsel') || 'null'); if (p && p.id && p.adds && p.removes) return p; } catch (_) {}
-    return null;
-  }
-  function pendClear() { try { sessionStorage.removeItem('te_plsel'); } catch (_) {} }
-  function exitPlselView() {
-    plselView = null;
-    try { history.replaceState(null, '', 'playlists.html'); } catch (_) {}
-    if (PL()) PL().load(true).then(render); else render();
-  }
-  function renderTopicSelect() {
-    var lists = PL() ? (PL().get() || []) : [];
-    var p = lists.filter(function (x) { return String(x.id) === String(plselView.id); })[0];
-    if (!p) { pendClear(); exitPlselView(); return; }
-    var name = p.name || plselView.name || 'Playlist';
-    var pend = pendRead();
-    if (pend && String(pend.id) !== String(plselView.id)) pend = null;
-    var pendingOps = 0;
-    if (pend) {
-      for (var a in pend.adds) pendingOps += pend.adds[a].length;
-      for (var r in pend.removes) pendingOps += pend.removes[r].length;
-    }
-    root.innerHTML =
-      '<p class="pl-note" style="margin-bottom:0.9rem">Adding sentences to <strong>' + esc(name) + '</strong> — choose a topic:</p>' +
-      TOPICS.map(function (t, i) {
-        // "X of Y sentences added" = the playlist's items for this topic, adjusted by pending diffs
-        var have = {};
-        (p.items || []).forEach(function (it) { if (it.topic_key === t.dynKey) have[it.num] = true; });
-        if (pend) {
-          (pend.adds[t.dynKey] || []).forEach(function (it) { have[it.num] = true; });
-          (pend.removes[t.dynKey] || []).forEach(function (num) { delete have[num]; });
-        }
-        var x = 0; for (var k in have) x++;
-        return '<button class="pl-topic-card" type="button" data-i="' + i + '">' +
-          '<span class="pl-topic-name">' + esc(t.name) + '</span>' +
-          '<span class="pl-topic-meta">' + x + ' of ' + t.total + ' sentences added</span></button>';
-      }).join('') +
-      '<div class="pl-sel-actions">' +
-        '<button class="pl-sel-btn primary" id="pl-sel-done" type="button">Done</button>' +
-        '<button class="pl-sel-btn plain" id="pl-sel-cancel" type="button">Cancel</button>' +
+  // On-brand confirmation modal (pattern copied from account.html's delete-account modal).
+  // opts: { title, body(html), confirmText, cancelText, danger, onConfirm }
+  function showModal(opts) {
+    var ov = document.createElement('div');
+    ov.className = 'modal-overlay';
+    ov.innerHTML =
+      '<div class="modal-card" role="dialog" aria-modal="true">' +
+        '<h2>' + esc(opts.title) + '</h2>' +
+        '<p>' + (opts.body || '') + '</p>' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-ghost" id="modal-cancel">' + esc(opts.cancelText || 'Cancel') + '</button>' +
+          '<button class="btn ' + (opts.danger ? 'btn-danger' : 'btn-primary') + '" id="modal-ok">' + esc(opts.confirmText || 'Confirm') + '</button>' +
+        '</div>' +
       '</div>';
-    root.querySelectorAll('.pl-topic-card').forEach(function (card) {
-      card.addEventListener('click', function () {
-        var t = TOPICS[+card.getAttribute('data-i')];
-        location.href = t.page + '?plsel=' + encodeURIComponent(plselView.id) + '&pln=' + encodeURIComponent(name) + '&k=cu38961y';
-      });
-    });
-    // Done here applies any diffs stashed by topic pages (they only exist when the owner came
-    // BACK from a topic without pressing that page's Done) — otherwise it just leaves the view.
-    document.getElementById('pl-sel-done').addEventListener('click', function () {
-      var pend2 = pendRead();
-      if (!pend2 || String(pend2.id) !== String(plselView.id)) { pendClear(); exitPlselView(); return; }
-      var ops = [], tkk;
-      for (tkk in pend2.adds) pend2.adds[tkk].forEach(function (pl) { ops.push({ add: pl }); });
-      for (tkk in pend2.removes) {
-        (function (tk2) { pend2.removes[tk2].forEach(function (num) { ops.push({ rmTk: tk2, rmNum: num }); }); })(tkk);
-      }
-      if (!ops.length) { pendClear(); exitPlselView(); return; }
-      var btn = this;
-      btn.disabled = true;
-      var chain = Promise.resolve();
-      ops.forEach(function (op, i) {
-        chain = chain.then(function () {
-          btn.textContent = 'Saving… ' + (i + 1) + ' of ' + ops.length;
-          return op.add ? PL().addItem(pend2.id, op.add) : PL().removeItem(pend2.id, op.rmTk, op.rmNum);
-        });
-      });
-      chain.then(function () { pendClear(); exitPlselView(); })
-        .catch(function () { btn.disabled = false; btn.textContent = 'Done'; alert('Couldn’t save — check your connection.'); });
-    });
-    document.getElementById('pl-sel-cancel').addEventListener('click', function () {
-      if (pendingOps && !window.confirm('Discard the ' + pendingOps + ' unsaved change' + (pendingOps === 1 ? '' : 's') + '?')) return;
-      pendClear();
-      exitPlselView();
-    });
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('#modal-cancel').addEventListener('click', close);
+    ov.querySelector('#modal-ok').addEventListener('click', function () { close(); opts.onConfirm(); });
+  }
+
+  // Cache-first data source: the loaded server copy, else the localStorage copy — the latter
+  // is readable even before auth/the Supabase client resolve (peek never touches plCache),
+  // with a direct localStorage fallback for the window before auth.js itself has run.
+  function currentLists() {
+    var pl = PL();
+    var lists = pl && pl.get ? pl.get() : null;
+    if (!lists && pl && pl.peek) lists = pl.peek();
+    if (!lists) { try { lists = JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) { lists = null; } }
+    return lists || null;
+  }
+  var paintedJson = null;   // JSON of the playlist data currently painted as boxes (null = message/loading shown)
+  function authReady() { return !!(window.ThaiEarAuth && window.ThaiEarAuth.isReady); }
+  function showLoading() {
+    paintedJson = null;
+    root.innerHTML = '<p class="pl-note">Loading playlists<span class="dyn-dots"></span></p>';
   }
 
   function render() {
-    var lists = PL() ? (PL().get() || []) : [];
-    if (!user()) {
+    // a re-render invalidates any live batch-remove bar (its instance is being replaced)
+    var rb = document.getElementById('dyn-rm-bar');
+    if (rb) rb.parentNode.removeChild(rb);
+    if (authReady() && !user()) {
+      paintedJson = null;
       root.innerHTML = '<p class="pl-note">Sign in (via the Menu) to create and play playlists. Playlists are free for every account.</p>';
       return;
     }
-    if (plselView) { renderTopicSelect(); return; }
+    var lists = currentLists();
+    if (!lists) { showLoading(); return; }   // no cache on this device yet → indicator until load resolves
+    paintedJson = JSON.stringify(lists);
     if (!lists.length) {
-      root.innerHTML = '<p class="pl-note">No playlists yet. Tap <strong>＋ Add playlist</strong>, then use the ♪ button on any sentence to add it here.</p>';
+      root.innerHTML = '<p class="pl-note">No playlists yet. Tap <strong>＋ Add playlist</strong>, then add sentences from any topic page (the “＋ Add sentences…” button under its player).</p>';
       return;
     }
     root.innerHTML = lists.map(function (p) {
@@ -177,7 +143,7 @@
           '<span class="pl-box-chev" aria-hidden="true">⌄</span>' +
         '</button>' +
         '<div class="pl-box-body"><div class="pl-player dyn-wrap"></div>' +
-          '<button class="pl-addsent" type="button">＋ Add sentences</button>' +
+          (p.items.length ? '<button class="pl-remsent" type="button">Remove sentences</button>' : '') +
           '<button class="pl-del" type="button">Delete playlist</button>' +
         '</div></div>';
     }).join('');
@@ -188,18 +154,22 @@
         openId = (openId === id) ? null : id;
         render();
       });
-      box.querySelector('.pl-addsent').addEventListener('click', function () {
-        // Open the topic-selection view for this playlist. Pending diffs from a DIFFERENT
-        // playlist's abandoned run are cleared; same-playlist pendings are kept (resume).
-        var pend = pendRead();
-        if (!pend || String(pend.id) !== String(id)) pendClear();
-        plselView = { id: id, name: p.name };
-        render();
+      var rs = box.querySelector('.pl-remsent');
+      if (rs) rs.addEventListener('click', function () {
+        if (openId !== id) { openId = id; render(); }   // player must be mounted for tick mode
+        var inst = instances[id];
+        if (inst && inst.enterRemoveMode) inst.enterRemoveMode();
       });
       box.querySelector('.pl-del').addEventListener('click', function () {
-        if (!window.confirm('Delete "' + p.name + '"? This can’t be undone — the sentences themselves are not affected.')) return;
-        PL().remove(id).then(function () { if (openId === id) openId = null; render(); })
-          .catch(function () { alert('Couldn’t delete — check your connection.'); });
+        showModal({
+          title: 'Delete “' + p.name + '”?',
+          body: 'This can’t be undone — the sentences themselves are not affected.',
+          confirmText: 'Delete playlist', danger: true,
+          onConfirm: function () {
+            PL().remove(id).then(function () { if (openId === id) openId = null; render(); })
+              .catch(function () { alert('Couldn’t delete — check your connection.'); });
+          }
+        });
       });
       if (p.id === openId) mountPlayer(box, p, lists);
     });
@@ -208,15 +178,16 @@
   function mountPlayer(box, p, lists) {
     var mountEl = box.querySelector('.pl-player');
     if (!p.items.length) {
-      mountEl.innerHTML = '<p class="pl-note">This playlist is empty — use the ♪ button on any sentence (in the test topics) to add it.</p>';
+      mountEl.innerHTML = '<p class="pl-note">This playlist is empty.</p>';
       return;
     }
-    var idx = lists.indexOf(p);
-    // Circular wrap (owner round-6): prev of the first = the last, next of the last = the
-    // first — no dead lock-screen buttons. A single playlist keeps the buttons hidden.
-    var wrap = lists.length > 1;
-    var prev = idx > 0 ? lists[idx - 1] : (wrap ? lists[lists.length - 1] : null);
-    var next = idx < lists.length - 1 ? lists[idx + 1] : (wrap ? lists[0] : null);
+    // Circular wrap over NON-EMPTY playlists only (round-7: skip empties, like the classic
+    // player skips non-entitled topics). A single non-empty playlist keeps the buttons hidden.
+    var navList = lists.filter(function (x) { return x.items && x.items.length; });
+    var nIdx = navList.indexOf(p);
+    var wrap = navList.length > 1;
+    var prev = wrap ? navList[(nIdx - 1 + navList.length) % navList.length] : null;
+    var next = wrap ? navList[(nIdx + 1) % navList.length] : null;
     instances[p.id] = ThaiEarDyn.create(mountEl, {
       name: p.name,
       topicKey: 'playlist',
@@ -225,12 +196,20 @@
       sentences: p.items.map(function (i) {
         return { num: i.num, thai: i.thai, translit: i.translit, english: i.english, prefix: i.prefix, tier: i.tier, topic_key: i.topic_key };
       }),
-      features: { removeItem: true },
+      features: { removeItem: true, batchRemove: true },
       onRemoveItem: function (s) {
-        if (!window.confirm('Remove this sentence from "' + p.name + '"?')) return;
-        PL().removeItem(p.id, s.topic_key, s.num).then(function () { render(); })
-          .catch(function () { alert('Couldn’t remove — check your connection.'); });
+        showModal({
+          title: 'Remove this sentence?',
+          body: 'It will be removed from “' + esc(p.name) + '”.',
+          confirmText: 'Remove', danger: true,
+          onConfirm: function () {
+            PL().removeItem(p.id, s.topic_key, s.num).then(function () { render(); })
+              .catch(function () { alert('Couldn’t remove — check your connection.'); });
+          }
+        });
       },
+      onBatchRemoveItem: function (item) { return PL().removeItem(p.id, item.topic_key, item.num); },
+      onBatchRemoveDone: function () { render(); },
       nav: {
         // If audio was playing (incl. lock-screen ⏮/⏭ in the app), keep it playing on the
         // adjacent playlist — expand-only reads as a dead button from the lock screen.
@@ -260,11 +239,19 @@
   });
 
   function boot() {
-    if (window.ThaiEarAuth && window.ThaiEarAuth.isReady) {
-      if (PL()) PL().load().then(render); else render();
-    } else {
-      setTimeout(boot, 250);
-    }
+    // CACHE-FIRST: paint the localStorage copy immediately (no waiting on auth/server);
+    // the loading indicator only appears when this device has no cache at all.
+    render();
+    (function wait() {
+      if (!authReady()) { setTimeout(wait, 250); return; }
+      if (!PL() || !user()) { render(); return; }
+      PL().load(true).then(function (lists) {
+        // repaint only when the server copy differs from what's on screen
+        if (JSON.stringify(lists || []) !== paintedJson) render();
+      }).catch(function () {
+        if (paintedJson === null) root.innerHTML = '<p class="pl-note">Couldn’t load playlists — check your connection.</p>';
+      });
+    })();
   }
   window.addEventListener('thaiear:auth', function () { if (PL()) PL().load(true).then(render); });
   boot();
