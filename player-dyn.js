@@ -1,33 +1,37 @@
-/* player-dyn.js — DYNAMIC PLAYER (TEST BUILD, 2026-07-27; see DYNAMIC_PLAYER_PLAN.md)
-   Sequences per-sentence clips client-side instead of playing the prefab _TE/_ET files:
+/* player-dyn.js — DYNAMIC PLAYER (TEST BUILD v2 "stitched session", 2026-07-27;
+   see DYNAMIC_PLAYER_PLAN.md)
+
+   v2 redesign (owner-approved): instead of chaining many small clips (which stalled on bad
+   networks and made the iOS lock screen race through tiny scrubbers), the engine now
+   CONSTRUCTS THE SESSION FILE ON-DEVICE:
+     press play → fetch every needed clip (~2 MB for a whole topic, LESS than the prefab
+     TE/ET file) → decode → stitch with exactly-computed silence gaps → one WAV blob →
+     the phone plays ONE ordinary continuous track.
+   Results: playback is 100% local once built (driving-through-dead-zones robust), the
+   lock screen shows a normal progress bar + real scrubbing, and sentence nav is a SEEK
+   into a known timeline (sample-accurate now-playing highlight).
      TE pair: Thai → repeat pause → Thai → repeat pause → English → 3s gap
      ET pair: English → recall pause → Thai → repeat pause → Thai → 3s gap
-   Pauses are the generator's formulas (ported verbatim) scaled by the user's pause slider,
-   rounded to the nearest pre-cut silence MP3 (sil_{ms}.mp3, 1.0–10.0s in 0.5s steps) so the
-   whole session is EVENT-DRIVEN AUDIO (ended → next src) — no timers, which is what lets
-   playback survive a locked screen.
-   Dual output: web <audio> chain (browser / installed PWA, with blob prefetch-ahead for
-   offline resilience) or the existing NativeAudio Media3 engine in the Capacitor app
-   (lock-screen + background inherited; its NEXT/PREV lock-screen buttons drive sentence nav).
-   Used ONLY by topic-test.html. Not precached; not part of the normal player. */
+   Gaps use the generator's formulas × the pause slider — exact, no rounding (the pre-cut
+   sil_*.mp3 files of v1 are no longer needed).
+   Output: web <audio> element playing the blob URL; in the Capacitor app the WAV is
+   written to the cache dir and handed to the native Media3 engine as file:// (same
+   lock-screen/background behaviour as any topic — progress bar and scrubbing kept).
+   Used ONLY by topic-test.html. */
 (function () {
   var T = window.ThaiEarTest;
   if (!T) return;
   var SENTS = T.sentences, BASE = T.audioBase, PREFIX = T.prefix;
+  var SR = 24000;   // clip native rate (Chirp3 + Standard-D); decode + stitch at this rate
 
-  /* ── pause model (generate_topic_audio.py, ported verbatim) ── */
+  /* ── pause model (generate_topic_audio.py, ported verbatim; × slider, exact) ── */
   function syllables(thai) {
     var c = thai.replace(/\|/g, '').replace(/\s/g, '').replace(/[ๆ็์]/g, '');
     return Math.max(1, Math.floor(c.length / 3));
   }
-  function repeatPause(s) { return Math.max(3.0, syllables(s.thai) * 0.5); }
-  function recallPause(s) { return Math.max(4.5, syllables(s.thai) * 0.7); }
-  var GAP_BETWEEN_PAIRS = 3.0;
-  function silUrl(sec) {
-    var ms = Math.round((sec * factor) / 0.5) * 500;
-    ms = Math.min(10000, Math.max(1000, ms));
-    return BASE + 'sil_' + ms + '.mp3';
-  }
+  function repeatPause(s) { return Math.max(3.0, syllables(s.thai) * 0.5) * factor; }
+  function recallPause(s) { return Math.max(4.5, syllables(s.thai) * 0.7) * factor; }
+  function gapPause() { return 3.0 * factor; }
   function thUrl(s) { return BASE + PREFIX + '_S' + s.num + '_TH.mp3'; }
   function enUrl(s) { return BASE + PREFIX + '_S' + s.num + '_EN.mp3'; }
   function dispThai(s) { return s.thai.replace(/\s*\|\s*/g, ' '); }
@@ -35,151 +39,216 @@
   /* ── persisted state ── */
   function lsGet(k, d) { try { return localStorage.getItem(k) || d; } catch (_) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
-  var mode = lsGet('te_dyn_mode', 'TE');                       // 'TE' | 'ET'
-  var factor = parseFloat(lsGet('te_dyn_pf', '1')) || 1;       // pause slider 0.5–2
+  var mode = lsGet('te_dyn_mode', 'TE');
+  var factor = parseFloat(lsGet('te_dyn_pf', '1')) || 1;
   var excluded = {};
   try { (JSON.parse(lsGet('te_dyn_excl', '[]')) || []).forEach(function (n) { excluded[n] = 1; }); } catch (_) {}
   function saveExcl() { lsSet('te_dyn_excl', JSON.stringify(Object.keys(excluded).map(Number))); }
-  var filter = 'all';                                          // pill: all | in | out
-
-  /* ── playlist ── */
-  var steps = [], playing = false, idx = 0;
+  var filter = 'all';
   function included() { return SENTS.filter(function (s) { return !excluded[s.num]; }); }
-  function buildSteps() {
-    steps = [];
-    included().forEach(function (s, k) {
-      var th = thUrl(s), en = enUrl(s), rp = silUrl(repeatPause(s)), gp = silUrl(GAP_BETWEEN_PAIRS);
-      var seq = mode === 'TE'
-        ? [th, rp, th, rp, en, gp]
-        : [enUrl(s), silUrl(recallPause(s)), th, rp, th, gp];
-      seq.forEach(function (u) { steps.push({ url: u, s: s, block: k }); });
+
+  /* ── session builder: fetch → decode → stitch → WAV ─────── */
+  var session = null;      // { url, map:[{num,start,end}], key, fileUri? }
+  var building = false;
+  var pcmCache = {};       // url → AudioBuffer (decoded clips survive rebuilds/mode flips)
+  function sessionKey() {
+    return mode + '|' + factor + '|' + included().map(function (s) { return s.num; }).join(',');
+  }
+  function fetchDecode(url, octx) {
+    if (pcmCache[url]) return Promise.resolve(pcmCache[url]);
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.arrayBuffer();
+    }).then(function (ab) {
+      return new Promise(function (res, rej) { octx.decodeAudioData(ab, res, rej); });
+    }).then(function (buf) { pcmCache[url] = buf; return buf; });
+  }
+  function buildSession(onProg) {
+    var inc = included();
+    var urls = [];
+    inc.forEach(function (s) { urls.push(thUrl(s), enUrl(s)); });
+    urls = urls.filter(function (u, i) { return urls.indexOf(u) === i; });
+    var octx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, SR);
+    var got = 0;
+    return Promise.all(urls.map(function (u) {
+      return fetchDecode(u, octx).then(function (b) { got++; if (onProg) onProg(got, urls.length); return b; });
+    })).then(function () {
+      // assemble mono Float32 timeline + per-sentence map
+      var chunks = [], map = [], t = 0;
+      function addBuf(buf) { chunks.push(buf.getChannelData(0)); t += buf.getChannelData(0).length / SR; }
+      function addSil(sec) { chunks.push(new Float32Array(Math.round(sec * SR))); t += Math.round(sec * SR) / SR; }
+      inc.forEach(function (s) {
+        var th = pcmCache[thUrl(s)], en = pcmCache[enUrl(s)];
+        var start = t;
+        if (mode === 'TE') { addBuf(th); addSil(repeatPause(s)); addBuf(th); addSil(repeatPause(s)); addBuf(en); }
+        else { addBuf(en); addSil(recallPause(s)); addBuf(th); addSil(repeatPause(s)); addBuf(th); }
+        addSil(gapPause());
+        map.push({ num: s.num, start: start, end: t });
+      });
+      var total = 0;
+      chunks.forEach(function (c) { total += c.length; });
+      var wav = encodeWav(chunks, total, SR);
+      if (session && session.url) { try { URL.revokeObjectURL(session.url); } catch (_) {} }
+      session = { url: URL.createObjectURL(wav), blob: wav, map: map, key: sessionKey(), duration: t };
+      return session;
     });
   }
+  function encodeWav(chunks, totalSamples, sr) {
+    var buf = new ArrayBuffer(44 + totalSamples * 2);
+    var v = new DataView(buf);
+    function str(o, s) { for (var i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); }
+    str(0, 'RIFF'); v.setUint32(4, 36 + totalSamples * 2, true); str(8, 'WAVE');
+    str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    str(36, 'data'); v.setUint32(40, totalSamples * 2, true);
+    var o = 44;
+    chunks.forEach(function (c) {
+      for (var i = 0; i < c.length; i++) {
+        var x = Math.max(-1, Math.min(1, c[i]));
+        v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7FFF, true);
+        o += 2;
+      }
+    });
+    return new Blob([buf], { type: 'audio/wav' });
+  }
 
-  /* ── output: native Media3 in the app, <audio> elsewhere ── */
+  /* ── output: native Media3 (app) or <audio> (web/PWA) ───── */
   var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   var NA = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.NativeAudio : null;
-  var out, blobCache = {};
-  function stepEnded() {
-    if (!playing) return;
-    if (idx + 1 < steps.length) playStep(idx + 1);
-    else { playing = false; idx = 0; updateUI(); }
-  }
-  if (NA) {
-    NA.addListener('ended', stepEnded);
-    NA.addListener('command', function (d) {
-      var a = d && d.action;
-      if (a === 'thaiear.NEXT') nextSentence();
-      else if (a === 'thaiear.PREV') prevSentence();
-    });
-    out = {
-      play: function (url) {
-        return NA.prepare({ url: url, title: T.name, subtitle: 'ThaiEar — dynamic test', artwork: 'https://thaiear.com/apple-touch-icon.png' })
-          .then(function () { return NA.play(); });
-      },
-      pause: function () { NA.pause(); },
-      resume: function () { NA.play(); }
-    };
-  } else {
-    var audio = new Audio();
+  var FS = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
+  var playing = false, curTime = 0;
+  var audio = null;
+  if (!NA) {
+    audio = new Audio();
     audio.preload = 'auto';
-    audio.addEventListener('ended', function () { errRun = 0; stepEnded(); });
-    // A clip that fails to load must SKIP, not stall the whole chain (first-load network
-    // hiccups otherwise freeze the session and invite replay-mashing). A run of failures
-    // means we're truly offline past the prefetch buffer — stop cleanly instead of
-    // sprinting silently through the rest of the playlist.
-    var errRun = 0;
-    audio.addEventListener('error', function () {
-      if (!playing) return;
-      if (++errRun >= 5) { playing = false; errRun = 0; updateUI(); return; }
-      stepEnded();
-    });
-    out = {
-      play: function (url) { audio.src = blobCache[url] || url; return audio.play(); },
-      pause: function () { audio.pause(); },
-      resume: function () { return audio.play(); }
-    };
+    audio.addEventListener('timeupdate', function () { curTime = audio.currentTime; tickUI(); });
+    audio.addEventListener('ended', function () { playing = false; curTime = 0; updateUI(); });
+    audio.addEventListener('play', function () { playing = true; updateUI(); });
+    audio.addEventListener('pause', function () { if (!audio.ended) { playing = false; updateUI(); } });
     if ('mediaSession' in navigator) {
       try {
         navigator.mediaSession.metadata = new MediaMetadata({ title: T.name, artist: 'ThaiEar (test)' });
-        navigator.mediaSession.setActionHandler('play', function () { togglePlay(); });
-        navigator.mediaSession.setActionHandler('pause', function () { togglePlay(); });
+        navigator.mediaSession.setActionHandler('play', function () { audio.play(); });
+        navigator.mediaSession.setActionHandler('pause', function () { audio.pause(); });
         navigator.mediaSession.setActionHandler('nexttrack', function () { nextSentence(); });
         navigator.mediaSession.setActionHandler('previoustrack', function () { prevSentence(); });
       } catch (_) {}
-      // The session is a chain of tiny clips; a per-clip scrubber on the lock screen races
-      // and resets constantly, which reads as broken. Clearing position state asks the OS
-      // to show stable metadata with no progress bar. (Best-effort — iOS may ignore it.)
-      audio.addEventListener('loadedmetadata', function () {
-        try { navigator.mediaSession.setPositionState(); } catch (_) {}
+    }
+  } else {
+    NA.addListener('time', function (d) { if (d) { curTime = d.position || 0; tickUI(); } });
+    NA.addListener('ended', function () { playing = false; curTime = 0; updateUI(); });
+    NA.addListener('playing', function (d) { playing = !!(d && d.playing); updateUI(); });
+    NA.addListener('command', function (d) {
+      var a = d && d.action;
+      // v2 APK dynamic layout: custom slots = sentence, standard ⏮⏭ = topic (inert on the
+      // single-topic test page). A v1 APK sends none of the sentence commands — page buttons cover it.
+      if (a === 'thaiear.SENT_NEXT') nextSentence();
+      else if (a === 'thaiear.SENT_PREV') prevSentence();
+    });
+  }
+  // iOS unlock: play() must originate from the tap. During the async build we keep the
+  // element "warm" with a moment of silence so the post-build play() is allowed.
+  var SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAwF0AAIC7AAACABAAZGF0YQAAAAA=';
+  function unlockWebAudio() {
+    if (!audio) return;
+    try { audio.src = SILENT_WAV; audio.play().catch(function () {}); } catch (_) {}
+  }
+  function startPlayback() {
+    if (NA) {
+      // write the WAV into the app cache and hand the native engine a file:// URL —
+      // one continuous track, so the notification keeps its progress bar + scrubbing.
+      var fr = new FileReader();
+      return new Promise(function (resolve, reject) {
+        fr.onerror = reject;
+        fr.onload = function () {
+          var b64 = String(fr.result).split(',')[1];
+          FS.writeFile({ path: 'dyn-session.wav', data: b64, directory: 'CACHE' })
+            .then(function () { return FS.getUri({ path: 'dyn-session.wav', directory: 'CACHE' }); })
+            .then(function (u) {
+              session.fileUri = u.uri;
+              return NA.prepare({ url: u.uri, title: T.name, subtitle: 'ThaiEar — dynamic test', artwork: 'https://thaiear.com/apple-touch-icon.png', mode: 'dyn' });
+            })
+            .then(function () { playing = true; return NA.play(); })
+            .then(resolve, reject);
+        };
+        fr.readAsDataURL(session.blob);
       });
     }
+    audio.src = session.url;
+    return audio.play();
   }
-  // Prefetch-ahead (web only): the next few steps ride as blobs, so a brief connection
-  // drop mid-session doesn't kill playback. Silence files are shared and cache once.
-  function prefetchAhead(from) {
-    if (NA) return;
-    for (var i = from + 1; i < Math.min(from + 9, steps.length); i++) {
-      (function (url) {
-        if (blobCache[url]) return;
-        blobCache[url] = 'pending';
-        fetch(url).then(function (r) { return r.ok ? r.blob() : null; })
-          .then(function (b) { blobCache[url] = b ? URL.createObjectURL(b) : undefined; })
-          .catch(function () { blobCache[url] = undefined; });
-      })(steps[i].url);
-    }
+  function seekTo(sec) {
+    curTime = sec;
+    if (NA) NA.seekTo({ seconds: sec });
+    else if (audio) audio.currentTime = sec;
+    tickUI();
   }
 
   /* ── transport ── */
-  function playStep(i) {
-    idx = i;
-    var st = steps[i];
-    if (blobCache[st.url] === 'pending') blobCache[st.url] = undefined;
-    out.play(st.url).catch(function () {});
-    prefetchAhead(i);
+  var buildFailed = false;
+  function ensureSession() {
+    if (session && session.key === sessionKey()) return Promise.resolve(session);
+    building = true; buildFailed = false;
     updateUI();
+    return buildSession(function (done, total) { buildProg(done, total); })
+      .then(function (s) { building = false; updateUI(); return s; })
+      .catch(function (e) { building = false; buildFailed = true; session = null; updateUI(); throw e; });
   }
   function togglePlay() {
-    if (!steps.length) { buildSteps(); }
-    if (!steps.length) return;
-    if (playing) { playing = false; out.pause(); }
-    else {
-      playing = true;
-      if (idx === 0 || !steps[idx]) playStep(idx < steps.length ? idx : 0);
-      else out.resume();
+    if (building) return;
+    if (playing) {
+      playing = false;
+      if (NA) NA.pause(); else audio.pause();
+      updateUI();
+      return;
     }
-    updateUI();
+    if (!included().length) return;
+    if (session && session.key === sessionKey()) {
+      playing = true;
+      (NA ? NA.play() : audio.play());
+      updateUI();
+      return;
+    }
+    unlockWebAudio();
+    ensureSession().then(function () { return startPlayback(); }).catch(function () {});
   }
-  function blockStart(block) {
-    for (var i = 0; i < steps.length; i++) if (steps[i].block === block) return i;
-    return 0;
+  function curBlock() {
+    if (!session) return -1;
+    for (var i = 0; i < session.map.length; i++) {
+      if (curTime < session.map[i].end) return i;
+    }
+    return session.map.length - 1;
   }
-  function maxBlock() { return steps.length ? steps[steps.length - 1].block : 0; }
-  function nextSentence() { jumpBlock(Math.min((steps[idx] ? steps[idx].block : 0) + 1, maxBlock())); }
-  function prevSentence() { jumpBlock(Math.max((steps[idx] ? steps[idx].block : 0) - 1, 0)); }
-  function jumpBlock(b) {
-    if (!steps.length) return;
-    idx = blockStart(b);
-    if (playing) playStep(idx); else updateUI();
+  function nextSentence() {
+    if (!session) return;
+    var b = Math.min(curBlock() + 1, session.map.length - 1);
+    seekTo(session.map[b].start);
+  }
+  function prevSentence() {
+    if (!session) return;
+    var b = curBlock();
+    // within the first second of a block, prev = previous block; deeper in, prev = block start
+    if (b > 0 && curTime - session.map[b].start < 1.2) b--;
+    seekTo(session.map[b].start);
   }
   function playFrom(num) {
     if (excluded[num]) return;
-    buildSteps();
-    var b = -1;
-    for (var i = 0; i < steps.length; i++) if (steps[i].s.num === num) { b = steps[i].block; break; }
-    if (b < 0) return;
-    playing = true;
-    playStep(blockStart(b));
+    unlockWebAudio();
+    ensureSession().then(function (s) {
+      var target = 0;
+      s.map.forEach(function (m) { if (m.num === num) target = m.start; });
+      if (playing || (NA ? true : audio.src === s.url)) {
+        seekTo(target);
+        if (!playing) { playing = true; (NA ? NA.play() : audio.play()); updateUI(); }
+      } else {
+        return startPlayback().then(function () { seekTo(target); });
+      }
+    }).catch(function () {});
   }
-  // Rebuild (mode / slider / exclusion changed) keeping our place by sentence.
-  function rebuild() {
-    var cur = steps[idx] ? steps[idx].s.num : null;
-    buildSteps();
-    idx = 0;
-    if (cur != null) {
-      for (var i = 0; i < steps.length; i++) if (steps[i].s.num === cur) { idx = blockStart(steps[i].block); break; }
-    }
-    if (playing) { steps.length ? playStep(idx) : (playing = false); }
+  function invalidate() {   // mode / slider / exclusions changed → rebuild on next play
+    if (playing) { if (NA) NA.pause(); else audio.pause(); }
+    playing = false; curTime = 0;
+    session = null;
     updateUI();
   }
 
@@ -187,6 +256,10 @@
   var root = document.getElementById('dyn-root');
   if (!root) return;
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function fmt(t) {
+    t = Math.max(0, Math.round(t));
+    return Math.floor(t / 60) + ':' + ('0' + (t % 60)).slice(-2);
+  }
   root.innerHTML =
     '<div class="dyn-player">' +
       '<div class="dyn-mode" role="group" aria-label="Direction">' +
@@ -198,6 +271,8 @@
         '<button class="dyn-play" id="dyn-play" type="button" aria-label="Play"><svg id="dyn-play-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>' +
         '<button class="dyn-skip" id="dyn-next" type="button" aria-label="Next sentence"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l10-7z"/></svg></button>' +
       '</div>' +
+      '<div class="dyn-build" id="dyn-build" hidden>Constructing dynamic mp3 file<span class="dyn-dots" aria-hidden="true"></span><span id="dyn-build-n"></span></div>' +
+      '<div class="dyn-seek" id="dyn-seek"><div class="dyn-seek-bar" id="dyn-seek-bar"><i id="dyn-seek-fill"></i></div><div class="dyn-seek-t"><span id="dyn-t-cur">0:00</span><span id="dyn-t-tot">–:––</span></div></div>' +
       '<button class="dyn-now" id="dyn-now" type="button">Ready</button>' +
       '<div class="dyn-slider"><span>Pauses</span>' +
         '<input id="dyn-pf" type="range" min="0.5" max="2" step="0.25" value="' + factor + '">' +
@@ -210,26 +285,31 @@
   modeBtns.forEach(function (b) {
     b.addEventListener('click', function () {
       if (mode === b.getAttribute('data-mode')) return;
-      mode = b.getAttribute('data-mode'); lsSet('te_dyn_mode', mode); rebuild();
+      mode = b.getAttribute('data-mode'); lsSet('te_dyn_mode', mode); invalidate();
     });
   });
   document.getElementById('dyn-play').addEventListener('click', togglePlay);
   document.getElementById('dyn-prev').addEventListener('click', prevSentence);
   document.getElementById('dyn-next').addEventListener('click', nextSentence);
   document.getElementById('dyn-now').addEventListener('click', function () {
-    var st = steps[idx];
-    if (!st) return;
-    var card = document.querySelector('.dyn-card[data-num="' + st.s.num + '"]');
+    var b = curBlock();
+    if (b < 0 || !session) return;
+    var card = document.querySelector('.dyn-card[data-num="' + session.map[b].num + '"]');
     if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
   var pf = document.getElementById('dyn-pf');
-  pf.addEventListener('input', function () {
-    document.getElementById('dyn-pf-val').textContent = pf.value + '×';
-  });
-  pf.addEventListener('change', function () {
-    factor = parseFloat(pf.value) || 1; lsSet('te_dyn_pf', String(factor)); rebuild();
+  pf.addEventListener('input', function () { document.getElementById('dyn-pf-val').textContent = pf.value + '×'; });
+  pf.addEventListener('change', function () { factor = parseFloat(pf.value) || 1; lsSet('te_dyn_pf', String(factor)); invalidate(); });
+  document.getElementById('dyn-seek-bar').addEventListener('click', function (ev) {
+    if (!session) return;
+    var r = ev.currentTarget.getBoundingClientRect();
+    seekTo(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * session.duration);
   });
 
+  function buildProg(done, total) {
+    var n = document.getElementById('dyn-build-n');
+    if (n) n.textContent = ' ' + done + '/' + total;
+  }
   function renderPills() {
     var nIn = included().length, nOut = SENTS.length - nIn;
     var el = document.getElementById('dyn-pills');
@@ -266,39 +346,55 @@
       card.querySelector('.dyn-x').addEventListener('click', function (ev) {
         ev.stopPropagation();
         if (excluded[num]) delete excluded[num]; else excluded[num] = 1;
-        saveExcl(); renderPills(); renderList(); rebuild();
+        saveExcl(); renderPills(); renderList(); invalidate();
       });
       card.querySelector('.dyn-txt').addEventListener('click', function () { playFrom(num); });
     });
-    markPlayingCard();
+    tickUI();
   }
-  function markPlayingCard() {
-    document.querySelectorAll('.dyn-card.playing').forEach(function (c) { c.classList.remove('playing'); });
-    var st = steps[idx];
-    if (st && playing) {
-      var card = document.querySelector('.dyn-card[data-num="' + st.s.num + '"]');
-      if (card) card.classList.add('playing');
+  var lastMarkedNum = null;
+  function tickUI() {
+    // seek bar + times
+    if (session) {
+      document.getElementById('dyn-t-cur').textContent = fmt(curTime);
+      document.getElementById('dyn-t-tot').textContent = fmt(session.duration);
+      document.getElementById('dyn-seek-fill').style.width = Math.min(100, curTime / session.duration * 100) + '%';
+    }
+    // playing-card highlight + now line
+    var b = curBlock();
+    var num = (b >= 0 && session) ? session.map[b].num : null;
+    if (num !== lastMarkedNum) {
+      lastMarkedNum = num;
+      document.querySelectorAll('.dyn-card.playing').forEach(function (c) { c.classList.remove('playing'); });
+      if (num != null && (playing || curTime > 0)) {
+        var card = document.querySelector('.dyn-card[data-num="' + num + '"]');
+        if (card) card.classList.add('playing');
+      }
+    }
+    var now = document.getElementById('dyn-now');
+    if (session && b >= 0 && (playing || curTime > 0)) {
+      var s = SENTS.filter(function (x) { return x.num === session.map[b].num; })[0];
+      now.textContent = '▸ Sentence ' + (b + 1) + ' of ' + session.map.length + (s ? ' — ' + dispThai(s) : '');
+    } else if (!building) {
+      now.textContent = buildFailed
+        ? 'Couldn’t load the audio — check your connection and press play to retry'
+        : (included().length
+          ? 'Ready — ' + included().length + ' sentence' + (included().length === 1 ? '' : 's') + ' in the ' + (mode === 'TE' ? 'Thai-first' : 'English-first') + ' session'
+          : 'Every sentence is excluded — include some to play');
     }
   }
   function updateUI() {
     modeBtns.forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-mode') === mode); });
     document.getElementById('dyn-play-ico').innerHTML = playing
       ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
-    var now = document.getElementById('dyn-now');
-    var st = steps[idx];
-    if (st && (playing || idx > 0)) {
-      now.textContent = '▸ Sentence ' + (st.block + 1) + ' of ' + (maxBlock() + 1) + ' — ' + dispThai(st.s);
-    } else {
-      now.textContent = included().length
-        ? 'Ready — ' + included().length + ' sentence' + (included().length === 1 ? '' : 's') + ' in the ' + (mode === 'TE' ? 'Thai-first' : 'English-first') + ' session'
-        : 'Every sentence is excluded — include some to play';
-    }
-    markPlayingCard();
+    var bld = document.getElementById('dyn-build');
+    bld.hidden = !building;
+    if (building) document.getElementById('dyn-now').textContent = '';
+    document.getElementById('dyn-seek').style.visibility = session ? 'visible' : 'hidden';
+    tickUI();
   }
 
-  buildSteps();
   renderPills();
   renderList();
   updateUI();
-  prefetchAhead(-1);   // web only (no-op native): warm the opening steps so first play starts clean
 })();

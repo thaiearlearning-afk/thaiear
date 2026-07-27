@@ -55,6 +55,19 @@
   .dyn-skip { width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
   .dyn-skip:hover { color: var(--accent); border-color: var(--accent); }
   .dyn-skip svg { width: 16px; height: 16px; }
+  /* "Constructing dynamic mp3 file…" — same width-reveal dots animation the site uses
+     (animating `content` doesn't work in the app webview; steps(3,start) shows . .. ...) */
+  .dyn-build { text-align: center; font-size: 13px; font-weight: 500; color: var(--accent); padding: 4px 0 8px; }
+  .dyn-dots { display: inline-block; width: 1.1em; text-align: left; }
+  .dyn-dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom; animation: dyn-dots 1.2s steps(3, start) infinite; }
+  @keyframes dyn-dots { from { width: 0; } to { width: 1.05em; } }
+  #dyn-build-n { color: var(--text-tertiary); font-weight: 400; margin-left: 6px; }
+
+  .dyn-seek { margin: 2px 4px 8px; visibility: hidden; }
+  .dyn-seek-bar { height: 6px; border-radius: 3px; background: var(--accent-light); cursor: pointer; position: relative; overflow: hidden; }
+  .dyn-seek-bar i { display: block; position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); border-radius: 3px; }
+  .dyn-seek-t { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+
   .dyn-now { display: block; width: 100%; text-align: center; font-family: var(--font-ui); font-size: 13px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 4px 0; margin-bottom: 0.5rem; }
   .dyn-now:hover { color: var(--accent); }
   .dyn-slider { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 12.5px; color: var(--text-tertiary); }
@@ -88,7 +101,7 @@
 <div class="wrap">
   <div class="eyebrow">Owner test build · not public</div>
   <h1>Dynamic player — Communication survival</h1>
-  <p class="lede">Sentences are sequenced live from individual clips (no combined file). Tap a sentence to start from it; use − to exclude it from the session. Pauses follow the standard formulas × the slider.</p>
+  <p class="lede">On play, the session file is constructed on your device from the individual sentence clips — then plays as one continuous track (offline-robust, scrubbable). Tap a sentence to start from it; use − to exclude it. Pauses follow the standard formulas × the slider.</p>
 
   <div id="dyn-root"></div>
 
