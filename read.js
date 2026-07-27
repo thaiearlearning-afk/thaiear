@@ -18,7 +18,11 @@
 
   // Reading audio lives in the public R2 bucket under read/ (deployed 2026-07-22).
   // Localhost override: define window.ThaiEarReadAudioBase = 'read-audio/' before this loads.
-  var AUDIO_BASE = window.ThaiEarReadAudioBase || 'https://audio.thaiear.com/read/';
+  var IS_LOCALHOST = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  // Localhost previews serve the clips same-origin from /read-audio/ (the canonical local copies):
+  // the CDN's CORS policy only allows the thaiear.com origin, so cross-origin fetches would fail.
+  var AUDIO_BASE = window.ThaiEarReadAudioBase ||
+    (IS_LOCALHOST ? 'read-audio/' : 'https://audio.thaiear.com/read/');
   // BUMP ON EVERY AUDIO RELEASE: the zone's 4h Browser Cache TTL means replaced
   // same-name clips play stale from users' browsers — a new query string is a
   // new URL, so every cache (edge + browser) misses and fetches fresh.
@@ -45,8 +49,8 @@
       while (active < MAX && i < queue.length) {
         (function (id) {
           active++;
-          fetch(AUDIO_BASE + id + '.mp3' + AUDIO_VER)
-            .then(function (r) { return r.ok ? r.blob() : null; })
+          fetchClip(clipUrl(id))
+            .then(function (r) { return r && r.ok ? r.blob() : null; })
             .then(function (b) { if (b) blobUrls[id] = URL.createObjectURL(b); })
             .catch(function () {})
             .then(function () { active--; pump(); });
@@ -92,9 +96,191 @@
 
   function play(id, el) {
     stopHighlight();
-    player.src = blobUrls[id] || (AUDIO_BASE + id + '.mp3' + AUDIO_VER);
+    player.src = blobUrls[id] || clipUrl(id);
     player.play().catch(function () {});
     if (el) { el.classList.add('playing'); playingEl = el; }
+  }
+
+  /* ── offline download (whole course) ───────────────────────
+     The 14 pages + read.js/read-data.js/read.css are already in the service worker's
+     PRECACHE, so the course INTERFACE works offline for everyone. This engine saves the
+     one missing piece — all ~208 audio clips (~1.5 MB) — into the durable
+     'thaiear-audio-dl' Cache Storage cache (sw.js preserves it across versions).
+     Playback is cache-first via fetchClip(), so a downloaded course plays with no
+     internet on the Android app, the iOS home-screen PWA, and desktop alike.
+     AUDIO_VER is part of every cached URL: bumping it on an audio release automatically
+     invalidates the download and flips the hub card to "update available". */
+  var DL_CACHE = 'thaiear-audio-dl';
+  var DL_KEY = 'thaiear_read_offline';   // {ver, count, ts} — separate from the topics' manifest
+  function clipUrl(id) { return AUDIO_BASE + id + '.mp3' + AUDIO_VER; }
+  function cachesOk() { return 'caches' in window; }
+  function fetchClip(url) {
+    if (!cachesOk()) return fetch(url);
+    return caches.open(DL_CACHE)
+      .then(function (c) { return c.match(url); })
+      .then(function (hit) { return hit || fetch(url); })
+      .catch(function () { return fetch(url); });
+  }
+  function allCourseAudioIds() {
+    var seen = {}, out = [];
+    ['hub'].concat(D.sections.map(function (s) { return s.key; })).forEach(function (key) {
+      sectionAudioIds(key).forEach(function (id) {
+        if (id && !seen[id]) { seen[id] = true; out.push(id); }
+      });
+    });
+    return out;
+  }
+  function dlManifest() {
+    try { return JSON.parse(localStorage.getItem(DL_KEY) || 'null'); } catch (_) { return null; }
+  }
+  function dlDownload(onProgress) {
+    var ids = allCourseAudioIds();
+    var done = 0, failed = 0;
+    return caches.open(DL_CACHE).then(function (cache) {
+      return new Promise(function (resolve) {
+        var i = 0, active = 0, MAX = 6;
+        function pump() {
+          if (i >= ids.length && active === 0) return resolve();
+          while (active < MAX && i < ids.length) {
+            (function (id) {
+              active++;
+              var url = clipUrl(id);
+              cache.match(url)
+                .then(function (hit) {
+                  if (hit) return true;
+                  return fetch(url).then(function (r) {
+                    if (!r.ok) throw 0;
+                    return cache.put(url, r).then(function () { return true; });
+                  });
+                })
+                .catch(function () { failed++; })
+                .then(function () {
+                  done++;
+                  if (onProgress) onProgress(done, ids.length);
+                  active--; pump();
+                });
+            })(ids[i++]);
+          }
+        }
+        pump();
+      });
+    }).then(function () {
+      if (failed) throw failed;
+      localStorage.setItem(DL_KEY, JSON.stringify({ ver: AUDIO_VER, count: ids.length, ts: Date.now() }));
+    });
+  }
+  function dlRemove() {
+    localStorage.removeItem(DL_KEY);
+    if (!cachesOk()) return Promise.resolve();
+    return caches.open(DL_CACHE).then(function (cache) {
+      return cache.keys().then(function (keys) {
+        return Promise.all(keys.filter(function (req) {
+          return /\/read(-audio)?\//.test(req.url);   // only the course's clips, never topic audio
+        }).map(function (req) { return cache.delete(req); }));
+      });
+    }).catch(function () {});
+  }
+  // iOS can evict Cache Storage under pressure — the tick must never lie. Spot-check a
+  // sample of clips; any miss flips the card back to a (fast, cache-first) re-download.
+  function dlVerify() {
+    var m = dlManifest();
+    if (!m || !cachesOk()) return Promise.resolve(false);
+    var ids = allCourseAudioIds();
+    var sample = [];
+    for (var i = 0; i < ids.length; i += Math.max(1, Math.floor(ids.length / 8))) sample.push(ids[i]);
+    return caches.open(DL_CACHE).then(function (cache) {
+      return Promise.all(sample.map(function (id) { return cache.match(clipUrl(id)); }));
+    }).then(function (hits) {
+      return hits.every(function (h) { return !!h; });
+    }).catch(function () { return false; });
+  }
+
+  /* ── hub offline-download card ─────────────────────────── */
+  function dlCardVisible() {
+    var native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+      window.navigator.standalone === true;
+    var dev = IS_LOCALHOST || /[?&]readdl=1/.test(location.search);
+    return cachesOk() && (native || standalone || dev);
+  }
+  function mountDlCard(root) {
+    if (!dlCardVisible()) return;
+    var card = document.createElement('div');
+    card.className = 'read-dl';
+    card.innerHTML =
+      '<div class="read-dl-row">' +
+        '<div class="read-dl-text">' +
+          '<div class="read-dl-title"><span class="read-dl-ico" aria-hidden="true">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>' +
+          '</span>Take the course offline</div>' +
+          '<div class="read-dl-desc" id="read-dl-desc"></div>' +
+        '</div>' +
+        '<button class="read-dl-btn" id="read-dl-btn" type="button"></button>' +
+      '</div>' +
+      '<div class="read-dl-barwrap" id="read-dl-barwrap" hidden><div class="read-dl-bar" id="read-dl-bar"></div></div>' +
+      '<div class="read-dl-foot" id="read-dl-foot"></div>';
+    var anchor = root.querySelector('.section-header');
+    root.insertBefore(card, anchor || root.firstChild);
+
+    var desc = card.querySelector('#read-dl-desc');
+    var btn = card.querySelector('#read-dl-btn');
+    var barwrap = card.querySelector('#read-dl-barwrap');
+    var bar = card.querySelector('#read-dl-bar');
+    var foot = card.querySelector('#read-dl-foot');
+    var busy = false;
+
+    function render(state) {
+      card.setAttribute('data-state', state);
+      barwrap.hidden = state !== 'busy';
+      btn.disabled = state === 'busy';
+      foot.textContent = 'Your test scores are saved on this device and work offline either way.';
+      if (state === 'none') {
+        desc.textContent = 'Save all twelve steps and every audio clip (about 2 MB) — then learn with no internet, even in airplane mode.';
+        btn.textContent = 'Download';
+      } else if (state === 'busy') {
+        btn.textContent = 'Saving…';
+      } else if (state === 'done') {
+        desc.textContent = '✓ Available offline — every step, test and audio clip.';
+        btn.textContent = 'Remove';
+      } else if (state === 'update') {
+        desc.textContent = 'The course audio has been updated since you saved it — refresh your download.';
+        btn.textContent = 'Update';
+      } else if (state === 'repair') {
+        desc.textContent = 'Some saved audio is missing — your device may have cleared it to free space. A quick repair re-saves it.';
+        btn.textContent = 'Repair';
+      } else if (state === 'error') {
+        desc.textContent = 'Couldn’t finish the download — check your connection and try again.';
+        btn.textContent = 'Retry';
+      }
+    }
+    function startDownload() {
+      if (busy) return;
+      busy = true;
+      render('busy');
+      dlDownload(function (done, total) {
+        desc.textContent = 'Saving audio… ' + done + ' of ' + total;
+        bar.style.width = Math.round(done / total * 100) + '%';
+      }).then(function () { busy = false; render('done'); })
+        .catch(function () { busy = false; render('error'); });
+    }
+    btn.addEventListener('click', function () {
+      var state = card.getAttribute('data-state');
+      if (state === 'done') {
+        if (window.confirm('Remove the offline copy of the Read Thai course? You can download it again any time.')) {
+          dlRemove().then(function () { render('none'); });
+        }
+      } else {
+        startDownload();
+      }
+    });
+
+    var m = dlManifest();
+    if (!m) render('none');
+    else if (m.ver !== AUDIO_VER) render('update');
+    else {
+      render('done');
+      dlVerify().then(function (ok) { if (!ok) render('repair'); });
+    }
   }
 
   /* ── progress store ────────────────────────────────────── */
@@ -1262,6 +1448,7 @@
     root.querySelectorAll('.tone-chip').forEach(function (chip) {
       chip.addEventListener('click', function () { play(chip.getAttribute('data-audio'), chip); });
     });
+    mountDlCard(root);
   }
 
   /* ── boot ──────────────────────────────────────────────── */
