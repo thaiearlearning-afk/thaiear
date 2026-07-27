@@ -1346,7 +1346,16 @@
   // media-session failures on iPhone — blind fixes have failed twice. dynLog() is a strict
   // no-op unless DYN && dbg=1, so sprinkling calls into shared handlers changes nothing
   // for normal pages.
-  var DYN_DBG = DYN && /[?&]dbg=1(&|$)/.test(location.search);
+  // dbg=1 sticks for the whole session (sessionStorage) so the overlay survives the
+  // cross-page hops it exists to debug.
+  var DYN_DBG = DYN && (function () {
+    var on = /[?&]dbg=1(&|$)/.test(location.search);
+    try {
+      if (on) sessionStorage.setItem('te_dbg', '1');
+      return on || sessionStorage.getItem('te_dbg') === '1';
+    } catch (_) { return on; }
+  })();
+  var DYN_BUILD = 'r9';   // visible build tag on the test pages — bump every test-space deploy
   var dynLogEl = null;
   function dynLog(msg) {
     if (!DYN_DBG) return;
@@ -2308,7 +2317,7 @@
       else aplAnchor.parentNode.insertBefore(apl, aplAnchor.nextSibling);
       var pll = document.createElement('a');
       pll.className = 'dyn-pl-link'; pll.href = 'playlists.html';
-      pll.textContent = '🎵 My Playlists';
+      pll.textContent = '🎵 My Playlists · build ' + DYN_BUILD;
       apl.parentNode.insertBefore(pll, apl.nextSibling);
     }
     sentences.forEach(function (s) {
@@ -2590,8 +2599,25 @@
     // Dyn pages: adopt the dynNav neighbour in place (persisted session or static placeholder).
     // A SECOND hop from an adopted state navigates for real — the user has moved two steps.
     if (DYN && cfg.dynNav) {
-      dynLog('advanceTopic dir=' + dir + (dynAdopted ? ' (adopted→navigate)' : ''));
-      if (dynAdopted) { location.href = dynAdopted.page; return; }
+      if (dynAdopted) {
+        // Hopping BACK to this page's own topic un-adopts IN PLACE — a page navigation
+        // from the lock screen kills playback on iOS (the round-8 death). Only a second
+        // hop onward (same direction again) still navigates.
+        var returning = (dir < 0 && dynAdopted === cfg.dynNav.next) || (dir > 0 && dynAdopted === cfg.dynNav.prev);
+        dynLog('advanceTopic dir=' + dir + (returning ? ' (adopted→return local)' : ' (adopted→navigate)'));
+        if (!returning) { location.href = dynAdopted.page; return; }
+        dynAdopted = null; dynStdRemote = false;
+        mainPage = PAGE_FILE; mainPrefix = PREFIX; mainGated = GATED; mainTier = TIER;
+        currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
+        mainSrcReady = false;
+        var rf = $('scrubber-fill'); if (rf) rf.style.width = '0%';
+        var rnp = $('now-playing'); if (rnp) rnp.classList.remove('show');
+        ensureMainSrc().then(function () { if (!dynAdopted) return mainAudio.play(); })
+          .then(function () { dynLog('return-local play ok'); if (!dynAdopted) setMainIcon(true); })
+          .catch(function (e) { dynLog('return-local FAIL ' + ((e && (e.name || e.code)) || e)); handleDenied(e, mainTier); });
+        return;
+      }
+      dynLog('advanceTopic dir=' + dir);
       var dynT = dir > 0 ? cfg.dynNav.next : cfg.dynNav.prev;
       if (dynT) dynAdvance(dynT);
       return;
