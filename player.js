@@ -103,7 +103,9 @@
         if (st.preparedSrc === st.src && st.src) { st.paused = false; return NA.play(); }
         nativeMeta.title = resolveMainTitle();   // ensure the lock screen shows the topic, even on first play
         writeNowPlaying();                       // share what's now playing across pages (now-playing bar + sync)
-        return NA.prepare({ url: st.src, title: nativeMeta.title, subtitle: nativeMeta.subtitle, artwork: nativeMeta.artwork })
+        var prep = { url: st.src, title: nativeMeta.title, subtitle: nativeMeta.subtitle, artwork: nativeMeta.artwork };
+        if (DYN) { prep.mode = 'dyn'; prep.marks = dynSession ? dynSession.map.map(function (m) { return m.start; }) : []; }
+        return NA.prepare(prep)
           .then(function () { st.preparedSrc = st.src; st.paused = false; return NA.play(); });
       },
       pause: function () { st.paused = true; return NA ? NA.pause() : Promise.resolve(); },
@@ -637,6 +639,7 @@
     }
   }
   function renderOfflineBar() {
+    if (DYN) return;   // dyn test pages: a static-file offline download would only confuse the test
     var bar = $('offline-bar'); if (!bar) return;
     if (!OFFLINE && !WEB_DL) { bar.style.display = 'none'; return; }  // plain website (no app, flag off): never shown
     bar.style.display = 'flex';
@@ -1318,6 +1321,312 @@
     document.querySelectorAll('.speed-toggle').forEach(function (btn) { btn.classList.toggle('active', slowMode); });
   }
 
+  /* ---- dynamic player mode (DYN) ----
+     Test-page feature (cfg.dyn === true): instead of playing the pre-rendered combined
+     TE/ET MP3, the top player plays a session stitched CLIENT-SIDE from the per-sentence
+     clips (_TH/_EN), with per-sentence repeat/recall pauses scaled by a user slider, and
+     per-sentence exclusion. Everything here is inert unless DYN — non-dyn pages are
+     behaviourally unchanged. */
+  var DYN = cfg.dyn === true;
+
+  var DYN_SR = 24000;
+  var dynFactor = 1;
+  try { var _dynPf = parseFloat(localStorage.getItem('te_dyn_pf')); if (isFinite(_dynPf) && _dynPf > 0) dynFactor = _dynPf; } catch (_) {}
+  var DYN_EXCL_KEY = 'te_dyn_excl_' + (cfg.dynKey || PREFIX);
+  var dynExcluded = {};
+  try {
+    var _dynEx = JSON.parse(localStorage.getItem(DYN_EXCL_KEY) || '[]');
+    if (Array.isArray(_dynEx)) _dynEx.forEach(function (n) { dynExcluded[n] = true; });
+  } catch (_) {}
+  function dynSaveExcluded() {
+    try {
+      var arr = [];
+      for (var k in dynExcluded) { if (dynExcluded[k]) arr.push(+k); }
+      localStorage.setItem(DYN_EXCL_KEY, JSON.stringify(arr));
+    } catch (_) {}
+  }
+  var dynSession = null;      // { url, fileUri?, blob, map:[{num,start,end}], key, duration }
+  var dynBuilding = null;     // { key, p } while a build is in flight
+  var dynClipCache = {};      // decoded AudioBuffer per clip filename (survives invalidation)
+  var dynLastLive = null;     // sentence num currently highlighted by the timeupdate handler
+
+  // Pause lengths are derived from a crude syllable estimate of the Thai (len/3 after
+  // stripping the pause markers, whitespace and the zero-ish chars ๆ ็ ์).
+  function dynSyllables(thai) {
+    var t = String(thai || '').replace(/\|/g, '').replace(/\s+/g, '').replace(/[ๆ็์]/g, '');
+    return Math.max(1, Math.floor(t.length / 3));
+  }
+  function dynIncluded() {
+    return sentences.filter(function (s) { return !dynExcluded[s.num]; });
+  }
+  function dynKey() {
+    return currentMode + '|' + dynFactor + '|' + dynIncluded().map(function (s) { return s.num; }).join(',');
+  }
+  function dynClipFile(num, side) {
+    return PREFIX + '_S' + String(num).padStart(2, '0') + '_' + side + '.mp3';
+  }
+  // Fetch + decode one clip to a mono 24 kHz AudioBuffer (decodeAudioData resamples to the
+  // OfflineAudioContext's rate). Decoded buffers are cached for the life of the page.
+  function dynFetchClip(file) {
+    if (dynClipCache[file]) return Promise.resolve(dynClipCache[file]);
+    return buildUrl(file, GATED).then(function (u) {
+      return fetch(u);
+    }).then(function (r) {
+      if (!r.ok) return Promise.reject({ code: r.status });
+      return r.arrayBuffer();
+    }).then(function (ab) {
+      return new Promise(function (res, rej) {
+        var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        var ctx = new OAC(1, 1, DYN_SR);
+        ctx.decodeAudioData(ab, res, rej);
+      });
+    }).then(function (buf) { dynClipCache[file] = buf; return buf; });
+  }
+  // Encode mono Float32 samples as a 16-bit PCM WAV blob (standard 44-byte header).
+  function dynEncodeWav(samples) {
+    var n = samples.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    function wstr(off, s) { for (var i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); }
+    wstr(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); wstr(8, 'WAVE');
+    wstr(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, DYN_SR, true); v.setUint32(28, DYN_SR * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    wstr(36, 'data'); v.setUint32(40, n * 2, true);
+    var off = 44;
+    for (var i = 0; i < n; i++, off += 2) {
+      var x = Math.max(-1, Math.min(1, samples[i]));
+      v.setInt16(off, x < 0 ? x * 0x8000 : x * 0x7FFF, true);
+    }
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+  // Build the stitched session for the CURRENT mode/factor/inclusion set.
+  // TE per sentence: TH, repeat-pause, TH, repeat-pause, EN. ET: EN, recall-pause, TH,
+  // repeat-pause, TH. Then a gap-pause. map records {num,start,end} per sentence block.
+  function dynBuildSession(onProg) {
+    var inc = dynIncluded();
+    if (!inc.length) return Promise.reject({ code: 'empty' });
+    var key = dynKey();
+    var files = [];
+    inc.forEach(function (s) { files.push(dynClipFile(s.num, 'TH')); files.push(dynClipFile(s.num, 'EN')); });
+    var done = 0;
+    return Promise.all(files.map(function (f) {
+      return dynFetchClip(f).then(function (b) { done++; if (onProg) onProg(done, files.length); return b; });
+    })).then(function () {
+      var parts = [];   // AudioBuffer, or a number = silence length in samples
+      var map = [];
+      var pos = 0;      // running length in samples
+      function pushBuf(b) { parts.push(b); pos += b.length; }
+      function pushSil(sec) { var n = Math.round(sec * DYN_SR); parts.push(n); pos += n; }
+      inc.forEach(function (s) {
+        var th = dynClipCache[dynClipFile(s.num, 'TH')];
+        var en = dynClipCache[dynClipFile(s.num, 'EN')];
+        var syl = dynSyllables(s.thai);
+        var repeat = Math.max(3.0, syl * 0.5) * dynFactor;
+        var recall = Math.max(4.5, syl * 0.7) * dynFactor;
+        var gap = 3.0 * dynFactor;
+        var start = pos / DYN_SR;
+        if (currentMode === 'et') { pushBuf(en); pushSil(recall); pushBuf(th); pushSil(repeat); pushBuf(th); }
+        else { pushBuf(th); pushSil(repeat); pushBuf(th); pushSil(repeat); pushBuf(en); }
+        pushSil(gap);
+        map.push({ num: s.num, start: start, end: pos / DYN_SR });
+      });
+      var out = new Float32Array(pos);   // silence = the zero-filled default
+      var o = 0;
+      parts.forEach(function (p) {
+        if (typeof p === 'number') { o += p; }
+        else { out.set(p.getChannelData(0), o); o += p.length; }
+      });
+      var blob = dynEncodeWav(out);
+      var sess = { url: URL.createObjectURL(blob), blob: blob, map: map, key: key, duration: pos / DYN_SR };
+      if (!NATIVE) return sess;
+      // Native engine can't play a blob: URL — persist the WAV to the app cache and hand it a file URI.
+      return new Promise(function (res, rej) {
+        var fr = new FileReader();
+        fr.onload = function () { res(String(fr.result).split(',')[1] || ''); };
+        fr.onerror = function () { rej({ code: 'fs' }); };
+        fr.readAsDataURL(blob);
+      }).then(function (b64) {
+        var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+        if (!FS) return sess;
+        return FS.writeFile({ path: 'dyn-session.wav', data: b64, directory: 'CACHE' })
+          .then(function () { return FS.getUri({ path: 'dyn-session.wav', directory: 'CACHE' }); })
+          .then(function (r) { sess.fileUri = (r && r.uri) || null; return sess; });
+      });
+    });
+  }
+  function dynEnsureSession(onProg) {
+    var key = dynKey();
+    if (dynSession && dynSession.key === key) return Promise.resolve(dynSession);
+    if (dynBuilding && dynBuilding.key === key) return dynBuilding.p;
+    var p = dynBuildSession(onProg).then(function (sess) {
+      if (dynSession && dynSession.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
+      dynSession = sess;
+      dynBuilding = null;
+      return sess;
+    }).catch(function (e) { dynBuilding = null; return Promise.reject(e); });
+    dynBuilding = { key: key, p: p };
+    return p;
+  }
+  // The DYN branch of ensureMainSrc: build (or reuse) the session and point mainAudio at it.
+  function dynEnsureMainSrc() {
+    if (mainSrcReady && dynSession && dynSession.key === dynKey()) return Promise.resolve();
+    dynStatus('Constructing dynamic mp3 file', true);
+    return dynEnsureSession(function (done, total) {
+      var c = $('dyn-status-count'); if (c) c.textContent = done + '/' + total;
+    }).then(function (sess) {
+      mainAudio.src = (NATIVE && sess.fileUri) ? sess.fileUri : sess.url;
+      mainAudio.load();
+      mainSrcReady = true;
+      dynStatus(null);
+    }).catch(function (e) {
+      var code = e && e.code;
+      dynStatus((code === 'noauth' || code === 401 || code === 403)
+        ? 'Sign in to play this topic'
+        : 'Couldn’t load the audio — check your connection', false);
+      return Promise.reject(e);
+    });
+  }
+  // A setting changed (pause factor / exclusions): drop the session, keep the decoded clip
+  // cache, and let the next play rebuild.
+  function dynInvalidate() {
+    if (!mainAudio.paused) { mainAudio.pause(); setMainIcon(false); }
+    mainSrcReady = false;
+    if (dynSession && dynSession.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
+    dynSession = null;
+    dynStatus('Changes saved — your session will reconstruct on next play.', false);
+  }
+  // Status line under the transport. text=null hides it; dots=true appends the animated dots
+  // (plus a live n/m counter span the build progress writes into).
+  function dynStatus(text, dots) {
+    var el = $('dyn-status');
+    if (!el) return;
+    if (text == null) { el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    el.innerHTML = escapeHtml(text) + (dots ? '<span class="dyn-dots"></span> <span id="dyn-status-count"></span>' : '');
+  }
+  // Sentence-block skip (the ①-arrow buttons): next → start of the next block; prev → start
+  // of the previous block if we're within 1.5 s of the current block's start, else restart it.
+  function dynSentSkip(dir) {
+    if (!dynSession || !dynSession.map.length) return;
+    var t = mainAudio.currentTime || 0, map = dynSession.map, i;
+    for (i = 0; i < map.length; i++) { if (t < map[i].end) break; }
+    if (i >= map.length) i = map.length - 1;
+    if (dir > 0) {
+      if (i + 1 < map.length) mainAudio.currentTime = map[i + 1].start;
+      return;
+    }
+    if (t - map[i].start < 1.5 && i > 0) mainAudio.currentTime = map[i - 1].start;
+    else mainAudio.currentTime = map[i].start;
+  }
+  // Highlight the card whose block is playing (called from the timeupdate handler when DYN).
+  function dynHighlight(t) {
+    var map = dynSession.map, num = null;
+    for (var i = 0; i < map.length; i++) { if (t < map[i].end) { num = map[i].num; break; } }
+    if (num === dynLastLive) return;
+    if (dynLastLive != null) { var prev = document.getElementById('sc-' + dynLastLive); if (prev) prev.classList.remove('dyn-live'); }
+    if (num != null) { var cur = document.getElementById('sc-' + num); if (cur) cur.classList.add('dyn-live'); }
+    dynLastLive = num;
+  }
+  var DYN_STYLES =
+    '.dyn-status{text-align:center;font-size:13px;font-weight:500;color:var(--accent);padding:4px 0;}' +
+    '.dyn-dots{display:inline-block;width:1.1em;text-align:left}' +
+    ".dyn-dots::after{content:'...';display:inline-block;width:0;overflow:hidden;vertical-align:bottom;animation:dyn-dots 1.2s steps(3,start) infinite}" +
+    '@keyframes dyn-dots{from{width:0}to{width:1.05em}}' +
+    '.dyn-sent-btn{width:34px;height:34px}' +
+    '.dyn-slider{display:flex;align-items:center;justify-content:center;gap:10px;font-size:12.5px;color:var(--text-tertiary);margin-top:8px}' +
+    '.dyn-slider input{width:150px;accent-color:var(--accent)}' +
+    '.sentence-card.dyn-off{opacity:.55;border-style:dashed}' +
+    '.sentence-card.dyn-off .sent-preview{text-decoration:line-through}' +
+    '.dyn-card-btn{width:26px;height:26px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}' +
+    '.dyn-card-btn svg{width:13px;height:13px}' +
+    '.dyn-card-btn:hover{color:var(--accent);border-color:var(--accent)}' +
+    '.sentence-card.dyn-live{border-color:var(--accent);}';
+  // Mount-time DOM injection: status line + pause slider + sentence-skip transport buttons
+  // + the per-card playlist/exclude buttons. Only ever called when DYN.
+  function initDyn() {
+    if (!document.getElementById('dyn-styles')) {
+      var st = document.createElement('style');
+      st.id = 'dyn-styles';
+      st.textContent = DYN_STYLES;
+      document.head.appendChild(st);
+    }
+    var root = $('player-root'); if (!root) return;
+    var row = root.querySelector('.audio-row');
+    if (row) {
+      var stEl = document.createElement('div');
+      stEl.id = 'dyn-status'; stEl.className = 'dyn-status'; stEl.hidden = true;
+      row.parentNode.insertBefore(stEl, row.nextSibling);
+      var sl = document.createElement('div');
+      sl.className = 'dyn-slider';
+      sl.innerHTML = 'Pauses <input id="dyn-pf" type="range" min="0.5" max="2" step="0.25"> <span id="dyn-pf-val">1×</span>';
+      stEl.parentNode.insertBefore(sl, stEl.nextSibling);
+      var pf = sl.querySelector('#dyn-pf'), pv = sl.querySelector('#dyn-pf-val');
+      pf.value = String(dynFactor);
+      pv.textContent = dynFactor + '×';
+      pf.addEventListener('input', function () { pv.textContent = (parseFloat(pf.value) || 1) + '×'; });
+      pf.addEventListener('change', function () {
+        dynFactor = parseFloat(pf.value) || 1;
+        try { localStorage.setItem('te_dyn_pf', String(dynFactor)); } catch (_) {}
+        pv.textContent = dynFactor + '×';
+        dynInvalidate();
+      });
+      var skips = row.querySelectorAll('.skip-btn');   // [back-10, fwd-10] (dyn buttons not yet inserted)
+      var DIGIT1 = '<path d="M12.36 15.94v-4.27h-.09l-1.77.63v.69l1.01-.31v3.26h.85z"/>';
+      var prevB = document.createElement('button');
+      prevB.id = 'dyn-sent-prev'; prevB.className = 'skip-btn dyn-sent-btn';
+      prevB.setAttribute('aria-label', 'Previous sentence'); prevB.title = 'Previous sentence';
+      prevB.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>' + DIGIT1 + '</svg>';
+      prevB.addEventListener('click', function () { dynSentSkip(-1); });
+      var nextB = document.createElement('button');
+      nextB.id = 'dyn-sent-next'; nextB.className = 'skip-btn dyn-sent-btn';
+      nextB.setAttribute('aria-label', 'Next sentence'); nextB.title = 'Next sentence';
+      nextB.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 13c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6v4l5-5-5-5v4c-4.4 0-8 3.6-8 8z"/>' + DIGIT1 + '</svg>';
+      nextB.addEventListener('click', function () { dynSentSkip(1); });
+      if (skips[0]) row.insertBefore(prevB, skips[0]);
+      if (skips[1]) row.insertBefore(nextB, skips[1].nextSibling);
+    }
+    sentences.forEach(function (s) {
+      var hdr = document.querySelector('#sc-' + s.num + ' .sentence-header');
+      if (!hdr) return;
+      var flag = hdr.querySelector('.sent-flag-btn');
+      var nb = document.createElement('button');
+      nb.className = 'dyn-card-btn dyn-note-btn';
+      nb.setAttribute('aria-label', 'Add to playlist'); nb.title = 'Add to playlist';
+      nb.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3z"/></svg>';
+      nb.addEventListener('click', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        if (window.ThaiEarDyn && window.ThaiEarDyn.openPopup) {
+          window.ThaiEarDyn.openPopup(TIER === 'premium' ? 'premium' : 'std', {
+            topic_key: (cfg.dynKey || ''), num: s.num, prefix: PREFIX, tier: TIER || 'free',
+            thai: s.thai, translit: s.translit || null, english: s.english
+          });
+        } else alert('Playlists unavailable');
+      });
+      var xb = document.createElement('button');
+      xb.className = 'dyn-card-btn dyn-x-btn';
+      function xPaint() {
+        var on = !!dynExcluded[s.num];
+        xb.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="' + (on ? 'M12 5v14M5 12h14' : 'M5 12h14') + '"/></svg>';
+        xb.setAttribute('aria-label', on ? 'Include in session' : 'Exclude from session');
+        xb.title = on ? 'Include in session' : 'Exclude from session';
+      }
+      xPaint();
+      xb.addEventListener('click', function (e) {
+        e.stopPropagation(); e.preventDefault();
+        dynExcluded[s.num] = !dynExcluded[s.num];
+        dynSaveExcluded();
+        var card = document.getElementById('sc-' + s.num);
+        if (card) card.classList.toggle('dyn-off', !!dynExcluded[s.num]);
+        xPaint();
+        dynInvalidate();
+      });
+      hdr.insertBefore(nb, flag ? flag.nextSibling : null);
+      hdr.insertBefore(xb, nb.nextSibling);
+      if (dynExcluded[s.num]) {
+        var card0 = document.getElementById('sc-' + s.num);
+        if (card0) card0.classList.add('dyn-off');
+      }
+    });
+  }
+
   /* ---- main player ----
      The TOP player carries its OWN identity (mainPrefix / mainGated / mainTier / mainPage),
      separate from the page's PREFIX/GATED/TIER. They start equal, but autoplay and the
@@ -1346,12 +1655,13 @@
   // play (we need the session token, and we don't want to burn a signed URL on page load).
   // Free + web: set the public src now so duration shows. In the app, defer to ensureMainSrc so a
   // downloaded local copy can be used (offline-aware).
-  if (!mainGated && !OFFLINE && !(WEB_DL && isDownloaded(mainPrefix))) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
+  if (!DYN && !mainGated && !OFFLINE && !(WEB_DL && isDownloaded(mainPrefix))) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
 
   // Resolve + attach the current main file's src if not already done (premium- and offline-aware).
   // Web offline serves a blob: URL; revoke the previous one on each swap so it doesn't leak.
   var mainBlobUrl = null;
   function ensureMainSrc() {
+    if (DYN) return dynEnsureMainSrc();   // dynamic mode: stitched client-side session, never the static file
     if (mainSrcReady) return Promise.resolve();
     return mainSrcFor(currentMainFile).then(function (u) {
       if (mainBlobUrl && mainBlobUrl !== u) { try { URL.revokeObjectURL(mainBlobUrl); } catch (_) {} mainBlobUrl = null; }
@@ -1378,6 +1688,7 @@
       if (tt.textContent !== tot) tt.textContent = tot;
     }
     var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';   // mirror onto the floating mini bar
+    if (DYN && dynSession) dynHighlight(mainAudio.currentTime);       // dyn: highlight the playing sentence's card
     writeWebResume();   // keep the cross-page resume position fresh while playing (web only, throttled)
   });
   mainAudio.addEventListener('ended', function () {
@@ -1494,8 +1805,8 @@
     mainAudio.pause();
     setMainIcon(false);
     currentMainFile = mainPrefix + '_' + mode.toUpperCase() + '.mp3';
-    mainSrcReady = false;                 // new file → re-resolve (premium needs a fresh signed URL)
-    if (!mainGated && !OFFLINE && !(WEB_DL && isDownloaded(mainPrefix))) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
+    mainSrcReady = false;                 // new file → re-resolve (premium needs a fresh signed URL; dyn rebuilds its session)
+    if (!DYN && !mainGated && !OFFLINE && !(WEB_DL && isDownloaded(mainPrefix))) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainAudio.load(); mainSrcReady = true; }
     var f = $('scrubber-fill'); if (f) f.style.width = '0%';
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
@@ -1538,6 +1849,9 @@
   }
 
   function advanceTopic(dir) {
+    // Dyn test pages navigate between each other instead of swapping audio in place —
+    // each page rebuilds its own fresh session.
+    if (DYN && cfg.dynNav) { var dynDest = dir > 0 ? cfg.dynNav.next : cfg.dynNav.prev; if (dynDest) location.href = dynDest; return; }
     var T = window.ThaiEarTopics;
     if (!T || !T.nextAccessible) return;            // topics.js not present → feature inert
     var unit = nextPlayable(mainPage, dir);         // skip anything that can't actually play now
@@ -2034,6 +2348,7 @@
     initXtraControls();
     initMiniPlayer();       // floating mini transport (shows when the main player scrolls out of view)
     renderOfflineBar();
+    if (DYN) initDyn();     // dynamic-mode extras: status line, pause slider, sentence-skip + card buttons
     syncToPlayingTrack();   // if the engine is already playing another topic, reflect/adopt it
     maybeWebResume();       // web: if we navigated here from the now-playing link, continue from where it was
   }

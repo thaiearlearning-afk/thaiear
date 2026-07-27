@@ -469,5 +469,5 @@
     return inst;
   }
 
-  window.ThaiEarDyn = { create: create };
+  window.ThaiEarDyn = { create: create, openPopup: openPlaylistPopup };
 })();
