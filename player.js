@@ -1260,7 +1260,15 @@
       seekTo(e.clientX); e.preventDefault();
     });
     scrub.addEventListener('pointermove', function (e) { if (dragging) seekTo(e.clientX); });
-    function end(e) { dragging = false; try { scrub.releasePointerCapture(e.pointerId); } catch (_) {} }
+    function end(e) {
+      dragging = false; try { scrub.releasePointerCapture(e.pointerId); } catch (_) {}
+      // Dyn: snap the committed mini-scrub seek to the nearest sentence start (round-8 item 3).
+      if (DYN && dynSession && mainAudio.duration && isFinite(mainAudio.duration)) {
+        var t2 = dynSnapTime(mainAudio.currentTime);
+        try { mainAudio.currentTime = t2; } catch (_) {}
+        var mf2 = $('te-mini-fill'); if (mf2) mf2.style.width = (t2 / mainAudio.duration * 100) + '%';
+      }
+    }
     scrub.addEventListener('pointerup', end);
     scrub.addEventListener('pointercancel', end);
   }
@@ -1333,6 +1341,41 @@
      per-sentence exclusion. Everything here is inert unless DYN — non-dyn pages are
      behaviourally unchanged. */
   var DYN = cfg.dyn === true;
+
+  // ?dbg=1 on-page debug overlay (round-8 item 5): the owner screenshots lock-screen /
+  // media-session failures on iPhone — blind fixes have failed twice. dynLog() is a strict
+  // no-op unless DYN && dbg=1, so sprinkling calls into shared handlers changes nothing
+  // for normal pages.
+  var DYN_DBG = DYN && /[?&]dbg=1(&|$)/.test(location.search);
+  var dynLogEl = null;
+  function dynLog(msg) {
+    if (!DYN_DBG) return;
+    try {
+      if (!dynLogEl) {
+        dynLogEl = document.createElement('div');
+        dynLogEl.id = 'dyn-dbg';
+        dynLogEl.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:99999;max-width:82vw;' +
+          'max-height:8.6em;overflow-y:auto;background:rgba(10,10,20,.82);color:#8f8;' +
+          'font:10px/1.35 monospace;padding:5px 7px;border-radius:6px;pointer-events:none;' +
+          'white-space:pre-wrap;word-break:break-all;';
+        (document.body || document.documentElement).appendChild(dynLogEl);
+      }
+      var t = new Date();
+      var line = document.createElement('div');
+      line.textContent = ('0' + t.getMinutes()).slice(-2) + ':' + ('0' + t.getSeconds()).slice(-2) + ' ' + msg;
+      dynLogEl.appendChild(line);
+      while (dynLogEl.childNodes.length > 40) dynLogEl.removeChild(dynLogEl.firstChild);
+      dynLogEl.scrollTop = dynLogEl.scrollHeight;
+    } catch (_) {}
+  }
+  if (DYN_DBG) {
+    window.ThaiEarDynLog = dynLog;   // the factory (player-dyn.js) logs through this when present
+    window.addEventListener('error', function (e) { dynLog('ERR ' + ((e && e.message) || e.type)); });
+    window.addEventListener('unhandledrejection', function (e) {
+      var r = e && e.reason;
+      dynLog('REJ ' + ((r && ((r.name || '') + ' ' + (r.message || r.code || ''))) || String(r)));
+    });
+  }
 
   var DYN_SR = 24000;
   var dynFactor = 1;
@@ -1652,19 +1695,46 @@
     el.hidden = false;
     el.innerHTML = escapeHtml(text) + (dots ? '<span class="dyn-dots"></span> <span id="dyn-status-count"></span>' : '');
   }
+  // Round-8: snap an in-page scrub commit to the nearest sentence-block start, so a seek
+  // never lands mid-pause. (Lock-screen drag scrubbing is APK v4 native work.)
+  function dynSnapTime(t) {
+    var map = dynSession && dynSession.map;
+    if (!map || !map.length) return t;
+    var best = t, bd = Infinity;
+    for (var i = 0; i < map.length; i++) {
+      var d = Math.abs(map[i].start - t);
+      if (d < bd) { bd = d; best = map[i].start; }
+    }
+    return best;
+  }
+  // Round-8: a paused <audio> doesn't reliably emit timeupdate for a programmatic seek on
+  // every engine, so ① seeks repaint the transport (and card highlight) directly.
+  function dynPaintPos() {
+    var pct = (mainAudio.duration && isFinite(mainAudio.duration)) ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
+    var f = $('scrubber-fill'); if (f) f.style.width = pct + '%';
+    var c = $('time-cur'); if (c) c.textContent = formatTime(mainAudio.currentTime);
+    var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';
+    if (dynSession && dynSessionIsLocal) dynHighlight(mainAudio.currentTime);
+  }
   // Sentence-block skip (the ①-arrow buttons): next → start of the next block; prev → start
   // of the previous block if we're within 1.5 s of the current block's start, else restart it.
+  // Seek-only — never calls play(), so it repositions while PAUSED too (round-8 item 4).
   function dynSentSkip(dir) {
     if (!dynSession || !dynSession.map.length) return;
     var t = mainAudio.currentTime || 0, map = dynSession.map, i;
     for (i = 0; i < map.length; i++) { if (t < map[i].end) break; }
     if (i >= map.length) i = map.length - 1;
+    var target = null;
     if (dir > 0) {
-      if (i + 1 < map.length) mainAudio.currentTime = map[i + 1].start;
-      return;
+      if (i + 1 < map.length) target = map[i + 1].start;
+    } else if (t - map[i].start < 1.5 && i > 0) {
+      target = map[i - 1].start;
+    } else {
+      target = map[i].start;
     }
-    if (t - map[i].start < 1.5 && i > 0) mainAudio.currentTime = map[i - 1].start;
-    else mainAudio.currentTime = map[i].start;
+    if (target == null) return;
+    mainAudio.currentTime = target;
+    dynPaintPos();
   }
   // Highlight the card whose block is playing (called from the timeupdate handler when DYN).
   function dynHighlight(t) {
@@ -1716,13 +1786,14 @@
     var mode = currentMode;
     var c = dynAdoptCache[t.page];
     if (c && c.mode === mode) {   // fully pre-resolved (session or placeholder) → synchronous resolve
-      if (c.sess) return Promise.resolve({ src: (NATIVE && c.sess.fileUri) ? c.sess.fileUri : c.sess.url, std: false, sess: c.sess });
-      if (c.src) return Promise.resolve({ src: c.src, std: true, sess: null });
+      if (c.sess) { dynLog('adopt: cached session'); return Promise.resolve({ src: (NATIVE && c.sess.fileUri) ? c.sess.fileUri : c.sess.url, std: false, sess: c.sess }); }
+      if (c.src) { dynLog('adopt: cached placeholder'); return Promise.resolve({ src: c.src, std: true, sess: null }); }
     }
     var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;   // synchronous pre-check
-    if (!meta) return dynAdoptPlaceholder(t, mode);
+    if (!meta) { dynLog('adopt: placeholder (no meta)'); return dynAdoptPlaceholder(t, mode); }
     return dynRestoreSession(t.dynKey, mode, meta).then(function (sess) {
-      if (sess) return { src: (NATIVE && sess.fileUri) ? sess.fileUri : sess.url, std: false, sess: sess };
+      if (sess) { dynLog('adopt: restored persisted'); return { src: (NATIVE && sess.fileUri) ? sess.fileUri : sess.url, std: false, sess: sess }; }
+      dynLog('adopt: placeholder (restore miss)');
       return dynAdoptPlaceholder(t, mode);
     });
   }
@@ -1766,12 +1837,16 @@
       dynSession = r.sess;
       dynStdRemote = r.std;
       if (!r.std) dynStripPaint(t, false);
+      dynLog('src set (' + (r.std ? 'std' : 'dyn') + ')');
       mainAudio.src = r.src;
       mainAudio.load();
       mainSrcReady = true;
       return mainAudio.play();
-    }).then(function () { if (dynAdopted === t) setMainIcon(true); })
-      .catch(function (e) { handleDenied(e, (t.tier === 'member' || t.tier === 'premium') ? t.tier : null); });
+    }).then(function () { dynLog('play ok'); if (dynAdopted === t) setMainIcon(true); })
+      .catch(function (e) {
+        dynLog('adopt FAIL ' + ((e && (e.name || e.code)) || '') + ' ' + ((e && e.message) || ''));
+        handleDenied(e, (t.tier === 'member' || t.tier === 'premium') ? t.tier : null);
+      });
   }
   /* -- batch add-to-playlist (select mode) --
      dyn-addpl-btn → playlist chooser modal → SELECT MODE: card taps toggle a tick instead of
@@ -2418,7 +2493,16 @@
       mainAudio.currentTime = scrubTime;
       paint(scrubTime);
     });
-    function endDrag() { if (!dragging) return; dragging = false; fill.style.transition = ''; }
+    function endDrag() {
+      if (!dragging) return;
+      dragging = false; fill.style.transition = '';
+      // Dyn: the committed seek snaps to the nearest sentence start (round-8 item 3).
+      if (DYN && dynSession) {
+        scrubTime = dynSnapTime(scrubTime);
+        mainAudio.currentTime = scrubTime;
+        paint(scrubTime);
+      }
+    }
     track.addEventListener('pointerup', endDrag);
     track.addEventListener('pointercancel', endDrag);
   }
@@ -2506,6 +2590,7 @@
     // Dyn pages: adopt the dynNav neighbour in place (persisted session or static placeholder).
     // A SECOND hop from an adopted state navigates for real — the user has moved two steps.
     if (DYN && cfg.dynNav) {
+      dynLog('advanceTopic dir=' + dir + (dynAdopted ? ' (adopted→navigate)' : ''));
       if (dynAdopted) { location.href = dynAdopted.page; return; }
       var dynT = dir > 0 ? cfg.dynNav.next : cfg.dynNav.prev;
       if (dynT) dynAdvance(dynT);
@@ -2615,10 +2700,10 @@
     if (!('mediaSession' in navigator)) return;
     var ms = navigator.mediaSession;
     function set(action, fn) { try { ms.setActionHandler(action, fn); } catch (_) {} }
-    set('play', function () { if (mainAudio.paused) togglePlay(); });
-    set('pause', function () { if (!mainAudio.paused) togglePlay(); });
-    set('previoustrack', function () { advanceTopic(-1); });
-    set('nexttrack', function () { advanceTopic(1); });
+    set('play', function () { dynLog('ms:play'); if (mainAudio.paused) togglePlay(); });
+    set('pause', function () { dynLog('ms:pause'); if (!mainAudio.paused) togglePlay(); });
+    set('previoustrack', function () { dynLog('ms:prevtrack'); advanceTopic(-1); });
+    set('nexttrack', function () { dynLog('ms:nexttrack'); advanceTopic(1); });
     // iOS Control Center shows the prev/next-TRACK buttons only when the seek handlers are
     // absent — otherwise it falls back to the ±15s skip buttons. Clear them explicitly so
     // our topic prev/next show on the lock screen. (Our on-page ±10s buttons are unaffected.)

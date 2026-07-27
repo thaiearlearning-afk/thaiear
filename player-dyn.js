@@ -27,14 +27,54 @@
   var FS = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
   var active = null;      // the instance that owns playback
   var pcmCache = {};      // fileName → AudioBuffer, shared across instances
+  // Last known NATIVE engine state — the WebView's JS is suspended while the screen is
+  // locked, so on wake the active instance re-syncs its UI from this (round-8 item 2).
+  var naLast = { t: 0, playing: false };
+
+  // ?dbg=1 debug logging: use player.js's overlay when it's on the page (topic test pages),
+  // else build our own identical one (playlists.html has no player.js).
+  var DBG_ON = /[?&]dbg=1(&|$)/.test(location.search);
+  var dbgEl = null;
+  function dbgLog(msg) {
+    if (!DBG_ON) return;
+    if (window.ThaiEarDynLog) { window.ThaiEarDynLog(msg); return; }
+    try {
+      if (!dbgEl) {
+        dbgEl = document.getElementById('dyn-dbg');
+        if (!dbgEl) {
+          dbgEl = document.createElement('div');
+          dbgEl.id = 'dyn-dbg';
+          dbgEl.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:99999;max-width:82vw;' +
+            'max-height:8.6em;overflow-y:auto;background:rgba(10,10,20,.82);color:#8f8;' +
+            'font:10px/1.35 monospace;padding:5px 7px;border-radius:6px;pointer-events:none;' +
+            'white-space:pre-wrap;word-break:break-all;';
+          (document.body || document.documentElement).appendChild(dbgEl);
+        }
+      }
+      var t = new Date();
+      var line = document.createElement('div');
+      line.textContent = ('0' + t.getMinutes()).slice(-2) + ':' + ('0' + t.getSeconds()).slice(-2) + ' ' + msg;
+      dbgEl.appendChild(line);
+      while (dbgEl.childNodes.length > 40) dbgEl.removeChild(dbgEl.firstChild);
+      dbgEl.scrollTop = dbgEl.scrollHeight;
+    } catch (_) {}
+  }
+  if (DBG_ON) {
+    window.addEventListener('error', function (e) { dbgLog('ERR ' + ((e && e.message) || e.type)); });
+    window.addEventListener('unhandledrejection', function (e) {
+      var r = e && e.reason;
+      dbgLog('REJ ' + ((r && ((r.name || '') + ' ' + (r.message || r.code || ''))) || String(r)));
+    });
+  }
 
   if (NA) {
-    NA.addListener('time', function (d) { if (active && d) active._onTime(d.position || 0); });
-    NA.addListener('ended', function () { if (active) active._onEnded(); });
-    NA.addListener('playing', function (d) { if (active) active._onPlaying(!!(d && d.playing)); });
+    NA.addListener('time', function (d) { if (d) naLast.t = d.position || 0; if (active && d) active._onTime(d.position || 0); });
+    NA.addListener('ended', function () { naLast.playing = false; if (active) active._onEnded(); });
+    NA.addListener('playing', function (d) { naLast.playing = !!(d && d.playing); if (active) active._onPlaying(!!(d && d.playing)); });
     NA.addListener('command', function (d) {
       if (!active) return;
       var a = d && d.action;
+      dbgLog('na:cmd ' + a);
       if (a === 'thaiear.SENT_NEXT') active.nextSentence();
       else if (a === 'thaiear.SENT_PREV') active.prevSentence();
       else if (a === 'thaiear.NEXT') active._navGo(1);
@@ -114,6 +154,12 @@
   }
   var SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAwF0AAIC7AAACABAAZGF0YQAAAAA=';
 
+  // Circular-① sentence-skip glyphs — identical to the player.js dyn topic player's (item 6:
+  // the two players must be visually indistinguishable).
+  var SVG_D1 = '<path d="M12.36 15.94v-4.27h-.09l-1.77.63v.69l1.01-.31v3.26h.85z"/>';
+  var SVG_SENT_PREV = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>' + SVG_D1 + '</svg>';
+  var SVG_SENT_NEXT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 13c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6v4l5-5-5-5v4c-4.4 0-8 3.6-8 8z"/>' + SVG_D1 + '</svg>';
+
   /* ── playlist popup (shared, one at a time) ─────────────── */
   function openPlaylistPopup(anchorTier, item) {
     var old = document.getElementById('dyn-pl-pop');
@@ -179,6 +225,80 @@
     var playing = false, curTime = 0;
     var removing = null;   // { marked: {tk|num: item} } while batch-remove tick mode is active
     var inst = {};
+    // ── session persistence (round-8 item 1; mirrors player.js's dyn persistence) ──
+    // Only when the host passes a persistId (playlists.html → the playlist id). Meta in
+    // localStorage; audio in the durable 'thaiear-audio-dl' cache (web) or the DATA dir
+    // (native) under UNIQUE per-build names + old-file cleanup (the stale-URI lesson).
+    var PID = opts.persistId != null ? String(opts.persistId) : null;
+    function plMetaKey(m) { return 'te_dyn_meta_pl_' + PID + '_' + m; }
+    function plCachePath(m) { return '/dyn/pl-' + PID + '/' + m + '.wav'; }
+    function plReadMeta(m) {
+      try {
+        var x = JSON.parse(lsGet(plMetaKey(m), 'null') || 'null');
+        if (x && x.key && x.map && x.map.length && x.duration) return x;
+      } catch (_) {}
+      return null;
+    }
+    function plNextSeq() {
+      var n = 1;
+      try { n = (parseInt(localStorage.getItem('te_dyn_seq'), 10) || 0) + 1; localStorage.setItem('te_dyn_seq', String(n)); } catch (_) {}
+      return n;
+    }
+    function plPersist(sess, m) {
+      if (!PID) return Promise.resolve(sess);
+      var oldMeta = plReadMeta(m);
+      if (NA && FS) {
+        var name = 'dyn-pl-' + PID + '-' + m + '-' + plNextSeq() + '.wav';
+        return new Promise(function (res, rej) {
+          var fr = new FileReader();
+          fr.onload = function () { res(String(fr.result).split(',')[1] || ''); };
+          fr.onerror = function () { rej(new Error('fr')); };
+          fr.readAsDataURL(sess.blob);
+        }).then(function (b64) {
+          return FS.writeFile({ path: name, data: b64, directory: 'DATA' });
+        }).then(function () {
+          return FS.getUri({ path: name, directory: 'DATA' });
+        }).then(function (u) {
+          sess.fileUri = (u && u.uri) || null;
+          sess.file = name;
+          lsSet(plMetaKey(m), JSON.stringify({ key: sess.key, map: sess.map, duration: sess.duration, file: name }));
+          if (oldMeta && oldMeta.file && oldMeta.file !== name) {
+            try { FS.deleteFile({ path: oldMeta.file, directory: 'DATA' }).catch(function () {}); } catch (_) {}
+          }
+          return sess;
+        }).catch(function () { return sess; });   // persistence failure is non-fatal — the session still plays
+      }
+      lsSet(plMetaKey(m), JSON.stringify({ key: sess.key, map: sess.map, duration: sess.duration }));
+      if (window.caches) {
+        caches.open('thaiear-audio-dl').then(function (c) {
+          return c.put(plCachePath(m), new Response(sess.blob, { headers: { 'Content-Type': 'audio/wav' } }));
+        }).catch(function () {});
+      }
+      return Promise.resolve(sess);
+    }
+    // Resolves the restored session, or null on any miss (stale key, evicted cache, purged file).
+    function plRestore(m) {
+      if (!PID) return Promise.resolve(null);
+      var meta = plReadMeta(m);
+      if (!meta || meta.key !== sessionKey()) return Promise.resolve(null);
+      if (NA) {
+        if (!FS || !meta.file) return Promise.resolve(null);
+        return FS.stat({ path: meta.file, directory: 'DATA' })
+          .then(function () { return FS.getUri({ path: meta.file, directory: 'DATA' }); })
+          .then(function (u) {
+            if (!u || !u.uri) return null;
+            return { url: null, fileUri: u.uri, blob: null, map: meta.map, key: meta.key, duration: meta.duration, file: meta.file };
+          }).catch(function () { return null; });
+      }
+      if (!window.caches) return Promise.resolve(null);
+      return caches.open('thaiear-audio-dl')
+        .then(function (c) { return c.match(plCachePath(m)); })
+        .then(function (r) { return r ? r.blob() : null; })
+        .then(function (b) {
+          if (!b) return null;
+          return { url: URL.createObjectURL(b), blob: b, map: meta.map, key: meta.key, duration: meta.duration };
+        }).catch(function () { return null; });
+    }
 
     function included() { return SENTS.filter(function (s) { return !excluded[s.num]; }); }
     function repeatPause(s) { return Math.max(3.0, syllables(s.thai) * 0.5) * factor; }
@@ -234,9 +354,18 @@
       audio.addEventListener('pause', function () { if (!audio.ended) { playing = false; updateUI(); } });
     }
     // Called by the module visibilitychange listener when we return to the foreground:
-    // adopt the <audio> element's REAL state (web; the native path gets 'playing' events).
+    // adopt the REAL engine state. Web reads the <audio> element; native reads the cached
+    // last NA 'time'/'playing' data (the WebView's JS was suspended while locked, so the
+    // instance's own flags — and a box auto-played via lock-screen nav — are stale).
     inst._resync = function () {
-      if (NA || !audio) return;
+      if (NA) {
+        if (active !== inst) return;
+        playing = naLast.playing;
+        curTime = naLast.t || curTime;
+        updateUI();   // full repaint: play icon, seek bar visibility/fill, card highlight
+        return;
+      }
+      if (!audio) return;
       playing = !audio.paused && !audio.ended;
       curTime = audio.currentTime || curTime;
       updateUI();
@@ -257,16 +386,28 @@
       if (!NA && 'mediaSession' in navigator) {
         try {
           navigator.mediaSession.metadata = new MediaMetadata({ title: opts.name || 'ThaiEar', artist: 'ThaiEar' });
-          navigator.mediaSession.setActionHandler('play', function () { if (audio) audio.play(); });
-          navigator.mediaSession.setActionHandler('pause', function () { if (audio) audio.pause(); });
-          navigator.mediaSession.setActionHandler('nexttrack', function () { inst.nextSentence(); });
-          navigator.mediaSession.setActionHandler('previoustrack', function () { inst.prevSentence(); });
+          navigator.mediaSession.setActionHandler('play', function () { dbgLog('ms:play'); if (audio) audio.play(); });
+          navigator.mediaSession.setActionHandler('pause', function () { dbgLog('ms:pause'); if (audio) audio.pause(); });
+          navigator.mediaSession.setActionHandler('nexttrack', function () { dbgLog('ms:nexttrack'); inst.nextSentence(); });
+          navigator.mediaSession.setActionHandler('previoustrack', function () { dbgLog('ms:prevtrack'); inst.prevSentence(); });
         } catch (_) {}
       }
     }
     function startPlayback() {
       claim();
       if (NA) {
+        var doPrep = function (uri) {
+          return NA.prepare({
+            url: uri, title: opts.name || 'ThaiEar', subtitle: 'ThaiEar',
+            artwork: 'https://thaiear.com/apple-touch-icon.png', mode: 'dyn',
+            // sentence start-times → native lock-screen sentence skip (JS is suspended when locked)
+            marks: session.map.map(function (m) { return m.start; })
+          }).then(function () { playing = true; return NA.play(); });
+        };
+        // Persisted sessions (built or restored) already sit in the DATA dir under a unique
+        // name — prepare that URI directly. The throwaway CACHE write remains only for
+        // callers without a persistId.
+        if (session.fileUri) return doPrep(session.fileUri);
         var fr = new FileReader();
         return new Promise(function (resolve, reject) {
           fr.onerror = reject;
@@ -274,15 +415,7 @@
             var b64 = String(fr.result).split(',')[1];
             FS.writeFile({ path: 'dyn-session.wav', data: b64, directory: 'CACHE' })
               .then(function () { return FS.getUri({ path: 'dyn-session.wav', directory: 'CACHE' }); })
-              .then(function (u) {
-                return NA.prepare({
-                  url: u.uri, title: opts.name || 'ThaiEar', subtitle: 'ThaiEar',
-                  artwork: 'https://thaiear.com/apple-touch-icon.png', mode: 'dyn',
-                  // sentence start-times → native lock-screen sentence skip (JS is suspended when locked)
-                  marks: session.map.map(function (m) { return m.start; })
-                });
-              })
-              .then(function () { playing = true; return NA.play(); })
+              .then(function (u) { return doPrep(u.uri); })
               .then(resolve, reject);
           };
           fr.readAsDataURL(session.blob);
@@ -300,14 +433,25 @@
     function unlockWebAudio() { if (audio) { try { audio.src = SILENT_WAV; audio.play().catch(function () {}); } catch (_) {} } }
     function ensureSession() {
       if (session && session.key === sessionKey()) return Promise.resolve(session);
-      building = true; buildFailed = null; updateUI();
-      return buildSession(function (d, t) { var n = el('#dyn-build-n'); if (n) n.textContent = ' ' + d + '/' + t; })
-        .then(function (s) { building = false; updateUI(); return s; })
-        .catch(function (e) {
-          building = false; session = null;
-          buildFailed = (e && e.code === 'noauth') ? 'auth' : 'net';
-          updateUI(); throw e;
-        });
+      buildFailed = null;
+      // Restore-before-build (round-8 item 1): a persisted-session hit skips the fetch/decode
+      // AND the "Constructing…" status entirely, like the topic dyn player.
+      return plRestore(mode).then(function (restored) {
+        if (restored) {
+          if (session && session.url) { try { URL.revokeObjectURL(session.url); } catch (_) {} }
+          session = restored;
+          updateUI();
+          return session;
+        }
+        building = true; updateUI();
+        return buildSession(function (d, t) { var n = el('#dyn-build-n'); if (n) n.textContent = ' ' + d + '/' + t; })
+          .then(function (s) { return plPersist(s, mode); })
+          .then(function (s) { building = false; updateUI(); return s; });
+      }).catch(function (e) {
+        building = false; session = null;
+        buildFailed = (e && e.code === 'noauth') ? 'auth' : 'net';
+        updateUI(); throw e;
+      });
     }
     inst.isPlaying = function () { return playing; };
     inst.pause = function () {
@@ -428,13 +572,18 @@
           '<div class="dyn-mode" role="group"><button type="button" data-mode="TE">Thai first</button><button type="button" data-mode="ET">English first</button></div>' +
           '<div class="dyn-main">' +
             ((nav.prevHref || nav.onPrev) ? '<button class="dyn-skip dyn-topic-btn" id="dyn-tprev" type="button" aria-label="Previous topic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h2v14H4z"/><path d="M13 5v14l-7-7zM21 5v14l-7-7z"/></svg></button>' : '') +
-            '<button class="dyn-skip" id="dyn-prev" type="button" aria-label="Previous sentence"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14l-10-7z"/></svg></button>' +
+            '<button class="dyn-skip dyn-sent" id="dyn-prev" type="button" aria-label="Previous sentence" title="Previous sentence">' + SVG_SENT_PREV + '</button>' +
             '<button class="dyn-play" id="dyn-play" type="button" aria-label="Play"><svg id="dyn-play-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>' +
-            '<button class="dyn-skip" id="dyn-next" type="button" aria-label="Next sentence"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l10-7z"/></svg></button>' +
+            '<button class="dyn-skip dyn-sent" id="dyn-next" type="button" aria-label="Next sentence" title="Next sentence">' + SVG_SENT_NEXT + '</button>' +
             ((nav.nextHref || nav.onNext) ? '<button class="dyn-skip dyn-topic-btn" id="dyn-tnext" type="button" aria-label="Next topic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 5h2v14h-2z"/><path d="M3 5v14l7-7zM11 5v14l7-7z"/></svg></button>' : '') +
+            '<div class="dyn-scrubwrap">' +
+              '<div class="dyn-seek" id="dyn-seek">' +
+                '<div class="dyn-seek-bar" id="dyn-seek-bar"><i id="dyn-seek-fill"></i></div>' +
+                '<div class="dyn-seek-t"><span id="dyn-t-cur">0:00</span><span id="dyn-t-tot">–:––</span></div>' +
+              '</div>' +
+            '</div>' +
           '</div>' +
           '<div class="dyn-build" id="dyn-build" hidden>Constructing dynamic mp3 file<span class="dyn-dots" aria-hidden="true"></span><span id="dyn-build-n"></span></div>' +
-          '<div class="dyn-seek" id="dyn-seek"><div class="dyn-seek-bar" id="dyn-seek-bar"><i id="dyn-seek-fill"></i></div><div class="dyn-seek-t"><span id="dyn-t-cur">0:00</span><span id="dyn-t-tot">–:––</span></div></div>' +
           '<button class="dyn-now" id="dyn-now" type="button">Ready</button>' +
           '<div class="dyn-slider"><span>Pauses</span><input id="dyn-pf" type="range" min="0.5" max="2" step="0.25" value="' + factor + '"><span id="dyn-pf-val">' + factor + '×</span>' +
             '<span class="dyn-ctl-sep">·</span><span>Thai sentence repeats</span><span class="dyn-reps" id="dyn-reps"></span>' +
@@ -494,7 +643,11 @@
       el('#dyn-seek-bar').addEventListener('click', function (ev) {
         if (!session) return;
         var r = ev.currentTarget.getBoundingClientRect();
-        seekTo(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * session.duration);
+        var target = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * session.duration;
+        // Round-8 item 3: snap to the nearest sentence-block start — never land mid-pause.
+        var best = target, bd = Infinity;
+        session.map.forEach(function (m) { var d = Math.abs(m.start - target); if (d < bd) { bd = d; best = m.start; } });
+        seekTo(best);
       });
       if (FEAT.exclude) renderPills();
       renderList();

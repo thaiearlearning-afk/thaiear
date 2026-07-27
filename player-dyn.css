@@ -4,19 +4,23 @@
    skin on premium topic pages. */
 .dyn-wrap.tier-premium { --accent: #B29234; --accent-light: #FBF5DC; --accent-mid: #C8A030; }
 
-.dyn-player { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.15rem 1.25rem 1rem; }
-.dyn-mode { display: flex; gap: 0; border: 0.5px solid var(--border-strong); border-radius: 20px; overflow: hidden; width: max-content; margin: 0 auto 1rem; }
-.dyn-mode button { font-family: var(--font-ui); font-size: 13px; font-weight: 500; padding: 7px 18px; border: none; background: var(--surface); color: var(--text-secondary); cursor: pointer; }
-.dyn-mode button.on { background: var(--accent); color: #fff; font-weight: 600; }
-.dyn-main { display: flex; align-items: center; justify-content: center; gap: 1.4rem; margin-bottom: 0.85rem; }
-.dyn-play { width: 60px; height: 60px; border-radius: 50%; border: none; background: var(--accent); color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s; }
+/* ── player chrome — copied from player.js's dyn topic player (round-8 item 6: the two
+   players must be side-by-side indistinguishable). Scoped under .dyn-wrap. ── */
+.dyn-wrap .dyn-player, .dyn-player { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1rem; }
+.dyn-mode { display: flex; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; width: max-content; margin: 0 auto 0.9rem; }
+.dyn-mode button { font-family: var(--font-ui); font-size: 12px; font-weight: 400; color: var(--text-secondary); background: none; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
+.dyn-mode button:hover { color: var(--text-primary); }
+.dyn-mode button.on { background: var(--accent); color: #fff; font-weight: 500; }
+.dyn-main { display: flex; align-items: center; gap: 12px; margin-bottom: 0.35rem; }
+.dyn-play { width: 38px; height: 38px; border-radius: 50%; border: none; background: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
 .dyn-play:hover { background: var(--accent-mid); }
-.dyn-play svg { width: 26px; height: 26px; }
-.dyn-skip { width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
-.dyn-skip:hover { color: var(--accent); border-color: var(--accent); }
-.dyn-skip svg { width: 16px; height: 16px; }
+.dyn-play svg { fill: #fff; width: 14px; height: 14px; margin-left: 2px; }
+.dyn-skip { position: relative; width: 34px; height: 34px; border-radius: 50%; background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+.dyn-skip:hover { background: var(--bg); color: var(--accent); }
+.dyn-skip.dyn-sent svg { width: 30px; height: 30px; }
 .dyn-topic-btn { width: 34px; height: 34px; }
 .dyn-topic-btn svg { width: 14px; height: 14px; }
+.dyn-scrubwrap { flex: 1; min-width: 0; }
 
 .dyn-build { text-align: center; font-size: 13px; font-weight: 500; color: var(--accent); padding: 4px 0 8px; }
 .dyn-dots { display: inline-block; width: 1.1em; text-align: left; }
@@ -24,12 +28,15 @@
 @keyframes dyn-dots { from { width: 0; } to { width: 1.05em; } }
 #dyn-build-n, .dyn-build span:last-child { color: var(--text-tertiary); font-weight: 400; margin-left: 6px; }
 
-.dyn-seek { margin: 2px 4px 8px; visibility: hidden; }
-.dyn-seek-bar { height: 6px; border-radius: 3px; background: var(--accent-light); cursor: pointer; position: relative; overflow: hidden; }
-.dyn-seek-bar i { display: block; position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); border-radius: 3px; }
-.dyn-seek-t { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+/* scrubber — same track/fill/thumb as the player.js dyn scrubber (8px bar, 18px thumb) */
+.dyn-seek { visibility: hidden; }
+.dyn-seek-bar { width: 100%; height: 8px; border-radius: 4px; background: var(--border); cursor: pointer; position: relative; margin: 10px 0 5px; }
+.dyn-seek-bar i { display: block; position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); border-radius: 4px; transition: width 0.1s linear; }
+.dyn-seek-bar i::after { content: ''; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border-radius: 50%; background: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+.dyn-seek-t { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
 
-.dyn-now { display: block; width: 100%; text-align: center; font-family: var(--font-ui); font-size: 13px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 4px 0; margin-bottom: 0.5rem; }
+/* now-playing line — same typography as the player.js .now-playing strip */
+.dyn-now { display: block; width: 100%; text-align: center; font-family: var(--font-ui); font-size: 12.5px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 4px 0; margin: 0.15rem 0 0.35rem; }
 .dyn-now:hover { color: var(--accent); }
 .dyn-slider { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; font-size: 11.5px; color: var(--text-tertiary); }
 .dyn-slider input[type=range] { width: 110px; accent-color: var(--accent); }

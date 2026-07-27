@@ -191,6 +191,7 @@
     instances[p.id] = ThaiEarDyn.create(mountEl, {
       name: p.name,
       topicKey: 'playlist',
+      persistId: p.id,   // round-8: playlist sessions persist per playlist id
       prefix: '',
       tier: 'free',
       sentences: p.items.map(function (i) {
