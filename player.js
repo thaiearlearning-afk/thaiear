@@ -1446,7 +1446,7 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r16a';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r16b';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2142,7 +2142,8 @@
     reps: 'This setting determines the number of times a Thai sentence is spoken.',
     engpos: 'This setting determines where the English sentence appears. In the final position, ' +
       'the English is heard after all Thai repeats, but English can also be repositioned so that ' +
-      'it is heard between Thai repeats for maximum comprehensibility.'
+      'it is heard between Thai repeats for maximum comprehensibility. To hear English in the ' +
+      'first position, switch to the English first mode at the top.'
   };
   var dynInfoOpen = null;
   function dynInfoClose() {
