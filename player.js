@@ -1774,7 +1774,12 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r27a';  // visible build tag on the test pages — bump every test-space deploy
+  /* r28: opt-in cosmetic restyle, per page via `style2: true` in window.ThaiEarTopic. Everything
+     it changes is DISCLOSURE and PLACEMENT — no control is removed, because the owner's
+     constraint is that all current functionality must remain. Set on topic-test only, so
+     topic-test2 stays as-is for side-by-side comparison. */
+  var STYLE2 = DYN && cfg.style2 === true;
+  var DYN_BUILD = 'r28';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3075,6 +3080,24 @@
       'aria-label="' + escapeHtml(text) + ' — what is this?">' + escapeHtml(text) +
       ' <span class="dyn-info-i" aria-hidden="true">i</span></button>';
   }
+  /* Collapse the SEO intro to two lines with a Read more. The paragraph is only WRAPPED and
+     height-clamped — the text is never removed or display:none'd, so it stays fully indexable. */
+  function dynCollapseIntro() {
+    var p = document.querySelector('.topic-intro');
+    if (!p || (p.parentNode && p.parentNode.className === 'te-intro-wrap')) return;
+    var w = document.createElement('div');
+    w.className = 'te-intro-wrap';
+    p.parentNode.insertBefore(w, p);
+    w.appendChild(p);
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'te-intro-more';
+    b.textContent = 'Read more';
+    w.appendChild(b);
+    b.addEventListener('click', function () {
+      b.textContent = w.classList.toggle('open') ? 'Show less' : 'Read more';
+    });
+  }
   // Show/hide the TE-only English checkbox to match the current direction (ET always has English).
   function dynSyncEnToggle() {
     var w = $('dyn-en-wrap'), sp = $('dyn-en-sep');
@@ -3748,6 +3771,46 @@
     '.dyn-ep-box{width:16px;height:16px;border-radius:4px;border:.5px solid var(--border-strong);background:var(--surface);cursor:pointer;padding:0;position:relative}' +
     '.dyn-ep-box.on{background:var(--accent);border-color:var(--accent)}' +
     ".dyn-ep-box.on::after{content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}" +
+    /* ══ r28 STYLE2 — opt-in restyle, everything scoped to body.te-v2 ══════════════
+       1. The intro collapses to two lines. It is a HEIGHT CLAMP, never display:none — the
+          full text stays in the DOM so search engines still read every word, which is the
+          whole reason the paragraph exists.
+       2. Playback settings fold into a disclosure. They are the busiest block on the page
+          and are set once, not per listen.
+       3. The two playlist actions become a proper 2-up button row instead of a button and a
+          stray text link.
+       4. Per-sentence tools move to the RIGHT of the preview, so every row reads
+          number → play → Thai, with the tools out of the reading path.
+       5. The three-segment reveal indicator goes. The tap-to-expand-in-stages mechanic it
+          described is untouched — only the ornament is removed. */
+    'body.te-v2 .te-intro-wrap{position:relative;margin-bottom:1.1rem}' +
+    'body.te-v2 .te-intro-wrap .topic-intro{overflow:hidden;margin-bottom:0}' +
+    'body.te-v2 .te-intro-wrap:not(.open) .topic-intro{max-height:3.3em}' +
+    "body.te-v2 .te-intro-wrap:not(.open)::after{content:'';position:absolute;left:0;right:0;bottom:1.85em;height:2.1em;background:linear-gradient(to bottom,rgba(250,250,248,0),var(--bg));pointer-events:none}" +
+    'body.te-v2 .te-intro-more{margin-top:3px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:none;border:0;padding:2px 0;cursor:pointer}' +
+    'body.te-v2 .te-intro-more:hover{text-decoration:underline}' +
+    /* settings disclosure */
+    'body.te-v2 .dyn-set-wrap{margin-top:2px}' +
+    'body.te-v2 .dyn-set-wrap summary{list-style:none;cursor:pointer;font-family:var(--font-ui);font-size:12.5px;font-weight:500;color:var(--text-secondary);padding:9px 0 0;display:flex;align-items:center;gap:6px}' +
+    'body.te-v2 .dyn-set-wrap summary::-webkit-details-marker{display:none}' +
+    "body.te-v2 .dyn-set-wrap summary::after{content:'⌄';font-size:14px;transition:transform .18s}" +
+    'body.te-v2 .dyn-set-wrap[open] summary::after{transform:rotate(180deg)}' +
+    'body.te-v2 .dyn-set-wrap .dyn-slider{margin-top:9px}' +
+    /* playlist row */
+    'body.te-v2 .te-pl-row{display:flex;gap:9px;margin:14px 0 16px}' +
+    'body.te-v2 .te-pl-row .dyn-addpl,body.te-v2 .te-pl-row .dyn-pl-link{flex:1;margin:0;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-ui);font-size:13.5px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:11px 10px;text-decoration:none;text-align:center;cursor:pointer}' +
+    'body.te-v2 .te-pl-row .dyn-addpl:hover,body.te-v2 .te-pl-row .dyn-pl-link:hover{background:var(--accent-light);color:var(--accent)}' +
+    /* per-sentence: tools to the right, reveal ornament gone */
+    'body.te-v2 .sentence-header{display:flex;align-items:center;gap:8px}' +
+    'body.te-v2 .prog-wrap{display:none}' +
+    'body.te-v2 .dyn-tick{order:0}' +
+    'body.te-v2 .sent-num{order:1}' +
+    'body.te-v2 .dyn-eq{order:2}' +
+    'body.te-v2 .sent-play-btn{order:3}' +
+    'body.te-v2 .sent-preview{order:4;flex:1;min-width:0}' +
+    'body.te-v2 .speed-toggle{order:5}' +
+    'body.te-v2 .sent-flag-btn{order:6}' +
+    'body.te-v2 .dyn-x-btn{order:7}' +
     /* r16a: the ⓘ explainer labels + their dismissible box */
     '.dyn-info-lbl{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-align:left}' +
     '.dyn-info-lbl:hover{color:var(--accent)}' +
@@ -3858,6 +3921,7 @@
       document.head.appendChild(st);
     }
     var root = $('player-root'); if (!root) return;
+    if (STYLE2) { document.body.classList.add('te-v2'); dynCollapseIntro(); }
     dynLoadSettings();   // r16: this unit's settings for the current direction, before anything paints
     var row = root.querySelector('.audio-row');
     if (row) {
@@ -3950,6 +4014,19 @@
       var syncBtn = syncRow.querySelector('#dyn-sync-btn');
       if (syncBtn) syncBtn.addEventListener('click', dynSyncConfirm);
       dynPaintFmtTag();
+      if (STYLE2) {
+        // Move (not rebuild) the three settings rows inside a disclosure — moving nodes keeps
+        // every listener already attached to them, so no control changes behaviour.
+        var det = document.createElement('details');
+        det.className = 'dyn-set-wrap';
+        var sum = document.createElement('summary');
+        sum.textContent = 'Playback settings';
+        det.appendChild(sum);
+        sl.parentNode.insertBefore(det, sl);
+        det.appendChild(sl);
+        det.appendChild(epRow);
+        det.appendChild(syncRow);
+      }
       dynSyncEnToggle();
       var skips = row.querySelectorAll('.skip-btn');   // [back-10, fwd-10] (dyn buttons not yet inserted)
       var prevB = document.createElement('button');
@@ -3992,8 +4069,18 @@
       else aplAnchor.parentNode.insertBefore(apl, aplAnchor.nextSibling);
       var pll = document.createElement('a');
       pll.className = 'dyn-pl-link'; pll.href = 'playlists.html';
-      pll.textContent = '🎵 My Playlists · build ' + DYN_BUILD;
+      // The build tag already shows in the corner of the settings block, so the link does not
+      // need to carry it once these are proper side-by-side buttons.
+      pll.textContent = STYLE2 ? '🎵 My playlists' : ('🎵 My Playlists · build ' + DYN_BUILD);
       apl.parentNode.insertBefore(pll, apl.nextSibling);
+      if (STYLE2) {
+        apl.textContent = '＋ Add to a playlist';
+        var plRow = document.createElement('div');
+        plRow.className = 'te-pl-row';
+        apl.parentNode.insertBefore(plRow, apl);
+        plRow.appendChild(apl);
+        plRow.appendChild(pll);
+      }
     }
     sentences.forEach(function (s) {
       var hdr = document.querySelector('#sc-' + s.num + ' .sentence-header');
