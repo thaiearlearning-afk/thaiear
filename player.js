@@ -1425,7 +1425,7 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r12';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r13';  // visible build tag on the test pages — bump every test-space deploy
   var dynLogEl = null;
   function dynLog(msg) {
     if (!DYN_DBG) return;
