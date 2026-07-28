@@ -1457,7 +1457,7 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r17';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r17a';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -1764,6 +1764,60 @@
       total -= it.bytes;
       dynLog('sweep: evicted ' + it.ns + '/' + it.mode + ' (' + Math.round(it.bytes / 1048576) + ' MB)');
     }
+  }
+  /* r17a: ORPHAN SWEEP. A rebuild REPLACES rather than adds — the web cache key is stable
+     (same path, cache.put overwrites) and the native path deletes the superseded file right
+     after persisting. But the native write happens during the BUILD and the delete during the
+     PERSIST, so an app kill between the two strands a file that nothing references and nothing
+     would ever remove. Same for a web entry whose extension changed while the tab died. So:
+     once per page, list what's actually stored, and delete anything no current meta claims.
+     Cheap, and it can only ever remove a file that is already unreachable. */
+  function dynReferencedFiles() {
+    var refs = {}, i;
+    try {
+      for (i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf('te_dyn_meta_') !== 0) continue;
+        var m = null;
+        try { m = JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) {}
+        if (!m) continue;
+        if (m.file) refs[m.file] = true;                       // native filename
+        var rest = k.slice(12), us = rest.lastIndexOf('_');
+        if (us > 0) refs[dynCachePath(rest.slice(0, us), rest.slice(us + 1), m.ext)] = true;
+      }
+    } catch (_) {}
+    return refs;
+  }
+  function dynSweepOrphans() {
+    var refs = dynReferencedFiles();
+    if (NATIVE) {
+      var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+      if (!FS || !FS.readdir) return;
+      FS.readdir({ path: '', directory: 'DATA' }).then(function (r) {
+        var files = (r && r.files) || [];
+        files.forEach(function (f) {
+          var name = (typeof f === 'string') ? f : (f && f.name);
+          if (!name || name.indexOf('dyn-') !== 0) return;     // only ever our own session files
+          if (refs[name]) return;
+          FS.deleteFile({ path: name, directory: 'DATA' }).catch(function () {});
+          dynLog('sweep: orphan ' + name);
+        });
+      }).catch(function () {});
+      return;
+    }
+    if (!window.caches) return;
+    caches.open(AUDIO_DL_CACHE).then(function (c) {
+      return c.keys().then(function (reqs) {
+        reqs.forEach(function (req) {
+          var p;
+          try { p = new URL(req.url).pathname; } catch (_) { return; }
+          // ONLY /dyn/ — this cache also holds downloaded topic audio, which is not ours to touch.
+          if (p.indexOf('/dyn/') !== 0 || refs[p]) return;
+          c.delete(req).catch(function () {});
+          dynLog('sweep: orphan ' + p);
+        });
+      });
+    }).catch(function () {});
   }
   // Rehydrate a persisted session's audio (meta comes from dynReadMeta). Resolves null on any
   // miss — evicted cache entry, missing native file — so callers fall back to building.
@@ -3436,6 +3490,8 @@
         }
       }
     });
+    // Housekeeping, deferred so it never competes with a build or the first paint.
+    setTimeout(dynSweepOrphans, 4000);
     dynPrefetchNeighbours();        // iPhone: neighbours' placeholder URLs ready before any lock-screen skip
     dynSyncSentBtns();              // ① buttons start greyed until a session (or hydrated map) is live
     dynPrefsApply();                // round-14: overlay the account-level settings once auth allows
