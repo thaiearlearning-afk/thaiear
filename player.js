@@ -1457,7 +1457,7 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r17a';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r17b';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2150,11 +2150,29 @@
   function dynWavResult(samples) {
     return { blob: dynEncodeWav(samples), ext: 'wav', mime: 'audio/wav', fmt: 'wav' };
   }
+  /* The chosen format + the size it produced, shown in the test-space corner tag. This lives
+     on screen rather than behind ?dbg=1 because the APP has no address bar — a debug flag you
+     cannot type is a debug flag that does not exist. Test-space only; goes at rollout. */
+  var dynLastEnc = null;
+  function dynPaintFmtTag() {
+    var el = $('dyn-fmt-tag');
+    if (!el) return;
+    var fmt = dynLastEnc && dynLastEnc.fmt;
+    if (!fmt) { try { fmt = localStorage.getItem(DYN_FMT_KEY); } catch (_) {} }
+    if (!fmt) { el.textContent = DYN_BUILD; return; }
+    el.textContent = DYN_BUILD + ' · ' + fmt +
+      (dynLastEnc && dynLastEnc.bytes ? ' · ' + (dynLastEnc.bytes / 1048576).toFixed(2) + ' MB' : '');
+  }
+  function dynNoteEnc(fmt, bytes) { dynLastEnc = { fmt: fmt, bytes: bytes }; dynPaintFmtTag(); }
   // Encode the session, choosing (and remembering) the best format this device can produce.
   function dynEncodeSession(samples, seconds) {
     var cached = null;
     try { cached = localStorage.getItem(DYN_FMT_KEY); } catch (_) {}
-    if (cached === 'wav' || !window.AudioEncoder || !window.AudioData) return Promise.resolve(dynWavResult(samples));
+    if (cached === 'wav' || !window.AudioEncoder || !window.AudioData) {
+      var w = dynWavResult(samples);
+      dynNoteEnc('wav', w.blob.size);
+      return Promise.resolve(w);
+    }
     var tiers = DYN_ENC_TIERS.filter(function (t) { return !cached || t.fmt === cached; });
     var verified = !!cached;    // an already-chosen format was verified when it was chosen
     var idx = 0;
@@ -2162,7 +2180,9 @@
       if (idx >= tiers.length) {
         try { localStorage.setItem(DYN_FMT_KEY, 'wav'); } catch (_) {}
         dynLog('encode: falling back to WAV');
-        return Promise.resolve(dynWavResult(samples));
+        var wf = dynWavResult(samples);
+        dynNoteEnc('wav', wf.blob.size);
+        return Promise.resolve(wf);
       }
       var tier = tiers[idx++], cfg = tier.cfg();
       return AudioEncoder.isConfigSupported(cfg)
@@ -2171,11 +2191,12 @@
           return dynEncodeFrames(cfg, samples).then(function (r) {
             var blob = dynPackage(tier, r);
             if (!blob) return attempt();
-            if (verified) return { blob: blob, ext: tier.ext, mime: tier.mime, fmt: tier.fmt };
+            if (verified) { dynNoteEnc(tier.fmt, blob.size); return { blob: blob, ext: tier.ext, mime: tier.mime, fmt: tier.fmt }; }
             return dynVerifyFormat(blob, seconds).then(function (ok) {
               if (!ok) { dynLog('encode: ' + tier.fmt + ' failed verification'); return attempt(); }
               try { localStorage.setItem(DYN_FMT_KEY, tier.fmt); } catch (_) {}
               dynLog('encode: using ' + tier.fmt + ' (' + Math.round(blob.size / 1024) + ' KB)');
+              dynNoteEnc(tier.fmt, blob.size);
               return { blob: blob, ext: tier.ext, mime: tier.mime, fmt: tier.fmt };
             });
           }).catch(function () { return attempt(); });
@@ -3250,7 +3271,8 @@
     '.dyn-info-x{position:absolute;top:3px;right:4px;width:22px;height:22px;border:0;background:none;color:var(--text-tertiary);cursor:pointer;font-size:16px;line-height:1;padding:0}' +
     '.dyn-info-x:hover{color:var(--accent)}' +
     /* r16: "apply to all" sync affordance — bottom-left, under the settings rows */
-    '.dyn-sync-row{display:flex;justify-content:flex-start;margin:8px 0 2px}' +
+    '.dyn-sync-row{display:flex;align-items:center;justify-content:flex-start;margin:8px 0 2px}' +
+    '.dyn-fmt-tag{order:2;margin-left:auto;font-size:10.5px;color:var(--text-tertiary);font-variant-numeric:tabular-nums}' +
     '.dyn-sync-btn{width:28px;height:28px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}' +
     '.dyn-sync-btn svg{width:15px;height:15px}' +
     '.dyn-sync-btn:hover{color:var(--accent);border-color:var(--accent)}' +
@@ -3391,7 +3413,8 @@
       // r16 item 3: the "apply to all" affordance — bottom-left of the player controls.
       var syncRow = document.createElement('div');
       syncRow.className = 'dyn-sync-row';
-      syncRow.innerHTML = '<button type="button" class="dyn-sync-btn" id="dyn-sync-btn" ' +
+      syncRow.innerHTML = '<span class="dyn-fmt-tag" id="dyn-fmt-tag"></span>' +
+        '<button type="button" class="dyn-sync-btn" id="dyn-sync-btn" ' +
         'aria-label="Apply these settings to all topics and playlists" ' +
         'title="Apply these settings to all topics and playlists">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -3400,6 +3423,7 @@
       epRow.parentNode.insertBefore(syncRow, epRow.nextSibling);
       var syncBtn = syncRow.querySelector('#dyn-sync-btn');
       if (syncBtn) syncBtn.addEventListener('click', dynSyncConfirm);
+      dynPaintFmtTag();
       dynSyncEnToggle();
       var skips = row.querySelectorAll('.skip-btn');   // [back-10, fwd-10] (dyn buttons not yet inserted)
       var prevB = document.createElement('button');

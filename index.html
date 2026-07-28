@@ -1526,7 +1526,10 @@ updateBatchBar();          // show the batch-download bar in the app (hidden on 
         // The APP has no address bar, so every owner-only test page needs a link here or it
         // simply cannot be reached on Android.
         [['owner-test-link', 'topic-test.html?k=cu38961y', '🧪 Dynamic player test (owner preview)', '2.25rem auto 0'],
-         ['owner-probe-link', 'dyn-probe.html?k=cu38961y', '📊 Dynamic audio capability probe', '.6rem auto 0']
+         ['owner-probe-link', 'dyn-probe.html?k=cu38961y', '📊 Dynamic audio capability probe', '.6rem auto 0'],
+         // The app has no address bar, so ?dbg=1 was unreachable there — the overlay it turns
+         // on is the artifact for iPhone lock-screen failures, so it needs its own link.
+         ['owner-dbg-link', 'topic-test.html?k=cu38961y&dbg=1', '🐞 Dynamic player test (debug overlay)', '.6rem auto 0']
         ].forEach(function (L) {
           if (document.getElementById(L[0])) return;
           var a = document.createElement('a');
