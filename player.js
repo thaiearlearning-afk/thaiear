@@ -362,6 +362,13 @@
   })();
   var CACHES = (window.caches && window.isSecureContext) ? window.caches : null;
   var WEB_DL = !NATIVE && !!CACHES && WEB_DL_FLAG;
+  /* r23: the DYN test space must not be behind that dark flag. dyn-index.html enables its own
+     Cache-Storage download whenever caches exist, so on an iPhone the clips DID download — but
+     player.js then refused to READ them (WEB_DL false without the flag), went to the network,
+     and failed offline. That is exactly the "no connection — your settings have been put back"
+     the owner hit on a topic that showed a tick. The flag still governs the CLASSIC web
+     download for real topics; dyn paths use this instead. */
+  var DYN_WEB_DL = !NATIVE && !!CACHES;
   var AUDIO_DL_CACHE = 'thaiear-audio-dl';
   // Same-origin string used purely as a Cache Storage key (never actually fetched from this path),
   // so the stored entry is stable even though a premium file's signed source URL changes each mint.
@@ -655,6 +662,14 @@
      implementation. EXCLUDED sentences are downloaded too — exclusion is a playback choice,
      and re-including one later must not need a connection. */
   function dynDlRef() { return PLMODE ? DYN_KEY_NS : 'topic'; }
+  // Rebuild the stored mp3 for the current settings, from the downloaded clips (works offline).
+  function dynUpdateMp3() {
+    var bar = $('offline-bar');
+    if (bar) bar.innerHTML = '<span class="offline-status"><span class="prog-spin"></span> Constructing dynamic mp3<span class="dyn-dots"></span></span>';
+    dynEnsureSession(null, false)
+      .then(function () { renderOfflineBar(); })
+      .catch(function () { renderOfflineBar(); });
+  }
   /* r22: how much room this download actually takes, shown next to "Available offline".
      Measured, not estimated — the clip files plus the constructed sessions — and cached into
      the manifest so the per-file stat/cache-read happens once, not on every render. Measuring
@@ -685,7 +700,7 @@
       chain = chain.then(function () {
         var files = (getManifest()[pfx] || {}).files || [], sum = 0;
         return dynPool(files, function (f) {
-          if (WEB_DL) {
+          if (DYN_WEB_DL) {
             return caches.open(AUDIO_DL_CACHE)
               .then(function (c) { return c.match(webCacheKey(pfx, f)); })
               .then(function (r) { return r ? r.blob() : null; })
@@ -741,7 +756,7 @@
     var gated = (tier === 'member' || tier === 'premium');
     function attempt(tryNo) {
       return buildUrl(file, gated).then(function (url) {
-        if (WEB_DL) {
+        if (DYN_WEB_DL) {
           var ctrl = new AbortController();
           var timer = setTimeout(function () { ctrl.abort(); }, DL_RACE_TIMEOUT_MS);
           return fetch(url, { mode: 'cors', cache: 'no-store', signal: ctrl.signal }).then(function (res) {
@@ -771,8 +786,8 @@
     function step() { done++; setOfflineState('downloading', done, total); }
     downloadingNow = true;
     setOfflineState('downloading', 0, total);
-    if (WEB_DL) { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {} }
-    var chain = WEB_DL ? caches.open(AUDIO_DL_CACHE) : Promise.resolve(null);
+    if (DYN_WEB_DL) { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {} }
+    var chain = DYN_WEB_DL ? caches.open(AUDIO_DL_CACHE) : Promise.resolve(null);
     chain = chain.then(function (cache) {
       var c = Promise.resolve();
       prefixes.forEach(function (pfx) {
@@ -865,7 +880,7 @@
   }
 
   function downloadTopic() {
-    if (!OFFLINE && !WEB_DL) return;
+    if (!OFFLINE && !WEB_DL && !(DYN && DYN_WEB_DL)) return;
     // Gated topic + not entitled → same preview-only gate as play/reveal/flag (premium → "preview
     // only" toast in-app; member → sign-in), instead of attempting the download and erroring on /api/audio.
     if (!entitledForPage()) { gate(TIER); return; }
@@ -921,7 +936,7 @@
       .then(function () { removeDownloaded(PREFIX); downloadTopic(); });
   }
   function deleteTopic() {
-    if (!OFFLINE && !WEB_DL) return;
+    if (!OFFLINE && !WEB_DL && !(DYN && DYN_WEB_DL)) return;
     if (DYN) { dynDeleteHere(); return; }
     if (WEB_DL) { webDeleteTopic().then(function () { removeDownloaded(PREFIX); setOfflineState('idle'); }); return; }
     Filesystem.rmdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
@@ -959,7 +974,7 @@
   }
   function renderOfflineBar() {
     var bar = $('offline-bar'); if (!bar) return;
-    if (!OFFLINE && !WEB_DL) { bar.style.display = 'none'; return; }  // plain website (no app, flag off): never shown
+    if (!OFFLINE && !WEB_DL && !(DYN && DYN_WEB_DL)) { bar.style.display = 'none'; return; }  // plain website (no app, flag off): never shown
     bar.style.display = 'flex';
     if (DYN) {
       // No stale/refresh states here: a dyn session is keyed on its own content and settings,
@@ -967,6 +982,16 @@
       // are all here", which is the only claim worth making.
       if (!dynDlHasAll()) { setOfflineState('idle'); return; }
       cachePage();
+      // If the STORED mp3 was built with different settings from the ones now selected, say so
+      // and offer to rebuild it — and deliberately show NO size while in that state, because a
+      // figure here would be ambiguous between the old file and the proposed one.
+      var sm = dynReadMeta(DYN_KEY_NS, currentMode);
+      if (sm && sm.key !== dynKey()) {
+        bar.innerHTML = '<span class="offline-status">⟳ Update dynamic mp3 to match current settings?</span>' +
+          '<button class="offline-btn" onclick="dynUpdateMp3()">Update</button>' +
+          '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
+        return;
+      }
       setOfflineState('downloaded');
       dynPaintOfflineSize();
       return;
@@ -1711,7 +1736,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r22a';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r23';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -1876,6 +1901,12 @@
   var dynClipCache = {};      // decoded AudioBuffer per clip filename (survives invalidation)
   var dynLastLive = null;     // sentence num currently highlighted by the timeupdate handler
   var dynLastPos = 0;         // last known playback position (round-10 item 4: resume must survive an engine idle)
+  /* r23: ...but NOT across a reconstruct. dynInvalidate() zeroes dynLastPos, then pause()'s
+     trailing timeupdate/pause events fire ASYNCHRONOUSLY on a real <audio> element and write the
+     OLD position straight back — so iOS resumed the new mp3 mid-way while Android (whose native
+     shim emits no trailing events) correctly started at 0. This flag makes the intent explicit
+     rather than relying on event ordering: while set, nothing may record or restore a position. */
+  var dynPosStale = false;
   var dynSessionIsLocal = true; // does dynSession belong to THIS page's sentences? (card highlight guard)
   var dynAdopted = null;      // the CHAIN entry the top player is currently on when it isn't home (null = home)
   // ── round-11: the CHAIN replaces the pairwise dynNav adopt/navigate model ──
@@ -2156,7 +2187,7 @@
       return localBlobUrl(ref.prefix, ref.file)
         .then(function (u) { return u ? { url: u, temp: true } : buildUrl(ref.file, ref.gated).then(function (r) { return { url: r, temp: false }; }); });
     }
-    if (WEB_DL && isDownloaded(ref.prefix) && entitled) {
+    if (DYN_WEB_DL && isDownloaded(ref.prefix) && entitled) {
       return cachedBlobUrl(ref.prefix, ref.file)
         .then(function (u) { return u ? { url: u, temp: true } : buildUrl(ref.file, ref.gated).then(function (r) { return { url: r, temp: false }; }); });
     }
@@ -2694,7 +2725,9 @@
       mainAudio.src = (NATIVE && sess.fileUri) ? sess.fileUri : sess.url;
       mainAudio.load();
       mainSrcReady = true;
+      dynPosStale = false;      // new timeline in place; positions may be tracked again
       dynStatus(null);
+      renderOfflineBar();       // the stored mp3 now matches the settings again
     }).catch(function (e) {
       var code = e && e.code;
       if (code === 'noauth' || code === 401 || code === 403) {
@@ -2779,6 +2812,7 @@
     var revertHit = !!(meta && meta.key === key);   // persisted copy matches → strict restore hits on next play
     if (!mainAudio.paused) { mainAudio.pause(); setMainIcon(false); }
     dynLastPos = 0;   // the rebuilt session has a different timeline
+    dynPosStale = true;   // and no late pause/timeupdate may resurrect the old one
     dynAttached = false;
     mainSrcReady = false;
     if (dynSession && dynSession.url && dynSessionIsLocal) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
@@ -2786,6 +2820,7 @@
     dynSyncSentBtns();   // no map until the rebuild → ① buttons grey out
     if (revertHit) dynStatus(null);
     else dynStatus('Changes saved — your session will reconstruct on next play.', false);
+    renderOfflineBar();   // downloaded? then the stored mp3 no longer matches — offer the update
   }
   /* ── round-14: account-level settings sync (auth.js dynPrefs / public.dyn_prefs) ──
      Boot stays instant on the local mirror; once auth resolves the server copy is written
@@ -4036,7 +4071,7 @@
       if (tt.textContent !== tot) tt.textContent = tot;
     }
     var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';   // mirror onto the floating mini bar
-    if (DYN && (mainAudio.currentTime || 0) > 0) dynLastPos = mainAudio.currentTime;   // remember position (resume guard)
+    if (DYN && !dynPosStale && (mainAudio.currentTime || 0) > 0) dynLastPos = mainAudio.currentTime;   // remember position (resume guard)
     if (DYN && dynSession && dynSessionIsLocal) dynHighlight(mainAudio.currentTime);   // dyn: highlight the playing card (this page's session only)
     writeWebResume();   // keep the cross-page resume position fresh while playing (web only, throttled)
   });
@@ -4074,7 +4109,7 @@
         // Round-10 item 4: a long pause can idle the engine and drop the position to 0 —
         // restore the last known position before resuming (and again after a native
         // prepare-resume, which always starts a fresh prepare at 0).
-        var want = (DYN && dynLastPos > 0.5 && (mainAudio.currentTime || 0) < 0.5 &&
+        var want = (DYN && !dynPosStale && dynLastPos > 0.5 && (mainAudio.currentTime || 0) < 0.5 &&
           (!mainAudio.duration || !isFinite(mainAudio.duration) || dynLastPos < mainAudio.duration - 0.5)) ? dynLastPos : null;
         if (want != null) { try { mainAudio.currentTime = want; } catch (_) {} }
         var pp = mainAudio.play();
@@ -4086,7 +4121,7 @@
         setMainIcon(true); setupMediaSession();
       }).catch(function (e) { handleDenied(e, mainTier); });
     } else {
-      if (DYN) dynLastPos = mainAudio.currentTime || dynLastPos;   // remember where we paused
+      if (DYN && !dynPosStale) dynLastPos = mainAudio.currentTime || dynLastPos;   // remember where we paused
       mainAudio.pause(); setMainIcon(false); writeWebResume(true);
     }
     resumeMainAfter = false;   // a manual tap on the top player overrides auto-resume
@@ -4788,7 +4823,8 @@
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow, toggleTranslit: toggleTranslit,
     progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn,
     advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat,
-    downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete, refreshTopic: refreshTopic });
+    downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete, refreshTopic: refreshTopic,
+    dynUpdateMp3: dynUpdateMp3 });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
