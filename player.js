@@ -1463,7 +1463,7 @@
      than duplicating the stitcher in the index. Such a frame must never touch live playback,
      hence the syncToPlayingTrack guard below. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r18c';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r18d';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3650,7 +3650,15 @@
     });
     if (DYN_PREBUILD) {
       dynStatus('Preparing both directions', true);
-      dynPrebuildBoth().then(function () {
+      dynPrebuildBoth(function (i, n, mode) {
+        // Tell the opener which direction is under way — the index shows "1 of 2" so a long
+        // construction reads as progress rather than a hang.
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ te: 'prebuilding', key: DYN_KEY_NS, i: i, n: n, mode: mode }, location.origin);
+          }
+        } catch (_) {}
+      }).then(function () {
         dynStatus('Ready.', false);
         try {
           if (window.parent && window.parent !== window) {

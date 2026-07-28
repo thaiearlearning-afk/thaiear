@@ -58,6 +58,39 @@
   .pl-open { display: inline-block; font-family: var(--font-ui); font-size: 12.5px; font-weight: 600; color: #fff; background: var(--accent); border-radius: 16px; padding: 6px 16px; text-decoration: none; margin: 1rem 8px 0 0; }
   .pl-open:hover { background: var(--accent-mid); }
   .pl-rm-list { margin: 0 0 0.75rem; }
+  /* Download area — mirrors index.html / dyn-index.html exactly. */
+  .dl-batch-bar { display: flex; flex-direction: column; gap: 8px; background: var(--surface);
+    border: .5px solid var(--border); border-radius: var(--radius-md); padding: 12px; margin: 0 0 1rem; }
+  .dl-batch-btns { display: flex; gap: 8px; }
+  .dl-batch-btn { flex: 1; font-family: var(--font-ui); font-size: 15px; font-weight: 500; color: #fff;
+    background: var(--accent); border: 0; border-radius: 8px; padding: 11px 10px; cursor: pointer; }
+  .dl-batch-btn:hover:not([disabled]) { background: var(--accent-mid); }
+  .dl-batch-btn[disabled] { background: var(--border); color: var(--text-tertiary); cursor: default; }
+  .dl-clear-btn { background: var(--surface); color: var(--text-secondary); border: .5px solid var(--border-strong); }
+  .dl-clear-btn:hover:not([disabled]) { background: var(--accent-light); color: var(--accent); }
+  .dl-batch-status { font-size: 13px; color: var(--text-secondary); min-height: 1.15em; }
+  .dl-batch-status.err { color: #B00020; }
+  .dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); }
+  .dl-select, .dl-badge { position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; margin-left: 6px; flex-shrink: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .dl-select::before, .dl-badge::before { content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%); width: 52px; height: 52px; border-radius: 50%; }
+  .dl-dot { width: 23px; height: 23px; border-radius: 50%; background: var(--accent-light);
+    border: 1.5px solid var(--accent-light); transition: background .15s, border-color .15s, transform .1s; }
+  .dl-select:hover .dl-dot { border-color: var(--accent); }
+  .dl-select.selected .dl-dot { background: var(--accent); border-color: var(--accent); }
+  .dl-select:active .dl-dot { transform: scale(0.92); }
+  .dl-tick { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px;
+    border-radius: 50%; color: var(--accent); border: 2px solid transparent; transition: border-color .15s, background .15s; }
+  .dl-badge.clear-selected .dl-tick { border-color: #9d92e0; background: var(--accent-light); }
+  .mode-download .dl-badge { opacity: .4; }
+  .mode-clear .dl-select { opacity: .4; }
+  .pl-dl-state { font-size: 12px; color: var(--accent); font-weight: 500; }
+  .dots { display: inline-block; width: 1.1em; text-align: left; }
+  .dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom;
+    animation: dots 1.2s steps(3,start) infinite; }
+  @keyframes dots { from { width: 0 } to { width: 1.05em } }
+  #pl-prebuild-frame { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; left: -9999px; }
 </style>
 <link rel="stylesheet" href="player-dyn.css">
 </head>
@@ -66,17 +99,26 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r18c</div>
+  <div class="eyebrow">Owner test build · r18d</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
+  <div class="dl-batch-bar" id="dl-batch-bar" hidden>
+    <div class="dl-batch-btns">
+      <button class="dl-batch-btn" id="dl-btn" type="button">Download Playlist(s)</button>
+      <button class="dl-batch-btn dl-clear-btn" id="clear-btn" type="button">Clear Download(s)</button>
+    </div>
+    <span class="dl-batch-status" id="dl-status"></span>
+    <span class="dl-batch-hint" id="dl-hint">Tap a playlist's circle to download, or a tick to remove, then pick an action.</span>
+  </div>
   <div id="pl-root"><p class="pl-note">Loading…</p></div>
 </div>
 
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
+<iframe id="pl-prebuild-frame" title="prebuild"></iframe>
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r18c</div>
+  <div class="eyebrow">Playlist · r18d</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -135,9 +177,280 @@
     root.innerHTML = '<p class="pl-note">Loading playlists<span class="dyn-dots"></span></p>';
   }
 
+
+  /* == DOWNLOADS (r18d) =================================================================
+     A playlist's clips belong to the TOPICS its sentences came from, so two playlists - or a
+     playlist and a downloaded topic - can legitimately need the same file. Deleting one must
+     never strip another. So each topic prefix's manifest entry carries a REFS list of who
+     required it ('topic', 'pl-<id>'); clearing removes only that referrer, and the files go
+     only when the last one does. The bias is deliberately toward over-retaining a few clips
+     rather than ever deleting one that something still needs. */
+  var DL_CACHE = 'thaiear-audio-dl';                                    // must match player.js
+  function dlCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; }
+  var CAP = window.Capacitor;
+  var DL_NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
+  var DL_FS = (DL_NATIVE && CAP.Plugins) ? CAP.Plugins.Filesystem : null;
+  var DL_OK = DL_NATIVE || !!window.caches;
+  var dlSel = {}, dlClearSel = {}, dlBusy = false, dlWorking = {};
+
+  function dlManifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
+  function dlSetManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
+  function dlPlMap() { try { return JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}'); } catch (_) { return {}; } }
+  function dlSetPlMap(m) { try { localStorage.setItem('thaiear_offline_pl', JSON.stringify(m)); } catch (_) {} }
+  function dlIsDownloaded(id) { return !!dlPlMap()[id]; }
+  function dlStatus(msg, err) {
+    var el = document.getElementById('dl-status'); if (!el) return;
+    el.className = 'dl-batch-status' + (err ? ' err' : '');
+    el.textContent = msg || '';
+  }
+  function dlStatusDots(msg) {
+    var el = document.getElementById('dl-status'); if (!el) return;
+    el.className = 'dl-batch-status';
+    el.innerHTML = esc(msg) + '<span class="dots"></span> · please keep this page open.';
+  }
+  // The control on a playlist head: nothing while it works, a tick if downloaded, a circle
+  // otherwise. The tick appears only once clips AND construction have finished.
+  function dlControl(p) {
+    if (!DL_OK || !p.items.length) return '';
+    if (dlWorking[p.id]) return '<span class="dots" aria-hidden="true"></span>';
+    if (dlIsDownloaded(p.id)) {
+      return '<span class="dl-badge' + (dlClearSel[p.id] ? ' clear-selected' : '') + '" data-dl="' + p.id +
+        '" data-mode="clear" role="button" title="Downloaded - tap to select for removal">' +
+        '<span class="dl-tick"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
+        'stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>';
+    }
+    return '<span class="dl-select' + (dlSel[p.id] ? ' selected' : '') + '" data-dl="' + p.id +
+      '" data-mode="dl" role="button" aria-label="Select for offline download"><span class="dl-dot"></span></span>';
+  }
+  function dlPaintBar() {
+    var bar = document.getElementById('dl-batch-bar'); if (!bar) return;
+    var lists = currentLists() || [];
+    bar.hidden = !DL_OK || !lists.some(function (p) { return p.items.length; });
+    var nd = Object.keys(dlSel).length, nc = Object.keys(dlClearSel).length;
+    var d = document.getElementById('dl-btn'), c = document.getElementById('clear-btn');
+    if (d && !dlBusy) d.textContent = nd ? ('Download Playlist(s) (' + nd + ')') : 'Download Playlist(s)';
+    if (c && !dlBusy) c.textContent = nc ? ('Clear Download(s) (' + nc + ')') : 'Clear Download(s)';
+    var hint = document.getElementById('dl-hint');
+    if (hint) hint.style.display = (nd || nc || dlBusy) ? 'none' : '';
+    root.classList.toggle('mode-download', nd > 0);
+    root.classList.toggle('mode-clear', nc > 0);
+  }
+  function dlSetBusy(b) {
+    dlBusy = b;
+    var d = document.getElementById('dl-btn'), c = document.getElementById('clear-btn');
+    if (d) d.disabled = b; if (c) c.disabled = b;
+  }
+  // Tap a circle/tick without toggling the box open underneath it.
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest) return;
+    var t = e.target.closest('[data-dl]');
+    if (!t) return;
+    e.preventDefault(); e.stopPropagation();
+    if (dlBusy) return;
+    var id = t.getAttribute('data-dl');
+    if (t.getAttribute('data-mode') === 'dl') {
+      if (Object.keys(dlClearSel).length) { dlStatus('Finish or deselect your removal choice first.'); return; }
+      if (dlSel[id]) delete dlSel[id]; else dlSel[id] = true;
+    } else {
+      if (Object.keys(dlSel).length) { dlStatus('Finish or deselect your download choice first.'); return; }
+      if (dlClearSel[id]) delete dlClearSel[id]; else dlClearSel[id] = true;
+    }
+    dlStatus(''); render();
+  }, true);
+
+  function dlFileUrl(file, tier) {
+    if (tier !== 'member' && tier !== 'premium') return Promise.resolve('https://audio.thaiear.com/' + file);
+    var tok = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken) ? window.ThaiEarAuth.getAccessToken() : null;
+    if (!tok) return Promise.reject(new Error('Sign in to download this playlist'));
+    return fetch('/api/audio?file=' + encodeURIComponent(file), { headers: { Authorization: 'Bearer ' + tok } })
+      .then(function (r) { if (!r.ok) throw new Error('audio gate ' + r.status); return r.json(); })
+      .then(function (j) { if (!j || !j.url) throw new Error('no url'); return j.url; });
+  }
+  function dlSaveOne(prefix, tier, file) {
+    return dlFileUrl(file, tier).then(function (url) {
+      if (DL_NATIVE) {
+        return DL_FS.downloadFile({ url: url, path: 'offline/' + prefix + '/' + file, directory: 'DATA',
+          recursive: true, connectTimeout: 15000, readTimeout: 20000 });
+      }
+      return caches.open(DL_CACHE).then(function (cache) {
+        return fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (res) {
+          if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
+          if (res.type === 'opaque') throw new Error('CORS not enabled for ' + file);
+          return cache.put(dlCacheKey(prefix, file), res);
+        });
+      });
+    });
+  }
+  // Group a playlist's sentences by the topic their clips live under.
+  function dlGroup(p) {
+    var by = {};
+    p.items.forEach(function (it) {
+      var pfx = it.prefix; if (!pfx) return;
+      var n = String(it.num).padStart(2, '0');
+      by[pfx] = by[pfx] || { tier: it.tier || 'free', files: [] };
+      by[pfx].files.push(pfx + '_S' + n + '_TH.mp3');
+      by[pfx].files.push(pfx + '_S' + n + '_EN.mp3');
+    });
+    return by;
+  }
+  function dlPrebuild(p) {
+    return new Promise(function (resolve) {
+      var frame = document.getElementById('pl-prebuild-frame');
+      if (!frame) return resolve();
+      var done = false;
+      function finish() { if (done) return; done = true; window.removeEventListener('message', onMsg); frame.src = 'about:blank'; resolve(); }
+      function onMsg(e) {
+        if (e.origin !== location.origin || !e.data || e.data.key !== 'pl-' + p.id) return;
+        if (e.data.te === 'prebuilding') {
+          dlWorking[p.id] = 'constructing dynamic mp3 (' + e.data.i + ' of ' + e.data.n + ')...';
+          render();
+          return;
+        }
+        if (e.data.te === 'prebuilt') finish();
+      }
+      window.addEventListener('message', onMsg);
+      setTimeout(finish, 180000);   // non-fatal - the clips are the download
+      frame.src = 'playlists.html?pl=' + encodeURIComponent(p.id) + '&k=cu38961y&prebuild=1';
+    });
+  }
+  function dlRunDownloads() {
+    if (dlBusy) return;
+    var lists = currentLists() || [];
+    var picked = lists.filter(function (p) { return dlSel[p.id] && p.items.length; });
+    if (!picked.length) { dlStatus('Please select a playlist to download first.'); return; }
+    if (!navigator.onLine) { dlStatus('You’re offline — reconnect to download playlists.', true); return; }
+    dlSetBusy(true);
+    var i = 0;
+    (function next() {
+      if (i >= picked.length) {
+        dlSetBusy(false);
+        dlStatus('Done — ' + picked.length + ' playlist' + (picked.length > 1 ? 's' : '') + ' saved offline.');
+        dlSel = {}; render();
+        return;
+      }
+      var p = picked[i], by = dlGroup(p), prefixes = Object.keys(by);
+      var total = 0, done = 0;
+      prefixes.forEach(function (k) { total += by[k].files.length; });
+      dlWorking[p.id] = 'downloading clips...'; render();
+      dlStatus('Downloading “' + p.name + '” — please keep this page open.');
+      var chain = Promise.resolve();
+      prefixes.forEach(function (pfx) {
+        chain = chain.then(function () {
+          return DL_NATIVE
+            ? DL_FS.mkdir({ directory: 'DATA', path: 'offline/' + pfx, recursive: true }).catch(function () {})
+            : null;
+        }).then(function () {
+          var c = Promise.resolve();
+          by[pfx].files.forEach(function (f) {
+            c = c.then(function () {
+              return dlSaveOne(pfx, by[pfx].tier, f).then(function () {
+                done++;
+                dlWorking[p.id] = 'downloading clip ' + done + ' of ' + total;
+                var el = root.querySelector('.pl-box[data-id="' + p.id + '"] .pl-dl-state');
+                if (el) el.textContent = dlWorking[p.id];
+                dlStatus('Downloading “' + p.name + '” — clip ' + done + '/' + total + ' · please keep this page open.');
+              });
+            });
+          });
+          return c;
+        });
+      });
+      chain.then(function () {
+        // Register this playlist as a referrer of every prefix it needed.
+        var m = dlManifest();
+        prefixes.forEach(function (pfx) {
+          var e = m[pfx] || { tier: by[pfx].tier, files: [], at: Date.now(), dyn: true };
+          var seen = {};
+          (e.files || []).concat(by[pfx].files).forEach(function (f) { seen[f] = true; });
+          e.files = Object.keys(seen);
+          e.refs = (e.refs || ['topic']).filter(function (r) { return r !== 'pl-' + p.id; });
+          e.refs.push('pl-' + p.id);
+          e.at = Date.now();
+          m[pfx] = e;
+        });
+        dlSetManifest(m);
+        var pm = dlPlMap(); pm[p.id] = { prefixes: prefixes, at: Date.now() }; dlSetPlMap(pm);
+        dlWorking[p.id] = 'constructing dynamic mp3...'; render();
+        dlStatusDots('Constructing dynamic mp3 for “' + p.name + '”');
+        return dlPrebuild(p);
+      }).then(function () {
+        delete dlWorking[p.id]; render(); i++; next();
+      }).catch(function (err) {
+        delete dlWorking[p.id];
+        dlSetBusy(false);
+        var msg = (err && err.message) || 'error';
+        if (!navigator.onLine || /failed to fetch|load failed|network/i.test(msg)) {
+          dlStatus('You’re offline — reconnect to download playlists.', true);
+        } else {
+          dlStatus('Stopped (' + msg + '). Nothing was removed — retry when ready.', true);
+        }
+        render();
+      });
+    })();
+  }
+  function dlClearOne(p) {
+    var pm = dlPlMap(), rec = pm[p.id];
+    var prefixes = (rec && rec.prefixes) || Object.keys(dlGroup(p));
+    var m = dlManifest();
+    var chain = Promise.resolve();
+    prefixes.forEach(function (pfx) {
+      var e = m[pfx]; if (!e) return;
+      e.refs = (e.refs || ['topic']).filter(function (r) { return r !== 'pl-' + p.id; });
+      if (e.refs.length) { m[pfx] = e; return; }        // something else still needs these clips
+      var files = e.files || [];
+      delete m[pfx];
+      chain = chain.then(function () {
+        if (DL_NATIVE) return DL_FS.rmdir({ directory: 'DATA', path: 'offline/' + pfx, recursive: true }).catch(function () {});
+        if (!window.caches) return null;
+        return caches.open(DL_CACHE).then(function (c) {
+          return Promise.all(files.map(function (f) { return c.delete(dlCacheKey(pfx, f)).catch(function () {}); }));
+        }).catch(function () {});
+      });
+    });
+    dlSetManifest(m);
+    // The playlist's own built sessions go too - otherwise "cleared" leaves them behind.
+    ['te', 'et'].forEach(function (mode) {
+      var mk = 'te_dyn_meta_pl-' + p.id + '_' + mode, meta = null;
+      try { meta = JSON.parse(localStorage.getItem(mk) || 'null'); } catch (_) {}
+      try { localStorage.removeItem(mk); } catch (_) {}
+      if (DL_NATIVE && meta && meta.file) DL_FS.deleteFile({ path: meta.file, directory: 'DATA' }).catch(function () {});
+      else if (window.caches) caches.open(DL_CACHE).then(function (c) {
+        c.delete('/dyn/pl-' + p.id + '/' + mode + '.' + (meta && meta.ext ? meta.ext : 'wav')).catch(function () {});
+      }).catch(function () {});
+    });
+    delete pm[p.id]; dlSetPlMap(pm);
+    return chain;
+  }
+  function dlRunClear() {
+    if (dlBusy) return;
+    var lists = currentLists() || [];
+    var picked = lists.filter(function (p) { return dlClearSel[p.id]; });
+    if (!picked.length) { dlStatus('Please select a downloaded playlist to clear first.'); return; }
+    showModal({
+      title: 'Remove ' + (picked.length > 1 ? 'these downloads?' : 'this download?'),
+      body: 'You will no longer be able to listen offline. The playlist itself is not affected.',
+      confirmText: 'Remove', danger: true,
+      onConfirm: function () {
+        dlSetBusy(true);
+        var i = 0;
+        (function next() {
+          if (i >= picked.length) {
+            dlSetBusy(false);
+            dlStatus('Removed ' + picked.length + ' download' + (picked.length > 1 ? 's' : '') + '.');
+            dlClearSel = {}; render();
+            return;
+          }
+          dlStatus('Removing “' + picked[i].name + '”...');
+          dlClearOne(picked[i]).then(function () { i++; render(); next(); });
+        })();
+      }
+    });
+  }
+
   function render() {
     // a re-render invalidates any live batch-remove tick mode
     removing = null;
+    setTimeout(dlPaintBar, 0);
     var rb = document.getElementById('dyn-rm-bar');
     if (rb) rb.parentNode.removeChild(rb);
     if (authReady() && !user()) {
@@ -156,7 +469,11 @@
       return '<div class="pl-box' + (p.id === openId ? ' open' : '') + '" data-id="' + p.id + '">' +
         '<button class="pl-box-head" type="button">' +
           '<span class="pl-box-name">' + esc(p.name) + '</span>' +
-          '<span class="pl-box-meta">' + p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') + '</span>' +
+          '<span class="pl-box-meta">' + (dlWorking[p.id]
+            ? '<span class="pl-dl-state">' + esc(dlWorking[p.id]) + '</span>'
+            : p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') +
+              (dlIsDownloaded(p.id) ? ' · downloaded' : '')) + '</span>' +
+          dlControl(p) +
           '<span class="pl-box-chev" aria-hidden="true">⌄</span>' +
         '</button>' +
         '<div class="pl-box-body">' +
@@ -310,6 +627,11 @@
     s.src = 'player.js';
     document.body.appendChild(s);
   }
+  (function wireDownloads() {
+    var d = document.getElementById('dl-btn'), c = document.getElementById('clear-btn');
+    if (d) d.addEventListener('click', dlRunDownloads);
+    if (c) c.addEventListener('click', dlRunClear);
+  })();
   function bootPlayer() {
     document.getElementById('pl-list-wrap').hidden = true;
     document.getElementById('pl-player-wrap').hidden = false;

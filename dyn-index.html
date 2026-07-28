@@ -80,6 +80,12 @@
   .dl-badge.clear-selected .dl-tick { border-color:#9d92e0; background:var(--accent-light); }
   .mode-download .dl-badge { opacity:.4; }
   .mode-clear .dl-select { opacity:.4; }
+  .dots { display:inline-block; width:1.1em; text-align:left; }
+  .dots::after { content:'...'; display:inline-block; width:0; overflow:hidden; vertical-align:bottom;
+    animation:dots 1.2s steps(3,start) infinite; }
+  @keyframes dots { from { width:0 } to { width:1.05em } }
+  .unit.working { border-color:var(--accent); }
+  .unit-meta .working-txt { color:var(--accent); font-weight:500; }
   .links { margin-top:1.5rem; font-size:13.5px; }
   .links a { display:block; color:var(--accent); text-decoration:none; padding:5px 0; }
   #prebuild-frame { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; border:0; left:-9999px; }
@@ -87,7 +93,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Owner test build · dyn index r18c</div>
+  <div class="eyebrow">Owner test build · dyn index r18d</div>
   <h1>Dynamic player test index</h1>
   <p class="lede">The test space's own front page, so downloads can be exercised the way the real
   index works. A dynamic download stores each sentence's <strong>clips</strong>, not a finished file —
@@ -132,6 +138,10 @@
   var WEB_DL = !NATIVE && !!window.caches;
 
   var dlSel = {}, clearSel = {}, busy = false;
+  // A unit is only ever shown as downloaded once its clips AND both constructions are done.
+  // (The manifest is still written before constructing — an interrupted construction leaves a
+  // usable offline topic — but claiming "downloaded" while still working reads as a lie.)
+  var working = {};
 
   function manifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
   function setManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
@@ -142,15 +152,30 @@
     el.className = 'dl-batch-status' + (err ? ' err' : '');
   }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function statusDots(msg) {
+    var el = document.getElementById('dl-status');
+    el.className = 'dl-batch-status';
+    el.innerHTML = esc(msg) + '<span class="dots"></span> · please keep this page open.';
+  }
+  // Repaint just this unit's caption — a full render() would restart the dots animation.
+  function renderMeta(prefix) {
+    var idx = UNITS.map(function (x) { return x.prefix; }).indexOf(prefix);
+    var el = document.querySelectorAll('#units .unit')[idx];
+    var m = el && el.querySelector('.unit-meta .working-txt');
+    if (m && working[prefix]) m.textContent = working[prefix];
+  }
 
   function render() {
     var root = document.getElementById('units');
     root.innerHTML = '';
     UNITS.forEach(function (u) {
-      var dl = isDownloaded(u.prefix);
+      var w = working[u.prefix];
+      var dl = !w && isDownloaded(u.prefix);
       var el = document.createElement('div');
-      el.className = 'unit';
-      var sel = dl
+      el.className = 'unit' + (w ? ' working' : '');
+      var sel = w
+        ? '<span class="dots" aria-hidden="true"></span>'
+        : dl
         ? '<span class="dl-badge' + (clearSel[u.prefix] ? ' clear-selected' : '') + '" data-p="' + u.prefix + '" data-mode="clear" role="button" title="Downloaded · tap to select for removal">' +
             '<span class="dl-tick"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>'
         : '<span class="dl-select' + (dlSel[u.prefix] ? ' selected' : '') + '" data-p="' + u.prefix + '" data-mode="dl" role="button" aria-label="Select for offline download"><span class="dl-dot"></span></span>';
@@ -158,7 +183,9 @@
         '<div class="unit-main">' +
           '<a class="unit-name" href="' + u.page + '?' + K + '">' + esc(u.name) +
             '<span class="tier-pill tier-' + u.tier + '">' + u.tier + '</span></a>' +
-          '<div class="unit-meta">' + u.n + ' sentences · ' + (dl ? 'downloaded' : 'not downloaded') + '</div>' +
+          '<div class="unit-meta">' + (w
+            ? '<span class="working-txt">' + esc(w) + '</span>'
+            : u.n + ' sentences · ' + (dl ? 'downloaded' : 'not downloaded')) + '</div>' +
         '</div>' + sel;
       root.appendChild(el);
     });
@@ -241,8 +268,13 @@
       var done = false;
       function finish() { if (done) return; done = true; window.removeEventListener('message', onMsg); frame.src = 'about:blank'; resolve(); }
       function onMsg(e) {
-        if (e.origin !== location.origin || !e.data || e.data.te !== 'prebuilt') return;
-        if (e.data.key === u.key) finish();
+        if (e.origin !== location.origin || !e.data || e.data.key !== u.key) return;
+        if (e.data.te === 'prebuilding') {
+          working[u.prefix] = 'constructing dynamic mp3 (' + e.data.i + ' of ' + e.data.n + ')…';
+          renderMeta(u.prefix);
+          return;
+        }
+        if (e.data.te === 'prebuilt') finish();
       }
       window.addEventListener('message', onMsg);
       setTimeout(finish, 120000);   // non-fatal: the clips are the download, sessions rebuild on play
@@ -266,7 +298,8 @@
         return;
       }
       var u = list[i];
-      status('Downloading ' + u.name + ' — reading sentences…');
+      working[u.prefix] = 'reading sentences…'; render();
+      status('Downloading ' + u.name + ' — please keep this page open.');
       sentenceNums(u.page).then(function (nums) {
         if (!nums.length) throw new Error('no sentences found for ' + u.prefix);
         var files = clipFiles(u.prefix, nums), done = 0;
@@ -280,7 +313,10 @@
           chain = chain.then(function () {
             return saveOne(u, f).then(function () {
               done++;
-              status('Downloading ' + u.name + ' — clip ' + done + '/' + files.length);
+              working[u.prefix] = 'downloading clip ' + done + ' of ' + files.length;
+              renderMeta(u.prefix);
+              status('Downloading ' + u.name + ' — clip ' + done + '/' + files.length +
+                ' · please keep this page open.');
             });
           });
         });
@@ -291,12 +327,14 @@
           m[u.prefix] = { tier: u.tier, files: files, at: Date.now(), ver: '', av: null, dyn: true };
           setManifest(m);
           if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(u.page).catch(function () {}); }).catch(function () {});
-          render();
-          status('Constructing dynamic mp3 for ' + u.name + '…');
+          working[u.prefix] = 'constructing dynamic mp3…';
+          renderMeta(u.prefix);
+          statusDots('Constructing dynamic mp3 for ' + u.name);
           return prebuild(u);
         });
-      }).then(function () { i++; next(); })
+      }).then(function () { delete working[u.prefix]; render(); i++; next(); })
         .catch(function (err) {
+          delete working[u.prefix];
           busy = false; setBusy(false);
           var msg = (err && err.message) || 'error';
           if (!navigator.onLine || /failed to fetch|load failed|network/i.test(msg)) {
