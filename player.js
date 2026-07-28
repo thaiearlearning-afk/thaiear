@@ -189,17 +189,34 @@
           mainGated = !!mainTier;
           if (np.mode === 'te' || np.mode === 'et') currentMode = np.mode;
           nativeMeta.title = t.name;
-          dynSession = null;                       // the live track's map isn't ours — no highlight/skip until a local resolve
-          dynSessionIsLocal = false;
+          // Round-15 item 1: hydrate a DISPLAY session from the playing unit's persisted meta
+          // so ① skip, snap scrubbing and position memory work here. No url/blob — the audio
+          // is engine-owned (dynAttached blocks any re-sourcing from this object; the
+          // .display flag keeps it out of the src-providing fast paths).
+          var dm = t.dynKey ? dynReadMeta(t.dynKey, currentMode) : null;
+          dynSession = dm ? { url: null, fileUri: null, blob: null, map: dm.map, key: dm.key, duration: dm.duration, display: true } : null;
+          dynSessionIsLocal = false;               // foreign map — never highlight this page's cards with it
           dynStdRemote = false;
           if (dynAdopted) dynStripPaint(t, false); // "Now playing: X" + ↩ Return
         } else {
           dynTitle = (dynChain && dynChain[dynHomeIdx]) ? dynChain[dynHomeIdx].name : dynTitle;
+          // Own unit playing (its page opened mid-play): adopt the live mode and hydrate from
+          // OUR meta — the map's nums match this page's cards, so highlight works too.
+          if (np.mode === 'te' || np.mode === 'et') currentMode = np.mode;
+          if (!dynSession) {
+            var dm2 = dynReadMeta(DYN_KEY_NS, currentMode);
+            if (dm2) {
+              dynSession = { url: null, fileUri: null, blob: null, map: dm2.map, key: dm2.key, duration: dm2.duration, display: true };
+              dynSessionIsLocal = true;
+              dynStdRemote = false;
+            }
+          }
         }
         dynAttached = true;                        // src belongs to the live engine — never rebuild under it
         mainSrcReady = true;
         if (mainAudio.attach) mainAudio.attach();  // control the live track without restarting it (position preserved)
         setMainIcon(true);
+        dynSyncSentBtns();                         // ① buttons follow the hydrated (or absent) map
         return;
       }
       if (np.prefix !== mainPrefix) {            // a DIFFERENT topic is playing → adopt it on the top player
@@ -1425,7 +1442,7 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r14';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r15';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
   var dynLogEl = null;
@@ -1465,6 +1482,12 @@
   try { var _dynRp = parseInt(localStorage.getItem('te_dyn_rp'), 10); if (_dynRp >= 1 && _dynRp <= 4) dynRepeats = _dynRp; } catch (_) {}
   var dynEnglish = true;   // TE mode only: include the English clip after the repeats (ET always has it)
   try { dynEnglish = localStorage.getItem('te_dyn_en') !== '0'; } catch (_) {}
+  // Round-15 item 4: WHERE the English lands in a TE block — after the Nth Thai repeat.
+  // 0 = never chosen → effective default is dynRepeats (the end = the original behaviour);
+  // a choice above the current repeat count also clamps to the end.
+  var dynEngPos = 0;
+  try { var _dynEp = parseInt(localStorage.getItem('te_dyn_ep'), 10); if (_dynEp >= 1 && _dynEp <= 4) dynEngPos = _dynEp; } catch (_) {}
+  function dynEngPosEff() { return (dynEngPos >= 1 && dynEngPos <= dynRepeats) ? dynEngPos : dynRepeats; }
   var DYN_EXCL_KEY = 'te_dyn_excl_' + (cfg.dynKey || PREFIX);
   var dynExcluded = {};
   try {
@@ -1609,7 +1632,11 @@
   }
   function dynKeyFor(sents) {
     var en = (currentMode === 'et' || dynEnglish) ? 1 : 0;
-    return currentMode + '|' + dynFactor + '|r' + dynRepeats + '|e' + en + '|' + sents.map(function (s) {
+    // English-position token appears ONLY when it actually shapes the audio (TE + English on +
+    // ≥2 repeats + not at the default end position) — so irrelevant toggles never churn keys
+    // AND every pre-r15 persisted session stays valid (no migration wipe).
+    var ep = (currentMode !== 'et' && dynEnglish && dynRepeats > 1 && dynEngPosEff() !== dynRepeats) ? dynEngPosEff() : 0;
+    return currentMode + '|' + dynFactor + '|r' + dynRepeats + '|e' + en + (ep ? '|p' + ep : '') + '|' + sents.map(function (s) {
       return s.prefix ? (s.prefix + ':' + (s.clipNum != null ? s.clipNum : s.num)) : s.num;
     }).join(',');
   }
@@ -1707,9 +1734,15 @@
           pushBuf(en); pushSil(recall); pushBuf(th);
           for (r = 1; r < dynRepeats; r++) { pushSil(repeat); pushBuf(th); }
         } else {
+          // TE: English lands after the ep-th Thai repeat (round-15 item 4); ep === repeats
+          // reproduces the original TH…TH,EN order exactly.
+          var ep = dynEnglish ? dynEngPosEff() : 0;
           pushBuf(th);
-          for (r = 1; r < dynRepeats; r++) { pushSil(repeat); pushBuf(th); }
-          if (dynEnglish) { pushSil(repeat); pushBuf(en); }
+          if (ep === 1) { pushSil(repeat); pushBuf(en); }
+          for (r = 1; r < dynRepeats; r++) {
+            pushSil(repeat); pushBuf(th);
+            if (ep === r + 1) { pushSil(repeat); pushBuf(en); }
+          }
         }
         pushSil(gap);
         map.push({ num: s.num, start: start, end: pos / DYN_SR });
@@ -1747,7 +1780,9 @@
   // play presses stay strict (stale key → rebuild + resave).
   function dynEnsureSession(onProg, lenient) {
     var key = dynKey();
-    if (dynSession && dynSessionIsLocal && (lenient || dynSession.key === key)) return Promise.resolve(dynSession);
+    // .display sessions (attach-adoption hydration) carry no url/blob — they can never be a
+    // src source; fall through to a real restore/build instead.
+    if (dynSession && dynSessionIsLocal && !dynSession.display && (lenient || dynSession.key === key)) return Promise.resolve(dynSession);
     if (dynBuilding && dynBuilding.key === key) return dynBuilding.p;
     var mode = currentMode;
     var meta = dynReadMeta(DYN_KEY_NS, mode);
@@ -1765,6 +1800,7 @@
         dynSessionIsLocal = true;
         dynStdRemote = false;
         dynBuilding = null;
+        dynSyncSentBtns();
         return sess;
       }).catch(function (e) { dynBuilding = null; return Promise.reject(e); });
     dynBuilding = { key: key, p: p };
@@ -1788,9 +1824,10 @@
         mainAudio.src = r.src;
         mainAudio.load();
         mainSrcReady = true;
+        dynSyncSentBtns();
       });
     }
-    if (mainSrcReady && dynSession && dynSessionIsLocal && (lenient || dynSession.key === dynKey())) return Promise.resolve();
+    if (mainSrcReady && dynSession && dynSessionIsLocal && !dynSession.display && (lenient || dynSession.key === dynKey())) return Promise.resolve();
     return dynEnsureSession(function (done, total) {
       var c = $('dyn-status-count'); if (c) c.textContent = done + '/' + total;
     }, lenient).then(function (sess) {
@@ -1824,6 +1861,7 @@
     mainSrcReady = false;
     if (dynSession && dynSession.url && dynSessionIsLocal) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
     dynSession = null;
+    dynSyncSentBtns();   // no map until the rebuild → ① buttons grey out
     if (revertHit) dynStatus(null);
     else dynStatus('Changes saved — your session will reconstruct on next play.', false);
   }
@@ -1843,7 +1881,7 @@
       dynPrefsTimer = null;
       var api = window.ThaiEarAuth && window.ThaiEarAuth.dynPrefs;
       if (!api) return;
-      if (dynPushGlobal) { dynPushGlobal = false; api.set('global', { pf: dynFactor, rp: dynRepeats, en: dynEnglish }); }
+      if (dynPushGlobal) { dynPushGlobal = false; api.set('global', { pf: dynFactor, rp: dynRepeats, en: dynEnglish, ep: dynEngPos }); }
       if (dynPushExcl && !PLMODE) {
         dynPushExcl = false;
         var excl = [];
@@ -1860,6 +1898,7 @@
     if (reps) reps.querySelectorAll('.dyn-rep-btn').forEach(function (x) { x.classList.toggle('on', x.textContent === String(dynRepeats)); });
     var enCb = $('dyn-en');
     if (enCb) enCb.checked = dynEnglish;
+    dynEpRender();   // English-position boxes follow repeats/english/ep
   }
   function dynPrefsRepaintExcl() {
     sentences.forEach(function (s) {
@@ -1887,6 +1926,8 @@
         var rp = parseInt(g.rp, 10);
         if (rp >= 1 && rp <= 4 && rp !== dynRepeats) { dynRepeats = rp; try { localStorage.setItem('te_dyn_rp', String(rp)); } catch (_) {} changed = true; }
         if (typeof g.en === 'boolean' && g.en !== dynEnglish) { dynEnglish = g.en; try { localStorage.setItem('te_dyn_en', g.en ? '1' : '0'); } catch (_) {} changed = true; }
+        var epv = parseInt(g.ep, 10);   // 0 = never chosen (effective default follows repeats)
+        if (!isNaN(epv) && epv >= 0 && epv <= 4 && epv !== dynEngPos) { dynEngPos = epv; try { localStorage.setItem('te_dyn_ep', String(epv)); } catch (_) {} changed = true; }
       }
       if (!PLMODE) {
         var u = map[DYN_KEY_NS];
@@ -1916,6 +1957,37 @@
     var hide = currentMode === 'et';
     if (w) w.style.display = hide ? 'none' : '';
     if (sp) sp.style.display = hide ? 'none' : '';
+    dynEpRender();   // the English-position line shares the same mode-dependence
+  }
+  // Round-15 item 4: "English position" line — |thai ☐ thai ☐| per current repeat count,
+  // radio-style (exactly one ticked = English follows that Thai repeat). Only meaningful in
+  // TE, with English on, and ≥2 repeats; hidden otherwise. Rebuilt on every relevant change.
+  function dynEpRender() {
+    var row = $('dyn-ep-row'), box = $('dyn-ep-boxes');
+    if (!row || !box) return;
+    var show = currentMode !== 'et' && dynEnglish && dynRepeats >= 2;
+    row.style.display = show ? '' : 'none';
+    if (!show) return;
+    var eff = dynEngPosEff();
+    var html = '';
+    for (var i = 1; i <= dynRepeats; i++) {
+      html += '<span class="dyn-ep-th">thai</span>' +
+        '<button type="button" class="dyn-ep-box' + (i === eff ? ' on' : '') + '" data-ep="' + i + '"' +
+          ' role="radio" aria-checked="' + (i === eff ? 'true' : 'false') + '"' +
+          ' aria-label="English after Thai repeat ' + i + '"></button>';
+    }
+    box.innerHTML = html;
+    box.querySelectorAll('.dyn-ep-box').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var v = parseInt(b.getAttribute('data-ep'), 10);
+        if (!(v >= 1 && v <= dynRepeats) || v === dynEngPosEff()) return;
+        dynEngPos = v;
+        try { localStorage.setItem('te_dyn_ep', String(v)); } catch (_) {}
+        dynEpRender();
+        dynInvalidate();
+        dynPrefsQueue('global');
+      });
+    });
   }
   // Status line under the transport. text=null hides it; dots=true appends the animated dots
   // (plus a live n/m counter span the build progress writes into).
@@ -1949,6 +2021,15 @@
     var c = $('time-cur'); if (c) c.textContent = formatTime(mainAudio.currentTime);
     var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';
     if (dynSession && dynSessionIsLocal) dynHighlight(mainAudio.currentTime);
+  }
+  // Round-15 item 2: the ① buttons (audio-row + mini) grey out whenever NO map governs the
+  // current audio — placeholder/standard playback, or invalidated-and-not-yet-rebuilt — and
+  // come back the moment a session (real or hydrated display) is live. One central toggle.
+  function dynSyncSentBtns() {
+    var off = !(dynSession && dynSession.map && dynSession.map.length);
+    ['dyn-sent-prev', 'dyn-sent-next', 'te-mini-back', 'te-mini-fwd'].forEach(function (id) {
+      var b = $(id); if (b) b.classList.toggle('dyn-sent-off', off);
+    });
   }
   // Sentence-block skip (the ①-arrow buttons): next → start of the next block; prev → start
   // of the previous block if we're within 1.5 s of the current block's start, else restart it.
@@ -2151,6 +2232,7 @@
     mainSrcReady = false;
     if (dynLastLive != null) { var pc = document.getElementById('sc-' + dynLastLive); if (pc) pc.classList.remove('dyn-live'); dynLastLive = null; }
     dynStripPaint(t, true);
+    dynSyncSentBtns();   // session nulled until the resolve lands
   }
   function dynAdvance(t, revertIdx) {
     // Structurally IDENTICAL shape to classic advanceTopic (works from the iPhone lock
@@ -2167,6 +2249,7 @@
       if (dynAdopted !== t) return;                 // superseded by a newer hop
       dynSession = r.sess;
       dynStdRemote = r.std;
+      dynSyncSentBtns();                            // placeholder hop → ① grey; session hop → live
       if (!r.std) dynStripPaint(t, false);
       dynLog('src set (' + (r.std ? 'std' : 'dyn') + ')');
       mainAudio.src = r.src;
@@ -2496,6 +2579,7 @@
     ".dyn-dots::after{content:'...';display:inline-block;width:0;overflow:hidden;vertical-align:bottom;animation:dyn-dots 1.2s steps(3,start) infinite}" +
     '@keyframes dyn-dots{from{width:0}to{width:1.05em}}' +
     '.dyn-sent-btn{width:34px;height:34px}' +
+    '.dyn-sent-off{opacity:.35;pointer-events:none}' +
     /* owner 2026-07-27: the ±10 buttons are clutter in dyn mode (sentence skip covers it) */
     '.audio-row button[onclick="skip(-10)"],.audio-row button[onclick="skip(10)"]{display:none}' +
     /* owner 2026-07-27: emphasis swap — the playback scrubber gets BIG, the pauses slider small */
@@ -2511,6 +2595,13 @@
     '.dyn-rep-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}' +
     '.dyn-en-lbl{display:inline-flex;align-items:center;gap:4px;cursor:pointer}' +
     '.dyn-en-lbl input{accent-color:var(--accent);margin:0;width:13px;height:13px}' +
+    /* round-15 item 4: English-position line (|thai ☐ thai ☐| radio boxes) */
+    '.dyn-ep-row{margin-top:2px}' +
+    '.dyn-ep-boxes{display:inline-flex;align-items:center;gap:4px}' +
+    '.dyn-ep-th{font-size:10.5px;color:var(--text-tertiary);font-style:italic}' +
+    '.dyn-ep-box{width:16px;height:16px;border-radius:4px;border:.5px solid var(--border-strong);background:var(--surface);cursor:pointer;padding:0;position:relative}' +
+    '.dyn-ep-box.on{background:var(--accent);border-color:var(--accent)}' +
+    ".dyn-ep-box.on::after{content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}" +
     '.sentence-card.dyn-off{opacity:.55;border-style:dashed}' +
     '.sentence-card.dyn-off .sent-preview{text-decoration:line-through}' +
     '.dyn-card-btn{width:26px;height:26px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}' +
@@ -2614,6 +2705,7 @@
           try { localStorage.setItem('te_dyn_rp', String(n)); } catch (_) {}
           reps.querySelectorAll('.dyn-rep-btn').forEach(function (x) { x.classList.toggle('on', x.textContent === String(n)); });
           dynInvalidate();
+          dynEpRender();   // box count follows the repeat count (and ep clamps to it)
           dynPrefsQueue('global');
         });
         reps.appendChild(b);
@@ -2625,8 +2717,15 @@
         dynEnglish = enCb.checked;
         try { localStorage.setItem('te_dyn_en', dynEnglish ? '1' : '0'); } catch (_) {}
         dynInvalidate();
+        dynEpRender();
         dynPrefsQueue('global');
       });
+      // English-position line (round-15 item 4) — its own non-wrapping group under the row.
+      var epRow = document.createElement('div');
+      epRow.className = 'dyn-slider dyn-ep-row';
+      epRow.id = 'dyn-ep-row';
+      epRow.innerHTML = '<span class="dyn-ctl-group">English position <span class="dyn-ep-boxes" id="dyn-ep-boxes"></span></span>';
+      sl.parentNode.insertBefore(epRow, sl.nextSibling);
       dynSyncEnToggle();
       var skips = row.querySelectorAll('.skip-btn');   // [back-10, fwd-10] (dyn buttons not yet inserted)
       var prevB = document.createElement('button');
@@ -2718,6 +2817,7 @@
       }
     });
     dynPrefetchNeighbours();        // iPhone: neighbours' placeholder URLs ready before any lock-screen skip
+    dynSyncSentBtns();              // ① buttons start greyed until a session (or hydrated map) is live
     dynPrefsApply();                // round-14: overlay the account-level settings once auth allows
     if (dynPlsel) dynPlselBoot();   // opened from playlists.html "Add sentences" → auto-enter select mode
   }
