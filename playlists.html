@@ -98,7 +98,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r20</div>
+  <div class="eyebrow">Owner test build · r20a</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -116,7 +116,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r20</div>
+  <div class="eyebrow">Playlist · r20a</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -354,7 +354,11 @@
           var seen = {};
           (e.files || []).concat(by[pfx].files).forEach(function (f) { seen[f] = true; });
           e.files = Object.keys(seen);
-          e.refs = (e.refs || ['topic']).filter(function (r) { return r !== 'pl-' + p.id; });
+          // NOT ['topic'] — a playlist pulls only the sentences IT uses, so claiming the whole
+          // topic is downloaded is a lie: the topic would show a tick and then fail to build
+          // offline because most of its clips were never fetched. Only a topic download adds
+          // the 'topic' ref. An entry with NO refs at all predates this and IS a topic download.
+          e.refs = (e.refs || (m[pfx] ? ['topic'] : [])).filter(function (r) { return r !== 'pl-' + p.id; });
           e.refs.push('pl-' + p.id);
           e.at = Date.now();
           m[pfx] = e;

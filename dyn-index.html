@@ -105,7 +105,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Owner test build · dyn index r20</div>
+  <div class="eyebrow">Owner test build · dyn index r20a</div>
   <h1>Dynamic player test index</h1>
   <p class="lede">The test space's own front page, so downloads can be exercised the way the real
   index works. A dynamic download stores each sentence's <strong>clips</strong>, not a finished file —
@@ -156,7 +156,12 @@
 
   function manifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
   function setManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
-  function isDownloaded(p) { return !!manifest()[p]; }
+  /* A manifest entry can exist because a PLAYLIST pulled some of this topic's clips. That is
+     not the topic being downloaded — it holds only the sentences that playlist uses, so a tick
+     here would promise offline playback the topic cannot deliver. Ownership is the 'topic' ref;
+     an entry with no refs field at all predates refs and IS a topic download. */
+  function ownedByTopic(e) { return !!e && (!e.refs || e.refs.indexOf('topic') >= 0); }
+  function isDownloaded(p) { return ownedByTopic(manifest()[p]); }
   function status(msg, err) {
     var el = document.getElementById('dl-status');
     el.textContent = msg || '';
@@ -326,8 +331,17 @@
         return chain.then(function () {
           // Mark BEFORE pre-building: the clips ARE the download; sessions are a convenience,
           // so an interrupted pre-build still leaves a fully usable offline topic.
+          // Merge rather than overwrite: a playlist may already hold some of these clips, and
+          // its ref must survive a topic download (and vice versa).
           var m = manifest();
-          m[u.prefix] = { tier: u.tier, files: files, at: Date.now(), ver: '', av: null, dyn: true };
+          var e = m[u.prefix] || { tier: u.tier, files: [], ver: '', av: null };
+          var seen = {};
+          (e.files || []).concat(files).forEach(function (f) { seen[f] = true; });
+          e.files = Object.keys(seen);
+          e.refs = (e.refs || []).filter(function (r) { return r !== 'topic'; });
+          e.refs.push('topic');
+          e.tier = u.tier; e.at = Date.now(); e.dyn = true;
+          m[u.prefix] = e;
           setManifest(m);
           if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(u.page).catch(function () {}); }).catch(function () {});
           lastDlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
@@ -384,10 +398,17 @@
         clearSel = {}; render();
         return;
       }
-      var u = list[i], m = manifest(), files = (m[u.prefix] && m[u.prefix].files) || [];
+      var u = list[i], m = manifest(), entry = m[u.prefix] || {}, files = entry.files || [];
+      // Drop only THIS topic's claim. If a downloaded playlist still needs these clips, the
+      // files stay — the topic simply stops showing as downloaded. Over-retaining a few clips
+      // is invisible; deleting one a playlist needs is not.
+      var rest = (entry.refs || ['topic']).filter(function (r) { return r !== 'topic'; });
       status('Removing ' + u.name + '…');
       var p;
-      if (NATIVE) p = FS.rmdir({ directory: 'DATA', path: 'offline/' + u.prefix, recursive: true }).catch(function () {});
+      if (rest.length) {
+        entry.refs = rest; m[u.prefix] = entry; setManifest(m);
+        p = Promise.resolve();
+      } else if (NATIVE) p = FS.rmdir({ directory: 'DATA', path: 'offline/' + u.prefix, recursive: true }).catch(function () {});
       else if (window.caches) {
         p = caches.open(AUDIO_DL_CACHE).then(function (c) {
           return Promise.all(files.map(function (f) { return c.delete(webCacheKey(u.prefix, f)).catch(function () {}); }));
@@ -404,7 +425,7 @@
             c.delete('/dyn/' + u.key + '/' + mode + '.' + (meta && meta.ext ? meta.ext : 'wav')).catch(function () {});
           }).catch(function () {});
         });
-        var mm = manifest(); delete mm[u.prefix]; setManifest(mm);
+        if (!rest.length) { var mm = manifest(); delete mm[u.prefix]; setManifest(mm); }
         i++; render(); next();
       });
     })();

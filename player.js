@@ -794,6 +794,12 @@
   // Progress is keyed by this page's (frozen) filename, e.g. "topic-09a" — unique
   // per page, matches what the progress page enumerates from topics.js.
   var PAGE_FILE = (location.pathname.split('/').pop() || '').toLowerCase();
+  /* A playlist LIVES at playlists.html?pl={id} — the query is its identity, so anything that
+     LINKS back here (the now-playing bar, the np stamp) has to keep it, or tapping "now
+     playing" lands on the playlist LIST instead of the playlist. PAGE_FILE stays bare for
+     filename comparisons; PAGE_HREF is the linkable form. (It also preserves the test-space
+     ?k= key, which was being dropped the same way.) */
+  var PAGE_HREF = PAGE_FILE + ((cfg.dyn && location.search) ? location.search : '');
   if (!/\.html$/.test(PAGE_FILE)) PAGE_FILE += '.html'; // clean URLs (/topic-02) → topic-02.html
   var TOPIC_KEY = PAGE_FILE.replace(/\.html$/, '');
 
@@ -1468,7 +1474,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r20';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r20a';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3002,7 +3008,7 @@
     dynAttached = false;
     dynStdRemote = false;
     dynLastPos = 0;
-    mainPage = PAGE_FILE; mainPrefix = PREFIX; mainGated = GATED; mainTier = TIER;
+    mainPage = PAGE_HREF; mainPrefix = PREFIX; mainGated = GATED; mainTier = TIER;
     currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
     mainSrcReady = false;
     var rf = $('scrubber-fill'); if (rf) rf.style.width = '0%';
@@ -3798,7 +3804,7 @@
   var mainPrefix = PREFIX;          // audio prefix the top player is currently on
   var mainGated = GATED;            // is that topic gated? → signed URL vs public CDN
   var mainTier = TIER;              // its tier → denial route, if it ever denies
-  var mainPage = PAGE_FILE;         // the live-unit page the top player is currently playing
+  var mainPage = PAGE_HREF;         // the live-unit page the top player is currently playing
   var currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
   var mainSrcReady = false;                 // has the current file's src been resolved onto mainAudio?
 
