@@ -1774,7 +1774,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r26b';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r26c';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2761,6 +2761,7 @@
         mainAudio.src = r.src;
         mainAudio.load();
         mainSrcReady = true;
+        dynPreAdvanced = false;   // new track → re-arm autoplay's once-per-track guard
         dynSyncSentBtns();
       });
     }
@@ -4138,11 +4139,16 @@
     }
     var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';   // mirror onto the floating mini bar
     if (DYN && !dynPosStale && (mainAudio.currentTime || 0) > 0) dynLastPos = mainAudio.currentTime;   // remember position (resume guard)
+    /* The guard has to be tight. While a new source loads, iOS can report a transient or tiny
+       duration — so a loose "near the end" test fires the instant after a MANUAL hop and skids
+       straight on to the next unit, which reads as prev/next being broken. A real session runs
+       minutes, so require a substantial duration AND genuinely being in its last stretch. */
     if (DYN && autoplayOn && !repeatOn && !dynPreAdvanced && !mainAudio.paused &&
-        mainAudio.duration && isFinite(mainAudio.duration) && (mainAudio.currentTime || 0) > 0 &&
+        mainAudio.duration && isFinite(mainAudio.duration) && mainAudio.duration > 20 &&
+        (mainAudio.currentTime || 0) > mainAudio.duration * 0.9 &&
         (mainAudio.duration - mainAudio.currentTime) <= DYN_PREADVANCE_S) {
       dynPreAdvanced = true;   // once per track; cleared whenever a new source is set
-      dynLog('auto: pre-advance at ' + mainAudio.currentTime.toFixed(1) + '/' + mainAudio.duration.toFixed(1));
+      dynLog('AUTO pre-advance at ' + mainAudio.currentTime.toFixed(1) + '/' + mainAudio.duration.toFixed(1));
       advanceTopic(1);
     }
     if (DYN && dynSession && dynSessionIsLocal) dynHighlight(mainAudio.currentTime);   // dyn: highlight the playing card (this page's session only)
