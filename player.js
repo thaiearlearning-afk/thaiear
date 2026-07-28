@@ -212,6 +212,9 @@
             }
           }
         }
+        // r16: adopting the live track can flip the direction — settings are per mode, so the
+        // controls must repaint onto THIS unit's settings for the mode now playing.
+        dynLoadSettings(); dynPrefsRepaintControls();
         dynAttached = true;                        // src belongs to the live engine — never rebuild under it
         mainSrcReady = true;
         if (mainAudio.attach) mainAudio.attach();  // control the live track without restarting it (position preserved)
@@ -272,6 +275,7 @@
       if (bte) bte.classList.toggle('active', currentMode === 'te');
       if (bet) bet.classList.toggle('active', currentMode === 'et');
       applyDirClass();   // restored ET side → reveal order should open English-first too
+      if (DYN) { dynLoadSettings(); dynPrefsRepaintControls(); }   // r16: settings are per mode
     }
     var target = r.t;
     ensureMainSrc().then(function () {
@@ -1442,7 +1446,7 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r15';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r16';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
   var dynLogEl = null;
@@ -1476,18 +1480,76 @@
   }
 
   var DYN_SR = 24000;
-  var dynFactor = 1;
-  try { var _dynPf = parseFloat(localStorage.getItem('te_dyn_pf')); if (isFinite(_dynPf) && _dynPf > 0) dynFactor = _dynPf; } catch (_) {}
-  var dynRepeats = 2;   // Thai repeat count 1–4 (2 = the original behaviour)
-  try { var _dynRp = parseInt(localStorage.getItem('te_dyn_rp'), 10); if (_dynRp >= 1 && _dynRp <= 4) dynRepeats = _dynRp; } catch (_) {}
-  var dynEnglish = true;   // TE mode only: include the English clip after the repeats (ET always has it)
-  try { dynEnglish = localStorage.getItem('te_dyn_en') !== '0'; } catch (_) {}
-  // Round-15 item 4: WHERE the English lands in a TE block — after the Nth Thai repeat.
-  // 0 = never chosen → effective default is dynRepeats (the end = the original behaviour);
-  // a choice above the current repeat count also clamps to the end.
-  var dynEngPos = 0;
-  try { var _dynEp = parseInt(localStorage.getItem('te_dyn_ep'), 10); if (_dynEp >= 1 && _dynEp <= 4) dynEngPos = _dynEp; } catch (_) {}
+  /* ── ROUND-16: settings are PER UNIT and PER MODE ───────────────────────────────────
+     Until r15 the four dyn settings (pause factor, Thai repeats, English on/off, English
+     position) were ONE player-global set shared by every topic and playlist — so moving
+     the English position on a topic silently moved it on every playlist too. They are now
+     scoped to {unit, mode}: a topic holds separate TE and ET settings, and so does a
+     playlist. A unit that has never been touched shows DYN_DEFAULTS — the classic setup
+     that reproduces the prefab TE/ET file (2 Thai repeats, English on at the end, ×1
+     pauses). "The first settings a user sees is always the default."
+
+     Resolution order for {unit, mode}:
+       the unit's own override  →  the user's global default for that MODE  →  DYN_DEFAULTS
+     The global default is written ONLY by the "apply to all" sync (dynSyncAll), and the
+     race between it and an older per-unit override is settled by TIMESTAMP rather than by
+     rewriting every unit's row: a sync stamps a NEWER ts on the global default, which
+     therefore supersedes every override made before it; a change made after the sync is
+     newer again, so that unit keeps winning. One write, "applies to all", nothing to
+     migrate, and a unit is never pinned to a value the user has since replaced globally.
+
+     Because the sync writes a default for ONE mode, syncing in TE leaves every unit's ET
+     settings untouched (and vice versa) — which is what the confirm modal promises.
+     Storage: localStorage `te_dyn_set_{unitKey}_{mode}` / `te_dyn_gdef_{mode}`, mirrored
+     for signed-in users into dyn_prefs (unit rows gain {te,et} alongside {excl}; the
+     'global' row becomes {v:2, te, et}). The pre-r16 flat 'global' row and the old
+     te_dyn_pf/rp/en/ep keys are deliberately NOT read — per owner, everyone restarts from
+     the classic default rather than inheriting the old player-global values. */
+  var DYN_DEFAULTS = { pf: 1, rp: 2, en: true, ep: 0 };   // ep 0 = "not chosen" → English at the end
+  // The settings currently IN EFFECT (this page's unit, current mode). dynLoadSettings()
+  // refills them on boot, on a TE/ET switch, and when the account copy lands.
+  var dynFactor = DYN_DEFAULTS.pf;
+  var dynRepeats = DYN_DEFAULTS.rp;   // Thai repeat count 1–4
+  var dynEnglish = DYN_DEFAULTS.en;   // TE mode only: include the English clip (ET always has it)
+  // WHERE the English lands in a TE block — after the Nth Thai repeat. 0 = never chosen →
+  // effective default is dynRepeats (the end); a choice above the repeat count clamps there too.
+  var dynEngPos = DYN_DEFAULTS.ep;
   function dynEngPosEff() { return (dynEngPos >= 1 && dynEngPos <= dynRepeats) ? dynEngPos : dynRepeats; }
+  function dynSetKey(ns, mode) { return 'te_dyn_set_' + ns + '_' + mode; }
+  function dynGdefKey(mode) { return 'te_dyn_gdef_' + mode; }
+  function dynReadJson(k) {
+    try { var o = JSON.parse(localStorage.getItem(k) || 'null'); return (o && typeof o === 'object') ? o : null; } catch (_) { return null; }
+  }
+  function dynWriteJson(k, o) { try { localStorage.setItem(k, JSON.stringify(o)); } catch (_) {} }
+  // Sanitise an untrusted settings record (localStorage / another device) onto the defaults.
+  function dynNormSet(o) {
+    var d = { pf: DYN_DEFAULTS.pf, rp: DYN_DEFAULTS.rp, en: DYN_DEFAULTS.en, ep: DYN_DEFAULTS.ep };
+    if (!o) return d;
+    var pf = parseFloat(o.pf); if (isFinite(pf) && pf >= 0.5 && pf <= 2) d.pf = pf;
+    var rp = parseInt(o.rp, 10); if (rp >= 1 && rp <= 4) d.rp = rp;
+    if (typeof o.en === 'boolean') d.en = o.en;
+    var ep = parseInt(o.ep, 10); if (!isNaN(ep) && ep >= 0 && ep <= 4) d.ep = ep;
+    return d;
+  }
+  // The effective settings for any unit+mode — used for this page AND for a foreign unit
+  // the chain builds in place (that unit must sound the way ITS settings say, not ours).
+  function dynSettingsFor(ns, mode) {
+    var u = dynReadJson(dynSetKey(ns, mode)), g = dynReadJson(dynGdefKey(mode));
+    var uts = (u && +u.ts) || 0, gts = (g && +g.ts) || 0;
+    return dynNormSet((u && uts >= gts) ? u : (g || u));
+  }
+  function dynCurrentSet() { return { pf: dynFactor, rp: dynRepeats, en: dynEnglish, ep: dynEngPos }; }
+  function dynLoadSettings() {
+    var s = dynSettingsFor(DYN_KEY_NS, currentMode);
+    dynFactor = s.pf; dynRepeats = s.rp; dynEnglish = s.en; dynEngPos = s.ep;
+  }
+  // Every control handler ends here: persist for THIS unit + THIS mode only, then sync.
+  function dynSaveSettings() {
+    var o = dynCurrentSet();
+    o.ts = Date.now();
+    dynWriteJson(dynSetKey(DYN_KEY_NS, currentMode), o);
+    dynPrefsQueue('set');
+  }
   var DYN_EXCL_KEY = 'te_dyn_excl_' + (cfg.dynKey || PREFIX);
   var dynExcluded = {};
   try {
@@ -1630,13 +1692,16 @@
     // equal-length edit must still change the key (cross-device staleness test).
     return dynKeyFor(dynIncluded());
   }
-  function dynKeyFor(sents) {
-    var en = (currentMode === 'et' || dynEnglish) ? 1 : 0;
+  // st (r16) = the settings the session is/was built with; defaults to this page's own.
+  function dynKeyFor(sents, st) {
+    st = st || dynCurrentSet();
+    var epEff = (st.ep >= 1 && st.ep <= st.rp) ? st.ep : st.rp;
+    var en = (currentMode === 'et' || st.en) ? 1 : 0;
     // English-position token appears ONLY when it actually shapes the audio (TE + English on +
     // ≥2 repeats + not at the default end position) — so irrelevant toggles never churn keys
     // AND every pre-r15 persisted session stays valid (no migration wipe).
-    var ep = (currentMode !== 'et' && dynEnglish && dynRepeats > 1 && dynEngPosEff() !== dynRepeats) ? dynEngPosEff() : 0;
-    return currentMode + '|' + dynFactor + '|r' + dynRepeats + '|e' + en + (ep ? '|p' + ep : '') + '|' + sents.map(function (s) {
+    var ep = (currentMode !== 'et' && st.en && st.rp > 1 && epEff !== st.rp) ? epEff : 0;
+    return currentMode + '|' + st.pf + '|r' + st.rp + '|e' + en + (ep ? '|p' + ep : '') + '|' + sents.map(function (s) {
       return s.prefix ? (s.prefix + ':' + (s.clipNum != null ? s.clipNum : s.num)) : s.num;
     }).join(',');
   }
@@ -1706,10 +1771,12 @@
   // Parametrised stitcher (round-11): the chain can BUILD a FOREIGN playlist's session in
   // place (foreground only) from the local playlist cache — sents/keyNs/key come from the
   // caller instead of this page's own state.
-  function dynBuildSessionFor(inc, keyNs, key, onProg) {
+  function dynBuildSessionFor(inc, keyNs, key, onProg, st) {
     if (!inc.length) return Promise.reject({ code: 'empty' });
     var mode = currentMode;   // captured: the key/filename must match the mode this build is FOR
-    var needEn = (mode === 'et') || dynEnglish;   // TE with English off never touches the _EN clips
+    st = st || dynCurrentSet();   // r16: settings are per unit — a foreign build passes ITS unit's
+    var stEp = (st.ep >= 1 && st.ep <= st.rp) ? st.ep : st.rp;
+    var needEn = (mode === 'et') || st.en;   // TE with English off never touches the _EN clips
     var files = [];
     inc.forEach(function (s) { files.push(dynClipRef(s, 'TH')); if (needEn) files.push(dynClipRef(s, 'EN')); });
     var done = 0;
@@ -1725,21 +1792,21 @@
         var th = dynClipCache[dynClipRef(s, 'TH').file];
         var en = needEn ? dynClipCache[dynClipRef(s, 'EN').file] : null;
         var syl = dynSyllables(s.thai);
-        var repeat = Math.max(3.0, syl * 0.5) * dynFactor;
-        var recall = Math.max(4.5, syl * 0.7) * dynFactor;
-        var gap = 3.0 * dynFactor;
+        var repeat = Math.max(3.0, syl * 0.5) * st.pf;
+        var recall = Math.max(4.5, syl * 0.7) * st.pf;
+        var gap = 3.0 * st.pf;
         var start = pos / DYN_SR;
         var r;
         if (mode === 'et') {
           pushBuf(en); pushSil(recall); pushBuf(th);
-          for (r = 1; r < dynRepeats; r++) { pushSil(repeat); pushBuf(th); }
+          for (r = 1; r < st.rp; r++) { pushSil(repeat); pushBuf(th); }
         } else {
           // TE: English lands after the ep-th Thai repeat (round-15 item 4); ep === repeats
           // reproduces the original TH…TH,EN order exactly.
-          var ep = dynEnglish ? dynEngPosEff() : 0;
+          var ep = st.en ? stEp : 0;
           pushBuf(th);
           if (ep === 1) { pushSil(repeat); pushBuf(en); }
-          for (r = 1; r < dynRepeats; r++) {
+          for (r = 1; r < st.rp; r++) {
             pushSil(repeat); pushBuf(th);
             if (ep === r + 1) { pushSil(repeat); pushBuf(en); }
           }
@@ -1866,14 +1933,41 @@
     else dynStatus('Changes saved — your session will reconstruct on next play.', false);
   }
   /* ── round-14: account-level settings sync (auth.js dynPrefs / public.dyn_prefs) ──
-     Boot stays instant on the local te_dyn_* keys; once auth resolves, the server copy is
-     applied over them (controls repaint + dynInvalidate — the r12 revert logic keeps the
-     rebuild notice away when the built session still matches). Every local change keeps
-     writing te_dyn_* AND, signed-in, upserts the account copy (debounced ~1s). Signed-out
-     stays local-only. PLMODE has no exclusions (r11) — only the global scope syncs there. */
-  var dynPrefsTimer = null, dynPushGlobal = false, dynPushExcl = false;
+     Boot stays instant on the local mirror; once auth resolves the server copy is written
+     over it and the settings are RE-RESOLVED (controls repaint + dynInvalidate — the r12
+     revert logic keeps the rebuild notice away when the built session still matches). Every
+     local change writes localStorage AND, signed-in, upserts the account copy (debounced
+     ~1s). Signed-out stays local-only.
+     r16: two rows, not two scopes-per-setting — the UNIT row ('<dynKey>') holds {excl, te,
+     et} and the 'global' row holds only the apply-to-all per-mode defaults {v:2, te, et}.
+     PLMODE has no exclusions (r11), but its unit row still carries its settings. */
+  var dynPrefsTimer = null, dynPushGdef = false, dynPushUnit = false;
+  // The UNIT row now carries the exclusions AND both modes' settings, so every push rebuilds
+  // the whole row from local state — a settings write must never drop the exclusions, nor
+  // the other mode's settings (r16).
+  function dynUnitPayload() {
+    var d = {};
+    if (!PLMODE) {
+      var excl = [];
+      for (var k in dynExcluded) { if (dynExcluded[k]) excl.push(+k); }
+      d.excl = excl;
+    }
+    var te = dynReadJson(dynSetKey(DYN_KEY_NS, 'te')), et = dynReadJson(dynSetKey(DYN_KEY_NS, 'et'));
+    if (te) d.te = te;
+    if (et) d.et = et;
+    return d;
+  }
+  // v:2 marks the per-mode shape. A pre-r16 flat row has no v and is ignored on read, so the
+  // first write from any device simply replaces it.
+  function dynGdefPayload() {
+    var d = { v: 2 };
+    var te = dynReadJson(dynGdefKey('te')), et = dynReadJson(dynGdefKey('et'));
+    if (te) d.te = te;
+    if (et) d.et = et;
+    return d;
+  }
   function dynPrefsQueue(which) {
-    if (which === 'excl') dynPushExcl = true; else dynPushGlobal = true;
+    if (which === 'gdef') dynPushGdef = true; else dynPushUnit = true;   // 'set' | 'excl' both live on the unit row
     var a = window.ThaiEarAuth;
     if (!a || !a.dynPrefs || !(a.getUser && a.getUser())) return;   // signed-out → local only
     if (dynPrefsTimer) clearTimeout(dynPrefsTimer);
@@ -1881,13 +1975,8 @@
       dynPrefsTimer = null;
       var api = window.ThaiEarAuth && window.ThaiEarAuth.dynPrefs;
       if (!api) return;
-      if (dynPushGlobal) { dynPushGlobal = false; api.set('global', { pf: dynFactor, rp: dynRepeats, en: dynEnglish, ep: dynEngPos }); }
-      if (dynPushExcl && !PLMODE) {
-        dynPushExcl = false;
-        var excl = [];
-        for (var k in dynExcluded) { if (dynExcluded[k]) excl.push(+k); }
-        api.set(DYN_KEY_NS, { excl: excl });
-      }
+      if (dynPushGdef) { dynPushGdef = false; api.set('global', dynGdefPayload()); }
+      if (dynPushUnit) { dynPushUnit = false; api.set(DYN_KEY_NS, dynUnitPayload()); }
     }, 1000);
   }
   function dynPrefsRepaintControls() {
@@ -1918,20 +2007,20 @@
     if (!a || !a.dynPrefs || !(a.getUser && a.getUser())) return;
     a.dynPrefs.load().then(function (map) {
       if (!map) return;
-      var changed = false, exclChanged = false;
+      var exclChanged = false;
+      var before = JSON.stringify(dynCurrentSet());
+      // r16: mirror the account copy into the local stores, then RE-RESOLVE — the winner
+      // between a unit override and the global default is decided by ts, not by arrival order.
+      // A pre-r16 'global' row is flat {pf,rp,en,ep} with no v: deliberately ignored, so every
+      // unit starts from the classic default instead of inheriting the old player-global set.
       var g = map.global;
-      if (g) {
-        var pf = parseFloat(g.pf);
-        if (isFinite(pf) && pf > 0 && pf !== dynFactor) { dynFactor = pf; try { localStorage.setItem('te_dyn_pf', String(pf)); } catch (_) {} changed = true; }
-        var rp = parseInt(g.rp, 10);
-        if (rp >= 1 && rp <= 4 && rp !== dynRepeats) { dynRepeats = rp; try { localStorage.setItem('te_dyn_rp', String(rp)); } catch (_) {} changed = true; }
-        if (typeof g.en === 'boolean' && g.en !== dynEnglish) { dynEnglish = g.en; try { localStorage.setItem('te_dyn_en', g.en ? '1' : '0'); } catch (_) {} changed = true; }
-        var epv = parseInt(g.ep, 10);   // 0 = never chosen (effective default follows repeats)
-        if (!isNaN(epv) && epv >= 0 && epv <= 4 && epv !== dynEngPos) { dynEngPos = epv; try { localStorage.setItem('te_dyn_ep', String(epv)); } catch (_) {} changed = true; }
+      if (g && g.v === 2) {
+        ['te', 'et'].forEach(function (m) { if (g[m]) dynWriteJson(dynGdefKey(m), g[m]); });
       }
-      if (!PLMODE) {
-        var u = map[DYN_KEY_NS];
-        if (u && Array.isArray(u.excl)) {
+      var u = map[DYN_KEY_NS];
+      if (u) {
+        ['te', 'et'].forEach(function (m) { if (u[m]) dynWriteJson(dynSetKey(DYN_KEY_NS, m), u[m]); });
+        if (!PLMODE && Array.isArray(u.excl)) {
           var byNum = function (x, y) { return x - y; };
           var cur = [];
           for (var k in dynExcluded) { if (dynExcluded[k]) cur.push(+k); }
@@ -1943,6 +2032,8 @@
           }
         }
       }
+      dynLoadSettings();
+      var changed = JSON.stringify(dynCurrentSet()) !== before;
       if (changed || exclChanged) {
         dynLog('prefs: applied account settings');
         if (changed) dynPrefsRepaintControls();
@@ -1950,6 +2041,55 @@
         dynInvalidate();   // r12: clears itself when the built session's key still matches
       }
     }).catch(function () {});
+  }
+  /* ── r16: "apply to all" ──────────────────────────────────────────────────────────
+     Settings are per unit, so this is the escape hatch for "I want THIS everywhere".
+     It writes the current settings as the user's global default FOR THE CURRENT MODE
+     ONLY — syncing in Thai→English never touches anyone's English→Thai setups — with a
+     ts that outranks every per-unit override made before now, which is what makes one
+     write apply to all units without rewriting them. This unit keeps a matching override
+     at the same stamp so it stays in step. */
+  function dynModeLabel() { return currentMode === 'et' ? 'English→Thai' : 'Thai→English'; }
+  function dynSyncAll() {
+    var o = dynCurrentSet();
+    o.ts = Date.now();
+    dynWriteJson(dynGdefKey(currentMode), o);
+    dynWriteJson(dynSetKey(DYN_KEY_NS, currentMode), o);
+    dynPrefsQueue('gdef');
+    dynPrefsQueue('set');
+    dynStatus('Applied to all topics and playlists (' + dynModeLabel() + ').', false);
+    var seq = dynStatusSeq;
+    setTimeout(function () { if (seq === dynStatusSeq) dynStatus(null); }, 3500);
+  }
+  // Confirm sheet — same construction as the premium sheet above (inline styles, click-out
+  // to dismiss) so it needs no stylesheet of its own.
+  function dynSyncConfirm() {
+    var unitWord = PLMODE ? 'playlist' : 'topic';
+    var ov = document.createElement('div');
+    ov.id = 'dyn-sync-sheet';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;' +
+      'justify-content:center;padding:20px;background:rgba(20,16,48,.5);opacity:0;transition:opacity .18s;';
+    ov.innerHTML =
+      '<div role="dialog" aria-modal="true" style="background:#fff;border-radius:14px;max-width:380px;width:100%;' +
+        'padding:22px 20px 18px;box-shadow:0 12px 40px rgba(0,0,0,.25);font-family:var(--font-ui,system-ui,sans-serif);">' +
+        '<div style="font:600 16px var(--font-ui,system-ui,sans-serif);color:#1A1A1A;margin-bottom:10px;">Sync player settings</div>' +
+        '<p style="font-size:14px;color:#5A5A5A;line-height:1.6;margin:0 0 16px;">' +
+          'Your changes are saved for this ' + unitWord + '. Syncing your dynamic player settings will now apply ' +
+          'these settings to all topics/playlists when ' + escapeHtml(dynModeLabel()) + ' is selected — do you want to continue?</p>' +
+        '<div style="display:flex;gap:8px;">' +
+          '<button id="dyn-sync-go" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
+            'padding:11px 14px;border-radius:8px;border:0;background:#4B41AD;color:#fff;cursor:pointer;">Continue</button>' +
+          '<button id="dyn-sync-back" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
+            'padding:11px 14px;border-radius:8px;border:.5px solid rgba(0,0,0,.18);background:#fff;color:#5A5A5A;cursor:pointer;">Go back</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    requestAnimationFrame(function () { ov.style.opacity = '1'; });
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    var b = ov.querySelector('#dyn-sync-back'); if (b) b.addEventListener('click', close);
+    var g = ov.querySelector('#dyn-sync-go');
+    if (g) g.addEventListener('click', function () { close(); dynSyncAll(); });
   }
   // Show/hide the TE-only English checkbox to match the current direction (ET always has English).
   function dynSyncEnToggle() {
@@ -1982,10 +2122,9 @@
         var v = parseInt(b.getAttribute('data-ep'), 10);
         if (!(v >= 1 && v <= dynRepeats) || v === dynEngPosEff()) return;
         dynEngPos = v;
-        try { localStorage.setItem('te_dyn_ep', String(v)); } catch (_) {}
+        dynSaveSettings();
         dynEpRender();
         dynInvalidate();
-        dynPrefsQueue('global');
       });
     });
   }
@@ -2166,9 +2305,11 @@
     dynLog('adopt: building ' + t.dynKey);
     dynStatus('Constructing dynamic mp3 file', true);
     var mode = currentMode;
-    return dynBuildSessionFor(sents, t.dynKey, dynKeyFor(sents), function (d, tot) {
+    // r16: build it with the TARGET unit's own settings, not this page's.
+    var st = dynSettingsFor(t.dynKey, mode);
+    return dynBuildSessionFor(sents, t.dynKey, dynKeyFor(sents, st), function (d, tot) {
       var cEl = $('dyn-status-count'); if (cEl) cEl.textContent = d + '/' + tot;
-    }).then(function (sess) {
+    }, st).then(function (sess) {
       dynPersistSessionFor(sess, mode, t.dynKey);
       dynStatus(null);
       var entry = dynAdoptCache[t.page];
@@ -2602,6 +2743,12 @@
     '.dyn-ep-box{width:16px;height:16px;border-radius:4px;border:.5px solid var(--border-strong);background:var(--surface);cursor:pointer;padding:0;position:relative}' +
     '.dyn-ep-box.on{background:var(--accent);border-color:var(--accent)}' +
     ".dyn-ep-box.on::after{content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}" +
+    /* r16: "apply to all" sync affordance — bottom-left, under the settings rows */
+    '.dyn-sync-row{display:flex;justify-content:flex-start;margin:8px 0 2px}' +
+    '.dyn-sync-btn{width:28px;height:28px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}' +
+    '.dyn-sync-btn svg{width:15px;height:15px}' +
+    '.dyn-sync-btn:hover{color:var(--accent);border-color:var(--accent)}' +
+    'body.premium-topic .dyn-sync-btn:hover{color:#B29234;border-color:#B29234}' +
     '.sentence-card.dyn-off{opacity:.55;border-style:dashed}' +
     '.sentence-card.dyn-off .sent-preview{text-decoration:line-through}' +
     '.dyn-card-btn{width:26px;height:26px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}' +
@@ -2665,6 +2812,7 @@
       document.head.appendChild(st);
     }
     var root = $('player-root'); if (!root) return;
+    dynLoadSettings();   // r16: this unit's settings for the current direction, before anything paints
     var row = root.querySelector('.audio-row');
     if (row) {
       var stEl = document.createElement('div');
@@ -2686,10 +2834,9 @@
       pf.addEventListener('input', function () { pv.textContent = (parseFloat(pf.value) || 1) + '×'; });
       pf.addEventListener('change', function () {
         dynFactor = parseFloat(pf.value) || 1;
-        try { localStorage.setItem('te_dyn_pf', String(dynFactor)); } catch (_) {}
+        dynSaveSettings();
         pv.textContent = dynFactor + '×';
         dynInvalidate();
-        dynPrefsQueue('global');
       });
       // Thai repeat count: 1–4 segmented mini-buttons
       var reps = sl.querySelector('#dyn-reps');
@@ -2702,11 +2849,10 @@
         b.addEventListener('click', function () {
           if (dynRepeats === n) return;
           dynRepeats = n;
-          try { localStorage.setItem('te_dyn_rp', String(n)); } catch (_) {}
+          dynSaveSettings();
           reps.querySelectorAll('.dyn-rep-btn').forEach(function (x) { x.classList.toggle('on', x.textContent === String(n)); });
           dynInvalidate();
           dynEpRender();   // box count follows the repeat count (and ep clamps to it)
-          dynPrefsQueue('global');
         });
         reps.appendChild(b);
       });
@@ -2715,17 +2861,28 @@
       enCb.checked = dynEnglish;
       enCb.addEventListener('change', function () {
         dynEnglish = enCb.checked;
-        try { localStorage.setItem('te_dyn_en', dynEnglish ? '1' : '0'); } catch (_) {}
+        dynSaveSettings();
         dynInvalidate();
         dynEpRender();
-        dynPrefsQueue('global');
       });
       // English-position line (round-15 item 4) — its own non-wrapping group under the row.
       var epRow = document.createElement('div');
       epRow.className = 'dyn-slider dyn-ep-row';
       epRow.id = 'dyn-ep-row';
-      epRow.innerHTML = '<span class="dyn-ctl-group">English position <span class="dyn-ep-boxes" id="dyn-ep-boxes"></span></span>';
+      epRow.innerHTML = '<span class="dyn-ctl-group">English position (mark with tick) <span class="dyn-ep-boxes" id="dyn-ep-boxes"></span></span>';
       sl.parentNode.insertBefore(epRow, sl.nextSibling);
+      // r16 item 3: the "apply to all" affordance — bottom-left of the player controls.
+      var syncRow = document.createElement('div');
+      syncRow.className = 'dyn-sync-row';
+      syncRow.innerHTML = '<button type="button" class="dyn-sync-btn" id="dyn-sync-btn" ' +
+        'aria-label="Apply these settings to all topics and playlists" ' +
+        'title="Apply these settings to all topics and playlists">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>' +
+        '<path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></button>';
+      epRow.parentNode.insertBefore(syncRow, epRow.nextSibling);
+      var syncBtn = syncRow.querySelector('#dyn-sync-btn');
+      if (syncBtn) syncBtn.addEventListener('click', dynSyncConfirm);
       dynSyncEnToggle();
       var skips = row.querySelectorAll('.skip-btn');   // [back-10, fwd-10] (dyn buttons not yet inserted)
       var prevB = document.createElement('button');
@@ -3042,7 +3199,9 @@
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
     $('btn-et').classList.toggle('active', mode === 'et');
-    if (DYN) { dynLastPos = 0; dynAttached = false; dynSyncEnToggle(); dynPrefetchNeighbours(); }   // dyn: new direction = new track; English checkbox is TE-only; re-resolve neighbour placeholders
+    // dyn: new direction = new track; settings are PER MODE so they reload here (r16); the
+    // English checkbox is TE-only; re-resolve neighbour placeholders.
+    if (DYN) { dynLastPos = 0; dynAttached = false; dynLoadSettings(); dynPrefsRepaintControls(); dynSyncEnToggle(); dynPrefetchNeighbours(); }
     applyDirClass();                      // flip the accordion reveal order to match the new direction
     if (wasPlaying) ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(function (e) { handleDenied(e, mainTier); });
   }
