@@ -54,6 +54,10 @@
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
   .btn-danger { background: #B00020; color: #fff; border-color: #B00020; }
   .btn-danger:hover { background: #8a0019; }
+  /* round-10: playback moved to the ?pl= player view — the box keeps management only */
+  .pl-open { display: inline-block; font-family: var(--font-ui); font-size: 12.5px; font-weight: 600; color: #fff; background: var(--accent); border-radius: 16px; padding: 6px 16px; text-decoration: none; margin: 1rem 8px 0 0; }
+  .pl-open:hover { background: var(--accent-mid); }
+  .pl-rm-list { margin: 0 0 0.75rem; }
 </style>
 <link rel="stylesheet" href="player-dyn.css">
 </head>
@@ -61,21 +65,33 @@
 
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
-<div class="wrap">
-  <div class="eyebrow">Owner test build · r9</div>
+<div class="wrap" id="pl-list-wrap">
+  <div class="eyebrow">Owner test build · r10</div>
   <h1>My Playlists</h1>
-  <p class="lede">Build custom sessions from sentences you've added on any topic page. Expand a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
+  <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
   <div id="pl-root"><p class="pl-note">Loading…</p></div>
 </div>
 
-<script>window.ThaiEarTopic = { test: true };</script>
-<script src="player-dyn.js"></script>
+<!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
+     injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
+<div class="wrap" id="pl-player-wrap" hidden>
+  <div class="eyebrow">Playlist · r10</div>
+  <h1 id="pl-player-title">Loading…</h1>
+  <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
+  <div id="player-root"></div>
+</div>
+
 <script>
 (function () {
   var root = document.getElementById('pl-root');
   var openId = null;
-  var instances = {};
+  // ?pl={id} → PLAYER VIEW: render this playlist as a dyn topic page via player.js (round-10).
+  var PLID = (function () {
+    var m = /[?&]pl=([^&]+)/.exec(location.search);
+    if (!m) return null;
+    try { return decodeURIComponent(m[1]); } catch (_) { return null; }
+  })();
 
   function PL() { return window.ThaiEarAuth && window.ThaiEarAuth.playlists; }
   function user() { return window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser(); }
@@ -120,7 +136,8 @@
   }
 
   function render() {
-    // a re-render invalidates any live batch-remove bar (its instance is being replaced)
+    // a re-render invalidates any live batch-remove tick mode
+    removing = null;
     var rb = document.getElementById('dyn-rm-bar');
     if (rb) rb.parentNode.removeChild(rb);
     if (authReady() && !user()) {
@@ -142,7 +159,10 @@
           '<span class="pl-box-meta">' + p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') + '</span>' +
           '<span class="pl-box-chev" aria-hidden="true">⌄</span>' +
         '</button>' +
-        '<div class="pl-box-body"><div class="pl-player dyn-wrap"></div>' +
+        '<div class="pl-box-body">' +
+          (p.items.length
+            ? '<a class="pl-open" href="playlists.html?pl=' + encodeURIComponent(p.id) + '">▶ Open player</a>'
+            : '<p class="pl-note">This playlist is empty.</p>') +
           (p.items.length ? '<button class="pl-remsent" type="button">Remove sentences</button>' : '') +
           '<button class="pl-del" type="button">Delete playlist</button>' +
         '</div></div>';
@@ -155,11 +175,7 @@
         render();
       });
       var rs = box.querySelector('.pl-remsent');
-      if (rs) rs.addEventListener('click', function () {
-        if (openId !== id) { openId = id; render(); }   // player must be mounted for tick mode
-        var inst = instances[id];
-        if (inst && inst.enterRemoveMode) inst.enterRemoveMode();
-      });
+      if (rs) rs.addEventListener('click', function () { enterRemove(box, p); });
       box.querySelector('.pl-del').addEventListener('click', function () {
         showModal({
           title: 'Delete “' + p.name + '”?',
@@ -171,61 +187,151 @@
           }
         });
       });
-      if (p.id === openId) mountPlayer(box, p, lists);
     });
   }
 
-  function mountPlayer(box, p, lists) {
-    var mountEl = box.querySelector('.pl-player');
-    if (!p.items.length) {
-      mountEl.innerHTML = '<p class="pl-note">This playlist is empty.</p>';
-      return;
-    }
-    // Circular wrap over NON-EMPTY playlists only (round-7: skip empties, like the classic
-    // player skips non-entitled topics). A single non-empty playlist keeps the buttons hidden.
-    var navList = lists.filter(function (x) { return x.items && x.items.length; });
-    var nIdx = navList.indexOf(p);
-    var wrap = navList.length > 1;
-    var prev = wrap ? navList[(nIdx - 1 + navList.length) % navList.length] : null;
-    var next = wrap ? navList[(nIdx + 1) % navList.length] : null;
-    instances[p.id] = ThaiEarDyn.create(mountEl, {
-      name: p.name,
-      topicKey: 'playlist',
-      persistId: p.id,   // round-8: playlist sessions persist per playlist id
-      prefix: '',
-      tier: 'free',
-      sentences: p.items.map(function (i) {
-        return { num: i.num, thai: i.thai, translit: i.translit, english: i.english, prefix: i.prefix, tier: i.tier, topic_key: i.topic_key };
-      }),
-      features: { removeItem: true, batchRemove: true },
-      onRemoveItem: function (s) {
-        showModal({
-          title: 'Remove this sentence?',
-          body: 'It will be removed from “' + esc(p.name) + '”.',
-          confirmText: 'Remove', danger: true,
-          onConfirm: function () {
-            PL().removeItem(p.id, s.topic_key, s.num).then(function () { render(); })
-              .catch(function () { alert('Couldn’t remove — check your connection.'); });
-          }
-        });
-      },
-      onBatchRemoveItem: function (item) { return PL().removeItem(p.id, item.topic_key, item.num); },
-      onBatchRemoveDone: function () { render(); },
-      nav: {
-        // If audio was playing (incl. lock-screen ⏮/⏭ in the app), keep it playing on the
-        // adjacent playlist — expand-only reads as a dead button from the lock screen.
-        onPrev: prev ? function () {
-          var was = instances[p.id] && instances[p.id].isPlaying();
-          openId = prev.id; render();
-          if (was && instances[prev.id]) instances[prev.id].play();
-        } : null,
-        onNext: next ? function () {
-          var was = instances[p.id] && instances[p.id].isPlaying();
-          openId = next.id; render();
-          if (was && instances[next.id]) instances[next.id].play();
-        } : null
-      }
+  /* ── Remove sentences: native tick mode over simple item rows (the factory retired) ── */
+  var removing = null;   // { id, marked: {tk|num: {topic_key, num}} }
+  function enterRemove(box, p) {
+    if (removing) return;
+    removing = { id: p.id, marked: {} };
+    var body = box.querySelector('.pl-box-body');
+    var listEl = document.createElement('div');
+    listEl.className = 'dyn-list removing pl-rm-list';
+    listEl.innerHTML = p.items.map(function (it) {
+      var key = it.topic_key + '|' + it.num;
+      return '<div class="dyn-card" data-key="' + esc(key) + '">' +
+        '<span class="dyn-tick" aria-hidden="true"></span>' +
+        '<div class="dyn-txt"><div class="dyn-th">' + esc(String(it.thai).replace(/\s*\|\s*/g, ' ')) + '</div>' +
+        '<div class="dyn-en">' + esc(it.english) + '</div></div></div>';
+    }).join('');
+    body.insertBefore(listEl, body.firstChild);
+    listEl.querySelectorAll('.dyn-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        if (!removing) return;
+        var key = card.getAttribute('data-key');
+        if (removing.marked[key]) { delete removing.marked[key]; }
+        else {
+          var cut = key.lastIndexOf('|');
+          removing.marked[key] = { topic_key: key.slice(0, cut), num: +key.slice(cut + 1) };
+        }
+        card.querySelector('.dyn-tick').classList.toggle('on', !!removing.marked[key]);
+        rmCount();
+      });
     });
+    var bar = document.getElementById('dyn-rm-bar');
+    if (!bar) { bar = document.createElement('div'); bar.id = 'dyn-rm-bar'; document.body.appendChild(bar); }
+    bar.innerHTML = '<span id="dyn-rm-count"></span>' +
+      '<span style="display:flex;gap:8px">' +
+        '<button type="button" class="dyn-rm-cancel">Cancel</button>' +
+        '<button type="button" class="dyn-rm-done">Done</button></span>';
+    bar.querySelector('.dyn-rm-cancel').addEventListener('click', exitRemove);
+    bar.querySelector('.dyn-rm-done').addEventListener('click', function () { rmDone(p); });
+    bar.classList.add('show');
+    rmCount();
+  }
+  function rmCount() {
+    var c = document.getElementById('dyn-rm-count');
+    if (!c || !removing) return;
+    var n = 0; for (var k in removing.marked) n++;
+    c.textContent = n + ' to remove';
+  }
+  function exitRemove() {
+    removing = null;
+    var bar = document.getElementById('dyn-rm-bar');
+    if (bar) bar.parentNode.removeChild(bar);
+    var l = document.querySelector('.pl-rm-list');
+    if (l) l.parentNode.removeChild(l);
+  }
+  function rmDone(p) {
+    if (!removing) return;
+    var items = [];
+    for (var k in removing.marked) items.push(removing.marked[k]);
+    if (!items.length) { exitRemove(); return; }
+    var bar = document.getElementById('dyn-rm-bar');
+    var btns = bar ? bar.querySelectorAll('button') : [];
+    btns.forEach(function (b) { b.disabled = true; });
+    var cnt = document.getElementById('dyn-rm-count');
+    var chain = Promise.resolve();
+    items.forEach(function (it, i) {
+      chain = chain.then(function () {
+        if (cnt) cnt.textContent = 'Removing… ' + (i + 1) + ' of ' + items.length;
+        return PL().removeItem(p.id, it.topic_key, it.num);
+      });
+    });
+    chain.then(function () { exitRemove(); return PL().load(true); }).then(function () { render(); })
+      .catch(function () {
+        btns.forEach(function (b) { b.disabled = false; });
+        rmCount();
+        alert('Couldn’t remove — check your connection.');
+      });
+  }
+
+  /* ── Player view (?pl={id}): build window.ThaiEarTopic from the playlist, inject player.js ── */
+  function findList(lists, id) {
+    return (lists || []).filter(function (x) { return String(x.id) === String(id); })[0] || null;
+  }
+  function launchPlayer(p, lists) {
+    document.title = p.name + ' — ThaiEar';
+    document.getElementById('pl-player-title').textContent = p.name;
+    var nonEmpty = (lists || []).filter(function (x) { return x.items && x.items.length; });
+    var i = -1;
+    nonEmpty.forEach(function (x, j) { if (String(x.id) === String(p.id)) i = j; });
+    function navRef(q) {
+      return { page: 'playlists.html?pl=' + encodeURIComponent(q.id), prefix: '', tier: 'free', name: q.name, dynKey: 'pl-' + q.id };
+    }
+    var nav = {};
+    if (nonEmpty.length > 1 && i >= 0) {
+      nav.prev = navRef(nonEmpty[(i - 1 + nonEmpty.length) % nonEmpty.length]);
+      nav.next = navRef(nonEmpty[(i + 1) % nonEmpty.length]);
+    }
+    window.ThaiEarTopic = {
+      dyn: true,
+      dynKey: 'pl-' + p.id,        // persistence namespace (sessions per playlist per mode)
+      playlistMode: true,          // player.js: no flags, no progress card, per-item prefixes
+      audioPrefix: '',
+      dynNav: nav,
+      sentences: p.items.map(function (it, idx) {
+        var t = String(it.thai || '').replace(/\s*\|\s*/g, ' ').trim();
+        var pv = t.split(/\s+/).slice(0, 4).join(' ');
+        if (pv.length > 20) pv = pv.slice(0, 20);
+        return {
+          num: 100001 + idx,       // synthetic page-unique id (nums can repeat across topics)
+          clipNum: it.num,         // the REAL spreadsheet num — drives the audio filenames
+          display: idx + 1,
+          preview: pv,
+          thai: it.thai,
+          translit: it.translit || null,
+          english: it.english,
+          gloss: [],
+          cultural: '',
+          prefix: it.prefix,       // per-sentence audio prefix/tier (a playlist mixes topics)
+          tier: it.tier || 'free'
+        };
+      })
+    };
+    var s = document.createElement('script');
+    s.src = 'player.js';
+    document.body.appendChild(s);
+  }
+  function bootPlayer() {
+    document.getElementById('pl-list-wrap').hidden = true;
+    document.getElementById('pl-player-wrap').hidden = false;
+    var cached = currentLists();
+    var p = findList(cached, PLID);
+    if (p && p.items && p.items.length) { launchPlayer(p, cached); return; }
+    // no usable cache → wait for auth + a real load, then launch (player.js injects after cfg)
+    (function wait() {
+      if (!authReady()) { setTimeout(wait, 250); return; }
+      if (!PL() || !user()) { location.href = 'playlists.html'; return; }
+      PL().load(true).then(function (lists) {
+        var p2 = findList(lists, PLID);
+        if (!p2 || !p2.items || !p2.items.length) { location.href = 'playlists.html'; return; }
+        launchPlayer(p2, lists);
+      }).catch(function () {
+        document.getElementById('pl-player-title').textContent = 'Couldn’t load this playlist — check your connection.';
+      });
+    })();
   }
 
   document.getElementById('pl-add').addEventListener('click', function () {
@@ -240,6 +346,7 @@
   });
 
   function boot() {
+    if (PLID) { bootPlayer(); return; }   // player view — the list UI stays hidden
     // CACHE-FIRST: paint the localStorage copy immediately (no waiting on auth/server);
     // the loading indicator only appears when this device has no cache at all.
     render();
@@ -254,7 +361,10 @@
       });
     })();
   }
-  window.addEventListener('thaiear:auth', function () { if (PL()) PL().load(true).then(render); });
+  window.addEventListener('thaiear:auth', function () {
+    if (PLID) return;   // player view: player.js owns the page now; a re-render would clobber it
+    if (PL()) PL().load(true).then(render);
+  });
   boot();
 })();
 </script>

@@ -47,6 +47,10 @@
   // source-visible HTML and we hydrate them (toggle a stage class) instead of building from
   // JS. Pages WITHOUT cfg.ssr keep the original build-from-JS path, byte-for-byte unchanged.
   var SSR = cfg.ssr === true;
+  // Playlist mode (round-10): playlists.html?pl={id} renders a playlist AS a dyn topic page —
+  // same player.js machinery, but flags + progress tracking don't apply and every sentence
+  // carries its OWN audio prefix/tier (a playlist mixes topics).
+  var PLMODE = cfg.playlistMode === true;
 
   /* ---- native (Capacitor app) audio engine ----
      In a browser the TOP player is an HTML5 <audio>. Inside the app that won't play with
@@ -180,7 +184,7 @@
   function maybeWebResume() {
     if (NATIVE) return;
     var r; try { r = JSON.parse(localStorage.getItem('thaiear_resume') || 'null'); } catch (_) { r = null; }
-    if (!r || r.prefix !== PREFIX) return;          // only continue THIS page's own topic
+    if (!r || !PREFIX || r.prefix !== PREFIX) return; // only continue THIS page's own topic (playlists: no cross-resume)
     if (!r.playing) return;                         // only auto-continue something that was actually playing
     if (Date.now() - (r.ts || 0) > 60000) return;   // stale → ignore (don't hijack a much later visit)
     if (!(r.t > 1)) return;                         // negligible position
@@ -438,20 +442,20 @@
   }
   // Sentence (web <audio>) player: a same-origin blob: URL of the downloaded clip if available
   // (plays reliably across WebViews — see localBlobUrl), else the free CDN / signed remote URL.
-  function sentSrcFor(file) {
+  function sentSrcFor(file, gated) {
     if (OFFLINE && isDownloaded(PREFIX)) {
       if (canUseOffline(TIER)) {
-        return localBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file); });
+        return localBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file, gated); });
       }
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
     if (WEB_DL && isDownloaded(PREFIX)) {
       if (canUseOffline(TIER)) {
-        return cachedBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file); });
+        return cachedBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file, gated); });
       }
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
-    return buildUrl(file);
+    return buildUrl(file, gated);
   }
 
   // A native downloadFile has no built-in deadline, so a stalled connection (slow network, or
@@ -705,7 +709,10 @@
   if (!/\.html$/.test(PAGE_FILE)) PAGE_FILE += '.html'; // clean URLs (/topic-02) → topic-02.html
   var TOPIC_KEY = PAGE_FILE.replace(/\.html$/, '');
 
-  if (!PREFIX || !sentences.length) {
+  // Playlist pages have no page-level audioPrefix — each sentence carries its own.
+  var PER_SENT_PREFIX = cfg.dyn === true && sentences.length > 0 &&
+    sentences.every(function (s) { return !!s.prefix; });
+  if ((!PREFIX && !PER_SENT_PREFIX) || !sentences.length) {
     console.error('player.js: window.ThaiEarTopic { audioPrefix, sentences } is missing.');
     return;
   }
@@ -1206,6 +1213,8 @@
   var PLAY_TRI  = '<polygon points="5,2 14,8 5,14"/>';
   var PLAY_BARS = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
   function setMainIcon(playing) {
+    // Dyn: the equalizer cue on the playing sentence card runs only while audio actually plays.
+    if (DYN) { try { document.body.classList.toggle('dyn-playing', !!playing); } catch (_) {} }
     var i = $('play-icon'); if (i) i.innerHTML = playing ? PLAY_BARS : PLAY_TRI;
     var mi = $('te-mini-icon'); if (mi) mi.innerHTML = playing ? PLAY_BARS : PLAY_TRI;
     // Screen readers should hear the action the button will take, not a static label.
@@ -1266,6 +1275,7 @@
       if (DYN && dynSession && mainAudio.duration && isFinite(mainAudio.duration)) {
         var t2 = dynSnapTime(mainAudio.currentTime);
         try { mainAudio.currentTime = t2; } catch (_) {}
+        dynLastPos = t2;
         var mf2 = $('te-mini-fill'); if (mf2) mf2.style.width = (t2 / mainAudio.duration * 100) + '%';
       }
     }
@@ -1312,7 +1322,12 @@
         mainInView = entries[entries.length - 1].isIntersecting;
         updateMiniVisibility();
       }, { rootMargin: '-56px 0px 0px 0px', threshold: 0 });
-      io.observe($('player-root'));
+      // Round-10 addendum D (dyn): #player-root grows a tail (status/slider/controls rows), so
+      // observing all of it left a dead band — transport gone, mini not yet shown. Watch the
+      // transport row itself so the mini appears the moment the play/scrub controls leave view.
+      var ioTarget = $('player-root');
+      if (DYN) { var ioRow = document.querySelector('#player-root .audio-row'); if (ioRow) ioTarget = ioRow; }
+      io.observe(ioTarget);
     }
     syncMini();
   }
@@ -1355,7 +1370,7 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r9';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r10';  // visible build tag on the test pages — bump every test-space deploy
   var dynLogEl = null;
   function dynLog(msg) {
     if (!DYN_DBG) return;
@@ -1410,6 +1425,7 @@
   var dynBuilding = null;     // { key, p } while a build is in flight
   var dynClipCache = {};      // decoded AudioBuffer per clip filename (survives invalidation)
   var dynLastLive = null;     // sentence num currently highlighted by the timeupdate handler
+  var dynLastPos = 0;         // last known playback position (round-10 item 4: resume must survive an engine idle)
   var dynSessionIsLocal = true; // does dynSession belong to THIS page's sentences? (card highlight guard)
   var dynAdopted = null;      // cross-topic nav: the dynNav target descriptor the top player adopted
   var dynStdRemote = false;   // adopted target is playing its STATIC combined file (no session/map)
@@ -1501,10 +1517,21 @@
     // English is EFFECTIVE-value keyed: ET always includes English, so toggling the TE-only
     // checkbox must not churn ET sessions.
     var en = (currentMode === 'et' || dynEnglish) ? 1 : 0;
-    return currentMode + '|' + dynFactor + '|r' + dynRepeats + '|e' + en + '|' + dynIncluded().map(function (s) { return s.num; }).join(',');
+    // Topic pages key on the sentence nums (unchanged — existing persisted metas stay valid).
+    // Playlist sentences key on prefix:clipNum — their s.num is a synthetic page index, and an
+    // equal-length edit must still change the key (cross-device staleness test).
+    return currentMode + '|' + dynFactor + '|r' + dynRepeats + '|e' + en + '|' + dynIncluded().map(function (s) {
+      return s.prefix ? (s.prefix + ':' + (s.clipNum != null ? s.clipNum : s.num)) : s.num;
+    }).join(',');
   }
-  function dynClipFile(num, side) {
-    return PREFIX + '_S' + String(num).padStart(2, '0') + '_' + side + '.mp3';
+  // Clip reference for a sentence: playlists carry per-sentence prefix/tier (a playlist mixes
+  // topics) and a clipNum (the real spreadsheet num — s.num is a synthetic page-unique id
+  // there); topic pages keep the page-level PREFIX/GATED exactly as before.
+  function dynClipRef(s, side) {
+    var pfx = (s.prefix ? s.prefix : PREFIX);
+    var gated = (s.tier != null) ? (s.tier === 'member' || s.tier === 'premium') : GATED;
+    var n = (s.clipNum != null) ? s.clipNum : s.num;
+    return { file: pfx + '_S' + String(n).padStart(2, '0') + '_' + side + '.mp3', gated: gated };
   }
   // Bounded-concurrency runner: Safari throttles huge parallel fetch bursts (the iOS
   // 2-minute-build culprit), so clip fetches — and the /api/audio URL mints inside them —
@@ -1523,9 +1550,10 @@
   }
   // Fetch + decode one clip to a mono 24 kHz AudioBuffer (decodeAudioData resamples to the
   // OfflineAudioContext's rate). Decoded buffers are cached for the life of the page.
-  function dynFetchClip(file) {
+  function dynFetchClip(ref) {
+    var file = ref.file;
     if (dynClipCache[file]) return Promise.resolve(dynClipCache[file]);
-    return buildUrl(file, GATED).then(function (u) {
+    return buildUrl(file, ref.gated).then(function (u) {
       return fetch(u);
     }).then(function (r) {
       if (!r.ok) return Promise.reject({ code: r.status });
@@ -1563,7 +1591,7 @@
     var mode = currentMode;   // captured: the key/filename must match the mode this build is FOR
     var needEn = (mode === 'et') || dynEnglish;   // TE with English off never touches the _EN clips
     var files = [];
-    inc.forEach(function (s) { files.push(dynClipFile(s.num, 'TH')); if (needEn) files.push(dynClipFile(s.num, 'EN')); });
+    inc.forEach(function (s) { files.push(dynClipRef(s, 'TH')); if (needEn) files.push(dynClipRef(s, 'EN')); });
     var done = 0;
     return dynPool(files, function (f) {
       return dynFetchClip(f).then(function (b) { done++; if (onProg) onProg(done, files.length); return b; });
@@ -1574,8 +1602,8 @@
       function pushBuf(b) { parts.push(b); pos += b.length; }
       function pushSil(sec) { var n = Math.round(sec * DYN_SR); parts.push(n); pos += n; }
       inc.forEach(function (s) {
-        var th = dynClipCache[dynClipFile(s.num, 'TH')];
-        var en = needEn ? dynClipCache[dynClipFile(s.num, 'EN')] : null;
+        var th = dynClipCache[dynClipRef(s, 'TH').file];
+        var en = needEn ? dynClipCache[dynClipRef(s, 'EN').file] : null;
         var syl = dynSyllables(s.thai);
         var repeat = Math.max(3.0, syl * 0.5) * dynFactor;
         var recall = Math.max(4.5, syl * 0.7) * dynFactor;
@@ -1621,20 +1649,25 @@
       });
     });
   }
-  function dynEnsureSession(onProg) {
+  // lenient (round-10 item 3): lock-family paths (return-hop, adopt) accept the LATEST LOCAL
+  // persisted session even when its key is stale — never rebuild from a lock path. Foreground
+  // play presses stay strict (stale key → rebuild + resave).
+  function dynEnsureSession(onProg, lenient) {
     var key = dynKey();
-    if (dynSession && dynSessionIsLocal && dynSession.key === key) return Promise.resolve(dynSession);
+    if (dynSession && dynSessionIsLocal && (lenient || dynSession.key === key)) return Promise.resolve(dynSession);
     if (dynBuilding && dynBuilding.key === key) return dynBuilding.p;
     var mode = currentMode;
     var meta = dynReadMeta(DYN_KEY_NS, mode);
-    var p = ((meta && meta.key === key) ? dynRestoreSession(DYN_KEY_NS, mode, meta) : Promise.resolve(null))
+    var p = ((meta && (lenient || meta.key === key)) ? dynRestoreSession(DYN_KEY_NS, mode, meta) : Promise.resolve(null))
       .then(function (restored) {
-        if (restored) return restored;   // persisted hit → no fetch, no decode, no status line
+        if (restored) { if (lenient && restored.key !== key) dynLog('lenient restore (stale key)'); return restored; }   // persisted hit → no fetch, no decode, no status line
         dynStatus('Constructing dynamic mp3 file', true);   // only a REAL build shows the status
         return dynBuildSession(onProg).then(function (sess) { dynPersistSession(sess, mode); return sess; });
       })
       .then(function (sess) {
-        if (dynSession && dynSession.url && dynSession.url !== sess.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
+        // Only ever revoke a LOCAL session's blob URL — an adopted session's URL lives in
+        // dynAdoptCache and must survive for future re-adoption.
+        if (dynSession && dynSession.url && dynSessionIsLocal && dynSession.url !== sess.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
         dynSession = sess;
         dynSessionIsLocal = true;
         dynStdRemote = false;
@@ -1647,7 +1680,7 @@
   // The DYN branch of ensureMainSrc: build (restore, or reuse) the session and point mainAudio
   // at it. When the top player has ADOPTED a neighbour topic (dyn cross-topic nav), re-resolve
   // that adoption instead — e.g. after a TE/ET switch reset mainSrcReady.
-  function dynEnsureMainSrc() {
+  function dynEnsureMainSrc(lenient) {
     if (dynAdopted) {
       if (mainSrcReady) return Promise.resolve();
       var adoptedT = dynAdopted;
@@ -1661,10 +1694,10 @@
         mainSrcReady = true;
       });
     }
-    if (mainSrcReady && dynSession && dynSessionIsLocal && dynSession.key === dynKey()) return Promise.resolve();
+    if (mainSrcReady && dynSession && dynSessionIsLocal && (lenient || dynSession.key === dynKey())) return Promise.resolve();
     return dynEnsureSession(function (done, total) {
       var c = $('dyn-status-count'); if (c) c.textContent = done + '/' + total;
-    }).then(function (sess) {
+    }, lenient).then(function (sess) {
       mainAudio.src = (NATIVE && sess.fileUri) ? sess.fileUri : sess.url;
       mainAudio.load();
       mainSrcReady = true;
@@ -1681,6 +1714,7 @@
   // cache, and let the next play rebuild.
   function dynInvalidate() {
     if (!mainAudio.paused) { mainAudio.pause(); setMainIcon(false); }
+    dynLastPos = 0;   // the rebuilt session has a different timeline
     mainSrcReady = false;
     if (dynSession && dynSession.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
     dynSession = null;
@@ -1719,6 +1753,7 @@
   // Round-8: a paused <audio> doesn't reliably emit timeupdate for a programmatic seek on
   // every engine, so ① seeks repaint the transport (and card highlight) directly.
   function dynPaintPos() {
+    dynLastPos = mainAudio.currentTime || 0;
     var pct = (mainAudio.duration && isFinite(mainAudio.duration)) ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
     var f = $('scrubber-fill'); if (f) f.style.width = pct + '%';
     var c = $('time-cur'); if (c) c.textContent = formatTime(mainAudio.currentTime);
@@ -1768,16 +1803,18 @@
     if (!cfg.dynNav) return;
     ['prev', 'next'].forEach(function (side) {
       var t = cfg.dynNav[side];
-      if (!t || !t.prefix) return;
+      if (!t || (!t.prefix && !t.dynKey)) return;   // playlist neighbours have no prefix — session-only prefetch
       var mode = currentMode;
       var old = dynAdoptCache[t.page];
       if (old && old.sess && old.sess.url && old.sess !== dynSession) { try { URL.revokeObjectURL(old.sess.url); } catch (_) {} }
       var entry = { mode: mode, src: null, sess: null };
       dynAdoptCache[t.page] = entry;
-      var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
-      buildUrl(file, t.tier === 'member' || t.tier === 'premium')
-        .then(function (u) { entry.src = u; })
-        .catch(function () {});   // signed-out on a gated neighbour etc. — adopt falls back to a live mint
+      if (t.prefix) {
+        var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
+        buildUrl(file, t.tier === 'member' || t.tier === 'premium')
+          .then(function (u) { entry.src = u; })
+          .catch(function () {});   // signed-out on a gated neighbour etc. — adopt falls back to a live mint
+      }
       // Round-7 (item 10): restore the neighbour's PERSISTED session eagerly too, so a
       // lock-screen hop resolves synchronously (same shape as classic advanceTopic).
       var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;
@@ -1787,6 +1824,8 @@
   function dynAdoptPlaceholder(t, mode) {
     var c = dynAdoptCache[t.page];
     if (c && c.mode === mode && c.src) return Promise.resolve({ src: c.src, std: true, sess: null });
+    // Playlists have no pre-rendered combined file — nothing to fall back on without a session.
+    if (!t.prefix) return Promise.reject({ code: 'nosess' });
     var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
     return buildUrl(file, t.tier === 'member' || t.tier === 'premium')
       .then(function (u) { return { src: u, std: true, sess: null }; });
@@ -1812,11 +1851,39 @@
   function dynStripPaint(t, std) {
     var box = $('now-playing'), txt = $('now-playing-text');
     if (box) box.classList.add('show');
-    if (txt) txt.innerHTML = '<a class="dyn-np-link" href="' + escapeHtml(t.page) + '">Now playing: <strong>' + escapeHtml(t.name) + '</strong></a>' + (std ? ' — standard audio' : '');
+    if (txt) {
+      // Round-10 item 2: classic-strip parity — the name links to the playing page AND a
+      // ↩ Return action un-adopts in place (same red np-return styling as classic).
+      txt.innerHTML = '<a class="dyn-np-link" href="' + escapeHtml(t.page) + '">Now playing: <strong>' + escapeHtml(t.name) + '</strong></a>' +
+        (std ? ' — standard audio' : '') +
+        ' <a href="#" class="np-return" id="dyn-np-return" title="Bring the player back to this page">↩ Return</a>';
+      var rb = $('dyn-np-return');
+      if (rb) rb.onclick = function (e) { e.preventDefault(); dynReturnLocal(); };
+    }
+  }
+  // Un-adopt IN PLACE and resume this page's own session — shared by the strip's ↩ Return and
+  // the lock-screen back-hop (a page navigation from the lock screen kills playback on iOS).
+  function dynReturnLocal() {
+    dynLog('return local');
+    dynAdopted = null;
+    dynStdRemote = false;
+    dynLastPos = 0;
+    mainPage = PAGE_FILE; mainPrefix = PREFIX; mainGated = GATED; mainTier = TIER;
+    currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
+    mainSrcReady = false;
+    var rf = $('scrubber-fill'); if (rf) rf.style.width = '0%';
+    var rc = $('time-cur'); if (rc) rc.textContent = '0:00';
+    var rnp = $('now-playing'); if (rnp) rnp.classList.remove('show');
+    // Lenient (round-10 item 3): play the latest LOCAL persisted session even if its key is
+    // stale — reconstruction only happens on a real foreground play press.
+    ensureMainSrc(true).then(function () { if (!dynAdopted) return mainAudio.play(); })
+      .then(function () { dynLog('return-local play ok'); if (!dynAdopted) setMainIcon(true); })
+      .catch(function (e) { dynLog('return-local FAIL ' + ((e && (e.name || e.code)) || e)); handleDenied(e, mainTier); });
   }
   // SYNCHRONOUS half of adoption — mirrors classic advanceTopic's sync identity swap.
   function dynApplyAdoptState(t) {
     if (dynSession && dynSession.url && dynSessionIsLocal) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
+    dynLastPos = 0;                 // new track — resume guard must not drag the old position over
     dynSession = null;              // the resolve step lands the target's session (if it has one)
     dynSessionIsLocal = false;
     dynStdRemote = true;
@@ -1853,6 +1920,9 @@
       return mainAudio.play();
     }).then(function () { dynLog('play ok'); if (dynAdopted === t) setMainIcon(true); })
       .catch(function (e) {
+        // A playlist neighbour with no persisted session has nothing adoptable — fall back to
+        // a real page navigation (nothing was playing there to kill).
+        if (e && e.code === 'nosess') { dynLog('adopt: no session, no placeholder → navigate'); location.href = t.page; return; }
         dynLog('adopt FAIL ' + ((e && (e.name || e.code)) || '') + ' ' + ((e && e.message) || ''));
         handleDenied(e, (t.tier === 'member' || t.tier === 'premium') ? t.tier : null);
       });
@@ -2171,7 +2241,8 @@
     '.scrubber{height:8px;border-radius:4px}' +
     '.scrubber-fill{border-radius:4px}' +
     '.scrubber-fill::after{width:18px;height:18px;right:-9px}' +
-    '.dyn-slider{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;font-size:11.5px;color:var(--text-tertiary);margin-top:8px}' +
+    '.dyn-slider{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 8px;font-size:11.5px;color:var(--text-tertiary);margin-top:8px}' +
+    '.dyn-ctl-group{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}' +
     '.dyn-slider input[type=range]{width:90px;accent-color:var(--accent);height:3px}' +
     '.dyn-ctl-sep{color:var(--border-strong)}' +
     '.dyn-reps{display:inline-flex;gap:3px}' +
@@ -2214,7 +2285,20 @@
     'body.dyn-plsel .topic-intro{display:none}' +
     'body.dyn-plsel #btn-prev-topic,body.dyn-plsel #btn-next-topic{opacity:.35;pointer-events:none}' +
     '#dyn-plsel-back{display:block;margin:10px 0 14px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:8px 14px;cursor:pointer}' +
-    '#dyn-plsel-back:hover{background:var(--accent-light)}';
+    '#dyn-plsel-back:hover{background:var(--accent-light)}' +
+    /* playlist mode (round-10): flags + per-topic progress don't apply to playlists */
+    'body.dyn-plmode .progress-controls{display:none}' +
+    'body.dyn-plmode .sent-flag-btn{display:none}' +
+    /* round-10 addendum C: animated equalizer on the playing sentence card (index .te-eq design);
+       visible only while actually playing; premium pages get the gold tone */
+    '.dyn-eq{display:none;align-items:flex-end;gap:2px;height:12px;width:16px;flex-shrink:0}' +
+    'body.dyn-playing .sentence-card.dyn-live .dyn-eq{display:inline-flex}' +
+    '.dyn-eq i{width:3px;height:100%;border-radius:2px;background:var(--accent);transform-origin:bottom;animation:te-eq-bounce 0.9s ease-in-out infinite}' +
+    '.dyn-eq i:nth-child(2){animation-delay:.3s}' +
+    '.dyn-eq i:nth-child(3){animation-delay:.15s}' +
+    '.dyn-eq i:nth-child(4){animation-delay:.45s}' +
+    'body.premium-topic .dyn-eq i{background:#B29234}' +
+    '@keyframes te-eq-bounce{0%,100%{transform:scaleY(0.35)}50%{transform:scaleY(1)}}';
   // The circular-① sentence-skip glyphs (shared by the audio-row buttons and the dyn mini player).
   var DYN_DIGIT1 = '<path d="M12.36 15.94v-4.27h-.09l-1.77.63v.69l1.01-.31v3.26h.85z"/>';
   var DYN_SVG_PREV = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>' + DYN_DIGIT1 + '</svg>';
@@ -2236,11 +2320,13 @@
       row.parentNode.insertBefore(stEl, row.nextSibling);
       var sl = document.createElement('div');
       sl.className = 'dyn-slider';
-      sl.innerHTML = 'Pauses <input id="dyn-pf" type="range" min="0.5" max="2" step="0.25"> <span id="dyn-pf-val">1×</span>' +
+      // Each control is a NON-WRAPPING group — the row wraps between groups, never inside one
+      // (round-10 addendum B: "Thai sentence repeats" was wrapping away from its 1-4 boxes).
+      sl.innerHTML = '<span class="dyn-ctl-group">Pauses <input id="dyn-pf" type="range" min="0.5" max="2" step="0.25"> <span id="dyn-pf-val">1×</span></span>' +
         '<span class="dyn-ctl-sep">·</span>' +
-        'Thai sentence repeats <span class="dyn-reps" id="dyn-reps"></span>' +
+        '<span class="dyn-ctl-group">Thai sentence repeats <span class="dyn-reps" id="dyn-reps"></span></span>' +
         '<span class="dyn-ctl-sep" id="dyn-en-sep">·</span>' +
-        '<label class="dyn-en-lbl" id="dyn-en-wrap"><input type="checkbox" id="dyn-en"> English</label>';
+        '<label class="dyn-en-lbl dyn-ctl-group" id="dyn-en-wrap"><input type="checkbox" id="dyn-en"> English</label>';
       stEl.parentNode.insertBefore(sl, stEl.nextSibling);
       var pf = sl.querySelector('#dyn-pf'), pv = sl.querySelector('#dyn-pf-val');
       pf.value = String(dynFactor);
@@ -2306,9 +2392,11 @@
     // "Add sentences to a playlist" entry point. Dyn pages hide the shared How-to-use
     // orientation box AT RUNTIME (markup/CSS stay untouched for the live pages) and put the
     // playlist button + link in its place.
+    if (PLMODE) document.body.classList.add('dyn-plmode');   // hides progress card + flag buttons (CSS)
     var orient = root.querySelector('.orientation-text');
+    if (PLMODE && orient) orient.style.display = 'none';     // the topic how-to box doesn't apply to playlists
     var aplAnchor = orient || $('offline-bar');   // fall back to after the offline bar if the box ever moves
-    if (aplAnchor) {
+    if (aplAnchor && !PLMODE) {
       var apl = document.createElement('button');
       apl.id = 'dyn-addpl-btn'; apl.className = 'dyn-addpl'; apl.type = 'button';
       apl.textContent = '＋ Add sentences from this topic to a playlist';
@@ -2329,6 +2417,13 @@
       tick.className = 'dyn-tick' + (TIER === 'premium' ? ' gold' : '');
       tick.setAttribute('aria-hidden', 'true');
       hdr.insertBefore(tick, hdr.querySelector('.sent-num') || hdr.firstChild);
+      // Equalizer cue next to the number — shows on the playing card while audio runs (addendum C).
+      var eq = document.createElement('span');
+      eq.className = 'dyn-eq';
+      eq.setAttribute('aria-hidden', 'true');
+      eq.innerHTML = '<i></i><i></i><i></i><i></i>';
+      var snEl = hdr.querySelector('.sent-num');
+      if (snEl) hdr.insertBefore(eq, snEl.nextSibling); else hdr.appendChild(eq);
       var xb = document.createElement('button');
       xb.className = 'dyn-card-btn dyn-x-btn';
       function xPaint() {
@@ -2390,8 +2485,8 @@
   // Resolve + attach the current main file's src if not already done (premium- and offline-aware).
   // Web offline serves a blob: URL; revoke the previous one on each swap so it doesn't leak.
   var mainBlobUrl = null;
-  function ensureMainSrc() {
-    if (DYN) return dynEnsureMainSrc();   // dynamic mode: stitched client-side session, never the static file
+  function ensureMainSrc(lenient) {
+    if (DYN) return dynEnsureMainSrc(lenient);   // dynamic mode: stitched client-side session, never the static file
     if (mainSrcReady) return Promise.resolve();
     return mainSrcFor(currentMainFile).then(function (u) {
       if (mainBlobUrl && mainBlobUrl !== u) { try { URL.revokeObjectURL(mainBlobUrl); } catch (_) {} mainBlobUrl = null; }
@@ -2418,10 +2513,12 @@
       if (tt.textContent !== tot) tt.textContent = tot;
     }
     var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';   // mirror onto the floating mini bar
+    if (DYN && (mainAudio.currentTime || 0) > 0) dynLastPos = mainAudio.currentTime;   // remember position (resume guard)
     if (DYN && dynSession && dynSessionIsLocal) dynHighlight(mainAudio.currentTime);   // dyn: highlight the playing card (this page's session only)
     writeWebResume();   // keep the cross-page resume position fresh while playing (web only, throttled)
   });
   mainAudio.addEventListener('ended', function () {
+    if (DYN) dynLastPos = 0;   // track finished — a later play starts over, not at the end
     setMainIcon(false);
     // repeat-one wins over autoplay: loop the current topic.
     if (repeatOn) {
@@ -2450,8 +2547,25 @@
     if (mainAudio.paused) {
       if (!entitledForPage()) { gate(mainTier); return; }   // gated topic + not entitled → no playback
       userStartedHere = true;   // this page's player is now user-driven → sync must not adopt a stale label
-      ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); setupMediaSession(); }).catch(function (e) { handleDenied(e, mainTier); });
-    } else { mainAudio.pause(); setMainIcon(false); writeWebResume(true); }
+      ensureMainSrc().then(function () {
+        // Round-10 item 4: a long pause can idle the engine and drop the position to 0 —
+        // restore the last known position before resuming (and again after a native
+        // prepare-resume, which always starts a fresh prepare at 0).
+        var want = (DYN && dynLastPos > 0.5 && (mainAudio.currentTime || 0) < 0.5 &&
+          (!mainAudio.duration || !isFinite(mainAudio.duration) || dynLastPos < mainAudio.duration - 0.5)) ? dynLastPos : null;
+        if (want != null) { try { mainAudio.currentTime = want; } catch (_) {} }
+        var pp = mainAudio.play();
+        if (want != null && pp && pp.then) {
+          pp.then(function () {
+            if ((mainAudio.currentTime || 0) < 0.5) { try { mainAudio.currentTime = want; } catch (_) {} }
+          }).catch(function () {});
+        }
+        setMainIcon(true); setupMediaSession();
+      }).catch(function (e) { handleDenied(e, mainTier); });
+    } else {
+      if (DYN) dynLastPos = mainAudio.currentTime || dynLastPos;   // remember where we paused
+      mainAudio.pause(); setMainIcon(false); writeWebResume(true);
+    }
     resumeMainAfter = false;   // a manual tap on the top player overrides auto-resume
   }
 
@@ -2509,6 +2623,7 @@
       if (DYN && dynSession) {
         scrubTime = dynSnapTime(scrubTime);
         mainAudio.currentTime = scrubTime;
+        dynLastPos = scrubTime;
         paint(scrubTime);
       }
     }
@@ -2557,7 +2672,7 @@
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
     $('btn-et').classList.toggle('active', mode === 'et');
-    if (DYN) { dynSyncEnToggle(); dynPrefetchNeighbours(); }   // dyn: English checkbox is TE-only; re-resolve neighbour placeholders for the new mode
+    if (DYN) { dynLastPos = 0; dynSyncEnToggle(); dynPrefetchNeighbours(); }   // dyn: new direction = new track; English checkbox is TE-only; re-resolve neighbour placeholders
     applyDirClass();                      // flip the accordion reveal order to match the new direction
     if (wasPlaying) ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(function (e) { handleDenied(e, mainTier); });
   }
@@ -2606,15 +2721,7 @@
         var returning = (dir < 0 && dynAdopted === cfg.dynNav.next) || (dir > 0 && dynAdopted === cfg.dynNav.prev);
         dynLog('advanceTopic dir=' + dir + (returning ? ' (adopted→return local)' : ' (adopted→navigate)'));
         if (!returning) { location.href = dynAdopted.page; return; }
-        dynAdopted = null; dynStdRemote = false;
-        mainPage = PAGE_FILE; mainPrefix = PREFIX; mainGated = GATED; mainTier = TIER;
-        currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
-        mainSrcReady = false;
-        var rf = $('scrubber-fill'); if (rf) rf.style.width = '0%';
-        var rnp = $('now-playing'); if (rnp) rnp.classList.remove('show');
-        ensureMainSrc().then(function () { if (!dynAdopted) return mainAudio.play(); })
-          .then(function () { dynLog('return-local play ok'); if (!dynAdopted) setMainIcon(true); })
-          .catch(function (e) { dynLog('return-local FAIL ' + ((e && (e.name || e.code)) || e)); handleDenied(e, mainTier); });
+        dynReturnLocal();
         return;
       }
       dynLog('advanceTopic dir=' + dir);
@@ -2815,13 +2922,19 @@
     // resumed the top player once the sentence finished.)
     if (!mainAudio.paused) { mainAudio.pause(); setMainIcon(false); }
 
-    var sid = String(num).padStart(2, '0');
-    var file = PREFIX + '_S' + sid + '_TH.mp3';
+    // Playlist sentences carry their own prefix/tier/clipNum (a playlist mixes topics);
+    // topic pages resolve exactly as before (sObj fields absent → PREFIX/GATED defaults).
+    var sObj = null;
+    for (var si = 0; si < sentences.length; si++) { if (sentences[si].num === num) { sObj = sentences[si]; break; } }
+    var clipN = (sObj && sObj.clipNum != null) ? sObj.clipNum : num;
+    var sid = String(clipN).padStart(2, '0');
+    var file = ((sObj && sObj.prefix) ? sObj.prefix : PREFIX) + '_S' + sid + '_TH.mp3';
+    var sentGated = (sObj && sObj.tier != null) ? (sObj.tier === 'member' || sObj.tier === 'premium') : undefined;
     sentPlaying = num;
     updateSentBtn(num, true);
     if (sentResetTimer) { clearTimeout(sentResetTimer); sentResetTimer = null; }
     // Resolve the src: local copy if downloaded, else free CDN / signed-URL fetch. Then play.
-    sentSrcFor(file).then(function (u) {
+    sentSrcFor(file, sentGated).then(function (u) {
       // user stopped/switched while the URL was resolving → drop the freshly-made blob to avoid a leak
       if (sentPlaying !== num) { if (u && u.indexOf('blob:') === 0) { try { URL.revokeObjectURL(u); } catch (_) {} } return; }
       revokeSentBlob();                                    // free the previous clip's object URL
@@ -2878,12 +2991,12 @@
     var A = window.ThaiEarAuth;
     var loggedIn = !!(A && A.getUser && A.getUser());
     var flagged = loggedIn && A.isFlagged && A.isFlagged(TOPIC_KEY, s.num);
-    var flagBtn = loggedIn
+    var flagBtn = PLMODE ? '' : (loggedIn
       ? '<button class="sent-flag-btn' + (flagged ? ' flagged' : '') + '" onclick="flagSent(event,' + s.num + ')" ' +
           'aria-label="' + (flagged ? 'Remove flag from sentence ' : 'Flag sentence ') + d + '" ' +
           'title="' + (flagged ? 'Flagged — click to remove' : 'Flag this sentence') + '">' + FLAG_SVG + '</button>'
       : '<button class="sent-flag-btn" onclick="flagSignIn(event)" ' +
-          'aria-label="Sign in to flag sentence ' + d + '" title="Sign in to flag sentences">' + FLAG_SVG + '</button>';
+          'aria-label="Sign in to flag sentence ' + d + '" title="Sign in to flag sentences">' + FLAG_SVG + '</button>');
     return '<div class="sentence-card" id="sc-' + s.num + '">' +
       '<div class="sentence-header" onclick="cycle(' + s.num + ')" role="button" tabindex="0" aria-label="Sentence ' + d + '">' +
         '<span class="sent-num">' + d + '</span>' +
@@ -2900,7 +3013,7 @@
       (st > 0 ? '<div class="sentence-body">' +
         '<div class="reveal-row row-thai">' + displayThai + (s.translit ? '<div class="thai-translit">' + cleanThai(s.translit) + '</div>' : '') + '</div>' +
         (st >= 2 ? '<div class="reveal-row row-english">' + s.english + '</div>' : '') +
-        (st >= 3 ? '<div class="reveal-row row-notes">' +
+        (st >= 3 && (!PLMODE || (s.gloss && s.gloss.length) || s.cultural) ? '<div class="reveal-row row-notes">' +
           '<div class="gloss-row">' + chipHtml(s.gloss) + '</div>' +
           (s.cultural ? '<div class="cultural-note">' + s.cultural + '</div>' : '') +
         '</div>' : '') +
@@ -2948,7 +3061,14 @@
 
   function cycle(num) {
     if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no reveal
-    states[num] = (states[num] + 1) % 4; render();
+    var mod = 4;
+    if (PLMODE) {
+      // Playlist items ship no gloss/cultural notes — skip the empty notes stage entirely.
+      var s = null;
+      for (var i = 0; i < sentences.length; i++) { if (sentences[i].num === num) { s = sentences[i]; break; } }
+      if (s && !(s.gloss && s.gloss.length) && !s.cultural) mod = 3;
+    }
+    states[num] = (states[num] + 1) % mod; render();
   }
 
   function toggleAll() {
@@ -2967,6 +3087,7 @@
   function renderProgress() {
     var box = $('progress-controls');
     if (!box) return;
+    if (PLMODE) { box.innerHTML = ''; return; }   // playlists: no per-topic progress tracking
     var a = window.ThaiEarAuth;
     if (!a || !a.isReady) { box.innerHTML = ''; return; } // hold until auth resolves
     var user = a.getUser && a.getUser();
@@ -3033,6 +3154,7 @@
 
   // Load the user's progress once, then render; re-run whenever auth resolves/changes.
   function initProgress() {
+    if (PLMODE) { renderProgress(); return; }   // playlists: renderProgress just clears the slot
     var a = window.ThaiEarAuth;
     if (!a || !a.isReady) { renderProgress(); return; }
     if (a.getUser && a.getUser() && a.loadProgress) {
@@ -3093,6 +3215,7 @@
   // classes onto the static buttons; legacy pages re-render the list (cardHtml reads isFlagged).
   function refreshFlags() { if (SSR) syncFlags(); else render(); }
   function initFlags() {
+    if (PLMODE) return;   // playlists: flagging is a topic-page feature
     var a = window.ThaiEarAuth;
     if (a && a.isReady && a.getUser && a.getUser() && a.loadFlags) {
       a.loadFlags().then(refreshFlags).catch(function () {});
