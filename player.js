@@ -686,9 +686,15 @@
     dynSession = null; mainSrcReady = false;
   }
   function dynCheckAudioUpdate() {
-    if (!navigator.onLine) return;      // can't check it, and couldn't act on it either
+    // &avtest=1 forces the prompt so the flow can be SEEN without editing audio-versions.json.
+    // That file is shared with the LIVE site — the test pages use live topics' audio prefixes —
+    // so bumping a real entry would nag every user who downloaded topic 3 into re-fetching
+    // identical files. A URL flag costs nothing and touches no live data.
+    var force = /[?&]avtest=1(&|$)/.test(location.search);
+    if (!navigator.onLine && !force) return;   // can't check it, and couldn't act on it either
     loadAudioVers().then(function (map) {
-      if (!map) return;
+      if (!map && !force) return;
+      map = map || {};
       var by = dynDlGroups(), m = getManifest(), adopted = false, stale = false;
       Object.keys(by).forEach(function (pfx) {
         var e = m[pfx]; if (!e) return;
@@ -698,6 +704,7 @@
         if (e.av !== cur) stale = true;
       });
       if (adopted) setManifest(m);
+      if (force) stale = true;
       if (!stale) return;
       var bar = $('offline-bar'); if (!bar) return;
       bar.innerHTML = '<span class="offline-status">⟳ Download audio update?</span>' +
@@ -1755,7 +1762,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r24';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r24a';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
