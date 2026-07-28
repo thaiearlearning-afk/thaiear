@@ -16,6 +16,37 @@
 (function () {
   'use strict';
 
+  /* ---- app / installed-PWA only: lock out zoom ----
+     An accidental double-tap zoom breaks the illusion of an app, and there is nothing here
+     worth zooming into — the type is already sized for a phone. Applied ONLY in the native
+     app and an installed (standalone) PWA: on the website itself, pinch-zoom stays available,
+     because disabling it is an accessibility failure and would cost the Lighthouse
+     Best-Practices/a11y score the site currently holds at 100.
+     touch-action:manipulation is what actually kills double-tap in WebKit (which ignores
+     user-scalable=no); gesturestart covers Safari's pinch. Deliberately NOT pan-x/pan-y, which
+     would also intercept the scrubber drag. */
+  (function lockZoom() {
+    var C = window.Capacitor;
+    var native = !!(C && C.isNativePlatform && C.isNativePlatform());
+    var standalone = window.navigator.standalone === true ||
+      !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    if (!native && !standalone) return;
+    var vp = document.querySelector('meta[name="viewport"]');
+    if (vp) {
+      var c = vp.getAttribute('content') || 'width=device-width, initial-scale=1.0';
+      if (!/maximum-scale/.test(c)) c += ', maximum-scale=1';
+      if (!/user-scalable/.test(c)) c += ', user-scalable=no';
+      vp.setAttribute('content', c);
+    }
+    var st = document.createElement('style');
+    st.id = 'te-nozoom';
+    st.textContent = 'html{touch-action:manipulation;-webkit-text-size-adjust:100%}';
+    (document.head || document.documentElement).appendChild(st);
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
+    });
+  })();
+
   /* ---- offline: register the service worker (caches the app shell + pages) ----
      Runs on every page since nav.js loads everywhere. Enables offline browse/play
      in the app (and PWA offline on the web). Audio is handled separately. */

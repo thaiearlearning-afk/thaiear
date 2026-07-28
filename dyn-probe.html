@@ -15,6 +15,30 @@
   else location.replace('index.html');
 })();
 </script>
+<script>
+/* App/PWA only: no accidental double-tap zoom. Mirrors nav.js's lockZoom, inlined because this
+   owner-only test page carries no nav. Both disappear at rollout. */
+(function () {
+  var C = window.Capacitor;
+  var native = !!(C && C.isNativePlatform && C.isNativePlatform());
+  var standalone = window.navigator.standalone === true ||
+    !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (!native && !standalone) return;
+  var vp = document.querySelector('meta[name="viewport"]');
+  if (vp) {
+    var c = vp.getAttribute('content') || 'width=device-width, initial-scale=1.0';
+    if (!/maximum-scale/.test(c)) c += ', maximum-scale=1';
+    if (!/user-scalable/.test(c)) c += ', user-scalable=no';
+    vp.setAttribute('content', c);
+  }
+  var st = document.createElement('style');
+  st.textContent = 'html{touch-action:manipulation;-webkit-text-size-adjust:100%}';
+  (document.head || document.documentElement).appendChild(st);
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
+  });
+})();
+</script>
 <link rel="icon" href="favicon.ico" sizes="any">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
