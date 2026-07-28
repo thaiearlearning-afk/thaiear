@@ -1521,13 +1521,21 @@ updateBatchBar();          // show the batch-download bar in the app (hidden on 
           return ('0' + b.toString(16)).slice(-2);
         }).join('');
         if (hex !== OWNER_HASH || document.getElementById('owner-test-link')) return;
-        var a = document.createElement('a');
-        a.id = 'owner-test-link';
-        a.href = 'topic-test.html?k=cu38961y';
-        a.textContent = '🧪 Dynamic player test (owner preview)';
-        a.style.cssText = 'display:block;text-align:center;margin:2.25rem auto 0;font-size:13px;color:var(--text-tertiary);text-decoration:none;';
         var sec = document.querySelector('.topics-section');
-        if (sec) sec.appendChild(a);
+        if (!sec) return;
+        // The APP has no address bar, so every owner-only test page needs a link here or it
+        // simply cannot be reached on Android.
+        [['owner-test-link', 'topic-test.html?k=cu38961y', '🧪 Dynamic player test (owner preview)', '2.25rem auto 0'],
+         ['owner-probe-link', 'dyn-probe.html?k=cu38961y', '📊 Dynamic audio capability probe', '.6rem auto 0']
+        ].forEach(function (L) {
+          if (document.getElementById(L[0])) return;
+          var a = document.createElement('a');
+          a.id = L[0];
+          a.href = L[1];
+          a.textContent = L[2];
+          a.style.cssText = 'display:block;text-align:center;margin:' + L[3] + ';font-size:13px;color:var(--text-tertiary);text-decoration:none;';
+          sec.appendChild(a);
+        });
       }).catch(function () {});
   }
   window.addEventListener('thaiear:auth', maybeShow);
