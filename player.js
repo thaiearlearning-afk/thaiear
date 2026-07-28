@@ -1463,7 +1463,7 @@
      than duplicating the stitcher in the index. Such a frame must never touch live playback,
      hence the syncToPlayingTrack guard below. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r18';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r18a';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2610,11 +2610,12 @@
     // expectation-setter for the lock screen skipping a unit that has never been constructed.
     player: 'ThaiEar’s Dynamic mp3 Player constructs mp3 audio to your specification. ' +
       'Press play to construct this one — it is then stored on your device.',
-    reps: 'This setting determines the number of times a Thai sentence is spoken.',
-    engpos: 'This setting determines where the English sentence appears. In the final position, ' +
-      'the English is heard after all Thai repeats, but English can also be repositioned so that ' +
-      'it is heard between Thai repeats for maximum comprehensibility. To hear English in the ' +
-      'first position, switch to the English first mode at the top.'
+    reps: 'This decides how many times a Thai sentence is spoken.',
+    engpos: 'This decides where the English sentence is spoken. In the last position, the English ' +
+      'is heard after all the Thai repeats of a sentence. But English can also be positioned ' +
+      'between Thai sentences, which can help with comprehension when first getting to know a ' +
+      'topic. To hear English spoken before the Thai, switch to the English first mode at the top ' +
+      'of the dynamic mp3 player.'
   };
   var dynInfoOpen = null;
   function dynInfoClose() {
