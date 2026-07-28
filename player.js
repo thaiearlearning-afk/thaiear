@@ -1774,7 +1774,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r25';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r26';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3354,7 +3354,14 @@
     // screen): synchronous state swap + transport reset, then ONE promise hop that sets
     // src → load → play. dynResolveAdopt resolves synchronously when pre-resolved; a
     // sessionless playlist unit builds in place — foreground only. NEVER navigates.
-    if (!mainAudio.paused) mainAudio.pause();
+    /* r26: do NOT pause first. Classic advanceTopic never does — it keeps the element playing
+       right up to the src assignment, which implicitly stops it. Pausing leaves a window where
+       no audio is playing, and WebKit suspends media LOADING for a backgrounded page without an
+       active audio session: the owner's lock-screen hop showed src set instantly and play()
+       then hanging five seconds until he unlocked, rather than rejecting. Only pause in the
+       foreground, where there is no session to lose and stopping the old audio promptly is the
+       nicer behaviour. */
+    if (!mainAudio.paused && document.visibilityState === 'visible') mainAudio.pause();
     setMainIcon(false);
     dynApplyAdoptState(t);
     var f = $('scrubber-fill'); if (f) f.style.width = '0%';
@@ -3366,10 +3373,23 @@
       dynStdRemote = r.std;
       dynSyncSentBtns();                            // placeholder hop → ① grey; session hop → live
       if (!r.std) dynStripPaint(t, false);
-      dynLog('src set (' + (r.std ? 'std' : 'dyn') + ')');
+      dynLog('src set (' + (r.std ? 'std' : 'dyn') + ', ' +
+        (String(r.src || '').indexOf('blob:') === 0 ? 'blob' : 'url') + ')');
       mainAudio.src = r.src;
       mainAudio.load();
       mainSrcReady = true;
+      // If play() hangs again, these say whether the element is stuck LOADING (readyState
+      // stays 0 while backgrounded) or whether it loaded fine and play() itself was blocked.
+      if (DYN_DBG) {
+        var t0 = Date.now();
+        try {
+          mainAudio.addEventListener('canplay', function onc() {
+            mainAudio.removeEventListener('canplay', onc);
+            dynLog('canplay after ' + (Date.now() - t0) + 'ms rs=' + mainAudio.readyState);
+          });
+        } catch (_) {}
+        setTimeout(function () { dynLog('t+1s rs=' + mainAudio.readyState + ' paused=' + mainAudio.paused); }, 1000);
+      }
       return mainAudio.play();
     }).then(function () {
       dynLog('play ok');
