@@ -90,7 +90,11 @@
   .dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom;
     animation: dots 1.2s steps(3,start) infinite; }
   @keyframes dots { from { width: 0 } to { width: 1.05em } }
-  #pl-prebuild-frame { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; left: -9999px; }
+  /* Deliberately IN the viewport (bottom-right, 1px, near-invisible): a frame parked
+     off-screen is treated as not rendered and has its timers throttled to ~1s, which turns a
+     few-second construction into minutes. */
+  #pl-prebuild-frame { position: fixed; right: 0; bottom: 0; width: 2px; height: 2px;
+    opacity: 0.01; pointer-events: none; border: 0; z-index: 0; }
 </style>
 <link rel="stylesheet" href="player-dyn.css">
 </head>
@@ -99,7 +103,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r18e</div>
+  <div class="eyebrow">Owner test build · r18f</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -118,7 +122,7 @@
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <iframe id="pl-prebuild-frame" title="prebuild"></iframe>
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r18e</div>
+  <div class="eyebrow">Playlist · r18f</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -206,7 +210,14 @@
   function dlStatusDots(msg) {
     var el = document.getElementById('dl-status'); if (!el) return;
     el.className = 'dl-batch-status';
-    el.innerHTML = esc(msg) + '<span class="dots"></span> · please keep this page open.';
+    el.innerHTML = esc(msg) + '<span class="dots"></span>';   // the animated ellipsis is the only one
+  }
+  // "Please keep this page open" is a standing instruction while busy, not part of the
+  // progress text — so no status line has to end in a dot or carry a separator.
+  function dlKeepOpen(on) {
+    var h = document.getElementById('dl-hint'); if (!h) return;
+    h.textContent = on ? 'Please keep this page open' : "Tap a playlist's circle to download, or a tick to remove, then pick an action.";
+    h.style.display = on ? '' : (Object.keys(dlSel).length || Object.keys(dlClearSel).length ? 'none' : '');
   }
   // The control on a playlist head: nothing while it works, a tick if downloaded, a circle
   // otherwise. The tick appears only once clips AND construction have finished.
@@ -231,12 +242,13 @@
     if (d && !dlBusy) d.textContent = nd ? ('Download Playlist(s) (' + nd + ')') : 'Download Playlist(s)';
     if (c && !dlBusy) c.textContent = nc ? ('Clear Download(s) (' + nc + ')') : 'Clear Download(s)';
     var hint = document.getElementById('dl-hint');
-    if (hint) hint.style.display = (nd || nc || dlBusy) ? 'none' : '';
+    if (hint && !dlBusy) hint.style.display = (nd || nc) ? 'none' : '';
     root.classList.toggle('mode-download', nd > 0);
     root.classList.toggle('mode-clear', nc > 0);
   }
   function dlSetBusy(b) {
     dlBusy = b;
+    dlKeepOpen(b);
     var d = document.getElementById('dl-btn'), c = document.getElementById('clear-btn');
     if (d) d.disabled = b; if (c) c.disabled = b;
   }
@@ -302,9 +314,7 @@
       function onMsg(e) {
         if (e.origin !== location.origin || !e.data || e.data.key !== 'pl-' + p.id) return;
         if (e.data.te === 'prebuilding') {
-          dlWorking[p.id] = 'constructing dynamic mp3 (' + e.data.i + ' of ' + e.data.n + ')...';
-          render();
-          return;
+          return;   // no counter - the dots already say it is working
         }
         if (e.data.te === 'prebuilt') finish();
       }
@@ -331,8 +341,8 @@
       var p = picked[i], by = dlGroup(p), prefixes = Object.keys(by);
       var total = 0, done = 0;
       prefixes.forEach(function (k) { total += by[k].files.length; });
-      dlWorking[p.id] = 'downloading clips...'; render();
-      dlStatus('Downloading “' + p.name + '” — please keep this page open.');
+      dlWorking[p.id] = 1; render();
+      dlStatus('Downloading “' + p.name + '”');
       var chain = Promise.resolve();
       prefixes.forEach(function (pfx) {
         chain = chain.then(function () {
@@ -345,10 +355,7 @@
             c = c.then(function () {
               return dlSaveOne(pfx, by[pfx].tier, f).then(function () {
                 done++;
-                dlWorking[p.id] = 'downloading clip ' + done + ' of ' + total;
-                var el = root.querySelector('.pl-box[data-id="' + p.id + '"] .pl-dl-state');
-                if (el) el.textContent = dlWorking[p.id];
-                dlStatus('Downloading “' + p.name + '” — clip ' + done + '/' + total + ' · please keep this page open.');
+                dlStatus('Downloading “' + p.name + '” — clip ' + done + ' of ' + total);
               });
             });
           });
@@ -370,7 +377,6 @@
         });
         dlSetManifest(m);
         var pm = dlPlMap(); pm[p.id] = { prefixes: prefixes, at: Date.now() }; dlSetPlMap(pm);
-        dlWorking[p.id] = 'constructing dynamic mp3...'; render();
         dlStatusDots('Constructing dynamic mp3 for “' + p.name + '”');
         return dlPrebuild(p);
       }).then(function () {
@@ -469,10 +475,8 @@
       return '<div class="pl-box' + (p.id === openId ? ' open' : '') + '" data-id="' + p.id + '">' +
         '<button class="pl-box-head" type="button">' +
           '<span class="pl-box-name">' + esc(p.name) + '</span>' +
-          '<span class="pl-box-meta">' + (dlWorking[p.id]
-            ? '<span class="pl-dl-state">' + esc(dlWorking[p.id]) + '</span>'
-            : p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') +
-              (dlIsDownloaded(p.id) ? ' · downloaded' : '')) + '</span>' +
+          '<span class="pl-box-meta">' + p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') +
+            (dlIsDownloaded(p.id) ? ' · downloaded' : '') + '</span>' +
           dlControl(p) +
           '<span class="pl-box-chev" aria-hidden="true">⌄</span>' +
         '</button>' +

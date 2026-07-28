@@ -88,12 +88,15 @@
   .unit-meta .working-txt { color:var(--accent); font-weight:500; }
   .links { margin-top:1.5rem; font-size:13.5px; }
   .links a { display:block; color:var(--accent); text-decoration:none; padding:5px 0; }
-  #prebuild-frame { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; border:0; left:-9999px; }
+  /* Deliberately IN the viewport: a frame parked off-screen is treated as not rendered and
+     has its timers throttled to ~1s, which turns a few-second construction into minutes. */
+  #prebuild-frame { position:fixed; right:0; bottom:0; width:2px; height:2px; opacity:.01;
+    pointer-events:none; border:0; z-index:0; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Owner test build · dyn index r18e</div>
+  <div class="eyebrow">Owner test build · dyn index r18f</div>
   <h1>Dynamic player test index</h1>
   <p class="lede">The test space's own front page, so downloads can be exercised the way the real
   index works. A dynamic download stores each sentence's <strong>clips</strong>, not a finished file —
@@ -155,7 +158,13 @@
   function statusDots(msg) {
     var el = document.getElementById('dl-status');
     el.className = 'dl-batch-status';
-    el.innerHTML = esc(msg) + '<span class="dots"></span> · please keep this page open.';
+    el.innerHTML = esc(msg) + '<span class="dots"></span>';   // the animated ellipsis is the only one
+  }
+  // A standing instruction while busy, not part of the progress text.
+  function keepOpen(on) {
+    var h = document.getElementById('dl-hint'); if (!h) return;
+    h.textContent = on ? 'Please keep this page open' : "Tap a topic's circle to download, or a ✓ to remove — then pick an action.";
+    h.style.display = on ? '' : '';
   }
   // Repaint just this unit's caption — a full render() would restart the dots animation.
   function renderMeta(prefix) {
@@ -183,9 +192,7 @@
         '<div class="unit-main">' +
           '<a class="unit-name" href="' + u.page + '?' + K + '">' + esc(u.name) +
             '<span class="tier-pill tier-' + u.tier + '">' + u.tier + '</span></a>' +
-          '<div class="unit-meta">' + (w
-            ? '<span class="working-txt">' + esc(w) + '</span>'
-            : u.n + ' sentences · ' + (dl ? 'downloaded' : 'not downloaded')) + '</div>' +
+          '<div class="unit-meta">' + u.n + ' sentences · ' + (dl ? 'downloaded' : 'not downloaded') + '</div>' +
         '</div>' + sel;
       root.appendChild(el);
     });
@@ -270,9 +277,7 @@
       function onMsg(e) {
         if (e.origin !== location.origin || !e.data || e.data.key !== u.key) return;
         if (e.data.te === 'prebuilding') {
-          working[u.prefix] = 'constructing dynamic mp3 (' + e.data.i + ' of ' + e.data.n + ')…';
-          renderMeta(u.prefix);
-          return;
+          return;   // no counter - the dots already say it is working
         }
         if (e.data.te === 'prebuilt') finish();
       }
@@ -298,8 +303,8 @@
         return;
       }
       var u = list[i];
-      working[u.prefix] = 'reading sentences…'; render();
-      status('Downloading ' + u.name + ' — please keep this page open.');
+      working[u.prefix] = 1; render();
+      status('Downloading ' + u.name);
       sentenceNums(u.page).then(function (nums) {
         if (!nums.length) throw new Error('no sentences found for ' + u.prefix);
         var files = clipFiles(u.prefix, nums), done = 0;
@@ -313,10 +318,7 @@
           chain = chain.then(function () {
             return saveOne(u, f).then(function () {
               done++;
-              working[u.prefix] = 'downloading clip ' + done + ' of ' + files.length;
-              renderMeta(u.prefix);
-              status('Downloading ' + u.name + ' — clip ' + done + '/' + files.length +
-                ' · please keep this page open.');
+              status('Downloading ' + u.name + ' — clip ' + done + ' of ' + files.length);
             });
           });
         });
@@ -327,8 +329,6 @@
           m[u.prefix] = { tier: u.tier, files: files, at: Date.now(), ver: '', av: null, dyn: true };
           setManifest(m);
           if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(u.page).catch(function () {}); }).catch(function () {});
-          working[u.prefix] = 'constructing dynamic mp3…';
-          renderMeta(u.prefix);
           statusDots('Constructing dynamic mp3 for ' + u.name);
           return prebuild(u);
         });
@@ -390,7 +390,7 @@
   function setBusy(b) {
     document.getElementById('dl-btn').disabled = b;
     document.getElementById('clear-btn').disabled = b;
-    if (b) document.getElementById('dl-hint').style.display = 'none';
+    keepOpen(b);
   }
 
   document.getElementById('dl-btn').addEventListener('click', runDownloads);

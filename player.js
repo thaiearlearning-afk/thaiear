@@ -1463,7 +1463,7 @@
      than duplicating the stitcher in the index. Such a frame must never touch live playback,
      hence the syncToPlayingTrack guard below. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r18e';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r18f';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2110,6 +2110,29 @@
     }
     return new Blob(pages, { type: 'audio/ogg' });
   }
+  /* r18f: yield to the task queue WITHOUT setTimeout. The encoder feed has to hand control
+     back so the encoder can drain, but setTimeout is clamped to ~1s in a frame the browser
+     considers un-rendered — and the prebuild frame is exactly that. With ~1s per chunk a
+     9-sentence playlist that should take two seconds took minutes and looked hung. A
+     MessageChannel message is a real task and is NOT clamped, so it drains at full speed
+     wherever it runs. (A microtask would starve the encoder's own callbacks instead.) */
+  var dynYieldChan = null, dynYieldQueue = [];
+  function dynYield() {
+    return new Promise(function (resolve) {
+      if (!dynYieldChan) {
+        try {
+          dynYieldChan = new MessageChannel();
+          dynYieldChan.port1.onmessage = function () {
+            var fn = dynYieldQueue.shift();
+            if (fn) fn();
+          };
+        } catch (_) { dynYieldChan = false; }
+      }
+      if (!dynYieldChan) { setTimeout(resolve, 8); return; }   // no MessageChannel → old path
+      dynYieldQueue.push(resolve);
+      dynYieldChan.port2.postMessage(0);
+    });
+  }
   // Run AudioEncoder over the stitched samples, collecting frames + the decoder description.
   function dynEncodeFrames(cfg, samples) {
     return new Promise(function (resolve, reject) {
@@ -2133,7 +2156,7 @@
         if (failed) return;
         try {
           while (i < samples.length) {
-            if (enc.encodeQueueSize > 8) { setTimeout(feed, 8); return; }
+            if (enc.encodeQueueSize > 8) { dynYield().then(feed); return; }
             var n = Math.min(FRAME, samples.length - i);
             var ad = new AudioData({
               format: 'f32-planar', sampleRate: cfg.sampleRate, numberOfFrames: n,
@@ -3712,6 +3735,7 @@
     });
     if (DYN_PREBUILD) {
       dynStatus('Preparing both directions', true);
+      var t0 = Date.now();
       dynPrebuildBoth(function (i, n, mode) {
         // Tell the opener which direction is under way — the index shows "1 of 2" so a long
         // construction reads as progress rather than a hang.
@@ -3721,6 +3745,7 @@
           }
         } catch (_) {}
       }).then(function () {
+        dynLog('prebuild both took ' + ((Date.now() - t0) / 1000).toFixed(1) + 's');
         dynStatus('Ready.', false);
         try {
           if (window.parent && window.parent !== window) {
