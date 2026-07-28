@@ -90,11 +90,6 @@
   .dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom;
     animation: dots 1.2s steps(3,start) infinite; }
   @keyframes dots { from { width: 0 } to { width: 1.05em } }
-  /* Deliberately IN the viewport (bottom-right, 1px, near-invisible): a frame parked
-     off-screen is treated as not rendered and has its timers throttled to ~1s, which turns a
-     few-second construction into minutes. */
-  #pl-prebuild-frame { position: fixed; right: 0; bottom: 0; width: 2px; height: 2px;
-    opacity: 0.01; pointer-events: none; border: 0; z-index: 0; }
 </style>
 <link rel="stylesheet" href="player-dyn.css">
 </head>
@@ -103,7 +98,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r19</div>
+  <div class="eyebrow">Owner test build · r20</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -120,9 +115,8 @@
 
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
-<iframe id="pl-prebuild-frame" title="prebuild"></iframe>
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r19</div>
+  <div class="eyebrow">Playlist · r20</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -316,30 +310,6 @@
     });
     return by;
   }
-  function dlPrebuild(p) {
-    return new Promise(function (resolve) {
-      var frame = document.getElementById('pl-prebuild-frame');
-      if (!frame) return resolve();
-      var done = false;
-      var secs = null;
-      function finish() { if (done) return; done = true; window.removeEventListener('message', onMsg); frame.src = 'about:blank'; resolve(secs); }
-      function onMsg(e) {
-        if (e.origin !== location.origin || !e.data || e.data.key !== 'pl-' + p.id) return;
-        if (e.data.te === 'prebuilding') {
-          return;   // no counter - the dots already say it is working
-        }
-        if (e.data.te === 'prebuilt') {
-          secs = (e.data.ms / 1000).toFixed(1);
-          console.log('[build] playlist ' + p.id + ': both directions in ' + secs + 's · last ' +
-            JSON.stringify(e.data.last));
-          finish();
-        }
-      }
-      window.addEventListener('message', onMsg);
-      setTimeout(finish, 180000);   // non-fatal - the clips are the download
-      frame.src = 'playlists.html?pl=' + encodeURIComponent(p.id) + '&k=cu38961y&prebuild=1';
-    });
-  }
   function dlRunDownloads() {
     if (dlBusy) return;
     var lists = currentLists() || [];
@@ -356,7 +326,7 @@
         return;
       }
       var p = picked[i], by = dlGroup(p), prefixes = Object.keys(by);
-      var total = 0, done = 0, tDl0 = Date.now(), dlSecs = null, buildSecs = null;
+      var total = 0, done = 0, tDl0 = Date.now(), dlSecs = null;
       prefixes.forEach(function (k) { total += by[k].files.length; });
       dlWorking[p.id] = 1; render();
       dlStatus('Downloading “' + p.name + '”');
@@ -393,11 +363,9 @@
         var pm = dlPlMap(); pm[p.id] = { prefixes: prefixes, at: Date.now() }; dlSetPlMap(pm);
         dlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
         console.log('[dl] playlist ' + p.id + ': ' + total + ' clips in ' + dlSecs + 's');
-        dlStatusDots('Constructing dynamic mp3 for “' + p.name + '”');
-        return dlPrebuild(p).then(function (ms) { buildSecs = ms; });
       }).then(function () {
         delete dlWorking[p.id];
-        dlStatus('“' + p.name + '” saved — clips ' + dlSecs + 's, construct ' + (buildSecs || '?') + 's');
+        dlStatus('“' + p.name + '” saved offline in ' + dlSecs + 's — open it to construct the mp3.');
         render(); i++; next();
       }).catch(function (err) {
         delete dlWorking[p.id];

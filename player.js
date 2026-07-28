@@ -1458,12 +1458,17 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  /* r18: the mini index opens a unit in a HIDDEN IFRAME with &prebuild=1 purely to render
-     both directions after its clips are downloaded — reusing this file's build path rather
-     than duplicating the stitcher in the index. Such a frame must never touch live playback,
-     hence the syncToPlayingTrack guard below. */
+  /* &prebuild=1 renders both directions for a unit in a hidden frame, reusing this file's
+     build path rather than duplicating the stitcher elsewhere.
+     ⚠ r20: NOTHING CALLS THIS ANY MORE. Constructing in a hidden frame took MINUTES for a
+     9-sentence playlist while the identical build on a foreground page takes seconds — the
+     frame is throttled in a way that neither a MessageChannel yield nor moving it on-screen
+     cured. Downloads now save the clips only (~1 s) and the mp3 is constructed on first play,
+     which is what the on-screen explainer always said would happen. The hook is kept because
+     it is harmless and correct; do not reintroduce a hidden-frame build without first
+     measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r19';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r20';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

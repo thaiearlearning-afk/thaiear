@@ -101,21 +101,17 @@
   .dl-modal-confirm:hover { background: #a93226; }
   .links { margin-top:1.5rem; font-size:13.5px; }
   .links a { display:block; color:var(--accent); text-decoration:none; padding:5px 0; }
-  /* Deliberately IN the viewport: a frame parked off-screen is treated as not rendered and
-     has its timers throttled to ~1s, which turns a few-second construction into minutes. */
-  #prebuild-frame { position:fixed; right:0; bottom:0; width:2px; height:2px; opacity:.01;
-    pointer-events:none; border:0; z-index:0; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Owner test build · dyn index r19</div>
+  <div class="eyebrow">Owner test build · dyn index r20</div>
   <h1>Dynamic player test index</h1>
   <p class="lede">The test space's own front page, so downloads can be exercised the way the real
   index works. A dynamic download stores each sentence's <strong>clips</strong>, not a finished file —
   so a settings change re-stitches offline, and a session the OS evicts rebuilds itself instead of
-  the download being gone. Both directions are pre-built afterwards so a unit works from the lock
-  screen straight away.</p>
+  the download being gone. The clips take about a second; the mp3 itself is constructed the first
+  time you open the topic, and then stored.</p>
 
   <div class="dl-batch-bar">
     <div class="dl-batch-btns">
@@ -134,7 +130,6 @@
     <a href="index.html">← Back to the real site</a>
   </div>
 </div>
-<iframe id="prebuild-frame" title="prebuild"></iframe>
 
 <script src="auth.js" defer></script>
 <script>
@@ -153,7 +148,7 @@
   var FS = (NATIVE && C.Plugins) ? C.Plugins.Filesystem : null;
   var WEB_DL = !NATIVE && !!window.caches;
 
-  var dlSel = {}, clearSel = {}, busy = false, lastDlSecs = null, buildSecs = null;
+  var dlSel = {}, clearSel = {}, busy = false, lastDlSecs = null;
   // A unit is only ever shown as downloaded once its clips AND both constructions are done.
   // (The manifest is still written before constructing — an interrupted construction leaves a
   // usable offline topic — but claiming "downloaded" while still working reads as a lie.)
@@ -291,31 +286,6 @@
       });
     });
   }
-  // Pre-render both directions by opening the unit in a hidden frame with &prebuild=1 — it
-  // runs player.js's own stitcher, so there is exactly one implementation of a build.
-  function prebuild(u) {
-    return new Promise(function (resolve) {
-      var frame = document.getElementById('prebuild-frame');
-      var done = false;
-      function finish() { if (done) return; done = true; window.removeEventListener('message', onMsg); frame.src = 'about:blank'; resolve(); }
-      function onMsg(e) {
-        if (e.origin !== location.origin || !e.data || e.data.key !== u.key) return;
-        if (e.data.te === 'prebuilding') {
-          return;   // no counter - the dots already say it is working
-        }
-        if (e.data.te === 'prebuilt') {
-          buildSecs = (e.data.ms / 1000).toFixed(1);
-          console.log('[build] ' + u.prefix + ': both directions in ' + buildSecs + 's · last ' +
-            JSON.stringify(e.data.last));
-          finish();
-        }
-      }
-      window.addEventListener('message', onMsg);
-      setTimeout(finish, 120000);   // non-fatal: the clips are the download, sessions rebuild on play
-      frame.src = u.page + '?' + K + '&prebuild=1';
-    });
-  }
-
   function runDownloads() {
     if (busy) return;
     var list = UNITS.filter(function (u) { return dlSel[u.prefix]; });
@@ -362,12 +332,10 @@
           if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(u.page).catch(function () {}); }).catch(function () {});
           lastDlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
           console.log('[dl] ' + u.prefix + ': ' + files.length + ' clips in ' + lastDlSecs + 's');
-          statusDots('Constructing dynamic mp3 for ' + u.name);
-          return prebuild(u);
         });
       }).then(function () {
         delete working[u.prefix];
-        status(u.name + ' saved — clips ' + lastDlSecs + 's, construct ' + (buildSecs || '?') + 's');
+        status(u.name + ' saved offline in ' + lastDlSecs + 's — open it to construct the mp3.');
         render(); i++; next();
       })
         .catch(function (err) {
