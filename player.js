@@ -1774,7 +1774,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r26';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r26a';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -1945,6 +1945,14 @@
      shim emits no trailing events) correctly started at 0. This flag makes the intent explicit
      rather than relying on event ordering: while set, nothing may record or restore a position. */
   var dynPosStale = false;
+  /* r26a: AUTOPLAY has to hop BEFORE the track ends. The lock-screen hop works now because the
+     element is still playing when we swap, which keeps the audio session active and lets
+     WebKit load the next source in the background. Waiting for 'ended' throws that away: the
+     element has already stopped, the session is inactive, and the load stalls until you unlock
+     — the exact failure the pause used to cause. So pre-advance a fraction before the end.
+     What is skipped is the tail of the session's final 3-second gap pause, i.e. silence. */
+  var DYN_PREADVANCE_S = 0.45;
+  var dynPreAdvanced = false;
   var dynSessionIsLocal = true; // does dynSession belong to THIS page's sentences? (card highlight guard)
   var dynAdopted = null;      // the CHAIN entry the top player is currently on when it isn't home (null = home)
   // ── round-11: the CHAIN replaces the pairwise dynNav adopt/navigate model ──
@@ -2763,6 +2771,7 @@
       mainAudio.src = (NATIVE && sess.fileUri) ? sess.fileUri : sess.url;
       mainAudio.load();
       mainSrcReady = true;
+      dynPreAdvanced = false;
       dynPosStale = false;      // new timeline in place; positions may be tracked again
       dynStatus(null);
     }).catch(function (e) {
@@ -3378,6 +3387,7 @@
       mainAudio.src = r.src;
       mainAudio.load();
       mainSrcReady = true;
+      dynPreAdvanced = false;
       // If play() hangs again, these say whether the element is stuck LOADING (readyState
       // stays 0 while backgrounded) or whether it loaded fine and play() itself was blocked.
       if (DYN_DBG) {
@@ -4128,6 +4138,13 @@
     }
     var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';   // mirror onto the floating mini bar
     if (DYN && !dynPosStale && (mainAudio.currentTime || 0) > 0) dynLastPos = mainAudio.currentTime;   // remember position (resume guard)
+    if (DYN && autoplayOn && !repeatOn && !dynPreAdvanced && !mainAudio.paused &&
+        mainAudio.duration && isFinite(mainAudio.duration) && (mainAudio.currentTime || 0) > 0 &&
+        (mainAudio.duration - mainAudio.currentTime) <= DYN_PREADVANCE_S) {
+      dynPreAdvanced = true;   // once per track; cleared whenever a new source is set
+      dynLog('auto: pre-advance at ' + mainAudio.currentTime.toFixed(1) + '/' + mainAudio.duration.toFixed(1));
+      advanceTopic(1);
+    }
     if (DYN && dynSession && dynSessionIsLocal) dynHighlight(mainAudio.currentTime);   // dyn: highlight the playing card (this page's session only)
     writeWebResume();   // keep the cross-page resume position fresh while playing (web only, throttled)
   });
