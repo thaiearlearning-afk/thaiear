@@ -1779,7 +1779,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r28';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r28a';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3427,7 +3427,11 @@
       return mainAudio.play();
     }).then(function () {
       dynLog('play ok');
-      if (dynAdopted === t) { setMainIcon(true); dynPrefetchNeighbours(); }   // ready the NEW neighbours
+      // r28a: RE-REGISTER the media-session handlers after a hop. iOS derives the lock-screen
+      // control set from which handlers are present, and a new media source can drop them —
+      // when that happened the owner saw ±15s skip + a scrubber (iOS's defaults) instead of our
+      // prev/next topic buttons. Every other play path already re-registers; this one did not.
+      if (dynAdopted === t) { setMainIcon(true); setupMediaSession(); dynPrefetchNeighbours(); }
     }).catch(function (e) {
       dynLog('adopt FAIL ' + ((e && (e.name || e.code)) || '') + ' ' + ((e && e.message) || ''));
       // Round-11: never location.href from transport/lock — put the pointer back where it was.
@@ -4585,6 +4589,7 @@
         var p;
         try { p = mainAudio.play(); } catch (_) { togglePlay(); return; }
         setMainIcon(true);
+        setupMediaSession();   // r28a: this path bypasses togglePlay(), which normally does it
         if (p && p.then) {
           p.then(function () { dynLog('ms:play sync ok'); },
                  function (e) { dynLog('ms:play sync FAIL ' + ((e && e.name) || e)); togglePlay(); });
@@ -4596,9 +4601,14 @@
     set('pause', function () { dynLog('ms:pause'); if (!mainAudio.paused) togglePlay(); });
     set('previoustrack', function () { dynLog('ms:prevtrack'); advanceTopic(-1); });
     set('nexttrack', function () { dynLog('ms:nexttrack'); advanceTopic(1); });
-    // iOS Control Center shows the prev/next-TRACK buttons only when the seek handlers are
-    // absent — otherwise it falls back to the ±15s skip buttons. Clear them explicitly so
-    // our topic prev/next show on the lock screen. (Our on-page ±10s buttons are unaffected.)
+    /* iOS Control Center shows the prev/next-TRACK buttons only when the seek handlers are
+       absent — otherwise it falls back to the ±15s skip buttons. Clear them explicitly so our
+       topic prev/next show on the lock screen. (Our on-page ±10s buttons are unaffected.)
+       ⚠ THIS IS A CHOICE, NOT A LIMITATION. Registering 'seekto' instead gives iOS a working
+       lock-screen SCRUBBER — the owner saw exactly that on 2026-07-28 when a hop dropped the
+       handlers and iOS fell back to its defaults. You can have prev/next topic OR a scrubber,
+       not both. Prev/next is the current choice because chain navigation is the feature; note
+       that iOS's own ±15s skip does NOT snap to sentences, whereas our ① buttons do. */
     set('seekbackward', null);
     set('seekforward', null);
     set('seekto', null);
