@@ -669,6 +669,46 @@
     }
   };
 
+  // ── Dynamic-player settings sync (public.dyn_prefs — see dyn_prefs_schema.sql) ──
+  // One row per user per scope: 'global' = {pf, rp, en}; '<dynKey>' = {excl:[nums]}.
+  // Additive and guarded exactly like the playlists API: signed-out or missing table →
+  // degrade to the localStorage mirror ('thaiear_dyn_prefs', keyed by scope).
+  var dpCache = null;   // { scope: dataObj }
+  function dpStore() { try { localStorage.setItem('thaiear_dyn_prefs', JSON.stringify(dpCache)); } catch (_) {} }
+  function dpLocal() { try { return JSON.parse(localStorage.getItem('thaiear_dyn_prefs') || 'null'); } catch (_) { return null; } }
+  window.ThaiEarAuth.dynPrefs = {
+    // Resolves { scope: data } for every row the user has.
+    load: function (force) {
+      if (dpCache && !force) return Promise.resolve(dpCache);
+      if (!client || !currentUser) { dpCache = dpLocal() || {}; return Promise.resolve(dpCache); }
+      return client.from('dyn_prefs').select('scope,data')
+        .then(function (r) {
+          if (r.error) throw r.error;
+          var map = {};
+          (r.data || []).forEach(function (row) { if (row && row.scope) map[row.scope] = row.data || {}; });
+          dpCache = map; dpStore();
+          return dpCache;
+        })
+        .catch(function () { dpCache = dpLocal() || {}; return dpCache; });
+    },
+    get: function (scope) { return dpCache ? dpCache[scope] : null; },
+    // Read-only localStorage view — safe before the client/auth resolve; never touches dpCache.
+    peek: function () { return dpLocal(); },
+    // Optimistic: cache + mirror written synchronously; the upsert follows (and is swallowed
+    // on failure — the local copy still holds the value, like the playlists degrade path).
+    set: function (scope, data) {
+      dpCache = dpCache || dpLocal() || {};
+      dpCache[scope] = data;
+      dpStore();
+      if (!client || !currentUser) return Promise.resolve();
+      return client.from('dyn_prefs')
+        .upsert({ user_id: currentUser.id, scope: scope, data: data, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id,scope' })
+        .then(function (r) { if (r.error) throw r.error; })
+        .catch(function () {});
+    }
+  };
+
   import(SUPABASE_ESM)
     .then(function (mod) {
       client = mod.createClient(SUPABASE_URL, SUPABASE_KEY);

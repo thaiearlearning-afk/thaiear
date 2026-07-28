@@ -1425,7 +1425,9 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r13';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r14';  // visible build tag on the test pages — bump every test-space deploy
+  // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
+  if (DYN) window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
   var dynLogEl = null;
   function dynLog(msg) {
     if (!DYN_DBG) return;
@@ -1824,6 +1826,89 @@
     dynSession = null;
     if (revertHit) dynStatus(null);
     else dynStatus('Changes saved — your session will reconstruct on next play.', false);
+  }
+  /* ── round-14: account-level settings sync (auth.js dynPrefs / public.dyn_prefs) ──
+     Boot stays instant on the local te_dyn_* keys; once auth resolves, the server copy is
+     applied over them (controls repaint + dynInvalidate — the r12 revert logic keeps the
+     rebuild notice away when the built session still matches). Every local change keeps
+     writing te_dyn_* AND, signed-in, upserts the account copy (debounced ~1s). Signed-out
+     stays local-only. PLMODE has no exclusions (r11) — only the global scope syncs there. */
+  var dynPrefsTimer = null, dynPushGlobal = false, dynPushExcl = false;
+  function dynPrefsQueue(which) {
+    if (which === 'excl') dynPushExcl = true; else dynPushGlobal = true;
+    var a = window.ThaiEarAuth;
+    if (!a || !a.dynPrefs || !(a.getUser && a.getUser())) return;   // signed-out → local only
+    if (dynPrefsTimer) clearTimeout(dynPrefsTimer);
+    dynPrefsTimer = setTimeout(function () {
+      dynPrefsTimer = null;
+      var api = window.ThaiEarAuth && window.ThaiEarAuth.dynPrefs;
+      if (!api) return;
+      if (dynPushGlobal) { dynPushGlobal = false; api.set('global', { pf: dynFactor, rp: dynRepeats, en: dynEnglish }); }
+      if (dynPushExcl && !PLMODE) {
+        dynPushExcl = false;
+        var excl = [];
+        for (var k in dynExcluded) { if (dynExcluded[k]) excl.push(+k); }
+        api.set(DYN_KEY_NS, { excl: excl });
+      }
+    }, 1000);
+  }
+  function dynPrefsRepaintControls() {
+    var pf = $('dyn-pf'), pv = $('dyn-pf-val');
+    if (pf) pf.value = String(dynFactor);
+    if (pv) pv.textContent = dynFactor + '×';
+    var reps = $('dyn-reps');
+    if (reps) reps.querySelectorAll('.dyn-rep-btn').forEach(function (x) { x.classList.toggle('on', x.textContent === String(dynRepeats)); });
+    var enCb = $('dyn-en');
+    if (enCb) enCb.checked = dynEnglish;
+  }
+  function dynPrefsRepaintExcl() {
+    sentences.forEach(function (s) {
+      var on = !!dynExcluded[s.num];
+      var card = document.getElementById('sc-' + s.num);
+      if (card) card.classList.toggle('dyn-off', on);
+      var xb = document.querySelector('#sc-' + s.num + ' .dyn-x-btn');
+      if (xb) {
+        xb.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="' + (on ? 'M12 5v14M5 12h14' : 'M5 12h14') + '"/></svg>';
+        xb.setAttribute('aria-label', on ? 'Include in session' : 'Exclude from session');
+        xb.title = on ? 'Include in session' : 'Exclude from session';
+      }
+    });
+  }
+  function dynPrefsApply() {
+    var a = window.ThaiEarAuth;
+    if (!a || !a.dynPrefs || !(a.getUser && a.getUser())) return;
+    a.dynPrefs.load().then(function (map) {
+      if (!map) return;
+      var changed = false, exclChanged = false;
+      var g = map.global;
+      if (g) {
+        var pf = parseFloat(g.pf);
+        if (isFinite(pf) && pf > 0 && pf !== dynFactor) { dynFactor = pf; try { localStorage.setItem('te_dyn_pf', String(pf)); } catch (_) {} changed = true; }
+        var rp = parseInt(g.rp, 10);
+        if (rp >= 1 && rp <= 4 && rp !== dynRepeats) { dynRepeats = rp; try { localStorage.setItem('te_dyn_rp', String(rp)); } catch (_) {} changed = true; }
+        if (typeof g.en === 'boolean' && g.en !== dynEnglish) { dynEnglish = g.en; try { localStorage.setItem('te_dyn_en', g.en ? '1' : '0'); } catch (_) {} changed = true; }
+      }
+      if (!PLMODE) {
+        var u = map[DYN_KEY_NS];
+        if (u && Array.isArray(u.excl)) {
+          var byNum = function (x, y) { return x - y; };
+          var cur = [];
+          for (var k in dynExcluded) { if (dynExcluded[k]) cur.push(+k); }
+          if (cur.sort(byNum).join(',') !== u.excl.slice().sort(byNum).join(',')) {
+            dynExcluded = {};
+            u.excl.forEach(function (n) { dynExcluded[n] = true; });
+            dynSaveExcluded();
+            exclChanged = true;
+          }
+        }
+      }
+      if (changed || exclChanged) {
+        dynLog('prefs: applied account settings');
+        if (changed) dynPrefsRepaintControls();
+        if (exclChanged) dynPrefsRepaintExcl();
+        dynInvalidate();   // r12: clears itself when the built session's key still matches
+      }
+    }).catch(function () {});
   }
   // Show/hide the TE-only English checkbox to match the current direction (ET always has English).
   function dynSyncEnToggle() {
@@ -2513,6 +2598,7 @@
         try { localStorage.setItem('te_dyn_pf', String(dynFactor)); } catch (_) {}
         pv.textContent = dynFactor + '×';
         dynInvalidate();
+        dynPrefsQueue('global');
       });
       // Thai repeat count: 1–4 segmented mini-buttons
       var reps = sl.querySelector('#dyn-reps');
@@ -2528,6 +2614,7 @@
           try { localStorage.setItem('te_dyn_rp', String(n)); } catch (_) {}
           reps.querySelectorAll('.dyn-rep-btn').forEach(function (x) { x.classList.toggle('on', x.textContent === String(n)); });
           dynInvalidate();
+          dynPrefsQueue('global');
         });
         reps.appendChild(b);
       });
@@ -2538,6 +2625,7 @@
         dynEnglish = enCb.checked;
         try { localStorage.setItem('te_dyn_en', dynEnglish ? '1' : '0'); } catch (_) {}
         dynInvalidate();
+        dynPrefsQueue('global');
       });
       dynSyncEnToggle();
       var skips = row.querySelectorAll('.skip-btn');   // [back-10, fwd-10] (dyn buttons not yet inserted)
@@ -2620,6 +2708,7 @@
           if (card) card.classList.toggle('dyn-off', !!dynExcluded[s.num]);
           xPaint();
           dynInvalidate();
+          dynPrefsQueue('excl');
         });
         hdr.insertBefore(xb, flag ? flag.nextSibling : null);
         if (dynExcluded[s.num]) {
@@ -2629,6 +2718,7 @@
       }
     });
     dynPrefetchNeighbours();        // iPhone: neighbours' placeholder URLs ready before any lock-screen skip
+    dynPrefsApply();                // round-14: overlay the account-level settings once auth allows
     if (dynPlsel) dynPlselBoot();   // opened from playlists.html "Add sentences" → auto-enter select mode
   }
 
