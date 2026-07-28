@@ -1446,9 +1446,25 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r16';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r16a';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
-  if (DYN) window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
+  if (DYN) {
+    window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
+    /* r16a — THE STALE-CONTROL FIX. The settings are read fresh on every play (so the audio
+       is always right) but the controls are painted ONCE at mount. Sync on the playlists
+       page, walk to a topic the WebView still holds in its back/forward cache, and that page
+       is RESTORED rather than re-executed: correct audio, stale English checkbox. So
+       re-resolve and repaint whenever the page is shown again, and whenever another tab
+       writes a setting. Cheap, idempotent, and only invalidates if a value actually moved. */
+    window.addEventListener('pageshow', function () { dynRefreshSettingsUI(); });
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') dynRefreshSettingsUI();
+    });
+    window.addEventListener('storage', function (e) {
+      if (!e || !e.key) return;
+      if (e.key.indexOf('te_dyn_set_') === 0 || e.key.indexOf('te_dyn_gdef_') === 0) dynRefreshSettingsUI();
+    });
+  }
   var dynLogEl = null;
   function dynLog(msg) {
     if (!DYN_DBG) return;
@@ -1542,6 +1558,33 @@
   function dynLoadSettings() {
     var s = dynSettingsFor(DYN_KEY_NS, currentMode);
     dynFactor = s.pf; dynRepeats = s.rp; dynEnglish = s.en; dynEngPos = s.ep;
+  }
+  // Re-resolve from storage and repaint. Safe to call at any time: the repaint no-ops before
+  // the controls are mounted, and nothing is invalidated unless a value genuinely moved.
+  function dynRefreshSettingsUI() {
+    if (!DYN) return;
+    var before = JSON.stringify(dynCurrentSet());
+    dynLoadSettings();
+    dynPrefsRepaintControls();
+    var moved = JSON.stringify(dynCurrentSet()) !== before;
+    // The exclusion marks are painted once at mount for the same reason, so they can go
+    // stale the same way — re-read them from storage on the same trigger.
+    if (!PLMODE) {
+      var was = [], now = [];
+      for (var k in dynExcluded) { if (dynExcluded[k]) was.push(+k); }
+      try {
+        var arr = JSON.parse(localStorage.getItem(DYN_EXCL_KEY) || '[]');
+        if (Array.isArray(arr)) now = arr.map(Number);
+      } catch (_) {}
+      var srt = function (a) { return a.slice().sort(function (x, y) { return x - y; }).join(','); };
+      if (srt(was) !== srt(now)) {
+        dynExcluded = {};
+        now.forEach(function (n) { dynExcluded[n] = true; });
+        dynPrefsRepaintExcl();
+        moved = true;
+      }
+    }
+    if (moved) dynInvalidate();
   }
   // Every control handler ends here: persist for THIS unit + THIS mode only, then sync.
   function dynSaveSettings() {
@@ -2034,9 +2077,9 @@
       }
       dynLoadSettings();
       var changed = JSON.stringify(dynCurrentSet()) !== before;
+      dynPrefsRepaintControls();   // r16a: unconditional — a repaint is cheap, a stale control is a bug
       if (changed || exclChanged) {
         dynLog('prefs: applied account settings');
-        if (changed) dynPrefsRepaintControls();
         if (exclChanged) dynPrefsRepaintExcl();
         dynInvalidate();   // r12: clears itself when the built session's key still matches
       }
@@ -2091,6 +2134,47 @@
     var g = ov.querySelector('#dyn-sync-go');
     if (g) g.addEventListener('click', function () { close(); dynSyncAll(); });
   }
+  /* ── r16a: the ⓘ explainers ────────────────────────────────────────────────────────
+     Two settings needed explaining. The whole label is the hit target (the ⓘ alone is a
+     tiny tap area on a phone); tapping again, or the ×, dismisses it. One box at a time,
+     inserted directly under the row it belongs to. */
+  var DYN_INFO = {
+    reps: 'This setting determines the number of times a Thai sentence is spoken.',
+    engpos: 'This setting determines where the English sentence appears. In the final position, ' +
+      'the English is heard after all Thai repeats, but English can also be repositioned so that ' +
+      'it is heard between Thai repeats for maximum comprehensibility.'
+  };
+  var dynInfoOpen = null;
+  function dynInfoClose() {
+    var box = document.getElementById('dyn-info-box');
+    if (box && box.parentNode) box.parentNode.removeChild(box);
+    dynInfoOpen = null;
+  }
+  function dynInfoToggle(key, rowEl) {
+    var was = dynInfoOpen;
+    dynInfoClose();
+    if (was === key || !rowEl || !DYN_INFO[key]) return;
+    var box = document.createElement('div');
+    box.id = 'dyn-info-box';
+    box.className = 'dyn-info-box';
+    box.setAttribute('role', 'note');
+    var x = document.createElement('button');
+    x.type = 'button'; x.className = 'dyn-info-x';
+    x.setAttribute('aria-label', 'Close'); x.title = 'Close';
+    x.innerHTML = '&times;';
+    x.addEventListener('click', dynInfoClose);
+    var t = document.createElement('span');
+    t.textContent = DYN_INFO[key];
+    box.appendChild(x); box.appendChild(t);
+    rowEl.parentNode.insertBefore(box, rowEl.nextSibling);
+    dynInfoOpen = key;
+  }
+  // Label + ⓘ, as one button so the text is tappable too.
+  function dynInfoLabel(text, key) {
+    return '<button type="button" class="dyn-info-lbl" data-info="' + key + '" ' +
+      'aria-label="' + escapeHtml(text) + ' — what is this?">' + escapeHtml(text) +
+      ' <span class="dyn-info-i" aria-hidden="true">i</span></button>';
+  }
   // Show/hide the TE-only English checkbox to match the current direction (ET always has English).
   function dynSyncEnToggle() {
     var w = $('dyn-en-wrap'), sp = $('dyn-en-sep');
@@ -2107,11 +2191,11 @@
     if (!row || !box) return;
     var show = currentMode !== 'et' && dynEnglish && dynRepeats >= 2;
     row.style.display = show ? '' : 'none';
-    if (!show) return;
+    if (!show) { if (dynInfoOpen === 'engpos') dynInfoClose(); return; }   // row gone → its explainer goes too
     var eff = dynEngPosEff();
     var html = '';
     for (var i = 1; i <= dynRepeats; i++) {
-      html += '<span class="dyn-ep-th">thai</span>' +
+      html += '<span class="dyn-ep-th">Thai</span>' +
         '<button type="button" class="dyn-ep-box' + (i === eff ? ' on' : '') + '" data-ep="' + i + '"' +
           ' role="radio" aria-checked="' + (i === eff ? 'true' : 'false') + '"' +
           ' aria-label="English after Thai repeat ' + i + '"></button>';
@@ -2743,6 +2827,13 @@
     '.dyn-ep-box{width:16px;height:16px;border-radius:4px;border:.5px solid var(--border-strong);background:var(--surface);cursor:pointer;padding:0;position:relative}' +
     '.dyn-ep-box.on{background:var(--accent);border-color:var(--accent)}' +
     ".dyn-ep-box.on::after{content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}" +
+    /* r16a: the ⓘ explainer labels + their dismissible box */
+    '.dyn-info-lbl{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-align:left}' +
+    '.dyn-info-lbl:hover{color:var(--accent)}' +
+    '.dyn-info-i{width:13px;height:13px;border-radius:50%;border:1px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font:italic 700 9px/1 Georgia,"Times New Roman",serif;flex-shrink:0}' +
+    '.dyn-info-box{position:relative;margin:7px 0 2px;padding:9px 30px 9px 11px;border:.5px solid var(--border-strong);border-radius:var(--radius-md);background:var(--surface);color:var(--text-secondary);font-size:12px;line-height:1.55;max-width:520px}' +
+    '.dyn-info-x{position:absolute;top:3px;right:4px;width:22px;height:22px;border:0;background:none;color:var(--text-tertiary);cursor:pointer;font-size:16px;line-height:1;padding:0}' +
+    '.dyn-info-x:hover{color:var(--accent)}' +
     /* r16: "apply to all" sync affordance — bottom-left, under the settings rows */
     '.dyn-sync-row{display:flex;justify-content:flex-start;margin:8px 0 2px}' +
     '.dyn-sync-btn{width:28px;height:28px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}' +
@@ -2824,7 +2915,7 @@
       // (round-10 addendum B: "Thai sentence repeats" was wrapping away from its 1-4 boxes).
       sl.innerHTML = '<span class="dyn-ctl-group">Pauses <input id="dyn-pf" type="range" min="0.5" max="2" step="0.25"> <span id="dyn-pf-val">1×</span></span>' +
         '<span class="dyn-ctl-sep">·</span>' +
-        '<span class="dyn-ctl-group">Thai sentence repeats <span class="dyn-reps" id="dyn-reps"></span></span>' +
+        '<span class="dyn-ctl-group">' + dynInfoLabel('Thai sentence repeats', 'reps') + ' <span class="dyn-reps" id="dyn-reps"></span></span>' +
         '<span class="dyn-ctl-sep" id="dyn-en-sep">·</span>' +
         '<label class="dyn-en-lbl dyn-ctl-group" id="dyn-en-wrap"><input type="checkbox" id="dyn-en"> English</label>';
       stEl.parentNode.insertBefore(sl, stEl.nextSibling);
@@ -2869,8 +2960,19 @@
       var epRow = document.createElement('div');
       epRow.className = 'dyn-slider dyn-ep-row';
       epRow.id = 'dyn-ep-row';
-      epRow.innerHTML = '<span class="dyn-ctl-group">English position (mark with tick) <span class="dyn-ep-boxes" id="dyn-ep-boxes"></span></span>';
+      epRow.innerHTML = '<span class="dyn-ctl-group">' + dynInfoLabel('English position', 'engpos') +
+        ' <span class="dyn-ep-boxes" id="dyn-ep-boxes"></span></span>';
       sl.parentNode.insertBefore(epRow, sl.nextSibling);
+      // Both ⓘ labels share one handler; the box lands under whichever row was tapped.
+      var infoRow = { reps: sl, engpos: epRow };
+      [sl, epRow].forEach(function (r) {
+        var lbl = r.querySelector('.dyn-info-lbl');
+        if (!lbl) return;
+        lbl.addEventListener('click', function () {
+          var k = lbl.getAttribute('data-info');
+          dynInfoToggle(k, infoRow[k]);
+        });
+      });
       // r16 item 3: the "apply to all" affordance — bottom-left of the player controls.
       var syncRow = document.createElement('div');
       syncRow.className = 'dyn-sync-row';
