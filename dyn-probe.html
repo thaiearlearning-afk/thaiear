@@ -54,7 +54,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Owner test build · dyn audio probe</div>
+  <div class="eyebrow">Owner test build · dyn audio probe v3</div>
   <h1>Dynamic audio capability probe</h1>
   <p class="lede">Measures what this device can actually do, so the r17 encoding work is built on facts rather
   than my estimates. It downloads ~0.6&nbsp;MB of real clips, stitches a genuine ~7-minute session, then encodes
@@ -280,6 +280,29 @@
   function zeros(n) { return new Uint8Array(n); }
   var MATRIX = cat([u32(0x00010000), u32(0), u32(0), u32(0), u32(0x00010000), u32(0), u32(0), u32(0), u32(0x40000000)]);
 
+  /* Safari handed back a 39-byte "description" where an AudioSpecificConfig is 2–5 bytes — it
+     is a full ES_Descriptor (with Apple's 3-byte extended length encoding), not an ASC. Wrapping
+     that in ANOTHER descriptor is what made the first MP4 undecodable. So normalise: walk the
+     descriptor to the DecoderSpecificInfo and take the real ASC out of it. */
+  function extractAsc(desc) {
+    if (!desc || !desc.length) return null;
+    if (desc[0] !== 0x03) return desc;                 // already a bare ASC (Chrome's form)
+    var i = 1;
+    function readLen() { var b, len = 0, n = 0; do { b = desc[i++]; len = (len << 7) | (b & 0x7F); n++; } while ((b & 0x80) && n < 4); return len; }
+    readLen();                                          // ES_Descriptor length
+    i += 2;                                             // ES_ID
+    var flags = desc[i++];
+    if (flags & 0x80) i += 2;                           // streamDependence
+    if (flags & 0x40) { i += 1 + desc[i]; }             // URL
+    if (flags & 0x20) i += 2;                           // OCR
+    if (desc[i] !== 0x04) return null;
+    i++; readLen();                                     // DecoderConfigDescriptor length
+    i += 13;                                            // objectType + streamType + buffer + bitrates
+    if (desc[i] !== 0x05) return null;
+    i++;
+    var ascLen = readLen();
+    return desc.subarray(i, i + ascLen);
+  }
   function esds(desc, avgBitrate) {
     var dsi = cat([new Uint8Array([0x05, desc.length]), desc]);                  // DecoderSpecificInfo
     var dcdBody = cat([
@@ -294,7 +317,9 @@
     var es = cat([new Uint8Array([0x03, esBody.length]), esBody]);
     return box('esds', [u32(0), es]);                                            // version/flags + descriptor
   }
-  function muxMp4(frames, desc, sampleRate, samplesPerFrame, avgBitrate) {
+  function muxMp4(frames, rawDesc, sampleRate, samplesPerFrame, avgBitrate) {
+    var desc = extractAsc(rawDesc);
+    if (!desc) return null;
     var n = frames.length;
     var duration = n * samplesPerFrame;
     var mdatData = cat(frames);
@@ -329,6 +354,66 @@
     var moov = box('moov', [mvhd, trak]);
     return new Blob([ftyp, mdat, moov], { type: 'audio/mp4' });
   }
+  /* Ogg Opus muxer. The Android run (Chrome 150) refused AAC in every form, so Opus is the
+     ONLY codec both platforms can encode — which makes this container the one that has to
+     work. Ogg is chosen over WebM because its framing is simple enough to get provably right:
+     fixed 27-byte page header, a lacing table, and a CRC. Granule positions are always in
+     48 kHz units regardless of the input rate, which is what gives players exact duration. */
+  var OGG_CRC = (function () {
+    var t = new Uint32Array(256);
+    for (var i = 0; i < 256; i++) {
+      var r = i << 24;
+      for (var j = 0; j < 8; j++) r = (r & 0x80000000) ? ((r << 1) ^ 0x04c11db7) : (r << 1);
+      t[i] = r >>> 0;
+    }
+    return t;
+  })();
+  function oggCrc(buf) {
+    var crc = 0;
+    for (var i = 0; i < buf.length; i++) crc = (((crc << 8) >>> 0) ^ OGG_CRC[((crc >>> 24) ^ buf[i]) & 0xFF]) >>> 0;
+    return crc >>> 0;
+  }
+  function u32le(n) { var a = new Uint8Array(4); new DataView(a.buffer).setUint32(0, n >>> 0, true); return a; }
+  function strBytes(s) { var a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+  function oggPage(headerType, granule, serial, seq, packets) {
+    var lacing = [], body = [];
+    for (var i = 0; i < packets.length; i++) {
+      var L = packets[i].length;
+      while (L >= 255) { lacing.push(255); L -= 255; }
+      lacing.push(L);
+      body.push(packets[i]);
+    }
+    var head = new Uint8Array(27 + lacing.length);
+    head.set([0x4F, 0x67, 0x67, 0x53], 0);            // "OggS"
+    head[4] = 0; head[5] = headerType;
+    var dv = new DataView(head.buffer);
+    dv.setUint32(6, granule >>> 0, true);
+    dv.setUint32(10, Math.floor(granule / 4294967296) >>> 0, true);
+    dv.setUint32(14, serial >>> 0, true);
+    dv.setUint32(18, seq >>> 0, true);
+    dv.setUint32(22, 0, true);                        // CRC computed over the page with this zeroed
+    head[26] = lacing.length;
+    head.set(lacing, 27);
+    var page = cat([head].concat(body));
+    new DataView(page.buffer).setUint32(22, oggCrc(page), true);
+    return page;
+  }
+  function muxOggOpus(frames, opusHead, granulePerPacket) {
+    var serial = 0x54484149;                          // "THAI"
+    var pages = [], seq = 0, granule = 0;
+    pages.push(oggPage(0x02, 0, serial, seq++, [opusHead]));        // BOS: OpusHead
+    var tags = cat([strBytes('OpusTags'), u32le(7), strBytes('ThaiEar'), u32le(0)]);
+    pages.push(oggPage(0x00, 0, serial, seq++, [tags]));            // OpusTags
+    var i = 0;
+    while (i < frames.length) {
+      var count = Math.min(50, frames.length - i), batch = [];
+      for (var k = 0; k < count; k++) batch.push(frames[i + k]);
+      i += count;
+      granule += count * granulePerPacket;
+      pages.push(oggPage(i >= frames.length ? 0x04 : 0x00, granule, serial, seq++, batch));
+    }
+    return new Blob(pages, { type: 'audio/ogg' });
+  }
   function muxAdts(frames, sampleRate) {
     var parts = [];
     for (var i = 0; i < frames.length; i++) { parts.push(adtsHeader(frames[i].length, sampleRate, 1)); parts.push(frames[i]); }
@@ -362,7 +447,7 @@
   function encodeWith(c, samples) {
     return new Promise(function (resolve, reject) {
       var data = resample(samples, SR, c.sampleRate);
-      var frames = [], bytes = 0, err = null, desc = null;
+      var frames = [], bytes = 0, err = null, desc = null, frameUs = 0;
       var t0 = performance.now();
       var enc = new AudioEncoder({
         // metadata carries decoderConfig.description = the AudioSpecificConfig, which an MP4
@@ -372,6 +457,7 @@
             var d = metadata.decoderConfig.description;
             desc = new Uint8Array(d.buffer ? d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength) : d);
           }
+          if (!frameUs && chunk.duration) frameUs = chunk.duration;   // Ogg granules come from this
           var b = new Uint8Array(chunk.byteLength);
           chunk.copyTo(b);
           bytes += b.length;
@@ -398,7 +484,7 @@
           enc.flush().then(function () {
             enc.close();
             if (err) return;
-            resolve({ bytes: bytes, ms: performance.now() - t0, frames: frames, desc: desc, cfg: c });
+            resolve({ bytes: bytes, ms: performance.now() - t0, frames: frames, desc: desc, frameUs: frameUs, cfg: c });
           }).catch(reject);
         } catch (e) { reject(e); }
       })();
@@ -530,12 +616,26 @@
               row('t-size', c.name, mb(r.bytes) + '  ·  ' + secs(r.ms) + '  ·  −' + saving + '%', 'yes');
               row('t-size', '   ' + c.name + ' frames / config', r.frames.length + ' frames · ASC ' +
                   (r.desc ? (r.desc.length + ' bytes') : 'MISSING'), r.desc ? '' : 'no');
-              if (c.codec !== 'mp4a.40.2') return;   // Opus needs Ogg/WebM — not muxed here
-              // Package the SAME frames two ways and let the decode round-trip pick a winner.
+              // Package the SAME frames every way that applies, and let the decode round-trip
+              // and playback tests pick the winner rather than my assumptions.
+              if (c.codec === 'opus') {
+                if (!r.desc) { row('t-size', '   → Ogg', 'no OpusHead from encoder', 'no'); return; }
+                // Ogg granules are ALWAYS 48 kHz units, whatever rate we fed the encoder.
+                var perPacket = Math.round((r.frameUs || 20000) * 48000 / 1e6);
+                var ogg = muxOggOpus(r.frames, r.desc, perPacket);
+                candidates.push({ blob: ogg, name: 'probe.opus', label: c.name + ' in Ogg', bytes: ogg.size });
+                row('t-size', '   → packaged as Ogg', mb(ogg.size) + '  (' + perPacket + ' samples/packet)', 'yes');
+                return;
+              }
+              if (c.codec !== 'mp4a.40.2') return;
               if (r.desc) {
                 var m4a = muxMp4(r.frames, r.desc, c.sampleRate, 1024, c.bitrate);
-                candidates.push({ blob: m4a, name: 'probe.m4a', label: c.name + ' in MP4', bytes: m4a.size });
-                row('t-size', '   → packaged as MP4', mb(m4a.size), 'yes');
+                if (m4a) {
+                  candidates.push({ blob: m4a, name: 'probe.m4a', label: c.name + ' in MP4', bytes: m4a.size });
+                  row('t-size', '   → packaged as MP4', mb(m4a.size) + '  (ASC ' + (extractAsc(r.desc) || []).length + ' bytes)', 'yes');
+                } else {
+                  row('t-size', '   → packaged as MP4', 'could not extract ASC from description', 'no');
+                }
               }
               var adts = muxAdts(r.frames, c.sampleRate);
               candidates.push({ blob: adts, name: 'probe.aac', label: c.name + ' in ADTS', bytes: adts.size });
@@ -551,38 +651,54 @@
       })
       .then(function () {
         status('Testing playback + seek accuracy…');
-        var tests = [{ blob: wavBlob, label: 'WAV (baseline)' }].concat(candidates);
+        var tests = [{ blob: wavBlob, label: 'WAV (baseline)', name: 'probe.wav', wav: true }].concat(candidates);
         var chain = Promise.resolve();
         tests.forEach(function (t) {
           chain = chain.then(function () {
-            // Decode round-trip FIRST — it is the only check that can't fool itself.
+            t.score = 0;
+            // Decode round-trip FIRST — it is the only check that can't fool itself. But a
+            // failure is NOT disqualifying on its own: Safari's Web Audio may refuse a
+            // container that <audio> plays perfectly well, so playback gets its own say.
             return verifyDecode(t.blob, session.seconds).then(function (v) {
               if (!v.ok) row('t-seek', t.label + ' — decodes back', 'NO: ' + v.why, 'no');
               else {
                 row('t-seek', t.label + ' — decodes back', v.seconds.toFixed(1) + 's (out by ' + v.err.toFixed(1) + 's)',
                     v.err < 0.5 ? 'yes' : (v.err < 2 ? 'warn' : 'no'));
-                if (v.err < 0.5 && t.label !== 'WAV (baseline)' && (!best || best.label === 'WAV')) {
-                  best = { blob: t.blob, name: t.name, label: t.label };   // native test uses a VERIFIED file
-                }
+                if (v.err < 0.5) t.score += 3;          // audio content is complete and correct
               }
             }).then(function () {
-            return testPlayback(t.blob, session.seconds, t.label).then(function (r) {
-              if (!r.ok) { row('t-seek', t.label, 'FAILED — ' + r.why, 'no'); return; }
-              if (!isFinite(r.duration)) {
-                row('t-seek', t.label + ' — duration', 'not reported (' + r.duration + ') — expected ' + session.seconds.toFixed(1) + 's', 'no');
-              } else {
-                var durErr = Math.abs(r.duration - session.seconds);
-                row('t-seek', t.label + ' — duration', r.duration.toFixed(1) + 's (out by ' + durErr.toFixed(1) + 's)',
-                    durErr < 1 ? 'yes' : (durErr < 5 ? 'warn' : 'no'));
-              }
-              row('t-seek', t.label + ' — worst seek error',
-                  isNaN(r.maxErr) ? 'seek unsupported' : r.maxErr.toFixed(2) + ' s',
-                  r.maxErr < 0.15 ? 'yes' : (r.maxErr < 1 ? 'warn' : 'no'));
-            });
+              return testPlayback(t.blob, session.seconds, t.label).then(function (r) {
+                if (!r.ok) { row('t-seek', t.label + ' — plays', 'FAILED — ' + r.why, 'no'); return; }
+                if (!isFinite(r.duration)) {
+                  row('t-seek', t.label + ' — duration', 'not reported (' + r.duration + ') — expected ' + session.seconds.toFixed(1) + 's', 'no');
+                } else {
+                  var durErr = Math.abs(r.duration - session.seconds);
+                  row('t-seek', t.label + ' — duration', r.duration.toFixed(1) + 's (out by ' + durErr.toFixed(1) + 's)',
+                      durErr < 1 ? 'yes' : (durErr < 5 ? 'warn' : 'no'));
+                  if (durErr < 1) t.score += 3;         // the container carries a real index
+                  else if (durErr < 5) t.score += 1;
+                }
+                if (!isNaN(r.maxErr)) {
+                  row('t-seek', t.label + ' — worst seek error', r.maxErr.toFixed(2) + ' s',
+                      r.maxErr < 0.15 ? 'yes' : (r.maxErr < 1 ? 'warn' : 'no'));
+                  if (r.maxErr < 0.15) t.score += 1;
+                } else {
+                  row('t-seek', t.label + ' — worst seek error', 'seek unsupported', 'no');
+                }
+              });
             });
           });
         });
-        return chain;
+        return chain.then(function () {
+          // Winner = highest score, smallest file breaks a tie. WAV only wins if nothing else does.
+          var ranked = tests.slice().sort(function (a, b) {
+            return (b.score - a.score) || ((a.blob.size || 0) - (b.blob.size || 0));
+          });
+          var top = ranked[0];
+          row('t-seek', '➜ BEST FORMAT ON THIS DEVICE', top.label + '  (' + mb(top.blob.size) + ')',
+              top.wav ? 'warn' : 'yes');
+          best = { blob: top.blob, name: top.name, label: top.label };
+        });
       })
       .then(function () {
         if (!native || !best) return null;
