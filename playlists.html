@@ -103,7 +103,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r18f</div>
+  <div class="eyebrow">Owner test build · r18g</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -122,7 +122,7 @@
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <iframe id="pl-prebuild-frame" title="prebuild"></iframe>
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r18f</div>
+  <div class="eyebrow">Playlist · r18g</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -434,7 +434,8 @@
     if (!picked.length) { dlStatus('Please select a downloaded playlist to clear first.'); return; }
     showModal({
       title: 'Remove ' + (picked.length > 1 ? 'these downloads?' : 'this download?'),
-      body: 'You will no longer be able to listen offline. The playlist itself is not affected.',
+      body: 'You will no longer be able to listen to ' + (picked.length > 1 ? 'them' : 'it') +
+        ' offline. The playlist itself is not affected.',
       confirmText: 'Remove', danger: true,
       onConfirm: function () {
         dlSetBusy(true);
