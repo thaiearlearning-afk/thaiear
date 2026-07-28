@@ -1774,7 +1774,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r26c';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r26d';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4479,7 +4479,15 @@
     if (!('mediaSession' in navigator)) return;
     var ms = navigator.mediaSession;
     function set(action, fn) { try { ms.setActionHandler(action, fn); } catch (_) {} }
-    set('play', function () { dynLog('ms:play'); if (mainAudio.paused) togglePlay(); });
+    // rs= is the diagnostic for the one remaining iPhone case: pause → lock → play gives a
+    // moving lock-screen scrubber but no sound. If readyState is 0 here, WebKit unloaded the
+    // media while the page was backgrounded and paused, and play() is waiting on a re-load it
+    // will not perform until the page is visible — iOS then advances its own scrubber
+    // optimistically. If readyState is 4, the element is ready and the fault is elsewhere.
+    set('play', function () {
+      dynLog('ms:play rs=' + mainAudio.readyState + ' t=' + (mainAudio.currentTime || 0).toFixed(1));
+      if (mainAudio.paused) togglePlay();
+    });
     set('pause', function () { dynLog('ms:pause'); if (!mainAudio.paused) togglePlay(); });
     set('previoustrack', function () { dynLog('ms:prevtrack'); advanceTopic(-1); });
     set('nexttrack', function () { dynLog('ms:nexttrack'); advanceTopic(1); });
