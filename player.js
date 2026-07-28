@@ -160,16 +160,28 @@
         // where the pre-r11 guard bailed on prefix-less playlist units and nothing set state.
         var ownKey = cfg.dynKey || null;
         var isForeign = np.key ? (np.key !== ownKey) : (np.prefix !== mainPrefix);
-        if (isForeign && dynChain) {
+        if (isForeign) {
           var idx = -1;
-          dynChain.forEach(function (u, j) {
-            if (idx >= 0 || !u) return;
-            if ((np.key && u.dynKey === np.key) || (!np.key && np.prefix && u.prefix === np.prefix)) idx = j;
-          });
-          if (idx < 0) return;                     // playing something outside this page's chain → leave it be
-          var t = dynChain[idx];
-          dynChainIdx = idx;
-          dynAdopted = (idx === dynHomeIdx) ? null : t;
+          if (dynChain) {
+            dynChain.forEach(function (u, j) {
+              if (idx >= 0 || !u) return;
+              if ((np.key && u.dynKey === np.key) || (!np.key && np.prefix && u.prefix === np.prefix)) idx = j;
+            });
+          }
+          var t;
+          if (idx >= 0) {
+            // in THIS page's space → the pointer follows the playing unit
+            t = dynChain[idx];
+            dynChainIdx = idx;
+            dynAdopted = (idx === dynHomeIdx) ? null : t;
+          } else {
+            // Round-12 item 3: a unit from ANOTHER space (topic playing on a playlist page,
+            // or vice versa) — adopt for DISPLAY + control only. The chain pointer stays
+            // home: nav buttons keep walking THIS page's own chain (their next hop takes
+            // the audio over), and ↩ Return plays this page's own unit.
+            t = { page: np.page, prefix: np.prefix || '', tier: (np.access && np.access !== 'free') ? np.access : 'free', name: np.name || 'Now playing', dynKey: np.key || null };
+            dynAdopted = t;
+          }
           dynTitle = t.name;
           mainPage = t.page;
           mainPrefix = t.prefix || '';
@@ -181,8 +193,6 @@
           dynSessionIsLocal = false;
           dynStdRemote = false;
           if (dynAdopted) dynStripPaint(t, false); // "Now playing: X" + ↩ Return
-        } else if (isForeign) {
-          return;                                  // foreign but no chain to place it on → don't adopt blind
         } else {
           dynTitle = (dynChain && dynChain[dynHomeIdx]) ? dynChain[dynHomeIdx].name : dynTitle;
         }
@@ -1415,7 +1425,7 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r11';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r12';  // visible build tag on the test pages — bump every test-space deploy
   var dynLogEl = null;
   function dynLog(msg) {
     if (!DYN_DBG) return;
@@ -1478,10 +1488,22 @@
   // transport/lock-screen prev/next ONLY ever moves an index pointer and swaps audio in
   // place — never location.href. Footer links remain the way to change pages.
   var dynChain = (DYN && Array.isArray(cfg.dynChain) && cfg.dynChain.length) ? cfg.dynChain : null;
+  // Deploy-skew safety net (round-12): the r11 topic-page regression was HTML still shipping
+  // the old pairwise dynNav while player.js only understood dynChain — prev/next went dead.
+  // A stale page now gets its chain SYNTHESIZED from dynNav so nav keeps working either way.
+  if (!dynChain && DYN && cfg.dynNav && (cfg.dynNav.prev || cfg.dynNav.next)) {
+    var _ownName = (document.title || 'ThaiEar')
+      .replace(/^Dynamic player test\s*[—–-]\s*/i, '')
+      .replace(/\s*[|·—–-]\s*ThaiEar.*$/i, '').trim() || 'This topic';
+    dynChain = [];
+    if (cfg.dynNav.prev) dynChain.push(cfg.dynNav.prev);
+    dynChain.push({ page: PAGE_FILE, prefix: PREFIX || '', tier: TIER || 'free', name: _ownName, dynKey: cfg.dynKey || '__self__' });
+    if (cfg.dynNav.next) dynChain.push(cfg.dynNav.next);
+  }
   var dynHomeIdx = 0;
   if (dynChain) {
     for (var _ci = 0; _ci < dynChain.length; _ci++) {
-      if (dynChain[_ci] && dynChain[_ci].dynKey === cfg.dynKey) { dynHomeIdx = _ci; break; }
+      if (dynChain[_ci] && (dynChain[_ci].dynKey === cfg.dynKey || dynChain[_ci].dynKey === '__self__')) { dynHomeIdx = _ci; break; }
     }
   }
   var dynChainIdx = dynHomeIdx;        // pointer = the unit the top player is CURRENTLY on
@@ -1785,13 +1807,23 @@
   // A setting changed (pause factor / exclusions): drop the session, keep the decoded clip
   // cache, and let the next play rebuild.
   function dynInvalidate() {
+    var key = dynKey();
+    // Round-12 item 1: if the change lands back ON the built session's key (a revert, or a
+    // no-effect toggle like English in ET), nothing is stale — keep playing, clear any nag.
+    if (dynSession && dynSessionIsLocal && dynSession.key === key) {
+      dynStatus(null);
+      return;
+    }
+    var meta = dynReadMeta(DYN_KEY_NS, currentMode);
+    var revertHit = !!(meta && meta.key === key);   // persisted copy matches → strict restore hits on next play
     if (!mainAudio.paused) { mainAudio.pause(); setMainIcon(false); }
     dynLastPos = 0;   // the rebuilt session has a different timeline
     dynAttached = false;
     mainSrcReady = false;
-    if (dynSession && dynSession.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
+    if (dynSession && dynSession.url && dynSessionIsLocal) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
     dynSession = null;
-    dynStatus('Changes saved — your session will reconstruct on next play.', false);
+    if (revertHit) dynStatus(null);
+    else dynStatus('Changes saved — your session will reconstruct on next play.', false);
   }
   // Show/hide the TE-only English checkbox to match the current direction (ET always has English).
   function dynSyncEnToggle() {
