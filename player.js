@@ -1463,7 +1463,7 @@
      than duplicating the stitcher in the index. Such a frame must never touch live playback,
      hence the syncToPlayingTrack guard below. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r18g';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r19';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2209,6 +2209,7 @@
      on screen rather than behind ?dbg=1 because the APP has no address bar — a debug flag you
      cannot type is a debug flag that does not exist. Test-space only; goes at rollout. */
   var dynLastEnc = null;
+  var dynLastBuildMs = null;   // r19: {fetch, stitch, encode} of the most recent build
   function dynPaintFmtTag() {
     var el = $('dyn-fmt-tag');
     if (!el) return;
@@ -2306,9 +2307,14 @@
     var files = [];
     inc.forEach(function (s) { files.push(dynClipRef(s, 'TH')); if (needEn) files.push(dynClipRef(s, 'EN')); });
     var done = 0;
+    // r19: phase timings. "It feels slow" is not a diagnosis - these turn it into numbers,
+    // and they cost nothing when the log is off.
+    var tFetch0 = Date.now(), tFetch = 0, tStitch = 0, cached0 = 0;
+    files.forEach(function (f) { if (dynClipCache[f.file]) cached0++; });
     return dynPool(files, function (f) {
       return dynFetchClip(f).then(function (b) { done++; if (onProg) onProg(done, files.length); return b; });
     }).then(function () {
+      tFetch = Date.now() - tFetch0;
       var parts = [];   // AudioBuffer, or a number = silence length in samples
       var map = [];
       var pos = 0;      // running length in samples
@@ -2347,9 +2353,15 @@
         else { out.set(p.getChannelData(0), o); o += p.length; }
       });
       var duration = pos / DYN_SR;
+      tStitch = Date.now() - tFetch0 - tFetch;
+      var tEnc0 = Date.now();
       // r17: encode rather than store raw PCM (~20× smaller). Falls back to WAV on any device
       // that can't produce a verified format, so this path can never be worse than before.
       return dynEncodeSession(out, duration).then(function (enc) {
+        dynLog('build ' + mode + ' ' + Math.round(duration) + 's audio: fetch ' + tFetch + 'ms (' +
+          (files.length - cached0) + ' new/' + files.length + ') · stitch ' + tStitch + 'ms · encode ' +
+          (Date.now() - tEnc0) + 'ms');
+        dynLastBuildMs = { fetch: tFetch, stitch: tStitch, encode: Date.now() - tEnc0 };
         var blob = enc.blob;
         var sess = { url: URL.createObjectURL(blob), blob: blob, map: map, key: key,
           duration: duration, ext: enc.ext, mime: enc.mime };
@@ -3737,6 +3749,12 @@
       dynStatus('Preparing both directions', true);
       var t0 = Date.now();
       dynPrebuildBoth(function (i, n, mode) {
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ te: 'prebuilding', key: DYN_KEY_NS, i: i, n: n, mode: mode,
+              ms: dynLastBuildMs }, location.origin);
+          }
+        } catch (_) {}
         // Tell the opener which direction is under way — the index shows "1 of 2" so a long
         // construction reads as progress rather than a hang.
         try {
@@ -3749,7 +3767,8 @@
         dynStatus('Ready.', false);
         try {
           if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ te: 'prebuilt', key: DYN_KEY_NS }, location.origin);
+            window.parent.postMessage({ te: 'prebuilt', key: DYN_KEY_NS,
+              ms: Date.now() - t0, last: dynLastBuildMs }, location.origin);
           }
         } catch (_) {}
       });

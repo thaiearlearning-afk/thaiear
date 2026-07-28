@@ -103,7 +103,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r18g</div>
+  <div class="eyebrow">Owner test build · r19</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -122,7 +122,7 @@
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <iframe id="pl-prebuild-frame" title="prebuild"></iframe>
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r18g</div>
+  <div class="eyebrow">Playlist · r19</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -294,6 +294,17 @@
     });
   }
   // Group a playlist's sentences by the topic their clips live under.
+  // Bounded-concurrency runner (same shape as player.js's dynPool).
+  function dlPool(items, n, worker) {
+    var i = 0;
+    function lane() {
+      if (i >= items.length) return Promise.resolve();
+      return worker(items[i++]).then(lane);
+    }
+    var lanes = [];
+    for (var k = 0; k < Math.min(n, items.length); k++) lanes.push(lane());
+    return Promise.all(lanes);
+  }
   function dlGroup(p) {
     var by = {};
     p.items.forEach(function (it) {
@@ -310,13 +321,19 @@
       var frame = document.getElementById('pl-prebuild-frame');
       if (!frame) return resolve();
       var done = false;
-      function finish() { if (done) return; done = true; window.removeEventListener('message', onMsg); frame.src = 'about:blank'; resolve(); }
+      var secs = null;
+      function finish() { if (done) return; done = true; window.removeEventListener('message', onMsg); frame.src = 'about:blank'; resolve(secs); }
       function onMsg(e) {
         if (e.origin !== location.origin || !e.data || e.data.key !== 'pl-' + p.id) return;
         if (e.data.te === 'prebuilding') {
           return;   // no counter - the dots already say it is working
         }
-        if (e.data.te === 'prebuilt') finish();
+        if (e.data.te === 'prebuilt') {
+          secs = (e.data.ms / 1000).toFixed(1);
+          console.log('[build] playlist ' + p.id + ': both directions in ' + secs + 's · last ' +
+            JSON.stringify(e.data.last));
+          finish();
+        }
       }
       window.addEventListener('message', onMsg);
       setTimeout(finish, 180000);   // non-fatal - the clips are the download
@@ -339,7 +356,7 @@
         return;
       }
       var p = picked[i], by = dlGroup(p), prefixes = Object.keys(by);
-      var total = 0, done = 0;
+      var total = 0, done = 0, tDl0 = Date.now(), dlSecs = null, buildSecs = null;
       prefixes.forEach(function (k) { total += by[k].files.length; });
       dlWorking[p.id] = 1; render();
       dlStatus('Downloading “' + p.name + '”');
@@ -350,16 +367,13 @@
             ? DL_FS.mkdir({ directory: 'DATA', path: 'offline/' + pfx, recursive: true }).catch(function () {})
             : null;
         }).then(function () {
-          var c = Promise.resolve();
-          by[pfx].files.forEach(function (f) {
-            c = c.then(function () {
-              return dlSaveOne(pfx, by[pfx].tier, f).then(function () {
-                done++;
-                dlStatus('Downloading “' + p.name + '” — clip ' + done + ' of ' + total);
-              });
+          // r19: six at a time, not one - see dyn-index.
+          return dlPool(by[pfx].files, 6, function (f) {
+            return dlSaveOne(pfx, by[pfx].tier, f).then(function () {
+              done++;
+              dlStatus('Downloading “' + p.name + '” — clip ' + done + ' of ' + total);
             });
           });
-          return c;
         });
       });
       chain.then(function () {
@@ -377,10 +391,14 @@
         });
         dlSetManifest(m);
         var pm = dlPlMap(); pm[p.id] = { prefixes: prefixes, at: Date.now() }; dlSetPlMap(pm);
+        dlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
+        console.log('[dl] playlist ' + p.id + ': ' + total + ' clips in ' + dlSecs + 's');
         dlStatusDots('Constructing dynamic mp3 for “' + p.name + '”');
-        return dlPrebuild(p);
+        return dlPrebuild(p).then(function (ms) { buildSecs = ms; });
       }).then(function () {
-        delete dlWorking[p.id]; render(); i++; next();
+        delete dlWorking[p.id];
+        dlStatus('“' + p.name + '” saved — clips ' + dlSecs + 's, construct ' + (buildSecs || '?') + 's');
+        render(); i++; next();
       }).catch(function (err) {
         delete dlWorking[p.id];
         dlSetBusy(false);

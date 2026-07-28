@@ -109,7 +109,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Owner test build · dyn index r18g</div>
+  <div class="eyebrow">Owner test build · dyn index r19</div>
   <h1>Dynamic player test index</h1>
   <p class="lede">The test space's own front page, so downloads can be exercised the way the real
   index works. A dynamic download stores each sentence's <strong>clips</strong>, not a finished file —
@@ -153,7 +153,7 @@
   var FS = (NATIVE && C.Plugins) ? C.Plugins.Filesystem : null;
   var WEB_DL = !NATIVE && !!window.caches;
 
-  var dlSel = {}, clearSel = {}, busy = false;
+  var dlSel = {}, clearSel = {}, busy = false, lastDlSecs = null, buildSecs = null;
   // A unit is only ever shown as downloaded once its clips AND both constructions are done.
   // (The manifest is still written before constructing — an interrupted construction leaves a
   // usable offline topic — but claiming "downloaded" while still working reads as a lie.)
@@ -256,6 +256,17 @@
       return nums;
     });
   }
+  // Bounded-concurrency runner (same shape as player.js's dynPool).
+  function pool(items, n, worker) {
+    var i = 0;
+    function lane() {
+      if (i >= items.length) return Promise.resolve();
+      return worker(items[i++]).then(lane);
+    }
+    var lanes = [];
+    for (var k = 0; k < Math.min(n, items.length); k++) lanes.push(lane());
+    return Promise.all(lanes);
+  }
   function clipFiles(prefix, nums) {
     var files = [];
     nums.forEach(function (n) {
@@ -292,7 +303,12 @@
         if (e.data.te === 'prebuilding') {
           return;   // no counter - the dots already say it is working
         }
-        if (e.data.te === 'prebuilt') finish();
+        if (e.data.te === 'prebuilt') {
+          buildSecs = (e.data.ms / 1000).toFixed(1);
+          console.log('[build] ' + u.prefix + ': both directions in ' + buildSecs + 's · last ' +
+            JSON.stringify(e.data.last));
+          finish();
+        }
       }
       window.addEventListener('message', onMsg);
       setTimeout(finish, 120000);   // non-fatal: the clips are the download, sessions rebuild on play
@@ -320,15 +336,17 @@
       status('Downloading ' + u.name);
       sentenceNums(u.page).then(function (nums) {
         if (!nums.length) throw new Error('no sentences found for ' + u.prefix);
-        var files = clipFiles(u.prefix, nums), done = 0;
+        var files = clipFiles(u.prefix, nums), done = 0, tDl0 = Date.now();
         // The destination directory must EXIST first. downloadFile's `recursive` does not
         // create it on Android (ENOENT) — player.js and index.html both mkdir first, and
         // omitting it here was the r18 download failure.
         var chain = NATIVE
           ? FS.mkdir({ directory: 'DATA', path: 'offline/' + u.prefix, recursive: true }).catch(function () {})
           : Promise.resolve();
-        files.forEach(function (f) {
-          chain = chain.then(function () {
+        // r19: SIX AT A TIME, not one. 18 clips downloaded strictly in series is 18 sequential
+        // round trips on a phone connection - a prime suspect for where the minutes went.
+        chain = chain.then(function () {
+          return pool(files, 6, function (f) {
             return saveOne(u, f).then(function () {
               done++;
               status('Downloading ' + u.name + ' — clip ' + done + ' of ' + files.length);
@@ -342,10 +360,16 @@
           m[u.prefix] = { tier: u.tier, files: files, at: Date.now(), ver: '', av: null, dyn: true };
           setManifest(m);
           if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(u.page).catch(function () {}); }).catch(function () {});
+          lastDlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
+          console.log('[dl] ' + u.prefix + ': ' + files.length + ' clips in ' + lastDlSecs + 's');
           statusDots('Constructing dynamic mp3 for ' + u.name);
           return prebuild(u);
         });
-      }).then(function () { delete working[u.prefix]; render(); i++; next(); })
+      }).then(function () {
+        delete working[u.prefix];
+        status(u.name + ' saved — clips ' + lastDlSecs + 's, construct ' + (buildSecs || '?') + 's');
+        render(); i++; next();
+      })
         .catch(function (err) {
           delete working[u.prefix];
           busy = false; setBusy(false);
