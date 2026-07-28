@@ -655,6 +655,67 @@
      implementation. EXCLUDED sentences are downloaded too — exclusion is a playback choice,
      and re-including one later must not need a connection. */
   function dynDlRef() { return PLMODE ? DYN_KEY_NS : 'topic'; }
+  /* r22: how much room this download actually takes, shown next to "Available offline".
+     Measured, not estimated — the clip files plus the constructed sessions — and cached into
+     the manifest so the per-file stat/cache-read happens once, not on every render. Measuring
+     lazily (rather than tallying during the download) means downloads made BEFORE this existed
+     get a figure too, with one code path instead of two. */
+  function dynDlSizeCached() {
+    var by = dynDlGroups(), m = getManifest(), total = 0, known = true;
+    Object.keys(by).forEach(function (pfx) {
+      var e = m[pfx];
+      if (!e || typeof e.bytes !== 'number') { known = false; return; }
+      total += e.bytes;
+    });
+    if (!known) return null;
+    ['te', 'et'].forEach(function (mode) {          // the built mp3s count too — they are the big ones
+      var meta = dynReadMeta(DYN_KEY_NS, mode);
+      if (meta && meta.bytes) total += meta.bytes;
+    });
+    return total;
+  }
+  function dynDlMeasure() {
+    var m = getManifest();
+    var prefixes = Object.keys(dynDlGroups()).filter(function (p) {
+      var e = m[p]; return e && typeof e.bytes !== 'number';
+    });
+    if (!prefixes.length) return Promise.resolve(dynDlSizeCached());
+    var chain = Promise.resolve();
+    prefixes.forEach(function (pfx) {
+      chain = chain.then(function () {
+        var files = (getManifest()[pfx] || {}).files || [], sum = 0;
+        return dynPool(files, function (f) {
+          if (WEB_DL) {
+            return caches.open(AUDIO_DL_CACHE)
+              .then(function (c) { return c.match(webCacheKey(pfx, f)); })
+              .then(function (r) { return r ? r.blob() : null; })
+              .then(function (b) { if (b) sum += b.size; })
+              .catch(function () {});
+          }
+          if (!Filesystem) return null;
+          return Filesystem.stat({ path: offlineDir(pfx) + '/' + f, directory: 'DATA' })
+            .then(function (r) { sum += (r && r.size) || 0; })
+            .catch(function () {});
+        }).then(function () {
+          var mm = getManifest();
+          if (mm[pfx]) { mm[pfx].bytes = sum; setManifest(mm); }
+        });
+      });
+    });
+    return chain.then(function () { return dynDlSizeCached(); });
+  }
+  function dynFmtMb(b) { return (b / 1048576).toFixed(2) + ' MB'; }
+  function dynPaintOfflineSize() {
+    var el = document.querySelector('#offline-bar .offline-ok');
+    if (!el) return;
+    var cached = dynDlSizeCached();
+    if (cached != null) { el.textContent = '✓ Available offline (' + dynFmtMb(cached) + ')'; return; }
+    dynDlMeasure().then(function (t) {
+      var e2 = document.querySelector('#offline-bar .offline-ok');   // may have re-rendered meanwhile
+      if (e2 && t != null) e2.textContent = '✓ Available offline (' + dynFmtMb(t) + ')';
+    }).catch(function () {});
+  }
+
   function dynDlGroups() {
     var by = {};
     sentences.forEach(function (s) {
@@ -736,6 +797,7 @@
         e.refs = (e.refs || []).filter(function (r) { return r !== ref; });
         e.refs.push(ref);
         e.tier = by[pfx].tier; e.at = Date.now(); e.dyn = true;
+        delete e.bytes;                       // file set changed → re-measure rather than lie
         m[pfx] = e;
       });
       setManifest(m);
@@ -750,6 +812,7 @@
       cachePage();
       downloadingNow = false;
       setOfflineState('downloaded');
+      dynPaintOfflineSize();
     }).catch(function (err) {
       downloadingNow = false;
       console.warn('player.js: dyn download failed', err);
@@ -905,6 +968,7 @@
       if (!dynDlHasAll()) { setOfflineState('idle'); return; }
       cachePage();
       setOfflineState('downloaded');
+      dynPaintOfflineSize();
       return;
     }
     var ent = getManifest()[PREFIX];
@@ -1544,6 +1608,10 @@
     scrub.addEventListener('pointercancel', end);
   }
   function initMiniPlayer() {
+    // r22: not on dyn pages. The dyn player already carries its own transport, sentence-skip
+    // and status, so a second floating copy sliding in on scroll is noise on top of noise —
+    // owner: "not needed and actively bad".
+    if (DYN) return;
     if (!$('player-root') || $('te-mini')) return;   // topic pages only; once
     var bar = document.createElement('div');
     bar.className = 'te-mini';
@@ -1641,7 +1709,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r21';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r22';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2884,7 +2952,8 @@
     // r18: shown above the player. The second sentence is the one that matters — it is the
     // expectation-setter for the lock screen skipping a unit that has never been constructed.
     player: 'ThaiEar’s Dynamic mp3 Player constructs mp3 audio to your specification. ' +
-      'Press play to construct this one — it is then stored on your device.',
+      'Press play to construct this one — it is then stored on your device and replaced each ' +
+      'time you generate a new dynamic mp3.',
     reps: 'This decides how many times a Thai sentence is spoken.',
     engpos: 'This decides where the English sentence is spoken. In the last position, the English ' +
       'is heard after all the Thai repeats of a sentence. But English can also be positioned ' +
