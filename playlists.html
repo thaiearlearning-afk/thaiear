@@ -66,7 +66,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r10</div>
+  <div class="eyebrow">Owner test build · r11</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -76,7 +76,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r10</div>
+  <div class="eyebrow">Playlist · r11</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -275,22 +275,18 @@
     document.title = p.name + ' — ThaiEar';
     document.getElementById('pl-player-title').textContent = p.name;
     var nonEmpty = (lists || []).filter(function (x) { return x.items && x.items.length; });
-    var i = -1;
-    nonEmpty.forEach(function (x, j) { if (String(x.id) === String(p.id)) i = j; });
-    function navRef(q) {
+    // Round-11: the CHAIN — every non-empty playlist, in order, circular. Transport/lock
+    // prev/next walks this in place; it never navigates.
+    var chain = nonEmpty.map(function (q) {
       return { page: 'playlists.html?pl=' + encodeURIComponent(q.id), prefix: '', tier: 'free', name: q.name, dynKey: 'pl-' + q.id };
-    }
-    var nav = {};
-    if (nonEmpty.length > 1 && i >= 0) {
-      nav.prev = navRef(nonEmpty[(i - 1 + nonEmpty.length) % nonEmpty.length]);
-      nav.next = navRef(nonEmpty[(i + 1) % nonEmpty.length]);
-    }
+    });
     window.ThaiEarTopic = {
       dyn: true,
       dynKey: 'pl-' + p.id,        // persistence namespace (sessions per playlist per mode)
       playlistMode: true,          // player.js: no flags, no progress card, per-item prefixes
       audioPrefix: '',
-      dynNav: nav,
+      dynChain: chain,
+      dynChainWrap: true,
       sentences: p.items.map(function (it, idx) {
         var t = String(it.thai || '').replace(/\s*\|\s*/g, ' ').trim();
         var pv = t.split(/\s+/).slice(0, 4).join(' ');

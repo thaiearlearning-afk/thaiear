@@ -105,7 +105,9 @@
         if (!NA) return Promise.resolve();
         // resume (same track already prepared) → just play; new track → prepare with metadata first
         if (st.preparedSrc === st.src && st.src) { st.paused = false; return NA.play(); }
-        nativeMeta.title = resolveMainTitle();   // ensure the lock screen shows the topic, even on first play
+        // Lock screen shows the unit ACTUALLY playing: dyn chain hops set dynTitle explicitly
+        // (round-11 item 2); classic keeps the resolveMainTitle lookup.
+        nativeMeta.title = (DYN && dynTitle) ? dynTitle : resolveMainTitle();
         writeNowPlaying();                       // share what's now playing across pages (now-playing bar + sync)
         var prep = { url: st.src, title: nativeMeta.title, subtitle: nativeMeta.subtitle, artwork: nativeMeta.artwork };
         if (DYN) {
@@ -129,7 +131,12 @@
      The native engine keeps playing when you navigate, so we stash what it's on (in localStorage)
      so ANY page can show a now-playing bar and a topic page can sync its top player to the live track. */
   function writeNowPlaying() {
-    try { localStorage.setItem('thaiear_np', JSON.stringify({ page: mainPage, name: nativeMeta.title, prefix: mainPrefix, mode: currentMode, access: mainTier || 'free' })); } catch (_) {}
+    try {
+      var np = { page: mainPage, name: nativeMeta.title, prefix: mainPrefix, mode: currentMode, access: mainTier || 'free' };
+      // Dyn units also stamp their chain key (playlists have no prefix — the key is their identity).
+      if (DYN) np.key = (dynChain && dynChain[dynChainIdx]) ? dynChain[dynChainIdx].dynKey : (cfg.dynKey || null);
+      localStorage.setItem('thaiear_np', JSON.stringify(np));
+    } catch (_) {}
   }
   // Set true once the user starts playback on THIS page's own player. Guards syncToPlayingTrack so a
   // late "time" tick from the user's OWN audio can't adopt a stale other-topic label (bug: open a fresh
@@ -140,13 +147,51 @@
   // it — adopting another topic's identity if needed — so it shows + controls the live track.
   function syncToPlayingTrack() {
     if (!NA) return;
-    var np; try { np = JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { np = null; }
-    if (!np || !np.prefix) return;
+    var np; try { np = JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { np = null;  }
+    if (!np || (!np.prefix && !np.key)) return;   // dyn playlist units have no prefix — their key identifies them
     var done = false;
     NA.addListener('time', function () {
       if (done) return;
       if (userStartedHere) { done = true; return; } // user is driving THIS page → never hijack its label
       done = true;
+      if (DYN) {
+        // Round-11 item 3: dyn adoption is chain-based and is the ONE source of page state
+        // (icon, strip, pointer) — fixes the r10 "bar moves but icon shows play" desync,
+        // where the pre-r11 guard bailed on prefix-less playlist units and nothing set state.
+        var ownKey = cfg.dynKey || null;
+        var isForeign = np.key ? (np.key !== ownKey) : (np.prefix !== mainPrefix);
+        if (isForeign && dynChain) {
+          var idx = -1;
+          dynChain.forEach(function (u, j) {
+            if (idx >= 0 || !u) return;
+            if ((np.key && u.dynKey === np.key) || (!np.key && np.prefix && u.prefix === np.prefix)) idx = j;
+          });
+          if (idx < 0) return;                     // playing something outside this page's chain → leave it be
+          var t = dynChain[idx];
+          dynChainIdx = idx;
+          dynAdopted = (idx === dynHomeIdx) ? null : t;
+          dynTitle = t.name;
+          mainPage = t.page;
+          mainPrefix = t.prefix || '';
+          mainTier = (t.tier === 'member' || t.tier === 'premium') ? t.tier : null;
+          mainGated = !!mainTier;
+          if (np.mode === 'te' || np.mode === 'et') currentMode = np.mode;
+          nativeMeta.title = t.name;
+          dynSession = null;                       // the live track's map isn't ours — no highlight/skip until a local resolve
+          dynSessionIsLocal = false;
+          dynStdRemote = false;
+          if (dynAdopted) dynStripPaint(t, false); // "Now playing: X" + ↩ Return
+        } else if (isForeign) {
+          return;                                  // foreign but no chain to place it on → don't adopt blind
+        } else {
+          dynTitle = (dynChain && dynChain[dynHomeIdx]) ? dynChain[dynHomeIdx].name : dynTitle;
+        }
+        dynAttached = true;                        // src belongs to the live engine — never rebuild under it
+        mainSrcReady = true;
+        if (mainAudio.attach) mainAudio.attach();  // control the live track without restarting it (position preserved)
+        setMainIcon(true);
+        return;
+      }
       if (np.prefix !== mainPrefix) {            // a DIFFERENT topic is playing → adopt it on the top player
         mainPage = np.page; mainPrefix = np.prefix;
         if (np.mode === 'te' || np.mode === 'et') currentMode = np.mode;
@@ -1370,7 +1415,7 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r10';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r11';  // visible build tag on the test pages — bump every test-space deploy
   var dynLogEl = null;
   function dynLog(msg) {
     if (!DYN_DBG) return;
@@ -1427,7 +1472,22 @@
   var dynLastLive = null;     // sentence num currently highlighted by the timeupdate handler
   var dynLastPos = 0;         // last known playback position (round-10 item 4: resume must survive an engine idle)
   var dynSessionIsLocal = true; // does dynSession belong to THIS page's sentences? (card highlight guard)
-  var dynAdopted = null;      // cross-topic nav: the dynNav target descriptor the top player adopted
+  var dynAdopted = null;      // the CHAIN entry the top player is currently on when it isn't home (null = home)
+  // ── round-11: the CHAIN replaces the pairwise dynNav adopt/navigate model ──
+  // cfg.dynChain = ordered units of the whole space ({page, prefix, tier, name, dynKey});
+  // transport/lock-screen prev/next ONLY ever moves an index pointer and swaps audio in
+  // place — never location.href. Footer links remain the way to change pages.
+  var dynChain = (DYN && Array.isArray(cfg.dynChain) && cfg.dynChain.length) ? cfg.dynChain : null;
+  var dynHomeIdx = 0;
+  if (dynChain) {
+    for (var _ci = 0; _ci < dynChain.length; _ci++) {
+      if (dynChain[_ci] && dynChain[_ci].dynKey === cfg.dynKey) { dynHomeIdx = _ci; break; }
+    }
+  }
+  var dynChainIdx = dynHomeIdx;        // pointer = the unit the top player is CURRENTLY on
+  var dynChainWrap = cfg.dynChainWrap === true;   // playlists: circular; topic test pages: clamp
+  var dynTitle = (dynChain && dynChain[dynHomeIdx]) ? dynChain[dynHomeIdx].name : null;   // lock-screen title = the unit actually playing
+  var dynAttached = false;             // adopted a live native track via attach() — src must not be rebuilt under it
   var dynStdRemote = false;   // adopted target is playing its STATIC combined file (no session/map)
   var DYN_KEY_NS = cfg.dynKey || PREFIX;   // namespace for exclusions + persisted sessions
 
@@ -1455,10 +1515,11 @@
     } catch (_) {}
     return null;
   }
-  function dynPersistSession(sess, mode) {
-    var oldMeta = dynReadMeta(DYN_KEY_NS, mode);   // read BEFORE overwriting: we sweep its file below
+  function dynPersistSession(sess, mode) { dynPersistSessionFor(sess, mode, DYN_KEY_NS); }
+  function dynPersistSessionFor(sess, mode, keyNs) {
+    var oldMeta = dynReadMeta(keyNs, mode);   // read BEFORE overwriting: we sweep its file below
     try {
-      localStorage.setItem(dynMetaLsKey(DYN_KEY_NS, mode),
+      localStorage.setItem(dynMetaLsKey(keyNs, mode),
         JSON.stringify({ key: sess.key, map: sess.map, duration: sess.duration, file: sess.file || null }));
     } catch (_) {}
     if (NATIVE) {
@@ -1472,7 +1533,7 @@
     }
     if (window.caches) {
       caches.open(AUDIO_DL_CACHE).then(function (c) {
-        return c.put(dynCachePath(DYN_KEY_NS, mode),
+        return c.put(dynCachePath(keyNs, mode),
           new Response(sess.blob, { headers: { 'Content-Type': 'audio/wav' } }));
       }).catch(function () {});
     }
@@ -1511,16 +1572,20 @@
     return Math.max(1, Math.floor(t.length / 3));
   }
   function dynIncluded() {
+    if (PLMODE) return sentences.slice(0);   // playlists have no exclusion UI (round-11) — play everything
     return sentences.filter(function (s) { return !dynExcluded[s.num]; });
   }
   function dynKey() {
     // English is EFFECTIVE-value keyed: ET always includes English, so toggling the TE-only
     // checkbox must not churn ET sessions.
-    var en = (currentMode === 'et' || dynEnglish) ? 1 : 0;
     // Topic pages key on the sentence nums (unchanged — existing persisted metas stay valid).
     // Playlist sentences key on prefix:clipNum — their s.num is a synthetic page index, and an
     // equal-length edit must still change the key (cross-device staleness test).
-    return currentMode + '|' + dynFactor + '|r' + dynRepeats + '|e' + en + '|' + dynIncluded().map(function (s) {
+    return dynKeyFor(dynIncluded());
+  }
+  function dynKeyFor(sents) {
+    var en = (currentMode === 'et' || dynEnglish) ? 1 : 0;
+    return currentMode + '|' + dynFactor + '|r' + dynRepeats + '|e' + en + '|' + sents.map(function (s) {
       return s.prefix ? (s.prefix + ':' + (s.clipNum != null ? s.clipNum : s.num)) : s.num;
     }).join(',');
   }
@@ -1585,9 +1650,13 @@
   // TE per sentence: TH, repeat-pause, TH, repeat-pause, EN. ET: EN, recall-pause, TH,
   // repeat-pause, TH. Then a gap-pause. map records {num,start,end} per sentence block.
   function dynBuildSession(onProg) {
-    var inc = dynIncluded();
+    return dynBuildSessionFor(dynIncluded(), DYN_KEY_NS, dynKey(), onProg);
+  }
+  // Parametrised stitcher (round-11): the chain can BUILD a FOREIGN playlist's session in
+  // place (foreground only) from the local playlist cache — sents/keyNs/key come from the
+  // caller instead of this page's own state.
+  function dynBuildSessionFor(inc, keyNs, key, onProg) {
     if (!inc.length) return Promise.reject({ code: 'empty' });
-    var key = dynKey();
     var mode = currentMode;   // captured: the key/filename must match the mode this build is FOR
     var needEn = (mode === 'et') || dynEnglish;   // TE with English off never touches the _EN clips
     var files = [];
@@ -1641,7 +1710,7 @@
         if (!FS) return sess;
         // Unique per-build filename — a rebuild must present a NEW file:// src or the native
         // shim resumes the previously prepared (stale) audio. See dynNextSeq.
-        var wavPath = dynNativeFile(DYN_KEY_NS, mode, dynNextSeq());
+        var wavPath = dynNativeFile(keyNs, mode, dynNextSeq());
         // DATA, not CACHE: Android clears the cache dir, which wiped every persisted session (round-7).
         return FS.writeFile({ path: wavPath, data: b64, directory: 'DATA' })
           .then(function () { return FS.getUri({ path: wavPath, directory: 'DATA' }); })
@@ -1681,6 +1750,9 @@
   // at it. When the top player has ADOPTED a neighbour topic (dyn cross-topic nav), re-resolve
   // that adoption instead — e.g. after a TE/ET switch reset mainSrcReady.
   function dynEnsureMainSrc(lenient) {
+    // Attached to a live native track (page-open adoption): the engine owns the src — play/
+    // pause/seek control it directly and a rebuild would restart it (round-11 item 3).
+    if (dynAttached && mainSrcReady) return Promise.resolve();
     if (dynAdopted) {
       if (mainSrcReady) return Promise.resolve();
       var adoptedT = dynAdopted;
@@ -1715,6 +1787,7 @@
   function dynInvalidate() {
     if (!mainAudio.paused) { mainAudio.pause(); setMainIcon(false); }
     dynLastPos = 0;   // the rebuilt session has a different timeline
+    dynAttached = false;
     mainSrcReady = false;
     if (dynSession && dynSession.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
     dynSession = null;
@@ -1790,7 +1863,7 @@
     dynLastLive = num;
   }
   /* -- cross-topic nav with autoplay (dyn pages) --
-     Mirrors classic advanceTopic: stay on the page and swap the top player onto the dynNav
+     Mirrors classic advanceTopic: stay on the page and swap the top player onto the chain
      target. Source priority: (a) the TARGET topic's own persisted dyn session for the current
      mode — accepted as-is, its stored key is authoritative (this page's exclusions are
      irrelevant to it); (b) the pre-rendered static combined TE/ET file as a placeholder.
@@ -1800,9 +1873,10 @@
   // switch) into this cache, and the persisted-session meta is pre-checked synchronously.
   var dynAdoptCache = {};   // t.page → { mode, src (placeholder URL), sess (restored persisted session) }
   function dynPrefetchNeighbours() {
-    if (!cfg.dynNav) return;
-    ['prev', 'next'].forEach(function (side) {
-      var t = cfg.dynNav[side];
+    if (!dynChain) return;
+    // Pre-resolve the CURRENT pointer's two chain neighbours (re-run after every hop/mode switch).
+    [dynChainStep(-1), dynChainStep(1)].forEach(function (stp) {
+      var t = stp && stp.t;
       if (!t || (!t.prefix && !t.dynKey)) return;   // playlist neighbours have no prefix — session-only prefetch
       var mode = currentMode;
       var old = dynAdoptCache[t.page];
@@ -1830,6 +1904,37 @@
     return buildUrl(file, t.tier === 'member' || t.tier === 'premium')
       .then(function (u) { return { src: u, std: true, sess: null }; });
   }
+  // Chain-walk helpers (round-11).
+  function dynChainStep(dir, fromIdx) {
+    if (!dynChain || dynChain.length < 2) return null;
+    var i = (fromIdx == null ? dynChainIdx : fromIdx) + dir;
+    if (dynChainWrap) i = (i + dynChain.length) % dynChain.length;
+    else if (i < 0 || i >= dynChain.length) return null;
+    return { idx: i, t: dynChain[i] };
+  }
+  // Can this unit produce audio WITHOUT building? (persisted session — stale ok — or a static
+  // placeholder). Locked-screen hops skip units that can't (mirrors classic's nextPlayable skip).
+  function dynChainPlayable(t, idx) {
+    if (idx === dynHomeIdx && dynSession && dynSessionIsLocal) return true;
+    if (t.dynKey) {
+      var c = dynAdoptCache[t.page];
+      if (c && c.sess) return true;
+      if (dynReadMeta(t.dynKey, currentMode)) return true;   // best sync guess (restore may still miss)
+    }
+    return !!t.prefix;
+  }
+  // Sentence source for building a FOREIGN playlist unit in place (foreground only): the
+  // local playlist cache. Topic units never need this (they always have a placeholder).
+  function dynChainSentences(t) {
+    if (!t.dynKey || String(t.dynKey).indexOf('pl-') !== 0) return null;
+    var id = String(t.dynKey).slice(3), lists = null;
+    try { lists = JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) {}
+    var p = (lists || []).filter(function (x) { return String(x.id) === String(id); })[0];
+    if (!p || !p.items || !p.items.length) return null;
+    return p.items.map(function (it, idx) {
+      return { num: 100001 + idx, clipNum: it.num, thai: it.thai, prefix: it.prefix, tier: it.tier || 'free' };
+    });
+  }
   function dynResolveAdopt(t) {
     var mode = currentMode;
     var c = dynAdoptCache[t.page];
@@ -1837,13 +1942,41 @@
       if (c.sess) { dynLog('adopt: cached session'); return Promise.resolve({ src: (NATIVE && c.sess.fileUri) ? c.sess.fileUri : c.sess.url, std: false, sess: c.sess }); }
       if (c.src) { dynLog('adopt: cached placeholder'); return Promise.resolve({ src: c.src, std: true, sess: null }); }
     }
-    var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;   // synchronous pre-check
-    if (!meta) { dynLog('adopt: placeholder (no meta)'); return dynAdoptPlaceholder(t, mode); }
+    var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;   // synchronous pre-check (stale-lenient by design)
+    if (!meta) {
+      dynLog('adopt: placeholder (no meta)');
+      return dynAdoptPlaceholder(t, mode).catch(function (e) {
+        if (!(e && e.code === 'nosess')) return Promise.reject(e);
+        return dynAdoptBuild(t);
+      });
+    }
     return dynRestoreSession(t.dynKey, mode, meta).then(function (sess) {
       if (sess) { dynLog('adopt: restored persisted'); return { src: (NATIVE && sess.fileUri) ? sess.fileUri : sess.url, std: false, sess: sess }; }
       dynLog('adopt: placeholder (restore miss)');
       return dynAdoptPlaceholder(t, mode);
+    }).catch(function (e) {
+      if (!(e && e.code === 'nosess')) return Promise.reject(e);
+      return dynAdoptBuild(t);
     });
+  }
+  // Round-11: a playlist unit with no session and no placeholder can still be BUILT in place —
+  // but only in the foreground (never from the lock screen; the chain walk skips it there).
+  function dynAdoptBuild(t) {
+    if (document.visibilityState !== 'visible') return Promise.reject({ code: 'nosess' });
+    var sents = dynChainSentences(t);
+    if (!sents) return Promise.reject({ code: 'nosess' });
+    dynLog('adopt: building ' + t.dynKey);
+    dynStatus('Constructing dynamic mp3 file', true);
+    var mode = currentMode;
+    return dynBuildSessionFor(sents, t.dynKey, dynKeyFor(sents), function (d, tot) {
+      var cEl = $('dyn-status-count'); if (cEl) cEl.textContent = d + '/' + tot;
+    }).then(function (sess) {
+      dynPersistSessionFor(sess, mode, t.dynKey);
+      dynStatus(null);
+      var entry = dynAdoptCache[t.page];
+      if (entry && entry.mode === mode) entry.sess = sess;   // future hops resolve synchronously
+      return { src: (NATIVE && sess.fileUri) ? sess.fileUri : sess.url, std: false, sess: sess };
+    }).catch(function (e) { dynStatus(null); return Promise.reject(e); });
   }
   // Now-playing strip, set directly — topics.js can't resolve test pages. The name is a LINK
   // to the playing topic's page (round-7 item 9); the strip's existing `a` styling (accent,
@@ -1866,6 +1999,9 @@
   function dynReturnLocal() {
     dynLog('return local');
     dynAdopted = null;
+    dynChainIdx = dynHomeIdx;       // the pointer comes home with us
+    dynTitle = dynChain && dynChain[dynHomeIdx] ? dynChain[dynHomeIdx].name : null;
+    dynAttached = false;
     dynStdRemote = false;
     dynLastPos = 0;
     mainPage = PAGE_FILE; mainPrefix = PREFIX; mainGated = GATED; mainTier = TIER;
@@ -1877,17 +2013,19 @@
     // Lenient (round-10 item 3): play the latest LOCAL persisted session even if its key is
     // stale — reconstruction only happens on a real foreground play press.
     ensureMainSrc(true).then(function () { if (!dynAdopted) return mainAudio.play(); })
-      .then(function () { dynLog('return-local play ok'); if (!dynAdopted) setMainIcon(true); })
+      .then(function () { dynLog('return-local play ok'); if (!dynAdopted) { setMainIcon(true); dynPrefetchNeighbours(); } })
       .catch(function (e) { dynLog('return-local FAIL ' + ((e && (e.name || e.code)) || e)); handleDenied(e, mainTier); });
   }
   // SYNCHRONOUS half of adoption — mirrors classic advanceTopic's sync identity swap.
   function dynApplyAdoptState(t) {
     if (dynSession && dynSession.url && dynSessionIsLocal) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
     dynLastPos = 0;                 // new track — resume guard must not drag the old position over
+    dynAttached = false;            // we're deliberately re-sourcing the player
     dynSession = null;              // the resolve step lands the target's session (if it has one)
     dynSessionIsLocal = false;
     dynStdRemote = true;
     dynAdopted = t;
+    dynTitle = t.name;              // lock screen must show the unit ACTUALLY playing (round-11 item 2)
     mainPage = t.page;
     mainPrefix = t.prefix;
     mainTier = (t.tier === 'member' || t.tier === 'premium') ? t.tier : null;
@@ -1897,11 +2035,11 @@
     if (dynLastLive != null) { var pc = document.getElementById('sc-' + dynLastLive); if (pc) pc.classList.remove('dyn-live'); dynLastLive = null; }
     dynStripPaint(t, true);
   }
-  function dynAdvance(t) {
-    // Round-7 item 10: structurally IDENTICAL shape to classic advanceTopic (which works from
-    // the iPhone lock screen): synchronous state swap + transport reset, then ONE promise hop
-    // that sets src → load → play. dynResolveAdopt resolves synchronously when the neighbour
-    // was pre-resolved at initDyn (placeholder URL and/or restored persisted session).
+  function dynAdvance(t, revertIdx) {
+    // Structurally IDENTICAL shape to classic advanceTopic (works from the iPhone lock
+    // screen): synchronous state swap + transport reset, then ONE promise hop that sets
+    // src → load → play. dynResolveAdopt resolves synchronously when pre-resolved; a
+    // sessionless playlist unit builds in place — foreground only. NEVER navigates.
     if (!mainAudio.paused) mainAudio.pause();
     setMainIcon(false);
     dynApplyAdoptState(t);
@@ -1918,14 +2056,20 @@
       mainAudio.load();
       mainSrcReady = true;
       return mainAudio.play();
-    }).then(function () { dynLog('play ok'); if (dynAdopted === t) setMainIcon(true); })
-      .catch(function (e) {
-        // A playlist neighbour with no persisted session has nothing adoptable — fall back to
-        // a real page navigation (nothing was playing there to kill).
-        if (e && e.code === 'nosess') { dynLog('adopt: no session, no placeholder → navigate'); location.href = t.page; return; }
-        dynLog('adopt FAIL ' + ((e && (e.name || e.code)) || '') + ' ' + ((e && e.message) || ''));
-        handleDenied(e, (t.tier === 'member' || t.tier === 'premium') ? t.tier : null);
-      });
+    }).then(function () {
+      dynLog('play ok');
+      if (dynAdopted === t) { setMainIcon(true); dynPrefetchNeighbours(); }   // ready the NEW neighbours
+    }).catch(function (e) {
+      dynLog('adopt FAIL ' + ((e && (e.name || e.code)) || '') + ' ' + ((e && e.message) || ''));
+      // Round-11: never location.href from transport/lock — put the pointer back where it was.
+      if (revertIdx != null && dynChain) {
+        dynChainIdx = revertIdx;
+        dynAdopted = (revertIdx === dynHomeIdx) ? null : dynChain[revertIdx];
+        dynTitle = dynChain[revertIdx] ? dynChain[revertIdx].name : dynTitle;
+        if (!dynAdopted) { var rnp = $('now-playing'); if (rnp) rnp.classList.remove('show'); }
+      }
+      if (!(e && e.code === 'nosess')) handleDenied(e, (t.tier === 'member' || t.tier === 'premium') ? t.tier : null);
+    });
   }
   /* -- batch add-to-playlist (select mode) --
      dyn-addpl-btn → playlist chooser modal → SELECT MODE: card taps toggle a tick instead of
@@ -2424,28 +2568,32 @@
       eq.innerHTML = '<i></i><i></i><i></i><i></i>';
       var snEl = hdr.querySelector('.sent-num');
       if (snEl) hdr.insertBefore(eq, snEl.nextSibling); else hdr.appendChild(eq);
-      var xb = document.createElement('button');
-      xb.className = 'dyn-card-btn dyn-x-btn';
-      function xPaint() {
-        var on = !!dynExcluded[s.num];
-        xb.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="' + (on ? 'M12 5v14M5 12h14' : 'M5 12h14') + '"/></svg>';
-        xb.setAttribute('aria-label', on ? 'Include in session' : 'Exclude from session');
-        xb.title = on ? 'Include in session' : 'Exclude from session';
-      }
-      xPaint();
-      xb.addEventListener('click', function (e) {
-        e.stopPropagation(); e.preventDefault();
-        dynExcluded[s.num] = !dynExcluded[s.num];
-        dynSaveExcluded();
-        var card = document.getElementById('sc-' + s.num);
-        if (card) card.classList.toggle('dyn-off', !!dynExcluded[s.num]);
+      // Round-11 item 4: no exclude − on playlist cards — playlist curation happens in the
+      // playlists menu (Remove sentences), not per-session exclusion.
+      if (!PLMODE) {
+        var xb = document.createElement('button');
+        xb.className = 'dyn-card-btn dyn-x-btn';
+        var xPaint = function () {
+          var on = !!dynExcluded[s.num];
+          xb.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="' + (on ? 'M12 5v14M5 12h14' : 'M5 12h14') + '"/></svg>';
+          xb.setAttribute('aria-label', on ? 'Include in session' : 'Exclude from session');
+          xb.title = on ? 'Include in session' : 'Exclude from session';
+        };
         xPaint();
-        dynInvalidate();
-      });
-      hdr.insertBefore(xb, flag ? flag.nextSibling : null);
-      if (dynExcluded[s.num]) {
-        var card0 = document.getElementById('sc-' + s.num);
-        if (card0) card0.classList.add('dyn-off');
+        xb.addEventListener('click', function (e) {
+          e.stopPropagation(); e.preventDefault();
+          dynExcluded[s.num] = !dynExcluded[s.num];
+          dynSaveExcluded();
+          var card = document.getElementById('sc-' + s.num);
+          if (card) card.classList.toggle('dyn-off', !!dynExcluded[s.num]);
+          xPaint();
+          dynInvalidate();
+        });
+        hdr.insertBefore(xb, flag ? flag.nextSibling : null);
+        if (dynExcluded[s.num]) {
+          var card0 = document.getElementById('sc-' + s.num);
+          if (card0) card0.classList.add('dyn-off');
+        }
       }
     });
     dynPrefetchNeighbours();        // iPhone: neighbours' placeholder URLs ready before any lock-screen skip
@@ -2672,7 +2820,7 @@
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     $('btn-te').classList.toggle('active', mode === 'te');
     $('btn-et').classList.toggle('active', mode === 'et');
-    if (DYN) { dynLastPos = 0; dynSyncEnToggle(); dynPrefetchNeighbours(); }   // dyn: new direction = new track; English checkbox is TE-only; re-resolve neighbour placeholders
+    if (DYN) { dynLastPos = 0; dynAttached = false; dynSyncEnToggle(); dynPrefetchNeighbours(); }   // dyn: new direction = new track; English checkbox is TE-only; re-resolve neighbour placeholders
     applyDirClass();                      // flip the accordion reveal order to match the new direction
     if (wasPlaying) ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(function (e) { handleDenied(e, mainTier); });
   }
@@ -2711,22 +2859,29 @@
   }
 
   function advanceTopic(dir) {
-    // Dyn pages: adopt the dynNav neighbour in place (persisted session or static placeholder).
-    // A SECOND hop from an adopted state navigates for real — the user has moved two steps.
-    if (DYN && cfg.dynNav) {
-      if (dynAdopted) {
-        // Hopping BACK to this page's own topic un-adopts IN PLACE — a page navigation
-        // from the lock screen kills playback on iOS (the round-8 death). Only a second
-        // hop onward (same direction again) still navigates.
-        var returning = (dir < 0 && dynAdopted === cfg.dynNav.next) || (dir > 0 && dynAdopted === cfg.dynNav.prev);
-        dynLog('advanceTopic dir=' + dir + (returning ? ' (adopted→return local)' : ' (adopted→navigate)'));
-        if (!returning) { location.href = dynAdopted.page; return; }
-        dynReturnLocal();
-        return;
+    // Dyn pages (round-11): walk the CHAIN in place — audio swaps, the page never navigates.
+    if (DYN) {
+      // Round-11: prev/next ALWAYS moves the chain pointer and swaps audio IN PLACE —
+      // never a navigation. When locked, units with nothing playable (no persisted
+      // session, no placeholder) are skipped, mirroring classic's nextPlayable walk;
+      // in the foreground anything can be built, so nothing is skipped.
+      if (!dynChain || dynChain.length < 2) { dynLog('advanceTopic: no chain'); return; }
+      var fg = document.visibilityState === 'visible';
+      var fromIdx = dynChainIdx;
+      var hop = null, probe = dynChainIdx, guardN = dynChain.length;
+      while (guardN-- > 0) {
+        var stp = dynChainStep(dir, probe);
+        if (!stp) break;                           // clamped end (topic test pages)
+        if (stp.idx === fromIdx) break;            // wrapped the whole chain — nothing playable
+        probe = stp.idx;
+        if (fg || dynChainPlayable(stp.t, stp.idx)) { hop = stp; break; }
+        dynLog('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (locked, nothing playable)');
       }
-      dynLog('advanceTopic dir=' + dir);
-      var dynT = dir > 0 ? cfg.dynNav.next : cfg.dynNav.prev;
-      if (dynT) dynAdvance(dynT);
+      dynLog('advanceTopic dir=' + dir + (hop ? ' → ' + (hop.t.dynKey || hop.t.prefix) : ' (nothing playable)'));
+      if (!hop) return;
+      dynChainIdx = hop.idx;
+      if (hop.idx === dynHomeIdx) { dynReturnLocal(); return; }
+      dynAdvance(hop.t, fromIdx);
       return;
     }
     var T = window.ThaiEarTopics;
