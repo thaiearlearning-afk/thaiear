@@ -1608,10 +1608,6 @@
     scrub.addEventListener('pointercancel', end);
   }
   function initMiniPlayer() {
-    // r22: not on dyn pages. The dyn player already carries its own transport, sentence-skip
-    // and status, so a second floating copy sliding in on scroll is noise on top of noise —
-    // owner: "not needed and actively bad".
-    if (DYN) return;
     if (!$('player-root') || $('te-mini')) return;   // topic pages only; once
     var bar = document.createElement('div');
     bar.className = 'te-mini';
@@ -1648,7 +1644,13 @@
     // it as the player tucks under the sticky nav (~54px), not only once it's fully off-screen.
     if ('IntersectionObserver' in window) {
       var io = new IntersectionObserver(function (entries) {
-        mainInView = entries[entries.length - 1].isIntersecting;
+        var e = entries[entries.length - 1];
+        // r22a: the mini is for when the player has scrolled AWAY ABOVE — so you can resume
+        // without scrolling back past thirty sentences. isIntersecting alone is direction-
+        // blind: it is equally false when the player sits BELOW the viewport, i.e. when you
+        // are near the top of the page and the real player is about to come into view. That
+        // made it appear exactly where it is useless. A positive top means "still below us".
+        mainInView = e.isIntersecting || e.boundingClientRect.top > 0;
         updateMiniVisibility();
       }, { rootMargin: '-56px 0px 0px 0px', threshold: 0 });
       // Round-10 addendum D (dyn): #player-root grows a tail (status/slider/controls rows), so
@@ -1709,7 +1711,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r22';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r22a';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
