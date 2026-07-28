@@ -61,17 +61,25 @@
   .tier-free { background:var(--accent-light); color:var(--accent); }
   .tier-member { background:#EFEAFB; color:#6B4FBB; }
 
-  /* circle = select for download · tick = downloaded, tap to select for removal */
-  .dl-select { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--accent);
-    background:var(--accent-light); display:inline-flex; align-items:center; justify-content:center;
-    cursor:pointer; flex-shrink:0; }
-  .dl-select.selected { background:var(--accent); }
-  .dl-dot { width:9px; height:9px; border-radius:50%; background:var(--accent); }
-  .dl-select.selected .dl-dot { background:#fff; }
-  .dl-badge { width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
-    display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
-    border:2px solid transparent; }
-  .dl-badge.clear-selected { border-color:#B00020; background:#B00020; }
+  /* Selection controls — lifted VERBATIM from index.html so the test space looks like the
+     real thing. The outer span is a big finger-friendly tap target; the inner dot/tick is the
+     smaller visible mark. A solid dot that FILLS when selected, not a ring around a dot —
+     the earlier approximation here read as a bullseye. */
+  .dl-select, .dl-badge { position:relative; display:inline-flex; align-items:center; justify-content:center;
+    width:30px; height:30px; margin-left:4px; vertical-align:middle; cursor:pointer;
+    flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+  .dl-select::before, .dl-badge::before { content:''; position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%); width:52px; height:52px; border-radius:50%; }
+  .dl-dot { width:23px; height:23px; border-radius:50%; background:var(--accent-light);
+    border:1.5px solid var(--accent-light); transition:background .15s, border-color .15s, transform .1s; }
+  .dl-select:hover .dl-dot { border-color:var(--accent); }
+  .dl-select.selected .dl-dot { background:var(--accent); border-color:var(--accent); }
+  .dl-select:active .dl-dot { transform:scale(0.92); }
+  .dl-tick { display:inline-flex; align-items:center; justify-content:center; width:27px; height:27px;
+    border-radius:50%; color:var(--accent); border:2px solid transparent; transition:border-color .15s, background .15s; }
+  .dl-badge.clear-selected .dl-tick { border-color:#9d92e0; background:var(--accent-light); }
+  .mode-download .dl-badge { opacity:.4; }
+  .mode-clear .dl-select { opacity:.4; }
   .links { margin-top:1.5rem; font-size:13.5px; }
   .links a { display:block; color:var(--accent); text-decoration:none; padding:5px 0; }
   #prebuild-frame { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; border:0; left:-9999px; }
@@ -79,7 +87,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Owner test build · dyn index r18b</div>
+  <div class="eyebrow">Owner test build · dyn index r18c</div>
   <h1>Dynamic player test index</h1>
   <p class="lede">The test space's own front page, so downloads can be exercised the way the real
   index works. A dynamic download stores each sentence's <strong>clips</strong>, not a finished file —
@@ -144,7 +152,7 @@
       el.className = 'unit';
       var sel = dl
         ? '<span class="dl-badge' + (clearSel[u.prefix] ? ' clear-selected' : '') + '" data-p="' + u.prefix + '" data-mode="clear" role="button" title="Downloaded · tap to select for removal">' +
-            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
+            '<span class="dl-tick"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>'
         : '<span class="dl-select' + (dlSel[u.prefix] ? ' selected' : '') + '" data-p="' + u.prefix + '" data-mode="dl" role="button" aria-label="Select for offline download"><span class="dl-dot"></span></span>';
       el.innerHTML =
         '<div class="unit-main">' +
@@ -161,6 +169,8 @@
       c.textContent = nc ? ('Clear Download(s) (' + nc + ')') : 'Clear Download(s)';
     }
     document.getElementById('dl-hint').style.display = (nd || nc || busy) ? 'none' : '';
+    root.classList.toggle('mode-download', nd > 0);
+    root.classList.toggle('mode-clear', nc > 0);
   }
 
   document.addEventListener('click', function (e) {
@@ -282,7 +292,7 @@
           setManifest(m);
           if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(u.page).catch(function () {}); }).catch(function () {});
           render();
-          status('Constructing both directions for ' + u.name + '…');
+          status('Constructing dynamic mp3 for ' + u.name + '…');
           return prebuild(u);
         });
       }).then(function () { i++; next(); })
