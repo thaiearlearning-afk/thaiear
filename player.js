@@ -644,11 +644,169 @@
     }).catch(function () {});
   }
 
+
+  /* ══ r21: the offline bar on DYN pages ═══════════════════════════════════════════════
+     Topic pages and the playlist player get the SAME download control the live site has —
+     the same button, the same "✓ Available offline", the same Delete → "Delete this
+     download?" → Delete/Keep confirm, the same states. Only what it downloads differs: a dyn
+     unit needs its per-sentence _TH + _EN clips, not the prefab TE/ET pair.
+     Written per-SENTENCE-prefix so it serves a playlist (whose clips span several topics)
+     and a topic page (whose sentences carry no prefix and fall back to this page's) with one
+     implementation. EXCLUDED sentences are downloaded too — exclusion is a playback choice,
+     and re-including one later must not need a connection. */
+  function dynDlRef() { return PLMODE ? DYN_KEY_NS : 'topic'; }
+  function dynDlGroups() {
+    var by = {};
+    sentences.forEach(function (s) {
+      var th = dynClipRef(s, 'TH'), en = dynClipRef(s, 'EN');
+      by[th.prefix] = by[th.prefix] || { tier: th.tier, files: [] };
+      by[th.prefix].files.push(th.file, en.file);
+    });
+    return by;
+  }
+  // Reality, not a flag: is every clip this unit needs actually in the store? Self-healing,
+  // and it catches an interrupted download or a partial eviction.
+  function dynDlHasAll() {
+    var by = dynDlGroups(), m = getManifest(), pfx, i;
+    for (pfx in by) {
+      var have = (m[pfx] && m[pfx].files) || [];
+      var seen = {};
+      have.forEach(function (f) { seen[f] = true; });
+      for (i = 0; i < by[pfx].files.length; i++) if (!seen[by[pfx].files[i]]) return false;
+    }
+    return true;
+  }
+  function dynDlFile(cache, pfx, tier, file) {
+    var gated = (tier === 'member' || tier === 'premium');
+    function attempt(tryNo) {
+      return buildUrl(file, gated).then(function (url) {
+        if (WEB_DL) {
+          var ctrl = new AbortController();
+          var timer = setTimeout(function () { ctrl.abort(); }, DL_RACE_TIMEOUT_MS);
+          return fetch(url, { mode: 'cors', cache: 'no-store', signal: ctrl.signal }).then(function (res) {
+            clearTimeout(timer);
+            if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
+            if (res.type === 'opaque') throw new Error('CORS not enabled (opaque) for ' + file);
+            return cache.put(webCacheKey(pfx, file), res);
+          }, function (e) { clearTimeout(timer); throw e; });
+        }
+        var dl = Filesystem.downloadFile({ url: url, path: offlineDir(pfx) + '/' + file, directory: 'DATA',
+          recursive: true, connectTimeout: DL_CONNECT_TIMEOUT_MS, readTimeout: DL_READ_TIMEOUT_MS });
+        var backstop = new Promise(function (_, rej) {
+          setTimeout(function () { rej(new Error('download timed out: ' + file)); }, DL_RACE_TIMEOUT_MS);
+        });
+        return Promise.race([dl, backstop]);
+      }).catch(function (err) {
+        if (tryNo >= DL_MAX_TRIES) throw err;
+        return new Promise(function (r) { setTimeout(r, 600 * tryNo); }).then(function () { return attempt(tryNo + 1); });
+      });
+    }
+    return attempt(1);
+  }
+  function dynDownloadHere() {
+    var by = dynDlGroups(), prefixes = Object.keys(by), total = 0, done = 0;
+    prefixes.forEach(function (k) { total += by[k].files.length; });
+    if (!total) return;
+    function step() { done++; setOfflineState('downloading', done, total); }
+    downloadingNow = true;
+    setOfflineState('downloading', 0, total);
+    if (WEB_DL) { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {} }
+    var chain = WEB_DL ? caches.open(AUDIO_DL_CACHE) : Promise.resolve(null);
+    chain = chain.then(function (cache) {
+      var c = Promise.resolve();
+      prefixes.forEach(function (pfx) {
+        c = c.then(function () {
+          return OFFLINE ? Filesystem.mkdir({ directory: 'DATA', path: offlineDir(pfx), recursive: true })
+            .catch(function () {}) : null;      // downloadFile does NOT create parents on Android
+        }).then(function () {
+          return dynPool(by[pfx].files, function (f) { return dynDlFile(cache, pfx, by[pfx].tier, f).then(step); });
+        });
+      });
+      return c;
+    });
+    chain.then(function () {
+      // Merge into whatever is already recorded — a playlist and a topic can legitimately both
+      // claim the same prefix, and neither may erase the other's files or ref.
+      var m = getManifest(), ref = dynDlRef();
+      prefixes.forEach(function (pfx) {
+        var e = m[pfx] || { tier: by[pfx].tier, files: [], ver: '', av: null };
+        var seen = {};
+        (e.files || []).concat(by[pfx].files).forEach(function (f) { seen[f] = true; });
+        e.files = Object.keys(seen);
+        e.refs = (e.refs || []).filter(function (r) { return r !== ref; });
+        e.refs.push(ref);
+        e.tier = by[pfx].tier; e.at = Date.now(); e.dyn = true;
+        m[pfx] = e;
+      });
+      setManifest(m);
+      if (PLMODE) {   // so the playlists page's own Clear knows which prefixes to release
+        try {
+          var pm = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}');
+          pm[String(DYN_KEY_NS).replace(/^pl-/, '')] = { prefixes: prefixes, at: Date.now() };
+          localStorage.setItem('thaiear_offline_pl', JSON.stringify(pm));
+        } catch (_) {}
+      }
+      stampVerified();
+      cachePage();
+      downloadingNow = false;
+      setOfflineState('downloaded');
+    }).catch(function (err) {
+      downloadingNow = false;
+      console.warn('player.js: dyn download failed', err);
+      setOfflineState('error', (err && (err.message || err.errorMessage)) || String(err));
+    });
+  }
+  function dynDeleteHere() {
+    var by = dynDlGroups(), m = getManifest(), ref = dynDlRef();
+    var chain = Promise.resolve();
+    Object.keys(by).forEach(function (pfx) {
+      var e = m[pfx]; if (!e) return;
+      // Release only OUR claim. If a downloaded playlist (or the topic) still needs these
+      // clips they stay put; over-retaining is invisible, under-deleting breaks playback.
+      e.refs = (e.refs || ['topic']).filter(function (r) { return r !== ref; });
+      if (e.refs.length) { m[pfx] = e; return; }
+      var files = e.files || [];
+      delete m[pfx];
+      chain = chain.then(function () {
+        if (OFFLINE) return Filesystem.rmdir({ directory: 'DATA', path: offlineDir(pfx), recursive: true }).catch(function () {});
+        if (!CACHES) return null;
+        return caches.open(AUDIO_DL_CACHE).then(function (c) {
+          return Promise.all(files.map(function (f) { return c.delete(webCacheKey(pfx, f)).catch(function () {}); }));
+        }).catch(function () {});
+      });
+    });
+    setManifest(m);
+    // The constructed sessions go too — "Delete" has to actually free the space.
+    ['te', 'et'].forEach(function (mode) {
+      var meta = dynReadMeta(DYN_KEY_NS, mode);
+      try { localStorage.removeItem(dynMetaLsKey(DYN_KEY_NS, mode)); } catch (_) {}
+      if (!meta) return;
+      if (NATIVE && meta.file) {
+        var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+        if (FS) FS.deleteFile({ path: meta.file, directory: 'DATA' }).catch(function () {});
+      } else if (window.caches) {
+        caches.open(AUDIO_DL_CACHE).then(function (c) {
+          c.delete(dynCachePath(DYN_KEY_NS, mode, meta.ext)).catch(function () {});
+        }).catch(function () {});
+      }
+    });
+    if (PLMODE) {
+      try {
+        var pm = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}');
+        delete pm[String(DYN_KEY_NS).replace(/^pl-/, '')];
+        localStorage.setItem('thaiear_offline_pl', JSON.stringify(pm));
+      } catch (_) {}
+    }
+    dynSession = null; mainSrcReady = false;
+    return chain.then(function () { setOfflineState('idle'); });
+  }
+
   function downloadTopic() {
     if (!OFFLINE && !WEB_DL) return;
     // Gated topic + not entitled → same preview-only gate as play/reveal/flag (premium → "preview
     // only" toast in-app; member → sign-in), instead of attempting the download and erroring on /api/audio.
     if (!entitledForPage()) { gate(TIER); return; }
+    if (DYN) { dynDownloadHere(); return; }   // clips, not the prefab pair
     var files = topicFiles();
     var done = 0;
     downloadingNow = true;
@@ -701,6 +859,7 @@
   }
   function deleteTopic() {
     if (!OFFLINE && !WEB_DL) return;
+    if (DYN) { dynDeleteHere(); return; }
     if (WEB_DL) { webDeleteTopic().then(function () { removeDownloaded(PREFIX); setOfflineState('idle'); }); return; }
     Filesystem.rmdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
       .catch(function () {})
@@ -736,10 +895,18 @@
     }
   }
   function renderOfflineBar() {
-    if (DYN) return;   // dyn test pages: a static-file offline download would only confuse the test
     var bar = $('offline-bar'); if (!bar) return;
     if (!OFFLINE && !WEB_DL) { bar.style.display = 'none'; return; }  // plain website (no app, flag off): never shown
     bar.style.display = 'flex';
+    if (DYN) {
+      // No stale/refresh states here: a dyn session is keyed on its own content and settings,
+      // so changed text or a changed setting rebuilds by itself. Downloaded means "the clips
+      // are all here", which is the only claim worth making.
+      if (!dynDlHasAll()) { setOfflineState('idle'); return; }
+      cachePage();
+      setOfflineState('downloaded');
+      return;
+    }
     var ent = getManifest()[PREFIX];
     if (!ent) { setOfflineState('idle'); return; }
     cachePage();                       // self-heal: re-persist the page whenever we open a downloaded topic online
@@ -1474,7 +1641,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r20b';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r21';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3486,14 +3653,6 @@
      Both directions are pre-built at download time (~2 s, ~1.4 MB) so a downloaded unit is
      playable from the LOCK SCREEN immediately — building is foreground-only, so without
      this a locked chain hop would skip straight past it. */
-  function dynUnitFiles() {
-    var files = [];
-    sentences.forEach(function (s) {
-      files.push(dynClipRef(s, 'TH').file);
-      files.push(dynClipRef(s, 'EN').file);
-    });
-    return files;
-  }
   // Pre-render both directions, reusing the clips just downloaded. Failures are non-fatal:
   // the download is the clips, and a missing session rebuilds on first play.
   function dynPrebuildBoth(onStep) {
@@ -3512,54 +3671,6 @@
     });
     return chain.then(function () { currentMode = was; }, function () { currentMode = was; });
   }
-  /* Download this dyn unit. onProg(done,total,phase) drives whatever UI called us.
-     NEVER deletes anything on failure — a half-finished download simply isn't marked, so an
-     existing older copy stays intact and playable. */
-  function dynDownloadUnit(onProg) {
-    var files = dynUnitFiles();
-    if (!files.length) return Promise.reject({ code: 'empty' });
-    var done = 0, total = files.length;
-    function step() { done++; if (onProg) onProg(done, total, 'clips'); }
-    var chain;
-    if (OFFLINE) {
-      chain = Filesystem.mkdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
-        .catch(function () {})
-        .then(function () {
-          var c = Promise.resolve();
-          files.forEach(function (f) { c = c.then(function () { return downloadFileWithRetry(f).then(step); }); });
-          return c;
-        });
-    } else if (WEB_DL) {
-      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {}
-      chain = caches.open(AUDIO_DL_CACHE).then(function (cache) {
-        var c = Promise.resolve();
-        files.forEach(function (f) { c = c.then(function () { return webDownloadFileWithRetry(cache, f).then(step); }); });
-        return c;
-      });
-    } else {
-      return Promise.reject({ code: 'unsupported' });
-    }
-    return chain.then(function () {
-      // Mark downloaded BEFORE pre-building: the clips are the download, and the sessions are
-      // a convenience. If the pre-build is interrupted the unit is still fully usable offline.
-      markDownloaded(PREFIX, TIER, files, '', null);
-      var m = getManifest();
-      if (m[PREFIX]) { m[PREFIX].dyn = true; setManifest(m); }
-      cachePage();
-      if (onProg) onProg(total, total, 'building');
-      return dynPrebuildBoth(function (i, n, mode) { if (onProg) onProg(total, total, 'building:' + mode); });
-    }).then(function () {
-      if (onProg) onProg(total, total, 'done');
-      return true;
-    });
-  }
-  // Expose for the pages that own download UI (mini index, playlists) — they drive it, the
-  // player owns the logic, so there is one implementation rather than three.
-  window.ThaiEarDynDL = {
-    download: function (onProg) { return dynDownloadUnit(onProg); },
-    files: function () { return dynUnitFiles(); },
-    isDownloaded: function () { return isDownloaded(PREFIX); }
-  };
   // The circular-① sentence-skip glyphs (shared by the audio-row buttons and the dyn mini player).
   var DYN_DIGIT1 = '<path d="M12.36 15.94v-4.27h-.09l-1.77.63v.69l1.01-.31v3.26h.85z"/>';
   var DYN_SVG_PREV = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>' + DYN_DIGIT1 + '</svg>';
