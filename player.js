@@ -1774,7 +1774,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r27';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r27a';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3041,8 +3041,8 @@
     engpos: 'This decides where the English sentence is spoken. In the last position, the English ' +
       'is heard after all the Thai repeats of a sentence. But English can also be positioned ' +
       'between Thai sentences, which can help with comprehension when first getting to know a ' +
-      'topic. To hear English spoken before the Thai, switch to the English first mode at the top ' +
-      'of the dynamic mp3 player.'
+      'topic. To hear English spoken first, before any Thai, switch to the English first mode at ' +
+      'the top of the dynamic mp3 player.'
   };
   var dynInfoOpen = null;
   function dynInfoClose() {
