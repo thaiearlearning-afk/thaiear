@@ -221,7 +221,7 @@
     });
   }
   // Flush queued writes whenever the connection returns.
-  window.addEventListener('online', function () { flushProgress(); flushFlags(); });
+  window.addEventListener('online', function () { flushProgress(); flushFlags(); dpFlush(); });
 
   // ---- listening progress (own `progress` row, RLS) ----------------------
   // One jsonb row per user: { goal, topics:{ topicKey:count } }. Read on demand
@@ -676,6 +676,35 @@
   var dpCache = null;   // { scope: dataObj }
   function dpStore() { try { localStorage.setItem('thaiear_dyn_prefs', JSON.stringify(dpCache)); } catch (_) {} }
   function dpLocal() { try { return JSON.parse(localStorage.getItem('thaiear_dyn_prefs') || 'null'); } catch (_) { return null; } }
+  /* A settings change made OFFLINE used to be written locally, attempted, and the failure
+     swallowed — so it never reached the server and no other device ever saw it. Nothing
+     re-sent it either. Scopes whose upsert failed are now remembered and flushed when the
+     connection (or auth) comes back.
+     Only ever marked while a user IS signed in: pushing a signed-out device's local settings
+     into whatever account signs in next would overwrite that account's real settings. */
+  function dpPending() { try { return JSON.parse(localStorage.getItem('thaiear_dyn_prefs_dirty') || '{}'); } catch (_) { return {}; } }
+  function dpSetPending(m) { try { localStorage.setItem('thaiear_dyn_prefs_dirty', JSON.stringify(m)); } catch (_) {} }
+  function dpMarkDirty(scope) { var m = dpPending(); m[scope] = 1; dpSetPending(m); }
+  function dpClearDirty(scope) { var m = dpPending(); delete m[scope]; dpSetPending(m); }
+  function dpFlush() {
+    if (!client || !currentUser) return Promise.resolve();
+    var m = dpPending(), scopes = Object.keys(m);
+    if (!scopes.length) return Promise.resolve();
+    var cache = dpCache || dpLocal() || {};
+    var chain = Promise.resolve();
+    scopes.forEach(function (scope) {
+      var data = cache[scope];
+      if (data === undefined) { dpClearDirty(scope); return; }   // nothing local to send
+      chain = chain.then(function () {
+        return client.from('dyn_prefs')
+          .upsert({ user_id: currentUser.id, scope: scope, data: data, updated_at: new Date().toISOString() },
+            { onConflict: 'user_id,scope' })
+          .then(function (r) { if (r.error) throw r.error; dpClearDirty(scope); })
+          .catch(function () {});                                 // still offline — keep it pending
+      });
+    });
+    return chain;
+  }
   window.ThaiEarAuth.dynPrefs = {
     // Resolves { scope: data } for every row the user has.
     load: function (force) {
@@ -700,13 +729,15 @@
       dpCache = dpCache || dpLocal() || {};
       dpCache[scope] = data;
       dpStore();
-      if (!client || !currentUser) return Promise.resolve();
+      if (!client || !currentUser) return Promise.resolve();      // signed out → local only, as before
       return client.from('dyn_prefs')
         .upsert({ user_id: currentUser.id, scope: scope, data: data, updated_at: new Date().toISOString() },
           { onConflict: 'user_id,scope' })
-        .then(function (r) { if (r.error) throw r.error; })
-        .catch(function () {});
-    }
+        .then(function (r) { if (r.error) throw r.error; dpClearDirty(scope); })
+        .catch(function () { dpMarkDirty(scope); });               // retried on reconnect
+    },
+    // Retry anything that failed while offline. Safe to call at any time.
+    flush: function () { return dpFlush(); }
   };
 
   import(SUPABASE_ESM)
@@ -732,6 +763,7 @@
       notify();
       refreshSubscription(); // async; fires another notify when it resolves
       refreshProfile();      // marketing-consent flag
+      dpFlush();             // push any dyn settings changed while offline
       // keep in sync on login / logout / token refresh
       client.auth.onAuthStateChange(function (_event, session) {
         var user = userFromSession(session);
@@ -748,6 +780,7 @@
         notify();
         refreshSubscription();
         refreshProfile();
+        dpFlush();
       });
       // In the native app, complete Google sign-in when the OAuth deep link returns.
       if (isNative()) {

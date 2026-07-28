@@ -828,6 +828,7 @@
     return attempt(1);
   }
   function dynDownloadHere() {
+    if (!navigator.onLine) { setOfflineState('offline'); return; }   // don't grind through retries
     var by = dynDlGroups(), prefixes = Object.keys(by), total = 0, done = 0;
     prefixes.forEach(function (k) { total += by[k].files.length; });
     if (!total) return;
@@ -880,7 +881,15 @@
     }).catch(function (err) {
       downloadingNow = false;
       console.warn('player.js: dyn download failed', err);
-      setOfflineState('error', (err && (err.message || err.errorMessage)) || String(err));
+      // navigator.onLine lies in the WebView (often "online" in airplane mode), so treat a
+      // network-shaped failure as offline too — "Download failed: load failed" is not an
+      // explanation, and this matches the wording the real index already uses.
+      var msg = (err && (err.message || err.errorMessage)) || String(err);
+      if (!navigator.onLine || /failed to fetch|load failed|network|timed out|networkerror/i.test(msg)) {
+        setOfflineState('offline');
+      } else {
+        setOfflineState('error', msg);
+      }
     });
   }
   function dynDeleteHere() {
@@ -997,6 +1006,9 @@
         bar.innerHTML = '<span class="offline-status">⚠ This download may be out of date — reconnect to update</span>' +
           '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
       }
+    } else if (state === 'offline') {
+      bar.innerHTML = '<span class="offline-status">You’re offline — reconnect to download</span>' +
+        '<button class="offline-btn" onclick="downloadTopic()">Retry</button>';
     } else if (state === 'error') {
       var msg = done ? (': ' + escapeHtml(String(done).slice(0, 160))) : '.';
       bar.innerHTML = '<span class="offline-status">Download failed' + msg + '</span>' +
@@ -1762,7 +1774,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r24a';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r25';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
