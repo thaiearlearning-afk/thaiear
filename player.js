@@ -117,7 +117,18 @@
           else prep.mode = 'std';
         }
         return NA.prepare(prep)
-          .then(function () { st.preparedSrc = st.src; st.paused = false; return NA.play(); });
+          .then(function () { st.preparedSrc = st.src; st.paused = false; return NA.play(); })
+          .catch(function (e) {
+            // r17: the WebView's decoders and Media3's are different codebases, and only the
+            // WebView's can be verified silently at encode time. If Media3 refuses an encoded
+            // session, demote this device to WAV and let the next play rebuild — rather than
+            // leaving it permanently unable to play.
+            if (DYN && dynSession && dynSession.ext && dynSession.ext !== 'wav' && dynDemoteFormat('native prepare failed')) {
+              dynStatus('Rebuilding this session for your device — press play again.', false);
+              return Promise.reject({ code: 'refmt' });
+            }
+            return Promise.reject(e);
+          });
       },
       pause: function () { st.paused = true; return NA ? NA.pause() : Promise.resolve(); },
       // Attach this (fresh-page) shim to a track already playing in the native engine, WITHOUT
@@ -1446,7 +1457,7 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r16b';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r17';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -1649,7 +1660,10 @@
      per-topic WAV in the app CACHE dir on native; {key,map,duration} metadata in localStorage.
      Stale entries are never deleted eagerly — a key mismatch just misses and rebuilds. */
   function dynMetaLsKey(dk, mode) { return 'te_dyn_meta_' + dk + '_' + mode; }
-  function dynCachePath(dk, mode) { return '/dyn/' + dk + '/' + mode + '.wav'; }
+  // r17: the extension travels with the session (sessions are no longer always WAV). Metas
+  // written before r17 carry no ext and legitimately point at a .wav — hence the default,
+  // which is what keeps every session already on a device playable after the upgrade.
+  function dynCachePath(dk, mode, ext) { return '/dyn/' + dk + '/' + mode + '.' + (ext || 'wav'); }
   // Native WAV filenames are UNIQUE PER BUILD (persisted counter): the native shim resumes
   // instead of re-preparing when src is unchanged, so rebuilding under the SAME file:// path
   // made the app keep playing the OLD audio after an exclusion. The meta records the actual
@@ -1659,7 +1673,7 @@
     try { n = (parseInt(localStorage.getItem('te_dyn_seq'), 10) || 0) + 1; localStorage.setItem('te_dyn_seq', String(n)); } catch (_) {}
     return n;
   }
-  function dynNativeFile(dk, mode, seq) { return 'dyn-' + dk + '-' + mode + (seq ? '-' + seq : '') + '.wav'; }
+  function dynNativeFile(dk, mode, seq, ext) { return 'dyn-' + dk + '-' + mode + (seq ? '-' + seq : '') + '.' + (ext || 'wav'); }
   function dynReadMeta(dk, mode) {
     try {
       var m = JSON.parse(localStorage.getItem(dynMetaLsKey(dk, mode)) || 'null');
@@ -1672,7 +1686,8 @@
     var oldMeta = dynReadMeta(keyNs, mode);   // read BEFORE overwriting: we sweep its file below
     try {
       localStorage.setItem(dynMetaLsKey(keyNs, mode),
-        JSON.stringify({ key: sess.key, map: sess.map, duration: sess.duration, file: sess.file || null }));
+        JSON.stringify({ key: sess.key, map: sess.map, duration: sess.duration, file: sess.file || null,
+          ext: sess.ext || 'wav', mime: sess.mime || 'audio/wav', bytes: (sess.blob && sess.blob.size) || 0, at: Date.now() }));
     } catch (_) {}
     if (NATIVE) {
       // The WAV was already written (unique per-build name) during the build; delete the
@@ -1681,13 +1696,73 @@
       if (FS && oldMeta && oldMeta.file && oldMeta.file !== sess.file) {
         try { FS.deleteFile({ path: oldMeta.file, directory: 'DATA' }).catch(function () {}); } catch (_) {}
       }
+      dynSweepSessions(keyNs, mode);
       return;
     }
     if (window.caches) {
       caches.open(AUDIO_DL_CACHE).then(function (c) {
-        return c.put(dynCachePath(keyNs, mode),
-          new Response(sess.blob, { headers: { 'Content-Type': 'audio/wav' } }));
-      }).catch(function () {});
+        // A format change leaves the old extension's entry orphaned — drop it, or the cache
+        // keeps a 20 MB WAV alongside its 1 MB replacement forever.
+        if (oldMeta && (oldMeta.ext || 'wav') !== (sess.ext || 'wav')) {
+          c.delete(dynCachePath(keyNs, mode, oldMeta.ext)).catch(function () {});
+        }
+        return c.put(dynCachePath(keyNs, mode, sess.ext),
+          new Response(sess.blob, { headers: { 'Content-Type': sess.mime || 'audio/wav' } }));
+      }).then(function () { dynSweepSessions(keyNs, mode); }).catch(function () {});
+    }
+  }
+  /* r17: bounded session storage. Until now every session a device ever built was kept
+     forever — one per {unit, mode}, superseded builds swept but nothing else — so playing
+     through the catalogue accumulated ~20 MB a time with no ceiling. Encoded sessions make
+     that a non-problem in practice (~1 MB each), but "in practice" is not a guarantee, so
+     this is the backstop. It sweeps oldest-first and evicts pre-r17 WAVs BEFORE anything
+     else: they are ~20× the size of their replacement, so the space reclaims itself as the
+     app is used, with nothing lost that can't be rebuilt in a couple of seconds. */
+  var DYN_CACHE_CAP = 400 * 1024 * 1024;
+  function dynEvictSession(it) {
+    try { localStorage.removeItem(it.lsKey); } catch (_) {}
+    if (NATIVE) {
+      var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+      if (FS && it.file) { try { FS.deleteFile({ path: it.file, directory: 'DATA' }).catch(function () {}); } catch (_) {} }
+      return;
+    }
+    if (window.caches) {
+      caches.open(AUDIO_DL_CACHE)
+        .then(function (c) { return c.delete(dynCachePath(it.ns, it.mode, it.ext)); })
+        .catch(function () {});
+    }
+  }
+  function dynSweepSessions(keepNs, keepMode) {
+    var items = [], i, total = 0;
+    try {
+      for (i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf('te_dyn_meta_') !== 0) continue;
+        var m = null;
+        try { m = JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) {}
+        if (!m) continue;
+        var rest = k.slice(12), us = rest.lastIndexOf('_');
+        if (us < 0) continue;
+        var ext = m.ext || 'wav';
+        // Pre-r17 metas carry no size — a WAV's is exactly duration × 48 KB/s.
+        var bytes = m.bytes || Math.round((m.duration || 0) * DYN_SR * 2);
+        items.push({ lsKey: k, ns: rest.slice(0, us), mode: rest.slice(us + 1),
+          bytes: bytes, at: m.at || 0, ext: ext, file: m.file || null });
+        total += bytes;
+      }
+    } catch (_) { return; }
+    if (total <= DYN_CACHE_CAP) return;
+    items.sort(function (a, b) {
+      var aw = (a.ext === 'wav') ? 0 : 1, bw = (b.ext === 'wav') ? 0 : 1;
+      return (aw - bw) || (a.at - b.at);        // legacy WAVs first, then oldest
+    });
+    for (i = 0; i < items.length && total > DYN_CACHE_CAP; i++) {
+      var it = items[i];
+      if (it.ns === keepNs && it.mode === keepMode) continue;          // never the one just written
+      if (it.ns === DYN_KEY_NS && it.mode === currentMode) continue;   // nor the one in play
+      dynEvictSession(it);
+      total -= it.bytes;
+      dynLog('sweep: evicted ' + it.ns + '/' + it.mode + ' (' + Math.round(it.bytes / 1048576) + ' MB)');
     }
   }
   // Rehydrate a persisted session's audio (meta comes from dynReadMeta). Resolves null on any
@@ -1704,16 +1779,18 @@
         .then(function () { return FS.getUri({ path: path, directory: 'DATA' }); })
         .then(function (r) {
           if (!r || !r.uri) return null;
-          return { url: null, fileUri: r.uri, blob: null, map: meta.map, key: meta.key, duration: meta.duration };
+          return { url: null, fileUri: r.uri, blob: null, map: meta.map, key: meta.key,
+            duration: meta.duration, file: meta.file, ext: meta.ext || 'wav', mime: meta.mime || 'audio/wav' };
         }).catch(function () { return null; });
     }
     if (!window.caches) return Promise.resolve(null);
     return caches.open(AUDIO_DL_CACHE)
-      .then(function (c) { return c.match(dynCachePath(dk, mode)); })
+      .then(function (c) { return c.match(dynCachePath(dk, mode, meta.ext)); })
       .then(function (res) { return res ? res.blob() : null; })
       .then(function (blob) {
         if (!blob) return null;
-        return { url: URL.createObjectURL(blob), blob: blob, map: meta.map, key: meta.key, duration: meta.duration };
+        return { url: URL.createObjectURL(blob), blob: blob, map: meta.map, key: meta.key,
+          duration: meta.duration, ext: meta.ext || 'wav', mime: meta.mime || 'audio/wav' };
       }).catch(function () { return null; });
   }
 
@@ -1790,6 +1867,282 @@
       });
     }).then(function (buf) { dynClipCache[file] = buf; return buf; });
   }
+  /* ══ r17: SESSION ENCODING ═══════════════════════════════════════════════════════════
+     A stitched session used to be stored as raw PCM: 48 KB/s, so 7:12 of audio came to
+     19.79 MB — 19× the mp3 of the same audio, and more than half of it silence. Encoding it
+     takes that to ~1 MB. Measured on real devices (see DYNAMIC_PLAYER_PLAN.md § SESSION
+     ENCODING and `live/dyn-probe.html`, from which these muxers are lifted verbatim after
+     being validated against ffmpeg output):
+
+       Chromium / Android   Opus in Ogg   0.69 MB  −96.5%   exact duration   Media3 ✓
+       WebKit / iOS         AAC in MP4    1.05 MB  −94.7%   exact duration
+
+     NO single format works on both, and the traps are not guessable:
+       · Chromium CANNOT ENCODE AAC in any configuration (it decodes it happily — encoder
+         support is a different question, and `isConfigSupported` is the only honest answer).
+       · WebKit rejects aac:{format:'adts'}, and raw ADTS reports its duration 37 s SHORT
+         (the audio is intact — a raw stream simply carries no index).
+       · WebKit CAN encode Opus and it is smaller — but its reported duration comes out
+         +10.1 s, which would wreck snap scrubbing and ① skip. So "prefer the smallest" is
+         the wrong rule, and decodeAudioData alone would have PASSED it: the round-trip was
+         exact. Only the <audio> element's REPORTED duration catches it, which is why that
+         is what dynVerifyFormat checks.
+       · WebKit's decoderConfig.description is a 39-byte full ES_Descriptor (Apple's 3-byte
+         extended lengths), not the 2–5 byte AudioSpecificConfig Chromium returns. Wrapping
+         it in another descriptor yields an undecodable MP4 — hence dynExtractAsc.
+
+     So: try in preference order, VERIFY each by reported duration, use the first that passes,
+     and remember the winner per device. No platform sniffing — every device self-selects, and
+     one that behaves unlike both of ours still lands somewhere correct. WAV remains the final
+     tier, so the worst case is exactly the old behaviour. */
+  var DYN_FMT_KEY = 'te_dyn_fmt';        // cached per-device winner: 'mp4' | 'ogg' | 'wav'
+  function dynU32(n) { var a = new Uint8Array(4); new DataView(a.buffer).setUint32(0, n >>> 0); return a; }
+  function dynU16(n) { var a = new Uint8Array(2); new DataView(a.buffer).setUint16(0, n); return a; }
+  function dynU32le(n) { var a = new Uint8Array(4); new DataView(a.buffer).setUint32(0, n >>> 0, true); return a; }
+  function dynStr4(s) { var a = new Uint8Array(4); for (var i = 0; i < 4; i++) a[i] = s.charCodeAt(i); return a; }
+  function dynStrBytes(s) { var a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+  function dynCat(list) {
+    var len = 0, i;
+    for (i = 0; i < list.length; i++) len += list[i].length;
+    var out = new Uint8Array(len), o = 0;
+    for (i = 0; i < list.length; i++) { out.set(list[i], o); o += list[i].length; }
+    return out;
+  }
+  function dynBox(type, parts) { var b = dynCat(parts); return dynCat([dynU32(b.length + 8), dynStr4(type), b]); }
+  function dynZeros(n) { return new Uint8Array(n); }
+  var DYN_MATRIX = dynCat([dynU32(0x00010000), dynU32(0), dynU32(0), dynU32(0), dynU32(0x00010000),
+    dynU32(0), dynU32(0), dynU32(0), dynU32(0x40000000)]);
+
+  // Normalise an encoder "description" to a bare AudioSpecificConfig (see trap 4 above).
+  function dynExtractAsc(desc) {
+    if (!desc || !desc.length) return null;
+    if (desc[0] !== 0x03) return desc;                  // Chromium already gives a bare ASC
+    var i = 1;
+    function readLen() { var b, len = 0, n = 0; do { b = desc[i++]; len = (len << 7) | (b & 0x7F); n++; } while ((b & 0x80) && n < 4); return len; }
+    readLen(); i += 2;
+    var flags = desc[i++];
+    if (flags & 0x80) i += 2;
+    if (flags & 0x40) { i += 1 + desc[i]; }
+    if (flags & 0x20) i += 2;
+    if (desc[i] !== 0x04) return null;
+    i++; readLen(); i += 13;
+    if (desc[i] !== 0x05) return null;
+    i++;
+    var ascLen = readLen();
+    return desc.subarray(i, i + ascLen);
+  }
+  function dynEsds(asc, avgBitrate) {
+    var dsi = dynCat([new Uint8Array([0x05, asc.length]), asc]);
+    var dcdBody = dynCat([new Uint8Array([0x40, 0x15]), new Uint8Array([0, 0, 0]),
+      dynU32(avgBitrate), dynU32(avgBitrate), dsi]);
+    var dcd = dynCat([new Uint8Array([0x04, dcdBody.length]), dcdBody]);
+    var esBody = dynCat([dynU16(1), new Uint8Array([0x00]), dcd, new Uint8Array([0x06, 0x01, 0x02])]);
+    return dynBox('esds', [dynU32(0), dynCat([new Uint8Array([0x03, esBody.length]), esBody])]);
+  }
+  // Non-fragmented MP4, laid out ftyp · mdat · moov so the single chunk offset is known
+  // before moov is built. The stts/stsz/stco sample table is what gives exact seeking.
+  function dynMuxMp4(frames, rawDesc, sampleRate, samplesPerFrame, avgBitrate) {
+    var asc = dynExtractAsc(rawDesc);
+    if (!asc || !asc.length) return null;
+    var n = frames.length, duration = n * samplesPerFrame;
+    var mdatData = dynCat(frames);
+    var ftyp = dynBox('ftyp', [dynStr4('M4A '), dynU32(0x200), dynStr4('M4A '), dynStr4('mp42'), dynStr4('isom')]);
+    var mdat = dynCat([dynU32(mdatData.length + 8), dynStr4('mdat'), mdatData]);
+    var chunkOffset = ftyp.length + 8;
+    var mvhd = dynBox('mvhd', [dynU32(0), dynU32(0), dynU32(0), dynU32(sampleRate), dynU32(duration),
+      dynU32(0x00010000), dynU16(0x0100), dynZeros(2), dynZeros(8), DYN_MATRIX, dynZeros(24), dynU32(2)]);
+    var tkhd = dynBox('tkhd', [new Uint8Array([0, 0, 0, 7]), dynU32(0), dynU32(0), dynU32(1), dynU32(0),
+      dynU32(duration), dynZeros(8), dynU16(0), dynU16(0), dynU16(0x0100), dynZeros(2), DYN_MATRIX, dynU32(0), dynU32(0)]);
+    var mdhd = dynBox('mdhd', [dynU32(0), dynU32(0), dynU32(0), dynU32(sampleRate), dynU32(duration), dynU16(0x55C4), dynU16(0)]);
+    var hdlr = dynBox('hdlr', [dynU32(0), dynU32(0), dynStr4('soun'), dynZeros(12),
+      new Uint8Array([0x53, 0x6F, 0x75, 0x6E, 0x64, 0x48, 0x61, 0x6E, 0x64, 0x6C, 0x65, 0x72, 0x00])]);
+    var dinf = dynBox('dinf', [dynBox('dref', [dynU32(0), dynU32(1), dynBox('url ', [new Uint8Array([0, 0, 0, 1])])])]);
+    var mp4a = dynBox('mp4a', [dynZeros(6), dynU16(1), dynZeros(8), dynU16(1), dynU16(16), dynU16(0), dynU16(0),
+      dynU32(sampleRate << 16), dynEsds(asc, avgBitrate)]);
+    var sizes = [dynU32(0), dynU32(0), dynU32(n)];
+    for (var i = 0; i < n; i++) sizes.push(dynU32(frames[i].length));
+    var stbl = dynBox('stbl', [
+      dynBox('stsd', [dynU32(0), dynU32(1), mp4a]),
+      dynBox('stts', [dynU32(0), dynU32(1), dynU32(n), dynU32(samplesPerFrame)]),
+      dynBox('stsc', [dynU32(0), dynU32(1), dynU32(1), dynU32(n), dynU32(1)]),
+      dynBox('stsz', sizes),
+      dynBox('stco', [dynU32(0), dynU32(1), dynU32(chunkOffset)])
+    ]);
+    var minf = dynBox('minf', [dynBox('smhd', [dynU32(0), dynU16(0), dynU16(0)]), dinf, stbl]);
+    var moov = dynBox('moov', [mvhd, dynBox('trak', [tkhd, dynBox('mdia', [mdhd, hdlr, minf])])]);
+    return new Blob([ftyp, mdat, moov], { type: 'audio/mp4' });
+  }
+  // Ogg Opus. Granule positions are ALWAYS in 48 kHz units whatever rate we fed the encoder.
+  var DYN_OGG_CRC = (function () {
+    var t = new Uint32Array(256);
+    for (var i = 0; i < 256; i++) {
+      var r = i << 24;
+      for (var j = 0; j < 8; j++) r = (r & 0x80000000) ? ((r << 1) ^ 0x04c11db7) : (r << 1);
+      t[i] = r >>> 0;
+    }
+    return t;
+  })();
+  function dynOggCrc(buf) {
+    var crc = 0;
+    for (var i = 0; i < buf.length; i++) crc = (((crc << 8) >>> 0) ^ DYN_OGG_CRC[((crc >>> 24) ^ buf[i]) & 0xFF]) >>> 0;
+    return crc >>> 0;
+  }
+  function dynOggPage(headerType, granule, serial, seq, packets) {
+    var lacing = [], body = [], i;
+    for (i = 0; i < packets.length; i++) {
+      var L = packets[i].length;
+      while (L >= 255) { lacing.push(255); L -= 255; }
+      lacing.push(L);
+      body.push(packets[i]);
+    }
+    var head = new Uint8Array(27 + lacing.length);
+    head.set([0x4F, 0x67, 0x67, 0x53], 0);
+    head[4] = 0; head[5] = headerType;
+    var dv = new DataView(head.buffer);
+    dv.setUint32(6, granule >>> 0, true);
+    dv.setUint32(10, Math.floor(granule / 4294967296) >>> 0, true);
+    dv.setUint32(14, serial >>> 0, true);
+    dv.setUint32(18, seq >>> 0, true);
+    dv.setUint32(22, 0, true);
+    head[26] = lacing.length;
+    head.set(lacing, 27);
+    var page = dynCat([head].concat(body));
+    new DataView(page.buffer).setUint32(22, dynOggCrc(page), true);
+    return page;
+  }
+  function dynMuxOggOpus(frames, opusHead, granulePerPacket) {
+    var serial = 0x54484149, pages = [], seq = 0, granule = 0, i = 0;
+    pages.push(dynOggPage(0x02, 0, serial, seq++, [opusHead]));
+    pages.push(dynOggPage(0x00, 0, serial, seq++,
+      [dynCat([dynStrBytes('OpusTags'), dynU32le(7), dynStrBytes('ThaiEar'), dynU32le(0)])]));
+    while (i < frames.length) {
+      var count = Math.min(50, frames.length - i), batch = [];
+      for (var k = 0; k < count; k++) batch.push(frames[i + k]);
+      i += count;
+      granule += count * granulePerPacket;
+      pages.push(dynOggPage(i >= frames.length ? 0x04 : 0x00, granule, serial, seq++, batch));
+    }
+    return new Blob(pages, { type: 'audio/ogg' });
+  }
+  // Run AudioEncoder over the stitched samples, collecting frames + the decoder description.
+  function dynEncodeFrames(cfg, samples) {
+    return new Promise(function (resolve, reject) {
+      var frames = [], desc = null, frameUs = 0, failed = false;
+      var enc = new AudioEncoder({
+        output: function (chunk, metadata) {
+          if (!desc && metadata && metadata.decoderConfig && metadata.decoderConfig.description) {
+            var d = metadata.decoderConfig.description;
+            desc = new Uint8Array(d.buffer ? d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength) : d);
+          }
+          if (!frameUs && chunk.duration) frameUs = chunk.duration;
+          var b = new Uint8Array(chunk.byteLength);
+          chunk.copyTo(b);
+          frames.push(b);
+        },
+        error: function (e) { failed = true; reject(e); }
+      });
+      enc.configure(cfg);
+      var i = 0, FRAME = cfg.sampleRate;
+      (function feed() {
+        if (failed) return;
+        try {
+          while (i < samples.length) {
+            if (enc.encodeQueueSize > 8) { setTimeout(feed, 8); return; }
+            var n = Math.min(FRAME, samples.length - i);
+            var ad = new AudioData({
+              format: 'f32-planar', sampleRate: cfg.sampleRate, numberOfFrames: n,
+              numberOfChannels: 1, timestamp: Math.round(i / cfg.sampleRate * 1e6),
+              data: samples.slice(i, i + n)
+            });
+            enc.encode(ad); ad.close();
+            i += n;
+          }
+          enc.flush().then(function () {
+            enc.close();
+            if (!failed) resolve({ frames: frames, desc: desc, frameUs: frameUs });
+          }).catch(reject);
+        } catch (e) { reject(e); }
+      })();
+    });
+  }
+  // The gate every candidate must pass: does an <audio> element report the RIGHT duration?
+  // That is the number the scrubber, ① skip and snap all derive from, and it is exactly what
+  // caught Ogg-on-WebKit (+10.1 s) and ADTS (−37 s) when a decode round-trip did not.
+  function dynVerifyFormat(blob, seconds) {
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(blob), a = new Audio(), done = false;
+      function finish(ok) { if (done) return; done = true; clearTimeout(t); try { a.pause(); } catch (_) {} URL.revokeObjectURL(url); resolve(ok); }
+      var t = setTimeout(function () { finish(false); }, 12000);
+      a.addEventListener('error', function () { finish(false); });
+      a.addEventListener('loadedmetadata', function () {
+        finish(isFinite(a.duration) && Math.abs(a.duration - seconds) < 1);
+      });
+      a.preload = 'metadata';
+      a.src = url;
+      a.load();
+    });
+  }
+  var DYN_ENC_TIERS = [
+    { fmt: 'mp4', ext: 'm4a', mime: 'audio/mp4',
+      cfg: function () { return { codec: 'mp4a.40.2', sampleRate: DYN_SR, numberOfChannels: 1, bitrate: 32000 }; } },
+    { fmt: 'ogg', ext: 'opus', mime: 'audio/ogg',
+      cfg: function () { return { codec: 'opus', sampleRate: DYN_SR, numberOfChannels: 1, bitrate: 24000 }; } }
+  ];
+  function dynPackage(tier, r) {
+    if (tier.fmt === 'mp4') return dynMuxMp4(r.frames, r.desc, DYN_SR, 1024, 32000);
+    if (!r.desc) return null;
+    return dynMuxOggOpus(r.frames, r.desc, Math.round((r.frameUs || 20000) * 48000 / 1e6));
+  }
+  function dynWavResult(samples) {
+    return { blob: dynEncodeWav(samples), ext: 'wav', mime: 'audio/wav', fmt: 'wav' };
+  }
+  // Encode the session, choosing (and remembering) the best format this device can produce.
+  function dynEncodeSession(samples, seconds) {
+    var cached = null;
+    try { cached = localStorage.getItem(DYN_FMT_KEY); } catch (_) {}
+    if (cached === 'wav' || !window.AudioEncoder || !window.AudioData) return Promise.resolve(dynWavResult(samples));
+    var tiers = DYN_ENC_TIERS.filter(function (t) { return !cached || t.fmt === cached; });
+    var verified = !!cached;    // an already-chosen format was verified when it was chosen
+    var idx = 0;
+    function attempt() {
+      if (idx >= tiers.length) {
+        try { localStorage.setItem(DYN_FMT_KEY, 'wav'); } catch (_) {}
+        dynLog('encode: falling back to WAV');
+        return Promise.resolve(dynWavResult(samples));
+      }
+      var tier = tiers[idx++], cfg = tier.cfg();
+      return AudioEncoder.isConfigSupported(cfg)
+        .then(function (s) {
+          if (!s || !s.supported) return attempt();
+          return dynEncodeFrames(cfg, samples).then(function (r) {
+            var blob = dynPackage(tier, r);
+            if (!blob) return attempt();
+            if (verified) return { blob: blob, ext: tier.ext, mime: tier.mime, fmt: tier.fmt };
+            return dynVerifyFormat(blob, seconds).then(function (ok) {
+              if (!ok) { dynLog('encode: ' + tier.fmt + ' failed verification'); return attempt(); }
+              try { localStorage.setItem(DYN_FMT_KEY, tier.fmt); } catch (_) {}
+              dynLog('encode: using ' + tier.fmt + ' (' + Math.round(blob.size / 1024) + ' KB)');
+              return { blob: blob, ext: tier.ext, mime: tier.mime, fmt: tier.fmt };
+            });
+          }).catch(function () { return attempt(); });
+        })
+        .catch(function () { return attempt(); });
+    }
+    return attempt().catch(function () { return dynWavResult(samples); });
+  }
+  // If the NATIVE engine ever refuses a session the WebView was happy with, demote this device
+  // to WAV and drop the built session so the next play re-encodes. The WebView's decoder and
+  // Media3's are different codebases; only one of them is verifiable silently.
+  function dynDemoteFormat(why) {
+    var cur = null;
+    try { cur = localStorage.getItem(DYN_FMT_KEY); } catch (_) {}
+    if (cur === 'wav') return false;
+    try { localStorage.setItem(DYN_FMT_KEY, 'wav'); } catch (_) {}
+    dynLog('encode: DEMOTED to WAV (' + (why || 'native failure') + ')');
+    try { localStorage.removeItem(dynMetaLsKey(DYN_KEY_NS, currentMode)); } catch (_) {}
+    dynSession = null; mainSrcReady = false;
+    return true;
+  }
   // Encode mono Float32 samples as a 16-bit PCM WAV blob (standard 44-byte header).
   function dynEncodeWav(samples) {
     var n = samples.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
@@ -1863,25 +2216,32 @@
         if (typeof p === 'number') { o += p; }
         else { out.set(p.getChannelData(0), o); o += p.length; }
       });
-      var blob = dynEncodeWav(out);
-      var sess = { url: URL.createObjectURL(blob), blob: blob, map: map, key: key, duration: pos / DYN_SR };
-      if (!NATIVE) return sess;
-      // Native engine can't play a blob: URL — persist the WAV to the app cache and hand it a file URI.
-      return new Promise(function (res, rej) {
-        var fr = new FileReader();
-        fr.onload = function () { res(String(fr.result).split(',')[1] || ''); };
-        fr.onerror = function () { rej({ code: 'fs' }); };
-        fr.readAsDataURL(blob);
-      }).then(function (b64) {
-        var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
-        if (!FS) return sess;
-        // Unique per-build filename — a rebuild must present a NEW file:// src or the native
-        // shim resumes the previously prepared (stale) audio. See dynNextSeq.
-        var wavPath = dynNativeFile(keyNs, mode, dynNextSeq());
-        // DATA, not CACHE: Android clears the cache dir, which wiped every persisted session (round-7).
-        return FS.writeFile({ path: wavPath, data: b64, directory: 'DATA' })
-          .then(function () { return FS.getUri({ path: wavPath, directory: 'DATA' }); })
-          .then(function (r) { sess.fileUri = (r && r.uri) || null; sess.file = wavPath; return sess; });
+      var duration = pos / DYN_SR;
+      // r17: encode rather than store raw PCM (~20× smaller). Falls back to WAV on any device
+      // that can't produce a verified format, so this path can never be worse than before.
+      return dynEncodeSession(out, duration).then(function (enc) {
+        var blob = enc.blob;
+        var sess = { url: URL.createObjectURL(blob), blob: blob, map: map, key: key,
+          duration: duration, ext: enc.ext, mime: enc.mime };
+        if (!NATIVE) return sess;
+        // Native engine can't play a blob: URL — persist the file to app storage and hand it a URI.
+        return new Promise(function (res, rej) {
+          var fr = new FileReader();
+          fr.onload = function () { res(String(fr.result).split(',')[1] || ''); };
+          fr.onerror = function () { rej({ code: 'fs' }); };
+          fr.readAsDataURL(blob);
+        }).then(function (b64) {
+          var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+          if (!FS) return sess;
+          // Unique per-build filename — a rebuild must present a NEW file:// src or the native
+          // shim resumes the previously prepared (stale) audio. See dynNextSeq. The extension
+          // is no longer always .wav (r17), and Media3 picks its demuxer from it.
+          var sessPath = dynNativeFile(keyNs, mode, dynNextSeq(), enc.ext);
+          // DATA, not CACHE: Android clears the cache dir, which wiped every persisted session (round-7).
+          return FS.writeFile({ path: sessPath, data: b64, directory: 'DATA' })
+            .then(function () { return FS.getUri({ path: sessPath, directory: 'DATA' }); })
+            .then(function (r) { sess.fileUri = (r && r.uri) || null; sess.file = sessPath; return sess; });
+        });
       });
     });
   }
