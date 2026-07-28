@@ -1463,7 +1463,7 @@
      than duplicating the stitcher in the index. Such a frame must never touch live playback,
      hence the syncToPlayingTrack guard below. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r18a';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r18b';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

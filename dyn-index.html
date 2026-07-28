@@ -79,7 +79,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Owner test build · dyn index r18</div>
+  <div class="eyebrow">Owner test build · dyn index r18b</div>
   <h1>Dynamic player test index</h1>
   <p class="lede">The test space's own front page, so downloads can be exercised the way the real
   index works. A dynamic download stores each sentence's <strong>clips</strong>, not a finished file —
@@ -260,7 +260,12 @@
       sentenceNums(u.page).then(function (nums) {
         if (!nums.length) throw new Error('no sentences found for ' + u.prefix);
         var files = clipFiles(u.prefix, nums), done = 0;
-        var chain = Promise.resolve();
+        // The destination directory must EXIST first. downloadFile's `recursive` does not
+        // create it on Android (ENOENT) — player.js and index.html both mkdir first, and
+        // omitting it here was the r18 download failure.
+        var chain = NATIVE
+          ? FS.mkdir({ directory: 'DATA', path: 'offline/' + u.prefix, recursive: true }).catch(function () {})
+          : Promise.resolve();
         files.forEach(function (f) {
           chain = chain.then(function () {
             return saveOne(u, f).then(function () {
