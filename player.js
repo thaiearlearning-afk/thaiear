@@ -1463,7 +1463,7 @@
      than duplicating the stitcher in the index. Such a frame must never touch live playback,
      hence the syncToPlayingTrack guard below. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r18d';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r18e';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2414,11 +2414,73 @@
       dynStatus(null);
     }).catch(function (e) {
       var code = e && e.code;
-      dynStatus((code === 'noauth' || code === 401 || code === 403)
-        ? 'Sign in to play this topic'
-        : 'Couldn’t load the audio — check your connection', false);
-      return Promise.reject(e);
+      if (code === 'noauth' || code === 401 || code === 403) {
+        dynStatus('Sign in to play this topic', false);
+        return Promise.reject(e);
+      }
+      dynStatus('Couldn’t load the audio — check your connection', false);
+      // r18e: the build failed, but there may be a playable session already on the device
+      // built with DIFFERENT settings. Rather than leave the user with nothing, show the
+      // error briefly, then put the settings back to that session and play it.
+      if (!dynReadMeta(DYN_KEY_NS, currentMode)) return Promise.reject(e);
+      return new Promise(function (res) { setTimeout(res, 1200); }).then(function () {
+        if (!dynRevertToStored()) return Promise.reject(e);
+        dynStatus('No connection — your settings have been put back to the version saved on this device.', false);
+        var seq = dynStatusSeq;
+        setTimeout(function () { if (seq === dynStatusSeq) dynStatus(null); }, 6000);
+        return dynEnsureSession(null, true).then(function (sess) {
+          mainAudio.src = (NATIVE && sess.fileUri) ? sess.fileUri : sess.url;
+          mainAudio.load();
+          mainSrcReady = true;
+        });
+      });
     });
+  }
+  /* r18e: DON'T STRAND THE USER. Sessions persist per unit+mode whether or not the unit was
+     ever "downloaded", so a topic played once is playable offline. But changing a setting
+     invalidates that session, and offline with no downloaded clips there is nothing to
+     rebuild from — so a single tap could take away audio the user had a moment earlier and
+     leave only "check your connection".
+     The persisted session's KEY encodes the settings it was built with, so we can read them
+     back and put the controls where the audio actually is. Parse is the exact inverse of
+     dynKeyFor: mode|pf|rN|eN[|pN]|nums. */
+  function dynParseKey(key) {
+    var parts = String(key || '').split('|');
+    if (parts.length < 5) return null;
+    var rp = parseInt(String(parts[2]).replace(/^r/, ''), 10);
+    var idx = 4, ep = 0;
+    // The optional position token only exists when there are 6 parts — a playlist's num list
+    // could otherwise be mistaken for one.
+    if (parts.length >= 6 && /^p\d+$/.test(parts[4])) { ep = parseInt(parts[4].slice(1), 10); idx = 5; }
+    return { mode: parts[0], pf: parseFloat(parts[1]), rp: rp, en: parts[3] === 'e1', ep: ep,
+      nums: parts.slice(idx).join('|') };
+  }
+  // Put settings (and exclusions) back to whatever the stored session was built with.
+  // Returns true only if the result actually matches that session.
+  function dynRevertToStored() {
+    var meta = dynReadMeta(DYN_KEY_NS, currentMode);
+    if (!meta || !meta.key || meta.key === dynKey()) return false;
+    var k = dynParseKey(meta.key);
+    if (!k || k.mode !== currentMode) return false;
+    if (isFinite(k.pf) && k.pf > 0) dynFactor = k.pf;
+    if (k.rp >= 1 && k.rp <= 4) dynRepeats = k.rp;
+    if (currentMode !== 'et') {            // en/ep are TE-only; in ET the key always says e1
+      dynEnglish = k.en;
+      dynEngPos = (k.ep >= 1 && k.ep <= 4) ? k.ep : 0;
+    }
+    // The key's num list IS the included set, so exclusions come back too.
+    if (!PLMODE && k.nums) {
+      var inc = {};
+      k.nums.split(',').forEach(function (n) { inc[n] = true; });
+      var next = {};
+      sentences.forEach(function (s) { if (!inc[String(s.num)]) next[s.num] = true; });
+      dynExcluded = next;
+      dynSaveExcluded();
+      dynPrefsRepaintExcl();
+    }
+    dynSaveSettings();
+    dynPrefsRepaintControls();
+    return dynKey() === meta.key;
   }
   // A setting changed (pause factor / exclusions): drop the session, keep the decoded clip
   // cache, and let the next play rebuild.
