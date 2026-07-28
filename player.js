@@ -1774,7 +1774,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r26d';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r27';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4486,7 +4486,25 @@
     // optimistically. If readyState is 4, the element is ready and the fault is elsewhere.
     set('play', function () {
       dynLog('ms:play rs=' + mainAudio.readyState + ' t=' + (mainAudio.currentTime || 0).toFixed(1));
-      if (mainAudio.paused) togglePlay();
+      if (!mainAudio.paused) return;
+      /* r27: iOS deactivates the page's AUDIO SESSION when you pause. Re-activating it requires
+         play() to be called SYNCHRONOUSLY inside this action handler — togglePlay() routes
+         through ensureMainSrc().then(), a microtask later, which is too late: the element then
+         plays SILENTLY (owner's overlay: rs=4, currentTime advancing, no sound, and unlocking
+         did not help — only pause-then-play in the foreground restored it).
+         When the element is already loaded there is nothing to resolve, so call play() straight
+         away and only fall back to the full path if it rejects. */
+      if (DYN && mainSrcReady && mainAudio.readyState >= 2) {
+        var p;
+        try { p = mainAudio.play(); } catch (_) { togglePlay(); return; }
+        setMainIcon(true);
+        if (p && p.then) {
+          p.then(function () { dynLog('ms:play sync ok'); },
+                 function (e) { dynLog('ms:play sync FAIL ' + ((e && e.name) || e)); togglePlay(); });
+        }
+        return;
+      }
+      togglePlay();
     });
     set('pause', function () { dynLog('ms:pause'); if (!mainAudio.paused) togglePlay(); });
     set('previoustrack', function () { dynLog('ms:prevtrack'); advanceTopic(-1); });
