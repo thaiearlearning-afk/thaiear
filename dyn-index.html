@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Dynamic player test index — ThaiEar</title>
+<script>
+(function () {
+  var ok = false;
+  try { ok = sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
+  if (!ok && /[?&]k=cu38961y(&|$)/.test(location.search)) ok = true;
+  if (!ok) ok = (prompt('Test page password:') === 'cu38961y');
+  if (ok) { try { sessionStorage.setItem('te_test_ok', '1'); } catch (_) {} }
+  else location.replace('index.html');
+})();
+</script>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="preload" href="/fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<style id="te-fonts">
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/inter-latin-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/inter-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/inter-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF8; --surface:#fff; --border:rgba(0,0,0,.10); --border-strong:rgba(0,0,0,.18);
+    --text-primary:#1A1A1A; --text-secondary:#5A5A5A; --text-tertiary:#9A9A9A;
+    --accent:#4B41AD; --accent-light:#EEEDFE; --accent-mid:#534AB7; --gold:#B29234;
+    --radius-md:10px; --radius-lg:14px; --font-ui:'Inter',system-ui,sans-serif;
+  }
+  body { background:var(--bg); color:var(--text-primary); font-family:var(--font-ui); font-size:15px; line-height:1.55; }
+  .wrap { max-width:600px; margin:0 auto; padding:1.5rem 1.1rem 3rem; }
+  .eyebrow { font-size:11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
+  h1 { font-size:23px; font-weight:600; letter-spacing:-.02em; margin-bottom:.35rem; }
+  .lede { font-size:13.5px; color:var(--text-secondary); margin-bottom:1.2rem; }
+
+  /* batch bar — mirrors index.html */
+  .dl-batch-bar { display:flex; flex-direction:column; gap:8px; background:var(--surface);
+    border:.5px solid var(--border); border-radius:var(--radius-md); padding:12px; margin-bottom:1rem; }
+  .dl-batch-btns { display:flex; gap:8px; }
+  .dl-batch-btn { flex:1; font-family:var(--font-ui); font-size:15px; font-weight:500; color:#fff;
+    background:var(--accent); border:0; border-radius:8px; padding:11px 10px; cursor:pointer; }
+  .dl-batch-btn:hover:not([disabled]) { background:var(--accent-mid); }
+  .dl-batch-btn[disabled] { background:var(--border); color:var(--text-tertiary); cursor:default; }
+  .dl-clear-btn { background:var(--surface); color:var(--text-secondary); border:.5px solid var(--border-strong); }
+  .dl-clear-btn:hover:not([disabled]) { background:var(--accent-light); color:var(--accent); }
+  .dl-batch-status { font-size:13px; color:var(--text-secondary); min-height:1.15em; }
+  .dl-batch-status.err { color:#B00020; }
+  .dl-batch-hint { font-size:12.5px; color:var(--text-tertiary); }
+
+  .unit { display:flex; align-items:center; gap:12px; background:var(--surface);
+    border:.5px solid var(--border); border-radius:var(--radius-md); padding:13px 14px; margin-bottom:9px; }
+  .unit-main { flex:1; min-width:0; }
+  .unit-name { font-size:15px; font-weight:600; color:var(--text-primary); text-decoration:none; display:block; }
+  .unit-name:hover { color:var(--accent); }
+  .unit-meta { font-size:12px; color:var(--text-tertiary); margin-top:2px; }
+  .tier-pill { display:inline-block; font-size:10px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    padding:1px 6px; border-radius:9px; margin-left:6px; }
+  .tier-free { background:var(--accent-light); color:var(--accent); }
+  .tier-member { background:#EFEAFB; color:#6B4FBB; }
+
+  /* circle = select for download · tick = downloaded, tap to select for removal */
+  .dl-select { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--accent);
+    background:var(--accent-light); display:inline-flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0; }
+  .dl-select.selected { background:var(--accent); }
+  .dl-dot { width:9px; height:9px; border-radius:50%; background:var(--accent); }
+  .dl-select.selected .dl-dot { background:#fff; }
+  .dl-badge { width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
+    display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+    border:2px solid transparent; }
+  .dl-badge.clear-selected { border-color:#B00020; background:#B00020; }
+  .links { margin-top:1.5rem; font-size:13.5px; }
+  .links a { display:block; color:var(--accent); text-decoration:none; padding:5px 0; }
+  #prebuild-frame { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; border:0; left:-9999px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Owner test build · dyn index r18</div>
+  <h1>Dynamic player test index</h1>
+  <p class="lede">The test space's own front page, so downloads can be exercised the way the real
+  index works. A dynamic download stores each sentence's <strong>clips</strong>, not a finished file —
+  so a settings change re-stitches offline, and a session the OS evicts rebuilds itself instead of
+  the download being gone. Both directions are pre-built afterwards so a unit works from the lock
+  screen straight away.</p>
+
+  <div class="dl-batch-bar">
+    <div class="dl-batch-btns">
+      <button class="dl-batch-btn" id="dl-btn" type="button">Download Topic(s)</button>
+      <button class="dl-batch-btn dl-clear-btn" id="clear-btn" type="button">Clear Download(s)</button>
+    </div>
+    <span class="dl-batch-status" id="dl-status"></span>
+    <span class="dl-batch-hint" id="dl-hint">Tap a topic's circle to download, or a ✓ to remove — then pick an action.</span>
+  </div>
+
+  <div id="units"></div>
+
+  <div class="links">
+    <a href="playlists.html?k=cu38961y">🎵 My Playlists (test)</a>
+    <a href="dyn-probe.html?k=cu38961y">📊 Dynamic audio capability probe</a>
+    <a href="index.html">← Back to the real site</a>
+  </div>
+</div>
+<iframe id="prebuild-frame" title="prebuild"></iframe>
+
+<script src="auth.js" defer></script>
+<script>
+(function () {
+  'use strict';
+  var K = 'k=cu38961y';
+  var UNITS = [
+    { page: 'topic-test.html',  name: 'Communication survival', prefix: 'CommSurvival_BEG',     key: 'topic-03',  tier: 'free',   n: 25 },
+    { page: 'topic-test2.html', name: 'Shopping & money 1',     prefix: 'ShoppingAndMoney_BEG', key: 'topic-11a', tier: 'member', n: 22 }
+  ];
+  var AUDIO_BASE = 'https://audio.thaiear.com';
+  var AUDIO_DL_CACHE = 'thaiear-audio-dl';                                  // must match player.js
+  function webCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; }  // must match player.js
+  var C = window.Capacitor;
+  var NATIVE = !!(C && C.isNativePlatform && C.isNativePlatform());
+  var FS = (NATIVE && C.Plugins) ? C.Plugins.Filesystem : null;
+  var WEB_DL = !NATIVE && !!window.caches;
+
+  var dlSel = {}, clearSel = {}, busy = false;
+
+  function manifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
+  function setManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
+  function isDownloaded(p) { return !!manifest()[p]; }
+  function status(msg, err) {
+    var el = document.getElementById('dl-status');
+    el.textContent = msg || '';
+    el.className = 'dl-batch-status' + (err ? ' err' : '');
+  }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  function render() {
+    var root = document.getElementById('units');
+    root.innerHTML = '';
+    UNITS.forEach(function (u) {
+      var dl = isDownloaded(u.prefix);
+      var el = document.createElement('div');
+      el.className = 'unit';
+      var sel = dl
+        ? '<span class="dl-badge' + (clearSel[u.prefix] ? ' clear-selected' : '') + '" data-p="' + u.prefix + '" data-mode="clear" role="button" title="Downloaded · tap to select for removal">' +
+            '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>'
+        : '<span class="dl-select' + (dlSel[u.prefix] ? ' selected' : '') + '" data-p="' + u.prefix + '" data-mode="dl" role="button" aria-label="Select for offline download"><span class="dl-dot"></span></span>';
+      el.innerHTML =
+        '<div class="unit-main">' +
+          '<a class="unit-name" href="' + u.page + '?' + K + '">' + esc(u.name) +
+            '<span class="tier-pill tier-' + u.tier + '">' + u.tier + '</span></a>' +
+          '<div class="unit-meta">' + u.n + ' sentences · ' + (dl ? 'downloaded' : 'not downloaded') + '</div>' +
+        '</div>' + sel;
+      root.appendChild(el);
+    });
+    var d = document.getElementById('dl-btn'), c = document.getElementById('clear-btn');
+    var nd = Object.keys(dlSel).length, nc = Object.keys(clearSel).length;
+    if (!busy) {
+      d.textContent = nd ? ('Download Topic(s) (' + nd + ')') : 'Download Topic(s)';
+      c.textContent = nc ? ('Clear Download(s) (' + nc + ')') : 'Clear Download(s)';
+    }
+    document.getElementById('dl-hint').style.display = (nd || nc || busy) ? 'none' : '';
+  }
+
+  document.addEventListener('click', function (e) {
+    if (busy || !e.target.closest) return;
+    var t = e.target.closest('[data-p]');
+    if (!t) return;
+    var p = t.getAttribute('data-p');
+    if (t.getAttribute('data-mode') === 'dl') {
+      if (Object.keys(clearSel).length) { status('Finish or deselect your removal choice first.'); return; }
+      if (dlSel[p]) delete dlSel[p]; else dlSel[p] = true;
+    } else {
+      if (Object.keys(dlSel).length) { status('Finish or deselect your download choice first.'); return; }
+      if (clearSel[p]) delete clearSel[p]; else clearSel[p] = true;
+    }
+    status(''); render();
+  });
+
+  // Premium/member clips need a signed URL; free ones come straight off the CDN.
+  function fileUrl(file, tier) {
+    if (tier !== 'member' && tier !== 'premium') return Promise.resolve(AUDIO_BASE + '/' + file);
+    var tok = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken) ? window.ThaiEarAuth.getAccessToken() : null;
+    if (!tok) return Promise.reject(new Error('Sign in to download this topic'));
+    return fetch('/api/audio?file=' + encodeURIComponent(file), { headers: { Authorization: 'Bearer ' + tok } })
+      .then(function (r) { if (!r.ok) throw new Error('audio gate ' + r.status); return r.json(); })
+      .then(function (j) { if (!j || !j.url) throw new Error('no url'); return j.url; });
+  }
+  // Read the unit's own page for its sentence numbers — the same trick index.html uses, and
+  // the reason a download never has to be told what a topic contains.
+  function sentenceNums(page) {
+    return fetch(page + '?' + K).then(function (r) { return r.text(); }).then(function (html) {
+      var i = html.indexOf('window.ThaiEarTopic'), nums = [];
+      if (i < 0) return nums;
+      var end = html.indexOf('<\/script>', i); if (end < 0) end = html.length;
+      var block = html.slice(i, end), re = /\bnum\b"?\s*:\s*(\d+)/g, m;
+      while ((m = re.exec(block))) nums.push(parseInt(m[1], 10));
+      return nums;
+    });
+  }
+  function clipFiles(prefix, nums) {
+    var files = [];
+    nums.forEach(function (n) {
+      var p = String(n).padStart(2, '0');
+      files.push(prefix + '_S' + p + '_TH.mp3');
+      files.push(prefix + '_S' + p + '_EN.mp3');   // dyn needs BOTH sides; no prefab TE/ET
+    });
+    return files;
+  }
+  function saveOne(u, file) {
+    return fileUrl(file, u.tier).then(function (url) {
+      if (NATIVE) {
+        return FS.downloadFile({ url: url, path: 'offline/' + u.prefix + '/' + file, directory: 'DATA',
+          recursive: true, connectTimeout: 15000, readTimeout: 20000 });
+      }
+      return caches.open(AUDIO_DL_CACHE).then(function (cache) {
+        return fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (res) {
+          if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
+          if (res.type === 'opaque') throw new Error('CORS not enabled for ' + file);
+          return cache.put(webCacheKey(u.prefix, file), res);
+        });
+      });
+    });
+  }
+  // Pre-render both directions by opening the unit in a hidden frame with &prebuild=1 — it
+  // runs player.js's own stitcher, so there is exactly one implementation of a build.
+  function prebuild(u) {
+    return new Promise(function (resolve) {
+      var frame = document.getElementById('prebuild-frame');
+      var done = false;
+      function finish() { if (done) return; done = true; window.removeEventListener('message', onMsg); frame.src = 'about:blank'; resolve(); }
+      function onMsg(e) {
+        if (e.origin !== location.origin || !e.data || e.data.te !== 'prebuilt') return;
+        if (e.data.key === u.key) finish();
+      }
+      window.addEventListener('message', onMsg);
+      setTimeout(finish, 120000);   // non-fatal: the clips are the download, sessions rebuild on play
+      frame.src = u.page + '?' + K + '&prebuild=1';
+    });
+  }
+
+  function runDownloads() {
+    if (busy) return;
+    var list = UNITS.filter(function (u) { return dlSel[u.prefix]; });
+    if (!list.length) { status('Please select a topic to download first.'); return; }
+    if (!NATIVE && !WEB_DL) { status('This device can’t store downloads.', true); return; }
+    if (!navigator.onLine) { status('You’re offline — reconnect to download topics.', true); return; }
+    busy = true; setBusy(true);
+    var i = 0;
+    (function next() {
+      if (i >= list.length) {
+        busy = false; setBusy(false);
+        status('Done — ' + list.length + ' topic' + (list.length > 1 ? 's' : '') + ' saved offline.');
+        dlSel = {}; render();
+        return;
+      }
+      var u = list[i];
+      status('Downloading ' + u.name + ' — reading sentences…');
+      sentenceNums(u.page).then(function (nums) {
+        if (!nums.length) throw new Error('no sentences found for ' + u.prefix);
+        var files = clipFiles(u.prefix, nums), done = 0;
+        var chain = Promise.resolve();
+        files.forEach(function (f) {
+          chain = chain.then(function () {
+            return saveOne(u, f).then(function () {
+              done++;
+              status('Downloading ' + u.name + ' — clip ' + done + '/' + files.length);
+            });
+          });
+        });
+        return chain.then(function () {
+          // Mark BEFORE pre-building: the clips ARE the download; sessions are a convenience,
+          // so an interrupted pre-build still leaves a fully usable offline topic.
+          var m = manifest();
+          m[u.prefix] = { tier: u.tier, files: files, at: Date.now(), ver: '', av: null, dyn: true };
+          setManifest(m);
+          if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(u.page).catch(function () {}); }).catch(function () {});
+          render();
+          status('Constructing both directions for ' + u.name + '…');
+          return prebuild(u);
+        });
+      }).then(function () { i++; next(); })
+        .catch(function (err) {
+          busy = false; setBusy(false);
+          var msg = (err && err.message) || 'error';
+          if (!navigator.onLine || /failed to fetch|load failed|network/i.test(msg)) {
+            status('You’re offline — reconnect to download topics.', true);
+          } else {
+            status('Stopped (' + msg + '). Nothing was removed — retry when ready.', true);
+          }
+          render();
+        });
+    })();
+  }
+
+  function runClear() {
+    if (busy) return;
+    var list = UNITS.filter(function (u) { return clearSel[u.prefix]; });
+    if (!list.length) { status('Please select a downloaded topic to clear first.'); return; }
+    if (!confirm('Remove the downloaded topic' + (list.length > 1 ? 's' : '') +
+      '? You will no longer be able to listen offline.')) return;
+    busy = true; setBusy(true);
+    var i = 0;
+    (function next() {
+      if (i >= list.length) {
+        busy = false; setBusy(false);
+        status('Removed ' + list.length + ' download' + (list.length > 1 ? 's' : '') + '.');
+        clearSel = {}; render();
+        return;
+      }
+      var u = list[i], m = manifest(), files = (m[u.prefix] && m[u.prefix].files) || [];
+      status('Removing ' + u.name + '…');
+      var p;
+      if (NATIVE) p = FS.rmdir({ directory: 'DATA', path: 'offline/' + u.prefix, recursive: true }).catch(function () {});
+      else if (window.caches) {
+        p = caches.open(AUDIO_DL_CACHE).then(function (c) {
+          return Promise.all(files.map(function (f) { return c.delete(webCacheKey(u.prefix, f)).catch(function () {}); }));
+        }).catch(function () {});
+      } else p = Promise.resolve();
+      p.then(function () {
+        // Drop the built sessions too — otherwise "cleared" leaves ~1.4 MB per unit behind.
+        ['te', 'et'].forEach(function (mode) {
+          var mk = 'te_dyn_meta_' + u.key + '_' + mode, meta = null;
+          try { meta = JSON.parse(localStorage.getItem(mk) || 'null'); } catch (_) {}
+          try { localStorage.removeItem(mk); } catch (_) {}
+          if (NATIVE && meta && meta.file) FS.deleteFile({ path: meta.file, directory: 'DATA' }).catch(function () {});
+          else if (window.caches) caches.open(AUDIO_DL_CACHE).then(function (c) {
+            c.delete('/dyn/' + u.key + '/' + mode + '.' + (meta && meta.ext ? meta.ext : 'wav')).catch(function () {});
+          }).catch(function () {});
+        });
+        var mm = manifest(); delete mm[u.prefix]; setManifest(mm);
+        i++; render(); next();
+      });
+    })();
+  }
+  function setBusy(b) {
+    document.getElementById('dl-btn').disabled = b;
+    document.getElementById('clear-btn').disabled = b;
+    if (b) document.getElementById('dl-hint').style.display = 'none';
+  }
+
+  document.getElementById('dl-btn').addEventListener('click', runDownloads);
+  document.getElementById('clear-btn').addEventListener('click', runClear);
+  window.addEventListener('thaiear:auth', render);
+  render();
+})();
+</script>
+</body>
+</html>

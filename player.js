@@ -158,6 +158,7 @@
   // it — adopting another topic's identity if needed — so it shows + controls the live track.
   function syncToPlayingTrack() {
     if (!NA) return;
+    if (DYN_PREBUILD) return;   // a prebuild frame must not adopt (or hijack) the live track
     var np; try { np = JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { np = null;  }
     if (!np || (!np.prefix && !np.key)) return;   // dyn playlist units have no prefix — their key identifies them
     var done = false;
@@ -1457,7 +1458,12 @@
       return on || sessionStorage.getItem('te_dbg') === '1';
     } catch (_) { return on; }
   })();
-  var DYN_BUILD = 'r17b';  // visible build tag on the test pages — bump every test-space deploy
+  /* r18: the mini index opens a unit in a HIDDEN IFRAME with &prebuild=1 purely to render
+     both directions after its clips are downloaded — reusing this file's build path rather
+     than duplicating the stitcher in the index. Such a frame must never touch live playback,
+     hence the syncToPlayingTrack guard below. */
+  var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
+  var DYN_BUILD = 'r18';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -1884,9 +1890,29 @@
   // there); topic pages keep the page-level PREFIX/GATED exactly as before.
   function dynClipRef(s, side) {
     var pfx = (s.prefix ? s.prefix : PREFIX);
+    var tier = (s.tier != null) ? s.tier : TIER;
     var gated = (s.tier != null) ? (s.tier === 'member' || s.tier === 'premium') : GATED;
     var n = (s.clipNum != null) ? s.clipNum : s.num;
-    return { file: pfx + '_S' + String(n).padStart(2, '0') + '_' + side + '.mp3', gated: gated };
+    return { file: pfx + '_S' + String(n).padStart(2, '0') + '_' + side + '.mp3',
+      gated: gated, prefix: pfx, tier: tier };
+  }
+  /* r18: resolve a clip from the OFFLINE STORE first, falling back to the network. Until now
+     dynFetchClip went straight to buildUrl(), which only ever returns a remote URL — so a dyn
+     session could not be built or rebuilt without a connection, even on a topic the user had
+     explicitly downloaded. This is what makes a downloaded unit self-sufficient: change a
+     setting on a plane and it re-stitches from the clips already on the device.
+     Returns {url, temp} — temp blob: URLs are revoked by the caller once decoded. */
+  function dynClipUrl(ref) {
+    var entitled = canUseOffline(ref.tier);
+    if (OFFLINE && isDownloaded(ref.prefix) && entitled) {
+      return localBlobUrl(ref.prefix, ref.file)
+        .then(function (u) { return u ? { url: u, temp: true } : buildUrl(ref.file, ref.gated).then(function (r) { return { url: r, temp: false }; }); });
+    }
+    if (WEB_DL && isDownloaded(ref.prefix) && entitled) {
+      return cachedBlobUrl(ref.prefix, ref.file)
+        .then(function (u) { return u ? { url: u, temp: true } : buildUrl(ref.file, ref.gated).then(function (r) { return { url: r, temp: false }; }); });
+    }
+    return buildUrl(ref.file, ref.gated).then(function (r) { return { url: r, temp: false }; });
   }
   // Bounded-concurrency runner: Safari throttles huge parallel fetch bursts (the iOS
   // 2-minute-build culprit), so clip fetches — and the /api/audio URL mints inside them —
@@ -1906,20 +1932,26 @@
   // Fetch + decode one clip to a mono 24 kHz AudioBuffer (decodeAudioData resamples to the
   // OfflineAudioContext's rate). Decoded buffers are cached for the life of the page.
   function dynFetchClip(ref) {
-    var file = ref.file;
+    var file = ref.file, temp = null;
     if (dynClipCache[file]) return Promise.resolve(dynClipCache[file]);
-    return buildUrl(file, ref.gated).then(function (u) {
-      return fetch(u);
+    return dynClipUrl(ref).then(function (u) {
+      if (u.temp) temp = u.url;
+      return fetch(u.url);
     }).then(function (r) {
       if (!r.ok) return Promise.reject({ code: r.status });
       return r.arrayBuffer();
     }).then(function (ab) {
+      if (temp) { try { URL.revokeObjectURL(temp); } catch (_) {} temp = null; }
       return new Promise(function (res, rej) {
         var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
         var ctx = new OAC(1, 1, DYN_SR);
         ctx.decodeAudioData(ab, res, rej);
       });
-    }).then(function (buf) { dynClipCache[file] = buf; return buf; });
+    }).then(function (buf) { dynClipCache[file] = buf; return buf; })
+      .catch(function (e) {
+        if (temp) { try { URL.revokeObjectURL(temp); } catch (_) {} }
+        return Promise.reject(e);
+      });
   }
   /* ══ r17: SESSION ENCODING ═══════════════════════════════════════════════════════════
      A stitched session used to be stored as raw PCM: 48 KB/s, so 7:12 of audio came to
@@ -2574,6 +2606,10 @@
      tiny tap area on a phone); tapping again, or the ×, dismisses it. One box at a time,
      inserted directly under the row it belongs to. */
   var DYN_INFO = {
+    // r18: shown above the player. The second sentence is the one that matters — it is the
+    // expectation-setter for the lock screen skipping a unit that has never been constructed.
+    player: 'ThaiEar’s Dynamic mp3 Player constructs mp3 audio to your specification. ' +
+      'Press play to construct this one — it is then stored on your device.',
     reps: 'This setting determines the number of times a Thai sentence is spoken.',
     engpos: 'This setting determines where the English sentence appears. In the final position, ' +
       'the English is heard after all Thai repeats, but English can also be repositioned so that ' +
@@ -3271,6 +3307,7 @@
     '.dyn-info-x{position:absolute;top:3px;right:4px;width:22px;height:22px;border:0;background:none;color:var(--text-tertiary);cursor:pointer;font-size:16px;line-height:1;padding:0}' +
     '.dyn-info-x:hover{color:var(--accent)}' +
     /* r16: "apply to all" sync affordance — bottom-left, under the settings rows */
+    '.dyn-head{font-size:12px;font-weight:600;color:var(--text-secondary);margin:0 0 8px;letter-spacing:.01em}' +
     '.dyn-sync-row{display:flex;align-items:center;justify-content:flex-start;margin:8px 0 2px}' +
     '.dyn-fmt-tag{order:2;margin-left:auto;font-size:10.5px;color:var(--text-tertiary);font-variant-numeric:tabular-nums}' +
     '.dyn-sync-btn{width:28px;height:28px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}' +
@@ -3326,6 +3363,94 @@
     '.dyn-eq i:nth-child(4){animation-delay:.45s}' +
     'body.premium-topic .dyn-eq i{background:#B29234}' +
     '@keyframes te-eq-bounce{0%,100%{transform:scaleY(0.35)}50%{transform:scaleY(1)}}';
+  /* ══ r18: DOWNLOADS FOR DYN UNITS ════════════════════════════════════════════════════
+     A dyn unit downloads its SOURCE CLIPS (_TH + _EN), not a rendered file. That is the
+     whole design, and it falls out of the measurements:
+       · clips are ~0.58 MB against ~1.4 MB for both rendered directions — but more
+         importantly they are the only thing that lets a settings change re-stitch OFFLINE,
+         which a rendered file can never do.
+       · the prefab TE/ET pair (2.11 MB) is NOT downloaded for a dyn unit: anything it could
+         play, the clips can rebuild — and rebuild it with the user's own settings rather
+         than the factory ones.
+       · a session evicted by the OS then self-heals instead of the download being simply
+         gone, which matters most on iOS where Cache Storage is evicted aggressively.
+     Both directions are pre-built at download time (~2 s, ~1.4 MB) so a downloaded unit is
+     playable from the LOCK SCREEN immediately — building is foreground-only, so without
+     this a locked chain hop would skip straight past it. */
+  function dynUnitFiles() {
+    var files = [];
+    sentences.forEach(function (s) {
+      files.push(dynClipRef(s, 'TH').file);
+      files.push(dynClipRef(s, 'EN').file);
+    });
+    return files;
+  }
+  // Pre-render both directions, reusing the clips just downloaded. Failures are non-fatal:
+  // the download is the clips, and a missing session rebuilds on first play.
+  function dynPrebuildBoth(onStep) {
+    var was = currentMode, modes = ['te', 'et'];
+    var chain = Promise.resolve();
+    modes.forEach(function (m, i) {
+      chain = chain.then(function () {
+        currentMode = m;                       // dynKey()/dynBuildSession() read this
+        if (onStep) onStep(i + 1, modes.length, m);
+        var st = dynSettingsFor(DYN_KEY_NS, m);
+        var inc = dynIncluded();
+        return dynBuildSessionFor(inc, DYN_KEY_NS, dynKeyFor(inc, st), null, st)
+          .then(function (sess) { dynPersistSessionFor(sess, m, DYN_KEY_NS); })
+          .catch(function (e) { dynLog('prebuild ' + m + ' failed: ' + ((e && (e.code || e.message)) || e)); });
+      });
+    });
+    return chain.then(function () { currentMode = was; }, function () { currentMode = was; });
+  }
+  /* Download this dyn unit. onProg(done,total,phase) drives whatever UI called us.
+     NEVER deletes anything on failure — a half-finished download simply isn't marked, so an
+     existing older copy stays intact and playable. */
+  function dynDownloadUnit(onProg) {
+    var files = dynUnitFiles();
+    if (!files.length) return Promise.reject({ code: 'empty' });
+    var done = 0, total = files.length;
+    function step() { done++; if (onProg) onProg(done, total, 'clips'); }
+    var chain;
+    if (OFFLINE) {
+      chain = Filesystem.mkdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
+        .catch(function () {})
+        .then(function () {
+          var c = Promise.resolve();
+          files.forEach(function (f) { c = c.then(function () { return downloadFileWithRetry(f).then(step); }); });
+          return c;
+        });
+    } else if (WEB_DL) {
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {}
+      chain = caches.open(AUDIO_DL_CACHE).then(function (cache) {
+        var c = Promise.resolve();
+        files.forEach(function (f) { c = c.then(function () { return webDownloadFileWithRetry(cache, f).then(step); }); });
+        return c;
+      });
+    } else {
+      return Promise.reject({ code: 'unsupported' });
+    }
+    return chain.then(function () {
+      // Mark downloaded BEFORE pre-building: the clips are the download, and the sessions are
+      // a convenience. If the pre-build is interrupted the unit is still fully usable offline.
+      markDownloaded(PREFIX, TIER, files, '', null);
+      var m = getManifest();
+      if (m[PREFIX]) { m[PREFIX].dyn = true; setManifest(m); }
+      cachePage();
+      if (onProg) onProg(total, total, 'building');
+      return dynPrebuildBoth(function (i, n, mode) { if (onProg) onProg(total, total, 'building:' + mode); });
+    }).then(function () {
+      if (onProg) onProg(total, total, 'done');
+      return true;
+    });
+  }
+  // Expose for the pages that own download UI (mini index, playlists) — they drive it, the
+  // player owns the logic, so there is one implementation rather than three.
+  window.ThaiEarDynDL = {
+    download: function (onProg) { return dynDownloadUnit(onProg); },
+    files: function () { return dynUnitFiles(); },
+    isDownloaded: function () { return isDownloaded(PREFIX); }
+  };
   // The circular-① sentence-skip glyphs (shared by the audio-row buttons and the dyn mini player).
   var DYN_DIGIT1 = '<path d="M12.36 15.94v-4.27h-.09l-1.77.63v.69l1.01-.31v3.26h.85z"/>';
   var DYN_SVG_PREV = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>' + DYN_DIGIT1 + '</svg>';
@@ -3343,6 +3468,14 @@
     dynLoadSettings();   // r16: this unit's settings for the current direction, before anything paints
     var row = root.querySelector('.audio-row');
     if (row) {
+      // r18: "Dynamic mp3 Player ⓘ" heading — the feature needs naming before it needs
+      // explaining, and the explainer is where the lock-screen skip is set up.
+      var hd = document.createElement('div');
+      hd.className = 'dyn-head';
+      hd.innerHTML = dynInfoLabel('Dynamic mp3 Player', 'player');
+      row.parentNode.insertBefore(hd, row);
+      var hdLbl = hd.querySelector('.dyn-info-lbl');
+      if (hdLbl) hdLbl.addEventListener('click', function () { dynInfoToggle('player', hd); });
       var stEl = document.createElement('div');
       stEl.id = 'dyn-status'; stEl.className = 'dyn-status'; stEl.hidden = true;
       row.parentNode.insertBefore(stEl, row.nextSibling);
@@ -3514,6 +3647,18 @@
         }
       }
     });
+    if (DYN_PREBUILD) {
+      dynStatus('Preparing both directions', true);
+      dynPrebuildBoth().then(function () {
+        dynStatus('Ready.', false);
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ te: 'prebuilt', key: DYN_KEY_NS }, location.origin);
+          }
+        } catch (_) {}
+      });
+      return;   // a prebuild frame does nothing else — no sweeps, no prefetch, no UI work
+    }
     // Housekeeping, deferred so it never competes with a build or the first paint.
     setTimeout(dynSweepOrphans, 4000);
     dynPrefetchNeighbours();        // iPhone: neighbours' placeholder URLs ready before any lock-screen skip
