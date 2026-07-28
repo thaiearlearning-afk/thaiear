@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Dyn audio capability probe — ThaiEar</title>
+<script>
+(function () {
+  var ok = false;
+  try { ok = sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
+  if (!ok && /[?&]k=cu38961y(&|$)/.test(location.search)) ok = true;
+  if (!ok) ok = (prompt('Test page password:') === 'cu38961y');
+  if (ok) { try { sessionStorage.setItem('te_test_ok', '1'); } catch (_) {} }
+  else location.replace('index.html');
+})();
+</script>
+<link rel="icon" href="favicon.ico" sizes="any">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF8; --surface:#fff; --border:rgba(0,0,0,.10); --border-strong:rgba(0,0,0,.18);
+    --text-primary:#1A1A1A; --text-secondary:#5A5A5A; --text-tertiary:#9A9A9A;
+    --accent:#4B41AD; --accent-mid:#534AB7; --ok:#1A7F37; --bad:#B00020; --warn:#8A6D00;
+    --font-ui:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  body { background:var(--bg); color:var(--text-primary); font-family:var(--font-ui); font-size:15px; line-height:1.55; }
+  .wrap { max-width:680px; margin:0 auto; padding:1.5rem 1.1rem 4rem; }
+  .eyebrow { font-size:11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
+  h1 { font-size:22px; font-weight:600; letter-spacing:-.02em; margin-bottom:.35rem; }
+  .lede { font-size:13.5px; color:var(--text-secondary); margin-bottom:1.1rem; }
+  button { font-family:var(--font-ui); font-size:15px; font-weight:500; color:#fff; background:var(--accent);
+           border:0; border-radius:10px; padding:12px 20px; cursor:pointer; }
+  button:hover:not([disabled]) { background:var(--accent-mid); }
+  button[disabled] { background:var(--border); color:var(--text-tertiary); cursor:default; }
+  .btn-ghost { background:var(--surface); color:var(--accent); border:.5px solid var(--border-strong); }
+  .btn-ghost:hover:not([disabled]) { background:#EEEDFE; }
+  .btns { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:1rem; }
+  #status { font-size:13.5px; color:var(--text-secondary); min-height:1.3em; margin-bottom:1rem; }
+  .card { background:var(--surface); border:.5px solid var(--border); border-radius:12px; padding:14px 15px; margin-bottom:12px; }
+  .card h2 { font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:9px; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  td { padding:4px 0; vertical-align:top; }
+  td:first-child { color:var(--text-secondary); padding-right:12px; white-space:nowrap; }
+  td:last-child { text-align:right; font-variant-numeric:tabular-nums; }
+  .yes { color:var(--ok); font-weight:600; }
+  .no  { color:var(--bad); font-weight:600; }
+  .warn{ color:var(--warn); font-weight:600; }
+  .note { font-size:12.5px; color:var(--text-tertiary); margin-top:8px; line-height:1.5; }
+  #raw { width:100%; height:230px; font:11.5px/1.45 ui-monospace,Menlo,Consolas,monospace; padding:10px;
+         border:.5px solid var(--border-strong); border-radius:10px; background:var(--surface); color:var(--text-primary);
+         white-space:pre; overflow:auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Owner test build · dyn audio probe</div>
+  <h1>Dynamic audio capability probe</h1>
+  <p class="lede">Measures what this device can actually do, so the r17 encoding work is built on facts rather
+  than my estimates. It downloads ~0.6&nbsp;MB of real clips, stitches a genuine ~7-minute session, then encodes
+  it every way this device supports and tests whether the result <em>plays</em> and <em>seeks</em> accurately.
+  Takes under a minute. Nothing is saved except a temporary file for the native test.</p>
+
+  <div class="btns">
+    <button id="run">Run the probe</button>
+    <button id="copy" class="btn-ghost" disabled>Copy results</button>
+  </div>
+  <div id="status">Ready.</div>
+
+  <div class="card" id="c-env"><h2>Device</h2><table id="t-env"></table></div>
+  <div class="card" id="c-play"><h2>Playback support (canPlayType)</h2><table id="t-play"></table></div>
+  <div class="card" id="c-enc"><h2>Encoder support</h2><table id="t-enc"></table>
+    <p class="note">Whether <code>AudioEncoder</code> will accept each codec. This is the question I could not
+    answer from documentation — encoder codec support is far patchier than decoder support.</p></div>
+  <div class="card" id="c-size"><h2>Real session — size &amp; speed</h2><table id="t-size"></table>
+    <p class="note">Built from real ThaiEar clips with the default TE layout (2 Thai repeats, English at the end),
+    so the audio-to-silence ratio matches a genuine session.</p></div>
+  <div class="card" id="c-seek"><h2>Playback &amp; seek accuracy</h2><table id="t-seek"></table>
+    <p class="note">The decisive test. Sentence-skip and snap scrubbing need exact seeking; WAV gives that for
+    free, but a compressed stream without an index can seek approximately. A large error here rules a format out.</p></div>
+  <div class="card" id="c-native" hidden><h2>Native engine (app only)</h2><table id="t-native"></table>
+    <p class="note">Whether the app's ExoPlayer/Media3 engine can play and seek the encoded file — the format
+    has to satisfy this as well as the browser.</p></div>
+
+  <div class="card"><h2>Raw results — paste these back to Claude</h2>
+    <textarea id="raw" readonly></textarea></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var AUDIO_BASE = 'https://audio.thaiear.com';
+  var PREFIX = 'CommSurvival_BEG';          // topic 3 — free, public bucket, no auth needed
+  var NUMS = [53, 54, 55, 56, 57, 58];      // 6 real sentences, repeated to a realistic session length
+  var SR = 24000;                           // must match player.js DYN_SR
+  var REPEATS = 2, GAP = 3.0, REP_PAUSE_MIN = 3.0;
+
+  var lines = [];                           // the raw copyable log
+  function log(s) { lines.push(s); var r = document.getElementById('raw'); if (r) r.value = lines.join('\n'); }
+  function status(s) { document.getElementById('status').textContent = s; }
+  function row(tableId, label, value, cls) {
+    var t = document.getElementById(tableId);
+    var tr = document.createElement('tr');
+    var a = document.createElement('td'); a.textContent = label;
+    var b = document.createElement('td'); b.textContent = value; if (cls) b.className = cls;
+    tr.appendChild(a); tr.appendChild(b); t.appendChild(tr);
+    log(pad(label, 34) + value);
+  }
+  function pad(s, n) { s = String(s); while (s.length < n) s += ' '; return s; }
+  function mb(bytes) { return (bytes / 1048576).toFixed(2) + ' MB'; }
+  function secs(ms) { return (ms / 1000).toFixed(1) + ' s'; }
+
+  /* ── 1. Environment ─────────────────────────────────────────────────────────── */
+  function probeEnv() {
+    var C = window.Capacitor;
+    var native = !!(C && C.isNativePlatform && C.isNativePlatform());
+    var ua = navigator.userAgent;
+    var chrome = (/Chrome\/(\d+)/.exec(ua) || [])[1];
+    var ios = (/OS (\d+)[._](\d+)/.exec(ua) || []);
+    log('=== ThaiEar dyn audio probe ===');
+    log('when: ' + new Date().toISOString());
+    row('t-env', 'Platform', native ? ('native app (' + (C.getPlatform ? C.getPlatform() : '?') + ')') : 'browser / PWA');
+    row('t-env', 'Chrome/WebView version', chrome || '—');
+    row('t-env', 'iOS version', ios.length ? (ios[1] + '.' + ios[2]) : '—');
+    row('t-env', 'AudioEncoder present', window.AudioEncoder ? 'yes' : 'no', window.AudioEncoder ? 'yes' : 'no');
+    row('t-env', 'OfflineAudioContext', (window.OfflineAudioContext || window.webkitOfflineAudioContext) ? 'yes' : 'no');
+    row('t-env', 'Capacitor Filesystem', (C && C.Plugins && C.Plugins.Filesystem) ? 'yes' : 'no');
+    row('t-env', 'NativeAudio plugin', (C && C.Plugins && C.Plugins.NativeAudio) ? 'yes' : 'no');
+    log('UA: ' + ua);
+    return native;
+  }
+
+  /* ── 2. What this device can PLAY (cheap + authoritative) ───────────────────── */
+  function probePlayback() {
+    var a = document.createElement('audio');
+    [['AAC (audio/aac)', 'audio/aac'],
+     ['AAC in MP4', 'audio/mp4; codecs="mp4a.40.2"'],
+     ['Opus in WebM', 'audio/webm; codecs="opus"'],
+     ['Opus in Ogg', 'audio/ogg; codecs="opus"'],
+     ['MP3', 'audio/mpeg'],
+     ['WAV', 'audio/wav']
+    ].forEach(function (p) {
+      var r = a.canPlayType(p[1]) || 'no';
+      row('t-play', p[0], r, r === 'probably' ? 'yes' : (r === 'maybe' ? 'warn' : 'no'));
+    });
+  }
+
+  /* ── 3. Which codecs this device can ENCODE ─────────────────────────────────── */
+  var CONFIGS = [
+    { name: 'AAC-LC 32 kbps (ADTS)', codec: 'mp4a.40.2', bitrate: 32000, sampleRate: SR, adts: true },
+    { name: 'AAC-LC 24 kbps (ADTS)', codec: 'mp4a.40.2', bitrate: 24000, sampleRate: SR, adts: true },
+    { name: 'AAC-LC 32 kbps (raw)', codec: 'mp4a.40.2', bitrate: 32000, sampleRate: SR },
+    { name: 'Opus 24 kbps @24k', codec: 'opus', bitrate: 24000, sampleRate: SR },
+    { name: 'Opus 24 kbps @48k', codec: 'opus', bitrate: 24000, sampleRate: 48000 }
+  ];
+  function encConfig(c) {
+    var cfg = { codec: c.codec, sampleRate: c.sampleRate, numberOfChannels: 1, bitrate: c.bitrate };
+    if (c.adts) cfg.aac = { format: 'adts' };
+    return cfg;
+  }
+  function probeEncoders() {
+    if (!window.AudioEncoder) {
+      row('t-enc', 'AudioEncoder', 'not available', 'no');
+      return Promise.resolve([]);
+    }
+    var supported = [];
+    var chain = Promise.resolve();
+    CONFIGS.forEach(function (c) {
+      chain = chain.then(function () {
+        return AudioEncoder.isConfigSupported(encConfig(c)).then(function (r) {
+          var ok = !!(r && r.supported);
+          row('t-enc', c.name, ok ? 'supported' : 'no', ok ? 'yes' : 'no');
+          if (ok) supported.push(c);
+        }).catch(function (e) {
+          row('t-enc', c.name, 'error: ' + (e && e.name || e), 'no');
+        });
+      });
+    });
+    return chain.then(function () { return supported; });
+  }
+
+  /* ── 4. Build a REAL session (mirrors player.js dynBuildSessionFor) ─────────── */
+  function fetchClip(file) {
+    return fetch(AUDIO_BASE + '/' + file, { mode: 'cors' }).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status + ' ' + file);
+      return r.arrayBuffer();
+    }).then(function (ab) {
+      return new Promise(function (res, rej) {
+        var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        new OAC(1, 1, SR).decodeAudioData(ab, res, rej);
+      });
+    });
+  }
+  function buildSession() {
+    var files = [];
+    NUMS.forEach(function (n) {
+      var p = String(n).padStart(2, '0');
+      files.push(PREFIX + '_S' + p + '_TH.mp3');
+      files.push(PREFIX + '_S' + p + '_EN.mp3');
+    });
+    var bufs = {};
+    var chain = Promise.resolve();
+    files.forEach(function (f, i) {
+      chain = chain.then(function () {
+        status('Downloading clips ' + (i + 1) + '/' + files.length + '…');
+        return fetchClip(f).then(function (b) { bufs[f] = b; });
+      });
+    });
+    return chain.then(function () {
+      status('Stitching a ~7-minute session…');
+      // Repeat the 6 sentences until we pass 7 minutes — a genuine audio/silence mix.
+      var parts = [], pos = 0, sentences = 0;
+      function pushBuf(b) { parts.push(b); pos += b.length; }
+      function pushSil(sec) { var n = Math.round(sec * SR); parts.push(n); pos += n; }
+      while (pos / SR < 420 && sentences < 200) {
+        NUMS.forEach(function (n) {
+          if (pos / SR >= 420) return;
+          var p = String(n).padStart(2, '0');
+          var th = bufs[PREFIX + '_S' + p + '_TH.mp3'], en = bufs[PREFIX + '_S' + p + '_EN.mp3'];
+          var pause = Math.max(REP_PAUSE_MIN, (th.length / SR) * 0.8);
+          pushBuf(th);
+          for (var r = 1; r < REPEATS; r++) { pushSil(pause); pushBuf(th); }
+          pushSil(pause); pushBuf(en); pushSil(GAP);
+          sentences++;
+        });
+      }
+      var out = new Float32Array(pos), o = 0, audible = 0;
+      parts.forEach(function (p) {
+        if (typeof p === 'number') { o += p; }
+        else { out.set(p.getChannelData(0), o); o += p.length; audible += p.length; }
+      });
+      return { samples: out, seconds: pos / SR, sentences: sentences, audibleRatio: audible / pos };
+    });
+  }
+  function encodeWav(samples) {
+    var n = samples.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    function wstr(off, s) { for (var i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); }
+    wstr(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); wstr(8, 'WAVE');
+    wstr(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, SR, true); v.setUint32(28, SR * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    wstr(36, 'data'); v.setUint32(40, n * 2, true);
+    var off = 44;
+    for (var i = 0; i < n; i++, off += 2) {
+      var x = Math.max(-1, Math.min(1, samples[i]));
+      v.setInt16(off, x < 0 ? x * 0x8000 : x * 0x7FFF, true);
+    }
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+
+  /* ── 5. Encode with AudioEncoder ────────────────────────────────────────────── */
+  // If the encoder won't emit ADTS itself we wrap each frame by hand — a 7-byte header,
+  // which is the whole reason AAC is the preferred target (Opus would need real muxing).
+  var ADTS_RATES = [96000,88200,64000,48000,44100,32000,24000,22050,16000,12000,11025,8000,7350];
+  function adtsHeader(len, sampleRate, channels) {
+    var idx = ADTS_RATES.indexOf(sampleRate);
+    var full = len + 7, h = new Uint8Array(7);
+    h[0] = 0xFF; h[1] = 0xF1;
+    h[2] = (1 << 6) | (idx << 2) | ((channels >> 2) & 1);
+    h[3] = ((channels & 3) << 6) | ((full >> 11) & 3);
+    h[4] = (full >> 3) & 0xFF;
+    h[5] = ((full & 7) << 5) | 0x1F;
+    h[6] = 0xFC;
+    return h;
+  }
+  function resample(samples, from, to) {
+    if (from === to) return samples;
+    var ratio = to / from, n = Math.round(samples.length * ratio), out = new Float32Array(n);
+    for (var i = 0; i < n; i++) {
+      var src = i / ratio, i0 = Math.floor(src), f = src - i0;
+      out[i] = (samples[i0] || 0) * (1 - f) + (samples[i0 + 1] || 0) * f;
+    }
+    return out;
+  }
+  function encodeWith(c, samples) {
+    return new Promise(function (resolve, reject) {
+      var data = resample(samples, SR, c.sampleRate);
+      var chunks = [], bytes = 0, err = null;
+      var t0 = performance.now();
+      var enc = new AudioEncoder({
+        output: function (chunk) {
+          var b = new Uint8Array(chunk.byteLength);
+          chunk.copyTo(b);
+          bytes += b.length;
+          if (c.adts) chunks.push(b);
+          else if (c.codec === 'mp4a.40.2') { chunks.push(adtsHeader(b.length, c.sampleRate, 1)); chunks.push(b); }
+          else chunks.push(b);   // opus: payload only — a real container comes in r17
+        },
+        error: function (e) { err = e; reject(e); }
+      });
+      enc.configure(encConfig(c));
+      var FRAME = c.sampleRate;    // feed one second at a time
+      var i = 0;
+      (function feed() {
+        try {
+          while (i < data.length) {
+            if (enc.encodeQueueSize > 8) { setTimeout(feed, 8); return; }
+            var n = Math.min(FRAME, data.length - i);
+            var slice = data.slice(i, i + n);
+            var ad = new AudioData({
+              format: 'f32-planar', sampleRate: c.sampleRate, numberOfFrames: n,
+              numberOfChannels: 1, timestamp: Math.round(i / c.sampleRate * 1e6), data: slice
+            });
+            enc.encode(ad); ad.close();
+            i += n;
+          }
+          enc.flush().then(function () {
+            enc.close();
+            if (err) return;
+            resolve({ bytes: bytes, ms: performance.now() - t0, chunks: chunks });
+          }).catch(reject);
+        } catch (e) { reject(e); }
+      })();
+    });
+  }
+
+  /* ── 6. Playback + seek accuracy ────────────────────────────────────────────── */
+  function testPlayback(blob, expectedSec, label) {
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(blob);
+      var a = new Audio();
+      var done = false;
+      var timer = setTimeout(function () { finish({ ok: false, why: 'timeout (no metadata)' }); }, 12000);
+      function finish(r) {
+        if (done) return; done = true;
+        clearTimeout(timer);
+        try { a.pause(); } catch (_) {}
+        URL.revokeObjectURL(url);
+        resolve(r);
+      }
+      a.addEventListener('error', function () { finish({ ok: false, why: 'decode error' }); });
+      a.addEventListener('loadedmetadata', function () {
+        var dur = a.duration;
+        // Seek to three points and see where we actually land.
+        var targets = [expectedSec * 0.25, expectedSec * 0.5, expectedSec * 0.85];
+        var errs = [], k = 0;
+        function seekNext() {
+          if (k >= targets.length) {
+            finish({ ok: true, duration: dur, maxErr: Math.max.apply(null, errs), errs: errs });
+            return;
+          }
+          var want = targets[k++];
+          var onSeeked = function () {
+            a.removeEventListener('seeked', onSeeked);
+            errs.push(Math.abs(a.currentTime - want));
+            seekNext();
+          };
+          a.addEventListener('seeked', onSeeked);
+          try { a.currentTime = want; } catch (e) { errs.push(NaN); seekNext(); }
+          setTimeout(function () { if (errs.length < k) { a.removeEventListener('seeked', onSeeked); errs.push(NaN); seekNext(); } }, 4000);
+        }
+        seekNext();
+      });
+      a.preload = 'metadata';
+      a.src = url;
+      a.load();
+    });
+  }
+
+  /* ── 7. Native engine test (app only) ───────────────────────────────────────── */
+  function testNative(blob, name, expectedSec) {
+    var C = window.Capacitor, P = C && C.Plugins;
+    var FS = P && P.Filesystem, NA = P && P.NativeAudio;
+    if (!FS || !NA) return Promise.resolve(null);
+    document.getElementById('c-native').hidden = false;
+    return new Promise(function (resolve) {
+      var fr = new FileReader();
+      fr.onload = function () {
+        var b64 = String(fr.result).split(',')[1] || '';
+        FS.writeFile({ path: 'probe/' + name, data: b64, directory: 'CACHE', recursive: true })
+          .then(function () { return FS.getUri({ path: 'probe/' + name, directory: 'CACHE' }); })
+          .then(function (u) {
+            var uri = u && u.uri;
+            var out = { uri: uri, duration: 0, seekErr: null, played: false };
+            var readyFired = false, timer = setTimeout(function () { done('timeout'); }, 15000);
+            var offReady = NA.addListener('ready', function (d) {
+              readyFired = true;
+              out.duration = (d && d.duration) || 0;
+              NA.play().then(function () {
+                out.played = true;
+                setTimeout(function () {
+                  var want = expectedSec * 0.5;
+                  NA.seekTo({ seconds: want });
+                  setTimeout(function () {
+                    NA.pause();
+                    done(null, want);
+                  }, 1200);
+                }, 900);
+              }).catch(function (e) { done('play failed: ' + (e && e.message || e)); });
+            });
+            var lastPos = 0;
+            var offTime = NA.addListener('time', function (d) { if (d && d.position) lastPos = d.position; });
+            function done(why, want) {
+              clearTimeout(timer);
+              try { NA.pause(); } catch (_) {}
+              try { if (offReady && offReady.remove) offReady.remove(); } catch (_) {}
+              try { if (offTime && offTime.remove) offTime.remove(); } catch (_) {}
+              if (want != null) out.seekErr = Math.abs(lastPos - want);
+              out.why = why;
+              FS.deleteFile({ path: 'probe/' + name, directory: 'CACHE' }).catch(function () {});
+              resolve(out);
+            }
+            NA.prepare({ url: uri, title: 'ThaiEar probe', subtitle: 'capability test', mode: 'std' })
+              .catch(function (e) { done('prepare failed: ' + (e && e.message || e)); });
+          })
+          .catch(function (e) { resolve({ why: 'write failed: ' + (e && e.message || e) }); });
+      };
+      fr.onerror = function () { resolve({ why: 'read failed' }); };
+      fr.readAsDataURL(blob);
+    });
+  }
+
+  /* ── run ────────────────────────────────────────────────────────────────────── */
+  document.getElementById('run').addEventListener('click', function () {
+    var btn = this; btn.disabled = true;
+    var native = probeEnv();
+    probePlayback();
+    var session = null, supported = [], best = null, wavBlob = null;
+    probeEncoders()
+      .then(function (s) { supported = s; return buildSession(); })
+      .then(function (sess) {
+        session = sess;
+        row('t-size', 'Session length', Math.floor(sess.seconds / 60) + ':' + ('0' + Math.round(sess.seconds % 60)).slice(-2));
+        row('t-size', 'Sentences', String(sess.sentences));
+        row('t-size', 'Actually audible', Math.round(sess.audibleRatio * 100) + '%  (rest is silence)');
+        wavBlob = encodeWav(sess.samples);
+        row('t-size', 'WAV (today’s format)', mb(wavBlob.size), 'warn');
+        best = { blob: wavBlob, name: 'probe.wav', label: 'WAV' };
+        if (!supported.length) { row('t-size', 'Encoded', 'no encoder available', 'no'); return null; }
+        var wav = wavBlob;
+        var chain = Promise.resolve();
+        // Only size-test configs at the session's own rate: resampling 7 minutes to 48 kHz would
+        // allocate ~80 MB on top of everything else, which is how you crash a mid-range phone.
+        supported.filter(function (c) { return c.sampleRate === SR; }).forEach(function (c) {
+          chain = chain.then(function () {
+            status('Encoding: ' + c.name + '…');
+            return encodeWith(c, sess.samples).then(function (r) {
+              var saving = Math.round((1 - r.bytes / wav.size) * 100);
+              row('t-size', c.name, mb(r.bytes) + '  ·  ' + secs(r.ms) + '  ·  −' + saving + '%', 'yes');
+              if (c.codec === 'mp4a.40.2' && (!best || best.label === 'WAV')) {
+                var parts = r.chunks;
+                best = { blob: new Blob(parts, { type: 'audio/aac' }), name: 'probe.aac', label: c.name };
+              }
+            }).catch(function (e) {
+              row('t-size', c.name, 'FAILED: ' + (e && (e.name + ' ' + (e.message || '')) || e), 'no');
+            });
+          });
+        });
+        supported.filter(function (c) { return c.sampleRate !== SR; }).forEach(function (c) {
+          row('t-size', c.name, 'supported (not size-tested)', 'warn');
+        });
+        return chain;
+      })
+      .then(function () {
+        status('Testing playback + seek accuracy…');
+        var tests = [{ blob: wavBlob, label: 'WAV (baseline)' }];
+        if (best && best.label !== 'WAV') tests.push({ blob: best.blob, label: best.label });
+        var chain = Promise.resolve();
+        tests.forEach(function (t) {
+          chain = chain.then(function () {
+            return testPlayback(t.blob, session.seconds, t.label).then(function (r) {
+              if (!r.ok) { row('t-seek', t.label, 'FAILED — ' + r.why, 'no'); return; }
+              if (!isFinite(r.duration)) {
+                row('t-seek', t.label + ' — duration', 'not reported (' + r.duration + ') — expected ' + session.seconds.toFixed(1) + 's', 'no');
+              } else {
+                var durErr = Math.abs(r.duration - session.seconds);
+                row('t-seek', t.label + ' — duration', r.duration.toFixed(1) + 's (out by ' + durErr.toFixed(1) + 's)',
+                    durErr < 1 ? 'yes' : (durErr < 5 ? 'warn' : 'no'));
+              }
+              row('t-seek', t.label + ' — worst seek error',
+                  isNaN(r.maxErr) ? 'seek unsupported' : r.maxErr.toFixed(2) + ' s',
+                  r.maxErr < 0.15 ? 'yes' : (r.maxErr < 1 ? 'warn' : 'no'));
+            });
+          });
+        });
+        return chain;
+      })
+      .then(function () {
+        if (!native || !best) return null;
+        status('Testing the app’s native engine (audio will play briefly)…');
+        return testNative(best.blob, best.name, session.seconds).then(function (r) {
+          if (!r) return;
+          row('t-native', 'Format tested', best.label);
+          row('t-native', 'Prepared + played', r.played ? 'yes' : 'no', r.played ? 'yes' : 'no');
+          row('t-native', 'Duration reported', (r.duration || 0).toFixed(1) + ' s',
+              Math.abs((r.duration || 0) - session.seconds) < 2 ? 'yes' : 'warn');
+          if (r.seekErr != null) row('t-native', 'Seek error', r.seekErr.toFixed(2) + ' s',
+              r.seekErr < 0.3 ? 'yes' : (r.seekErr < 1.5 ? 'warn' : 'no'));
+          if (r.why) row('t-native', 'Note', r.why, 'no');
+        });
+      })
+      .then(function () {
+        status('Done — tap "Copy results" and paste them back to Claude.');
+        document.getElementById('copy').disabled = false;
+        btn.textContent = 'Run again';
+        btn.disabled = false;
+      })
+      .catch(function (e) {
+        log('FATAL: ' + (e && (e.stack || e.message) || e));
+        status('Stopped: ' + (e && e.message || e) + ' — copy the results anyway, the partial log is useful.');
+        document.getElementById('copy').disabled = false;
+        btn.disabled = false;
+      });
+  });
+
+  document.getElementById('copy').addEventListener('click', function () {
+    var ta = document.getElementById('raw');
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (_) {}
+    if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(function () { status('Results copied.'); },
+      function () { status(ok ? 'Results copied.' : 'Select the text above and copy it manually.'); });
+    else status(ok ? 'Results copied.' : 'Select the text above and copy it manually.');
+  });
+})();
+</script>
+</body>
+</html>
