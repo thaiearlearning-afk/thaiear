@@ -1474,7 +1474,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r20a';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r20b';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

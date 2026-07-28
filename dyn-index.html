@@ -105,7 +105,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Owner test build · dyn index r20a</div>
+  <div class="eyebrow">Owner test build · dyn index r20b</div>
   <h1>Dynamic player test index</h1>
   <p class="lede">The test space's own front page, so downloads can be exercised the way the real
   index works. A dynamic download stores each sentence's <strong>clips</strong>, not a finished file —
@@ -161,7 +161,24 @@
      here would promise offline playback the topic cannot deliver. Ownership is the 'topic' ref;
      an entry with no refs field at all predates refs and IS a topic download. */
   function ownedByTopic(e) { return !!e && (!e.refs || e.refs.indexOf('topic') >= 0); }
-  function isDownloaded(p) { return ownedByTopic(manifest()[p]); }
+  /* ...but the ref alone is not enough. Entries written BEFORE r20a already carry a bogus
+     'topic' ref from a playlist download, and they are indistinguishable from a real one by
+     shape. So the tick asks the only question that actually matters: are all the clips a dyn
+     build needs actually here? That is self-healing (no migration, old bad entries simply stop
+     claiming), and it also catches a download that was interrupted or partially evicted. */
+  function hasAllClips(e, n) {
+    if (!e || !e.files) return false;
+    var th = 0, en = 0;
+    e.files.forEach(function (f) {
+      if (/_TH\.mp3$/.test(f)) th++;
+      else if (/_EN\.mp3$/.test(f)) en++;
+    });
+    return th >= n && en >= n;
+  }
+  function isDownloaded(p, n) {
+    var e = manifest()[p];
+    return ownedByTopic(e) && hasAllClips(e, n);
+  }
   function status(msg, err) {
     var el = document.getElementById('dl-status');
     el.textContent = msg || '';
@@ -192,7 +209,7 @@
     root.innerHTML = '';
     UNITS.forEach(function (u) {
       var w = working[u.prefix];
-      var dl = !w && isDownloaded(u.prefix);
+      var dl = !w && isDownloaded(u.prefix, u.n);
       var el = document.createElement('div');
       el.className = 'unit' + (w ? ' working' : '');
       var sel = w
