@@ -662,13 +662,55 @@
      implementation. EXCLUDED sentences are downloaded too — exclusion is a playback choice,
      and re-including one later must not need a connection. */
   function dynDlRef() { return PLMODE ? DYN_KEY_NS : 'topic'; }
-  // Rebuild the stored mp3 for the current settings, from the downloaded clips (works offline).
-  function dynUpdateMp3() {
-    var bar = $('offline-bar');
-    if (bar) bar.innerHTML = '<span class="offline-status"><span class="prog-spin"></span> Constructing dynamic mp3<span class="dyn-dots"></span></span>';
-    dynEnsureSession(null, false)
-      .then(function () { renderOfflineBar(); })
-      .catch(function () { renderOfflineBar(); });
+  /* r24: the update prompt now means what it should — THE AUDIO ON R2 HAS CHANGED. (It used to
+     mean "your settings no longer match the stored mp3", which was noise: pressing play
+     reconstructs anyway, so it resolved itself and never needed a button.)
+     Reuses the live site's existing mechanism: audio-versions.json stamps each topic's audio,
+     the stamp is recorded per prefix at download time, and a mismatch means the clips were
+     re-rendered. A missing stamp ADOPTS the current value rather than nagging, exactly as the
+     classic path does for downloads that predate the mechanism. */
+  function dynDropSessions() {
+    ['te', 'et'].forEach(function (mode) {
+      var meta = dynReadMeta(DYN_KEY_NS, mode);
+      try { localStorage.removeItem(dynMetaLsKey(DYN_KEY_NS, mode)); } catch (_) {}
+      if (!meta) return;
+      if (NATIVE && meta.file) {
+        var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+        if (FS) FS.deleteFile({ path: meta.file, directory: 'DATA' }).catch(function () {});
+      } else if (window.caches) {
+        caches.open(AUDIO_DL_CACHE).then(function (c) {
+          c.delete(dynCachePath(DYN_KEY_NS, mode, meta.ext)).catch(function () {});
+        }).catch(function () {});
+      }
+    });
+    dynSession = null; mainSrcReady = false;
+  }
+  function dynCheckAudioUpdate() {
+    if (!navigator.onLine) return;      // can't check it, and couldn't act on it either
+    loadAudioVers().then(function (map) {
+      if (!map) return;
+      var by = dynDlGroups(), m = getManifest(), adopted = false, stale = false;
+      Object.keys(by).forEach(function (pfx) {
+        var e = m[pfx]; if (!e) return;
+        var cur = map[pfx];
+        if (cur == null) return;                                  // nothing published for it
+        if (e.av == null) { e.av = cur; adopted = true; return; }  // baseline, don't nag
+        if (e.av !== cur) stale = true;
+      });
+      if (adopted) setManifest(m);
+      if (!stale) return;
+      var bar = $('offline-bar'); if (!bar) return;
+      bar.innerHTML = '<span class="offline-status">⟳ Download audio update?</span>' +
+        '<button class="offline-btn" onclick="dynUpdateAudio()">Update</button>' +
+        '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
+    }).catch(function () {});
+  }
+  function dynUpdateAudio() {
+    if (!navigator.onLine) { setOfflineState('error', 'you’re offline — reconnect to update'); return; }
+    // The stored mp3 was built from the OLD clips, and its key encodes settings, not clip
+    // content — so it would NOT rebuild by itself and would keep playing superseded audio.
+    dynDropSessions();
+    dynDownloadHere();
   }
   /* r22: how much room this download actually takes, shown next to "Available offline".
      Measured, not estimated — the clip files plus the constructed sessions — and cached into
@@ -682,12 +724,11 @@
       if (!e || typeof e.bytes !== 'number') { known = false; return; }
       total += e.bytes;
     });
-    if (!known) return null;
-    ['te', 'et'].forEach(function (mode) {          // the built mp3s count too — they are the big ones
-      var meta = dynReadMeta(DYN_KEY_NS, mode);
-      if (meta && meta.bytes) total += meta.bytes;
-    });
-    return total;
+    // r24: RAW CLIPS ONLY. Counting the constructed mp3 made the figure move every time the
+    // settings changed, which looked like the download changing when only the working file had.
+    // The clips are what was actually downloaded; the mp3 is explicitly "replaced each time you
+    // generate a new dynamic mp3", so it is not part of what this number promises.
+    return known ? total : null;
   }
   function dynDlMeasure() {
     var m = getManifest();
@@ -800,7 +841,7 @@
       });
       return c;
     });
-    chain.then(function () {
+    chain.then(function () { return loadAudioVers(); }).then(function (avMap) {
       // Merge into whatever is already recorded — a playlist and a topic can legitimately both
       // claim the same prefix, and neither may erase the other's files or ref.
       var m = getManifest(), ref = dynDlRef();
@@ -813,6 +854,7 @@
         e.refs.push(ref);
         e.tier = by[pfx].tier; e.at = Date.now(); e.dyn = true;
         delete e.bytes;                       // file set changed → re-measure rather than lie
+        if (avMap && avMap[pfx] != null) e.av = avMap[pfx];   // baseline for "audio update?"
         m[pfx] = e;
       });
       setManifest(m);
@@ -854,20 +896,7 @@
       });
     });
     setManifest(m);
-    // The constructed sessions go too — "Delete" has to actually free the space.
-    ['te', 'et'].forEach(function (mode) {
-      var meta = dynReadMeta(DYN_KEY_NS, mode);
-      try { localStorage.removeItem(dynMetaLsKey(DYN_KEY_NS, mode)); } catch (_) {}
-      if (!meta) return;
-      if (NATIVE && meta.file) {
-        var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
-        if (FS) FS.deleteFile({ path: meta.file, directory: 'DATA' }).catch(function () {});
-      } else if (window.caches) {
-        caches.open(AUDIO_DL_CACHE).then(function (c) {
-          c.delete(dynCachePath(DYN_KEY_NS, mode, meta.ext)).catch(function () {});
-        }).catch(function () {});
-      }
-    });
+    dynDropSessions();   // "Delete" has to actually free the space
     if (PLMODE) {
       try {
         var pm = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}');
@@ -875,7 +904,6 @@
         localStorage.setItem('thaiear_offline_pl', JSON.stringify(pm));
       } catch (_) {}
     }
-    dynSession = null; mainSrcReady = false;
     return chain.then(function () { setOfflineState('idle'); });
   }
 
@@ -982,18 +1010,9 @@
       // are all here", which is the only claim worth making.
       if (!dynDlHasAll()) { setOfflineState('idle'); return; }
       cachePage();
-      // If the STORED mp3 was built with different settings from the ones now selected, say so
-      // and offer to rebuild it — and deliberately show NO size while in that state, because a
-      // figure here would be ambiguous between the old file and the proposed one.
-      var sm = dynReadMeta(DYN_KEY_NS, currentMode);
-      if (sm && sm.key !== dynKey()) {
-        bar.innerHTML = '<span class="offline-status">⟳ Update dynamic mp3 to match current settings?</span>' +
-          '<button class="offline-btn" onclick="dynUpdateMp3()">Update</button>' +
-          '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
-        return;
-      }
       setOfflineState('downloaded');
       dynPaintOfflineSize();
+      dynCheckAudioUpdate();   // async; upgrades the bar only if the CLIPS on R2 have changed
       return;
     }
     var ent = getManifest()[PREFIX];
@@ -1736,7 +1755,7 @@
      it is harmless and correct; do not reintroduce a hidden-frame build without first
      measuring it against the same build in the foreground. */
   var DYN_PREBUILD = DYN && /[?&]prebuild=1(&|$)/.test(location.search);
-  var DYN_BUILD = 'r23';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r24';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2727,7 +2746,6 @@
       mainSrcReady = true;
       dynPosStale = false;      // new timeline in place; positions may be tracked again
       dynStatus(null);
-      renderOfflineBar();       // the stored mp3 now matches the settings again
     }).catch(function (e) {
       var code = e && e.code;
       if (code === 'noauth' || code === 401 || code === 403) {
@@ -2820,7 +2838,6 @@
     dynSyncSentBtns();   // no map until the rebuild → ① buttons grey out
     if (revertHit) dynStatus(null);
     else dynStatus('Changes saved — your session will reconstruct on next play.', false);
-    renderOfflineBar();   // downloaded? then the stored mp3 no longer matches — offer the update
   }
   /* ── round-14: account-level settings sync (auth.js dynPrefs / public.dyn_prefs) ──
      Boot stays instant on the local mirror; once auth resolves the server copy is written
@@ -4824,7 +4841,7 @@
     progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn,
     advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat,
     downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete, refreshTopic: refreshTopic,
-    dynUpdateMp3: dynUpdateMp3 });
+    dynUpdateAudio: dynUpdateAudio });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
