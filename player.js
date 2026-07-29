@@ -1680,14 +1680,19 @@
     if (!PLMODE) return false;                 // topic pages gate the whole page, not per sentence
     var tier = sentTierOf(s);
     if (tier !== 'member' && tier !== 'premium') return false;
+    /* PREMIUM is exactly canUseOffline(), identical to entitledForPage(). This asked
+       isSubscribed() alone, which reads TRUE from the cached subscription while offline — so a
+       member 51 days unconfirmed kept full access to premium sentences INSIDE PLAYLISTS even
+       though the same person was correctly gated on the topic page. I fixed that call site and
+       missed this sibling; the two must stay in step, because they are the same question asked
+       about a page and about a row. */
+    if (tier === 'premium') return !canUseOffline('premium');
+    // MEMBER = any signed-in user. A download of theirs stays open (nothing to expire).
     var pfx = (s && s.prefix) ? s.prefix : PREFIX;
-    // Downloaded clips stay playable while the offline licence holds — same rule as
-    // entitledForPage(), so a member who downloaded then lapsed keeps their paid period.
-    if ((OFFLINE || WEB_DL || DYN_WEB_DL) && pfx && isDownloaded(pfx) && canUseOffline(tier)) return false;
+    if ((OFFLINE || WEB_DL || DYN_WEB_DL) && pfx && isDownloaded(pfx)) return false;
     var a = AUTHV();
     if (!a || !a.isReady) return false;        // auth still resolving → never lock a paying user
-    if (tier === 'member') return !(a.getUser && a.getUser());
-    return !(a.isSubscribed && a.isSubscribed());
+    return !(a.getUser && a.getUser());
   }
   // Locked items sink to the bottom, keeping their relative order; display numbers follow the
   // list the user actually sees. Called on mount and again whenever auth resolves/changes.
@@ -1964,7 +1969,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29y';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29z';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
