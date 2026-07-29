@@ -36,6 +36,13 @@
      the window must not keep granting access. Set true only on an error-free read, cleared on
      sign-out and on any failure, so the fallback stays generous exactly when it should. */
   var subFresh = false;
+  var subFreshAt = 0;
+  /* Freshness must EXPIRE. It was set once on a clean read and never cleared, so loading a page
+     online and then switching on airplane mode left it true in memory — the app went on believing
+     it had a live server answer while offline, and the whole offline branch stayed unreachable.
+     That is why the 51-day case passed once (reloaded while already offline) and never again.
+     Two bounds: a short TTL, and an explicit clear when the device reports going offline. */
+  var SUB_FRESH_TTL_MS = 5 * 60 * 1000;
   var currentSub = null;         // {status, cancel_at_period_end, current_period_end}
   var currentConsent = false;    // opted in to marketing email? (profiles row)
   var consentLoaded = false;     // has that consent flag been read from profiles yet?
@@ -225,7 +232,7 @@
   }
   function refreshSubscription() {
     if (!client || !currentUser) {
-      currentSubscribed = false; currentSub = null;
+      currentSubscribed = false; currentSub = null; subFresh = false;
       // Drop only the cached subscription STATUS here (so the nav/account render logged-out). Do NOT
       // clear the premium OFFLINE licence stamps (thaiear_lifetime/lastVerified/sub_until) on a bare
       // currentUser == null: supabase-js emits a null-session auth change when it can't refresh an
@@ -256,6 +263,7 @@
            with data:null and blanked currentSubscribed to false, undoing the cache seed above
            and reading a paid-up member as unsubscribed. The .catch below never saw it. */
         if (res && res.error) return;
+        subFresh = true; subFreshAt = Date.now();   // authoritative answer, whatever it says
         currentSub = (res && res.data) || null;
         var s = currentSub && currentSub.status;
         currentSubscribed = (s === 'active' || s === 'trialing');
@@ -540,7 +548,7 @@
     // The real gate is server-side (/api/audio); this just drives the unlocked/locked UX.
     isSubscribed: function () { return currentSubscribed; },
     // True only when a clean server read answered this session — see subFresh.
-    isSubscriptionFresh: function () { return subFresh; },
+    isSubscriptionFresh: function () { return subFresh && (Date.now() - subFreshAt) < SUB_FRESH_TTL_MS; },
     getSubscription: function () { return currentSub; }, // {status, cancel_at_period_end, current_period_end}
     // True inside the Capacitor app. Pages use this to HIDE any upgrade-to-premium / checkout CTA
     // (Google Play reader-app rule: no in-app purchase or steering to web payment). Web is unaffected.
@@ -961,7 +969,13 @@
       /* Back online → if supabase lost its session while we were away, hand our tokens back so
          the user is silently restored instead of facing a sign-in screen. Also runs once at
          startup for the case where the app is opened online after a long offline spell. */
+      /* Losing the network invalidates any live server answer we were holding. Without this,
+         loading a page online and then switching on airplane mode kept subFresh true in memory,
+         so the app went on believing it had a current verdict and the offline rules never ran —
+         the reported "it worked once and then never again". Coming back online, re-ask. */
+      window.addEventListener('offline', function () { subFresh = false; });
       window.addEventListener('online', function () {
+        refreshSubscription();          // get a real answer again before anything relies on one
         if (restoredFromIdentity || !currentSession || !currentSession.access_token) reseedSession();
       });
       // And immediately, if we booted on our own record while a network is available — otherwise
