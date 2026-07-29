@@ -230,7 +230,8 @@
          sub_until to the real period end within a second of page load — silently undoing the
          31/41/51-day backdating and making those buttons look inert. The simulator owns the
          licence INPUTS while armed; canUseOffline's arithmetic over them is untouched. */
-      if (simArmed()) return;
+      if (simArmed()) { T('stampOfflineLicence SUPPRESSED'); return; }
+      T('stampOfflineLicence WROTE');
       localStorage.setItem('thaiear_lastVerified', String(Date.now()));
       var end = currentSub && currentSub.current_period_end;
       if (end != null && end !== '') {

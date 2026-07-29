@@ -476,6 +476,7 @@
      saw no simulator, and re-stamped the licence markers from the real subscription — silently
      wiping a 51-day simulation every time the owner passed through the index to reach the test
      space. The flag is localStorage, which is shared across pages; the object is not. */
+  function T(m) { try { if (window.ThaiEarSim && window.ThaiEarSim.trace) window.ThaiEarSim.trace('player: ' + m); } catch (_) {} }
   function simArmed() {
     try { var v = localStorage.getItem('te_sim_tier') || ''; return !!v && v !== 'off'; }
     catch (_) { return false; }
@@ -486,7 +487,8 @@
       // this, setting "51 days" online and THEN going offline lost the backdating on the way out
       // (this fires from canUseOffline's online-and-subscribed branch), so the offline half of the
       // test could never be set up. The simulator owns these inputs while armed.
-      if (simArmed()) return;
+      if (simArmed()) { T('stampVerified SUPPRESSED'); return; }
+      T('stampVerified WROTE');
       localStorage.setItem('thaiear_lastVerified', String(Date.now()));
       var a = window.ThaiEarAuth, sub = a && a.getSubscription && a.getSubscription();
       var end = sub && sub.current_period_end;
@@ -1962,7 +1964,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29w';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29x';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
