@@ -309,7 +309,10 @@
   /* One-shot boot purge — runs NOW, at script load, before auth.js exists. This is the half of
      the purge that actually makes the test honest; see purgeSupabaseSession() above. */
   var bootPurged = [];
-  try { localStorage.setItem(K_TRACE, '[]'); } catch (_) {}   // fresh trace per boot
+  /* Do NOT clear per load. The panel is on a different page from the failure, so navigating to
+     read the trace used to erase the very run being investigated. Keep a rolling buffer across
+     loads with a page marker, and clear explicitly from the panel instead. */
+  trace('── load ' + (location.pathname.split('/').pop() || '/') + ' ──');
   // Sticky: enforced on EVERY load while armed, before auth.js exists.
   if (keepPurged()) bootPurged = killSbKeys();
   function sbKeysPresent() {
@@ -322,8 +325,8 @@
     } catch (_) {}
     return n;
   }
-  trace('BUILD r29x');
-  trace('sim dis=' + (noIdentity()?1:0) + ' kp=' + (keepPurged()?1:0) + ' kill=' + bootPurged.length +
+  trace('BUILD r29y');
+  trace('sim tier=' + (tier() || 'real') + ' dis=' + (noIdentity()?1:0) + ' kp=' + (keepPurged()?1:0) + ' kill=' + bootPurged.length +
         ' sb=' + sbKeysPresent().length + ' id=' + (get(K_ID_PEEK)?1:0) +
         ' so=' + (get('thaiear_signed_out')==='1'?1:0));
 
@@ -437,6 +440,7 @@
     shellCaches: shellCaches,
     probeAudio: probeAudio,
     trace: trace,
+    traceClear: function () { set(K_TRACE, '[]'); },
     traceRead: traceRead,
     sbKeysPresent: sbKeysPresent,
     probeFile: function (k) { return (PROBE[k] || {}).file || ''; },
