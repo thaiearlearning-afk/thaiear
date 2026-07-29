@@ -84,6 +84,8 @@
     padding:1px 6px; border-radius:9px; margin-left:6px; }
   .tier-free { background:var(--accent-light); color:var(--accent); }
   .tier-member { background:#EFEAFB; color:#6B4FBB; }
+  /* Gold TEXT tone #B29234 (the index "Premium" pill), not the brighter graphic gold. */
+  .tier-premium { background:#FBF5DC; color:#B29234; }
 
   /* Selection controls — lifted VERBATIM from index.html so the test space looks like the
      real thing. The outer span is a big finger-friendly tap target; the inner dot/tick is the
@@ -129,7 +131,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Owner test build · dyn index r28a</div>
+  <div class="eyebrow">Owner test build · dyn index r29</div>
   <h1>Dynamic player test index</h1>
   <p class="lede">The test space's own front page, so downloads can be exercised the way the real
   index works. A dynamic download stores each sentence's <strong>clips</strong>, not a finished file —
@@ -162,7 +164,10 @@
   var K = 'k=cu38961y';
   var UNITS = [
     { page: 'topic-test.html',  name: 'Communication survival', prefix: 'CommSurvival_BEG',     key: 'topic-03',  tier: 'free',   n: 25 },
-    { page: 'topic-test2.html', name: 'Shopping & money 1',     prefix: 'ShoppingAndMoney_BEG', key: 'topic-11a', tier: 'member', n: 22 }
+    { page: 'topic-test2.html', name: 'Shopping & money 1',     prefix: 'ShoppingAndMoney_BEG', key: 'topic-11a', tier: 'member', n: 22 },
+    // Premium test unit (added for the playlist premium-gating test) — the third tier, so a
+    // playlist can mix free + member + premium and the lock grouping has something to group.
+    { page: 'topic-test3.html', name: 'Colours & descriptions 2', prefix: 'ColoursAndDescriptions2_BEG', key: 'topic-04b', tier: 'premium', n: 22 }
   ];
   var AUDIO_BASE = 'https://audio.thaiear.com';
   var AUDIO_DL_CACHE = 'thaiear-audio-dl';                                  // must match player.js

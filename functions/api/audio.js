@@ -43,8 +43,11 @@ export async function onRequestGet(context) {
   // Flat filenames only — no slashes / traversal. The premium bucket holds only these.
   if (!/^[A-Za-z0-9_]+\.mp3$/.test(file)) return json({ error: 'bad_request' }, 400);
 
-  // 1) Which tier does this file require? Prefix = name before _S###_TH / _TE / _ET.
-  const m = file.match(/^(.+?)_(?:S\d+_TH|TE|ET)\.mp3$/);
+  // 1) Which tier does this file require? Prefix = name before _S###_TH / _S###_EN / _TE / _ET.
+  // _EN (per-sentence English, added for the dynamic player) MUST be listed here: an unmatched
+  // filename falls through to the whole name as the "prefix", which is in no tier list, so it
+  // defaults to premium — silently demanding a subscription for a MEMBER topic's English clips.
+  const m = file.match(/^(.+?)_(?:S\d+_(?:TH|EN)|TE|ET)\.mp3$/);
   const prefix = m ? m[1] : file.replace(/\.mp3$/, '');
   // ── TIER LISTS — source of truth (edit here in git; no dashboard needed) ──
   // Keep in sync with topics.js `access` flags + each page's `tier`. The env vars are

@@ -460,6 +460,36 @@
       if (end) localStorage.setItem('thaiear_sub_until', String(parseExpiry(end)));
     } catch (_) {}
   }
+  /* ══ ENTITLEMENT SIMULATOR (owner test tool — see playlists.html "Simulate account") ═══════
+     Lets the owner flip entitlement without touching a real Supabase account or waiting for a
+     subscription to actually expire. Stored in localStorage so it SURVIVES going offline and
+     restarting the app — which is the whole point: the offline entitlement check is itself
+     100% client-side (canUseOffline reads localStorage, never the network), so simulating it
+     here exercises the REAL offline code path, not a stand-in for it.
+       ''/'off'    — use the real auth state (default; nothing is overridden)
+       'premium'   — entitled: active subscription + valid offline licence
+       'expired'   — signed in, subscription gone AND the offline licence lapsed (premium locks,
+                     member stays open — member only ever requires a signed-in user)
+       'signedout' — no user at all (member AND premium lock)
+     ⚠ IT OVERRIDES ONLY THE AUTH ANSWER — never a decision. The simulated state is injected at
+     the ThaiEarAuth boundary (getUser/isSubscribed), exactly where the real Supabase answer
+     enters; everything downstream — canUseOffline, the 30-day grace arithmetic, sentLocked,
+     entitledForPage, the licence overlay — then runs UNMODIFIED on it. A switch that forced
+     canUseOffline's return value would prove nothing: it would bypass the very code under test.
+     The elapsed-time case works the same way and is even purer: simElapse() below just BACKDATES
+     the real localStorage markers, so the real grace-window arithmetic decides the outcome.
+     ⚠ What it CANNOT simulate: the SERVER's answer. /api/audio still sees the real token, so a
+     really-subscribed owner would still be handed signed URLs. Use the separate "simulate server
+     denial" switch to exercise that path. */
+  function simDenies() { var S = window.ThaiEarSim; return !!(S && S.denies()); }
+  // The auth view every entitlement check reads: the real ThaiEarAuth unless sim.js is present
+  // AND armed, in which case a same-shape shim reporting the simulated account. Absent sim.js
+  // (i.e. every real page) this is a plain pass-through.
+  function AUTHV() {
+    var S = window.ThaiEarSim;
+    return S ? S.authView(window.ThaiEarAuth) : window.ThaiEarAuth;
+  }
+
   // May an offline download of this tier be played right now? free/member: always.
   // premium: live subscription when online; else within the verified-online window.
   function canUseOffline(tier) {
@@ -468,7 +498,7 @@
     // The flag is maintained by auth.js ONLY when the server confirms lifetime+active while online,
     // so a regular paying user can never reach this early-return.
     try { if (localStorage.getItem('thaiear_lifetime') === '1') return true; } catch (_) {}
-    var a = window.ThaiEarAuth;
+    var a = AUTHV();
     var subbed = a && a.isSubscribed && a.isSubscribed();
     // Only GRANT on the online fast-path — never DENY from it. navigator.onLine is unreliable in the
     // WebView (reports online in airplane mode, esp. at COLD START before the sub-cache seeds), so a
@@ -781,7 +811,12 @@
 
   function dynDlGroups() {
     var by = {};
-    sentences.forEach(function (s) {
+    // Never try to DOWNLOAD a locked sentence: its clips would 401/402 and, because dynDlFile
+    // throws after its retries, one denied clip aborts the whole download — the same
+    // all-or-nothing failure the playback path had. Topic pages are unaffected (sentLocked is
+    // PLMODE-only), and a per-session EXCLUDED sentence is still downloaded on purpose, so it
+    // is there the moment the user re-includes it.
+    sentences.filter(function (s) { return !sentLocked(s); }).forEach(function (s) {
       var th = dynClipRef(s, 'TH'), en = dynClipRef(s, 'EN');
       by[th.prefix] = by[th.prefix] || { tier: th.tier, files: [] };
       by[th.prefix].files.push(th.file, en.file);
@@ -1498,6 +1533,10 @@
   function buildUrl(file, gated) {
     if (gated == null) gated = GATED;
     if (!gated) return Promise.resolve(AUDIO_BASE + '/' + file);
+    // Owner test switch: pretend /api/audio refused. This is the ONE thing the entitlement
+    // simulator can't fake on its own — the server sees the owner's real (valid) token — so it
+    // is what exercises the "server disagrees with the client" fallback in dynBuildSessionFor.
+    if (simDenies()) return Promise.reject({ code: 402 });
     var token = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken)
       ? window.ThaiEarAuth.getAccessToken() : null;
     if (!token) return Promise.reject({ code: 'noauth' });
@@ -1520,7 +1559,7 @@
   function entitledForPage() {
     if (TIER !== 'member' && TIER !== 'premium') return true;   // free topic → open
     if ((OFFLINE || WEB_DL) && isDownloaded(PREFIX)) return true; // they downloaded it → were entitled (licence flow handles lapse)
-    var a = window.ThaiEarAuth;
+    var a = AUTHV();
     if (!a || !a.isReady) return true;                          // auth still resolving → don't wrongly gate a paying user
     if (TIER === 'member') return !!(a.getUser && a.getUser()); // member = any signed-in user
     return !!(a.isSubscribed && a.isSubscribed());              // premium = active subscription
@@ -1534,6 +1573,57 @@
     if (NATIVE) { premiumInfoSheet(); return; }
     window.location.href = 'subscribe.html';
   }
+  /* ══ PLAYLISTS: PER-SENTENCE ENTITLEMENT ═══════════════════════════════════════════════
+     A playlist MIXES TOPICS, so entitlement is a property of each sentence, not of the page —
+     playlists.html declares the page itself `tier:'free'`, which is why entitledForPage() lets
+     everyone press play here. Before this, a lapsed subscriber's playlist died WHOLE: the first
+     denied clip rejected a dynPool lane, that rejected the Promise.all, and the whole session
+     build failed — so the free sentences they were still entitled to never played either, and
+     they were thrown to the paywall with no idea which items caused it.
+     Now: locked sentences are dropped from the session (stitch the rest), grouped under a
+     "Premium content" heading at the BOTTOM of the list, and any interaction with one routes to
+     the same gate() the topic pages use (app → neutral sheet, web → paywall).
+     Topic pages are untouched — they keep their single whole-page gate. */
+  function sentTierOf(s) { return (s && s.tier != null) ? s.tier : TIER; }
+  function sentLocked(s) {
+    if (!PLMODE) return false;                 // topic pages gate the whole page, not per sentence
+    var tier = sentTierOf(s);
+    if (tier !== 'member' && tier !== 'premium') return false;
+    var pfx = (s && s.prefix) ? s.prefix : PREFIX;
+    // Downloaded clips stay playable while the offline licence holds — same rule as
+    // entitledForPage(), so a member who downloaded then lapsed keeps their paid period.
+    if ((OFFLINE || WEB_DL || DYN_WEB_DL) && pfx && isDownloaded(pfx) && canUseOffline(tier)) return false;
+    var a = AUTHV();
+    if (!a || !a.isReady) return false;        // auth still resolving → never lock a paying user
+    if (tier === 'member') return !(a.getUser && a.getUser());
+    return !(a.isSubscribed && a.isSubscribed());
+  }
+  // Locked items sink to the bottom, keeping their relative order; display numbers follow the
+  // list the user actually sees. Called on mount and again whenever auth resolves/changes.
+  function dynApplyLockOrder() {
+    if (!PLMODE) return false;
+    var open = [], shut = [], i;
+    for (i = 0; i < sentences.length; i++) (sentLocked(sentences[i]) ? shut : open).push(sentences[i]);
+    var next = open.concat(shut), changed = next.length !== sentences.length;
+    for (i = 0; i < next.length && !changed; i++) if (next[i] !== sentences[i]) changed = true;
+    sentences = next;
+    for (i = 0; i < sentences.length; i++) sentences[i].display = i + 1;
+    return changed;
+  }
+  function dynFirstLockedNum() {
+    for (var i = 0; i < sentences.length; i++) if (sentLocked(sentences[i])) return sentences[i].num;
+    return null;
+  }
+  // A locked card was tapped — same gate as a locked topic. Member → sign-in; premium → the
+  // neutral in-app sheet (NATIVE) or the website paywall.
+  function gateSent(num) {
+    var s = null;
+    for (var i = 0; i < sentences.length; i++) if (sentences[i].num === num) { s = sentences[i]; break; }
+    if (!s || !sentLocked(s)) return false;
+    gate(sentTierOf(s));
+    return true;
+  }
+
   // premiumInfoSheet(): compliance-safe explainer shown IN THE APP when a non-entitled visitor taps a
   // gated interaction on a premium topic. Google Play's reader-app rule forbids steering users to any
   // outside payment method, so this NEVER shows a price, the website, or a subscribe/checkout path — it
@@ -1562,9 +1652,13 @@
       ov.innerHTML =
         '<div role="dialog" aria-modal="true" style="background:#fff;border-radius:14px;max-width:360px;width:100%;' +
           'padding:22px 20px 18px;box-shadow:0 12px 40px rgba(0,0,0,.25);font-family:var(--font-ui,system-ui,sans-serif);">' +
-          '<div style="font:600 17px var(--font-ui,system-ui,sans-serif);color:#B29234;margin-bottom:8px;">🔒 Premium topic</div>' +
+          // Same sheet on a playlist, but the noun has to be right: the locked rows there are
+          // sentences drawn from several topics, not "this topic".
+          '<div style="font:600 17px var(--font-ui,system-ui,sans-serif);color:#B29234;margin-bottom:8px;">🔒 Premium ' +
+            (PLMODE ? 'content' : 'topic') + '</div>' +
           '<p style="font-size:14px;color:#5A5A5A;line-height:1.55;margin:0 0 12px;">' +
-            'You’re previewing this topic. A ThaiEar Premium membership unlocks:</p>' +
+            (PLMODE ? 'These sentences are for Premium members.' : 'You’re previewing this topic.') +
+            ' A ThaiEar Premium membership unlocks:</p>' +
           '<ul style="list-style:none;margin:0 0 16px;padding:0;font-size:14px;color:#1A1A1A;line-height:1.9;">' +
             '<li>✓ Every topic and level</li>' +
             '<li>✓ All sentence and full-topic audio</li>' +
@@ -1779,7 +1873,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r28a';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2191,7 +2285,11 @@
     return Math.max(1, Math.floor(t.length / 3));
   }
   function dynIncluded() {
-    if (PLMODE) return sentences.slice(0);   // playlists have no exclusion UI (round-11) — play everything
+    // Playlists have no exclusion UI (round-11) — play everything the visitor is ENTITLED to.
+    // Filtering locked sentences out HERE is what makes "skip the denied ones and stitch the
+    // rest" the normal path rather than an error path: their clips are never requested, so the
+    // build never sees a 402 at all.
+    if (PLMODE) return sentences.filter(function (s) { return !sentLocked(s); });
     return sentences.filter(function (s) { return !dynExcluded[s.num]; });
   }
   function dynKey() {
@@ -2641,9 +2739,36 @@
     // and they cost nothing when the log is off.
     var tFetch0 = Date.now(), tFetch = 0, tStitch = 0, cached0 = 0;
     files.forEach(function (f) { if (dynClipCache[f.file]) cached0++; });
+    /* Per-clip DENIAL must not kill the whole build. dynPool has no per-item catch, so one
+       rejected lane used to reject the Promise.all and lose every other clip with it. A gate
+       code (401/402/403/'licence') now drops just that sentence and the stitch carries on —
+       defence in depth behind dynIncluded()'s filter, for when the SERVER disagrees with the
+       client's view of entitlement (sub lapsed mid-session, tier list changed, clip missing).
+       Real faults (network, decode) still reject, and an all-denied build rejects with the gate
+       code so the visitor still gets the paywall/sheet rather than silence. */
+    var denied = {}, lastGate = null;
+    function isGateCode(c) { return c === 401 || c === 402 || c === 403 || c === 'noauth' || c === 'licence'; }
     return dynPool(files, function (f) {
-      return dynFetchClip(f).then(function (b) { done++; if (onProg) onProg(done, files.length); return b; });
+      return dynFetchClip(f).then(function (b) { done++; if (onProg) onProg(done, files.length); return b; })
+        .catch(function (e) {
+          if (!isGateCode(e && e.code)) throw e;
+          denied[f.prefix + '|' + f.file.replace(/_(TH|EN)\.mp3$/, '')] = true;
+          lastGate = e;
+          done++; if (onProg) onProg(done, files.length);
+          return null;
+        });
     }).then(function () {
+      if (lastGate) {
+        var kept = inc.filter(function (s) {
+          var r = dynClipRef(s, 'TH');
+          return !denied[r.prefix + '|' + r.file.replace(/_(TH|EN)\.mp3$/, '')];
+        });
+        if (!kept.length) return Promise.reject(lastGate);   // nothing playable → gate as before
+        if (kept.length !== inc.length) {
+          dynLog('build: ' + (inc.length - kept.length) + ' sentence(s) denied — stitching ' + kept.length);
+          inc = kept;
+        }
+      }
       tFetch = Date.now() - tFetch0;
       var parts = [];   // AudioBuffer, or a number = silence length in samples
       var map = [];
@@ -3484,8 +3609,11 @@
   function dynPendWrite(p) { try { sessionStorage.setItem('te_plsel', JSON.stringify(p)); } catch (_) {} }
   function dynPendClear() { try { sessionStorage.removeItem('te_plsel'); } catch (_) {} }
   function dynAddPlClick() {
-    var a = window.ThaiEarAuth;
-    if (!a || !(a.getUser && a.getUser())) { alert('Sign in to use playlists.'); return; }
+    var a = AUTHV();
+    // Playlists are a signed-in feature (they live in the account dropdown alongside My Progress
+    // and My Sentences). Signed out → the standard member sign-in route, not a raw alert().
+    // gate('member') goes to join.html on web AND in the app — login is not payment steering.
+    if (!a || !(a.getUser && a.getUser())) { gate('member'); return; }
     var PL = a.playlists;
     if (!PL || !PL.load) { alert('Playlists unavailable'); return; }
     PL.load().then(function (lists) { dynShowChooser(lists || []); })
@@ -3815,6 +3943,17 @@
     'body.te-v2 .speed-toggle{order:5}' +
     'body.te-v2 .sent-flag-btn{order:6}' +
     'body.te-v2 .dyn-x-btn{order:7}' +
+    /* Playlist locked rows + their "Premium content" divider. Gold TEXT tone #B29234 (the index
+       "Premium" pill colour) — the brighter #F0CC5C is for fills/graphics only. Deliberately
+       understated: it marks content, it does not advertise. */
+    '.sent-lock-group{display:flex;align-items:center;gap:7px;margin:22px 0 9px;font-family:var(--font-ui,system-ui,sans-serif);' +
+      'font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#B29234}' +
+    '.sent-lock-group::after{content:"";flex:1;height:.5px;background:var(--border,rgba(0,0,0,.12))}' +
+    '.sentence-card.sent-locked{opacity:.72;background:var(--surface)}' +
+    '.sentence-card.sent-locked .sentence-header{cursor:pointer}' +
+    '.sentence-card.sent-locked .sent-preview{color:var(--text-secondary)}' +
+    '.sentence-card.sent-locked .sent-lock-ico{display:inline-flex;align-items:center;color:#B29234;flex-shrink:0}' +
+    'body.te-v2 .sentence-card.sent-locked .sent-lock-ico{order:3}' +
     /* r16a: the ⓘ explainer labels + their dismissible box */
     '.dyn-info-lbl{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-align:left}' +
     '.dyn-info-lbl:hover{color:var(--accent)}' +
@@ -4076,6 +4215,12 @@
       // The build tag already shows in the corner of the settings block, so the link does not
       // need to carry it once these are proper side-by-side buttons.
       pll.textContent = STYLE2 ? '🎵 My playlists' : ('🎵 My Playlists · build ' + DYN_BUILD);
+      // Same gate as Add-to-playlist: a signed-out visitor gets the sign-in page, not a
+      // playlists page that can only tell them it's empty.
+      pll.addEventListener('click', function (e) {
+        var au = AUTHV();
+        if (!au || !(au.getUser && au.getUser())) { e.preventDefault(); gate('member'); }
+      });
       apl.parentNode.insertBefore(pll, apl.nextSibling);
       if (STYLE2) {
         apl.textContent = '＋ Add to a playlist';
@@ -4087,6 +4232,9 @@
       }
     }
     sentences.forEach(function (s) {
+      // Locked playlist rows are padlocks, not players — no select tick, no equalizer, no ①
+      // skip button. Their header carries the gate handler and nothing else.
+      if (sentLocked(s)) return;
       var hdr = document.querySelector('#sc-' + s.num + ' .sentence-header');
       if (!hdr) return;
       var flag = hdr.querySelector('.sent-flag-btn');
@@ -4672,6 +4820,7 @@
     e.stopPropagation();
     e.preventDefault();
     if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no sentence audio
+    if (gateSent(num)) return;                    // playlist: locked sentence → its own tier's gate
     if (sentLock) return;
     sentLock = true;
     setTimeout(function () { sentLock = false; }, 300);
@@ -4750,7 +4899,25 @@
     '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>' +
     '<line x1="4" y1="22" x2="4" y2="15"/></svg>';
 
+  // A locked playlist row: preview + padlock only, never the Thai/English body. Any tap goes to
+  // the gate. The number is kept so the group still reads as part of the list.
+  var LOCK_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  function lockedCardHtml(s) {
+    var d = dispNum(s);
+    return '<div class="sentence-card sent-locked" id="sc-' + s.num + '">' +
+      '<div class="sentence-header" onclick="gateSentence(' + s.num + ')" role="button" tabindex="0" ' +
+        'aria-label="Sentence ' + d + ' — Premium content">' +
+        '<span class="sent-num">' + d + '</span>' +
+        '<span class="sent-lock-ico">' + LOCK_SVG + '</span>' +
+        '<span class="sent-preview">' + s.preview + '<span class="ell">…</span></span>' +
+      '</div>' +
+    '</div>';
+  }
+
   function cardHtml(s) {
+    if (sentLocked(s)) return lockedCardHtml(s);
     var st = states[s.num];
     var playing = sentPlaying === s.num;
     var displayThai = cleanThai(s.thai);
@@ -4814,13 +4981,25 @@
     });
   }
 
+  // Playlist list HTML, with the "Premium content" divider inserted before the first locked
+  // card. dynApplyLockOrder() has already sunk them to the bottom, so one divider covers the lot.
+  function listHtml() {
+    var firstLocked = PLMODE ? dynFirstLockedNum() : null;
+    return sentences.map(function (s) {
+      var head = (firstLocked !== null && s.num === firstLocked)
+        ? '<div class="sent-lock-group">' + LOCK_SVG + '<span>Premium content</span></div>' : '';
+      return head + cardHtml(s);
+    }).join('');
+  }
+
   function render() {
     if (SSR) sentences.forEach(function (s) { syncCard(s.num); });
-    else $('sentence-list').innerHTML = sentences.map(cardHtml).join('');
+    else $('sentence-list').innerHTML = listHtml();
     applyDirClass();   // keep the reveal order in sync with the current TE/ET direction
     applyTranslitClass();   // reflect the stored transliteration preference (default on)
 
-    var allOpen = sentences.every(function (s) { return states[s.num] === 3; });
+    var allOpen = sentences.filter(function (s) { return !sentLocked(s); })
+      .every(function (s) { return states[s.num] === 3; });
     var btn = $('reveal-all-btn');
     if (!btn) return;
     btn.innerHTML = allOpen
@@ -4830,6 +5009,7 @@
 
   function cycle(num) {
     if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no reveal
+    if (gateSent(num)) return;                    // playlist: locked sentence → its own tier's gate
     var mod = 4;
     if (PLMODE) {
       // Playlist items ship no gloss/cultural notes — skip the empty notes stage entirely.
@@ -4842,8 +5022,11 @@
 
   function toggleAll() {
     if (!entitledForPage()) { gate(); return; }
-    var allOpen = sentences.every(function (s) { return states[s.num] === 3; });
-    sentences.forEach(function (s) { states[s.num] = allOpen ? 0 : 3; });
+    // Reveal-all must not reveal LOCKED rows — they render as padlocks either way, but leaving
+    // their state at 0 keeps "all open" honest and stops a later unlock showing them pre-opened.
+    var open = sentences.filter(function (s) { return !sentLocked(s); });
+    var allOpen = open.every(function (s) { return states[s.num] === 3; });
+    open.forEach(function (s) { states[s.num] = allOpen ? 0 : 3; });
     render();
   }
 
@@ -4993,6 +5176,17 @@
     }
   }
   window.addEventListener('thaiear:auth', initFlags);
+  /* Playlists: entitlement is only knowable once auth resolves, and sentLocked() deliberately
+     returns false until then (never lock a paying user mid-resolve). So the lock grouping has to
+     be re-applied on every auth change — sign-in, sign-out, and the subscription arriving a beat
+     after the user does.
+     No session invalidation needed: dynKey() is derived from dynIncluded(), so removing (or
+     restoring) a sentence changes the key and dynEnsureSession rebuilds on the next play. */
+  window.addEventListener('thaiear:auth', function () {
+    if (!PLMODE) return;
+    dynApplyLockOrder();
+    render();
+  });
 
   /* ---- mount ---- */
   function mount() {
@@ -5003,6 +5197,7 @@
       document.head.appendChild(style);
     }
     if (TIER === 'premium') document.body.classList.add('premium-topic'); // gold-skin the controls
+    dynApplyLockOrder();    // playlists: sink any locked sentence before the first render
     var root = $('player-root');
     if (root) root.innerHTML = PLAYER_HTML;
     // sync the transport bar if metadata already arrived before mount
@@ -5026,7 +5221,10 @@
     progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn,
     advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat,
     downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete, refreshTopic: refreshTopic,
-    dynUpdateAudio: dynUpdateAudio });
+    dynUpdateAudio: dynUpdateAudio, gateSentence: gateSent });
+
+  // Let the owner simulator panel show the REAL verdict rather than restating its own inputs.
+  if (window.ThaiEarSim) window.ThaiEarSim.canUseOffline = canUseOffline;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();

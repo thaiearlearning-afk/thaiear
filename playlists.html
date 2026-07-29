@@ -68,6 +68,23 @@
   .dl-batch-btn[disabled] { background: var(--border); color: var(--text-tertiary); cursor: default; }
   .dl-clear-btn { background: var(--surface); color: var(--text-secondary); border: .5px solid var(--border-strong); }
   .dl-clear-btn:hover:not([disabled]) { background: var(--accent-light); color: var(--accent); }
+  /* Owner entitlement simulator — deliberately utilitarian, and visually unlike the product
+     (dashed amber) so it can never be mistaken for shipped UI in a screenshot. */
+  .sim-panel { margin-top: 26px; padding: 14px 15px 12px; border: 1px dashed #C08A2E; border-radius: 10px;
+    background: #FFFBF2; }
+  .sim-head { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: #8A6417; margin-bottom: 10px; }
+  .sim-warn { font-weight: 500; color: #B00020; margin-left: 6px; }
+  .sim-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .sim-lbl { font-family: var(--font-ui); font-size: 12px; color: var(--text-secondary); min-width: 92px; }
+  .sim-seg { display: inline-flex; border: .5px solid #D8C08C; border-radius: 7px; overflow: hidden; flex-wrap: wrap; }
+  .sim-seg button { font-family: var(--font-ui); font-size: 12.5px; padding: 6px 11px; border: 0; background: #fff;
+    color: var(--text-secondary); cursor: pointer; border-right: .5px solid #E6D8B4; }
+  .sim-seg button:last-child { border-right: 0; }
+  .sim-seg button.on { background: #C08A2E; color: #fff; font-weight: 600; }
+  .sim-check { display: flex; align-items: center; gap: 7px; font-family: var(--font-ui); font-size: 12.5px;
+    color: var(--text-secondary); margin: 4px 0 8px; cursor: pointer; }
+  .sim-note { font-family: var(--font-ui); font-size: 12px; line-height: 1.5; color: #8A6417; margin: 0 0 6px; }
+  .sim-note.sim-dim { color: var(--text-tertiary); }
   .dl-batch-status { font-size: 13px; color: var(--text-secondary); min-height: 1.15em; }
   .dl-batch-status.err { color: #B00020; }
   .dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); }
@@ -98,7 +115,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r28a</div>
+  <div class="eyebrow">Owner test build · r29</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -111,17 +128,54 @@
     <span class="dl-batch-hint" id="dl-hint">Tap a playlist's circle to download, or a tick to remove, then pick an action.</span>
   </div>
   <div id="pl-root"><p class="pl-note">Loading…</p></div>
+
+  <!-- ══ OWNER ENTITLEMENT SIMULATOR ══════════════════════════════════════════════════════
+       Hidden unless the test flag is set (?k=cu38961y once, or any test page visited this
+       session) so it can never appear for a real user. Lets the owner test premium gating —
+       online AND offline — without touching a real account.
+       It overrides ONLY the auth answer; every downstream check (canUseOffline, the 30-day
+       grace arithmetic, the lock UI, the licence overlay) runs unmodified. "Elapsed" doesn't
+       override anything at all — it backdates the real localStorage markers. -->
+  <div class="sim-panel" id="sim-panel" hidden>
+    <div class="sim-head">🧪 Simulate account <span class="sim-warn" id="sim-warn"></span></div>
+    <div class="sim-row">
+      <span class="sim-lbl">Account</span>
+      <div class="sim-seg" id="sim-seg">
+        <button type="button" data-v="">Real</button>
+        <button type="button" data-v="premium">Premium</button>
+        <button type="button" data-v="expired">Expired</button>
+        <button type="button" data-v="signedout">Signed out</button>
+      </div>
+    </div>
+    <div class="sim-row">
+      <span class="sim-lbl">Offline licence</span>
+      <div class="sim-seg" id="sim-elapse">
+        <button type="button" data-d="0">Now</button>
+        <button type="button" data-d="31">31 days ago</button>
+      </div>
+    </div>
+    <label class="sim-check"><input type="checkbox" id="sim-deny"> Simulate server denial (402 from /api/audio)</label>
+    <p class="sim-note" id="sim-state"></p>
+    <p class="sim-note sim-dim">“31 days ago” backdates the real last-verified / period-end markers past the
+      30-day grace window, then lets the real check decide. It only bites <strong>offline</strong> — online with a
+      live subscription the app legitimately re-verifies and re-stamps. Put the device in airplane mode to see the
+      “Reconnect to keep listening” overlay. Restoring puts the markers back exactly as they were.</p>
+  </div>
 </div>
 
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r28a</div>
+  <div class="eyebrow">Playlist · r29</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
 </div>
 
+<!-- Owner entitlement simulator. Must be SYNCHRONOUS and before the inline block below (which
+     reads window.ThaiEarSim on load) and before player.js is injected. Test build only —
+     delete this tag, sim.js, and the ThaiEarSim references in player.js at rollout. -->
+<script src="sim.js"></script>
 <script>
 (function () {
   var root = document.getElementById('pl-root');
@@ -622,6 +676,67 @@
     s.src = 'player.js';
     document.body.appendChild(s);
   }
+  /* ── Owner entitlement simulator panel ─────────────────────────────────────────────────
+     Visible only once the test flag is set: ?k=cu38961y (persisted to localStorage, because
+     the app has no address bar and sessionStorage dies on restart — and offline testing
+     spans restarts), or any test page opened this session. Never renders for a real user. */
+  (function wireSim() {
+    var okFlag = false;
+    try {
+      if (/[?&]k=cu38961y(&|$)/.test(location.search)) localStorage.setItem('te_sim_ok', '1');
+      okFlag = localStorage.getItem('te_sim_ok') === '1' || sessionStorage.getItem('te_test_ok') === '1';
+    } catch (_) {}
+    var panel = document.getElementById('sim-panel');
+    if (!panel || !okFlag || !window.ThaiEarSim) return;
+    panel.hidden = false;
+
+    var S = window.ThaiEarSim;
+    var seg = document.getElementById('sim-seg');
+    var elapseSeg = document.getElementById('sim-elapse');
+    var denyBox = document.getElementById('sim-deny');
+
+    function fmt(k) {
+      var v;
+      try { v = localStorage.getItem(k); } catch (_) { v = null; }
+      if (!v) return k + ': —';
+      var n = parseInt(v, 10);
+      if (!isNaN(n) && n > 1e11) {
+        var days = Math.round((Date.now() - n) / 86400000);
+        return k + ': ' + new Date(n).toISOString().slice(0, 10) +
+          ' (' + (days >= 0 ? days + 'd ago' : (-days) + 'd ahead') + ')';
+      }
+      return k + ': ' + v;
+    }
+    function paint() {
+      var st = S.get();
+      Array.prototype.forEach.call(seg.querySelectorAll('button'), function (b) {
+        b.classList.toggle('on', (b.getAttribute('data-v') || '') === st.tier);
+      });
+      Array.prototype.forEach.call(elapseSeg.querySelectorAll('button'), function (b) {
+        b.classList.toggle('on', parseInt(b.getAttribute('data-d'), 10) === st.elapsedDays);
+      });
+      denyBox.checked = st.deny;
+      document.getElementById('sim-warn').textContent = S.active() ? '● SIMULATION ACTIVE' : '';
+      // Report the real marker VALUES, not a second opinion on what they mean — the verdict is
+      // whatever the player does when you open a playlist.
+      document.getElementById('sim-state').textContent =
+        'account: ' + (st.tier || 'real') + '  ·  ' + fmt('thaiear_lastVerified') +
+        '  ·  ' + fmt('thaiear_sub_until') + '  ·  ' + fmt('thaiear_lifetime');
+    }
+    seg.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      S.setTier(b.getAttribute('data-v')); paint();
+    });
+    elapseSeg.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var d = parseInt(b.getAttribute('data-d'), 10);
+      if (d) S.elapse(d); else S.restore();
+      paint();
+    });
+    denyBox.addEventListener('change', function () { S.setDeny(denyBox.checked); paint(); });
+    paint();
+  })();
+
   (function wireDownloads() {
     var d = document.getElementById('dl-btn'), c = document.getElementById('clear-btn');
     if (d) d.addEventListener('click', dlRunDownloads);
