@@ -928,11 +928,18 @@
       // claim the same prefix, and neither may erase the other's files or ref.
       var m = getManifest(), ref = dynDlRef();
       prefixes.forEach(function (pfx) {
+        var existed = !!m[pfx];
         var e = m[pfx] || { tier: by[pfx].tier, files: [], ver: '', av: null };
         var seen = {};
         (e.files || []).concat(by[pfx].files).forEach(function (f) { seen[f] = true; });
         e.files = Object.keys(seen);
-        e.refs = (e.refs || []).filter(function (r) { return r !== ref; });
+        /* DATA LOSS GUARD. A classic topic download records no refs at all, so its claim is
+           IMPLICIT — and dynDeleteHere() honours that by defaulting to ['topic']. This line
+           defaulted to [] instead, silently discarding it: download a playlist sharing the
+           prefix, then clear that playlist, and refs emptied → recursive rmdir of
+           offline/<prefix>/ → the TOPIC's combined _TE/_ET files were deleted with it.
+           Match the delete path's assumption: a pre-existing entry keeps its implicit claim. */
+        e.refs = (e.refs || (existed ? ['topic'] : [])).filter(function (r) { return r !== ref; });
         e.refs.push(ref);
         e.tier = by[pfx].tier; e.at = Date.now(); e.dyn = true;
         delete e.bytes;                       // file set changed → re-measure rather than lie
@@ -1597,14 +1604,15 @@
   // entitledForPage(): may THIS visitor use the gated interactions on this page?
   function entitledForPage() {
     if (TIER !== 'member' && TIER !== 'premium') return true;   // free topic → open
-    /* Downloaded content is entitled only while the offline LICENCE still holds. This used to
-       return true on "is it downloaded?" alone, trusting the audio path to fail later — but on a
-       dyn page nothing fails: dynClipUrl falls back to the network, and online the server still
-       answers, so a lapsed subscriber kept full access to any topic they had downloaded. Found
-       via the simulator (Expired + 51 days still played a downloaded premium topic).
-       canUseOffline() grants immediately for a live subscriber, so this cannot over-gate anyone
-       who is actually paying. */
-    if ((OFFLINE || WEB_DL) && isDownloaded(PREFIX) && canUseOffline(TIER)) return true;
+    /* PREMIUM entitlement is exactly canUseOffline(): it already encodes the whole rule —
+       server confirmed active → yes; server said lapsed → no; couldn't ask → paid period, else
+       50 days since the last confirmation.
+       It used to ask isSubscribed() alone, which offline reads TRUE from the cached subscription.
+       So a member 51 days unconfirmed still passed this check and played any already-built
+       session, while regeneration failed — the half-state of "it plays but won't rebuild".
+       Downloaded content needs no separate branch: canUseOffline covers it, and a download that
+       is no longer licensed should not play either. */
+    if (TIER === 'premium') return canUseOffline('premium');
     var a = AUTHV();
     if (!a || !a.isReady) return true;                          // auth still resolving → don't wrongly gate a paying user
     if (TIER === 'member') return !!(a.getUser && a.getUser()); // member = any signed-in user
@@ -1616,6 +1624,17 @@
   function gate(tier) {
     if (tier == null) tier = TIER;
     if (tier === 'member') { window.location.href = 'join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE); return; }
+    /* Two very different reasons a premium tap can be refused, and they must not share a message:
+         · the server told us the subscription is LAPSED  → the paywall is honest
+         · we simply could not REACH the server for >50 days → they may well be paid up; telling
+           them to subscribe would be wrong, and telling them to reconnect is the actual remedy.
+       isSubscribed() still reporting true (from the last known state) with canUseOffline() false
+       is exactly the second case. */
+    if (tier === 'premium') {
+      var a = AUTHV();
+      var lastKnownSubbed = !!(a && a.isSubscribed && a.isSubscribed());
+      if (lastKnownSubbed && !canUseOffline('premium')) { showLicenceOverlay(); return; }
+    }
     if (NATIVE) { premiumInfoSheet(); return; }
     window.location.href = 'subscribe.html';
   }
@@ -1934,7 +1953,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29s';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29t';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
