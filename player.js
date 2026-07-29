@@ -528,7 +528,15 @@
     // WebView (reports online in airplane mode, esp. at COLD START before the sub-cache seeds), so a
     // deny here wrongly blocked a just-verified member who reopened the app offline. Denial is driven
     // purely by the grace window + real end-date below, so a genuinely lapsed member still expires.
-    if (navigator.onLine && subbed) { stampVerified(); return true; }
+    /* Granting here is optimistic on purpose (the live read corrects it moments later), but the
+       STAMP must not be: refreshSubscription seeds currentSubscribed from the CACHED subscription
+       before the server answers, so a lapsed member's first check after launch would grant off a
+       stale cache AND re-stamp lastVerified to now — handing them a fresh 50-day offline window
+       that no server ever authorised. Only an authoritative read may move that marker. */
+    if (navigator.onLine && subbed) {
+      if (a && a.isSubscriptionFresh && a.isSubscriptionFresh()) stampVerified();
+      return true;
+    }
     // Offline (or online-but-not-freshly-confirmed). Trust the membership's REAL end date when we
     // captured one: a paid member can play offline right through their current period without needing
     // a recent re-verify — that's correct subscription billing (cancel = access until period end). The
@@ -1930,7 +1938,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29p';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29q';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
