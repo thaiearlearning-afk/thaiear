@@ -322,7 +322,7 @@
     } catch (_) {}
     return n;
   }
-  trace('BUILD r29u');
+  trace('BUILD r29v');
   trace('sim dis=' + (noIdentity()?1:0) + ' kp=' + (keepPurged()?1:0) + ' kill=' + bootPurged.length +
         ' sb=' + sbKeysPresent().length + ' id=' + (get(K_ID_PEEK)?1:0) +
         ' so=' + (get('thaiear_signed_out')==='1'?1:0));
@@ -372,6 +372,19 @@
     if (denies()) bits.push('deny');
     if (noIdentity()) bits.push('no-id');
     if (keepPurged()) bits.push('PURGED');
+    /* Live licence verdict. player.js registers canUseOffline on this object, so on any topic
+       page the strip can show what the REAL check returns for premium right now — no need to open
+       a topic and infer from whether audio plays. Also prints the three markers it reads, so a
+       surprising verdict is immediately traceable to its inputs. */
+    try {
+      if (window.ThaiEarSim && window.ThaiEarSim.canUseOffline) {
+        var verdict = window.ThaiEarSim.canUseOffline('premium') ? 'GRANT' : 'DENY';
+        var lv = get('thaiear_lastVerified'), su = get('thaiear_sub_until'), lf = get('thaiear_lifetime');
+        var age = lv ? Math.round((Date.now() - parseInt(lv, 10)) / 86400000) + 'd' : '—';
+        bits.push('licence:' + verdict + ' (v' + age + (lf === '1' ? ' LIFETIME' : '') +
+          (su ? (parseInt(su, 10) > Date.now() ? ' until:future' : ' until:past') : ' until:—') + ')');
+      }
+    } catch (_) {}
     var st = document.createElement('span');
     st.style.cssText = 'flex:0 0 auto;margin-left:auto;padding:5px 8px;border-radius:5px;' +
       'font:600 11px/1 system-ui,sans-serif;' +
@@ -386,12 +399,27 @@
       document.body.style.paddingTop = (parseFloat(getComputedStyle(document.body).paddingTop || 0) + h) + 'px';
     } catch (_) {}
   }
+  function remountBadge() {
+    var old = document.getElementById('te-sim-bar');
+    if (old) {
+      // undo the padding this strip added, or each remount would push the page further down
+      try {
+        var h = old.offsetHeight || 0;
+        var cur = parseFloat(getComputedStyle(document.body).paddingTop || 0);
+        document.body.style.paddingTop = Math.max(0, cur - h) + 'px';
+      } catch (_) {}
+      old.remove();
+    }
+    mountBadge();
+  }
+  window.addEventListener('thaiear:auth', function () { setTimeout(remountBadge, 50); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountBadge);
   else mountBadge();
 
   window.ThaiEarSim = {
     bootPurged: function () { return bootPurged.slice(); },
     mountBadge: mountBadge,
+    remountBadge: function () { remountBadge(); },
     tier: tier,
     denies: denies,
     authView: authView,

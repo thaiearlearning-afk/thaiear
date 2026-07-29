@@ -1953,7 +1953,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29u';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29v';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5322,7 +5322,11 @@
     dynUpdateAudio: dynUpdateAudio, gateSentence: gateSent });
 
   // Let the owner simulator panel show the REAL verdict rather than restating its own inputs.
-  if (window.ThaiEarSim) window.ThaiEarSim.canUseOffline = canUseOffline;
+  if (window.ThaiEarSim) {
+    window.ThaiEarSim.canUseOffline = canUseOffline;
+    // strip was built before this existed — rebuild it so the licence verdict appears
+    if (window.ThaiEarSim.remountBadge) window.ThaiEarSim.remountBadge();
+  }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
