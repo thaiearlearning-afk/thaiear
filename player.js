@@ -558,7 +558,10 @@
        in airplane mode, especially at cold start) — denying on that would lock out a member who
        had just been verified. It is "did a CLEAN server read answer us this session?". Only an
        authoritative negative ends the grace; a failed read leaves it exactly as generous. */
-    if (a && a.isSubscriptionFresh && a.isSubscriptionFresh()) return false;
+    // !subbed is load-bearing and was missing: without it this denied a SUBSCRIBED member the
+    // moment they went offline with no captured period end — killing the 50-day fallback in
+    // exactly the case it exists for. Only a fresh NEGATIVE may end the grace.
+    if (!subbed && a && a.isSubscriptionFresh && a.isSubscriptionFresh()) return false;
     return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
   }
 
@@ -1938,7 +1941,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29q';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29r';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
