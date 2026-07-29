@@ -214,6 +214,15 @@
   // the membership online + its real end date. Mirrors player.js stampVerified but lives here so it
   // fires on any page the moment auth confirms an active sub — including the index grid download path,
   // where player.js never loads. (current_period_end may be an ISO string or epoch s/ms.)
+  /* Is an owner simulation armed? Read localStorage DIRECTLY, never window.ThaiEarSim: sim.js is
+     only loaded on the test pages, so on the homepage or any live topic this file runs without it,
+     saw no simulator, and re-stamped the licence markers from the real subscription — silently
+     wiping a 51-day simulation every time the owner passed through the index to reach the test
+     space. The flag is localStorage, which is shared across pages; the object is not. */
+  function simArmed() {
+    try { var v = localStorage.getItem('te_sim_tier') || ''; return !!v && v !== 'off'; }
+    catch (_) { return false; }
+  }
   function stampOfflineLicence() {
     try {
       /* Owner simulator: never re-stamp while an account state is simulated. This reads the REAL
@@ -221,7 +230,7 @@
          sub_until to the real period end within a second of page load — silently undoing the
          31/41/51-day backdating and making those buttons look inert. The simulator owns the
          licence INPUTS while armed; canUseOffline's arithmetic over them is untouched. */
-      if (window.ThaiEarSim && window.ThaiEarSim.tier()) return;
+      if (simArmed()) return;
       localStorage.setItem('thaiear_lastVerified', String(Date.now()));
       var end = currentSub && currentSub.current_period_end;
       if (end != null && end !== '') {
@@ -296,7 +305,7 @@
        second after every page load — which is why "Expired" and the 31/41/51-day buttons appeared
        to do nothing. Overrides the SERVER's answer only; the expiry decision still runs for real. */
     try {
-      if (window.ThaiEarSim && window.ThaiEarSim.tier()) {
+      if (simArmed()) {
         localStorage.removeItem('thaiear_lifetime');
         return;
       }

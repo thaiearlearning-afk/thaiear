@@ -471,13 +471,22 @@
     var t = Date.parse(v); return isNaN(t) ? 0 : t;             // ISO string
   }
   // On each successful online check, record WHEN we checked + the membership's real end date.
+  /* Is an owner simulation armed? Read localStorage DIRECTLY, never window.ThaiEarSim: sim.js is
+     only loaded on the test pages, so on the homepage or any live topic this file runs without it,
+     saw no simulator, and re-stamped the licence markers from the real subscription — silently
+     wiping a 51-day simulation every time the owner passed through the index to reach the test
+     space. The flag is localStorage, which is shared across pages; the object is not. */
+  function simArmed() {
+    try { var v = localStorage.getItem('te_sim_tier') || ''; return !!v && v !== 'off'; }
+    catch (_) { return false; }
+  }
   function stampVerified() {
     try {
       // Owner simulator: hold the licence markers still while an account state is armed. Without
       // this, setting "51 days" online and THEN going offline lost the backdating on the way out
       // (this fires from canUseOffline's online-and-subscribed branch), so the offline half of the
       // test could never be set up. The simulator owns these inputs while armed.
-      if (window.ThaiEarSim && window.ThaiEarSim.tier()) return;
+      if (simArmed()) return;
       localStorage.setItem('thaiear_lastVerified', String(Date.now()));
       var a = window.ThaiEarAuth, sub = a && a.getSubscription && a.getSubscription();
       var end = sub && sub.current_period_end;
@@ -1953,7 +1962,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29v';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29w';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
