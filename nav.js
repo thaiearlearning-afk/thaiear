@@ -255,8 +255,22 @@
     );
   }
 
+  /* Has auth actually resolved? Until it has, the nav must render NEITHER state.
+     Supabase resolves a few hundred ms after paint, so rendering "Log in" in the meantime made
+     every load flash logged-out before the username appeared — harmless in itself, but after the
+     offline-logout bug it reads as "I've been signed out again" every single time, which is the
+     last thing a user needs to see. A same-width placeholder holds the slot so nothing shifts;
+     ThaiEarNav.refresh() repaints it the moment auth fires. */
+  function authReady() {
+    try { return !!(window.ThaiEarAuth && window.ThaiEarAuth.isReady); } catch (_) { return false; }
+  }
+
   function memberHtml() {
     if (!FEATURES.members) return '';
+    if (!authReady()) {
+      return '<span class="nav-auth nav-auth-pending" aria-hidden="true" ' +
+        'style="display:inline-block;min-width:48px;opacity:0"></span>';
+    }
     const user = getUser();
     if (user) {
       // Logged in: username + person-icon dropdown (Account / My progress / My sentences).
