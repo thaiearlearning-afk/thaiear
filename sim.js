@@ -288,7 +288,7 @@
     } catch (_) {}
     return n;
   }
-  trace('BUILD r29k');
+  trace('BUILD r29l');
   trace('sim dis=' + (noIdentity()?1:0) + ' kp=' + (keepPurged()?1:0) + ' kill=' + bootPurged.length +
         ' sb=' + sbKeysPresent().length + ' id=' + (get(K_ID_PEEK)?1:0) +
         ' so=' + (get('thaiear_signed_out')==='1'?1:0));
@@ -337,6 +337,7 @@
     if (elapsedDays()) bits.push(elapsedDays() + 'd');
     if (denies()) bits.push('deny');
     if (noIdentity()) bits.push('no-id');
+    if (keepPurged()) bits.push('PURGED');
     var st = document.createElement('span');
     st.style.cssText = 'flex:0 0 auto;margin-left:auto;padding:5px 8px;border-radius:5px;' +
       'font:600 11px/1 system-ui,sans-serif;' +

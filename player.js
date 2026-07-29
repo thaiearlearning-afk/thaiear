@@ -1567,7 +1567,14 @@
   // entitledForPage(): may THIS visitor use the gated interactions on this page?
   function entitledForPage() {
     if (TIER !== 'member' && TIER !== 'premium') return true;   // free topic → open
-    if ((OFFLINE || WEB_DL) && isDownloaded(PREFIX)) return true; // they downloaded it → were entitled (licence flow handles lapse)
+    /* Downloaded content is entitled only while the offline LICENCE still holds. This used to
+       return true on "is it downloaded?" alone, trusting the audio path to fail later — but on a
+       dyn page nothing fails: dynClipUrl falls back to the network, and online the server still
+       answers, so a lapsed subscriber kept full access to any topic they had downloaded. Found
+       via the simulator (Expired + 51 days still played a downloaded premium topic).
+       canUseOffline() grants immediately for a live subscriber, so this cannot over-gate anyone
+       who is actually paying. */
+    if ((OFFLINE || WEB_DL) && isDownloaded(PREFIX) && canUseOffline(TIER)) return true;
     var a = AUTHV();
     if (!a || !a.isReady) return true;                          // auth still resolving → don't wrongly gate a paying user
     if (TIER === 'member') return !!(a.getUser && a.getUser()); // member = any signed-in user
@@ -1897,7 +1904,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29k';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29l';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2333,7 +2340,12 @@
     // ≥2 repeats + not at the default end position) — so irrelevant toggles never churn keys
     // AND every pre-r15 persisted session stays valid (no migration wipe).
     var ep = (currentMode !== 'et' && st.en && st.rp > 1 && epEff !== st.rp) ? epEff : 0;
-    return currentMode + '|' + st.pf + '|r' + st.rp + '|e' + en + (ep ? '|p' + ep : '') + '|' + sents.map(function (s) {
+    // Owner sim only: fold the server-denial switch into the key so toggling it forces a REBUILD.
+    // Without this, a session persisted before the switch was flipped is simply restored and the
+    // denied sentences play as normal — which reads as "the denial did nothing". simDenies() is
+    // always false without sim.js, so production keys are byte-identical and no session churns.
+    var dny = simDenies() ? '|d' : '';
+    return currentMode + '|' + st.pf + '|r' + st.rp + '|e' + en + (ep ? '|p' + ep : '') + dny + '|' + sents.map(function (s) {
       return s.prefix ? (s.prefix + ':' + (s.clipNum != null ? s.clipNum : s.num)) : s.num;
     }).join(',');
   }
