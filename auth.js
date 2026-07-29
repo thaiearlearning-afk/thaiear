@@ -31,6 +31,11 @@
   var currentUser = null;
   var currentSession = null;
   var currentSubscribed = false; // active Stripe subscription? (read from Supabase via RLS)
+  /* Did a CLEAN server read actually answer this session? The offline grace window exists for when
+     we CANNOT check; once the server has told us authoritatively that someone is not subscribed,
+     the window must not keep granting access. Set true only on an error-free read, cleared on
+     sign-out and on any failure, so the fallback stays generous exactly when it should. */
+  var subFresh = false;
   var currentSub = null;         // {status, cancel_at_period_end, current_period_end}
   var currentConsent = false;    // opted in to marketing email? (profiles row)
   var consentLoaded = false;     // has that consent flag been read from profiles yet?
@@ -534,6 +539,8 @@
     // Synchronous + cached. False until the subscription row resolves (or when not subscribed).
     // The real gate is server-side (/api/audio); this just drives the unlocked/locked UX.
     isSubscribed: function () { return currentSubscribed; },
+    // True only when a clean server read answered this session — see subFresh.
+    isSubscriptionFresh: function () { return subFresh; },
     getSubscription: function () { return currentSub; }, // {status, cancel_at_period_end, current_period_end}
     // True inside the Capacitor app. Pages use this to HIDE any upgrade-to-premium / checkout CTA
     // (Google Play reader-app rule: no in-app purchase or steering to web payment). Web is unaffected.

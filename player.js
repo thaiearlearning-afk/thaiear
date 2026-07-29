@@ -541,6 +541,16 @@
     // within the backstop window. OR (not AND) so a missing/stale end date can't short-circuit a
     // valid member into denial — the download itself stamps lastVerified, so a recent download plays.
     if (until && Date.now() < until) return true;
+    /* The grace window is for when we CANNOT check — not a free 50 days for a known-lapsed
+       account. Until now nothing here was actually conditional on being offline, so an ONLINE
+       subscriber whose membership had ended kept access for the rest of the window even though
+       the server had already said otherwise. (Owner spotted this: "the 50-day grace is meant to
+       be offline only — an expired account shouldn't have premium access.")
+       The test is deliberately NOT navigator.onLine, which lies in the WebView (it reports online
+       in airplane mode, especially at cold start) — denying on that would lock out a member who
+       had just been verified. It is "did a CLEAN server read answer us this session?". Only an
+       authoritative negative ends the grace; a failed read leaves it exactly as generous. */
+    if (a && a.isSubscriptionFresh && a.isSubscriptionFresh()) return false;
     return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
   }
 
@@ -1920,7 +1930,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29n';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29o';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
