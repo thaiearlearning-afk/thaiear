@@ -524,18 +524,20 @@
     try { if (localStorage.getItem('thaiear_lifetime') === '1') return true; } catch (_) {}
     var a = AUTHV();
     var subbed = a && a.isSubscribed && a.isSubscribed();
-    // Only GRANT on the online fast-path — never DENY from it. navigator.onLine is unreliable in the
-    // WebView (reports online in airplane mode, esp. at COLD START before the sub-cache seeds), so a
-    // deny here wrongly blocked a just-verified member who reopened the app offline. Denial is driven
-    // purely by the grace window + real end-date below, so a genuinely lapsed member still expires.
-    /* Granting here is optimistic on purpose (the live read corrects it moments later), but the
-       STAMP must not be: refreshSubscription seeds currentSubscribed from the CACHED subscription
-       before the server answers, so a lapsed member's first check after launch would grant off a
-       stale cache AND re-stamp lastVerified to now — handing them a fresh 50-day offline window
-       that no server ever authorised. Only an authoritative read may move that marker. */
-    if (navigator.onLine && subbed) {
-      if (a && a.isSubscriptionFresh && a.isSubscriptionFresh()) stampVerified();
-      return true;
+    /* ONE question decides everything here: DID THE SERVER ANSWER US THIS SESSION?
+       This used to ask navigator.onLine, which the WebView lies about — it reports online in
+       airplane mode — so `onLine && subbed` granted on a cached flag and the 50-day arithmetic
+       below was never reached at all. That is why a member 51 days unverified still played
+       offline, and why the whole window looked like dead code.
+       isSubscriptionFresh() is the truthful version of the same question: true only when a clean
+       subscriptions read completed. It cannot be faked by a flight-mode radio.
+         answered + subscribed  → grant, and stamp (an authoritative confirmation)
+         answered + not         → deny outright; the server has spoken
+         no answer              → fall through to the offline rules below, unchanged */
+    var fresh = !!(a && a.isSubscriptionFresh && a.isSubscriptionFresh());
+    if (fresh) {
+      if (subbed) { stampVerified(); return true; }
+      return false;
     }
     // Offline (or online-but-not-freshly-confirmed). Trust the membership's REAL end date when we
     // captured one: a paid member can play offline right through their current period without needing
@@ -548,20 +550,11 @@
     // Entitled if EITHER the captured real end date is still in the future, OR we verified online
     // within the backstop window. OR (not AND) so a missing/stale end date can't short-circuit a
     // valid member into denial — the download itself stamps lastVerified, so a recent download plays.
+    // Reached only when the server did NOT answer, i.e. we genuinely cannot check. The captured
+    // period end wins if we have one; otherwise the 50-day window from the last confirmation.
+    // Past that, deny — which surfaces as "Reconnect to keep listening", not the paywall, because
+    // we are not claiming they lapsed; we are saying we can no longer vouch for them.
     if (until && Date.now() < until) return true;
-    /* The grace window is for when we CANNOT check — not a free 50 days for a known-lapsed
-       account. Until now nothing here was actually conditional on being offline, so an ONLINE
-       subscriber whose membership had ended kept access for the rest of the window even though
-       the server had already said otherwise. (Owner spotted this: "the 50-day grace is meant to
-       be offline only — an expired account shouldn't have premium access.")
-       The test is deliberately NOT navigator.onLine, which lies in the WebView (it reports online
-       in airplane mode, especially at cold start) — denying on that would lock out a member who
-       had just been verified. It is "did a CLEAN server read answer us this session?". Only an
-       authoritative negative ends the grace; a failed read leaves it exactly as generous. */
-    // !subbed is load-bearing and was missing: without it this denied a SUBSCRIBED member the
-    // moment they went offline with no captured period end — killing the 50-day fallback in
-    // exactly the case it exists for. Only a fresh NEGATIVE may end the grace.
-    if (!subbed && a && a.isSubscriptionFresh && a.isSubscriptionFresh()) return false;
     return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
   }
 
@@ -1941,7 +1934,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29r';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29s';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

@@ -83,9 +83,15 @@
       isReady: true,
       getUser: function () { return signedIn ? (real.getUser ? real.getUser() : { sim: true }) : null; },
       isSubscribed: function () { return subbed; },
-      // A simulated account is an AUTHORITATIVE answer — that is the whole point of the switch —
-      // so the grace window must not keep granting access on top of it.
-      isSubscriptionFresh: function () { return true; },
+      /* WHO you are is simulated; whether the server could ANSWER is not — that must stay real,
+         or the simulation cannot reproduce being offline. Returning true unconditionally made
+         every state look like a fresh server verdict, so the offline branch was unreachable and
+         "Premium, 51 days unverified, in airplane mode" still played.
+         Defer to the real read status: online → a real read succeeds → the simulated account
+         decides; offline → no read → the 50-day window decides, exactly as in production. */
+      isSubscriptionFresh: function () {
+        return !!(real.isSubscriptionFresh && real.isSubscriptionFresh());
+      },
       getSubscription: function () { return (subbed && real.getSubscription) ? real.getSubscription() : null; },
       getAccessToken: function () { return real.getAccessToken ? real.getAccessToken() : null; },
       isFlagged: function () { return real.isFlagged ? real.isFlagged.apply(real, arguments) : false; },
@@ -316,7 +322,7 @@
     } catch (_) {}
     return n;
   }
-  trace('BUILD r29r');
+  trace('BUILD r29s');
   trace('sim dis=' + (noIdentity()?1:0) + ' kp=' + (keepPurged()?1:0) + ' kill=' + bootPurged.length +
         ' sb=' + sbKeysPresent().length + ' id=' + (get(K_ID_PEEK)?1:0) +
         ' so=' + (get('thaiear_signed_out')==='1'?1:0));
