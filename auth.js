@@ -173,7 +173,7 @@
     if (reseeding || !client) return Promise.resolve(false);
     var id = readIdentity();
     if (!id || !id.refresh_token) return Promise.resolve(false);
-    T('reseed: attempting');
+    T('reseed try');
     reseeding = true;
     return client.auth.setSession({ access_token: id.access_token || '', refresh_token: id.refresh_token })
       .then(function (r) {
@@ -181,7 +181,7 @@
         var s = r && r.data && r.data.session;
         if (s) {
           writeIdentity(s);
-          T('reseed: OK');
+          T('reseed OK');
           restoredFromIdentity = false;   // supabase owns a real session again
           currentSession = s;             // so getAccessToken() stops handing out the stale token
           return true;
@@ -919,7 +919,7 @@
       currentSession = session || null;
       currentUser = userFromSession(currentSession);
       if (currentSession && currentSession.access_token) writeIdentity(currentSession);
-      T('init done: user=' + !!currentUser + ' fromIdentity=' + restoredFromIdentity);
+      T('init done user=' + (currentUser?1:0) + ' fromId=' + (restoredFromIdentity?1:0));
       window.ThaiEarAuth.isReady = true;
       notify();
       refreshSubscription(); // async; fires another notify when it resolves
@@ -938,13 +938,12 @@
         // that happened the guard could not fire and the user was logged out for good. anySignedIn()
         // consults our own record first, so only a real signOut() (which clears it and sets the
         // signed-out marker) can now reach the logout path.
-        T('authchange evt=' + _event + ' user=' + !!user + ' anySignedIn=' + !!anySignedIn() +
-          ' storedSb=' + !!readStoredSession() + ' identity=' + !!readIdentity());
-        if (!user && anySignedIn()) { T('  -> GUARD KEPT USER'); return; }
-        T('  -> APPLIED user=' + !!user);
+        T('chg ' + _event + ' u=' + (user?1:0) + ' any=' + (anySignedIn()?1:0) + ' sb=' + (readStoredSession()?1:0) + ' id=' + (readIdentity()?1:0));
+        if (!user && anySignedIn()) { T(' KEPT'); return; }
+        T(' APPLIED u=' + (user?1:0));
         currentSession = session || null;
         currentUser = user;
-        if (session && session.access_token) { T('  -> writeIdentity'); writeIdentity(session); }
+        if (session && session.access_token) { T(' writeId'); writeIdentity(session); }
         currentProgress = null; progressLoaded = false; // re-fetch for the new (or no) user
         currentFlags = null; flagsLoaded = false;
         notify();

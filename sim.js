@@ -52,7 +52,7 @@
   function trace(msg) {
     try {
       var t = JSON.parse(localStorage.getItem(K_TRACE) || '[]');
-      t.push(new Date().toISOString().slice(14, 23) + ' ' + msg);
+      t.push(new Date().toISOString().slice(17, 23) + ' ' + msg);
       localStorage.setItem(K_TRACE, JSON.stringify(t.slice(-60)));
     } catch (_) {}
   }
@@ -282,10 +282,10 @@
     } catch (_) {}
     return n;
   }
-  trace('BUILD sim=r29i sw=' + (self.SW_VER||'?'));
-  trace('sim.js load · disarm=' + noIdentity() + ' purgeFlag=' + hadPurgeFlag +
-        ' killed=' + bootPurged.length + ' sbKeysNow=' + sbKeysPresent().length +
-        ' identity=' + !!get(K_ID_PEEK) + ' signedOutMark=' + (get('thaiear_signed_out') === '1'));
+  trace('BUILD r29j');
+  trace('sim dis=' + (noIdentity()?1:0) + ' pf=' + (hadPurgeFlag?1:0) + ' kill=' + bootPurged.length +
+        ' sb=' + sbKeysPresent().length + ' id=' + (get(K_ID_PEEK)?1:0) +
+        ' so=' + (get('thaiear_signed_out')==='1'?1:0));
 
   /* ── ARMED BADGE ────────────────────────────────────────────────────────────────────────
      The simulator is already test-space-wide: sim.js is loaded on topic-test / test2 / test3 /

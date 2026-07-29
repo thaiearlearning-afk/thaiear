@@ -115,7 +115,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r29i</div>
+  <div class="eyebrow">Owner test build · r29j</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -199,8 +199,13 @@
       <span class="sim-lbl">Boot trace</span>
       <div class="sim-seg"><button type="button" id="sim-copytrace">📋 Copy</button></div>
     </div>
-    <pre id="sim-trace" style="font:600 11.5px/1.45 ui-monospace,Menlo,Consolas,monospace;background:#1E1811;
-      color:#E8DCC4;padding:9px 10px;border-radius:7px;overflow-x:auto;white-space:pre;margin:0 0 8px"></pre>
+    <!-- MUST wrap, never scroll sideways: the whole point is that one screenshot captures the lot. -->
+    <pre id="sim-trace" style="font:600 11px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#1E1811;
+      color:#E8DCC4;padding:9px 10px;border-radius:7px;white-space:pre-wrap;word-break:break-word;
+      overflow-wrap:anywhere;overflow-x:hidden;max-width:100%;margin:0 0 4px"></pre>
+    <p class="sim-note sim-dim" style="margin:0 0 8px">dis=disarmed · pf=purge flag survived · kill=keys
+      deleted · sb=supabase key present · id=identity present · so=signed-out mark · gs=getSession returned
+      · u=user · any=anySignedIn · KEPT=guard kept the user in</p>
     <p class="sim-note sim-dim">“31 days ago” backdates the real last-verified / period-end markers past the
       30-day grace window, then lets the real check decide. It only bites <strong>offline</strong> — online with a
       live subscription the app legitimately re-verifies and re-stamps. Put the device in airplane mode to see the
@@ -211,7 +216,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r29i</div>
+  <div class="eyebrow">Playlist · r29j</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
