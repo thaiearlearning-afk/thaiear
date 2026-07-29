@@ -29,7 +29,8 @@
 (function () {
   'use strict';
 
-  var K_TIER = 'te_sim_tier';       // '' | 'premium' | 'expired' | 'signedout'
+  var K_TIER = 'te_sim_tier';       // '' | 'premium' | 'premium-nolife' | 'expired' | 'signedout'
+  var K_NOID = 'te_sim_no_identity';// '1' = DISARM the durable offline identity (reproduce the bug)
   var K_DENY = 'te_sim_deny';       // '1' = pretend /api/audio returns 402
   var K_ELAPSED = 'te_sim_elapsed'; // days backdated, for the panel's own display
   var K_BACKUP = 'te_sim_backup';   // originals, so Restore is exact
@@ -55,7 +56,13 @@
     var s = tier();
     if (!real || !s) return real;
     var signedIn = (s !== 'signedout');
-    var subbed = (s === 'premium');
+    // 'premium-nolife' = a real paying subscriber who is NOT a lifetime member. Needed because a
+    // lifetime account can't exercise the offline-expiry paths at all: canUseOffline returns true
+    // on the lifetime flag before any date arithmetic runs, and auth.js's refreshLifetime rewrites
+    // that flag every time it confirms the account online. auth.js honours this state by clearing
+    // (and not re-setting) thaiear_lifetime — an override of the SERVER's lifetime answer, not of
+    // the expiry decision, which still runs for real.
+    var subbed = (s === 'premium' || s === 'premium-nolife');
     return {
       isReady: true,
       getUser: function () { return signedIn ? (real.getUser ? real.getUser() : { sim: true }) : null; },
@@ -116,9 +123,41 @@
     return killed;
   }
 
-  function reset() { set(K_TIER, null); set(K_DENY, null); restore(); }
+  /* Expire the stored ACCESS token — reproduces "I lost premium after an hour or two".
+     The JWT lives ~1 h; once it lapses supabase-js must refresh it, and offline that refresh
+     fails and fires a null-session auth change even though nobody signed out. This rewrites
+     expires_at/expires_in in supabase's own stored session to the past, which is exactly the
+     state the app reaches after an hour idle — then reload and watch what the REAL code does.
+     It edits only those two timestamp fields; the tokens and user are left intact. */
+  function expireAccessToken() {
+    var hits = [];
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf('sb-') !== 0 || k.indexOf('-auth-token') === -1) continue;
+        var o = JSON.parse(localStorage.getItem(k) || 'null');
+        var s = (o && o.currentSession) ? o.currentSession : o;
+        if (!s) continue;
+        var past = Math.floor(Date.now() / 1000) - 3600;   // an hour ago
+        s.expires_at = past;
+        s.expires_in = 0;
+        localStorage.setItem(k, JSON.stringify(o));
+        hits.push(k);
+      }
+    } catch (_) {}
+    return hits;
+  }
 
-  function active() { return !!tier() || !!elapsedDays() || denies(); }
+  /* DISARM the durable offline identity. This is the CONTROL: with it on, auth.js ignores
+     thaiear_identity and behaves exactly as it did before the fix, so purge + reload should log
+     you out. Turn it back off and the same sequence should keep you signed in. Without this you
+     are taking the fix on trust — with it you can watch the bug appear and disappear. */
+  function noIdentity() { return get(K_NOID) === '1'; }
+  function setNoIdentity(on) { set(K_NOID, on ? '1' : null); }
+
+  function reset() { set(K_TIER, null); set(K_DENY, null); set(K_NOID, null); restore(); }
+
+  function active() { return !!tier() || !!elapsedDays() || denies() || noIdentity(); }
 
   window.ThaiEarSim = {
     tier: tier,
@@ -128,8 +167,11 @@
     restore: restore,
     reset: reset,
     purgeSupabaseSession: purgeSupabaseSession,
+    expireAccessToken: expireAccessToken,
+    noIdentity: noIdentity,
+    setNoIdentity: setNoIdentity,
     active: active,
-    get: function () { return { tier: tier(), elapsedDays: elapsedDays(), deny: denies() }; },
+    get: function () { return { tier: tier(), elapsedDays: elapsedDays(), deny: denies(), noIdentity: noIdentity() }; },
     setTier: function (v) { set(K_TIER, v || null); },
     setDeny: function (on) { set(K_DENY, on ? '1' : null); }
   };

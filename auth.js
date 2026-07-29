@@ -109,6 +109,10 @@
   function readIdentity() {
     try {
       if (localStorage.getItem(SIGNED_OUT_KEY) === '1') return null;  // they really did log out
+      // Owner CONTROL (sim.js, test build): disarm this mechanism so the pre-fix behaviour can be
+      // reproduced on demand. With it on, purge + reload logs you out — which is what proves the
+      // fix is doing the work rather than something else keeping the session alive.
+      if (window.ThaiEarSim && window.ThaiEarSim.noIdentity && window.ThaiEarSim.noIdentity()) return null;
       var o = JSON.parse(localStorage.getItem(ID_KEY) || 'null');
       return (o && o.user && o.user.id) ? o : null;
     } catch (_) { return null; }
@@ -255,6 +259,17 @@
   // ONLY when online — so a regular paying user can never be flagged, and a revoked member is cleared
   // the next time they connect. Offline, the last-known value persists (that's the whole point).
   function refreshLifetime() {
+    // Owner simulator: 'premium-nolife' models a paying NON-lifetime member. A lifetime account
+    // can't exercise any offline-expiry path (canUseOffline returns true on this flag before the
+    // date arithmetic runs), and this function would re-set the flag on every online confirm,
+    // silently undoing the elapsed-time test. Overrides the SERVER's lifetime answer only; the
+    // expiry decision itself still runs for real.
+    try {
+      if (window.ThaiEarSim && window.ThaiEarSim.tier() === 'premium-nolife') {
+        localStorage.removeItem('thaiear_lifetime');
+        return;
+      }
+    } catch (_) {}
     if (!client || !currentUser || !navigator.onLine) return; // offline → keep whatever's cached
     client.from('subscriptions').select('lifetime,status').maybeSingle()
       .then(function (res) {

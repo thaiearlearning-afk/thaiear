@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v79';   // v79: durable offline identity (auth.js) + 50d grace + r29a (2026-07-29)
+const VERSION = 'v80';   // v80: precache playlists+sim.js (offline toggles) + sim controls (2026-07-29)
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
@@ -112,6 +112,12 @@ const PRECACHE = [
   '/read-quiz.html', '/read-results.html',
   '/read.js', '/read-data.js', '/read.css', '/betta.png',
   '/nav.js', '/topics.js', '/player.js', '/auth.js', '/footer.js',
+  // Playlists + the owner entitlement simulator. PRECACHED because the offline behaviour is
+  // exactly what they exist to test, and runtime caching couldn't guarantee it: bumping VERSION
+  // creates a NEW cache and drops the old one, so anything only ever runtime-cached vanishes on
+  // every deploy until it is visited online again. That is why the toggles were missing in
+  // airplane mode. (Both disappear at rollout — playlists.html becomes a normal shell page.)
+  '/playlists.html', '/sim.js',
   // PWA install vehicle: manifest + its icons, so "Add to Home Screen" works and the
   // installed app has its launch icon available offline.
   '/manifest.json', '/icon-512.png', '/icon-512-maskable.png',
