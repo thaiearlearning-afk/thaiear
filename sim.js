@@ -325,7 +325,7 @@
     } catch (_) {}
     return n;
   }
-  trace('BUILD r30a');
+  trace('BUILD r30b');
   trace('sim tier=' + (tier() || 'real') + ' dis=' + (noIdentity()?1:0) + ' kp=' + (keepPurged()?1:0) + ' kill=' + bootPurged.length +
         ' sb=' + sbKeysPresent().length + ' id=' + (get(K_ID_PEEK)?1:0) +
         ' so=' + (get('thaiear_signed_out')==='1'?1:0));

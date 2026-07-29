@@ -617,16 +617,23 @@
   }
   // Sentence (web <audio>) player: a same-origin blob: URL of the downloaded clip if available
   // (plays reliably across WebViews — see localBlobUrl), else the free CDN / signed remote URL.
-  function sentSrcFor(file, gated) {
-    if (OFFLINE && hasLocalFile(PREFIX, file)) {
-      if (canUseOffline(TIER)) {
-        return localBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file, gated); });
+  /* prefix/tier are per SENTENCE on a playlist, which mixes topics — the page-level PREFIX there
+     is '' and TIER is 'free'. This used to read the page values, so hasLocalFile('', file) was
+     always false: single-sentence playback skipped the downloaded clip and went to the network,
+     and offline it simply failed. The stitched session worked throughout because dynClipUrl uses
+     the per-sentence ref. Topic pages pass nothing and behave exactly as before. */
+  function sentSrcFor(file, gated, prefix, tier) {
+    var pfx = prefix || PREFIX;
+    var tr = tier || TIER;
+    if (OFFLINE && hasLocalFile(pfx, file)) {
+      if (canUseOffline(tr)) {
+        return localBlobUrl(pfx, file).then(function (url) { return url || buildUrl(file, gated); });
       }
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
-    if (WEB_DL && hasLocalFile(PREFIX, file)) {
-      if (canUseOffline(TIER)) {
-        return cachedBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file, gated); });
+    if (WEB_DL && hasLocalFile(pfx, file)) {
+      if (canUseOffline(tr)) {
+        return cachedBlobUrl(pfx, file).then(function (url) { return url || buildUrl(file, gated); });
       }
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
@@ -1969,7 +1976,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r30a';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r30b';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4965,7 +4972,8 @@
     updateSentBtn(num, true);
     if (sentResetTimer) { clearTimeout(sentResetTimer); sentResetTimer = null; }
     // Resolve the src: local copy if downloaded, else free CDN / signed-URL fetch. Then play.
-    sentSrcFor(file, sentGated).then(function (u) {
+    // Pass the sentence's OWN prefix/tier — on a playlist the page-level ones are ''/'free'.
+    sentSrcFor(file, sentGated, (sObj && sObj.prefix) || null, (sObj && sObj.tier) || null).then(function (u) {
       // user stopped/switched while the URL was resolving → drop the freshly-made blob to avoid a leak
       if (sentPlaying !== num) { if (u && u.indexOf('blob:') === 0) { try { URL.revokeObjectURL(u); } catch (_) {} } return; }
       revokeSentBlob();                                    // free the previous clip's object URL
