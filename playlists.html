@@ -115,7 +115,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r29f</div>
+  <div class="eyebrow">Owner test build · r29g</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -165,6 +165,18 @@
         <button type="button" id="sim-expire">Expire access token (~1h idle)</button>
       </div>
     </div>
+    <!-- Step 1.4 in place: testing gated audio used to mean LEAVING this page, at which point you
+         are no longer testing the state you just created. -->
+    <div class="sim-row">
+      <span class="sim-lbl">Audio gate</span>
+      <div class="sim-seg" id="sim-probe">
+        <button type="button" data-k="free">▶ Free</button>
+        <button type="button" data-k="member">▶ Member</button>
+        <button type="button" data-k="premium">▶ Premium</button>
+      </div>
+    </div>
+    <p class="sim-note" id="sim-probe-out" style="margin:-2px 0 8px"></p>
+
     <!-- The app has no address bar and no F5, so a reload has to be a button. Every test here is
          "change something, then reload" — without this the sequence can't be run on a device. -->
     <div class="sim-row">
@@ -191,7 +203,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r29f</div>
+  <div class="eyebrow">Playlist · r29g</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -770,6 +782,27 @@
     denyBox.addEventListener('change', function () { S.setDeny(denyBox.checked); paint(); });
     // Reproduces the 8h-offline logout in one tap by deleting exactly the key supabase-js
     // deletes. Reload after tapping: you should STILL be signed in.
+    // Gated-audio probe: hit /api/audio with the CURRENT token and actually play the bytes, so
+    // "is the token stale after a purge?" is answerable without navigating away.
+    var probeOut = document.getElementById('sim-probe-out');
+    var probeAudioEl = new Audio();
+    var probeSeg = document.getElementById('sim-probe');
+    if (probeSeg) probeSeg.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var kind = b.getAttribute('data-k');
+      probeOut.textContent = kind + ': requesting ' + S.probeFile(kind) + ' …';
+      S.probeAudio(kind).then(function (r) {
+        if (!r.ok) { probeOut.textContent = '✗ ' + kind + ' — ' + r.note; return; }
+        probeOut.textContent = '✓ ' + kind + ' — ' + r.note + ' — playing…';
+        probeAudioEl.src = r.url;
+        probeAudioEl.play().then(function () {
+          probeOut.textContent = '✓ ' + kind + ' — ' + r.note + ' — PLAYING';
+        }).catch(function (err) {
+          probeOut.textContent = '⚠ ' + kind + ' — URL issued but playback failed (' + (err && err.name) + ')';
+        });
+      });
+    });
+
     var reload = document.getElementById('sim-reload');
     if (reload) reload.addEventListener('click', function () { location.reload(); });
     var hard = document.getElementById('sim-hardreload');

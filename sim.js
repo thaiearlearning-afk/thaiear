@@ -200,6 +200,49 @@
       .catch(function () { return []; });
   }
 
+  /* ── GATED-AUDIO PROBE ──────────────────────────────────────────────────────────────────
+     Checklist step 1.4 ("after a purge, does gated audio still work?") previously meant leaving
+     this page for a topic or playlist — at which point you are no longer testing the state you
+     just created, and a reload en route can mask the very fault being looked for. These three
+     buttons exercise the gate IN PLACE.
+
+     One real free clip, one member, one premium — chosen from the three test units so they are
+     the same files the player itself requests:
+       free    → straight off the public CDN, no token. The CONTROL: if this fails too, it is the
+                 network, not the gate.
+       member  → /api/audio, needs a signed-in user
+       premium → /api/audio, needs an active subscription (this is the one 1.4 cares about)
+
+     Scope, stated honestly: this tests TOKEN → /api/audio → signed URL → the bytes play. It does
+     NOT exercise the player's offline clip resolution or session stitching — those are covered by
+     actually playing a topic. Offline it will fail on the network, which is expected and reported
+     as such rather than as a gate failure. */
+  var PROBE = {
+    free:    { file: 'CommSurvival_BEG_S53_TH.mp3',            gated: false, label: 'free (control)' },
+    member:  { file: 'ShoppingAndMoney_BEG_S323_TH.mp3',       gated: true,  label: 'member' },
+    premium: { file: 'ColoursAndDescriptions2_BEG_S87_TH.mp3', gated: true,  label: 'premium' }
+  };
+  function probeAudio(kind) {
+    var p = PROBE[kind];
+    if (!p) return Promise.resolve({ ok: false, note: 'unknown probe' });
+    if (!p.gated) {
+      return Promise.resolve({ ok: true, url: 'https://audio.thaiear.com/' + p.file, note: 'public CDN, no token' });
+    }
+    var a = window.ThaiEarAuth;
+    var tok = a && a.getAccessToken && a.getAccessToken();
+    if (!tok) return Promise.resolve({ ok: false, note: 'no access token — not signed in?' });
+    return fetch('/api/audio?file=' + encodeURIComponent(p.file), { headers: { Authorization: 'Bearer ' + tok } })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (r.ok && j && j.url) return { ok: true, url: j.url, note: 'HTTP ' + r.status + ' — signed URL issued' };
+          // 401 = token rejected (this is what a STALE token after a purge looks like)
+          // 402 = signed in but no subscription · 403 = token invalid
+          return { ok: false, note: 'HTTP ' + r.status + (j && j.error ? ' — ' + j.error : '') };
+        });
+      })
+      .catch(function (e) { return { ok: false, note: 'network error (' + (e && e.message || 'offline?') + ')' }; });
+  }
+
   function reset() { set(K_TIER, null); set(K_DENY, null); set(K_NOID, null); restore(); }
 
   function active() { return !!tier() || !!elapsedDays() || denies() || noIdentity(); }
@@ -212,8 +255,37 @@
     set(K_PURGE_BOOT, null);
   }
 
+  /* ── ARMED BADGE ────────────────────────────────────────────────────────────────────────
+     The simulator is already test-space-wide: sim.js is loaded on topic-test / test2 / test3 /
+     playlists, and the state lives in localStorage, so setting it once governs every one of them.
+     What was missing is that nothing on a TOPIC page told you it was armed — which is exactly how
+     a forgotten toggle turns into a false bug report ("premium is locked!" when you set Expired
+     twenty minutes ago). So whenever anything is armed, stamp a small badge on every page, and
+     make it a link back to the panel so the settings are reachable without hunting.
+     Renders nothing at all when the simulator is idle, i.e. for every real user. */
+  function mountBadge() {
+    if (!active()) return;
+    if (document.getElementById('te-sim-badge')) return;
+    var bits = [];
+    if (tier()) bits.push(tier());
+    if (elapsedDays()) bits.push(elapsedDays() + 'd');
+    if (denies()) bits.push('deny');
+    if (noIdentity()) bits.push('no-id');
+    var a = document.createElement('a');
+    a.id = 'te-sim-badge';
+    a.href = 'playlists.html?k=cu38961y';
+    a.textContent = '🧪 SIM: ' + bits.join(' · ');
+    a.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:2147483647;background:#C08A2E;color:#fff;' +
+      'font:600 11px/1 system-ui,sans-serif;padding:6px 9px;border-radius:6px;text-decoration:none;' +
+      'box-shadow:0 2px 8px rgba(0,0,0,.3);opacity:.92';
+    (document.body || document.documentElement).appendChild(a);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountBadge);
+  else mountBadge();
+
   window.ThaiEarSim = {
     bootPurged: function () { return bootPurged.slice(); },
+    mountBadge: mountBadge,
     tier: tier,
     denies: denies,
     authView: authView,
@@ -226,6 +298,8 @@
     setNoIdentity: setNoIdentity,
     hardReload: hardReload,
     shellCaches: shellCaches,
+    probeAudio: probeAudio,
+    probeFile: function (k) { return (PROBE[k] || {}).file || ''; },
     active: active,
     get: function () { return { tier: tier(), elapsedDays: elapsedDays(), deny: denies(), noIdentity: noIdentity() }; },
     setTier: function (v) { set(K_TIER, v || null); },
