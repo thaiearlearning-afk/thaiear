@@ -95,13 +95,18 @@
 
   // Backdate the licence markers by `days`. Stashes the originals once, so repeated calls (or a
   // different day count) never lose the true values.
+  // Snapshot the REAL markers once, before anything mutates them. Must run before EVERY path
+  // that writes them (elapse and the armed branch of restore), or arming a state first would
+  // clear thaiear_lifetime with nothing recorded to put back.
+  function stash() {
+    if (get(K_BACKUP)) return;
+    var b = {};
+    LICENCE_KEYS.forEach(function (k) { b[k] = get(k); });
+    set(K_BACKUP, JSON.stringify(b));
+  }
   function elapse(days) {
     if (!days) { restore(); return; }
-    if (!get(K_BACKUP)) {
-      var b = {};
-      LICENCE_KEYS.forEach(function (k) { b[k] = get(k); });
-      set(K_BACKUP, JSON.stringify(b));
-    }
+    stash();
     var past = Date.now() - days * 24 * 60 * 60 * 1000;
     set('thaiear_lastVerified', past);
     set('thaiear_sub_until', past);      // period end in the past too
@@ -109,7 +114,27 @@
     set(K_ELAPSED, days);
   }
 
+  /* "Now" means "last verified just now" — NOT "give me my real membership back".
+     It used to restore the backup unconditionally, which handed the owner's genuine
+     thaiear_lifetime='1' and future sub_until to a simulated EXPIRED account. canUseOffline
+     short-circuits on the lifetime flag before any other check, so Expired + Now granted full
+     access and the simulation looked broken.
+     While an account state is armed, the simulator owns these markers: set lastVerified to now
+     and clear the two that would override the simulated account. The REAL values are only put
+     back when the simulation is switched off (Account: Real), which is the only moment they
+     should return. */
   function restore() {
+    if (tier()) {
+      stash();
+      set('thaiear_lastVerified', Date.now());
+      set('thaiear_lifetime', null);
+      set('thaiear_sub_until', null);
+      set(K_ELAPSED, null);
+      return;
+    }
+    restoreReal();
+  }
+  function restoreReal() {
     var raw = get(K_BACKUP);
     if (raw) {
       var b = {};
@@ -271,7 +296,7 @@
       .catch(function (e) { return { ok: false, note: 'network error (' + (e && e.message || 'offline?') + ')' }; });
   }
 
-  function reset() { set(K_TIER, null); set(K_DENY, null); set(K_NOID, null); set(K_KEEP_PURGED, null); restore(); }
+  function reset() { set(K_TIER, null); set(K_DENY, null); set(K_NOID, null); set(K_KEEP_PURGED, null); restoreReal(); }
 
   function active() { return !!tier() || !!elapsedDays() || denies() || noIdentity() || keepPurged(); }
 
@@ -291,7 +316,7 @@
     } catch (_) {}
     return n;
   }
-  trace('BUILD r29o');
+  trace('BUILD r29p');
   trace('sim dis=' + (noIdentity()?1:0) + ' kp=' + (keepPurged()?1:0) + ' kill=' + bootPurged.length +
         ' sb=' + sbKeysPresent().length + ' id=' + (get(K_ID_PEEK)?1:0) +
         ' so=' + (get('thaiear_signed_out')==='1'?1:0));
@@ -366,6 +391,7 @@
     authView: authView,
     elapse: elapse,
     restore: restore,
+    restoreReal: restoreReal,
     reset: reset,
     purgeSupabaseSession: purgeSupabaseSession,
     keepPurged: keepPurged,
@@ -382,7 +408,15 @@
     probeFile: function (k) { return (PROBE[k] || {}).file || ''; },
     active: active,
     get: function () { return { tier: tier(), elapsedDays: elapsedDays(), deny: denies(), noIdentity: noIdentity() }; },
-    setTier: function (v) { set(K_TIER, v || null); },
+    setTier: function (v) {
+      var wasArmed = !!tier();
+      set(K_TIER, v || null);
+      // Switching back to Real is the ONLY moment the genuine licence markers should return.
+      if (wasArmed && !v) restoreReal();
+      // Arming a state: make the markers agree with it immediately, so the very first check
+      // after the change is not answered by leftover real ones.
+      if (v) restore();
+    },
     setDeny: function (on) { set(K_DENY, on ? '1' : null); }
   };
 })();
