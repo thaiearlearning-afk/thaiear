@@ -115,7 +115,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r29b</div>
+  <div class="eyebrow">Owner test build · r29c</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -165,6 +165,13 @@
         <button type="button" id="sim-expire">Expire access token (~1h idle)</button>
       </div>
     </div>
+    <!-- The app has no address bar and no F5, so a reload has to be a button. Every test here is
+         "change something, then reload" — without this the sequence can't be run on a device. -->
+    <div class="sim-row">
+      <span class="sim-lbl">Reload</span>
+      <div class="sim-seg"><button type="button" id="sim-reload">↻ Reload now</button></div>
+      <span class="sim-note" style="margin:0">Re-runs auth init — this is the step that shows the result.</span>
+    </div>
     <label class="sim-check"><input type="checkbox" id="sim-noid">
       <strong>Disarm the offline-identity fix</strong> — the control: with this ON, purge + reload should log you OUT
       (the original bug). Turn it off and the same steps should keep you signed in.</label>
@@ -179,7 +186,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r29b</div>
+  <div class="eyebrow">Playlist · r29c</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -750,25 +757,27 @@
     denyBox.addEventListener('change', function () { S.setDeny(denyBox.checked); paint(); });
     // Reproduces the 8h-offline logout in one tap by deleting exactly the key supabase-js
     // deletes. Reload after tapping: you should STILL be signed in.
+    var reload = document.getElementById('sim-reload');
+    if (reload) reload.addEventListener('click', function () { location.reload(); });
+
     var purge = document.getElementById('sim-purge');
     if (purge) purge.addEventListener('click', function () {
       var killed = S.purgeSupabaseSession();
-      alert(killed.length
-        ? 'Deleted ' + killed.length + ' Supabase session key(s):\n' + killed.join('\n') +
-          '\n\nNow RELOAD. You should still be signed in — auth.js restores you from its own ' +
-          'stored identity, and reconnecting re-seeds Supabase from the saved refresh token.'
-        : 'No Supabase session key found (already purged, or not signed in).');
       paint();
+      if (!killed.length) { alert('No Supabase session key found (already purged, or not signed in).'); return; }
+      // confirm() rather than alert(): the reload IS the test, and on a device there is no other
+      // way to trigger one — so offer it in the same tap instead of leaving them stranded.
+      if (confirm('Deleted ' + killed.length + ' Supabase session key(s):\n' + killed.join('\n') +
+        '\n\nExpected after reload:\n• fix ARMED  → still signed in\n• fix DISARMED → logged out\n\nReload now?')) location.reload();
     });
     var exp = document.getElementById('sim-expire');
     if (exp) exp.addEventListener('click', function () {
       var hits = S.expireAccessToken();
-      alert(hits.length
-        ? 'Backdated expires_at on ' + hits.length + ' session key(s).\n\nNow RELOAD (offline for the ' +
-          'real test). This is the state the app reaches after ~1h idle — supabase must refresh the ' +
-          'token and cannot. You should stay signed in AND keep premium.'
-        : 'No Supabase session key found.');
       paint();
+      if (!hits.length) { alert('No Supabase session key found.'); return; }
+      if (confirm('Backdated expires_at on ' + hits.length + ' session key(s).\n\nThis is the state the ' +
+        'app reaches after ~1h idle — supabase must refresh the token and (offline) cannot.\n\n' +
+        'Expected: still signed in AND premium still works.\n\nReload now?')) location.reload();
     });
     var noid = document.getElementById('sim-noid');
     if (noid) noid.addEventListener('change', function () { S.setNoIdentity(noid.checked); paint(); });

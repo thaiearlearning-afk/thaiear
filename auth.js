@@ -166,6 +166,7 @@
   }
 
   var reseeding = false;
+  var restoredFromIdentity = false;   // true while the app is running on OUR record, not supabase's
   function reseedSession() {
     if (reseeding || !client) return Promise.resolve(false);
     var id = readIdentity();
@@ -175,7 +176,12 @@
       .then(function (r) {
         reseeding = false;
         var s = r && r.data && r.data.session;
-        if (s) { writeIdentity(s); return true; }
+        if (s) {
+          writeIdentity(s);
+          restoredFromIdentity = false;   // supabase owns a real session again
+          currentSession = s;             // so getAccessToken() stops handing out the stale token
+          return true;
+        }
         return false;
       })
       .catch(function () { reseeding = false; return false; });
@@ -888,7 +894,14 @@
       // Offline (or supabase already purged its copy): fall back to OUR durable identity, so a
       // long spell without a network can never present as logged out. userFromSession reads
       // .user, which both shapes carry.
-      if (!session || !session.user) session = readIdentity() || session;
+      // restoredFromIdentity is load-bearing, not bookkeeping: when we restore this way SUPABASE
+      // still has no session, but our record carries an access_token — so a "do we have a token?"
+      // test looks satisfied while getAccessToken() is handing /api/audio a STALE one. Gated audio
+      // would then 401 on a page that looks perfectly signed in. Track it explicitly and re-seed.
+      if (!session || !session.user) {
+        var restored = readIdentity();
+        if (restored) { session = restored; restoredFromIdentity = true; }
+      }
       currentSession = session || null;
       currentUser = userFromSession(currentSession);
       if (currentSession && currentSession.access_token) writeIdentity(currentSession);
@@ -925,9 +938,11 @@
          the user is silently restored instead of facing a sign-in screen. Also runs once at
          startup for the case where the app is opened online after a long offline spell. */
       window.addEventListener('online', function () {
-        if (!currentUser || !currentSession || !currentSession.access_token) reseedSession();
+        if (restoredFromIdentity || !currentSession || !currentSession.access_token) reseedSession();
       });
-      if (currentUser && (!currentSession || !currentSession.access_token)) reseedSession();
+      // And immediately, if we booted on our own record while a network is available — otherwise
+      // supabase stays sessionless for the whole visit and gated audio 401s behind a signed-in UI.
+      if (restoredFromIdentity && navigator.onLine) reseedSession();
       // In the native app, complete Google sign-in when the OAuth deep link returns.
       if (isNative()) {
         var AppPlugin = capPlugin('App');
