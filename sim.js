@@ -263,22 +263,55 @@
      twenty minutes ago). So whenever anything is armed, stamp a small badge on every page, and
      make it a link back to the panel so the settings are reachable without hunting.
      Renders nothing at all when the simulator is idle, i.e. for every real user. */
+  /* Reaching topic-test3 meant going out through the real index and back in — and leaving the
+     test space is exactly when a reload can reset the state you just set up. sim.js is loaded on
+     every test page and nowhere else, so it is the natural (and single) place to own a test-space
+     nav: one strip, every page, no duplication.
+     `?k=` is carried on every link so the password gate never interrupts, and the armed state is
+     shown in the same strip — a forgotten toggle is how a stale simulation becomes a false bug
+     report. Real users never see this: sim.js ships only on the password-gated test pages. */
+  var TEST_PAGES = [
+    ['dyn-index.html', 'Index'],
+    ['topic-test.html', '1·free'],
+    ['topic-test2.html', '2·member'],
+    ['topic-test3.html', '3·premium'],
+    ['playlists.html', 'Playlists + SIM']
+  ];
   function mountBadge() {
-    if (!active()) return;
-    if (document.getElementById('te-sim-badge')) return;
+    if (document.getElementById('te-sim-bar')) return;
+    var here = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+    var bar = document.createElement('div');
+    bar.id = 'te-sim-bar';
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#2A2118;' +
+      'display:flex;align-items:center;gap:2px;padding:4px 6px;overflow-x:auto;white-space:nowrap;' +
+      '-webkit-overflow-scrolling:touch;box-shadow:0 1px 6px rgba(0,0,0,.35)';
+    TEST_PAGES.forEach(function (p) {
+      var a = document.createElement('a');
+      var on = (here === p[0].replace(/\.html$/, ''));
+      a.href = p[0] + '?k=cu38961y';
+      a.textContent = p[1];
+      a.style.cssText = 'flex:0 0 auto;font:600 11px/1 system-ui,sans-serif;padding:6px 8px;border-radius:5px;' +
+        'text-decoration:none;color:' + (on ? '#2A2118' : '#E8DCC4') + ';background:' + (on ? '#E8DCC4' : 'transparent');
+      bar.appendChild(a);
+    });
     var bits = [];
     if (tier()) bits.push(tier());
     if (elapsedDays()) bits.push(elapsedDays() + 'd');
     if (denies()) bits.push('deny');
     if (noIdentity()) bits.push('no-id');
-    var a = document.createElement('a');
-    a.id = 'te-sim-badge';
-    a.href = 'playlists.html?k=cu38961y';
-    a.textContent = '🧪 SIM: ' + bits.join(' · ');
-    a.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:2147483647;background:#C08A2E;color:#fff;' +
-      'font:600 11px/1 system-ui,sans-serif;padding:6px 9px;border-radius:6px;text-decoration:none;' +
-      'box-shadow:0 2px 8px rgba(0,0,0,.3);opacity:.92';
-    (document.body || document.documentElement).appendChild(a);
+    var st = document.createElement('span');
+    st.style.cssText = 'flex:0 0 auto;margin-left:auto;padding:5px 8px;border-radius:5px;' +
+      'font:600 11px/1 system-ui,sans-serif;' +
+      (bits.length ? 'background:#C08A2E;color:#fff' : 'color:#8A7A5E');
+    st.textContent = bits.length ? '🧪 ' + bits.join(' · ') : 'sim off';
+    bar.appendChild(st);
+    var root = document.body || document.documentElement;
+    root.appendChild(bar);
+    // Push the page down so the strip never covers the site nav or the eyebrow.
+    try {
+      var h = bar.offsetHeight || 32;
+      document.body.style.paddingTop = (parseFloat(getComputedStyle(document.body).paddingTop || 0) + h) + 'px';
+    } catch (_) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountBadge);
   else mountBadge();
