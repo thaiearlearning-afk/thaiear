@@ -406,6 +406,21 @@
   function getManifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
   function setManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
   function isDownloaded(prefix) { return !!getManifest()[prefix]; }
+  /* Is THIS FILE actually on the device? isDownloaded() only says the PREFIX appears in the
+     manifest, which is not the same thing — and the difference broke live playback.
+     A dyn download stores per-sentence CLIPS (…_S12_TH.mp3); the classic player plays the
+     COMBINED …_TE.mp3. They share a prefix, so downloading the dyn test mirror of a topic made
+     the live topic page believe its combined file was local. Filesystem.getUri() does not check
+     existence — it just builds a path — so the player got a valid-looking file:// URI to a file
+     that was never there and played nothing at all.
+     An entry with no file list is a legacy full download: trust it, as before. */
+  function hasLocalFile(prefix, file) {
+    var e = getManifest()[prefix];
+    if (!e) return false;
+    if (!e.files || !e.files.length) return true;
+    for (var i = 0; i < e.files.length; i++) if (e.files[i] === file) return true;
+    return false;
+  }
   // av: '' = no stamp for this topic yet · 'x' = a real stamp · null = couldn't read the map at
   // download (kept null, NOT '', so a later successful load adopts the real stamp instead of false-flagging).
   function markDownloaded(prefix, tier, files, ver, av) { var m = getManifest(); m[prefix] = { tier: tier || 'free', files: files, at: Date.now(), ver: ver || '', av: (av == null ? null : av) }; setManifest(m); }
@@ -564,11 +579,12 @@
   }
   // Main (native) player: local file:// if downloaded + licence ok, else the remote URL.
   function mainSrcFor(file) {
-    if (OFFLINE && isDownloaded(mainPrefix)) {
+    // hasLocalFile, not isDownloaded: the combined file must itself be on disk (see above).
+    if (OFFLINE && hasLocalFile(mainPrefix, file)) {
       if (canUseOffline(mainTier)) return localUri(mainPrefix, file).then(function (uri) { return uri || buildUrl(file, mainGated); });
       if (!navigator.onLine) return Promise.reject({ code: 'licence' }); // downloaded premium, offline licence lapsed
     }
-    if (WEB_DL && isDownloaded(mainPrefix)) {
+    if (WEB_DL && hasLocalFile(mainPrefix, file)) {
       if (canUseOffline(mainTier)) return cachedBlobUrl(mainPrefix, file).then(function (url) { return url || buildUrl(file, mainGated); });
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
@@ -577,13 +593,13 @@
   // Sentence (web <audio>) player: a same-origin blob: URL of the downloaded clip if available
   // (plays reliably across WebViews — see localBlobUrl), else the free CDN / signed remote URL.
   function sentSrcFor(file, gated) {
-    if (OFFLINE && isDownloaded(PREFIX)) {
+    if (OFFLINE && hasLocalFile(PREFIX, file)) {
       if (canUseOffline(TIER)) {
         return localBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file, gated); });
       }
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
-    if (WEB_DL && isDownloaded(PREFIX)) {
+    if (WEB_DL && hasLocalFile(PREFIX, file)) {
       if (canUseOffline(TIER)) {
         return cachedBlobUrl(PREFIX, file).then(function (url) { return url || buildUrl(file, gated); });
       }
@@ -1904,7 +1920,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29m';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29n';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
