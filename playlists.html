@@ -115,7 +115,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r29</div>
+  <div class="eyebrow">Owner test build · r29a</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -155,6 +155,10 @@
       </div>
     </div>
     <label class="sim-check"><input type="checkbox" id="sim-deny"> Simulate server denial (402 from /api/audio)</label>
+    <div class="sim-row">
+      <span class="sim-lbl">Offline logout</span>
+      <div class="sim-seg"><button type="button" id="sim-purge">Purge Supabase session</button></div>
+    </div>
     <p class="sim-note" id="sim-state"></p>
     <p class="sim-note sim-dim">“31 days ago” backdates the real last-verified / period-end markers past the
       30-day grace window, then lets the real check decide. It only bites <strong>offline</strong> — online with a
@@ -166,7 +170,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r29</div>
+  <div class="eyebrow">Playlist · r29a</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -734,6 +738,18 @@
       paint();
     });
     denyBox.addEventListener('change', function () { S.setDeny(denyBox.checked); paint(); });
+    // Reproduces the 8h-offline logout in one tap by deleting exactly the key supabase-js
+    // deletes. Reload after tapping: you should STILL be signed in.
+    var purge = document.getElementById('sim-purge');
+    if (purge) purge.addEventListener('click', function () {
+      var killed = S.purgeSupabaseSession();
+      alert(killed.length
+        ? 'Deleted ' + killed.length + ' Supabase session key(s):\n' + killed.join('\n') +
+          '\n\nNow RELOAD. You should still be signed in — auth.js restores you from its own ' +
+          'stored identity, and reconnecting re-seeds Supabase from the saved refresh token.'
+        : 'No Supabase session key found (already purged, or not signed in).');
+      paint();
+    });
     paint();
   })();
 

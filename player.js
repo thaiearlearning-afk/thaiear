@@ -336,7 +336,11 @@
   // offline access; a genuinely lapsed member who stays offline past it is asked to reconnect. (Was
   // 1 min for testing — too short: a download made >1 min before reopening offline wrongly expired.)
   // Keep nav.js OFFLINE_GRACE_MS in sync.
-  var OFFLINE_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
+  // 50 days (was 30, raised 2026-07-29). This is ONLY the fallback for when no real period end
+  // was ever captured — a paying member is governed by thaiear_sub_until (their actual billing
+  // period), which is checked first and is unaffected by this number. Raised because the window
+  // is what stands between a long-offline member and losing everything they downloaded.
+  var OFFLINE_GRACE_MS = 50 * 24 * 60 * 60 * 1000;
   var Filesystem = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
   var OFFLINE = !!(NATIVE && Filesystem);
 
@@ -1584,7 +1588,22 @@
      "Premium content" heading at the BOTTOM of the list, and any interaction with one routes to
      the same gate() the topic pages use (app → neutral sheet, web → paywall).
      Topic pages are untouched — they keep their single whole-page gate. */
+  function sentById(num) {
+    for (var i = 0; i < sentences.length; i++) if (sentences[i].num === num) return sentences[i];
+    return null;
+  }
   function sentTierOf(s) { return (s && s.tier != null) ? s.tier : TIER; }
+  /* Extra card classes a playlist row needs. On a topic page the whole page is one tier, so the
+     gold skin is applied once to <body> (premium-topic); a playlist MIXES tiers, so the premium
+     gold has to be per CARD — free/member rows stay brand purple, premium rows go gold, locked
+     or not. Returned as a string because syncCard() rewrites className wholesale. */
+  function sentCardClasses(s) {
+    if (!PLMODE || !s) return '';
+    var cls = '';
+    if (sentLocked(s)) cls += ' sent-locked';
+    if (sentTierOf(s) === 'premium') cls += ' sent-premium';
+    return cls;
+  }
   function sentLocked(s) {
     if (!PLMODE) return false;                 // topic pages gate the whole page, not per sentence
     var tier = sentTierOf(s);
@@ -1873,7 +1892,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29a';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3949,6 +3968,14 @@
     '.sent-lock-group{display:flex;align-items:center;gap:7px;margin:22px 0 9px;font-family:var(--font-ui,system-ui,sans-serif);' +
       'font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#B29234}' +
     '.sent-lock-group::after{content:"";flex:1;height:.5px;background:var(--border,rgba(0,0,0,.12))}' +
+    /* Per-card premium gold. A topic page skins <body> once because the whole page is one tier;
+       a playlist mixes tiers, so the same variable override is scoped to the CARD — free and
+       member rows keep brand purple, premium rows go gold. Same tokens as body.premium-topic
+       (bright #F0CC5C for fills, dark ink on them), so the two routes cannot drift apart. */
+    '.sentence-card.sent-premium{--accent:#F0CC5C;--accent-mid:#E3BC48;--accent-light:#FBF5DC;--purple-mid:#D4A82C}' +
+    '.sentence-card.sent-premium .sent-play-btn.playing svg,' +
+    '.sentence-card.sent-premium .sent-play-btn:hover svg{fill:#3D2E00}' +
+    '.sentence-card.sent-premium .sent-num{color:#B29234}' +
     '.sentence-card.sent-locked{opacity:.72;background:var(--surface)}' +
     '.sentence-card.sent-locked .sentence-header{cursor:pointer}' +
     '.sentence-card.sent-locked .sent-preview{color:var(--text-secondary)}' +
@@ -4906,7 +4933,7 @@
     '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
   function lockedCardHtml(s) {
     var d = dispNum(s);
-    return '<div class="sentence-card sent-locked" id="sc-' + s.num + '">' +
+    return '<div class="sentence-card' + sentCardClasses(s) + '" id="sc-' + s.num + '">' +
       '<div class="sentence-header" onclick="gateSentence(' + s.num + ')" role="button" tabindex="0" ' +
         'aria-label="Sentence ' + d + ' — Premium content">' +
         '<span class="sent-num">' + d + '</span>' +
@@ -4933,7 +4960,7 @@
           'title="' + (flagged ? 'Flagged — click to remove' : 'Flag this sentence') + '">' + FLAG_SVG + '</button>'
       : '<button class="sent-flag-btn" onclick="flagSignIn(event)" ' +
           'aria-label="Sign in to flag sentence ' + d + '" title="Sign in to flag sentences">' + FLAG_SVG + '</button>');
-    return '<div class="sentence-card" id="sc-' + s.num + '">' +
+    return '<div class="sentence-card' + sentCardClasses(s) + '" id="sc-' + s.num + '">' +
       '<div class="sentence-header" onclick="cycle(' + s.num + ')" role="button" tabindex="0" aria-label="Sentence ' + d + '">' +
         '<span class="sent-num">' + d + '</span>' +
         '<button class="sent-play-btn' + (playing ? ' playing' : '') + '" onclick="toggleSentPlay(event,' + s.num + ')" aria-label="Play sentence ' + d + '">' +
@@ -4966,6 +4993,7 @@
     // DYN: this wholesale className rewrite must not wipe the dyn state classes
     if (DYN && dynExcluded[num]) cls += ' dyn-off';
     if (DYN && dynLastLive === num) cls += ' dyn-live';
+    cls += sentCardClasses(sentById(num));   // nor the playlist lock / premium-gold classes
     c.className = cls;
   }
   // SSR: toggle flag visuals on the existing static buttons (no list rebuild).

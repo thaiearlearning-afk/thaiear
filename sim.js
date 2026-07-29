@@ -94,6 +94,28 @@
     set(K_ELAPSED, null);
   }
 
+  /* Reproduce the 8-hours-offline logout in one tap, instead of waiting 8 hours.
+     supabase-js 2.111.0, on a refresh failure that isn't a retryable FETCH error while the access
+     token has already expired, calls _removeSession() — which deletes sb-<ref>-auth-token from
+     localStorage. That single deletion is the whole bug: auth.js's old guard read that key, so
+     once it vanished the user was logged out for good and the refresh token went with it.
+     This deletes exactly that key and nothing else. Reload afterwards:
+       BEFORE the fix → signed out, sign-in does nothing offline.
+       AFTER  the fix → still signed in (restored from thaiear_identity), and reconnecting
+                        silently re-seeds the supabase session from the stored refresh token. */
+  function purgeSupabaseSession() {
+    var killed = [];
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('sb-') === 0 && k.indexOf('-auth-token') !== -1) {
+          localStorage.removeItem(k); killed.push(k);
+        }
+      }
+    } catch (_) {}
+    return killed;
+  }
+
   function reset() { set(K_TIER, null); set(K_DENY, null); restore(); }
 
   function active() { return !!tier() || !!elapsedDays() || denies(); }
@@ -105,6 +127,7 @@
     elapse: elapse,
     restore: restore,
     reset: reset,
+    purgeSupabaseSession: purgeSupabaseSession,
     active: active,
     get: function () { return { tier: tier(), elapsedDays: elapsedDays(), deny: denies() }; },
     setTier: function (v) { set(K_TIER, v || null); },

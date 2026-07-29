@@ -421,7 +421,7 @@
     // Same premium offline-licence rule as the topic player — applied here so an expired member can't
     // advance into a downloaded premium topic from a non-topic page. KEEP OFFLINE_GRACE_MS IN SYNC WITH
     // player.js (1 min for testing → 30 days for prod).
-    const OFFLINE_GRACE_MS = 30 * 24 * 60 * 60 * 1000;   // 30 days (prod) — keep in sync with player.js
+    const OFFLINE_GRACE_MS = 50 * 24 * 60 * 60 * 1000;   // 50 days (prod) — keep in sync with player.js
     function canUseOffline(tier) {
       if (tier !== 'premium') return true;
       try { if (localStorage.getItem('thaiear_lifetime') === '1') return true; } catch (_) {} // lifetime → no offline timeout

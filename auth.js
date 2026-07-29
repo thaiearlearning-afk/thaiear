@@ -78,6 +78,105 @@
     } catch (_) { return null; }
   }
 
+  /* ══ DURABLE OFFLINE IDENTITY (2026-07-29) ═══════════════════════════════════════════════════
+     THE BUG THIS FIXES: after ~8 h offline both the PWA and the app showed the user as logged
+     OUT, and tapping sign-in did nothing — so every offline download became unplayable, because
+     entitlement needs a user.
+
+     MEASURED CAUSE (read out of the pinned bundle, @supabase/supabase-js@2 → 2.111.0):
+       catch (err) { if (isAuthError(err)) { if (!isAuthRetryableFetchError(err)) {
+           const stored = await getItem(storage, storageKey);
+           if (stored?.expires_at * 1000 > Date.now()) { ...preserve... }
+           else await this._removeSession();      // ← DELETES sb-<ref>-auth-token
+     Once the access token has expired, a refresh failure that is NOT classified as a retryable
+     FETCH error makes supabase-js purge its own stored session. Offline that is easy to hit —
+     auth.thaiear.com is a custom domain behind Cloudflare, so a dead network can yield an edge
+     HTML response that parses as an API error rather than a network error. There is a second
+     purge on the getUser() path too.
+     The old guard below asked readStoredSession() — the SUPABASE-owned key. Once supabase had
+     deleted it the guard could not fire, the genuine-logout path ran, and the refresh token that
+     would have restored them silently was gone as well. Hence "sign in did nothing": offline
+     OAuth cannot complete, and the recovery material had been destroyed.
+
+     THE FIX: keep our OWN copy of who is signed in, under a key supabase-js never touches.
+     It is the source of truth for "is someone signed in" while offline; supabase remains the
+     source of truth whenever it can actually answer. Storing the tokens here is no weaker than
+     today — supabase-js already keeps exactly these in the same localStorage, same origin; this
+     is a duplicate so a library-internal purge cannot strand the user. Cleared ONLY by a real
+     signOut(). */
+  var ID_KEY = 'thaiear_identity';
+  var SIGNED_OUT_KEY = 'thaiear_signed_out';
+  function readIdentity() {
+    try {
+      if (localStorage.getItem(SIGNED_OUT_KEY) === '1') return null;  // they really did log out
+      var o = JSON.parse(localStorage.getItem(ID_KEY) || 'null');
+      return (o && o.user && o.user.id) ? o : null;
+    } catch (_) { return null; }
+  }
+  // Mirror a live session into our own store. Called on every auth resolution that has a user.
+  function writeIdentity(session) {
+    try {
+      var u = session && session.user;
+      if (!u) return;
+      localStorage.setItem(ID_KEY, JSON.stringify({
+        user: u,
+        access_token: session.access_token || null,
+        refresh_token: session.refresh_token || null,
+        at: Date.now()
+      }));
+      localStorage.removeItem(SIGNED_OUT_KEY);
+    } catch (_) {}
+  }
+  function clearIdentity() {
+    try { localStorage.removeItem(ID_KEY); localStorage.setItem(SIGNED_OUT_KEY, '1'); } catch (_) {}
+  }
+  /* Any durable evidence this device is signed in — ours first (survives a supabase purge), then
+     supabase's own copy for accounts that signed in before this mechanism existed.
+     The signed-out marker is checked HERE as well as inside readIdentity(): supabase's signOut()
+     can settle after forceLocal() has already wiped its key and write session state back, and a
+     second tab can do the same. Without this check that stale key resurrects the user and a real
+     logout silently undoes itself. */
+  function anySignedIn() {
+    try { if (localStorage.getItem(SIGNED_OUT_KEY) === '1') return null; } catch (_) {}
+    var id = readIdentity();
+    if (id) return id;
+    var s = readStoredSession();
+    return s ? { user: s.user } : null;
+  }
+
+  /* Reconnect recovery: if supabase has no session but we still hold tokens, hand them back so
+     the user is restored WITHOUT a fresh OAuth round trip. This is what makes sign-in work again
+     after a long offline spell — the refresh token long outlives the 1 h access token, so this
+     normally succeeds the moment the network returns. */
+  // The actual OAuth kick-off, factored out of signInWithGoogle so the offline recovery path
+  // above can fall through to it. Native app → deep-link flow; web → ordinary page redirect.
+  function startGoogleSignIn() {
+    if (!client) return;
+    if (isNative()) { nativeGoogleSignIn(); return; }
+    client.auth.signInWithOAuth({
+      provider: 'google',
+      // prompt=select_account → Google always shows the account chooser, so signing
+      // in is a deliberate confirmation rather than a silent re-auth.
+      options: { redirectTo: window.location.href, queryParams: { prompt: 'select_account' } }
+    });
+  }
+
+  var reseeding = false;
+  function reseedSession() {
+    if (reseeding || !client) return Promise.resolve(false);
+    var id = readIdentity();
+    if (!id || !id.refresh_token) return Promise.resolve(false);
+    reseeding = true;
+    return client.auth.setSession({ access_token: id.access_token || '', refresh_token: id.refresh_token })
+      .then(function (r) {
+        reseeding = false;
+        var s = r && r.data && r.data.session;
+        if (s) { writeIdentity(s); return true; }
+        return false;
+      })
+      .catch(function () { reseeding = false; return false; });
+  }
+
   function notify() {
     try { if (window.ThaiEarNav && window.ThaiEarNav.refresh) window.ThaiEarNav.refresh(); } catch (e) {}
     try { window.dispatchEvent(new CustomEvent('thaiear:auth', { detail: currentUser })); } catch (e) {}
@@ -127,6 +226,11 @@
     notify(); // reflect the cached status immediately (cards/nav) before the live read returns
     client.from('subscriptions').select('status,cancel_at_period_end,current_period_end').maybeSingle()
       .then(function (res) {
+        /* Only a CLEAN read may overwrite the cached seed. postgrest-js converts a failed fetch
+           into a RESOLVED {data:null, error} — it does not reject — so offline this .then ran
+           with data:null and blanked currentSubscribed to false, undoing the cache seed above
+           and reading a paid-up member as unsubscribed. The .catch below never saw it. */
+        if (res && res.error) return;
         currentSub = (res && res.data) || null;
         var s = currentSub && currentSub.status;
         currentSubscribed = (s === 'active' || s === 'trialing');
@@ -524,14 +628,19 @@
     },
     signInWithGoogle: function () {
       if (!client) { console.warn('ThaiEar auth still loading…'); return; }
-      // Native app → deep-link flow; web → ordinary page redirect.
-      if (isNative()) { nativeGoogleSignIn(); return; }
-      client.auth.signInWithOAuth({
-        provider: 'google',
-        // prompt=select_account → Google always shows the account chooser, so signing
-        // in is a deliberate confirmation rather than a silent re-auth.
-        options: { redirectTo: window.location.href, queryParams: { prompt: 'select_account' } }
-      });
+      /* Safety net for the offline-logout case: if we still hold tokens for this device, restore
+         the session from them rather than starting an OAuth round trip that cannot complete
+         without a network. Costs one promise when it doesn't apply, and turns the reported
+         "tapping sign in did nothing" into an actual sign-in the moment there IS a connection. */
+      if (!currentUser && readIdentity()) {
+        reseedSession().then(function (ok) {
+          if (ok) return;                       // restored — onAuthStateChange re-renders
+          if (!navigator.onLine) { alert('You’re offline. You’ll be signed back in automatically when you reconnect — your downloads keep working in the meantime.'); return; }
+          startGoogleSignIn();
+        });
+        return;
+      }
+      startGoogleSignIn();
     },
     // Passwordless "magic link": Supabase emails a one-click sign-in link. Creating an
     // account and signing in are the same action (shouldCreateUser defaults true). The
@@ -570,6 +679,10 @@
           localStorage.removeItem('thaiear_lastVerified');
           localStorage.removeItem('thaiear_sub_until');
         } catch (_) {}
+        // Drop OUR durable identity too and raise the signed-out marker — this is the ONLY thing
+        // that may log a user out now, so it has to be unambiguous. Without it the offline
+        // fallback would faithfully sign them straight back in.
+        clearIdentity();
         notify();   // re-render nav + account page as logged-out
       };
       var attempt = client.auth.signOut({ scope: 'local' }).catch(function () {});
@@ -749,16 +862,21 @@
       // Any later refresh / sign-in change still propagates via onAuthStateChange below.
       var gs = client.auth.getSession().then(
         function (res) { return (res && res.data && res.data.session) || null; },
-        function () { return readStoredSession(); }
+        function () { return readStoredSession() || readIdentity(); }   // ours survives a purge
       );
       var timer = new Promise(function (resolve) {
-        setTimeout(function () { resolve(readStoredSession()); }, OFFLINE_FALLBACK_MS);
+        setTimeout(function () { resolve(readStoredSession() || readIdentity()); }, OFFLINE_FALLBACK_MS);
       });
       return Promise.race([gs, timer]);
     })
     .then(function (session) {
+      // Offline (or supabase already purged its copy): fall back to OUR durable identity, so a
+      // long spell without a network can never present as logged out. userFromSession reads
+      // .user, which both shapes carry.
+      if (!session || !session.user) session = readIdentity() || session;
       currentSession = session || null;
       currentUser = userFromSession(currentSession);
+      if (currentSession && currentSession.access_token) writeIdentity(currentSession);
       window.ThaiEarAuth.isReady = true;
       notify();
       refreshSubscription(); // async; fires another notify when it resolves
@@ -772,9 +890,15 @@
         // is that transient blip — keep the current user (so downloads + offline licence survive and the
         // nav doesn't flip to logged-out). A real signOut() purges the stored session (forceLocal), so
         // readStoredSession() returns null there and we fall through to genuine logout handling.
-        if (!user && readStoredSession()) return;
+        // Was readStoredSession() alone — the supabase-owned key, which supabase DELETES when a
+        // refresh fails on an already-expired token (see DURABLE OFFLINE IDENTITY above). Once
+        // that happened the guard could not fire and the user was logged out for good. anySignedIn()
+        // consults our own record first, so only a real signOut() (which clears it and sets the
+        // signed-out marker) can now reach the logout path.
+        if (!user && anySignedIn()) return;
         currentSession = session || null;
         currentUser = user;
+        if (session && session.access_token) writeIdentity(session);   // keep our copy fresh
         currentProgress = null; progressLoaded = false; // re-fetch for the new (or no) user
         currentFlags = null; flagsLoaded = false;
         notify();
@@ -782,6 +906,13 @@
         refreshProfile();
         dpFlush();
       });
+      /* Back online → if supabase lost its session while we were away, hand our tokens back so
+         the user is silently restored instead of facing a sign-in screen. Also runs once at
+         startup for the case where the app is opened online after a long offline spell. */
+      window.addEventListener('online', function () {
+        if (!currentUser || !currentSession || !currentSession.access_token) reseedSession();
+      });
+      if (currentUser && (!currentSession || !currentSession.access_token)) reseedSession();
       // In the native app, complete Google sign-in when the OAuth deep link returns.
       if (isNative()) {
         var AppPlugin = capPlugin('App');
