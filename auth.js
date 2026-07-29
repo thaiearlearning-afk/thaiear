@@ -910,8 +910,8 @@
       // still has no session, but our record carries an access_token — so a "do we have a token?"
       // test looks satisfied while getAccessToken() is handing /api/audio a STALE one. Gated audio
       // would then 401 on a page that looks perfectly signed in. Track it explicitly and re-seed.
-      T('init: getSession=' + (session && session.user ? 'SESSION' : 'null') +
-        ' sbKey=' + !!readStoredSession() + ' identity=' + !!readIdentity());
+      T('init gs=' + (session && session.user ? 1 : 0) + ' sb=' + (readStoredSession() ? 1 : 0) +
+        ' id=' + (readIdentity() ? 1 : 0));
       if (!session || !session.user) {
         var restored = readIdentity();
         if (restored) { session = restored; restoredFromIdentity = true; }

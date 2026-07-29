@@ -147,9 +147,18 @@
      So arm a one-shot BOOT purge as well. sim.js is a synchronous script that runs before nav.js
      injects auth.js, so re-killing the key here — at load, below — guarantees supabase-js starts
      the next page with genuinely no stored session, whatever the old page did on its way out. */
-  var K_PURGE_BOOT = 'te_sim_purge_boot';
+  /* STICKY, not one-shot. The first version armed a flag consumed on the next boot — and the boot
+     trace showed it arriving as pf=0 kill=0 sb=1, i.e. the flag was simply not there and Supabase's
+     own session signed the user straight back in. Rather than keep theorising about what ate a
+     one-shot flag on a real device (dialog behaviour, an intervening load, WebView lifecycle), make
+     the state DURABLE: while "keep purged" is on, sim.js deletes the supabase key on EVERY load,
+     before auth.js exists. No timing to get wrong, and you can navigate the test space freely with
+     the session reliably absent. Turn it off to go back to normal. */
+  var K_KEEP_PURGED = 'te_sim_keep_purged';
+  function keepPurged() { return get(K_KEEP_PURGED) === '1'; }
+  function setKeepPurged(on) { set(K_KEEP_PURGED, on ? '1' : null); if (!on) return []; return killSbKeys(); }
   function purgeSupabaseSession() {
-    set(K_PURGE_BOOT, '1');     // survive anything the outgoing page rewrites
+    set(K_KEEP_PURGED, '1');
     return killSbKeys();
   }
 
@@ -259,19 +268,16 @@
       .catch(function (e) { return { ok: false, note: 'network error (' + (e && e.message || 'offline?') + ')' }; });
   }
 
-  function reset() { set(K_TIER, null); set(K_DENY, null); set(K_NOID, null); restore(); }
+  function reset() { set(K_TIER, null); set(K_DENY, null); set(K_NOID, null); set(K_KEEP_PURGED, null); restore(); }
 
-  function active() { return !!tier() || !!elapsedDays() || denies() || noIdentity(); }
+  function active() { return !!tier() || !!elapsedDays() || denies() || noIdentity() || keepPurged(); }
 
   /* One-shot boot purge — runs NOW, at script load, before auth.js exists. This is the half of
      the purge that actually makes the test honest; see purgeSupabaseSession() above. */
   var bootPurged = [];
-  var hadPurgeFlag = (get(K_PURGE_BOOT) === '1');
   try { localStorage.setItem(K_TRACE, '[]'); } catch (_) {}   // fresh trace per boot
-  if (hadPurgeFlag) {
-    bootPurged = killSbKeys();
-    set(K_PURGE_BOOT, null);
-  }
+  // Sticky: enforced on EVERY load while armed, before auth.js exists.
+  if (keepPurged()) bootPurged = killSbKeys();
   function sbKeysPresent() {
     var n = [];
     try {
@@ -282,8 +288,8 @@
     } catch (_) {}
     return n;
   }
-  trace('BUILD r29j');
-  trace('sim dis=' + (noIdentity()?1:0) + ' pf=' + (hadPurgeFlag?1:0) + ' kill=' + bootPurged.length +
+  trace('BUILD r29k');
+  trace('sim dis=' + (noIdentity()?1:0) + ' kp=' + (keepPurged()?1:0) + ' kill=' + bootPurged.length +
         ' sb=' + sbKeysPresent().length + ' id=' + (get(K_ID_PEEK)?1:0) +
         ' so=' + (get('thaiear_signed_out')==='1'?1:0));
 
@@ -358,6 +364,8 @@
     restore: restore,
     reset: reset,
     purgeSupabaseSession: purgeSupabaseSession,
+    keepPurged: keepPurged,
+    setKeepPurged: setKeepPurged,
     expireAccessToken: expireAccessToken,
     noIdentity: noIdentity,
     setNoIdentity: setNoIdentity,

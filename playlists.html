@@ -115,7 +115,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r29j</div>
+  <div class="eyebrow">Owner test build · r29k</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -189,6 +189,8 @@
         test, works offline. <strong>⟳</strong> also drops the app-shell cache to pull a new build —
         <strong>online only</strong>; it never touches your downloads.</span>
     </div>
+    <label class="sim-check"><input type="checkbox" id="sim-keeppurged">
+      <strong>Keep Supabase session purged</strong> — deletes the session key on EVERY load, so it stays gone however you navigate. Set automatically by the Purge button.</label>
     <label class="sim-check"><input type="checkbox" id="sim-noid">
       <strong>Disarm the offline-identity fix</strong> — the control: with this ON, purge + reload should log you OUT
       (the original bug). Turn it off and the same steps should keep you signed in.</label>
@@ -216,7 +218,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r29j</div>
+  <div class="eyebrow">Playlist · r29k</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -767,6 +769,7 @@
       });
       denyBox.checked = st.deny;
       var nb = document.getElementById('sim-noid'); if (nb) nb.checked = st.noIdentity;
+      var kp = document.getElementById('sim-keeppurged'); if (kp) kp.checked = S.keepPurged();
       var bp = (S.bootPurged && S.bootPurged()) || [];
       document.getElementById('sim-warn').textContent =
         (bp.length ? '✓ purged on boot (' + bp.length + ') ' : '') + (S.active() ? '● SIMULATION ACTIVE' : '');
@@ -863,6 +866,8 @@
         'app reaches after ~1h idle — supabase must refresh the token and (offline) cannot.\n\n' +
         'Expected: still signed in AND premium still works.\n\nReload now?')) location.reload();
     });
+    var kpBox = document.getElementById('sim-keeppurged');
+    if (kpBox) kpBox.addEventListener('change', function () { S.setKeepPurged(kpBox.checked); paint(); });
     var noid = document.getElementById('sim-noid');
     if (noid) noid.addEventListener('change', function () { S.setNoIdentity(noid.checked); paint(); });
     paint();
