@@ -155,6 +155,37 @@
   function noIdentity() { return get(K_NOID) === '1'; }
   function setNoIdentity(on) { set(K_NOID, on ? '1' : null); }
 
+  /* HARD reload: drop the service-worker SHELL cache and re-register, so the next load definitely
+     comes from the network. Only useful ONLINE (offline there is nothing to re-fetch, and you'd
+     just have thrown away the shell).
+     ⚠ The shell cache is `thaiear-<VERSION>` (e.g. thaiear-v81) but the DOWNLOAD caches are
+     `thaiear-dl` and `thaiear-audio-dl`. A naive 'thaiear-' prefix match would delete the user's
+     downloaded audio — the very thing under test. Match the version shape explicitly. */
+  var SHELL_CACHE_RE = /^thaiear-v\d+$/;
+  function hardReload() {
+    var jobs = [];
+    try {
+      if (window.caches && caches.keys) {
+        jobs.push(caches.keys().then(function (keys) {
+          return Promise.all(keys.filter(function (k) { return SHELL_CACHE_RE.test(k); })
+            .map(function (k) { return caches.delete(k); }));
+        }));
+      }
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+          return Promise.all(rs.map(function (r) { return r.update().catch(function () {}); }));
+        }));
+      }
+    } catch (_) {}
+    return Promise.all(jobs).catch(function () {}).then(function () { location.reload(); });
+  }
+  // Which shell cache is actually present — so the panel can SHOW the build rather than guess.
+  function shellCaches() {
+    if (!window.caches || !caches.keys) return Promise.resolve([]);
+    return caches.keys().then(function (k) { return k.filter(function (x) { return SHELL_CACHE_RE.test(x); }); })
+      .catch(function () { return []; });
+  }
+
   function reset() { set(K_TIER, null); set(K_DENY, null); set(K_NOID, null); restore(); }
 
   function active() { return !!tier() || !!elapsedDays() || denies() || noIdentity(); }
@@ -170,6 +201,8 @@
     expireAccessToken: expireAccessToken,
     noIdentity: noIdentity,
     setNoIdentity: setNoIdentity,
+    hardReload: hardReload,
+    shellCaches: shellCaches,
     active: active,
     get: function () { return { tier: tier(), elapsedDays: elapsedDays(), deny: denies(), noIdentity: noIdentity() }; },
     setTier: function (v) { set(K_TIER, v || null); },
