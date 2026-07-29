@@ -68,6 +68,12 @@
   /* The auth VIEW every entitlement check reads. With no simulation this returns the real
      ThaiEarAuth untouched; with one, a read-only shim of the same shape, so callers cannot
      tell the difference. */
+  /* ⚠ DELEGATE, never enumerate. This shim used to be a hand-written object listing the handful
+     of methods I happened to think of — so ThaiEarAuth.playlists (and dynPrefs, and anything
+     added later) simply did not exist on it. The moment player.js started reading AUTHV() instead
+     of window.ThaiEarAuth, "Add to a playlist" died with "Playlists unavailable".
+     Object.create(real) inherits EVERY property through the prototype chain and lets us override
+     only the three answers the simulation is actually about, so nothing can be missing again. */
   function authView(real) {
     var s = tier();
     if (!real || !s) return real;
@@ -79,24 +85,18 @@
     // (and not re-setting) thaiear_lifetime — an override of the SERVER's lifetime answer, not of
     // the expiry decision, which still runs for real.
     var subbed = (s === 'premium' || s === 'premium-nolife');
-    return {
-      isReady: true,
-      getUser: function () { return signedIn ? (real.getUser ? real.getUser() : { sim: true }) : null; },
-      isSubscribed: function () { return subbed; },
-      /* WHO you are is simulated; whether the server could ANSWER is not — that must stay real,
-         or the simulation cannot reproduce being offline. Returning true unconditionally made
-         every state look like a fresh server verdict, so the offline branch was unreachable and
-         "Premium, 51 days unverified, in airplane mode" still played.
-         Defer to the real read status: online → a real read succeeds → the simulated account
-         decides; offline → no read → the 50-day window decides, exactly as in production. */
-      isSubscriptionFresh: function () {
-        return !!(real.isSubscriptionFresh && real.isSubscriptionFresh());
-      },
-      getSubscription: function () { return (subbed && real.getSubscription) ? real.getSubscription() : null; },
-      getAccessToken: function () { return real.getAccessToken ? real.getAccessToken() : null; },
-      isFlagged: function () { return real.isFlagged ? real.isFlagged.apply(real, arguments) : false; },
-      loadFlags: function () { return real.loadFlags ? real.loadFlags.apply(real, arguments) : Promise.resolve(); }
+    var view = Object.create(real);          // inherits playlists, dynPrefs, signOut, everything
+    view.isReady = true;
+    view.getUser = function () { return signedIn ? (real.getUser ? real.getUser() : { sim: true }) : null; };
+    view.isSubscribed = function () { return subbed; };
+    /* WHO you are is simulated; whether the server could ANSWER is not — that must stay real, or
+       the simulation cannot reproduce being offline. Returning true unconditionally made every
+       state look like a fresh server verdict, so the offline branch was unreachable. */
+    view.isSubscriptionFresh = function () {
+      return !!(real.isSubscriptionFresh && real.isSubscriptionFresh());
     };
+    view.getSubscription = function () { return (subbed && real.getSubscription) ? real.getSubscription() : null; };
+    return view;
   }
 
   // Backdate the licence markers by `days`. Stashes the originals once, so repeated calls (or a
@@ -325,7 +325,7 @@
     } catch (_) {}
     return n;
   }
-  trace('BUILD r29z');
+  trace('BUILD r30a');
   trace('sim tier=' + (tier() || 'real') + ' dis=' + (noIdentity()?1:0) + ' kp=' + (keepPurged()?1:0) + ' kill=' + bootPurged.length +
         ' sb=' + sbKeysPresent().length + ' id=' + (get(K_ID_PEEK)?1:0) +
         ' so=' + (get('thaiear_signed_out')==='1'?1:0));
