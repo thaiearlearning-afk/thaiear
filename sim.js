@@ -110,7 +110,7 @@
        BEFORE the fix → signed out, sign-in does nothing offline.
        AFTER  the fix → still signed in (restored from thaiear_identity), and reconnecting
                         silently re-seeds the supabase session from the stored refresh token. */
-  function purgeSupabaseSession() {
+  function killSbKeys() {
     var killed = [];
     try {
       for (var i = localStorage.length - 1; i >= 0; i--) {
@@ -121,6 +121,20 @@
       }
     } catch (_) {}
     return killed;
+  }
+  /* Deleting the key is not enough on its own: the CURRENT page still has a live supabase client
+     holding the session in memory, and it re-saves. Its auto-refresh ticks every ~30 s, and iOS
+     also re-runs recovery on visibilitychange — either of which rewrites sb-<ref>-auth-token
+     while you are reading the confirm dialog. The session then reappears on the next load and the
+     test silently passes when it should have failed. (Observed: "logged out for a split second,
+     then logged back in.")
+     So arm a one-shot BOOT purge as well. sim.js is a synchronous script that runs before nav.js
+     injects auth.js, so re-killing the key here — at load, below — guarantees supabase-js starts
+     the next page with genuinely no stored session, whatever the old page did on its way out. */
+  var K_PURGE_BOOT = 'te_sim_purge_boot';
+  function purgeSupabaseSession() {
+    set(K_PURGE_BOOT, '1');     // survive anything the outgoing page rewrites
+    return killSbKeys();
   }
 
   /* Expire the stored ACCESS token — reproduces "I lost premium after an hour or two".
@@ -190,7 +204,16 @@
 
   function active() { return !!tier() || !!elapsedDays() || denies() || noIdentity(); }
 
+  /* One-shot boot purge — runs NOW, at script load, before auth.js exists. This is the half of
+     the purge that actually makes the test honest; see purgeSupabaseSession() above. */
+  var bootPurged = [];
+  if (get(K_PURGE_BOOT) === '1') {
+    bootPurged = killSbKeys();
+    set(K_PURGE_BOOT, null);
+  }
+
   window.ThaiEarSim = {
+    bootPurged: function () { return bootPurged.slice(); },
     tier: tier,
     denies: denies,
     authView: authView,
