@@ -18,11 +18,16 @@
 # moved to new topic 45 (School and University, part 45b "Campus"). Old 20d URL → 45b.
 /topic-20d       /topic-45b  301
 /topic-20d.html  /topic-45b  301
-# 2026-07-29: hostname canonicalisation. www.thaiear.com and thaiear.pages.dev were each
-# serving a full 200 copy of every page. Both already emit a canonical pointing at the apex,
-# but a canonical is a hint, not a directive — Search Console had indexed www separately
-# (12 of the homepage's 42 impressions landed on www), splitting the ranking signal.
-# 301 is a directive, so both hosts now consolidate onto the apex.
-# Preview deploys (<hash>.thaiear.pages.dev) do NOT match this and are unaffected.
-https://www.thaiear.com/*    https://thaiear.com/:splat  301
-https://thaiear.pages.dev/*  https://thaiear.com/:splat  301
+# 2026-07-29 — HOSTNAME CANONICALISATION CANNOT BE DONE IN THIS FILE. Tested and confirmed:
+# Cloudflare Pages matches _redirects rules on the PATH ONLY, so absolute-URL sources like
+#   https://www.thaiear.com/*  https://thaiear.com/:splat  301
+# deploy successfully and then silently never match. Don't re-add them.
+# The problem they were meant to solve is real: www.thaiear.com serves a full 200 copy of
+# every page and Search Console indexed it separately from the apex, splitting ranking
+# signal (12 of the homepage's 42 impressions landed on www). Both hosts emit a canonical
+# pointing at the apex, but a canonical is a hint, not a directive.
+# The fix lives at ZONE level instead: Cloudflare dashboard → thaiear.com → Rules →
+# Redirect Rules → "www to apex", If hostname equals www.thaiear.com → dynamic 301 to
+# concat("https://thaiear.com", http.request.uri.path), preserve query string.
+# thaiear.pages.dev is NOT in the zone so no rule can reach it; it relies on its canonical
+# tag, which is acceptable because nothing links to it.
