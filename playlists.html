@@ -115,7 +115,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r29h</div>
+  <div class="eyebrow">Owner test build · r29i</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -193,6 +193,14 @@
       <strong>Disarm the offline-identity fix</strong> — the control: with this ON, purge + reload should log you OUT
       (the original bug). Turn it off and the same steps should keep you signed in.</label>
     <p class="sim-note" id="sim-state"></p>
+    <!-- Boot trace. Deliberately big and legible: the owner tests on a phone, so a SCREENSHOT has
+         to be enough — no typing, no copying a long string out of a WebView. -->
+    <div class="sim-row" style="margin-bottom:4px">
+      <span class="sim-lbl">Boot trace</span>
+      <div class="sim-seg"><button type="button" id="sim-copytrace">📋 Copy</button></div>
+    </div>
+    <pre id="sim-trace" style="font:600 11.5px/1.45 ui-monospace,Menlo,Consolas,monospace;background:#1E1811;
+      color:#E8DCC4;padding:9px 10px;border-radius:7px;overflow-x:auto;white-space:pre;margin:0 0 8px"></pre>
     <p class="sim-note sim-dim">“31 days ago” backdates the real last-verified / period-end markers past the
       30-day grace window, then lets the real check decide. It only bites <strong>offline</strong> — online with a
       live subscription the app legitimately re-verifies and re-stamps. Put the device in airplane mode to see the
@@ -203,7 +211,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r29h</div>
+  <div class="eyebrow">Playlist · r29i</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -802,6 +810,23 @@
         });
       });
     });
+
+    // Boot trace: what actually happened on THIS load, newest last. Screenshot-sized.
+    function paintTrace() {
+      var el = document.getElementById('sim-trace');
+      if (!el || !S.traceRead) return;
+      var lines = S.traceRead();
+      el.textContent = lines.length ? lines.join('\n') : '(no trace — reload to capture one)';
+    }
+    var ct = document.getElementById('sim-copytrace');
+    if (ct) ct.addEventListener('click', function () {
+      var txt = (S.traceRead() || []).join('\n');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(function () { ct.textContent = '✓ copied'; },
+          function () { ct.textContent = '✗ copy failed — screenshot it'; });
+      } else { ct.textContent = '✗ no clipboard — screenshot it'; }
+    });
+    paintTrace();
 
     var reload = document.getElementById('sim-reload');
     if (reload) reload.addEventListener('click', function () { location.reload(); });

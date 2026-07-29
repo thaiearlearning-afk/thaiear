@@ -104,6 +104,8 @@
      today — supabase-js already keeps exactly these in the same localStorage, same origin; this
      is a duplicate so a library-internal purge cannot strand the user. Cleared ONLY by a real
      signOut(). */
+  // Boot trace (test build only; inert without sim.js) — see sim.js BOOT TRACE.
+  function T(m) { try { if (window.ThaiEarSim && window.ThaiEarSim.trace) window.ThaiEarSim.trace('auth: ' + m); } catch (_) {} }
   var ID_KEY = 'thaiear_identity';
   var SIGNED_OUT_KEY = 'thaiear_signed_out';
   function readIdentity() {
@@ -171,6 +173,7 @@
     if (reseeding || !client) return Promise.resolve(false);
     var id = readIdentity();
     if (!id || !id.refresh_token) return Promise.resolve(false);
+    T('reseed: attempting');
     reseeding = true;
     return client.auth.setSession({ access_token: id.access_token || '', refresh_token: id.refresh_token })
       .then(function (r) {
@@ -178,6 +181,7 @@
         var s = r && r.data && r.data.session;
         if (s) {
           writeIdentity(s);
+          T('reseed: OK');
           restoredFromIdentity = false;   // supabase owns a real session again
           currentSession = s;             // so getAccessToken() stops handing out the stale token
           return true;
@@ -906,6 +910,8 @@
       // still has no session, but our record carries an access_token — so a "do we have a token?"
       // test looks satisfied while getAccessToken() is handing /api/audio a STALE one. Gated audio
       // would then 401 on a page that looks perfectly signed in. Track it explicitly and re-seed.
+      T('init: getSession=' + (session && session.user ? 'SESSION' : 'null') +
+        ' sbKey=' + !!readStoredSession() + ' identity=' + !!readIdentity());
       if (!session || !session.user) {
         var restored = readIdentity();
         if (restored) { session = restored; restoredFromIdentity = true; }
@@ -913,6 +919,7 @@
       currentSession = session || null;
       currentUser = userFromSession(currentSession);
       if (currentSession && currentSession.access_token) writeIdentity(currentSession);
+      T('init done: user=' + !!currentUser + ' fromIdentity=' + restoredFromIdentity);
       window.ThaiEarAuth.isReady = true;
       notify();
       refreshSubscription(); // async; fires another notify when it resolves
@@ -931,10 +938,13 @@
         // that happened the guard could not fire and the user was logged out for good. anySignedIn()
         // consults our own record first, so only a real signOut() (which clears it and sets the
         // signed-out marker) can now reach the logout path.
-        if (!user && anySignedIn()) return;
+        T('authchange evt=' + _event + ' user=' + !!user + ' anySignedIn=' + !!anySignedIn() +
+          ' storedSb=' + !!readStoredSession() + ' identity=' + !!readIdentity());
+        if (!user && anySignedIn()) { T('  -> GUARD KEPT USER'); return; }
+        T('  -> APPLIED user=' + !!user);
         currentSession = session || null;
         currentUser = user;
-        if (session && session.access_token) writeIdentity(session);   // keep our copy fresh
+        if (session && session.access_token) { T('  -> writeIdentity'); writeIdentity(session); }
         currentProgress = null; progressLoaded = false; // re-fetch for the new (or no) user
         currentFlags = null; flagsLoaded = false;
         notify();

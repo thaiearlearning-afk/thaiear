@@ -42,6 +42,22 @@
   //   thaiear_lifetime     — lifetime members never time out, so it must be lifted
   var LICENCE_KEYS = ['thaiear_lastVerified', 'thaiear_sub_until', 'thaiear_lifetime'];
 
+  /* ── BOOT TRACE ─────────────────────────────────────────────────────────────────────────
+     "It logs out for half a second and then logs back in" has now defeated two fixes reasoned
+     from the code. This records what ACTUALLY happens during a boot — sim.js's purge, then every
+     decision auth.js makes — so the next run names the mechanism instead of inviting a third
+     guess. Reset at each sim.js load; auth.js appends. Inert without sim.js, i.e. in production. */
+  var K_TRACE = 'te_sim_trace';
+  var K_ID_PEEK = 'thaiear_identity';   // read-only peek for the trace; auth.js owns this key
+  function trace(msg) {
+    try {
+      var t = JSON.parse(localStorage.getItem(K_TRACE) || '[]');
+      t.push(new Date().toISOString().slice(14, 23) + ' ' + msg);
+      localStorage.setItem(K_TRACE, JSON.stringify(t.slice(-60)));
+    } catch (_) {}
+  }
+  function traceRead() { try { return JSON.parse(localStorage.getItem(K_TRACE) || '[]'); } catch (_) { return []; } }
+
   function get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
   function set(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, String(v)); } catch (_) {} }
 
@@ -250,10 +266,26 @@
   /* One-shot boot purge — runs NOW, at script load, before auth.js exists. This is the half of
      the purge that actually makes the test honest; see purgeSupabaseSession() above. */
   var bootPurged = [];
-  if (get(K_PURGE_BOOT) === '1') {
+  var hadPurgeFlag = (get(K_PURGE_BOOT) === '1');
+  try { localStorage.setItem(K_TRACE, '[]'); } catch (_) {}   // fresh trace per boot
+  if (hadPurgeFlag) {
     bootPurged = killSbKeys();
     set(K_PURGE_BOOT, null);
   }
+  function sbKeysPresent() {
+    var n = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('sb-') === 0 && k.indexOf('-auth-token') !== -1) n.push(k);
+      }
+    } catch (_) {}
+    return n;
+  }
+  trace('BUILD sim=r29i sw=' + (self.SW_VER||'?'));
+  trace('sim.js load · disarm=' + noIdentity() + ' purgeFlag=' + hadPurgeFlag +
+        ' killed=' + bootPurged.length + ' sbKeysNow=' + sbKeysPresent().length +
+        ' identity=' + !!get(K_ID_PEEK) + ' signedOutMark=' + (get('thaiear_signed_out') === '1'));
 
   /* ── ARMED BADGE ────────────────────────────────────────────────────────────────────────
      The simulator is already test-space-wide: sim.js is loaded on topic-test / test2 / test3 /
@@ -332,6 +364,9 @@
     hardReload: hardReload,
     shellCaches: shellCaches,
     probeAudio: probeAudio,
+    trace: trace,
+    traceRead: traceRead,
+    sbKeysPresent: sbKeysPresent,
     probeFile: function (k) { return (PROBE[k] || {}).file || ''; },
     active: active,
     get: function () { return { tier: tier(), elapsedDays: elapsedDays(), deny: denies(), noIdentity: noIdentity() }; },
