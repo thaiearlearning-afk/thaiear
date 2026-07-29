@@ -200,6 +200,12 @@
   // where player.js never loads. (current_period_end may be an ISO string or epoch s/ms.)
   function stampOfflineLicence() {
     try {
+      /* Owner simulator: never re-stamp while an account state is simulated. This reads the REAL
+         subscriptions row, so on a genuinely-active account it rewrote lastVerified to now and
+         sub_until to the real period end within a second of page load — silently undoing the
+         31/41/51-day backdating and making those buttons look inert. The simulator owns the
+         licence INPUTS while armed; canUseOffline's arithmetic over them is untouched. */
+      if (window.ThaiEarSim && window.ThaiEarSim.tier()) return;
       localStorage.setItem('thaiear_lastVerified', String(Date.now()));
       var end = currentSub && currentSub.current_period_end;
       if (end != null && end !== '') {
@@ -265,13 +271,15 @@
   // ONLY when online — so a regular paying user can never be flagged, and a revoked member is cleared
   // the next time they connect. Offline, the last-known value persists (that's the whole point).
   function refreshLifetime() {
-    // Owner simulator: 'premium-nolife' models a paying NON-lifetime member. A lifetime account
-    // can't exercise any offline-expiry path (canUseOffline returns true on this flag before the
-    // date arithmetic runs), and this function would re-set the flag on every online confirm,
-    // silently undoing the elapsed-time test. Overrides the SERVER's lifetime answer only; the
-    // expiry decision itself still runs for real.
+    /* Owner simulator: while ANY account state is simulated, stop maintaining the REAL lifetime
+       flag — we are pretending to be a different account, so the real server answer must not be
+       written back. Applies to EVERY simulated state, not just 'premium-nolife' (that narrower
+       version was a bug): `thaiear_lifetime` short-circuits canUseOffline before any date
+       arithmetic runs, so on a genuinely-lifetime device this re-granted full offline access a
+       second after every page load — which is why "Expired" and the 31/41/51-day buttons appeared
+       to do nothing. Overrides the SERVER's answer only; the expiry decision still runs for real. */
     try {
-      if (window.ThaiEarSim && window.ThaiEarSim.tier() === 'premium-nolife') {
+      if (window.ThaiEarSim && window.ThaiEarSim.tier()) {
         localStorage.removeItem('thaiear_lifetime');
         return;
       }

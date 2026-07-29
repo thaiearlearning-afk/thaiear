@@ -458,6 +458,11 @@
   // On each successful online check, record WHEN we checked + the membership's real end date.
   function stampVerified() {
     try {
+      // Owner simulator: hold the licence markers still while an account state is armed. Without
+      // this, setting "51 days" online and THEN going offline lost the backdating on the way out
+      // (this fires from canUseOffline's online-and-subscribed branch), so the offline half of the
+      // test could never be set up. The simulator owns these inputs while armed.
+      if (window.ThaiEarSim && window.ThaiEarSim.tier()) return;
       localStorage.setItem('thaiear_lastVerified', String(Date.now()));
       var a = window.ThaiEarAuth, sub = a && a.getSubscription && a.getSubscription();
       var end = sub && sub.current_period_end;
@@ -1892,7 +1897,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r29e';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r29f';  // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
