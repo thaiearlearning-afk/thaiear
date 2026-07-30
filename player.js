@@ -1033,7 +1033,12 @@
         localStorage.setItem('thaiear_offline_pl', JSON.stringify(pm));
       } catch (_) {}
     }
-    return chain.then(function () { setOfflineState('idle'); });
+    /* Re-derive rather than assert 'idle'. When another unit still claims these clips the files
+       are deliberately RETAINED (see the refs check above), so declaring "not downloaded" was a
+       display lie of exactly the kind r31 removed from the playlists list: the bar said idle, the
+       next page load said downloaded again, and the delete button looked broken. renderOfflineBar
+       asks dynDlHasAll() — the content question — so it reports what actually happened. */
+    return chain.then(function () { renderOfflineBar(); });
   }
 
   function downloadTopic() {
@@ -1095,6 +1100,32 @@
   function deleteTopic() {
     if (!OFFLINE && !WEB_DL && !(DYN && DYN_WEB_DL)) return;
     if (DYN) { dynDeleteHere(); return; }
+    /* REF-AWARE, mirroring dynDeleteHere. This path used to rmdir the WHOLE prefix directory and
+       `delete m[prefix]` unconditionally — so deleting a topic download destroyed any playlist's
+       per-sentence clips stored under the same prefix, and wiped the other claimants' refs with
+       them. That is the exact mirror of the playlist-clear data loss already fixed on the other
+       side; the fix was never brought across to the classic path.
+       Split by what each kind of download actually fetches: the combined _TE/_ET are pulled ONLY
+       by a classic topic download, so they always go. Per-sentence clips may be shared, so the
+       directory is removed only when nothing else claims the prefix. Over-retaining is invisible;
+       under-deleting breaks playback. */
+    var dm = getManifest(), de = dm[PREFIX];
+    var rest = de ? (de.refs || ['topic']).filter(function (r) { return r !== 'topic'; }) : [];
+    if (de && rest.length) {
+      var combined = [PREFIX + '_TE.mp3', PREFIX + '_ET.mp3'];
+      de.refs = rest;
+      de.files = (de.files || []).filter(function (f) { return combined.indexOf(f) === -1; });
+      dm[PREFIX] = de; setManifest(dm);
+      var freed = WEB_DL
+        ? (CACHES ? caches.open(AUDIO_DL_CACHE).then(function (c) {
+            return Promise.all(combined.map(function (f) { return c.delete(webCacheKey(PREFIX, f)).catch(function () {}); }));
+          }).catch(function () {}) : Promise.resolve())
+        : Promise.all(combined.map(function (f) {
+            return Filesystem.deleteFile({ path: offlineDir(PREFIX) + '/' + f, directory: 'DATA' }).catch(function () {});
+          }));
+      freed.then(function () { renderOfflineBar(); });
+      return;
+    }
     if (WEB_DL) { webDeleteTopic().then(function () { removeDownloaded(PREFIX); setOfflineState('idle'); }); return; }
     Filesystem.rmdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true })
       .catch(function () {})
@@ -1996,7 +2027,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r31';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r32';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

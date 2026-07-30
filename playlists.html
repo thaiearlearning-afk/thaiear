@@ -122,7 +122,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r31</div>
+  <div class="eyebrow">Owner test build · r32</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -133,6 +133,14 @@
     </div>
     <span class="dl-batch-status" id="dl-status"></span>
     <span class="dl-batch-hint" id="dl-hint">Tap a playlist's circle to download, or a tick to remove, then pick an action.</span>
+    <!-- Owner-requested note (2026-07-30). "Downloaded" is a content claim, so a playlist can be
+         downloaded without ever having been downloaded ITSELF - its sentences may already be saved
+         by a topic or another playlist. That also means clearing it can appear to do nothing, which
+         is correct (something else still needs the files) but reads as a bug. A static note is the
+         whole fix: no logic, and it stays true regardless of what claims what. -->
+    <span class="dl-batch-hint">A playlist can show <strong>downloaded</strong> when its sentences are already saved by
+      something else — a topic you've downloaded, or another playlist. Clearing it won't remove those files while
+      something else still needs them.</span>
   </div>
   <div id="pl-root"><p class="pl-note">Loading…</p></div>
 
@@ -226,7 +234,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r31</div>
+  <div class="eyebrow">Playlist · r32</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -534,6 +542,41 @@
       });
     })();
   }
+  /* GHOST CLAIMS. Deleting a playlist used to leave its 'pl-<id>' ref in the manifest forever —
+     dlClearOne() is the only thing that removes it and it needs the playlist to exist. A pinned
+     ref keeps refs.length > 0, so every later delete on that prefix retained the files and LOOKED
+     broken: the clips could not be freed by any UI, on any page, ever. The delete above stops new
+     orphans; this clears the ones already on devices.
+     ⚠ Only ever call this with an AUTHORITATIVE server list. Reconciling against a cache-only or
+     failed load could read "no playlists" and free clips that are legitimately claimed.
+     Entries with NO refs field predate refs and ARE topic downloads — never touch them.
+     Returns true if anything changed, so the caller can repaint. */
+  function dlReconcileRefs(lists) {
+    if (!lists) return false;
+    var live = {};
+    lists.forEach(function (p) { live['pl-' + p.id] = true; });
+    var m = dlManifest(), changed = false, orphaned = [];
+    Object.keys(m).forEach(function (pfx) {
+      var e = m[pfx];
+      if (!e || !e.refs) return;
+      var keep = e.refs.filter(function (r) { return r.indexOf('pl-') !== 0 || live[r]; });
+      if (keep.length === e.refs.length) return;
+      changed = true;
+      if (keep.length) { e.refs = keep; m[pfx] = e; return; }
+      orphaned.push({ pfx: pfx, files: e.files || [] });   // nothing claims these any more
+      delete m[pfx];
+    });
+    if (!changed) return false;
+    dlSetManifest(m);
+    orphaned.forEach(function (o) {
+      if (DL_NATIVE) DL_FS.rmdir({ directory: 'DATA', path: 'offline/' + o.pfx, recursive: true }).catch(function () {});
+      else if (window.caches) caches.open(DL_CACHE).then(function (c) {
+        o.files.forEach(function (f) { c.delete(dlCacheKey(o.pfx, f)).catch(function () {}); });
+      }).catch(function () {});
+    });
+    console.log('[dl] reconciled ghost playlist refs — freed ' + orphaned.length + ' prefix(es)');
+    return true;
+  }
   function dlClearOne(p) {
     var pm = dlPlMap(), rec = pm[p.id];
     var prefixes = (rec && rec.prefixes) || Object.keys(dlGroup(p));
@@ -644,7 +687,17 @@
           body: 'This can’t be undone — the sentences themselves are not affected.',
           confirmText: 'Delete playlist', danger: true,
           onConfirm: function () {
-            PL().remove(id).then(function () { if (openId === id) openId = null; render(); })
+            /* Release the download claim as part of the delete. dlClearOne() is the ONLY thing
+               that can remove this playlist's 'pl-<id>' ref, and it needs the playlist's items to
+               know which prefixes to release — both of which disappear with the record. Deleting
+               first left the ref pinned forever: nothing could free those clips again, and every
+               later delete on a shared prefix retained the files and looked broken.
+               Order matters — remove() is the network op that can fail, so it goes FIRST. If it
+               fails the download is left untouched; the local clear only runs once the record is
+               really gone. `p` is captured here, so it survives the record. */
+            PL().remove(id)
+              .then(function () { return dlClearOne(p); })
+              .then(function () { if (openId === id) openId = null; render(); })
               .catch(function () { alert('Couldn’t delete — check your connection.'); });
           }
         });
@@ -975,8 +1028,10 @@
       if (!authReady()) { setTimeout(wait, 250); return; }
       if (!PL() || !user()) { render(); return; }
       PL().load(true).then(function (lists) {
-        // repaint only when the server copy differs from what's on screen
-        if (JSON.stringify(lists || []) !== paintedJson) render();
+        // The one authoritative list on this page — the only safe moment to reconcile ghost refs.
+        var freed = dlReconcileRefs(lists);
+        // repaint when the server copy differs from what's on screen, or the manifest just changed
+        if (freed || JSON.stringify(lists || []) !== paintedJson) render();
       }).catch(function () {
         if (paintedJson === null) root.innerHTML = '<p class="pl-note">Couldn’t load playlists — check your connection.</p>';
       });

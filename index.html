@@ -979,7 +979,17 @@ const DL_BADGE =
   '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" ' +
   'stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
 function offlineManifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
-function isDownloaded(prefix) { return !!(prefix && offlineManifest()[prefix]); }
+/* A manifest entry is not the same as THIS TOPIC being downloaded. A playlist download creates an
+   entry under the topic's prefix while holding only the sentences that playlist uses (and no
+   combined _TE/_ET at all), so "entry exists" put a downloaded tick on topics the user had never
+   downloaded and could not play offline. Ownership is the 'topic' ref — the same test dyn-index.html
+   already uses. An entry with NO refs field predates refs and IS a topic download. */
+function isDownloaded(prefix) {
+  const e = prefix && offlineManifest()[prefix];
+  if (!e) return false;
+  if (!e.refs) return true;
+  return e.refs.indexOf('topic') !== -1;
+}
 // When online, persist the PAGES of every downloaded topic into the SW's persistent cache, so they
 // open offline (and survive SW updates) without the user re-visiting each one. No-op on the website.
 function precacheDownloadedPages() {
