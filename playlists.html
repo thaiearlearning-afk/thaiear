@@ -132,7 +132,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r35</div>
+  <div class="eyebrow">Owner test build · r36</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -142,18 +142,13 @@
       <button class="dl-batch-btn dl-clear-btn" id="clear-btn" type="button">Clear Download(s)</button>
     </div>
     <span class="dl-batch-status" id="dl-status"></span>
-    <span class="dl-batch-hint" id="dl-hint">Tap a playlist's circle to download, or a tick to remove, then pick an action.</span>
-    <!-- Owner-requested note (2026-07-30). "Downloaded" is a content claim, so a playlist can be
-         downloaded without ever having been downloaded ITSELF - its sentences may already be saved
-         by a topic or another playlist. That also means clearing it can appear to do nothing, which
-         is correct (something else still needs the files) but reads as a bug. A static note is the
-         whole fix: no logic, and it stays true regardless of what claims what. -->
-    <!-- Collapsed to a one-line prompt: the owner wants the box small, so NONE of the explanation
-         shows until asked for — only the question it answers. -->
-    <span class="dl-batch-hint dl-share-note" id="dl-share-note">Why does a playlist say
-      downloaded?<span class="more-body"> Its sentences may already be saved by something else — a topic you've
-      downloaded, or another playlist. Clearing this playlist won't remove those files while something else still
-      needs them.</span><button type="button" class="dl-share-more" id="dl-share-more">more</button></span>
+    <span class="dl-batch-hint dl-share-note" id="dl-share-note"><span id="dl-hint">Tap a playlist's circle to download, or a tick to remove, then pick an action.</span><span class="more-body"><br>A playlist can say <strong>downloaded</strong> when its sentences are already saved by something else — a topic you've downloaded, or another playlist. Clearing this playlist won't remove those files while something else still needs them.</span><button type="button" class="dl-share-more" id="dl-share-more">more</button></span>
+    <!-- Owner-requested note (2026-07-30), folded ONTO the existing tap/action hint above: that one
+         sentence is all the box may show, with `more` on the end of it. "Downloaded" is a content
+         claim, so a playlist can read downloaded without ever having been downloaded itself, and
+         clearing it can then appear to do nothing — correct, but it reads as a bug. Static text is
+         the whole fix; it stays true regardless of what claims what.
+         #dl-hint stays its own element because dlKeepOpen() rewrites and hides it. -->
   </div>
   <div id="pl-root"><p class="pl-note">Loading…</p></div>
 
@@ -247,7 +242,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r35</div>
+  <div class="eyebrow">Playlist · r36</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -285,21 +280,34 @@
         (opts.input ? '<input class="modal-input" id="modal-input" type="text" maxlength="' +
           (opts.input.maxlength || 60) + '" value="' + esc(opts.input.value || '') + '">' : '') +
         '<div class="modal-actions">' +
-          '<button class="btn btn-ghost" id="modal-cancel">' + esc(opts.cancelText || 'Cancel') + '</button>' +
+          // noCancel → a MESSAGE, not a choice; one button reads better than a fake decision.
+          (opts.noCancel ? '' : '<button class="btn btn-ghost" id="modal-cancel">' + esc(opts.cancelText || 'Cancel') + '</button>') +
           '<button class="btn ' + (opts.danger ? 'btn-danger' : 'btn-primary') + '" id="modal-ok">' + esc(opts.confirmText || 'Confirm') + '</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
     function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-    ov.querySelector('#modal-cancel').addEventListener('click', close);
+    var cancelBtn = ov.querySelector('#modal-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', close);
+    /* preventScroll: focusing an input inside a fixed overlay otherwise makes the browser scroll
+       the PAGE BEHIND it to "reveal" the field, so opening Rename from halfway down the list
+       visibly jumped the page. The overlay is already centred in the viewport — nothing needs
+       revealing. */
     var inp = ov.querySelector('#modal-input');
-    if (inp) { inp.focus(); inp.select(); }
+    if (inp) { try { inp.focus({ preventScroll: true }); } catch (_) { inp.focus(); } inp.select(); }
     ov.querySelector('#modal-ok').addEventListener('click', function () {
       var v = inp ? inp.value.trim() : null;
       if (inp && !v) { inp.focus(); return; }   // an empty name is never a valid confirm
       close(); opts.onConfirm(v);
     });
+  }
+
+  /* One-button message dialog — the styled counterpart to alert(). Every raw system box on this
+     page is now one of these; the only survivors are inside the owner simulator, which is deleted
+     at rollout. */
+  function msgModal(title, body) {
+    showModal({ title: title, body: esc(body), confirmText: 'OK', noCancel: true, onConfirm: function () {} });
   }
 
   // Cache-first data source: the loaded server copy, else the localStorage copy — the latter
@@ -765,7 +773,7 @@
           onConfirm: function (name) {
             if (!name || name === p.name) return;
             PL().rename(id, name).then(function () { render(); })
-              .catch(function () { alert('Couldn’t rename — you appear to be offline. Reconnect and try again.'); });
+              .catch(function () { msgModal('Couldn’t rename', 'You appear to be offline. Reconnect and try again.'); });
           }
         });
       });
@@ -786,7 +794,7 @@
             PL().remove(id)
               .then(function () { return dlClearOne(p); })
               .then(function () { if (openId === id) openId = null; render(); })
-              .catch(function () { alert('Couldn’t delete — check your connection.'); });
+              .catch(function () { msgModal('Couldn’t delete', 'You appear to be offline. Reconnect and try again.'); });
           }
         });
       });
@@ -866,7 +874,7 @@
       .catch(function () {
         btns.forEach(function (b) { b.disabled = false; });
         rmCount();
-        alert('Couldn’t remove — check your connection.');
+        msgModal('Couldn’t remove', 'You appear to be offline. Reconnect and try again.');
       });
   }
 
@@ -1104,14 +1112,23 @@
     });
   })();
   document.getElementById('pl-add').addEventListener('click', function () {
-    if (!user()) { alert('Sign in first (via the Menu) to create playlists.'); return; }
-    var name = prompt('Playlist name:');
-    if (!name || !name.trim()) return;
-    PL().create(name.trim().slice(0, 60)).then(function (p) { openId = p.id; render(); })
-      .catch(function (e) {
-        var msg = (e && (e.message || e.details || e.hint)) || JSON.stringify(e);
-        alert('Couldn’t create the playlist.\n\nError: ' + msg + '\n\nIf it says the relation does not exist, playlists_schema.sql was likely run in the wrong Supabase project — check the project ref is pyfyyiegmxwmfshgwvze.');
-      });
+    if (!user()) { msgModal('Sign in to create playlists', 'Use the Menu to sign in — playlists are saved to your account.'); return; }
+    // Was a raw prompt() — the grey system box. Same modal as Rename, so naming a new playlist and
+    // renaming one look like the same product.
+    showModal({
+      title: 'New playlist',
+      input: { value: '', maxlength: 60 },
+      confirmText: 'Create',
+      onConfirm: function (name) {
+        if (!name) return;
+        PL().create(name.slice(0, 60)).then(function (p) { openId = p.id; render(); })
+          .catch(function (e) {
+            var msg = (e && (e.message || e.details || e.hint)) || JSON.stringify(e);
+            msgModal('Couldn’t create the playlist', /failed to fetch|load failed|network/i.test(String(msg))
+              ? 'You appear to be offline. Reconnect and try again.' : String(msg));
+          });
+      }
+    });
   });
 
   function boot() {
