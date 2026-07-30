@@ -805,6 +805,17 @@
         if (plCache) { plCache = plCache.filter(function (p) { return p.id !== id; }); plStore(); }
       });
     },
+    // Metadata only — touches no prefix, claim or manifest, so it can never affect a download.
+    rename: function (id, name) {
+      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+      return client.from('playlists').update({ name: name }).eq('id', id).then(function (r) {
+        if (r.error) throw r.error;
+        if (plCache) {
+          plCache.forEach(function (p) { if (p.id === id) p.name = name; });
+          plStore();
+        }
+      });
+    },
     addItem: function (id, item) {
       if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
       var p = (plCache || []).filter(function (x) { return x.id === id; })[0];

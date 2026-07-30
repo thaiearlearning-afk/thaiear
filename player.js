@@ -1184,8 +1184,13 @@
       dynCheckAudioUpdate();   // async; upgrades the bar only if the CLIPS on R2 have changed
       return;
     }
+    /* Entry presence is NOT the claim that matters, and this was the last place still asking it.
+       The classic player plays the COMBINED file, and the ref-aware delete deliberately leaves the
+       manifest entry behind when a playlist still needs the per-sentence clips — so "entry exists"
+       reported "✓ Available offline" for a topic whose _TE had just been removed, and it then
+       played nothing offline. Ask for the file this page actually plays. */
     var ent = getManifest()[PREFIX];
-    if (!ent) { setOfflineState('idle'); return; }
+    if (!ent || !hasLocalFile(PREFIX, PREFIX + '_TE.mp3')) { setOfflineState('idle'); return; }
     cachePage();                       // self-heal: re-persist the page whenever we open a downloaded topic online
     setOfflineState('downloaded');     // show immediately; the checks below can upgrade it to 'stale'
     var curHash = contentHash();
@@ -2027,7 +2032,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r32';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r33';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3773,6 +3778,16 @@
     // and My Sentences). Signed out → the standard member sign-in route, not a raw alert().
     // gate('member') goes to join.html on web AND in the app — login is not payment steering.
     if (!a || !(a.getUser && a.getUser())) { gate('member'); return; }
+    /* Playlist writes are server-only (auth.js create/addItem/remove all POST and reject with no
+       connection), so offline the old flow let you pick sentences and THEN failed with a raw
+       "TypeError: failed to fetch". Say it before the work, not after.
+       ⚠ Only the FALSE case is trusted: navigator.onLine reports *online* in airplane mode in this
+       WebView (documented all over this file), so `true` proves nothing — hence the friendly
+       network-error message on the save path as well. Together they cover both. */
+    if (!navigator.onLine) {
+      alert('You need to be online to change a playlist.\n\nYour downloads keep working — this is only for adding or removing sentences.');
+      return;
+    }
     var PL = a.playlists;
     if (!PL || !PL.load) { alert('Playlists unavailable'); return; }
     PL.load().then(function (lists) { dynShowChooser(lists || []); })
@@ -4030,7 +4045,14 @@
     }).catch(function (e) {
       btns.forEach(function (b) { b.disabled = false; });   // stay in select mode so nothing chosen is lost
       dynSelCountPaint();
-      alert('Couldn’t save: ' + ((e && (e.message || e.code)) || 'unknown error'));
+      /* A dropped connection is the COMMON failure here, not an exceptional one, and
+         "Couldn't save: TypeError: failed to fetch" is the worst possible way to say it. Name it
+         plainly and keep the raw text only for genuinely unexpected errors. Select mode stays open
+         either way, so nothing chosen is lost. */
+      var msg = (e && (e.message || e.code)) || 'unknown error';
+      alert(/failed to fetch|load failed|network|networkerror/i.test(String(msg))
+        ? 'Couldn’t save — you appear to be offline.\n\nNothing has been lost: reconnect and press Done again.'
+        : 'Couldn’t save: ' + msg);
     });
   }
   var DYN_STYLES =

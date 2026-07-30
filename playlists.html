@@ -88,6 +88,16 @@
   .dl-batch-status { font-size: 13px; color: var(--text-secondary); min-height: 1.15em; }
   .dl-batch-status.err { color: #B00020; }
   .dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); }
+  /* Collapsed by default, first sentence only — same idea as dynCollapseIntro()'s te-intro-wrap on
+     the topic pages, rebuilt locally because the list view never loads player.js (it is injected
+     only in the ?pl= view), so neither that helper nor the te-v2 CSS exists here. */
+  .dl-share-note .more-body { display: none; }
+  .dl-share-note.open .more-body { display: inline; }
+  .dl-share-more { background: none; border: 0; padding: 0 0 0 5px; font: inherit; font-weight: 500;
+    color: var(--accent); cursor: pointer; }
+  .modal-input { width: 100%; font-family: var(--font-ui); font-size: 15px; padding: 9px 11px;
+    border: .5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 1rem; }
+  .modal-input:focus { outline: none; border-color: var(--accent); }
   .dl-select, .dl-badge { position: relative; display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px; margin-left: 6px; flex-shrink: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .dl-select::before, .dl-badge::before { content: ''; position: absolute; top: 50%; left: 50%;
@@ -122,7 +132,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r32</div>
+  <div class="eyebrow">Owner test build · r33</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -138,9 +148,10 @@
          by a topic or another playlist. That also means clearing it can appear to do nothing, which
          is correct (something else still needs the files) but reads as a bug. A static note is the
          whole fix: no logic, and it stays true regardless of what claims what. -->
-    <span class="dl-batch-hint">A playlist can show <strong>downloaded</strong> when its sentences are already saved by
-      something else — a topic you've downloaded, or another playlist. Clearing it won't remove those files while
-      something else still needs them.</span>
+    <span class="dl-batch-hint dl-share-note" id="dl-share-note">A playlist can show <strong>downloaded</strong> when its
+      sentences are already saved by something else.<span class="more-body"> That might be a topic you've downloaded, or
+      another playlist. Clearing this playlist won't remove those files while something else still needs
+      them.</span><button type="button" class="dl-share-more" id="dl-share-more">more</button></span>
   </div>
   <div id="pl-root"><p class="pl-note">Loading…</p></div>
 
@@ -234,7 +245,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r32</div>
+  <div class="eyebrow">Playlist · r33</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -268,6 +279,9 @@
       '<div class="modal-card" role="dialog" aria-modal="true">' +
         '<h2>' + esc(opts.title) + '</h2>' +
         '<p>' + (opts.body || '') + '</p>' +
+        // opts.input → a text field whose trimmed value is handed to onConfirm (rename).
+        (opts.input ? '<input class="modal-input" id="modal-input" type="text" maxlength="' +
+          (opts.input.maxlength || 60) + '" value="' + esc(opts.input.value || '') + '">' : '') +
         '<div class="modal-actions">' +
           '<button class="btn btn-ghost" id="modal-cancel">' + esc(opts.cancelText || 'Cancel') + '</button>' +
           '<button class="btn ' + (opts.danger ? 'btn-danger' : 'btn-primary') + '" id="modal-ok">' + esc(opts.confirmText || 'Confirm') + '</button>' +
@@ -277,7 +291,13 @@
     function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
     ov.querySelector('#modal-cancel').addEventListener('click', close);
-    ov.querySelector('#modal-ok').addEventListener('click', function () { close(); opts.onConfirm(); });
+    var inp = ov.querySelector('#modal-input');
+    if (inp) { inp.focus(); inp.select(); }
+    ov.querySelector('#modal-ok').addEventListener('click', function () {
+      var v = inp ? inp.value.trim() : null;
+      if (inp && !v) { inp.focus(); return; }   // an empty name is never a valid confirm
+      close(); opts.onConfirm(v);
+    });
   }
 
   // Cache-first data source: the loaded server copy, else the localStorage copy — the latter
@@ -669,6 +689,7 @@
             ? '<a class="pl-open" href="playlists.html?pl=' + encodeURIComponent(p.id) + '">▶ Open player</a>'
             : '<p class="pl-note">This playlist is empty.</p>') +
           (p.items.length ? '<button class="pl-remsent" type="button">Remove sentences</button>' : '') +
+          '<button class="pl-rename" type="button">Rename playlist</button>' +
           '<button class="pl-del" type="button">Delete playlist</button>' +
         '</div></div>';
     }).join('');
@@ -681,6 +702,19 @@
       });
       var rs = box.querySelector('.pl-remsent');
       if (rs) rs.addEventListener('click', function () { enterRemove(box, p); });
+      box.querySelector('.pl-rename').addEventListener('click', function () {
+        showModal({
+          title: 'Rename “' + p.name + '”',
+          body: 'This changes the name only — the sentences and any download are untouched.',
+          input: { value: p.name, maxlength: 60 },
+          confirmText: 'Save name',
+          onConfirm: function (name) {
+            if (!name || name === p.name) return;
+            PL().rename(id, name).then(function () { render(); })
+              .catch(function () { alert('Couldn’t rename — you appear to be offline. Reconnect and try again.'); });
+          }
+        });
+      });
       box.querySelector('.pl-del').addEventListener('click', function () {
         showModal({
           title: 'Delete “' + p.name + '”?',
@@ -1008,6 +1042,13 @@
     })();
   }
 
+  (function () {
+    var n = document.getElementById('dl-share-note'), b = document.getElementById('dl-share-more');
+    if (n && b) b.addEventListener('click', function () {
+      n.classList.toggle('open');
+      b.textContent = n.classList.contains('open') ? 'less' : 'more';
+    });
+  })();
   document.getElementById('pl-add').addEventListener('click', function () {
     if (!user()) { alert('Sign in first (via the Menu) to create playlists.'); return; }
     var name = prompt('Playlist name:');
