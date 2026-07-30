@@ -1005,22 +1005,74 @@
       }
     });
   }
+  /* Which files under `pfx` are still needed by claimants OTHER than the one being released?
+     Recomputed from first principles instead of tracked per file: the downloaded-playlist map
+     (thaiear_offline_pl) says WHICH playlists hold a download, and the cached playlist contents
+     (thaiear_playlists) say exactly which clips each one needs.
+     Returns null when it cannot answer — no cached list, or a surviving pl-* claim whose playlist
+     is not in the cache. null means "keep everything": deleting a clip a playlist needs is the one
+     mistake that actually breaks playback. */
+  function dynNeededByOthers(pfx, dropRef, survivingRefs) {
+    var dl = {}, lists = null;
+    try { dl = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}'); } catch (_) {}
+    try { lists = JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) {}
+    if (!lists) return null;
+    var known = {};
+    lists.forEach(function (p) { known['pl-' + p.id] = p; });
+    for (var i = 0; i < survivingRefs.length; i++) {
+      var r = survivingRefs[i];
+      if (r.indexOf('pl-') === 0 && !known[r]) return null;   // a claim we cannot evaluate
+    }
+    var need = {};
+    lists.forEach(function (p) {
+      var ref = 'pl-' + p.id;
+      if (ref === dropRef || !dl[p.id]) return;               // not a surviving DOWNLOADED claimant
+      (p.items || []).forEach(function (it) {
+        if (it.prefix !== pfx) return;
+        var n = String(it.num).padStart(2, '0');
+        need[pfx + '_S' + n + '_TH.mp3'] = true;
+        need[pfx + '_S' + n + '_EN.mp3'] = true;
+      });
+    });
+    return need;
+  }
   function dynDeleteHere() {
     var by = dynDlGroups(), m = getManifest(), ref = dynDlRef();
     var chain = Promise.resolve();
     Object.keys(by).forEach(function (pfx) {
       var e = m[pfx]; if (!e) return;
-      // Release only OUR claim. If a downloaded playlist (or the topic) still needs these
-      // clips they stay put; over-retaining is invisible, under-deleting breaks playback.
+      /* Release our claim at FILE level, not directory level. Keeping the whole prefix because one
+         playlist holds ONE sentence meant a user who deleted a 25-sentence topic reclaimed nothing
+         — 0.58 MB of clips with no remaining claim. Correct is: keep exactly the clips the
+         surviving claimants need, delete the rest.
+         It also fixes the UI for free: once the other clips are gone dynDlHasAll() is false, so the
+         bar drops to "Download for offline" by itself instead of insisting "Available offline"
+         immediately after a delete. */
       e.refs = (e.refs || ['topic']).filter(function (r) { return r !== ref; });
-      if (e.refs.length) { m[pfx] = e; return; }
       var files = e.files || [];
-      delete m[pfx];
+      var keep = null;
+      if (e.refs.length) {
+        // The topic claim needs every clip, so nothing can be trimmed while it survives.
+        if (e.refs.indexOf('topic') !== -1) { m[pfx] = e; return; }
+        var need = dynNeededByOthers(pfx, ref, e.refs);
+        if (!need) { m[pfx] = e; return; }                    // can't answer safely → keep it all
+        keep = files.filter(function (f) { return need[f]; });
+        if (!keep.length) { e.refs = []; }                    // nothing survives after all
+      }
+      var go = keep ? files.filter(function (f) { return !need[f]; }) : files;
+      if (keep && keep.length) { e.files = keep; m[pfx] = e; } else { delete m[pfx]; }
       chain = chain.then(function () {
-        if (OFFLINE) return Filesystem.rmdir({ directory: 'DATA', path: offlineDir(pfx), recursive: true }).catch(function () {});
+        var wipeAll = !(keep && keep.length);
+        if (OFFLINE) {
+          return wipeAll
+            ? Filesystem.rmdir({ directory: 'DATA', path: offlineDir(pfx), recursive: true }).catch(function () {})
+            : Promise.all(go.map(function (f) {
+                return Filesystem.deleteFile({ path: offlineDir(pfx) + '/' + f, directory: 'DATA' }).catch(function () {});
+              }));
+        }
         if (!CACHES) return null;
         return caches.open(AUDIO_DL_CACHE).then(function (c) {
-          return Promise.all(files.map(function (f) { return c.delete(webCacheKey(pfx, f)).catch(function () {}); }));
+          return Promise.all(go.map(function (f) { return c.delete(webCacheKey(pfx, f)).catch(function () {}); }));
         }).catch(function () {});
       });
     });
@@ -1105,24 +1157,33 @@
        per-sentence clips stored under the same prefix, and wiped the other claimants' refs with
        them. That is the exact mirror of the playlist-clear data loss already fixed on the other
        side; the fix was never brought across to the classic path.
-       Split by what each kind of download actually fetches: the combined _TE/_ET are pulled ONLY
-       by a classic topic download, so they always go. Per-sentence clips may be shared, so the
-       directory is removed only when nothing else claims the prefix. Over-retaining is invisible;
-       under-deleting breaks playback. */
+       Released at FILE level, like dynDeleteHere: the combined _TE/_ET are pulled ONLY by a classic
+       topic download so they always go, and the per-sentence clips are trimmed to exactly what the
+       surviving playlists still need. Keeping the whole directory because one playlist holds one
+       sentence reclaimed nothing, which is not what "delete" means. */
     var dm = getManifest(), de = dm[PREFIX];
     var rest = de ? (de.refs || ['topic']).filter(function (r) { return r !== 'topic'; }) : [];
     if (de && rest.length) {
+      var need = dynNeededByOthers(PREFIX, 'topic', rest);
+      var all = de.files || [];
       var combined = [PREFIX + '_TE.mp3', PREFIX + '_ET.mp3'];
-      de.refs = rest;
-      de.files = (de.files || []).filter(function (f) { return combined.indexOf(f) === -1; });
-      dm[PREFIX] = de; setManifest(dm);
+      // need === null → cannot evaluate a surviving claim, so keep every per-sentence clip.
+      var keepC = all.filter(function (f) {
+        return combined.indexOf(f) === -1 && (!need || need[f]);
+      });
+      var goC = all.filter(function (f) { return keepC.indexOf(f) === -1; });
+      if (keepC.length) { de.refs = rest; de.files = keepC; dm[PREFIX] = de; }
+      else { delete dm[PREFIX]; }
+      setManifest(dm);
       var freed = WEB_DL
         ? (CACHES ? caches.open(AUDIO_DL_CACHE).then(function (c) {
-            return Promise.all(combined.map(function (f) { return c.delete(webCacheKey(PREFIX, f)).catch(function () {}); }));
+            return Promise.all(goC.map(function (f) { return c.delete(webCacheKey(PREFIX, f)).catch(function () {}); }));
           }).catch(function () {}) : Promise.resolve())
-        : Promise.all(combined.map(function (f) {
-            return Filesystem.deleteFile({ path: offlineDir(PREFIX) + '/' + f, directory: 'DATA' }).catch(function () {});
-          }));
+        : (keepC.length
+            ? Promise.all(goC.map(function (f) {
+                return Filesystem.deleteFile({ path: offlineDir(PREFIX) + '/' + f, directory: 'DATA' }).catch(function () {});
+              }))
+            : Filesystem.rmdir({ directory: 'DATA', path: offlineDir(PREFIX), recursive: true }).catch(function () {}));
       freed.then(function () { renderOfflineBar(); });
       return;
     }
@@ -2032,7 +2093,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r33';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r34';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

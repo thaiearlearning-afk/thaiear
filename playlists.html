@@ -132,7 +132,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r33</div>
+  <div class="eyebrow">Owner test build · r34</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -245,7 +245,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r33</div>
+  <div class="eyebrow">Playlist · r34</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -597,6 +597,36 @@
     console.log('[dl] reconciled ghost playlist refs — freed ' + orphaned.length + ' prefix(es)');
     return true;
   }
+  /* Twin of player.js's dynNeededByOthers — which clips under `pfx` do the SURVIVING downloaded
+     claimants still need? Recomputed from the downloaded-playlist map + the cached playlist
+     contents rather than tracked per file. Returns null when it cannot answer (no cached list, or
+     a surviving pl-* claim absent from it): null means keep everything, because deleting a clip a
+     playlist needs is the one mistake that actually breaks playback. Duplicated deliberately —
+     player.js is not loaded on this view; D.1 folds the two together. */
+  function dlNeededByOthers(pfx, dropRef, survivingRefs) {
+    var dl = {}, lists = null;
+    try { dl = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}'); } catch (_) {}
+    try { lists = JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) {}
+    if (!lists) return null;
+    var known = {};
+    lists.forEach(function (q) { known['pl-' + q.id] = q; });
+    for (var i = 0; i < survivingRefs.length; i++) {
+      var r = survivingRefs[i];
+      if (r.indexOf('pl-') === 0 && !known[r]) return null;
+    }
+    var need = {};
+    lists.forEach(function (q) {
+      var ref = 'pl-' + q.id;
+      if (ref === dropRef || !dl[q.id]) return;
+      (q.items || []).forEach(function (it) {
+        if (it.prefix !== pfx) return;
+        var n = String(it.num).padStart(2, '0');
+        need[pfx + '_S' + n + '_TH.mp3'] = true;
+        need[pfx + '_S' + n + '_EN.mp3'] = true;
+      });
+    });
+    return need;
+  }
   function dlClearOne(p) {
     var pm = dlPlMap(), rec = pm[p.id];
     var prefixes = (rec && rec.prefixes) || Object.keys(dlGroup(p));
@@ -604,9 +634,32 @@
     var chain = Promise.resolve();
     prefixes.forEach(function (pfx) {
       var e = m[pfx]; if (!e) return;
+      /* Release at FILE level — see the twin in player.js (dynNeededByOthers). Keeping the whole
+         prefix because ONE other claimant needs ONE sentence reclaimed nothing, which is not what
+         clearing a download means. The topic claim needs every clip, so nothing is trimmed while
+         it survives; a null answer means "cannot evaluate safely, keep it all". */
       e.refs = (e.refs || ['topic']).filter(function (r) { return r !== 'pl-' + p.id; });
-      if (e.refs.length) { m[pfx] = e; return; }        // something else still needs these clips
       var files = e.files || [];
+      if (e.refs.length) {
+        if (e.refs.indexOf('topic') !== -1) { m[pfx] = e; return; }
+        var need = dlNeededByOthers(pfx, 'pl-' + p.id, e.refs);
+        if (!need) { m[pfx] = e; return; }
+        var keep = files.filter(function (f) { return need[f]; });
+        if (keep.length) {
+          var go = files.filter(function (f) { return !need[f]; });
+          e.files = keep; m[pfx] = e;
+          chain = chain.then(function () {
+            if (DL_NATIVE) return Promise.all(go.map(function (f) {
+              return DL_FS.deleteFile({ path: 'offline/' + pfx + '/' + f, directory: 'DATA' }).catch(function () {});
+            }));
+            if (!window.caches) return null;
+            return caches.open(DL_CACHE).then(function (c) {
+              return Promise.all(go.map(function (f) { return c.delete(dlCacheKey(pfx, f)).catch(function () {}); }));
+            }).catch(function () {});
+          });
+          return;
+        }
+      }
       delete m[pfx];
       chain = chain.then(function () {
         if (DL_NATIVE) return DL_FS.rmdir({ directory: 'DATA', path: 'offline/' + pfx, recursive: true }).catch(function () {});
