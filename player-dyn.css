@@ -117,13 +117,18 @@
 .pl-box-head { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: none; border: none; padding: 1rem 1.15rem; cursor: pointer; font-family: var(--font-ui); }
 .pl-box-name { flex: 1; font-size: 15px; font-weight: 600; color: var(--text-primary); }
 .pl-box-meta { font-size: 12.5px; color: var(--text-tertiary); }
-.pl-box-chev { color: var(--text-tertiary); transition: transform 0.15s; }
-.pl-box.open .pl-box-chev { transform: rotate(180deg); }
+/* .pl-box-chev removed r31 — the whole .pl-box-head is a button, so the chevron was clutter that
+   read as a sibling of the download circles/ticks. Its rules went with it. */
 .pl-box-body { display: none; padding: 0 1.15rem 1.15rem; }
 .pl-box.open .pl-box-body { display: block; }
 /* "Remove sentences" (batch-remove entry) — quiet pill like .pl-del, accent-leaning */
 .pl-remsent { font-family: var(--font-ui); font-size: 12px; color: var(--accent); background: none; border: 0.5px solid var(--accent); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; margin-right: 8px; }
 .pl-remsent:hover { background: var(--accent-light); }
-.pl-del { font-family: var(--font-ui); font-size: 12px; color: var(--text-tertiary); background: none; border: 0.5px solid var(--border-strong); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; }
+/* "Rename playlist" — same quiet accent pill as .pl-remsent; it is an ordinary, reversible edit. */
+.pl-rename { font-family: var(--font-ui); font-size: 12px; color: var(--accent); background: none; border: 0.5px solid var(--accent); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; margin-right: 8px; }
+.pl-rename:hover { background: var(--accent-light); }
+/* "Delete playlist" — the only destructive action here, so it reads red rather than neutral grey. */
+.pl-del { font-family: var(--font-ui); font-size: 12px; color: #B00020; background: none; border: 0.5px solid rgba(176,0,32,0.45); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; }
+.pl-del:hover { background: rgba(176,0,32,0.07); border-color: #B00020; }
 .pl-del:hover { color: #B03030; border-color: #B03030; }
 .pl-note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }

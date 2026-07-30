@@ -2093,7 +2093,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r34';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r35';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3846,15 +3846,40 @@
        WebView (documented all over this file), so `true` proves nothing — hence the friendly
        network-error message on the save path as well. Together they cover both. */
     if (!navigator.onLine) {
-      alert('You need to be online to change a playlist.\n\nYour downloads keep working — this is only for adding or removing sentences.');
+      dynMsg('You’re offline',
+        'Playlists are saved to your account, so adding or removing sentences needs a connection. Your downloads keep working in the meantime.');
       return;
     }
     var PL = a.playlists;
-    if (!PL || !PL.load) { alert('Playlists unavailable'); return; }
+    if (!PL || !PL.load) { dynMsg('Playlists unavailable', 'Try again in a moment.'); return; }
     PL.load().then(function (lists) { dynShowChooser(lists || []); })
-      .catch(function (e) { alert('Couldn’t load playlists: ' + ((e && (e.message || e.code)) || 'unknown error')); });
+      .catch(function (e) {
+        var m = (e && (e.message || e.code)) || 'unknown error';
+        dynMsg('Couldn’t load your playlists', /failed to fetch|load failed|network/i.test(String(m))
+          ? 'You appear to be offline. Reconnect and try again.' : String(m));
+      });
   }
   // Playlist chooser (reuses the dyn-pl-* popup styling from player-dyn.css, linked on dyn pages).
+  /* Styled message dialog. These were raw alert()s — the grey system box the owner has objected to
+     repeatedly — for states that are NORMAL rather than exceptional (offline, a dropped save). It
+     reuses the playlist chooser's own furniture (#dyn-pl-pop + .dyn-pl-card, player-dyn.css, linked
+     on every dyn page), so it is the site's dialog, not a second one invented here. */
+  function dynMsg(title, text, okLabel, onClose) {
+    var old = document.getElementById('dyn-pl-pop'); if (old) old.remove();
+    var wrap = document.createElement('div');
+    wrap.id = 'dyn-pl-pop';
+    wrap.innerHTML = '<div class="dyn-pl-card">' +
+      '<div class="dyn-pl-head">' + escapeHtml(title) + '</div>' +
+      '<div class="dyn-pl-empty">' + escapeHtml(text) + '</div>' +
+      '<div class="dyn-pl-foot"><button type="button" class="dyn-pl-done">' +
+        escapeHtml(okLabel || 'OK') + '</button></div></div>';
+    document.body.appendChild(wrap);
+    /* onClose fires on EITHER dismissal route. Some callers navigate afterwards, and unlike alert()
+       this dialog does not block — without it the redirect would fire before the message was read. */
+    function shut() { wrap.remove(); if (onClose) onClose(); }
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) shut(); });
+    wrap.querySelector('.dyn-pl-done').addEventListener('click', shut);
+  }
   function dynShowChooser(lists) {
     var old = document.getElementById('dyn-pl-pop'); if (old) old.remove();
     var wrap = document.createElement('div');
@@ -4043,13 +4068,23 @@
         if (++tries < 60) setTimeout(wait, 250);
         return;
       }
-      if (!(a.getUser && a.getUser())) { alert('Sign in to use playlists.'); dynPendClear(); location.href = 'playlists.html'; return; }
+      if (!(a.getUser && a.getUser())) {
+        dynPendClear();
+        dynMsg('Sign in to use playlists', 'Playlists are saved to your account.', 'OK',
+          function () { location.href = 'playlists.html'; });
+        return;
+      }
       var PL = a.playlists;
-      if (!PL || !PL.load) { alert('Playlists unavailable'); return; }
+      if (!PL || !PL.load) { dynMsg('Playlists unavailable', 'Try again in a moment.'); return; }
       PL.load().then(function (lists) {
         var p = null;
         (lists || []).forEach(function (x) { if (String(x.id) === String(dynPlsel.id)) p = x; });
-        if (!p) { alert('Playlist not found.'); dynPendClear(); location.href = 'playlists.html'; return; }
+        if (!p) {
+          dynPendClear();
+          dynMsg('Playlist not found', 'It may have been deleted on another device.', 'OK',
+            function () { location.href = 'playlists.html'; });
+          return;
+        }
         var pend = dynPendRead();
         if (!pend || String(pend.id) !== String(p.id)) {
           // First page of the flow: baseline the running total on the playlist's current size.
@@ -4057,13 +4092,13 @@
           dynPendWrite(pend);
         }
         dynEnterSelect(p, pend);
-      }).catch(function () { alert('Couldn’t load playlists — check your connection.'); });
+      }).catch(function () { dynMsg('Couldn’t load your playlists', 'You appear to be offline. Reconnect and try again.'); });
     })();
   }
   function dynSelDone() {
     if (!dynSel) return;
     var a = window.ThaiEarAuth, PL = a && a.playlists;
-    if (!PL) { alert('Playlists unavailable'); return; }
+    if (!PL) { dynMsg('Playlists unavailable', 'Try again in a moment.'); return; }
     var plsel = dynSel.plsel;
     var id = dynSel.id, name = dynSel.name;
     var ops = [], k;
@@ -4111,9 +4146,11 @@
          plainly and keep the raw text only for genuinely unexpected errors. Select mode stays open
          either way, so nothing chosen is lost. */
       var msg = (e && (e.message || e.code)) || 'unknown error';
-      alert(/failed to fetch|load failed|network|networkerror/i.test(String(msg))
-        ? 'Couldn’t save — you appear to be offline.\n\nNothing has been lost: reconnect and press Done again.'
-        : 'Couldn’t save: ' + msg);
+      if (/failed to fetch|load failed|network|networkerror/i.test(String(msg))) {
+        dynMsg('You’re offline', 'Nothing has been lost — your selection is still here. Reconnect and press Done again.');
+      } else {
+        dynMsg('Couldn’t save', String(msg));
+      }
     });
   }
   var DYN_STYLES =

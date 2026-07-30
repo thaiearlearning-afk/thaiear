@@ -132,7 +132,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r34</div>
+  <div class="eyebrow">Owner test build · r35</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -148,10 +148,12 @@
          by a topic or another playlist. That also means clearing it can appear to do nothing, which
          is correct (something else still needs the files) but reads as a bug. A static note is the
          whole fix: no logic, and it stays true regardless of what claims what. -->
-    <span class="dl-batch-hint dl-share-note" id="dl-share-note">A playlist can show <strong>downloaded</strong> when its
-      sentences are already saved by something else.<span class="more-body"> That might be a topic you've downloaded, or
-      another playlist. Clearing this playlist won't remove those files while something else still needs
-      them.</span><button type="button" class="dl-share-more" id="dl-share-more">more</button></span>
+    <!-- Collapsed to a one-line prompt: the owner wants the box small, so NONE of the explanation
+         shows until asked for — only the question it answers. -->
+    <span class="dl-batch-hint dl-share-note" id="dl-share-note">Why does a playlist say
+      downloaded?<span class="more-body"> Its sentences may already be saved by something else — a topic you've
+      downloaded, or another playlist. Clearing this playlist won't remove those files while something else still
+      needs them.</span><button type="button" class="dl-share-more" id="dl-share-more">more</button></span>
   </div>
   <div id="pl-root"><p class="pl-note">Loading…</p></div>
 
@@ -245,7 +247,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r34</div>
+  <div class="eyebrow">Playlist · r35</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -278,7 +280,7 @@
     ov.innerHTML =
       '<div class="modal-card" role="dialog" aria-modal="true">' +
         '<h2>' + esc(opts.title) + '</h2>' +
-        '<p>' + (opts.body || '') + '</p>' +
+        (opts.body ? '<p>' + opts.body + '</p>' : '') +   // no body → no empty <p> eating space
         // opts.input → a text field whose trimmed value is handed to onConfirm (rename).
         (opts.input ? '<input class="modal-input" id="modal-input" type="text" maxlength="' +
           (opts.input.maxlength || 60) + '" value="' + esc(opts.input.value || '') + '">' : '') +
@@ -758,7 +760,6 @@
       box.querySelector('.pl-rename').addEventListener('click', function () {
         showModal({
           title: 'Rename “' + p.name + '”',
-          body: 'This changes the name only — the sentences and any download are untouched.',
           input: { value: p.name, maxlength: 60 },
           confirmText: 'Save name',
           onConfirm: function (name) {
