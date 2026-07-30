@@ -97,6 +97,13 @@
   .dl-select:hover .dl-dot { border-color: var(--accent); }
   .dl-select.selected .dl-dot { background: var(--accent); border-color: var(--accent); }
   .dl-select:active .dl-dot { transform: scale(0.92); }
+  /* "Update available" — this playlist WAS downloaded and then gained sentences whose clips were
+     never fetched. It has to look like neither of the states it sits between: a plain unselected
+     dot reads as "never downloaded", and a tick is exactly the lie this fix removes. A dashed ring
+     in the existing accent says "partial" without inventing a colour — deliberately NOT gold,
+     which on this site means premium. */
+  .dl-select.dl-update .dl-dot { background: transparent; border-color: var(--accent); border-style: dashed; }
+  .dl-select.dl-update.selected .dl-dot { background: var(--accent); border-style: solid; }
   .dl-tick { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px;
     border-radius: 50%; color: var(--accent); border: 2px solid transparent; transition: border-color .15s, background .15s; }
   .dl-badge.clear-selected .dl-tick { border-color: #9d92e0; background: var(--accent-light); }
@@ -115,7 +122,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r30b</div>
+  <div class="eyebrow">Owner test build · r31</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -219,7 +226,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r30b</div>
+  <div class="eyebrow">Playlist · r31</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -302,7 +309,34 @@
   function dlSetManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
   function dlPlMap() { try { return JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}'); } catch (_) { return {}; } }
   function dlSetPlMap(m) { try { localStorage.setItem('thaiear_offline_pl', JSON.stringify(m)); } catch (_) {} }
-  function dlIsDownloaded(id) { return !!dlPlMap()[id]; }
+  /* "Downloaded" is a CONTENT question, never a flag — the standing rule, and this list was the
+     last surface still breaking it. dlPlMap() records only that a download HAPPENED, so a playlist
+     that gained sentences afterwards kept its tick while the new clips were never fetched; offline
+     the build then died with "Couldn't load the audio - check your connection", which the user had
+     no way to anticipate. Worse, the list is the ONLY surface they see before going offline: the
+     in-player button was already truthful (dynDlHasAll, player.js:885) but by the time it is
+     visible it is too late to act on.
+     player.js is injected only in the ?pl= view (see launchPlayer), so the list cannot call its
+     check — this mirrors it. That duplication is deliberate and is one of the three download
+     implementations D.1 consolidates at rollout.
+       downloaded — every clip this playlist needs is present, whatever put it there
+       update     — clips missing, but this playlist WAS downloaded before
+       none       — clips missing and it never was */
+  function dlHasAll(p) {
+    var by = dlGroup(p), m = dlManifest(), pfx, i;
+    for (pfx in by) {
+      var have = (m[pfx] && m[pfx].files) || [];
+      var seen = {};
+      have.forEach(function (f) { seen[f] = true; });
+      for (i = 0; i < by[pfx].files.length; i++) if (!seen[by[pfx].files[i]]) return false;
+    }
+    return true;
+  }
+  function dlState(p) {
+    if (!p.items.length) return 'none';
+    if (dlHasAll(p)) return 'downloaded';
+    return dlPlMap()[p.id] ? 'update' : 'none';
+  }
   function dlStatus(msg, err) {
     var el = document.getElementById('dl-status'); if (!el) return;
     el.className = 'dl-batch-status' + (err ? ' err' : '');
@@ -322,10 +356,19 @@
   }
   // The control on a playlist head: nothing while it works, a tick if downloaded, a circle
   // otherwise. The tick appears only once clips AND construction have finished.
-  function dlControl(p) {
+  function dlControl(p, st) {
     if (!DL_OK || !p.items.length) return '';
     if (dlWorking[p.id]) return '<span class="dots" aria-hidden="true"></span>';
-    if (dlIsDownloaded(p.id)) {
+    st = st || dlState(p);
+    if (st === 'update') {
+      // Selects for DOWNLOAD like the plain dot — same batch flow, so re-downloading is the one
+      // tap it already was. Only the look and the wording change, because the difference the user
+      // needs is WHY, not how.
+      return '<span class="dl-select dl-update' + (dlSel[p.id] ? ' selected' : '') + '" data-dl="' + p.id +
+        '" data-mode="dl" role="button" title="New sentences added - tap to select and update this download"' +
+        ' aria-label="New sentences added - select to update this download"><span class="dl-dot"></span></span>';
+    }
+    if (st === 'downloaded') {
       return '<span class="dl-badge' + (dlClearSel[p.id] ? ' clear-selected' : '') + '" data-dl="' + p.id +
         '" data-mode="clear" role="button" title="Downloaded - tap to select for removal">' +
         '<span class="dl-tick"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
@@ -570,13 +613,13 @@
       return;
     }
     root.innerHTML = lists.map(function (p) {
+      var st = dlState(p);
       return '<div class="pl-box' + (p.id === openId ? ' open' : '') + '" data-id="' + p.id + '">' +
         '<button class="pl-box-head" type="button">' +
           '<span class="pl-box-name">' + esc(p.name) + '</span>' +
           '<span class="pl-box-meta">' + p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') +
-            (dlIsDownloaded(p.id) ? ' · downloaded' : '') + '</span>' +
-          dlControl(p) +
-          '<span class="pl-box-chev" aria-hidden="true">⌄</span>' +
+            (st === 'downloaded' ? ' · downloaded' : st === 'update' ? ' · update available' : '') + '</span>' +
+          dlControl(p, st) +
         '</button>' +
         '<div class="pl-box-body">' +
           (p.items.length

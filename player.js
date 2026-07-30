@@ -892,6 +892,20 @@
     }
     return true;
   }
+  /* Was this unit downloaded BEFORE and is now incomplete? Only worth distinguishing for a
+     playlist the user downloaded and then ADDED sentences to: the new clips were never fetched, so
+     an offline build dies on a plain network error (dynBuildSessionFor forgives GATE codes only).
+     "Download for offline" is technically true there but tells them nothing — the button is the
+     one place we can say WHY before they are offline and out of options.
+     The record lives in the playlists page's thaiear_offline_pl map keyed by playlist id, and
+     dynKey already carries that id as 'pl-{id}', so nothing new has to be threaded through cfg. */
+  function dynDlWasDownloaded() {
+    if (!PLMODE) return false;
+    var key = String(cfg.dynKey || '');
+    if (key.indexOf('pl-') !== 0) return false;
+    try { return !!JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}')[key.slice(3)]; }
+    catch (_) { return false; }
+  }
   function dynDlFile(cache, pfx, tier, file) {
     var gated = (tier === 'member' || tier === 'premium');
     function attempt(tryNo) {
@@ -1086,6 +1100,7 @@
       .catch(function () {})
       .then(function () { removeDownloaded(PREFIX); setOfflineState('idle'); });
   }
+  var DL_ICON_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
   function setOfflineState(state, done, total) {
     var bar = $('offline-bar'); if (!bar) return;
     if (state === 'downloading') {
@@ -1112,9 +1127,14 @@
       var msg = done ? (': ' + escapeHtml(String(done).slice(0, 160))) : '.';
       bar.innerHTML = '<span class="offline-status">Download failed' + msg + '</span>' +
         '<button class="offline-btn" onclick="downloadTopic()">Retry</button>';
+    } else if (state === 'update') {
+      // Downloaded before, incomplete now — sentences were added and their clips were never
+      // fetched. Same action as idle (downloadTopic re-fetches what is missing); only the wording
+      // differs, because the missing information is WHY, not how.
+      bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' + DL_ICON_SVG +
+        ' Update download — new sentences added</button>';
     } else { // idle
-      bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' +
-        '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+      bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' + DL_ICON_SVG +
         ' Download for offline</button>';
     }
   }
@@ -1126,7 +1146,7 @@
       // No stale/refresh states here: a dyn session is keyed on its own content and settings,
       // so changed text or a changed setting rebuilds by itself. Downloaded means "the clips
       // are all here", which is the only claim worth making.
-      if (!dynDlHasAll()) { setOfflineState('idle'); return; }
+      if (!dynDlHasAll()) { setOfflineState(dynDlWasDownloaded() ? 'update' : 'idle'); return; }
       cachePage();
       setOfflineState('downloaded');
       dynPaintOfflineSize();
@@ -1976,7 +1996,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r30b';  // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r31';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
