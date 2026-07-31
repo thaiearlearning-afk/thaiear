@@ -2156,7 +2156,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r41';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r42';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3046,14 +3046,23 @@
           return null;
         });
     }).then(function () {
+      /* E9 INSTRUMENTATION (2026-07-31) — the owner reports the server-denial case failing both
+         online and offline, and dynLog does NOT reach the boot trace, so the failure was invisible.
+         T() puts the three facts that distinguish the possible causes into the trace: did ANY clip
+         come back with a gate code, how many sentences survived, and was the build re-thrown.
+         Instrument before theorising — every bug on this build attempted by inference first was
+         solved wrong. */
+      T('build: inc=' + inc.length + ' gate=' + (lastGate ? (lastGate.code || 'y') : 'none') +
+        ' denied=' + Object.keys(denied).length);
       if (lastGate) {
         var kept = inc.filter(function (s) {
           var r = dynClipRef(s, 'TH');
           return !denied[r.prefix + '|' + r.file.replace(/_(TH|EN)\.mp3$/, '')];
         });
-        if (!kept.length) return Promise.reject(lastGate);   // nothing playable → gate as before
+        if (!kept.length) { T('build: ALL denied → reject ' + (lastGate.code || '?')); return Promise.reject(lastGate); }
         if (kept.length !== inc.length) {
           dynLog('build: ' + (inc.length - kept.length) + ' sentence(s) denied — stitching ' + kept.length);
+          T('build: dropped ' + (inc.length - kept.length) + ' → stitching ' + kept.length);
           inc = kept;
         }
       }

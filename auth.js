@@ -600,7 +600,16 @@
            answered + not        → deny outright; the server has spoken
            no answer             → fall through to the offline rules below */
       if (this.isSubscriptionFresh && this.isSubscriptionFresh()) {
-        if (this.isSubscribed && this.isSubscribed()) { stampOfflineLicence(); return true; }
+        if (this.isSubscribed && this.isSubscribed()) {
+          /* Stamp at most once a minute. This runs PER SENTENCE per render (sentLocked → here), so
+             an unthrottled stamp meant dozens of localStorage writes — and dozens of trace lines —
+             for a single playlist paint. Re-stamping a licence that was stamped seconds ago adds
+             no information; the semantic ("we confirmed them recently") is unchanged. */
+          var lastStamp = 0;
+          try { lastStamp = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10); } catch (_) {}
+          if (!lastStamp || (Date.now() - lastStamp) > 60000) stampOfflineLicence();
+          return true;
+        }
         return false;
       }
       // Server did NOT answer. Trust the captured real period end first (correct billing: cancel =

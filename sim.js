@@ -49,10 +49,27 @@
      guess. Reset at each sim.js load; auth.js appends. Inert without sim.js, i.e. in production. */
   var K_TRACE = 'te_sim_trace';
   var K_ID_PEEK = 'thaiear_identity';   // read-only peek for the trace; auth.js owns this key
+  /* ⚠ CONSECUTIVE DUPLICATES COLLAPSE TO "msg ×N" — THE INSTRUMENT MUST NOT DESTROY THE EVIDENCE.
+     2026-07-31: an E9 boot trace came back as 60/60 lines of "stampOfflineLicence SUPPRESSED",
+     because an entitlement check runs PER SENTENCE per render and the buffer is only 60 deep. The
+     flood had evicted every line about the run being investigated, so the trace was unreadable
+     exactly when it was needed. This is the third time an instrument on this project has hidden its
+     own evidence (see also the purge control and the repaint-lagged checkbox), so the fix is
+     structural rather than a one-off silencing of that message: no repeated line, present or
+     future, can ever flush the buffer again. */
   function trace(msg) {
     try {
+      var stamp = new Date().toISOString().slice(17, 23);
       var t = JSON.parse(localStorage.getItem(K_TRACE) || '[]');
-      t.push(new Date().toISOString().slice(17, 23) + ' ' + msg);
+      var last = t.length ? t[t.length - 1] : '';
+      // Match on the message body, ignoring the leading timestamp and any existing "×N" suffix.
+      var body = last.replace(/^\d{2}\.\d{3} /, '').replace(/ ×\d+$/, '');
+      if (body === msg) {
+        var n = (/ ×(\d+)$/.exec(last) || [0, 1])[1];
+        t[t.length - 1] = stamp + ' ' + msg + ' ×' + (parseInt(n, 10) + 1);
+      } else {
+        t.push(stamp + ' ' + msg);
+      }
       localStorage.setItem(K_TRACE, JSON.stringify(t.slice(-60)));
     } catch (_) {}
   }
