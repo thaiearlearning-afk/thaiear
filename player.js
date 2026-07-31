@@ -2121,7 +2121,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r38';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r39';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3130,6 +3130,18 @@
   // at it. When the top player has ADOPTED a neighbour topic (dyn cross-topic nav), re-resolve
   // that adoption instead — e.g. after a TE/ET switch reset mainSrcReady.
   function dynEnsureMainSrc(lenient) {
+    /* NOTHING THIS VISITOR MAY PLAY → say so, don't attempt a build (r39, owner-reported).
+       An all-premium playlist opened without entitlement leaves dynIncluded() empty, so the build
+       ran with zero clips, failed, and reported "Couldn't load the audio — check your connection".
+       That blames the network for an entitlement decision — wrong, and it sends the user to fix
+       something that isn't broken. Guarded here rather than inside the builder because there is
+       nothing to build: the answer is known before any fetch.
+       ⚠ Wording is deliberately NEUTRAL — no price, no link, no subscribe path — because this same
+       string renders inside the Android app, where Google Play's no-steering rule applies. */
+    if (PLMODE && sentences.length && !dynIncluded().length) {
+      dynStatus('Premium membership needed', false);
+      return Promise.reject({ code: 'licence' });
+    }
     // Attached to a live native track (page-open adoption): the engine owns the src — play/
     // pause/seek control it directly and a rebuild would restart it (round-11 item 3).
     if (dynAttached && mainSrcReady) return Promise.resolve();
@@ -5507,6 +5519,21 @@
     if (!PLMODE) return;
     dynApplyLockOrder();
     render();
+  });
+  /* ⚠ ENTITLEMENT ALSO FLIPS ON A NETWORK CHANGE — re-apply on those too (r39, owner-reported).
+     canUseOffline answers a different question online and offline: online a fresh server read
+     decides, offline the grace window does. So going airplane can UNLOCK premium (verified
+     recently → we still vouch for them) and reconnecting can re-lock it. Without this listener the
+     cards kept the grouping they were rendered with while dynIncluded() — recomputed at build time
+     — used the new answer, so the page showed premium padlocked under "Premium content" while the
+     constructed mp3 happily played it. Same rule, two moments, no re-render in between.
+     `offline` also clears auth.js's subFresh, which is what makes the flip immediate. */
+  ['online', 'offline'].forEach(function (ev) {
+    window.addEventListener(ev, function () {
+      if (!PLMODE) return;
+      dynApplyLockOrder();
+      render();
+    });
   });
 
   /* ---- mount ---- */
