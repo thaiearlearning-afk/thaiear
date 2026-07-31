@@ -47,6 +47,9 @@
      member is governed by thaiear_sub_until (their actual billing period), which is checked first.
      ⚠ Keep player.js + nav.js in step. Moved here 2026-07-31 with canUseOffline below. */
   var OFFLINE_GRACE_MS = 50 * 24 * 60 * 60 * 1000;
+  // In-memory throttle for canUseOffline's licence stamp — see the note at that call site for why
+  // it deliberately does NOT read thaiear_lastVerified.
+  var lastStampAttempt = 0;
   // The offline manifest, read-only. player.js owns writing it; this is only ever asked "does this
   // prefix have an entry", for the member-tier rule in lockedFor().
   function hasOfflineEntry(prefix) {
@@ -603,11 +606,14 @@
         if (this.isSubscribed && this.isSubscribed()) {
           /* Stamp at most once a minute. This runs PER SENTENCE per render (sentLocked → here), so
              an unthrottled stamp meant dozens of localStorage writes — and dozens of trace lines —
-             for a single playlist paint. Re-stamping a licence that was stamped seconds ago adds
-             no information; the semantic ("we confirmed them recently") is unchanged. */
-          var lastStamp = 0;
-          try { lastStamp = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10); } catch (_) {}
-          if (!lastStamp || (Date.now() - lastStamp) > 60000) stampOfflineLicence();
+             for a single playlist paint. Re-stamping a licence stamped seconds ago adds nothing.
+             ⚠ THROTTLED ON AN IN-MEMORY CLOCK, NOT ON thaiear_lastVerified. The first attempt keyed
+             off the persisted marker and did NOT WORK: while the owner simulator is armed
+             stampOfflineLicence() returns early without writing, so the marker never advances and
+             the throttle re-fires forever — 299 calls in one burst in the r42 trace, with a
+             backdated "Last verified". A guard must never depend on a value the guarded call is
+             free to skip writing. */
+          if (Date.now() - lastStampAttempt > 60000) { lastStampAttempt = Date.now(); stampOfflineLicence(); }
           return true;
         }
         return false;
