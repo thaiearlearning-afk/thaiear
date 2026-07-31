@@ -2180,7 +2180,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r57';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r58';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3929,7 +3929,9 @@
       // control set from which handlers are present, and a new media source can drop them —
       // when that happened the owner saw ±15s skip + a scrubber (iOS's defaults) instead of our
       // prev/next topic buttons. Every other play path already re-registers; this one did not.
-      if (dynAdopted === t) { setMainIcon(true); setupMediaSession(); dynPrefetchNeighbours(); }
+      // dynSetMediaMeta(): setupMediaSession() re-registers handlers only, so without this the
+      // lock-screen TITLE kept naming the previous topic while its audio played the new one.
+      if (dynAdopted === t) { setMainIcon(true); setupMediaSession(); dynSetMediaMeta(); dynPrefetchNeighbours(); }
     }).catch(function (e) {
       dynLog('adopt FAIL ' + ((e && (e.name || e.code)) || '') + ' ' + ((e && e.message) || ''));
       /* ⚠ ALSO to the BOOT TRACE. dynLog does not reach it, so this failure was invisible on a
@@ -5234,6 +5236,28 @@
       navigator.mediaSession.metadata = new (window.MediaMetadata)({
         title: unit.name || 'ThaiEar',
         artist: lvl ? ('ThaiEar · ' + lvl) : 'ThaiEar',
+        album: 'ThaiEar — Thai listening'
+      });
+    } catch (_) {}
+  }
+  /* Lock-screen TITLE for a dyn chain hop (r58). setupMediaSession() only registers ACTION
+     HANDLERS — it never touches navigator.mediaSession.metadata — and the dyn hop called only that,
+     so the audio changed and the title did not. The classic path calls updateMediaSession(), which
+     DOES set metadata; that is why the live site was right and this was not.
+     ⚠ iPhone-ONLY, and it never worked there. The Android app takes its lock-screen title from
+     nativeMeta.title, which already reads dynTitle through the Capacitor bridge (~line 110), so it
+     was always correct. iOS is the PWA, where the lock screen reads mediaSession.metadata — which
+     nothing was writing on a hop.
+     ⚠ Deliberately does NOT touch nativeMeta: the native path is verified working on Android and
+     there is no reason to put a second writer on it.
+     Subtitle is a plain 'ThaiEar' (owner's call) — chain entries carry `name` but no `levels`, so
+     showing a level would need a topics.js lookup we do not need. */
+  function dynSetMediaMeta() {
+    if (!('mediaSession' in navigator) || !window.MediaMetadata) return;
+    try {
+      navigator.mediaSession.metadata = new window.MediaMetadata({
+        title: dynTitle || 'ThaiEar',
+        artist: 'ThaiEar',
         album: 'ThaiEar — Thai listening'
       });
     } catch (_) {}
