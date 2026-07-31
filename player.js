@@ -2180,7 +2180,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r46';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r47';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4322,8 +4322,11 @@
     'body.te-v2 .dyn-set-wrap{margin-top:2px}' +
     'body.te-v2 .dyn-set-wrap summary{list-style:none;cursor:pointer;font-family:var(--font-ui);font-size:12.5px;font-weight:500;color:var(--text-secondary);padding:9px 0 0;display:flex;align-items:center;gap:6px}' +
     'body.te-v2 .dyn-set-wrap summary::-webkit-details-marker{display:none}' +
-    "body.te-v2 .dyn-set-wrap summary::after{content:'⌄';font-size:14px;transition:transform .18s}" +
-    'body.te-v2 .dyn-set-wrap[open] summary::after{transform:rotate(180deg)}' +
+    /* ⚠ DELIBERATELY INVERTED — closed shows ^, open shows ⌄. This is the OPPOSITE of the usual
+       web convention and it is an OWNER DECISION (2026-07-30), not a bug. Do not "correct" it back.
+       Same glyph rotated: base 180° (reads as ^), [open] back to 0° (reads as ⌄). */
+    "body.te-v2 .dyn-set-wrap summary::after{content:'⌄';font-size:14px;transition:transform .18s;transform:rotate(180deg)}" +
+    'body.te-v2 .dyn-set-wrap[open] summary::after{transform:rotate(0deg)}' +
     'body.te-v2 .dyn-set-wrap .dyn-slider{margin-top:9px}' +
     /* playlist row */
     'body.te-v2 .te-pl-row{display:flex;gap:9px;margin:14px 0 16px}' +
