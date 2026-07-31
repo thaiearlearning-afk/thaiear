@@ -470,6 +470,26 @@
         out.push('pl-' + p.id + '  "' + p.name + '"  items=' + ((p.items || []).length) +
           '  downloaded=' + (plDl[p.id] ? 'YES' : 'no') + '\n   ' + JSON.stringify(byPfx));
       });
+      /* ⚠ BUILT SESSIONS. The stitched mp3/wav for a unit persists INDEPENDENTLY of the clips it was
+         built from, so a unit can play offline with almost no clips on disk — which is exactly the
+         state the owner reached: 10 clips present, 50 needed, and the topic still "reconstructs".
+         Every release path is supposed to remove these (te_dyn_meta_<key>_<mode> plus the stored
+         file), so anything listed here after a clear is either a delete that missed or a session
+         rebuilt since. The clip dump alone could never show this. */
+      out.push('', '── BUILT SESSIONS (te_dyn_meta_*) ──');
+      var metaKeys = [];
+      try {
+        for (var mi = 0; mi < localStorage.length; mi++) {
+          var mk2 = localStorage.key(mi);
+          if (mk2 && mk2.indexOf('te_dyn_meta_') === 0) metaKeys.push(mk2);
+        }
+      } catch (_) {}
+      if (!metaKeys.length) out.push('(none)');
+      metaKeys.forEach(function (mk2) {
+        var mv = null; try { mv = JSON.parse(localStorage.getItem(mk2) || 'null'); } catch (_) {}
+        out.push(mk2 + '\n   file=' + ((mv && mv.file) || (mv && mv.ext ? '(cache .' + mv.ext + ')' : '—')) +
+          '  key=' + ((mv && mv.key) ? String(mv.key).slice(0, 48) : '—'));
+      });
       /* ⚠ WHAT IS ACTUALLY STORED, not what the manifest claims (added 2026-07-31). The manifest is
          bookkeeping and it can be right while the disk is wrong: every per-file delete in every
          release path ends in `.catch(function(){})`, so a failing delete is invisible and the entry
