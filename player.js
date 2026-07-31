@@ -840,6 +840,27 @@
     if (!e) return false;
     return !e.refs || e.refs.indexOf('topic') >= 0;
   }
+  /* Every clip THIS unit is made of, per prefix, IGNORING locks — `{prefix: {file: 1}}`.
+     dynDlGroups() cannot answer this: it filters locked sentences, so it is empty for a gated
+     playlist. Needed because the manifest records files per PREFIX, shared by every claimant, and
+     a playlist holding three sentences of a topic must not report the whole topic's size. */
+  function dynUnitFileSet() {
+    var by = {};
+    sentences.forEach(function (s) {
+      var th = dynClipRef(s, 'TH'), en = dynClipRef(s, 'EN');
+      (by[th.prefix] = by[th.prefix] || {})[th.file] = 1;
+      (by[en.prefix] = by[en.prefix] || {})[en.file] = 1;
+    });
+    return by;
+  }
+  /* Does this unit need EVERY file recorded under `pfx`? Only then is the manifest's cached
+     `bytes` (a per-prefix total) a truthful answer for this unit. */
+  function dynOwnsWholePrefix(pfx, own) {
+    var e = getManifest()[pfx]; if (!e) return false;
+    var files = e.files || [], mine = own[pfx] || {};
+    for (var i = 0; i < files.length; i++) if (!mine[files[i]]) return false;
+    return true;
+  }
   function dynClaimedPrefixes() {
     var keys = Object.keys(dynDlGroups());
     if (keys.length) return keys;
@@ -855,10 +876,16 @@
   }
   function dynDlSizeCached() {
     var by = {}, m = getManifest(), total = 0, known = true;
+    var own = dynUnitFileSet();
     dynClaimedPrefixes().forEach(function (k) { by[k] = 1; });
     Object.keys(by).forEach(function (pfx) {
       var e = m[pfx];
       if (!e || typeof e.bytes !== 'number') { known = false; return; }
+      /* `bytes` is a PER-PREFIX total, shared with every other claimant. It is only this unit's
+         answer when this unit needs the whole prefix; otherwise fall through to a real measure,
+         or a playlist of three sentences reports the entire topic's size (owner: 0.57 MB on a
+         handful of sentences). */
+      if (!dynOwnsWholePrefix(pfx, own)) { known = false; return; }
       total += e.bytes;
     });
     // r24: RAW CLIPS ONLY. Counting the constructed mp3 made the figure move every time the
@@ -869,14 +896,25 @@
   }
   function dynDlMeasure() {
     var m = getManifest();
+    /* Measure every claimed prefix whose per-unit size we cannot already answer. The `bytes`
+       shortcut only applies when this unit owns the whole prefix — see dynDlSizeCached. */
+    var own = dynUnitFileSet();
     var prefixes = dynClaimedPrefixes().filter(function (p) {   // HOLDS, not NEEDS — see the helper
-      var e = m[p]; return e && typeof e.bytes !== 'number';
+      var e = m[p];
+      if (!e) return false;
+      return typeof e.bytes !== 'number' || !dynOwnsWholePrefix(p, own);
     });
     if (!prefixes.length) return Promise.resolve(dynDlSizeCached());
+    var partial = {};                 // pfx -> this unit's measured bytes (may be a subset)
     var chain = Promise.resolve();
     prefixes.forEach(function (pfx) {
       chain = chain.then(function () {
-        var files = (getManifest()[pfx] || {}).files || [], sum = 0;
+        /* ⚠ ONLY THIS UNIT'S CLIPS. The manifest lists files per PREFIX, shared by every
+           claimant, so summing them all made a three-sentence playlist report the whole topic's
+           size. Intersect with the unit's own set. */
+        var mine = own[pfx] || {};
+        var files = ((getManifest()[pfx] || {}).files || []).filter(function (f) { return mine[f]; });
+        var whole = dynOwnsWholePrefix(pfx, own), sum = 0;
         return dynPool(files, function (f) {
           if (DYN_WEB_DL) {
             return caches.open(AUDIO_DL_CACHE)
@@ -890,12 +928,27 @@
             .then(function (r) { sum += (r && r.size) || 0; })
             .catch(function () {});
         }).then(function () {
+          /* Cache the per-prefix total ONLY when this unit is the whole prefix. Writing a
+             partial sum here would poison the shared figure for the topic that owns it. */
+          partial[pfx] = sum;
+          if (!whole) return;
           var mm = getManifest();
           if (mm[pfx]) { mm[pfx].bytes = sum; setManifest(mm); }
         });
       });
     });
-    return chain.then(function () { return dynDlSizeCached(); });
+    /* Total from what we just measured, plus the cached figure for any prefix this unit owns
+       whole and therefore skipped. Deliberately NOT `dynDlSizeCached()` alone: that reads the
+       shared per-prefix `bytes`, which is not this unit's answer for a partial claim. */
+    return chain.then(function () {
+      var mm = getManifest(), total = 0, ownSet = dynUnitFileSet();
+      dynClaimedPrefixes().forEach(function (pfx) {
+        if (partial[pfx] != null) { total += partial[pfx]; return; }
+        var e = mm[pfx];
+        if (e && typeof e.bytes === 'number' && dynOwnsWholePrefix(pfx, ownSet)) total += e.bytes;
+      });
+      return total;
+    });
   }
   function dynFmtMb(b) { return (b / 1048576).toFixed(2) + ' MB'; }
   function dynPaintOfflineSize() {
@@ -2231,7 +2284,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r62';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r63';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
