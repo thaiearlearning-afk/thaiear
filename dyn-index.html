@@ -495,6 +495,36 @@
       if (busy && !bypass) { e.preventDefault(); e.returnValue = ''; }
     });
   })();
+  /* Which clips under `pfx` do the SURVIVING claimants still need? Twin of player.js's
+     dynNeededByOthers() and playlists.html's dlNeededByOthers(). Returns null when it cannot answer
+     — no cached playlist list, or a surviving pl-* claim absent from it — and null means KEEP
+     EVERYTHING. ⚠ A GHOST pl-* claim (a download record for a deleted playlist) therefore turns a
+     delete into a no-op; r69 purges those in dlReconcileRefs, which runs on playlists.html.
+     Fourth copy, deliberately: this page loads neither of the other two. D.1 folds them together. */
+  function neededByOthers(pfx, dropRef, survivingRefs) {
+    var dl = {}, lists = null;
+    try { dl = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}'); } catch (_) {}
+    try { lists = JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) {}
+    if (!lists) return null;
+    var known = {};
+    lists.forEach(function (q) { known['pl-' + q.id] = q; });
+    for (var i = 0; i < survivingRefs.length; i++) {
+      var r = survivingRefs[i];
+      if (r.indexOf('pl-') === 0 && !known[r]) return null;
+    }
+    var need = {};
+    lists.forEach(function (q) {
+      var ref = 'pl-' + q.id;
+      if (ref === dropRef || !dl[q.id]) return;
+      (q.items || []).forEach(function (it) {
+        if (it.prefix !== pfx) return;
+        var n = String(it.num).padStart(2, '0');
+        need[pfx + '_S' + n + '_TH.mp3'] = true;
+        need[pfx + '_S' + n + '_EN.mp3'] = true;
+      });
+    });
+    return need;
+  }
   function runClear() {
     if (busy) return;
     var list = UNITS.filter(function (u) { return clearSel[u.prefix]; });
@@ -521,8 +551,32 @@
       status('Removing ' + u.name + '…');
       var p;
       if (rest.length) {
-        entry.refs = rest; m[u.prefix] = entry; setManifest(m);
-        p = Promise.resolve();
+        /* ⚠ RELEASE AT FILE LEVEL — this used to keep EVERYTHING whenever any other claimant
+           survived, deleting nothing at all and only dropping the 'topic' ref. Its old comment
+           argued "over-retaining a few clips is invisible", which is exactly the reasoning §B2b/r34
+           overturned after the owner asked "in order to have one sentence saved in a playlist the
+           user has to keep an entire topic?". r34 fixed player.js and playlists.html and never
+           reached this file — the third download implementation. Owner's store dump caught it:
+           files=50 kept where a 5-sentence playlist needed 10.
+           Keep exactly what the surviving claimants need; delete the rest. A null answer means
+           "cannot evaluate safely", and then we keep everything, because deleting a clip a playlist
+           needs is the one mistake that actually breaks playback. */
+        var need = neededByOthers(u.prefix, 'topic', rest);
+        var combined = [u.prefix + '_TE.mp3', u.prefix + '_ET.mp3'];
+        var keep = files.filter(function (f) {
+          return combined.indexOf(f) === -1 && (!need || need[f]);
+        });
+        var go = files.filter(function (f) { return keep.indexOf(f) === -1; });
+        entry.refs = rest; entry.files = keep;
+        delete entry.bytes;              // file set changed → re-measure rather than lie (r65)
+        m[u.prefix] = entry; setManifest(m);
+        p = NATIVE
+          ? Promise.all(go.map(function (f) {
+              return FS.deleteFile({ path: 'offline/' + u.prefix + '/' + f, directory: 'DATA' }).catch(function () {});
+            }))
+          : (window.caches ? caches.open(AUDIO_DL_CACHE).then(function (c) {
+              return Promise.all(go.map(function (f) { return c.delete(webCacheKey(u.prefix, f)).catch(function () {}); }));
+            }).catch(function () {}) : Promise.resolve());
       } else if (NATIVE) p = FS.rmdir({ directory: 'DATA', path: 'offline/' + u.prefix, recursive: true }).catch(function () {});
       else if (window.caches) {
         p = caches.open(AUDIO_DL_CACHE).then(function (c) {

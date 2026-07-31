@@ -1203,74 +1203,6 @@ function runClearDownloads() {
   showConfirm('Are you sure you want to remove the downloaded topic' + (n > 1 ? 's' : '') +
     '? You will no longer be able to listen to ' + (n > 1 ? 'them' : 'it') + ' offline.', doClear);
 }
-/* Which clips under `pfx` do the SURVIVING claimants still need? Twin of player.js's
-   dynNeededByOthers() and playlists.html's dlNeededByOthers(). Recomputed from the downloaded-
-   playlist map plus the cached playlist contents rather than tracked per file.
-   Returns null when it cannot answer (no cached list, or a surviving pl-* claim absent from it):
-   null means KEEP EVERYTHING, because deleting a clip a playlist needs is the one mistake that
-   actually breaks playback. Duplicated deliberately — this page loads none of the other two;
-   D.1 folds all three together. */
-function neededByOthers(pfx, dropRef, survivingRefs) {
-  let dl = {}, lists = null;
-  try { dl = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}'); } catch (_) {}
-  try { lists = JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) {}
-  if (!lists) return null;
-  const known = {};
-  lists.forEach(function (q) { known['pl-' + q.id] = q; });
-  for (let i = 0; i < survivingRefs.length; i++) {
-    const r = survivingRefs[i];
-    if (r.indexOf('pl-') === 0 && !known[r]) return null;
-  }
-  const need = {};
-  lists.forEach(function (q) {
-    const ref = 'pl-' + q.id;
-    if (ref === dropRef || !dl[q.id]) return;
-    (q.items || []).forEach(function (item) {
-      if (item.prefix !== pfx) return;
-      const n = String(item.num).padStart(2, '0');
-      need[pfx + '_S' + n + '_TH.mp3'] = true;
-      need[pfx + '_S' + n + '_EN.mp3'] = true;
-    });
-  });
-  return need;
-}
-/* ⚠ REF-AWARE RELEASE — ported from player.js deleteTopic() (r32/r34), 2026-07-31.
-   This page used to `delete m[it.prefix]` and rmdir the whole prefix directory unconditionally, so
-   clearing a topic from the GRID destroyed any playlist's per-sentence clips stored under the same
-   prefix and wiped their claim with them. §B2's "fifth defect": the display half was ported here
-   (isDownloaded now tests the 'topic' ref) and the DELETE half never was. Owner confirmed the
-   inconsistency on device.
-   Released at FILE level: the combined _TE/_ET are pulled only by a classic topic download so they
-   always go, and the per-sentence clips are trimmed to exactly what surviving playlists still need.
-   Keeping the whole directory because one playlist holds one sentence reclaims nothing, which is
-   not what "remove this download" means. */
-function planTopicRelease(prefix) {
-  const e = offlineManifest()[prefix];
-  if (!e) return { go: [], keep: [], rest: [] };
-  const all = e.files || [];
-  const rest = (e.refs || ['topic']).filter(function (r) { return r !== 'topic'; });
-  if (!rest.length) return { go: all, keep: [], rest: [] };
-  const need = neededByOthers(prefix, 'topic', rest);
-  /* ⚠ TEMPORARY DIAGNOSTIC (2026-07-31). The owner's store dump showed this path keeping all 50
-     files where 10 were needed, i.e. `need` came back NULL with a cache that plainly contains the
-     answer. Reading the code has not explained it, so record the inputs at the moment of decision.
-     Writes straight to the sim trace key — this page never loads sim.js. Remove once diagnosed. */
-  try {
-    let raw = null; try { raw = localStorage.getItem('thaiear_playlists'); } catch (_) {}
-    const t = JSON.parse(localStorage.getItem('te_sim_trace') || '[]');
-    t.push(new Date().toISOString().slice(17, 23) + ' idx: release ' + prefix +
-      ' rest=' + JSON.stringify(rest) +
-      ' need=' + (need === null ? 'NULL' : Object.keys(need).length) +
-      ' files=' + ((e.files || []).length) +
-      ' plCacheType=' + (raw === null ? 'MISSING' : (Array.isArray(JSON.parse(raw)) ? 'array' : typeof JSON.parse(raw))));
-    localStorage.setItem('te_sim_trace', JSON.stringify(t.slice(-60)));
-  } catch (_) {}
-  const combined = [prefix + '_TE.mp3', prefix + '_ET.mp3'];
-  const keep = all.filter(function (f) {
-    return combined.indexOf(f) === -1 && (!need || need[f]);   // need===null → keep every clip
-  });
-  return { go: all.filter(function (f) { return keep.indexOf(f) === -1; }), keep: keep, rest: rest };
-}
 function doClear() {
   const items = Array.from(clearSelected.values());
   let i = 0;
@@ -1285,35 +1217,19 @@ function doClear() {
       return;
     }
     const it = items[i];
-    const plan = planTopicRelease(it.prefix);
     const done = function () {
-      const m = offlineManifest();
-      if (plan.keep.length) {
-        // Something else still needs clips here → keep the entry, minus this topic's claim.
-        const e = m[it.prefix] || {};
-        e.refs = plan.rest; e.files = plan.keep;
-        delete e.bytes;                       // file set changed → re-measure rather than lie
-        m[it.prefix] = e;
-      } else {
-        delete m[it.prefix];
-      }
+      const m = offlineManifest(); delete m[it.prefix];
       try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {}
       if (window.caches && it.page) caches.open('thaiear-dl').then(function (c) { c.delete(it.page); }).catch(function () {});
       i++; next();
     };
     if (WEB_DL_PWA && window.caches) {
+      const fl = (offlineManifest()[it.prefix] && offlineManifest()[it.prefix].files) || [];
       caches.open(AUDIO_DL_CACHE).then(function (c) {
-        return Promise.all(plan.go.map(function (f) { return c.delete(webCacheKey(it.prefix, f)).catch(function () {}); }));
+        return Promise.all(fl.map(function (f) { return c.delete(webCacheKey(it.prefix, f)).catch(function () {}); }));
       }).then(done).catch(done);
-    } else if (FS) {
-      // Only rmdir the whole directory when nothing survives; otherwise delete file by file.
-      (plan.keep.length
-        ? Promise.all(plan.go.map(function (f) {
-            return FS.deleteFile({ path: 'offline/' + it.prefix + '/' + f, directory: 'DATA' }).catch(function () {});
-          }))
-        : FS.rmdir({ directory: 'DATA', path: 'offline/' + it.prefix, recursive: true }).catch(function () {})
-      ).then(done).catch(done);
-    } else done();
+    } else if (FS) FS.rmdir({ directory: 'DATA', path: 'offline/' + it.prefix, recursive: true }).then(done).catch(done);
+    else done();
   })();
 }
 // Small confirm dialog (used by Clear Download(s)).
