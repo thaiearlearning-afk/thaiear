@@ -736,7 +736,7 @@
         setOfflineState('downloaded');
       })
       .catch(function (err) {
-        var msg = (err && (err.message || err.errorMessage)) || String(err);
+        var msg = dlErrText(err);   // NEVER String(err): a bare {code:402} renders as "[object Object]"
         console.warn('player.js: web offline download failed', err);
         downloadingNow = false;
         setOfflineState('error', msg);
@@ -1017,7 +1017,7 @@
       // navigator.onLine lies in the WebView (often "online" in airplane mode), so treat a
       // network-shaped failure as offline too — "Download failed: load failed" is not an
       // explanation, and this matches the wording the real index already uses.
-      var msg = (err && (err.message || err.errorMessage)) || String(err);
+      var msg = dlErrText(err);   // NEVER String(err): a bare {code:402} renders as "[object Object]"
       if (!navigator.onLine || /failed to fetch|load failed|network|timed out|networkerror/i.test(msg)) {
         setOfflineState('offline');
       } else {
@@ -1146,7 +1146,7 @@
         setOfflineState('downloaded');
       })
       .catch(function (err) {
-        var msg = (err && (err.message || err.errorMessage)) || String(err);
+        var msg = dlErrText(err);   // NEVER String(err): a bare {code:402} renders as "[object Object]"
         console.warn('player.js: offline download failed', err);
         downloadingNow = false;
         setOfflineState('error', msg);
@@ -1260,6 +1260,12 @@
      keep in step. */
   function dlErrText(e) {
     if (!e) return '';
+    /* ⚠ CALL THIS AT THE CATCH SITE, ON THE ERROR OBJECT — not at render time on an
+       already-stringified message. r44 added it only to renderOfflineBar(), but all three download
+       catches had ALREADY collapsed the object with `String(err)`, so this received the literal
+       string "[object Object]" and faithfully returned it. The fix has to happen before the
+       information is destroyed. (Owner re-reported it unchanged after r44 — a fix applied one layer
+       too late is indistinguishable from no fix at all.) */
     if (typeof e === 'string') return e;
     var c = e.code;
     if (c === 401 || c === 403 || c === 'noauth') return 'sign in to download this';
@@ -2174,7 +2180,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r44';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r45';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
