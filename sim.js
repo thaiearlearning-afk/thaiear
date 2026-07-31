@@ -470,12 +470,62 @@
         out.push('pl-' + p.id + '  "' + p.name + '"  items=' + ((p.items || []).length) +
           '  downloaded=' + (plDl[p.id] ? 'YES' : 'no') + '\n   ' + JSON.stringify(byPfx));
       });
+      /* ⚠ WHAT IS ACTUALLY STORED, not what the manifest claims (added 2026-07-31). The manifest is
+         bookkeeping and it can be right while the disk is wrong: every per-file delete in every
+         release path ends in `.catch(function(){})`, so a failing delete is invisible and the entry
+         is trimmed anyway. The owner proved the gap behaviourally — a topic kept reconstructing
+         from clips the manifest no longer listed, and only a whole-directory rmdir cleared them.
+         Counting real entries is the only way to see it. */
+      out.push('', '── ACTUALLY STORED (vs manifest) ──');
+      var storedLines = [];
+      var pending = 0, doneFn = null;
+      function finish() { if (doneFn) doneFn(); }
+      var FSP = (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
+      if (FSP) {
+        keys.forEach(function (k) {
+          pending++;
+          FSP.readdir({ path: 'offline/' + k, directory: 'DATA' }).then(function (r) {
+            var n = ((r && r.files) || []).length;
+            storedLines.push(k + '  on-disk=' + n + '  manifest=' + ((man[k] || {}).files || []).length +
+              (n !== ((man[k] || {}).files || []).length ? '   ⚠ MISMATCH' : ''));
+          }).catch(function (e) {
+            storedLines.push(k + '  on-disk=? (' + ((e && e.message) || 'readdir failed') + ')');
+          }).then(function () { if (!--pending) finish(); });
+        });
+      } else if (window.caches) {
+        pending++;
+        caches.open('thaiear-audio-dl').then(function (c) { return c.keys(); }).then(function (reqs) {
+          var byPfx = {};
+          reqs.forEach(function (rq) {
+            var mt = /\/__offline-audio\/([^/]+)\//.exec(rq.url);
+            if (mt) byPfx[mt[1]] = (byPfx[mt[1]] || 0) + 1;
+          });
+          var seen = {};
+          keys.concat(Object.keys(byPfx)).forEach(function (k) {
+            if (seen[k]) return; seen[k] = 1;
+            var real = byPfx[k] || 0, claimed = ((man[k] || {}).files || []).length;
+            storedLines.push(k + '  in-cache=' + real + '  manifest=' + claimed +
+              (real !== claimed ? '   ⚠ MISMATCH' : ''));
+          });
+        }).catch(function (e) {
+          storedLines.push('(cache read failed: ' + ((e && e.message) || e) + ')');
+        }).then(function () { if (!--pending) finish(); });
+      } else {
+        storedLines.push('(no Filesystem and no Cache Storage on this device)');
+      }
       var pop = document.createElement('div');
       pop.id = 'te-sim-storepop';
       pop.style.cssText = 'position:fixed;inset:34px 8px 8px;z-index:2147483647;background:#12180F;color:#DDEBD0;' +
         'border-radius:8px;padding:10px;overflow:auto;-webkit-overflow-scrolling:touch;' +
         'font:600 11px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;box-shadow:0 4px 24px rgba(0,0,0,.5)';
-      pop.textContent = out.join('\n');
+      pop.textContent = out.join('\n') + '\n(reading storage…)';
+      // The storage read is async; repaint once it lands so the dump is complete before it is copied.
+      doneFn = function () {
+        out.push.apply(out, storedLines.length ? storedLines : ['(nothing stored)']);
+        pop.textContent = out.join('\n');
+        pop.insertBefore(row, pop.firstChild);
+      };
+      if (!pending) doneFn();
       var row = document.createElement('div');
       row.style.cssText = 'position:sticky;top:0;display:flex;gap:6px;margin:-10px -10px 8px;padding:8px 10px;background:#12180F';
       ['📋 Copy', 'Close'].forEach(function (label) {
