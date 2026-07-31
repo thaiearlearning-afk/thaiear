@@ -2180,7 +2180,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r47';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r48';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3992,6 +3992,55 @@
     wrap.addEventListener('click', function (e) { if (e.target === wrap) shut(); });
     wrap.querySelector('.dyn-pl-done').addEventListener('click', shut);
   }
+  /* Two-button confirm in the same shell as dynMsg — used by the leave-guard below. */
+  function dynConfirm(title, text, okLabel, cancelLabel, onOk) {
+    var old = document.getElementById('dyn-pl-pop'); if (old) old.remove();
+    var wrap = document.createElement('div');
+    wrap.id = 'dyn-pl-pop';
+    wrap.innerHTML = '<div class="dyn-pl-card">' +
+      '<div class="dyn-pl-head">' + escapeHtml(title) + '</div>' +
+      '<div class="dyn-pl-empty">' + escapeHtml(text) + '</div>' +
+      '<div class="dyn-pl-foot">' +
+        '<button type="button" class="dyn-pl-done dyn-pl-alt">' + escapeHtml(okLabel) + '</button>' +
+        '<button type="button" class="dyn-pl-done">' + escapeHtml(cancelLabel) + '</button>' +
+      '</div></div>';
+    document.body.appendChild(wrap);
+    function shut() { wrap.remove(); }
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) shut(); });
+    wrap.querySelector('.dyn-pl-done:not(.dyn-pl-alt)').addEventListener('click', shut);
+    wrap.querySelector('.dyn-pl-alt').addEventListener('click', function () { shut(); onOk(); });
+  }
+  /* ── LEAVE GUARD ─────────────────────────────────────────────────────────────────────────────
+     Navigating away mid-download silently abandons it. `beforeunload` (line ~398) still fires, but
+     ⚠ ITS DIALOG CANNOT BE STYLED OR REWORDED — every major browser has ignored author-supplied
+     text since ~2016 and renders its own generic "Changes you made may not be saved" in browser
+     chrome, by design, so a page cannot write a deceptive message into a native dialog.
+     So we intercept the case we CAN own: a click on an internal link. That is the realistic route
+     out on a phone (the nav, a topic card, prev/next), and it gets the site's own dialog with
+     wording that actually says what is at stake. `beforeunload` stays as the un-stylable backstop
+     for tab close, the URL bar and gestures we cannot see.
+     Not covered, deliberately: `location.href = …` assignments in JS (no event to hook) and the
+     Android hardware back button (a Capacitor `backButton` listener — needs on-device verification,
+     so it is listed in §C rather than written blind). */
+  function installLeaveGuard(isBusy, ask) {
+    var bypass = false;
+    document.addEventListener('click', function (e) {
+      if (bypass || !isBusy()) return;
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a) return;
+      var href = a.getAttribute('href') || '';
+      // Leave in-page anchors, protocol links and new-tab links alone — none of them end the page.
+      if (!href || href.charAt(0) === '#' || /^(mailto:|tel:|javascript:)/i.test(href)) return;
+      if (a.target && a.target !== '_self') return;
+      e.preventDefault(); e.stopPropagation();
+      ask(function () { bypass = true; window.location.href = a.href; });
+    }, true);   // capture: run before the page's own link handlers
+  }
+  installLeaveGuard(function () { return downloadingNow; }, function (proceed) {
+    dynConfirm('Download in progress',
+      'If you leave now, this download won’t finish. You can start it again any time.',
+      'Leave anyway', 'Keep downloading', proceed);
+  });
   function dynShowChooser(lists) {
     var old = document.getElementById('dyn-pl-pop'); if (old) old.remove();
     var wrap = document.createElement('div');

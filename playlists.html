@@ -132,7 +132,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r47</div>
+  <div class="eyebrow">Owner test build · r48</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -242,7 +242,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r47</div>
+  <div class="eyebrow">Playlist · r48</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -519,6 +519,37 @@
     for (var k = 0; k < Math.min(n, items.length); k++) lanes.push(lane());
     return Promise.all(lanes);
   }
+  /* ── LEAVE GUARD (list view) ────────────────────────────────────────────────────────────────
+     Leaving mid-batch abandons the download. ⚠ This page had NO guard of any kind — not even a
+     `beforeunload` — so a batch download could be walked away from in complete silence.
+     A `beforeunload` dialog cannot be styled or reworded (browsers have ignored author text since
+     ~2016 and render their own generic string), so the click on an internal link is intercepted
+     instead and answered with this page's own modal. `beforeunload` is added below purely as the
+     un-stylable backstop for tab close / URL bar.
+     Same shape as player.js's installLeaveGuard — they cannot share code because this view never
+     loads player.js (folds into D.1). */
+  (function () {
+    var bypass = false;
+    document.addEventListener('click', function (e) {
+      if (bypass || !dlBusy) return;
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a) return;
+      var href = a.getAttribute('href') || '';
+      if (!href || href.charAt(0) === '#' || /^(mailto:|tel:|javascript:)/i.test(href)) return;
+      if (a.target && a.target !== '_self') return;
+      e.preventDefault(); e.stopPropagation();
+      showModal({
+        title: 'Download in progress',
+        body: 'If you leave now, this download won’t finish. You can start it again any time.',
+        confirmText: 'Leave anyway',
+        cancelText: 'Keep downloading',
+        onConfirm: function () { bypass = true; window.location.href = a.href; }
+      });
+    }, true);
+    window.addEventListener('beforeunload', function (e) {
+      if (dlBusy && !bypass) { e.preventDefault(); e.returnValue = ''; }
+    });
+  })();
   function dlGroup(p) {
     var by = {};
     // Locked items are EXCLUDED — never try to download a clip the server will deny. One 401/402

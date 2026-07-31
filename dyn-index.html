@@ -420,19 +420,44 @@
   }
 
   // Same dialog the real index uses for this exact action, same wording shape.
-  function showConfirm(message, onConfirm) {
+  // okLabel/cancelLabel are optional — they default to the removal wording this was written for.
+  function showConfirm(message, onConfirm, okLabel, cancelLabel) {
     var ov = document.createElement('div');
     ov.className = 'dl-modal';
     ov.innerHTML = '<div class="dl-modal-card" role="dialog" aria-modal="true"><p>' + esc(message) + '</p>' +
       '<div class="dl-modal-actions">' +
-      '<button class="dl-modal-cancel" type="button">Cancel</button>' +
-      '<button class="dl-modal-confirm" type="button">Remove</button></div></div>';
+      '<button class="dl-modal-cancel" type="button">' + esc(cancelLabel || 'Cancel') + '</button>' +
+      '<button class="dl-modal-confirm" type="button">' + esc(okLabel || 'Remove') + '</button></div></div>';
     document.body.appendChild(ov);
     function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
     ov.querySelector('.dl-modal-cancel').addEventListener('click', close);
     ov.querySelector('.dl-modal-confirm').addEventListener('click', function () { close(); onConfirm(); });
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
   }
+  /* ── LEAVE GUARD ────────────────────────────────────────────────────────────────────────────
+     Same reasoning as player.js and playlists.html: `beforeunload`'s dialog cannot be styled or
+     reworded (browsers ignore author text and show their own generic string), so intercept the
+     internal-link click — the realistic way out on a phone — and answer it with this page's own
+     modal. `beforeunload` stays as the un-stylable backstop. Third copy of a nine-line guard;
+     folds into D.1 with the download implementations it belongs to. */
+  (function () {
+    var bypass = false;
+    document.addEventListener('click', function (e) {
+      if (bypass || !busy) return;
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a) return;
+      var href = a.getAttribute('href') || '';
+      if (!href || href.charAt(0) === '#' || /^(mailto:|tel:|javascript:)/i.test(href)) return;
+      if (a.target && a.target !== '_self') return;
+      e.preventDefault(); e.stopPropagation();
+      showConfirm('A download is in progress. If you leave now it won’t finish — you can start it again any time.',
+        function () { bypass = true; window.location.href = a.href; },
+        'Leave anyway', 'Keep downloading');
+    }, true);
+    window.addEventListener('beforeunload', function (e) {
+      if (busy && !bypass) { e.preventDefault(); e.returnValue = ''; }
+    });
+  })();
   function runClear() {
     if (busy) return;
     var list = UNITS.filter(function (u) { return clearSel[u.prefix]; });
