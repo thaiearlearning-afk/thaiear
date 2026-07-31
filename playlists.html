@@ -132,7 +132,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r37</div>
+  <div class="eyebrow">Owner test build · r38</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -242,7 +242,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r37</div>
+  <div class="eyebrow">Playlist · r38</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -265,6 +265,31 @@
 
   function PL() { return window.ThaiEarAuth && window.ThaiEarAuth.playlists; }
   function user() { return window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser(); }
+  /* The auth view every ENTITLEMENT question must read — mirrors player.js's AUTHV(). Plain
+     window.ThaiEarAuth (used above for playlists/getUser) is the REAL account and is deliberately
+     left alone; anything asking "may they play/download this" has to go through the simulator or
+     the owner cannot test gating on the list side at all. Absent sim.js this is a pass-through. */
+  function AUTHV() {
+    var S = window.ThaiEarSim;
+    return S ? S.authView(window.ThaiEarAuth) : window.ThaiEarAuth;
+  }
+  /* One lock rule, defined in auth.js and shared with player.js's sentLocked(). Before this,
+     dlGroup() walked EVERY item regardless of tier: for a non-entitled user the locked clips
+     401/402'd and — because one denied clip aborts the whole batch — the entire playlist download
+     failed. r31's content-based dlHasAll() then went on requiring those unreachable clips, so the
+     row read "update available" forever while the in-player button correctly said "Available
+     offline". Two surfaces, opposite answers, same question. */
+  function plLocked(it) {
+    var a = AUTHV();
+    if (!a || typeof a.lockedFor !== 'function') return false;   // stale auth.js → never lock out
+    return a.lockedFor({ tier: (it && it.tier) || 'free', prefix: it && it.prefix },
+                       { canStoreOffline: DL_OK });
+  }
+  // The items this visitor may actually download and play. Locked ones are simply not our business:
+  // they are already shown sunk under "Premium content" and padlocked in the ?pl= view.
+  function plOpenItems(p) {
+    return ((p && p.items) || []).filter(function (it) { return !plLocked(it); });
+  }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 
   // On-brand confirmation modal (pattern copied from account.html's delete-account modal).
@@ -372,6 +397,12 @@
   }
   function dlState(p) {
     if (!p.items.length) return 'none';
+    /* Nothing this visitor may play → nothing to download. Without this, dlHasAll() over an EMPTY
+       group is vacuously true and an all-premium playlist would read "downloaded" to someone who
+       cannot hear a single sentence of it. Owner's spec is that a non-entitled user sees exactly
+       what they see online — premium sunk under its own heading, unplayable, no extra notice — so
+       we simply offer no download control rather than inventing a new state. */
+    if (!plOpenItems(p).length) return 'none';
     if (dlHasAll(p)) return 'downloaded';
     return dlPlMap()[p.id] ? 'update' : 'none';
   }
@@ -396,6 +427,7 @@
   // otherwise. The tick appears only once clips AND construction have finished.
   function dlControl(p, st) {
     if (!DL_OK || !p.items.length) return '';
+    if (!plOpenItems(p).length) return '';     // all locked — nothing downloadable, so no control
     if (dlWorking[p.id]) return '<span class="dots" aria-hidden="true"></span>';
     st = st || dlState(p);
     if (st === 'update') {
@@ -489,7 +521,10 @@
   }
   function dlGroup(p) {
     var by = {};
-    p.items.forEach(function (it) {
+    // Locked items are EXCLUDED — never try to download a clip the server will deny. One 401/402
+    // aborts the whole batch (dlSaveOne throws after its retries), which is the same all-or-nothing
+    // failure player.js's dynDlGroups() already avoids. Mirrors that filter via the shared rule.
+    plOpenItems(p).forEach(function (it) {
       var pfx = it.prefix; if (!pfx) return;
       var n = String(it.num).padStart(2, '0');
       by[pfx] = by[pfx] || { tier: it.tier || 'free', files: [] };

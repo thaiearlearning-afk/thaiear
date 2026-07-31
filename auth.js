@@ -43,6 +43,16 @@
      That is why the 51-day case passed once (reloaded while already offline) and never again.
      Two bounds: a short TTL, and an explicit clear when the device reports going offline. */
   var SUB_FRESH_TTL_MS = 5 * 60 * 1000;
+  /* The offline grace window — the FALLBACK for when no real period end was ever captured. A paying
+     member is governed by thaiear_sub_until (their actual billing period), which is checked first.
+     ⚠ Keep player.js + nav.js in step. Moved here 2026-07-31 with canUseOffline below. */
+  var OFFLINE_GRACE_MS = 50 * 24 * 60 * 60 * 1000;
+  // The offline manifest, read-only. player.js owns writing it; this is only ever asked "does this
+  // prefix have an entry", for the member-tier rule in lockedFor().
+  function hasOfflineEntry(prefix) {
+    try { return !!(JSON.parse(localStorage.getItem('thaiear_offline') || '{}') || {})[prefix]; }
+    catch (_) { return false; }
+  }
   var currentSub = null;         // {status, cancel_at_period_end, current_period_end}
   var currentConsent = false;    // opted in to marketing email? (profiles row)
   var consentLoaded = false;     // has that consent flag been read from profiles yet?
@@ -560,6 +570,67 @@
     // True only when a clean server read answered this session — see subFresh.
     isSubscriptionFresh: function () { return subFresh && (Date.now() - subFreshAt) < SUB_FRESH_TTL_MS; },
     getSubscription: function () { return currentSub; }, // {status, cancel_at_period_end, current_period_end}
+
+    /* ══ THE ONE OFFLINE-ENTITLEMENT PREDICATE (added 2026-07-31) ═══════════════════════════════
+       Both surfaces ask THIS. Previously player.js decided entitlement and playlists.html had no
+       tier awareness at all — so its download path fetched locked clips, hit 401/402 and failed
+       wholesale, while r31's content-based dlHasAll() then demanded those same clips forever.
+       Keeping one copy is the point: the SAME rule fixed in one place and missed in the other is
+       bug #7 (sentLocked vs entitledForPage) and §B4 (stampVerified's two call sites) — twice.
+       It lives in auth.js because auth.js already owns all three licence markers
+       (thaiear_lastVerified / thaiear_sub_until / thaiear_lifetime) and writes them via
+       stampOfflineLicence(), and because EVERY surface loads auth.js while only the `?pl=` view
+       loads player.js.
+
+       ⚠⚠ MUST call this.isSubscribed() / this.isSubscriptionFresh() / this.getUser() — NEVER the
+       module-private currentSubscribed / subFresh / currentUser. sim.js wraps ThaiEarAuth with
+       Object.create(real) (sim.js:88), so ONLY property lookups can be overridden. Reading the
+       closure variables directly would silently bypass the simulator and make every entitlement
+       test (A/B/X/R/1.x/2.x) pass vacuously against the owner's real lifetime account — a failure
+       that looks exactly like success. */
+    canUseOffline: function (tier) {
+      if (tier !== 'premium') return true;
+      // Lifetime members never time out offline. auth.js only sets this flag when the server
+      // confirms lifetime+active while online, so a regular paying user cannot reach it.
+      try { if (localStorage.getItem('thaiear_lifetime') === '1') return true; } catch (_) {}
+      /* ONE question decides everything: DID THE SERVER ANSWER US THIS SESSION? navigator.onLine
+         reports online in airplane mode and isSubscribed() reads a cached flag — neither can be
+         trusted. isSubscriptionFresh() is true only after a clean subscriptions read.
+           answered + subscribed → grant, and stamp (an authoritative confirmation)
+           answered + not        → deny outright; the server has spoken
+           no answer             → fall through to the offline rules below */
+      if (this.isSubscriptionFresh && this.isSubscriptionFresh()) {
+        if (this.isSubscribed && this.isSubscribed()) { stampOfflineLicence(); return true; }
+        return false;
+      }
+      // Server did NOT answer. Trust the captured real period end first (correct billing: cancel =
+      // access until period end); the grace window is only the fallback when none was captured.
+      // Past both, deny — which surfaces as "Reconnect to keep listening", NOT the paywall,
+      // because we are not claiming they lapsed, only that we can no longer vouch for them.
+      var last = 0, until = 0;
+      try {
+        last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);
+        until = parseInt(localStorage.getItem('thaiear_sub_until') || '0', 10);
+      } catch (_) {}
+      if (until && Date.now() < until) return true;
+      return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;
+    },
+
+    /* Is THIS item locked for the current visitor? The one lock rule, shared by player.js's
+       sentLocked() and playlists.html's dlGroup(). Pass {tier, prefix}.
+       `opts.canStoreOffline` is the CALLER's storage-backend capability (player.js:
+       OFFLINE||WEB_DL||DYN_WEB_DL; playlists.html: DL_OK). It is passed in rather than re-derived
+       here so behaviour stays byte-identical to what each surface did before this consolidation. */
+    lockedFor: function (item, opts) {
+      var tier = (item && item.tier) || 'free';
+      if (tier !== 'member' && tier !== 'premium') return false;
+      if (tier === 'premium') return !this.canUseOffline('premium');
+      // MEMBER = any signed-in user. A download of theirs stays open (nothing to expire).
+      var pfx = item && item.prefix;
+      if (opts && opts.canStoreOffline && pfx && hasOfflineEntry(pfx)) return false;
+      if (!this.isReady) return false;          // auth still resolving → never lock a paying user
+      return !(this.getUser && this.getUser());
+    },
     // True inside the Capacitor app. Pages use this to HIDE any upgrade-to-premium / checkout CTA
     // (Google Play reader-app rule: no in-app purchase or steering to web payment). Web is unaffected.
     isNative: function () { return isNative(); },

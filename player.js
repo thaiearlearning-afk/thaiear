@@ -525,9 +525,25 @@
     return S ? S.authView(window.ThaiEarAuth) : window.ThaiEarAuth;
   }
 
-  // May an offline download of this tier be played right now? free/member: always.
-  // premium: live subscription when online; else within the verified-online window.
+  /* May an offline download of this tier be played right now? free/member: always.
+     premium: live subscription when online; else within the verified-online window.
+     ⚠ THE RULE NOW LIVES IN auth.js (ThaiEarAuth.canUseOffline) — one predicate shared with
+     playlists.html's download path, which previously had NO tier awareness at all. This is a thin
+     delegate; every existing call site is unchanged. AUTHV() is used so the owner simulator still
+     injects at the ThaiEarAuth boundary (sim.js's Object.create view inherits the new method and
+     its `this` resolves to the SIMULATED isSubscribed/isSubscriptionFresh — which is exactly what
+     makes the A/B/X/R/2.x tests meaningful). */
   function canUseOffline(tier) {
+    var a = AUTHV();
+    if (a && typeof a.canUseOffline === 'function') return a.canUseOffline(tier);
+    return canUseOfflineLegacy(tier);
+  }
+  /* ⚠ STALE-CACHE FALLBACK ONLY — DO NOT EDIT THIS TO CHANGE BEHAVIOUR, AND DO NOT ADD LOGIC HERE.
+     It exists solely because player.js and auth.js are separately cached, so a browser could hold a
+     new player.js against an auth.js predating ThaiEarAuth.canUseOffline. It is a byte-for-byte
+     copy of the pre-2026-07-31 rule, kept identical on purpose. Edit auth.js instead — editing one
+     and not the other is precisely the bug this consolidation removes. Delete at D.1/rollout. */
+  function canUseOfflineLegacy(tier) {
     if (tier !== 'premium') return true;
     // Lifetime members (£0-forever) never time out offline — they may be off-grid for months.
     // The flag is maintained by auth.js ONLY when the server confirms lifetime+active while online,
@@ -1810,21 +1826,23 @@
     if (sentTierOf(s) === 'premium') cls += ' sent-premium';
     return cls;
   }
+  /* ⚠ THE RULE NOW LIVES IN auth.js (ThaiEarAuth.lockedFor) — shared with playlists.html's
+     dlGroup(), which previously had no tier awareness and so tried to download locked clips.
+     History kept because it is the reason the consolidation exists: PREMIUM here is exactly
+     canUseOffline(), identical to entitledForPage(). It once asked isSubscribed() alone, which
+     reads TRUE from the cached subscription while offline — so a member 51 days unconfirmed kept
+     full access to premium sentences INSIDE PLAYLISTS while the same person was correctly gated on
+     the topic page. That call site was fixed and this sibling missed. One predicate now. */
   function sentLocked(s) {
     if (!PLMODE) return false;                 // topic pages gate the whole page, not per sentence
-    var tier = sentTierOf(s);
-    if (tier !== 'member' && tier !== 'premium') return false;
-    /* PREMIUM is exactly canUseOffline(), identical to entitledForPage(). This asked
-       isSubscribed() alone, which reads TRUE from the cached subscription while offline — so a
-       member 51 days unconfirmed kept full access to premium sentences INSIDE PLAYLISTS even
-       though the same person was correctly gated on the topic page. I fixed that call site and
-       missed this sibling; the two must stay in step, because they are the same question asked
-       about a page and about a row. */
-    if (tier === 'premium') return !canUseOffline('premium');
-    // MEMBER = any signed-in user. A download of theirs stays open (nothing to expire).
-    var pfx = (s && s.prefix) ? s.prefix : PREFIX;
-    if ((OFFLINE || WEB_DL || DYN_WEB_DL) && pfx && isDownloaded(pfx)) return false;
     var a = AUTHV();
+    var item = { tier: sentTierOf(s), prefix: (s && s.prefix) ? s.prefix : PREFIX };
+    var canStore = !!(OFFLINE || WEB_DL || DYN_WEB_DL);
+    if (a && typeof a.lockedFor === 'function') return a.lockedFor(item, { canStoreOffline: canStore });
+    // Stale-cache fallback only — see canUseOfflineLegacy. Keep identical; edit auth.js instead.
+    if (item.tier !== 'member' && item.tier !== 'premium') return false;
+    if (item.tier === 'premium') return !canUseOffline('premium');
+    if (canStore && item.prefix && isDownloaded(item.prefix)) return false;
     if (!a || !a.isReady) return false;        // auth still resolving → never lock a paying user
     return !(a.getUser && a.getUser());
   }
@@ -2103,7 +2121,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r37';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r38';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
