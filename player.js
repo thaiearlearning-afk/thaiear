@@ -2180,7 +2180,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r51';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r52';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3772,6 +3772,12 @@
       if (c.src) { dynLog('adopt: cached placeholder'); return Promise.resolve({ src: c.src, std: true, sess: null }); }
     }
     var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;   // synchronous pre-check (stale-lenient by design)
+    /* WHICH BRANCH did the adopt take? To the BOOT TRACE, because this is the difference between
+       "restored a real session from disk" (works offline) and "fell back to the prefab TE/ET file"
+       (network-only — dyn downloads never fetch TE/ET, so offline it CANNOT work). That distinction
+       is the likeliest explanation for the iPhone-airplane failure passing on Android, and it can
+       only be told apart by looking. */
+    T('adopt branch ' + (t.dynKey || t.prefix || '?') + ' meta=' + (meta ? 1 : 0) + ' online=' + (navigator.onLine ? 1 : 0));
     if (!meta) {
       dynLog('adopt: placeholder (no meta)');
       return dynAdoptPlaceholder(t, mode).catch(function (e) {
