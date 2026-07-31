@@ -428,6 +428,72 @@
       document.body.appendChild(pop);
     });
     bar.appendChild(tb);
+    /* 📦 STORE DUMP — added 2026-07-31 because a whole evening of delete/size bugs was diagnosed by
+       READING code and guessing at state, and the last one could not be resolved that way at all.
+       Every question in this class ("why is this still on disk / still counted / still claimed?") is
+       answerable from three localStorage objects plus what is actually stored. Show them.
+       Test-space only; goes with the rest of the scaffolding at rollout. */
+    var sb = document.createElement('button');
+    sb.type = 'button';
+    sb.textContent = '📦 store';
+    sb.style.cssText = 'flex:0 0 auto;font:600 11px/1 system-ui,sans-serif;padding:6px 8px;border-radius:5px;' +
+      'border:none;color:#2A2118;background:#8FBF6F;cursor:pointer';
+    sb.addEventListener('click', function () {
+      var old = document.getElementById('te-sim-storepop'); if (old) { old.remove(); return; }
+      var man = {}, plDl = {}, lists = null;
+      try { man = JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) {}
+      try { plDl = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}'); } catch (_) {}
+      try { lists = JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) {}
+      var out = ['── thaiear_offline (manifest) ──'];
+      var keys = Object.keys(man);
+      if (!keys.length) out.push('(empty)');
+      keys.forEach(function (k) {
+        var e = man[k] || {};
+        out.push(k + '\n   refs=' + JSON.stringify(e.refs || '(none → implicit topic)') +
+          '\n   files=' + ((e.files || []).length) +
+          '  bytes=' + (typeof e.bytes === 'number' ? (e.bytes / 1048576).toFixed(2) + 'MB' : '—') +
+          '  dyn=' + (e.dyn ? 1 : 0) + '  tier=' + (e.tier || '—'));
+      });
+      out.push('', '── thaiear_offline_pl (downloaded playlists) ──');
+      var pk = Object.keys(plDl);
+      out.push(pk.length ? pk.map(function (k) {
+        return k + ' → ' + JSON.stringify((plDl[k] || {}).prefixes || []);
+      }).join('\n') : '(none)');
+      out.push('', '── thaiear_playlists (cached contents) ──');
+      /* ⚠ If this reads "(NOT CACHED)", dynNeededByOthers() returns null and every release path
+         silently keeps ALL files — that is the single most likely cause of "I deleted it and the
+         clips are still there". */
+      if (!lists) out.push('(NOT CACHED — release paths cannot evaluate claims, so they keep everything)');
+      else lists.forEach(function (p) {
+        var byPfx = {};
+        (p.items || []).forEach(function (it) { byPfx[it.prefix] = (byPfx[it.prefix] || 0) + 1; });
+        out.push('pl-' + p.id + '  "' + p.name + '"  items=' + ((p.items || []).length) +
+          '  downloaded=' + (plDl[p.id] ? 'YES' : 'no') + '\n   ' + JSON.stringify(byPfx));
+      });
+      var pop = document.createElement('div');
+      pop.id = 'te-sim-storepop';
+      pop.style.cssText = 'position:fixed;inset:34px 8px 8px;z-index:2147483647;background:#12180F;color:#DDEBD0;' +
+        'border-radius:8px;padding:10px;overflow:auto;-webkit-overflow-scrolling:touch;' +
+        'font:600 11px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;box-shadow:0 4px 24px rgba(0,0,0,.5)';
+      pop.textContent = out.join('\n');
+      var row = document.createElement('div');
+      row.style.cssText = 'position:sticky;top:0;display:flex;gap:6px;margin:-10px -10px 8px;padding:8px 10px;background:#12180F';
+      ['📋 Copy', 'Close'].forEach(function (label) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.textContent = label;
+        b.style.cssText = 'font:600 11px/1 system-ui,sans-serif;padding:6px 10px;border-radius:5px;border:none;cursor:pointer;background:#8FBF6F;color:#12180F';
+        b.addEventListener('click', function () {
+          if (label === 'Close') { pop.remove(); return; }
+          try { navigator.clipboard.writeText(out.join('\n')).then(function () { b.textContent = '✓ copied'; },
+            function () { b.textContent = '✗ screenshot it'; }); }
+          catch (_) { b.textContent = '✗ screenshot it'; }
+        });
+        row.appendChild(b);
+      });
+      pop.insertBefore(row, pop.firstChild);
+      document.body.appendChild(pop);
+    });
+    bar.appendChild(sb);
     var bits = [];
     if (tier()) bits.push(tier());
     if (elapsedDays()) bits.push(elapsedDays() + 'd');
