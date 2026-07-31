@@ -501,6 +501,10 @@
       var pending = 0, doneFn = null;
       function finish() { if (doneFn) doneFn(); }
       var FSP = (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
+      /* ⚠ CHECK BOTH STORES. This used to be `if (FSP) ... else if (caches)`, so on the Android app
+         (where Capacitor Filesystem exists) it NEVER looked in Cache Storage — and clips living there
+         were structurally invisible. The owner proved they must be somewhere: full dynamic
+         reconstruction, different lengths/pauses/repeats, with on-disk reading 10 of 50. */
       if (FSP) {
         keys.forEach(function (k) {
           pending++;
@@ -512,7 +516,8 @@
             storedLines.push(k + '  on-disk=? (' + ((e && e.message) || 'readdir failed') + ')');
           }).then(function () { if (!--pending) finish(); });
         });
-      } else if (window.caches) {
+      }
+      if (window.caches) {
         pending++;
         caches.open('thaiear-audio-dl').then(function (c) { return c.keys(); }).then(function (reqs) {
           var byPfx = {};
@@ -524,15 +529,14 @@
           keys.concat(Object.keys(byPfx)).forEach(function (k) {
             if (seen[k]) return; seen[k] = 1;
             var real = byPfx[k] || 0, claimed = ((man[k] || {}).files || []).length;
-            storedLines.push(k + '  in-cache=' + real + '  manifest=' + claimed +
+            storedLines.push(k + '  in-CACHE=' + real + '  manifest=' + claimed +
               (real !== claimed ? '   ⚠ MISMATCH' : ''));
           });
         }).catch(function (e) {
           storedLines.push('(cache read failed: ' + ((e && e.message) || e) + ')');
         }).then(function () { if (!--pending) finish(); });
-      } else {
-        storedLines.push('(no Filesystem and no Cache Storage on this device)');
       }
+      if (!FSP && !window.caches) storedLines.push('(no Filesystem and no Cache Storage on this device)');
       var pop = document.createElement('div');
       pop.id = 'te-sim-storepop';
       pop.style.cssText = 'position:fixed;inset:34px 8px 8px;z-index:2147483647;background:#12180F;color:#DDEBD0;' +

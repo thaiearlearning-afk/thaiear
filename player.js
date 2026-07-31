@@ -2296,7 +2296,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r72';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r73';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2758,16 +2758,25 @@
      explicitly downloaded. This is what makes a downloaded unit self-sufficient: change a
      setting on a plane and it re-stitches from the clips already on the device.
      Returns {url, temp} — temp blob: URLs are revoked by the caller once decoded. */
+  /* ⚠ WHERE DID EACH CLIP ACTUALLY COME FROM? (2026-07-31.) The owner demonstrated FULL dynamic
+     reconstruction — different lengths, pauses and repeat counts, i.e. genuinely re-stitched from
+     clips — on a topic whose manifest and Filesystem both said 10 of 50 clips present. A stored
+     session cannot do that. So the other 40 are reachable from somewhere neither the manifest nor
+     `offline/<prefix>/` knows about, and guessing has failed repeatedly. Count the sources. */
+  var dynSrcTally = null;
+  function dynTallyReset() { dynSrcTally = { mem: 0, local: 0, cache: 0, net: 0 }; }
+  function dynTally(kind) { if (dynSrcTally) dynSrcTally[kind] = (dynSrcTally[kind] || 0) + 1; }
   function dynClipUrl(ref) {
     var entitled = canUseOffline(ref.tier);
     if (OFFLINE && isDownloaded(ref.prefix) && entitled) {
       return localBlobUrl(ref.prefix, ref.file)
-        .then(function (u) { return u ? { url: u, temp: true } : buildUrl(ref.file, ref.gated).then(function (r) { return { url: r, temp: false }; }); });
+        .then(function (u) { if (u) { dynTally('local'); return { url: u, temp: true }; } dynTally('net'); return buildUrl(ref.file, ref.gated).then(function (r) { return { url: r, temp: false }; }); });
     }
     if (DYN_WEB_DL && isDownloaded(ref.prefix) && entitled) {
       return cachedBlobUrl(ref.prefix, ref.file)
-        .then(function (u) { return u ? { url: u, temp: true } : buildUrl(ref.file, ref.gated).then(function (r) { return { url: r, temp: false }; }); });
+        .then(function (u) { if (u) { dynTally('cache'); return { url: u, temp: true }; } dynTally('net'); return buildUrl(ref.file, ref.gated).then(function (r) { return { url: r, temp: false }; }); });
     }
+    dynTally('net');
     return buildUrl(ref.file, ref.gated).then(function (r) { return { url: r, temp: false }; });
   }
   // Bounded-concurrency runner: Safari throttles huge parallel fetch bursts (the iOS
@@ -2789,7 +2798,7 @@
   // OfflineAudioContext's rate). Decoded buffers are cached for the life of the page.
   function dynFetchClip(ref) {
     var file = ref.file, temp = null;
-    if (dynClipCache[file]) return Promise.resolve(dynClipCache[file]);
+    if (dynClipCache[file]) { dynTally('mem'); return Promise.resolve(dynClipCache[file]); }
     return dynClipUrl(ref).then(function (u) {
       if (u.temp) temp = u.url;
       return fetch(u.url);
@@ -3174,6 +3183,7 @@
        client's view of entitlement (sub lapsed mid-session, tier list changed, clip missing).
        Real faults (network, decode) still reject, and an all-denied build rejects with the gate
        code so the visitor still gets the paywall/sheet rather than silence. */
+    dynTallyReset();          // count where this build's clips come from (see dynSrcTally)
     var denied = {}, lastGate = null;
     function isGateCode(c) { return c === 401 || c === 402 || c === 403 || c === 'noauth' || c === 'licence'; }
     return dynPool(files, function (f) {
@@ -3193,7 +3203,9 @@
          Instrument before theorising — every bug on this build attempted by inference first was
          solved wrong. */
       T('build: inc=' + inc.length + ' gate=' + (lastGate ? (lastGate.code || 'y') : 'none') +
-        ' denied=' + Object.keys(denied).length);
+        ' denied=' + Object.keys(denied).length +
+        ' src[mem=' + dynSrcTally.mem + ' local=' + dynSrcTally.local +
+        ' cache=' + dynSrcTally.cache + ' net=' + dynSrcTally.net + ']');
       if (lastGate) {
         var kept = inc.filter(function (s) {
           var r = dynClipRef(s, 'TH');
