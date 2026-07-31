@@ -243,9 +243,21 @@
     var S = window.ThaiEarSim;
     var a = S ? S.authView(window.ThaiEarAuth) : window.ThaiEarAuth;
     if (!a || typeof a.lockedFor !== 'function') return false;   // stale auth.js → never lock out
+    /* ⚠ canStoreOffline:FALSE on purpose. That option enables lockedFor's "a member download stays
+       open once taken" rule, which is about PLAYBACK — keeping access to something you already
+       have. Asking whether to offer a NEW download is a different question, and passing `true` here
+       meant a SIGNED-OUT visitor saw a download circle on the member topic merely because a
+       manifest entry existed for that prefix (left by a playlist that had cached one of its
+       sentences). Owner caught it as T-1. The live index draws the same line: its download-unlock
+       for a downloaded topic applies only when OFFLINE, never to offering a fresh download. */
     return a.lockedFor({ tier: (u && u.tier) || 'free', prefix: u && u.prefix },
-                       { canStoreOffline: !!window.caches });
+                       { canStoreOffline: false });
   }
+  /* The pill said "free", which is the INTERNAL tier key, not the label the site uses. The live
+     index calls that tier "Non-member" everywhere (topic-nonmember chip), so the test space read as
+     a different product. Label only — `u.tier` stays the key that drives the CSS class and every
+     entitlement lookup. */
+  function tierLabel(t) { return t === 'premium' ? 'Premium' : t === 'member' ? 'Member' : 'Non-member'; }
   function render() {
     var root = document.getElementById('units');
     root.innerHTML = '';
@@ -275,7 +287,7 @@
       el.innerHTML =
         '<div class="unit-main">' +
           '<a class="unit-name" href="' + u.page + '?' + K + '">' + esc(u.name) +
-            '<span class="tier-pill tier-' + u.tier + '">' + u.tier + '</span></a>' +
+            '<span class="tier-pill tier-' + u.tier + '">' + tierLabel(u.tier) + '</span></a>' +
           '<div class="unit-meta">' + u.n + ' sentences · ' + (dl ? 'downloaded' : 'not downloaded') + '</div>' +
         '</div>' + sel;
       root.appendChild(el);

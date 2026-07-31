@@ -1299,7 +1299,13 @@
          the bar and delete it. "A user who has downgraded should not have to hold on to premium
          downloads they cannot use." Hiding the delete alongside the download is precisely the bug
          r38 introduced on the playlists side. */
-      if (!PLMODE && TIER === 'premium' && !canUseOffline('premium') && !dynDlWasDownloaded()) {
+      /* ⚠ isDownloaded(PREFIX), NOT dynDlWasDownloaded(). r60 used the latter and it returns FALSE
+         IMMEDIATELY when !PLMODE — it is a playlist-only helper — so the guard's escape hatch never
+         opened and the bar was hidden on a gated premium topic even when it WAS downloaded,
+         removing the only way to delete it (owner: T-6). A manifest entry is the right question
+         here: it means there is something to remove, and deleteTopic() is ref-aware (r32) so it
+         only releases what the topic itself claims. */
+      if (!PLMODE && TIER === 'premium' && !canUseOffline('premium') && !isDownloaded(PREFIX)) {
         bar.style.display = 'none'; return;
       }
       // No stale/refresh states here: a dyn session is keyed on its own content and settings,
@@ -2192,7 +2198,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r60';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r61';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
