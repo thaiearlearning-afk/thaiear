@@ -1160,7 +1160,7 @@
         if (!keep.length) { e.refs = []; }                    // nothing survives after all
       }
       var go = keep ? files.filter(function (f) { return !need[f]; }) : files;
-      if (keep && keep.length) { e.files = keep; m[pfx] = e; } else { delete m[pfx]; }
+      if (keep && keep.length) { e.files = keep; delete e.bytes;   /* r65: the cached per-prefix total is now WRONG - it still counts the files just removed. Leaving it made a playlist read the deleted TOPIC's size (owner: 0.13 MB -> 0.58 MB after a topic-page delete). The download path has always done this; the delete paths never did. */ m[pfx] = e; } else { delete m[pfx]; }
       chain = chain.then(function () {
         var wipeAll = !(keep && keep.length);
         if (OFFLINE) {
@@ -1272,7 +1272,7 @@
         return combined.indexOf(f) === -1 && (!need || need[f]);
       });
       var goC = all.filter(function (f) { return keepC.indexOf(f) === -1; });
-      if (keepC.length) { de.refs = rest; de.files = keepC; dm[PREFIX] = de; }
+      if (keepC.length) { de.refs = rest; de.files = keepC; delete de.bytes;   /* r65 - see dynDeleteHere */ dm[PREFIX] = de; }
       else { delete dm[PREFIX]; }
       setManifest(dm);
       var freed = WEB_DL
@@ -2284,7 +2284,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r64';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r65';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
