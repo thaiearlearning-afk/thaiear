@@ -2180,7 +2180,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r49';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r50';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3718,6 +3718,22 @@
     else if (i < 0 || i >= dynChain.length) return null;
     return { idx: i, t: dynChain[i] };
   }
+  /* ⚠ IS THIS CHAIN UNIT LOCKED FOR THIS VISITOR? (r50 — owner found the gap on iPhone, §B7.)
+     The entitlement gate used to live ONLY on the page-open path (entitledForPage / the licence
+     overlay, which run on mount for THAT page's tier). Adopting a NEIGHBOUR never went through it,
+     so with a lapsed licence you could open an adjacent topic, walk the in-player chain to a
+     downloaded premium topic, and it constructed and played. Bounded — clips had to be on disk
+     already, since otherwise /api/audio denies — but that IS the case C-R1/C-B2 exist to gate:
+     downloaded while subscribed, lapsed since, still offline.
+     Uses the ONE shared predicate (ThaiEarAuth.lockedFor, r38). Do NOT reimplement the tier rules
+     here — that would be a fifth divergent copy, and divergent copies are what produced bug #7,
+     §B4 and r40. */
+  function dynUnitLocked(t) {
+    var a = AUTHV();
+    if (!a || typeof a.lockedFor !== 'function') return false;   // stale auth.js → never lock a payer out
+    return a.lockedFor({ tier: (t && t.tier) || 'free', prefix: t && t.prefix },
+                       { canStoreOffline: !!(OFFLINE || WEB_DL || DYN_WEB_DL) });
+  }
   // Can this unit produce audio WITHOUT building? (persisted session — stale ok — or a static
   // placeholder). Locked-screen hops skip units that can't (mirrors classic's nextPlayable skip).
   function dynChainPlayable(t, idx) {
@@ -3742,6 +3758,13 @@
     });
   }
   function dynResolveAdopt(t) {
+    /* BACKSTOP for the entitlement skip above (r50, §B7). The chain WALK now refuses to hop onto a
+       locked unit, but that is not the only way to get here: the now-playing restore (line ~193)
+       sets dynAdopted straight from persisted state, so reopening a page with a premium topic
+       "now playing" would adopt it without any walk at all. Guard the adopt itself as well.
+       'licence' routes through handleDenied → showLicenceOverlay, which since r41 shows the paywall
+       instead when a clean server read has authoritatively said "not subscribed". */
+    if (dynUnitLocked(t)) { dynLog('adopt: REFUSED (not entitled)'); return Promise.reject({ code: 'licence' }); }
     var mode = currentMode;
     var c = dynAdoptCache[t.page];
     if (c && c.mode === mode) {   // fully pre-resolved (session or placeholder) → synchronous resolve
@@ -5065,6 +5088,15 @@
         if (!stp) break;                           // clamped end (topic test pages)
         if (stp.idx === fromIdx) break;            // wrapped the whole chain — nothing playable
         probe = stp.idx;
+        /* ⚠ ENTITLEMENT SKIP RUNS IN THE FOREGROUND TOO — this is the r50 fix (§B7). The line
+           below reads `fg || dynChainPlayable(...)`, i.e. in the foreground NOTHING was skipped,
+           because anything can be built there. That is right for "can it produce audio" and wrong
+           for "may they hear it": it walked a lapsed visitor straight into a downloaded premium
+           topic. Entitlement is not a can-we question, so it is checked before that shortcut. */
+        if (dynUnitLocked(stp.t)) {
+          dynLog('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (not entitled)');
+          continue;
+        }
         if (fg || dynChainPlayable(stp.t, stp.idx)) { hop = stp; break; }
         dynLog('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (locked, nothing playable)');
       }
