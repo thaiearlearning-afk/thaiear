@@ -1236,7 +1236,7 @@
       bar.innerHTML = '<span class="offline-status">You’re offline — reconnect to download</span>' +
         '<button class="offline-btn" onclick="downloadTopic()">Retry</button>';
     } else if (state === 'error') {
-      var msg = done ? (': ' + escapeHtml(String(done).slice(0, 160))) : '.';
+      var msg = done ? (': ' + escapeHtml(dlErrText(done).slice(0, 160))) : '.';
       bar.innerHTML = '<span class="offline-status">Download failed' + msg + '</span>' +
         '<button class="offline-btn" onclick="downloadTopic()">Retry</button>';
     } else if (state === 'update') {
@@ -1249,6 +1249,24 @@
       bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' + DL_ICON_SVG +
         ' Download for offline</button>';
     }
+  }
+  /* Turn a rejection into something a person can read. `String(err)` on a plain rejection object
+     yields "[object Object]" — which is what the owner saw as "Download failed: [object Object]".
+     ⚠ NOT simulation-only: every gate rejection in this file is a bare {code:…} literal, so ANY
+     real 401/402 during a download produced the same useless string.
+     A refusal is also not a failure, so gate codes get their own wording rather than being reported
+     as a broken download. No bespoke "server unreachable" message: a genuine connection problem
+     already has its own `offline` state above, and a second one would just be another string to
+     keep in step. */
+  function dlErrText(e) {
+    if (!e) return '';
+    if (typeof e === 'string') return e;
+    var c = e.code;
+    if (c === 401 || c === 403 || c === 'noauth') return 'sign in to download this';
+    if (c === 402 || c === 'licence') return 'premium membership needed';
+    if (e.message) return String(e.message);
+    if (c != null) return 'error ' + c;
+    return 'please try again';
   }
   function renderOfflineBar() {
     var bar = $('offline-bar'); if (!bar) return;
@@ -2156,7 +2174,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r43';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r44';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4072,11 +4090,17 @@
       };
       list.addEventListener('click', dynSelListener, true);
     }
-    // Round-7: cards open FULLY REVEALED (st-3) while selecting; previous stages restored on exit.
+    /* Cards open revealed to stage 2 — Thai + English, NOT the gloss chips — while selecting;
+       previous stages are restored on exit. Round-7 opened them at st-3 (everything), but the
+       notes row makes each card tall enough that only two or three fit on a phone screen, and
+       choosing sentences is a scanning task: you need to recognise a line, not study it. Owner,
+       2026-07-31, refining the original "fully expanded" instruction.
+       This is the INITIAL display only — the reveal cycle is untouched, so a tap still expands any
+       card to its gloss chips mid-selection. */
     dynSelPrevStates = {};
     sentences.forEach(function (s) {
       dynSelPrevStates[s.num] = states[s.num] || 0;
-      states[s.num] = 3;
+      states[s.num] = 2;
       syncCard(s.num);
       var t = document.querySelector('#sc-' + s.num + ' .dyn-tick');
       if (t) t.classList.toggle('on', !!dynSel.now[s.num]);

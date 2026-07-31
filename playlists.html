@@ -132,7 +132,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r43</div>
+  <div class="eyebrow">Owner test build · r44</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -242,7 +242,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r43</div>
+  <div class="eyebrow">Playlist · r44</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -597,7 +597,14 @@
       }).catch(function (err) {
         delete dlWorking[p.id];
         dlSetBusy(false);
-        var msg = (err && err.message) || 'error';
+        /* Name the REASON. Gate rejections in player.js are bare {code:…} literals with no
+           .message, so this said a bald "error" for what is actually a refusal, not a failure.
+           (player.js's dlErrText is the same idea; it cannot be shared because the list view never
+           loads player.js — see the D.1 consolidation.) */
+        var ec = err && err.code;
+        var msg = (ec === 402 || ec === 'licence') ? 'premium membership needed'
+                : (ec === 401 || ec === 403 || ec === 'noauth') ? 'sign in to download this'
+                : (err && err.message) || 'error';
         if (!navigator.onLine || /failed to fetch|load failed|network/i.test(msg)) {
           dlStatus('You’re offline — reconnect to download playlists.', true);
         } else {
