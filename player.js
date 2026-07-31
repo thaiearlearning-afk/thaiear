@@ -2180,7 +2180,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r50';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r51';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3818,7 +3818,13 @@
     if (txt) {
       // Round-10 item 2: classic-strip parity — the name links to the playing page AND a
       // ↩ Return action un-adopts in place (same red np-return styling as classic).
-      txt.innerHTML = '<a class="dyn-np-link" href="' + escapeHtml(t.page) + '">Now playing: <strong>' + escapeHtml(t.name) + '</strong></a>' +
+      /* Colour the link by the PLAYED unit's tier — premium gold, member purple — mirroring the
+         classic strip and nav.js's `.te-np-premium`. The `.np-premium` / `.np-member` rules already
+         existed for the classic path; the dyn strip simply never applied them (owner, 2026-07-31).
+         Pinning matters here: this link sits inside #player-root, where a premium PAGE remaps
+         --accent to gold, so a free/member destination would otherwise inherit the wrong colour. */
+      var npTier = (t.tier === 'premium') ? ' np-premium' : (t.tier === 'member' ? ' np-member' : '');
+      txt.innerHTML = '<a class="dyn-np-link' + npTier + '" href="' + escapeHtml(t.page) + '">Now playing: <strong>' + escapeHtml(t.name) + '</strong></a>' +
         (std ? ' — standard audio' : '') +
         ' <a href="#" class="np-return" id="dyn-np-return" title="Bring the player back to this page">↩ Return</a>';
       var rb = $('dyn-np-return');
@@ -3912,6 +3918,7 @@
       return mainAudio.play();
     }).then(function () {
       dynLog('play ok');
+      T('adopt play ok');   // pairs with the FAIL line below — tells the two apart in one trace
       // r28a: RE-REGISTER the media-session handlers after a hop. iOS derives the lock-screen
       // control set from which handlers are present, and a new media source can drop them —
       // when that happened the owner saw ±15s skip + a scrubber (iOS's defaults) instead of our
@@ -3919,6 +3926,12 @@
       if (dynAdopted === t) { setMainIcon(true); setupMediaSession(); dynPrefetchNeighbours(); }
     }).catch(function (e) {
       dynLog('adopt FAIL ' + ((e && (e.name || e.code)) || '') + ' ' + ((e && e.message) || ''));
+      /* ⚠ ALSO to the BOOT TRACE. dynLog does not reach it, so this failure was invisible on a
+         phone — and it is the one the owner hit on iPhone in airplane mode (strip flashes, then
+         the page snaps back to 0:00 paused: that is this revert). The error NAME is the whole
+         diagnosis — `NotAllowedError` means play() lost the user-gesture token across the adopt
+         (WebKit is strict where Android is not), which is a different fix from a load failure. */
+      T('adopt FAIL ' + ((e && (e.name || e.code)) || '?') + ' ' + ((e && e.message) || ''));
       // Round-11: never location.href from transport/lock — put the pointer back where it was.
       if (revertIdx != null && dynChain) {
         dynChainIdx = revertIdx;
