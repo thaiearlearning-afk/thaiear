@@ -2180,7 +2180,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r55';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r56';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5133,8 +5133,13 @@
       dynAdvance(hop.t, fromIdx);
       return;
     }
-    var T = window.ThaiEarTopics;
-    if (!T || !T.nextAccessible) return;            // topics.js not present → feature inert
+    /* ⚠ RENAMED FROM `T` (r56). `var` is FUNCTION-scoped and hoisted, so this declaration shadowed
+       the module-level T() trace helper for the WHOLE function — including the DYN branch above it,
+       where T was therefore `undefined`, not a function. Every trace call added there in r53 threw
+       a TypeError and aborted advanceTopic, which is why prev/next died on BOTH platforms. Do not
+       reintroduce a local named T in a function that also traces. */
+    var TOPICS = window.ThaiEarTopics;
+    if (!TOPICS || !TOPICS.nextAccessible) return;   // topics.js not present → feature inert
     var unit = nextPlayable(mainPage, dir);         // skip anything that can't actually play now
     if (!unit || !unit.audio) return;
     // Adopt the target topic's identity for the TOP player only (sentence list unchanged).
