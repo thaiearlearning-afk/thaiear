@@ -827,8 +827,35 @@
      the manifest so the per-file stat/cache-read happens once, not on every render. Measuring
      lazily (rather than tallying during the download) means downloads made BEFORE this existed
      get a figure too, with one code path instead of two. */
+  /* Which prefixes does this unit actually HOLD on disk? dynDlGroups() answers "what does it NEED",
+     which is empty when every sentence is locked — and an empty set made the size read a confident
+     "0.00 MB" for a download that genuinely occupies space (owner, on a downloaded premium playlist
+     after a lapse). Same empty-set trap as r40. When there is nothing needed but a download record
+     exists, fall back to what the RECORD says was stored. */
+  /* Did the TOPIC itself download this prefix, as opposed to a playlist merely claiming clips under
+     it? A classic download writes no `refs` field at all and is read as an implicit topic claim —
+     the same assumption dynDeleteHere() and deleteTopic() make (r32). */
+  function hasTopicClaim(prefix) {
+    var e = getManifest()[prefix];
+    if (!e) return false;
+    return !e.refs || e.refs.indexOf('topic') >= 0;
+  }
+  function dynClaimedPrefixes() {
+    var keys = Object.keys(dynDlGroups());
+    if (keys.length) return keys;
+    if (PLMODE) {
+      var id = String(cfg.dynKey || '').replace(/^pl-/, '');
+      try {
+        var rec = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}')[id];
+        if (rec && rec.prefixes && rec.prefixes.length) return rec.prefixes;
+      } catch (_) {}
+      return [];
+    }
+    return PREFIX ? [PREFIX] : [];
+  }
   function dynDlSizeCached() {
-    var by = dynDlGroups(), m = getManifest(), total = 0, known = true;
+    var by = {}, m = getManifest(), total = 0, known = true;
+    dynClaimedPrefixes().forEach(function (k) { by[k] = 1; });
     Object.keys(by).forEach(function (pfx) {
       var e = m[pfx];
       if (!e || typeof e.bytes !== 'number') { known = false; return; }
@@ -842,7 +869,7 @@
   }
   function dynDlMeasure() {
     var m = getManifest();
-    var prefixes = Object.keys(dynDlGroups()).filter(function (p) {
+    var prefixes = dynClaimedPrefixes().filter(function (p) {   // HOLDS, not NEEDS — see the helper
       var e = m[p]; return e && typeof e.bytes !== 'number';
     });
     if (!prefixes.length) return Promise.resolve(dynDlSizeCached());
@@ -1305,7 +1332,13 @@
          removing the only way to delete it (owner: T-6). A manifest entry is the right question
          here: it means there is something to remove, and deleteTopic() is ref-aware (r32) so it
          only releases what the topic itself claims. */
-      if (!PLMODE && TIER === 'premium' && !canUseOffline('premium') && !isDownloaded(PREFIX)) {
+      /* ⚠ "HAS THIS TOPIC'S OWN CLAIM", not "does a manifest entry exist" — the r33 lesson again.
+         isDownloaded(PREFIX) is true whenever ANY claimant holds that prefix, including a PLAYLIST
+         that cached one sentence of it. So a premium topic the visitor never downloaded still
+         looked downloaded, the guard's escape hatch opened, and the bar appeared (owner: T-5).
+         The topic's own claim is the `'topic'` ref (§B2d). A classic download writes NO refs field
+         and is read as an implicit topic claim — matching what dynDeleteHere/deleteTopic assume. */
+      if (!PLMODE && TIER === 'premium' && !canUseOffline('premium') && !hasTopicClaim(PREFIX)) {
         bar.style.display = 'none'; return;
       }
       // No stale/refresh states here: a dyn session is keyed on its own content and settings,
@@ -2198,7 +2231,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r61';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r62';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
