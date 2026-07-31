@@ -896,6 +896,10 @@
     });
     return by;
   }
+  /* Is there anything at all this visitor may download? False for an all-premium unit with no
+     entitlement. Kept as a named helper because "every needed clip is present" is VACUOUSLY TRUE
+     over an empty set, so every caller of dynDlHasAll() has to rule the empty case out first. */
+  dynDlGroups.hasAny = function () { return Object.keys(dynDlGroups()).length > 0; };
   // Reality, not a flag: is every clip this unit needs actually in the store? Self-healing,
   // and it catches an interrupted download or a partial eviction.
   function dynDlHasAll() {
@@ -1251,6 +1255,17 @@
     if (!OFFLINE && !WEB_DL && !(DYN && DYN_WEB_DL)) { bar.style.display = 'none'; return; }  // plain website (no app, flag off): never shown
     bar.style.display = 'flex';
     if (DYN) {
+      /* NOTHING THIS VISITOR MAY PLAY → no download bar at all (r40, owner-reported).
+         dynDlGroups() excludes locked sentences, so an all-premium playlist without entitlement
+         produces an EMPTY group — and "is every needed clip present?" over an empty set is
+         VACUOUSLY TRUE. The bar therefore announced "✓ Available offline (0.00 MB)" for a playlist
+         holding nothing the visitor can hear. Hidden rather than shown as "Download for offline",
+         because the download would fetch zero clips and report success. Mirrors the same guard on
+         the list side (playlists.html dlState/dlControl).
+         ⚠ THIS IS THE SIBLING MISS AGAIN — the empty-set guard was added to playlists.html in r38
+         and NOT here, which is exactly the two-surfaces-drift this consolidation exists to stop.
+         The lock RULE is shared; its CONSUMERS still have to be kept in step. */
+      if (PLMODE && sentences.length && !dynDlGroups.hasAny()) { bar.style.display = 'none'; return; }
       // No stale/refresh states here: a dyn session is keyed on its own content and settings,
       // so changed text or a changed setting rebuilds by itself. Downloaded means "the clips
       // are all here", which is the only claim worth making.
@@ -2121,7 +2136,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r39';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r40';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
