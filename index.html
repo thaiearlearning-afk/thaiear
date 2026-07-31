@@ -1251,6 +1251,20 @@ function planTopicRelease(prefix) {
   const rest = (e.refs || ['topic']).filter(function (r) { return r !== 'topic'; });
   if (!rest.length) return { go: all, keep: [], rest: [] };
   const need = neededByOthers(prefix, 'topic', rest);
+  /* ⚠ TEMPORARY DIAGNOSTIC (2026-07-31). The owner's store dump showed this path keeping all 50
+     files where 10 were needed, i.e. `need` came back NULL with a cache that plainly contains the
+     answer. Reading the code has not explained it, so record the inputs at the moment of decision.
+     Writes straight to the sim trace key — this page never loads sim.js. Remove once diagnosed. */
+  try {
+    let raw = null; try { raw = localStorage.getItem('thaiear_playlists'); } catch (_) {}
+    const t = JSON.parse(localStorage.getItem('te_sim_trace') || '[]');
+    t.push(new Date().toISOString().slice(17, 23) + ' idx: release ' + prefix +
+      ' rest=' + JSON.stringify(rest) +
+      ' need=' + (need === null ? 'NULL' : Object.keys(need).length) +
+      ' files=' + ((e.files || []).length) +
+      ' plCacheType=' + (raw === null ? 'MISSING' : (Array.isArray(JSON.parse(raw)) ? 'array' : typeof JSON.parse(raw))));
+    localStorage.setItem('te_sim_trace', JSON.stringify(t.slice(-60)));
+  } catch (_) {}
   const combined = [prefix + '_TE.mp3', prefix + '_ET.mp3'];
   const keep = all.filter(function (f) {
     return combined.indexOf(f) === -1 && (!need || need[f]);   // need===null → keep every clip
