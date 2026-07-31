@@ -11,7 +11,16 @@
   try { ok = sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
   if (!ok && /[?&]k=cu38961y(&|$)/.test(location.search)) ok = true;
   if (!ok) ok = (prompt('Test page password:') === 'cu38961y');
-  if (ok) { try { sessionStorage.setItem('te_test_ok', '1'); } catch (_) {} }
+  /* ⚠ PERSIST THE TEST-SPACE FLAG, not just the session one (2026-07-31). te_sim_ok — which is what
+     actually reveals the sim PANEL and the boot trace — was written ONLY when `?k=` appeared in
+     THIS page's URL. The owner enters via the owner-gated index links, which carry `?k=` to
+     dyn-index/topic-test but NOT here, so arriving from a topic page left the panel hidden and the
+     boot trace unreachable. That bit exactly when it mattered: reproduce a fault offline, then have
+     no way back to the trace. Any successful entry now sets both. */
+  if (ok) {
+    try { sessionStorage.setItem('te_test_ok', '1'); } catch (_) {}
+    try { localStorage.setItem('te_sim_ok', '1'); } catch (_) {}
+  }
   else location.replace('index.html');
 })();
 </script>
@@ -132,7 +141,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r53</div>
+  <div class="eyebrow">Owner test build · r54</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -251,7 +260,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r53</div>
+  <div class="eyebrow">Playlist · r54</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
