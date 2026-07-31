@@ -950,15 +950,20 @@
       return total;
     });
   }
+  /* "Available offline" now means something WEAKER on a playlist — its clips may be here on another
+     download's coat-tails (r66). Reaching this label at all means the unit has its own claim, so on
+     a playlist say DOWNLOADED, which is the durable promise the row caption also makes. A topic
+     keeps the original wording: a topic download is always its own claim. */
+  function dynOkLabel() { return PLMODE ? '✓ Downloaded' : '✓ Available offline'; }
   function dynFmtMb(b) { return (b / 1048576).toFixed(2) + ' MB'; }
   function dynPaintOfflineSize() {
     var el = document.querySelector('#offline-bar .offline-ok');
     if (!el) return;
     var cached = dynDlSizeCached();
-    if (cached != null) { el.textContent = '✓ Available offline (' + dynFmtMb(cached) + ')'; return; }
+    if (cached != null) { el.textContent = dynOkLabel() + ' (' + dynFmtMb(cached) + ')'; return; }
     dynDlMeasure().then(function (t) {
       var e2 = document.querySelector('#offline-bar .offline-ok');   // may have re-rendered meanwhile
-      if (e2 && t != null) e2.textContent = '✓ Available offline (' + dynFmtMb(t) + ')';
+      if (e2 && t != null) e2.textContent = dynOkLabel() + ' (' + dynFmtMb(t) + ')';
     }).catch(function () {});
   }
 
@@ -1298,7 +1303,7 @@
     if (state === 'downloading') {
       bar.innerHTML = '<span class="offline-status"><span class="prog-spin"></span> Downloading ' + (done || 0) + '/' + (total || '?') + ' — keep this page open</span>';
     } else if (state === 'downloaded') {
-      bar.innerHTML = '<span class="offline-status offline-ok">✓ Available offline</span>' +
+      bar.innerHTML = '<span class="offline-status offline-ok">' + dynOkLabel() + '</span>' +
         '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
     } else if (state === 'stale') {
       // Content was regenerated online since this topic was downloaded (page text refreshed via the
@@ -1398,6 +1403,13 @@
       // so changed text or a changed setting rebuilds by itself. Downloaded means "the clips
       // are all here", which is the only claim worth making.
       if (!dynDlHasAll()) { setOfflineState(dynDlWasDownloaded() ? 'update' : 'idle'); return; }
+      /* ⚠ PLAYLIST: "the clips are here" is NOT "this playlist is downloaded" (r66, owner-specified).
+         A playlist whose clips are present only because a TOPIC (or another playlist) holds them
+         works today and can vanish the moment that other download is removed. Offering no download
+         button there left the user no way to make it durable — and no way to know they needed to.
+         So without its own claim we show the ordinary "Download for offline" offer, even though it
+         would play right now. A topic is unaffected: a topic download IS its own claim. */
+      if (PLMODE && !dynDlWasDownloaded()) { setOfflineState('idle'); return; }
       cachePage();
       setOfflineState('downloaded');
       dynPaintOfflineSize();
@@ -2284,7 +2296,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r65';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r66';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

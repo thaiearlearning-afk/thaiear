@@ -141,7 +141,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r65</div>
+  <div class="eyebrow">Owner test build · r66</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -151,7 +151,7 @@
       <button class="dl-batch-btn dl-clear-btn" id="clear-btn" type="button">Clear Download(s)</button>
     </div>
     <span class="dl-batch-status" id="dl-status"></span>
-    <span class="dl-batch-hint dl-share-note" id="dl-share-note"><span id="dl-hint">Tap a playlist's circle to download, or a tick to remove, then pick an action.</span><span class="more-body"><br>A playlist can say <strong>downloaded</strong> when its sentences are already saved by something else — a topic you've downloaded, or another playlist. Clearing this playlist won't remove those files while something else still needs them.</span><button type="button" class="dl-share-more" id="dl-share-more">more</button></span>
+    <span class="dl-batch-hint dl-share-note" id="dl-share-note"><span id="dl-hint">Tap a playlist's circle to download, or a tick to remove, then pick an action.</span><span class="more-body"><br>A playlist can say <strong>available offline</strong> when its sentences are already saved by something else — a topic you've downloaded, or another playlist. Clearing this playlist won't remove those files while something else still needs them.<br><br>Downloaded playlists will always be available offline, no matter which other topic or playlist downloads you remove.</span><button type="button" class="dl-share-more" id="dl-share-more">more</button></span>
     <!-- Owner-requested note (2026-07-30), folded ONTO the existing tap/action hint above: that one
          sentence is all the box may show, with `more` on the end of it. "Downloaded" is a content
          claim, so a playlist can read downloaded without ever having been downloaded itself, and
@@ -260,7 +260,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r65</div>
+  <div class="eyebrow">Playlist · r66</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -413,6 +413,18 @@
     }
     return true;
   }
+  /* FOUR states, because "its clips happen to be here" and "this playlist is downloaded" are not
+     the same promise and users should not have to reason about refcounting to tell them apart
+     (owner, 2026-07-31):
+       downloaded — the playlist has its OWN claim. Durable: removing any other topic or playlist
+                    can never take it away.
+       available  — every clip is present, but only because something ELSE holds them (a downloaded
+                    topic, or another playlist). Works today, could vanish tomorrow. So the DOWNLOAD
+                    option is still offered, to let the user make it durable.
+       update     — it was downloaded, and sentences have since been added.
+       none       — clips missing and it was never downloaded.
+     The data to tell `downloaded` from `available` already existed — the pl-record versus a content
+     check — the UI just collapsed both into one word. */
   function dlState(p) {
     if (!p.items.length) return 'none';
     var rec = !!dlPlMap()[p.id];
@@ -425,7 +437,7 @@
          could neither play nor delete. Owner's rule: removal is available at all times.
        Note dlHasAll() is deliberately NOT called on this branch — the empty group would lie. */
     if (!plOpenItems(p).length) return rec ? 'downloaded' : 'none';
-    if (dlHasAll(p)) return 'downloaded';
+    if (dlHasAll(p)) return rec ? 'downloaded' : 'available';
     return rec ? 'update' : 'none';
   }
   function dlStatus(msg, err) {
@@ -460,6 +472,15 @@
        offering a download the server will refuse — and never the clear one.
        ⚠ Do not move this line back above `st === 'downloaded'`. */
     if (st !== 'downloaded' && !plOpenItems(p).length) return '';
+    /* AVAILABLE-BY-CHANCE still offers the download, deliberately. Its clips are here on someone
+       else's coat-tails, so the user needs a way to make it durable — and they should not have to
+       understand which topic is propping it up in order to find that option. Plain download circle:
+       the action is identical, only the row caption differs. */
+    if (st === 'available') {
+      return '<span class="dl-select' + (dlSel[p.id] ? ' selected' : '') + '" data-dl="' + p.id +
+        '" data-mode="dl" role="button" title="Available offline via another download - tap to select and download this playlist itself"' +
+        ' aria-label="Available offline via another download - select to download this playlist itself"><span class="dl-dot"></span></span>';
+    }
     if (st === 'update') {
       // Selects for DOWNLOAD like the plain dot — same batch flow, so re-downloading is the one
       // tap it already was. Only the look and the wording change, because the difference the user
@@ -847,7 +868,9 @@
         '<button class="pl-box-head" type="button">' +
           '<span class="pl-box-name">' + esc(p.name) + '</span>' +
           '<span class="pl-box-meta">' + p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') +
-            (st === 'downloaded' ? ' · downloaded' : st === 'update' ? ' · update available' : '') + '</span>' +
+            (st === 'downloaded' ? ' · downloaded'
+              : st === 'available' ? ' · available offline'
+              : st === 'update' ? ' · update available' : '') + '</span>' +
           dlControl(p, st) +
         '</button>' +
         '<div class="pl-box-body">' +
