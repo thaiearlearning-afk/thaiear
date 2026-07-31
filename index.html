@@ -1182,7 +1182,15 @@ function runBatchDownload() {
       if (!navigator.onLine || /failed to fetch|load failed|network/i.test(m)) {
         setBatchStatus('You’re offline — reconnect to download topics.', true);
       } else {
-        setBatchStatus('Stopped (' + ((err && (err.code || err.message)) || 'error') + '). Keep this page open and retry.');
+        /* Name the REASON. dlFileUrl rejects with a bare {code:…}, so this printed a raw
+           "Stopped (402)" — a status code is not an explanation, and a gate refusal is not a
+           broken download. Same wording as the topic page, the playlists menu and the dyn index,
+           so one refusal reads identically wherever the user meets it. */
+        const ec = err && err.code;
+        const why = (ec === 402 || ec === 'licence') ? 'premium membership needed'
+                  : (ec === 401 || ec === 403 || ec === 'noauth') ? 'sign in to download this'
+                  : (ec || (err && err.message) || 'error');
+        setBatchStatus('Stopped (' + why + '). Keep this page open and retry.');
       }
       updateBatchBar();
     });
