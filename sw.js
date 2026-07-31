@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v132';   // v132: r56 - FIX prev/next dead: local var T shadowed the trace helper (2026-07-31)
+const VERSION = 'v133';   // v133: r57 - PRECACHE the test pages (deploys were wiping them offline) (2026-07-31)
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
@@ -118,6 +118,18 @@ const PRECACHE = [
   // every deploy until it is visited online again. That is why the toggles were missing in
   // airplane mode. (Both disappear at rollout — playlists.html becomes a normal shell page.)
   '/playlists.html', '/sim.js',
+  /* ⚠ THE TEST SPACE ITSELF MUST BE PRECACHED, FOR EXACTLY THE REASON GIVEN ABOVE — and these were
+     missed (2026-07-31). Runtime caching cannot hold them: bumping VERSION creates a NEW cache and
+     drops the old one, so a topic-test page only ever runtime-cached VANISHES on every deploy until
+     it is visited online again. Fifteen VERSION bumps in one day therefore wiped the owner's
+     offline test pages fifteen times, and every airplane-mode test on iPhone silently fell back to
+     the SW's offline page: no sim.js, so no test-space strip, no boot trace, no dyn player — which
+     is why three captures in a row contained no topic-page lines at all, why the strip kept
+     disappearing, and why the owner had to route back in via the live homepage.
+     The offline behaviour of these pages IS the thing under test, so they cannot be left to a cache
+     that a deploy destroys. They go with the rest of the scaffolding at rollout (§E). */
+  '/dyn-index.html', '/topic-test.html', '/topic-test2.html', '/topic-test3.html',
+  '/player-dyn.js', '/player-dyn.css',
   // PWA install vehicle: manifest + its icons, so "Add to Home Screen" works and the
   // installed app has its launch icon available offline.
   '/manifest.json', '/icon-512.png', '/icon-512-maskable.png',
