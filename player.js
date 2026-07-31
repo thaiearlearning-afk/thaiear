@@ -2180,7 +2180,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r58';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r59';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3856,7 +3856,10 @@
     // Lenient (round-10 item 3): play the latest LOCAL persisted session even if its key is
     // stale — reconstruction only happens on a real foreground play press.
     ensureMainSrc(true).then(function () { if (!dynAdopted) return mainAudio.play(); })
-      .then(function () { dynLog('return-local play ok'); if (!dynAdopted) { setMainIcon(true); dynPrefetchNeighbours(); } })
+      // setupMediaSession() also rewrites the lock-screen title from dynTitle (r59), which
+      // dynReturnLocal has already reset to the home unit. Without it, coming home kept naming the
+      // topic we just left while playing this one.
+      .then(function () { dynLog('return-local play ok'); if (!dynAdopted) { setMainIcon(true); setupMediaSession(); dynPrefetchNeighbours(); } })
       .catch(function (e) { dynLog('return-local FAIL ' + ((e && (e.name || e.code)) || e)); handleDenied(e, mainTier); });
   }
   // SYNCHRONOUS half of adoption — mirrors classic advanceTopic's sync identity swap.
@@ -3929,9 +3932,9 @@
       // control set from which handlers are present, and a new media source can drop them —
       // when that happened the owner saw ±15s skip + a scrubber (iOS's defaults) instead of our
       // prev/next topic buttons. Every other play path already re-registers; this one did not.
-      // dynSetMediaMeta(): setupMediaSession() re-registers handlers only, so without this the
-      // lock-screen TITLE kept naming the previous topic while its audio played the new one.
-      if (dynAdopted === t) { setMainIcon(true); setupMediaSession(); dynSetMediaMeta(); dynPrefetchNeighbours(); }
+      // setupMediaSession() now writes the title itself (r59), so the explicit call r58 added here
+      // is redundant — one writer, every path, rather than one per call site.
+      if (dynAdopted === t) { setMainIcon(true); setupMediaSession(); dynPrefetchNeighbours(); }
     }).catch(function (e) {
       dynLog('adopt FAIL ' + ((e && (e.name || e.code)) || '') + ' ' + ((e && e.message) || ''));
       /* ⚠ ALSO to the BOOT TRACE. dynLog does not reach it, so this failure was invisible on a
@@ -5264,6 +5267,13 @@
   }
   function setupMediaSession() {
     if (!('mediaSession' in navigator)) return;
+    /* r59: set the dyn TITLE here rather than at each call site. Doing it per-site meant only the
+       forward hop got it (r58) — returning home via dynReturnLocal, and the very first play, both
+       call setupMediaSession() but never wrote metadata, so the lock screen kept the previous
+       topic's name, or the raw document title before any hop. dynTitle is initialised to the home
+       unit's name at load, so this is correct from the first play onwards.
+       Guarded on DYN: classic pages get their title from updateMediaSession() and must not change. */
+    if (DYN && dynTitle) dynSetMediaMeta();
     var ms = navigator.mediaSession;
     function set(action, fn) { try { ms.setActionHandler(action, fn); } catch (_) {} }
     // rs= is the diagnostic for the one remaining iPhone case: pause → lock → play gives a
