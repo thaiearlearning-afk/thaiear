@@ -132,7 +132,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r48</div>
+  <div class="eyebrow">Owner test build · r49</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -215,6 +215,15 @@
     </div>
     <label class="sim-check"><input type="checkbox" id="sim-keeppurged">
       <strong>Keep Supabase session purged</strong> — deletes the session key on EVERY load, so it stays gone however you navigate. Set automatically by the Purge button.</label>
+    <!-- ⚠ THE PWA AND THE ANDROID APP HAVE NO ADDRESS BAR, so a URL-only flag does not exist for the
+         owner (the same lesson as the ?dbg=1 overlay). thaiear_webdl gates the CLASSIC web download
+         on real topic pages — needed for the P1-P7 block on iPhone, where there is no native app —
+         and it was reachable ONLY by typing ?webdl=1. This checkbox is the way in. localStorage is
+         per-ORIGIN, so setting it here also applies to the live topic pages in the same PWA. -->
+    <label class="sim-check"><input type="checkbox" id="sim-webdl">
+      <strong>Enable classic web downloads</strong> — turns on the browser/PWA download button on real
+      topic pages (<code>thaiear_webdl</code>). Required for the live-topic download tests on iPhone;
+      the dyn pages never needed it.</label>
     <label class="sim-check"><input type="checkbox" id="sim-noid">
       <strong>Disarm the offline-identity fix</strong> — the control: with this ON, purge + reload should log you OUT
       (the original bug). Turn it off and the same steps should keep you signed in.</label>
@@ -242,7 +251,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r48</div>
+  <div class="eyebrow">Playlist · r49</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -1149,6 +1158,19 @@
     if (kpBox) kpBox.addEventListener('change', function () { S.setKeepPurged(kpBox.checked); paint(); });
     var noid = document.getElementById('sim-noid');
     if (noid) noid.addEventListener('change', function () { S.setNoIdentity(noid.checked); paint(); });
+    /* Plain localStorage, read by player.js's WEB_DL_FLAG on the next page load — no sim.js state,
+       because this is not a simulated ACCOUNT, it is a real capability flag. Reflect the stored
+       value on paint so the box tells the truth after a reload. */
+    var wdl = document.getElementById('sim-webdl');
+    if (wdl) {
+      try { wdl.checked = localStorage.getItem('thaiear_webdl') === '1'; } catch (_) {}
+      wdl.addEventListener('change', function () {
+        try {
+          if (wdl.checked) localStorage.setItem('thaiear_webdl', '1');
+          else localStorage.removeItem('thaiear_webdl');
+        } catch (_) {}
+      });
+    }
     paint();
   })();
 
