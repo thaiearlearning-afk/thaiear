@@ -141,7 +141,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r68</div>
+  <div class="eyebrow">Owner test build · r69</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -260,7 +260,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r68</div>
+  <div class="eyebrow">Playlist · r69</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -720,6 +720,19 @@
       orphaned.push({ pfx: pfx, files: e.files || [] });   // nothing claims these any more
       delete m[pfx];
     });
+    /* ⚠ ALSO PURGE ORPHANED DOWNLOAD RECORDS (2026-07-31). This reconciled manifest REFS but left
+       thaiear_offline_pl alone, so a record for a DELETED playlist survived forever. The owner's
+       store dump caught one: `9d8f7669-… → ["CommSurvival_BEG","ShoppingAndMoney_BEG"]` with no
+       such playlist in the cached list. That is not cosmetic — dynNeededByOthers/neededByOthers
+       bail to null on a claim they cannot evaluate, and null means "keep every file", which turns
+       a delete into a silent no-op. Same ghost-ref class as the r32 bug, one map over. */
+    var pmR = dlPlMap(), pmChanged = false;
+    Object.keys(pmR).forEach(function (id) {
+      if (live['pl-' + id]) return;
+      delete pmR[id]; pmChanged = true;
+      console.log('[dl] dropped orphaned download record for deleted playlist ' + id);
+    });
+    if (pmChanged) { dlSetPlMap(pmR); changed = true; }
     if (!changed) return false;
     dlSetManifest(m);
     orphaned.forEach(function (o) {
