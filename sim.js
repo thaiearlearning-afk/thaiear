@@ -386,6 +386,48 @@
         'text-decoration:none;color:' + (on ? '#2A2118' : '#E8DCC4') + ';background:' + (on ? '#E8DCC4' : 'transparent');
       bar.appendChild(a);
     });
+    /* ⚠ READ THE TRACE FROM *ANY* TEST PAGE — added 2026-07-31 because this cost two captures.
+       The boot trace panel lives on playlists.html, but the faults happen on topic pages, and in
+       airplane mode the owner could not get back to it at all (no address bar, strip route lands on
+       a playlists page whose panel was hidden). Asking someone to reproduce a fault in one place and
+       read the evidence in another is a broken workflow, not a tester problem.
+       This button dumps the whole trace into a scrollable overlay ON THE CURRENT PAGE, with a copy
+       button, so the evidence is always where the failure is. Works offline — it is pure
+       localStorage. */
+    var tb = document.createElement('button');
+    tb.type = 'button';
+    tb.textContent = '📋 trace';
+    tb.style.cssText = 'flex:0 0 auto;font:600 11px/1 system-ui,sans-serif;padding:6px 8px;border-radius:5px;' +
+      'border:none;color:#2A2118;background:#C9A227;cursor:pointer';
+    tb.addEventListener('click', function () {
+      var old = document.getElementById('te-sim-tracepop'); if (old) { old.remove(); return; }
+      var pop = document.createElement('div');
+      pop.id = 'te-sim-tracepop';
+      pop.style.cssText = 'position:fixed;inset:34px 8px 8px;z-index:2147483647;background:#1E1811;color:#E8DCC4;' +
+        'border-radius:8px;padding:10px;overflow:auto;-webkit-overflow-scrolling:touch;' +
+        'font:600 11px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;box-shadow:0 4px 24px rgba(0,0,0,.5)';
+      var lines = traceRead();
+      pop.textContent = lines.length ? lines.join('\n') : '(no trace — reload to capture one)';
+      var row = document.createElement('div');
+      row.style.cssText = 'position:sticky;top:0;display:flex;gap:6px;margin:-10px -10px 8px;padding:8px 10px;background:#1E1811';
+      ['📋 Copy', 'Clear', 'Close'].forEach(function (label) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.textContent = label;
+        b.style.cssText = 'font:600 11px/1 system-ui,sans-serif;padding:6px 10px;border-radius:5px;border:none;cursor:pointer;background:#C9A227;color:#2A2118';
+        b.addEventListener('click', function () {
+          if (label === 'Close') { pop.remove(); return; }
+          if (label === 'Clear') { set(K_TRACE, '[]'); pop.remove(); return; }
+          var txt = (traceRead() || []).join('\n');
+          try { navigator.clipboard.writeText(txt).then(function () { b.textContent = '✓ copied'; },
+            function () { b.textContent = '✗ screenshot it'; }); }
+          catch (_) { b.textContent = '✗ screenshot it'; }
+        });
+        row.appendChild(b);
+      });
+      pop.insertBefore(row, pop.firstChild);
+      document.body.appendChild(pop);
+    });
+    bar.appendChild(tb);
     var bits = [];
     if (tier()) bits.push(tier());
     if (elapsedDays()) bits.push(elapsedDays() + 'd');
