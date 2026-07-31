@@ -233,6 +233,19 @@
     if (m && working[prefix]) m.textContent = working[prefix];
   }
 
+  /* May this visitor download this unit? Uses the ONE shared predicate (ThaiEarAuth.lockedFor,
+     r38) rather than re-deriving the tier rules — a fourth private copy is exactly what produced
+     bug #7, §B4 and r40. It resolves the owner's rule directly: signed out → free only; signed in →
+     free + member (a member download stays open once taken); premium subscriber → everything.
+     ⚠ Read through the SIM VIEW, or the owner cannot test any of this. Absent sim.js this is a
+     plain pass-through to the real account. */
+  function unitLocked(u) {
+    var S = window.ThaiEarSim;
+    var a = S ? S.authView(window.ThaiEarAuth) : window.ThaiEarAuth;
+    if (!a || typeof a.lockedFor !== 'function') return false;   // stale auth.js → never lock out
+    return a.lockedFor({ tier: (u && u.tier) || 'free', prefix: u && u.prefix },
+                       { canStoreOffline: !!window.caches });
+  }
   function render() {
     var root = document.getElementById('units');
     root.innerHTML = '';
@@ -241,11 +254,23 @@
       var dl = !w && isDownloaded(u.prefix, u.n);
       var el = document.createElement('div');
       el.className = 'unit' + (w ? ' working' : '');
+      /* ⚠ TWO DIFFERENT RULES, AND THEY ARE NOT SYMMETRIC (owner, 2026-07-31).
+         DOWNLOAD is gated by entitlement — mirroring the live index, where a signed-out visitor
+         gets a select circle only on the free topics. Offering a download that the server will
+         refuse is just a failure waiting to happen.
+         REMOVAL IS ALWAYS AVAILABLE. "anything downloaded can be selected regardless of tier at all
+         times — a user who has downgraded should not have to hold on to premium downloads they
+         cannot use." So the tick is rendered on `dl` FIRST, before any entitlement question is
+         asked. ⚠ The live index gets this half wrong (`entitled = canAccess(access) || (dl &&
+         !navigator.onLine)`), so a lapsed premium download cannot be cleared there while ONLINE —
+         logged separately; this file implements the owner's stricter, correct rule. */
       var sel = w
         ? '<span class="dots" aria-hidden="true"></span>'
         : dl
         ? '<span class="dl-badge' + (clearSel[u.prefix] ? ' clear-selected' : '') + '" data-p="' + u.prefix + '" data-mode="clear" role="button" title="Downloaded · tap to select for removal">' +
             '<span class="dl-tick"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>'
+        : unitLocked(u)
+        ? ''      // not entitled and not downloaded → no download control at all
         : '<span class="dl-select' + (dlSel[u.prefix] ? ' selected' : '') + '" data-p="' + u.prefix + '" data-mode="dl" role="button" aria-label="Select for offline download"><span class="dl-dot"></span></span>';
       el.innerHTML =
         '<div class="unit-main">' +

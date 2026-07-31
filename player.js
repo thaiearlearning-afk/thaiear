@@ -1289,7 +1289,19 @@
          ⚠ THIS IS THE SIBLING MISS AGAIN — the empty-set guard was added to playlists.html in r38
          and NOT here, which is exactly the two-surfaces-drift this consolidation exists to stop.
          The lock RULE is shared; its CONSUMERS still have to be kept in step. */
-      if (PLMODE && sentences.length && !dynDlGroups.hasAny()) { bar.style.display = 'none'; return; }
+      if (PLMODE && sentences.length && !dynDlGroups.hasAny() && !dynDlWasDownloaded()) { bar.style.display = 'none'; return; }
+      /* ⚠ AND THE SAME RULE FOR A WHOLE GATED TOPIC (r60, owner-specified). A topic page the
+         visitor cannot play must not offer a download — the sentence ▶ buttons are already refused
+         and the page already gates, so a download button was the one control still inviting an
+         action that cannot work.
+         ⚠ REMOVAL SURVIVES: both this and the PLMODE guard above now fall through when something is
+         ALREADY on disk (`dynDlWasDownloaded()`), so a user whose entitlement lapsed can still see
+         the bar and delete it. "A user who has downgraded should not have to hold on to premium
+         downloads they cannot use." Hiding the delete alongside the download is precisely the bug
+         r38 introduced on the playlists side. */
+      if (!PLMODE && TIER === 'premium' && !canUseOffline('premium') && !dynDlWasDownloaded()) {
+        bar.style.display = 'none'; return;
+      }
       // No stale/refresh states here: a dyn session is keyed on its own content and settings,
       // so changed text or a changed setting rebuilds by itself. Downloaded means "the clips
       // are all here", which is the only claim worth making.
@@ -2180,7 +2192,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r59';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r60';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

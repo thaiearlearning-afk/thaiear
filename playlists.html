@@ -141,7 +141,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r59</div>
+  <div class="eyebrow">Owner test build · r60</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -260,7 +260,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r59</div>
+  <div class="eyebrow">Playlist · r60</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -415,14 +415,18 @@
   }
   function dlState(p) {
     if (!p.items.length) return 'none';
-    /* Nothing this visitor may play → nothing to download. Without this, dlHasAll() over an EMPTY
-       group is vacuously true and an all-premium playlist would read "downloaded" to someone who
-       cannot hear a single sentence of it. Owner's spec is that a non-entitled user sees exactly
-       what they see online — premium sunk under its own heading, unplayable, no extra notice — so
-       we simply offer no download control rather than inventing a new state. */
-    if (!plOpenItems(p).length) return 'none';
+    var rec = !!dlPlMap()[p.id];
+    /* NOTHING THIS VISITOR MAY PLAY. Two different answers, and conflating them was the bug:
+       · never downloaded  → 'none'. dlHasAll() over an EMPTY group is vacuously TRUE, so without
+         this an all-premium playlist would read "downloaded" to someone who cannot hear a single
+         sentence of it (that was r40).
+       · ALREADY downloaded → 'downloaded', so the clearable tick still renders and the storage can
+         be reclaimed. r38 returned 'none' here too, which left a downgraded user holding files they
+         could neither play nor delete. Owner's rule: removal is available at all times.
+       Note dlHasAll() is deliberately NOT called on this branch — the empty group would lie. */
+    if (!plOpenItems(p).length) return rec ? 'downloaded' : 'none';
     if (dlHasAll(p)) return 'downloaded';
-    return dlPlMap()[p.id] ? 'update' : 'none';
+    return rec ? 'update' : 'none';
   }
   function dlStatus(msg, err) {
     var el = document.getElementById('dl-status'); if (!el) return;
@@ -445,9 +449,17 @@
   // otherwise. The tick appears only once clips AND construction have finished.
   function dlControl(p, st) {
     if (!DL_OK || !p.items.length) return '';
-    if (!plOpenItems(p).length) return '';     // all locked — nothing downloadable, so no control
     if (dlWorking[p.id]) return '<span class="dots" aria-hidden="true"></span>';
     st = st || dlState(p);
+    /* ⚠ REMOVAL IS ALWAYS AVAILABLE — this guard used to sit ABOVE the `downloaded` branch and
+       returned '' whenever nothing was playable, which ALSO hid the clearable tick. A playlist
+       downloaded while entitled, whose entitlement then lapsed, showed no control at all: the user
+       was stuck holding storage they could neither use nor reclaim. Introduced by me in r38, found
+       by the owner 2026-07-31 when specifying this rule.
+       It now runs AFTER the download states, so it only ever suppresses the DOWNLOAD affordance —
+       offering a download the server will refuse — and never the clear one.
+       ⚠ Do not move this line back above `st === 'downloaded'`. */
+    if (st !== 'downloaded' && !plOpenItems(p).length) return '';
     if (st === 'update') {
       // Selects for DOWNLOAD like the plain dot — same batch flow, so re-downloading is the one
       // tap it already was. Only the look and the wording change, because the difference the user
