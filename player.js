@@ -2180,7 +2180,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r52';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r53';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5114,12 +5114,19 @@
            topic. Entitlement is not a can-we question, so it is checked before that shortcut. */
         if (dynUnitLocked(stp.t)) {
           dynLog('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (not entitled)');
+          T('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (not entitled)');
           continue;
         }
         if (fg || dynChainPlayable(stp.t, stp.idx)) { hop = stp; break; }
         dynLog('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (locked, nothing playable)');
+        T('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (nothing playable)');
       }
       dynLog('advanceTopic dir=' + dir + (hop ? ' → ' + (hop.t.dynKey || hop.t.prefix) : ' (nothing playable)'));
+      /* ⚠ The OUTCOME of the walk, to the boot trace. The r52 capture showed no adopt lines at all,
+         which means nothing was adopted — so either the walk skipped everything (r50 working) or it
+         never ran. Those are opposite conclusions and dynLog could not tell them apart, because it
+         does not reach the trace. This line does. */
+      T('advanceTopic dir=' + dir + ' fg=' + (fg ? 1 : 0) + (hop ? ' → ' + (hop.t.dynKey || hop.t.prefix) : ' → NOTHING'));
       if (!hop) return;
       dynChainIdx = hop.idx;
       if (hop.idx === dynHomeIdx) { dynReturnLocal(); return; }
