@@ -1295,10 +1295,20 @@
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); }); // tap backdrop to dismiss
   }
 
-  // Refresh the offline licence whenever auth resolves online with an active subscription.
+  /* Refresh the offline licence whenever auth resolves with a CONFIRMED active subscription.
+     This used to ask `navigator.onLine && isSubscribed()` — both untrustworthy, and the same pair
+     that made an entire expiry window dead code earlier in this build. navigator.onLine reports
+     ONLINE in airplane mode on these WebViews, and isSubscribed() returns the CACHED flag, not a
+     fresh answer. So both could read true while genuinely offline with a lapsed subscription: the
+     stamp renewed, the 50-day clock reset, and access continued indefinitely.
+     isSubscriptionFresh() is the truthful question — "did a clean subscriptions read answer us this
+     session?" — which a flight-mode radio cannot fake. Same predicate as canUseOffline's
+     fresh+subscribed branch (see stampVerified's other gated call site); the two must stay in step,
+     because this is the second time a fix landed on one sibling and missed the other. */
   window.addEventListener('thaiear:auth', function () {
     var a = window.ThaiEarAuth;
-    if (navigator.onLine && a && a.isSubscribed && a.isSubscribed()) stampVerified();
+    if (a && a.isSubscriptionFresh && a.isSubscriptionFresh() &&
+        a.isSubscribed && a.isSubscribed()) stampVerified();
   });
 
   // Progress is keyed by this page's (frozen) filename, e.g. "topic-09a" — unique
@@ -2093,7 +2103,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r36';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r37';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
