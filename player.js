@@ -1305,6 +1305,22 @@
   // In-page message shown when a downloaded premium topic is played offline after the licence
   // window has lapsed — friendly, no navigation (the SW would otherwise show the offline page).
   function showLicenceOverlay() {
+    /* ⚠⚠ "RECONNECT" MEANS EXACTLY ONE THING: WE COULD NOT CHECK. Owner, 2026-07-31 — this message
+       must not bleed into any other circumstance. It is only honest when a NON-LIFETIME premium
+       member's last clean verification is older than the grace window and we cannot reach the
+       server. If a clean read DID answer this session and said "not subscribed", that is an
+       authoritative negative — the paywall, not a connectivity problem — and telling that user to
+       reconnect sends them to fix something that isn't broken (they could reconnect all day and
+       nothing would change). Route those to the premium sheet instead.
+       Mirrors canUseOffline's own split: fresh+not-subscribed → deny outright; no answer → grace.
+       ⚠ NO RECURSION, and the reason is load-bearing: gate() calls this only when isSubscribed()
+       is TRUE (its `lastKnownSubbed` branch), while this guard fires only when it is FALSE. The two
+       conditions are mutually exclusive, so control can cross once and never bounce back. If either
+       condition is ever loosened, re-check that — it would become an infinite loop, not a bug you
+       can see in a diff. */
+    var a = AUTHV();
+    if (a && a.isSubscriptionFresh && a.isSubscriptionFresh() &&
+        !(a.isSubscribed && a.isSubscribed())) { gate(TIER || 'premium'); return; }
     if (document.getElementById('te-licence-overlay')) return;
     var ov = document.createElement('div');
     ov.id = 'te-licence-overlay';
@@ -1948,6 +1964,10 @@
   function handleDenied(err, tier) {
     if (tier == null) tier = TIER;
     var code = err && err.code;
+    // Nothing this visitor may play at all (all-premium unit, no entitlement). The status line
+    // already reads "Premium membership needed" — no overlay, no gate, and NOT a console warning,
+    // because this is an expected answer rather than a failure.
+    if (code === 'nothing-playable') return;
     // Offline premium download whose licence has lapsed → friendly in-page message (no navigation).
     if (code === 'licence') { showLicenceOverlay(); return; }
     var isGate = (code === 'noauth' || code === 401 || code === 402 || code === 403);
@@ -2136,7 +2156,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r40';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r41';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3155,7 +3175,11 @@
        string renders inside the Android app, where Google Play's no-steering rule applies. */
     if (PLMODE && sentences.length && !dynIncluded().length) {
       dynStatus('Premium membership needed', false);
-      return Promise.reject({ code: 'licence' });
+      /* ⚠ NOT code:'licence' — that is the RECONNECT overlay's code (handleDenied →
+         showLicenceOverlay), so r39 produced "Reconnect to keep listening" for a user who was
+         online and simply not entitled. Distinct code, handled as a no-op below: the status line
+         above has already said the right thing and there is nothing to reconnect TO. */
+      return Promise.reject({ code: 'nothing-playable' });
     }
     // Attached to a live native track (page-open adoption): the engine owns the src — play/
     // pause/seek control it directly and a rebuild would restart it (round-11 item 3).
