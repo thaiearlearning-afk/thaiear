@@ -538,20 +538,38 @@
     m[u.prefix] = e;
     setManifest(m);
   }
+  /* ⚠ r87 — RETRY WITH BACKOFF. There was NONE here: a single failed clip threw straight out of
+     dlPool and aborted the whole batch, so one transient blip killed a 40-clip download and the user
+     started again from nothing. Owner hit it on the dyn index, twice, at different points of the
+     same topic: "unable to resolve host …r2.cloudflarestorage.com — no address associated with
+     hostname" — a DNS wobble on the PRESIGNED-URL host that gated (member/premium) clips use.
+     ⚠ `player.js` has had downloadFileWithRetry since the classic path; the two DYN implementations
+     never got it. Third-copy problem again (§D.1 folds them together).
+     ⚠ THE URL IS RE-DERIVED ON EVERY ATTEMPT, deliberately: a presigned R2 URL is short-lived, so
+     retrying the SAME url would just fail again once it had expired. Same shape and constants as
+     player.js: 3 tries, 600 ms × attempt. */
+  var DL_MAX_TRIES = 3;
   function saveOne(u, file) {
-    return fileUrl(file, u.tier).then(function (url) {
-      if (NATIVE) {
-        return FS.downloadFile({ url: url, path: 'offline/' + u.prefix + '/' + file, directory: 'DATA',
-          recursive: true, connectTimeout: 15000, readTimeout: 20000 });
-      }
-      return caches.open(AUDIO_DL_CACHE).then(function (cache) {
-        return fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (res) {
-          if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
-          if (res.type === 'opaque') throw new Error('CORS not enabled for ' + file);
-          return cache.put(webCacheKey(u.prefix, file), res);
+    function attempt(tryNo) {
+      return fileUrl(file, u.tier).then(function (url) {
+        if (NATIVE) {
+          return FS.downloadFile({ url: url, path: 'offline/' + u.prefix + '/' + file, directory: 'DATA',
+            recursive: true, connectTimeout: 15000, readTimeout: 20000 });
+        }
+        return caches.open(AUDIO_DL_CACHE).then(function (cache) {
+          return fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (res) {
+            if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
+            if (res.type === 'opaque') throw new Error('CORS not enabled for ' + file);
+            return cache.put(webCacheKey(u.prefix, file), res);
+          });
         });
+      }).catch(function (err) {
+        if (tryNo >= DL_MAX_TRIES) throw err;
+        console.warn('dyn-index: download retry ' + (tryNo + 1) + '/' + DL_MAX_TRIES + ' for ' + file, err);
+        return new Promise(function (r) { setTimeout(r, 600 * tryNo); }).then(function () { return attempt(tryNo + 1); });
       });
-    });
+    }
+    return attempt(1);
   }
   function runDownloads() {
     if (busy) return;
@@ -634,7 +652,9 @@
           if (!navigator.onLine || /failed to fetch|load failed|network/i.test(msg)) {
             status('You’re offline — reconnect to download topics.', true);
           } else {
-            status('Stopped (' + msg + '). Nothing was removed — retry when ready.', true);
+            /* r87: true since the incremental manifest writes (r85/r86) - a failed run now leaves its
+               progress recorded, so 'retry' really does mean RESUME, not start again. */
+            status('Stopped (' + msg + '). The clips already saved are kept — tap Download again to carry on.', true);
           }
           render();
         });

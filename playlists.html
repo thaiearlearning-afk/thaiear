@@ -160,7 +160,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r86</div>
+  <div class="eyebrow">Owner test build · r87</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -291,7 +291,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r86</div>
+  <div class="eyebrow">Playlist · r87</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -653,20 +653,38 @@
       .then(function (r) { if (!r.ok) { var ge = new Error('audio gate ' + r.status); ge.code = r.status; throw ge; } return r.json(); })
       .then(function (j) { if (!j || !j.url) throw new Error('no url'); return j.url; });
   }
+  /* ⚠ r87 — RETRY WITH BACKOFF. There was NONE here: a single failed clip threw straight out of
+     dlPool and aborted the whole batch, so one transient blip killed a 40-clip download and the user
+     started again from nothing. Owner hit it on the dyn index, twice, at different points of the
+     same topic: "unable to resolve host …r2.cloudflarestorage.com — no address associated with
+     hostname" — a DNS wobble on the PRESIGNED-URL host that gated (member/premium) clips use.
+     ⚠ `player.js` has had downloadFileWithRetry since the classic path; the two DYN implementations
+     never got it. Third-copy problem again (§D.1 folds them together).
+     ⚠ THE URL IS RE-DERIVED ON EVERY ATTEMPT, deliberately: a presigned R2 URL is short-lived, so
+     retrying the SAME url would just fail again once it had expired. Same shape and constants as
+     player.js: 3 tries, 600 ms × attempt. */
+  var DL_MAX_TRIES = 3;
   function dlSaveOne(prefix, tier, file) {
-    return dlFileUrl(file, tier).then(function (url) {
-      if (DL_NATIVE) {
-        return DL_FS.downloadFile({ url: url, path: 'offline/' + prefix + '/' + file, directory: 'DATA',
-          recursive: true, connectTimeout: 15000, readTimeout: 20000 });
-      }
-      return caches.open(DL_CACHE).then(function (cache) {
-        return fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (res) {
-          if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
-          if (res.type === 'opaque') throw new Error('CORS not enabled for ' + file);
-          return cache.put(dlCacheKey(prefix, file), res);
+    function attempt(tryNo) {
+      return dlFileUrl(file, tier).then(function (url) {
+        if (DL_NATIVE) {
+          return DL_FS.downloadFile({ url: url, path: 'offline/' + prefix + '/' + file, directory: 'DATA',
+            recursive: true, connectTimeout: 15000, readTimeout: 20000 });
+        }
+        return caches.open(DL_CACHE).then(function (cache) {
+          return fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (res) {
+            if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
+            if (res.type === 'opaque') throw new Error('CORS not enabled for ' + file);
+            return cache.put(dlCacheKey(prefix, file), res);
+          });
         });
+      }).catch(function (err) {
+        if (tryNo >= DL_MAX_TRIES) throw err;
+        console.warn('playlists: download retry ' + (tryNo + 1) + '/' + DL_MAX_TRIES + ' for ' + file, err);
+        return new Promise(function (r) { setTimeout(r, 600 * tryNo); }).then(function () { return attempt(tryNo + 1); });
       });
-    });
+    }
+    return attempt(1);
   }
   // Group a playlist's sentences by the topic their clips live under.
   // Bounded-concurrency runner (same shape as player.js's dynPool).
@@ -824,7 +842,9 @@
         if (!navigator.onLine || /failed to fetch|load failed|network/i.test(msg)) {
           dlStatus('You’re offline — reconnect to download playlists.', true);
         } else {
-          dlStatus('Stopped (' + msg + '). Nothing was removed — retry when ready.', true);
+          /* r87: true since the incremental manifest writes (r85/r86) - a failed run now leaves its
+               progress recorded, so 'retry' really does mean RESUME, not start again. */
+            dlStatus('Stopped (' + msg + '). The clips already saved are kept — tap Download again to carry on.', true);
         }
         render();
       });
