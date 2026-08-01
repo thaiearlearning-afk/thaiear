@@ -59,7 +59,12 @@
   .btn-ghost { background: var(--surface); color: var(--text-secondary); }
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
   .btn-danger { background: #B00020; color: #fff; border-color: #B00020; }
-  .btn-danger:hover { background: #8a0019; }
+  .btn-danger:hover:not([disabled]) { background: #8a0019; }
+  /* r96: a confirm guarded by a typed word stays DULLED until the word is exact, then lights up —
+     the same behaviour as the two "Remove all downloads" dialogs. Previously this button looked
+     fully armed from the moment the dialog opened and only turned the input's border red when you
+     pressed it with the wrong text: the affordance said READY while the action was refused. */
+  .btn[disabled] { opacity: .45; cursor: default; }
   /* Premium gold call-to-action — matches the premium padlock/scheme. */
   .btn-gold { background: var(--gold); color: #4a3a00; border-color: var(--gold-dark); font-weight: 600; }
   .btn-gold:hover { background: var(--gold-dark); color: #fff; border-color: var(--gold-dark); }
@@ -142,9 +147,28 @@ function showModal(opts) {
   ov.querySelector('#modal-cancel').addEventListener('click', close);
   var inp = ov.querySelector('#modal-input');
   if (inp) inp.focus();
-  ov.querySelector('#modal-ok').addEventListener('click', function () {
+  var okBtn = ov.querySelector('#modal-ok');
+  /* ⚠ r96 — EXACT, CASE-SENSITIVE, AND THE BUTTON ARMS ONLY WHEN IT MATCHES.
+     Two faults, both on the most destructive control the site has:
+       1. it compared with .toUpperCase() on BOTH sides, so "delete", "Delete" — any casing — passed.
+          Typing the word in caps IS the deliberate act; accepting any casing gives away the friction
+          the guard exists to create. (A near-miss like "DELETES" was already refused, and still is.)
+       2. the confirm button was ALWAYS pressable and merely reddened the input on a wrong entry, so
+          it looked armed while the action was refused.
+     Now identical to the two "Remove all downloads" dialogs: dulled until the text is exactly right,
+     then it lights up.
+     ⚠ Do NOT add `text-transform: uppercase` to this field. The DISPLAY would read DELETE while
+     `.value` stayed lowercase, refusing the user while looking correct to them. */
+  if (opts.requireText && inp) {
+    okBtn.disabled = true;
+    inp.addEventListener('input', function () {
+      okBtn.disabled = (inp.value || '').trim() !== opts.requireText;
+      inp.style.borderColor = '';
+    });
+  }
+  okBtn.addEventListener('click', function () {
     if (opts.requireText) {
-      if ((inp.value || '').trim().toUpperCase() !== opts.requireText.toUpperCase()) { inp.style.borderColor = '#B00020'; inp.focus(); return; }
+      if ((inp.value || '').trim() !== opts.requireText) { inp.style.borderColor = '#B00020'; inp.focus(); return; }
     }
     close();
     opts.onConfirm();
