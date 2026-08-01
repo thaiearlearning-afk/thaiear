@@ -141,7 +141,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r74</div>
+  <div class="eyebrow">Owner test build · r75</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -260,7 +260,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r74</div>
+  <div class="eyebrow">Playlist · r75</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -774,9 +774,29 @@
     });
     return need;
   }
+  /* r75 — every prefix in the manifest carrying this ref. Lock-independent ground truth for "what
+     did this playlist claim", used as the fallback below. `dlGroup(p)` cannot serve that purpose:
+     it excludes locked items (r38), so for a lapsed premium playlist it under-reports or is empty. */
+  function dlRefPrefixes(ref) {
+    var m = dlManifest(), out = [];
+    Object.keys(m).forEach(function (pfx) {
+      var e = m[pfx];
+      if (e && e.refs && e.refs.indexOf(ref) >= 0) out.push(pfx);
+    });
+    return out;
+  }
   function dlClearOne(p) {
     var pm = dlPlMap(), rec = pm[p.id];
-    var prefixes = (rec && rec.prefixes) || Object.keys(dlGroup(p));
+    /* r75: the record is still preferred (it lists what was stored at download time, while
+       entitled), but the FALLBACK is no longer the lock-filtered group. If the record is missing
+       for any reason, ask the manifest which prefixes carry our ref; only if that is empty too do
+       we fall back to the group. Before this, a missing record on a gated playlist sent us to
+       dlGroup(p) — which omits exactly the premium clips we are trying to free. */
+    var prefixes = (rec && rec.prefixes && rec.prefixes.length) ? rec.prefixes : null;
+    if (!prefixes) {
+      var byRef = dlRefPrefixes('pl-' + p.id);
+      prefixes = byRef.length ? byRef : Object.keys(dlGroup(p));
+    }
     var m = dlManifest();
     var chain = Promise.resolve();
     prefixes.forEach(function (pfx) {

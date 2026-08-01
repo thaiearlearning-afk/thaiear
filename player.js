@@ -861,7 +861,44 @@
     for (var i = 0; i < files.length; i++) if (!mine[files[i]]) return false;
     return true;
   }
+  /* r75 — WHICH PREFIXES HAS THIS UNIT ACTUALLY CLAIMED ON DISK? Lock-INDEPENDENT, deliberately.
+     `dynDlGroups()` answers a different question — "what may this visitor FETCH" — because it
+     filters locked sentences so a denied clip can't abort a download. Reusing it to decide what to
+     RELEASE meant a gated playlist released only its unlocked prefixes (and an ALL-premium one
+     released nothing at all) while still deleting its download record, stranding clips that were
+     claimed by a ref whose record no longer existed. Owner found it from the size figure, 2026-08-01.
+     ⚠ TOPIC PAGES WERE NEVER AFFECTED — `sentLocked()` returns false when `!PLMODE` (player.js:2020),
+     so a topic's group is never lock-filtered. That is why the r60–r62 removal work passed T-4/T-6c
+     on topics and left this half undone; the owner called that split correctly.
+     Ground truth is the manifest's own refs: an entry carrying OUR ref is a clip we claimed,
+     regardless of what we may fetch today. The download record is then unioned in as belt-and-braces
+     (it lists what was stored at download time, while entitled), restricted to prefixes that still
+     exist so a stale record can never resurrect a released prefix.
+     ⚠ PLAYLIST-ONLY SCAN. For a topic page the ref is the literal string 'topic', which EVERY
+     classic download writes (§B2d) — scanning for it would match every downloaded topic on the
+     device and delete all of them. Topic pages therefore return their own PREFIX and nothing else. */
+  function dynOwnedPrefixes() {
+    if (!PLMODE) return PREFIX ? [PREFIX] : [];
+    var ref = dynDlRef(), m = getManifest(), out = [];
+    Object.keys(m).forEach(function (pfx) {
+      var e = m[pfx];
+      if (e && e.refs && e.refs.indexOf(ref) >= 0) out.push(pfx);
+    });
+    try {
+      var rec = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}')[String(ref).replace(/^pl-/, '')];
+      if (rec && rec.prefixes) rec.prefixes.forEach(function (p) {
+        if (m[p] && out.indexOf(p) < 0) out.push(p);
+      });
+    } catch (_) {}
+    return out;
+  }
   function dynClaimedPrefixes() {
+    /* r75: ask what we HOLD before what we may fetch, so a gated unit reports (and releases) the
+       clips it actually occupies. Falling back to the group keeps the r66 "available offline"
+       state intact — a unit with no claim of its own owns nothing here and must still be able to
+       report the borrowed clips it can play. */
+    var owned = dynOwnedPrefixes();
+    if (owned.length) return owned;
     var keys = Object.keys(dynDlGroups());
     if (keys.length) return keys;
     if (PLMODE) {
@@ -1154,9 +1191,13 @@
     return need;
   }
   function dynDeleteHere() {
-    var by = dynDlGroups(), m = getManifest(), ref = dynDlRef();
+    /* r75: release what we HOLD (dynOwnedPrefixes), never what we may currently FETCH
+       (dynDlGroups). The old group-based loop skipped every locked prefix, so on a gated playlist
+       this button deleted the record while leaving the premium clips claimed and unreclaimable —
+       and on an all-premium one it iterated nothing whatsoever. See the helper for the full note. */
+    var m = getManifest(), ref = dynDlRef();
     var chain = Promise.resolve();
-    Object.keys(by).forEach(function (pfx) {
+    dynOwnedPrefixes().forEach(function (pfx) {
       var e = m[pfx]; if (!e) return;
       /* Release our claim at FILE level, not directory level. Keeping the whole prefix because one
          playlist holds ONE sentence meant a user who deleted a 25-sentence topic reclaimed nothing
@@ -2308,7 +2349,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r74';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r75';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
