@@ -166,7 +166,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r93</div>
+  <div class="eyebrow">Owner test build · r94</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -297,7 +297,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r93</div>
+  <div class="eyebrow">Playlist · r94</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -659,7 +659,7 @@
         title: 'Leave this page?',
         body: 'A download is in progress. If you leave now it won’t finish — you can start it again any time.',
         confirmText: 'Leave anyway', cancelText: 'Keep downloading', danger: true,
-        onConfirm: function () { armed = false; skip = true; try { history.go(-2); } catch (_) {} }
+        onConfirm: function () { armed = false; skip = true; try { window.__teLeaveBypass(); } catch (_) {} try { history.go(-2); } catch (_) {} }
       });
     });
   })();
@@ -754,6 +754,12 @@
      loads player.js (folds into D.1). */
   (function () {
     var bypass = false;
+    /* r94: let the SWIPE guard suppress this too. Owner: choosing "Leave anyway" on the swipe
+       prompt "reveals the grey ugly box underneath then i have to click leave again" — because
+       `bypass` lives in THIS closure, so the history.go(-2) looked like an unguarded exit and
+       beforeunload fired. The click path never had the problem: it sets bypass before navigating.
+       One deliberate decision has to silence BOTH guards, not just the one that asked. */
+    window.__teLeaveBypass = function () { bypass = true; };
     document.addEventListener('click', function (e) {
       if (bypass || !dlBusy) return;
       var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;

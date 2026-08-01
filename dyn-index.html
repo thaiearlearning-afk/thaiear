@@ -820,7 +820,7 @@
       if (!armed) return;
       push();                                 // cancel the gesture by returning to the sentinel
       showConfirm('A download is in progress. If you leave now it won’t finish — you can start it again any time.',
-        function () { armed = false; skip = true; try { history.go(-2); } catch (_) {} },
+        function () { armed = false; skip = true; try { window.__teLeaveBypass(); } catch (_) {} try { history.go(-2); } catch (_) {} },
         'Leave anyway', 'Keep downloading');
     });
   })();
@@ -832,6 +832,12 @@
      folds into D.1 with the download implementations it belongs to. */
   (function () {
     var bypass = false;
+    /* r94: let the SWIPE guard suppress this too. Owner: choosing "Leave anyway" on the swipe
+       prompt "reveals the grey ugly box underneath then i have to click leave again" — because
+       `bypass` lives in THIS closure, so the history.go(-2) looked like an unguarded exit and
+       beforeunload fired. The click path never had the problem: it sets bypass before navigating.
+       One deliberate decision has to silence BOTH guards, not just the one that asked. */
+    window.__teLeaveBypass = function () { bypass = true; };
     document.addEventListener('click', function (e) {
       if (bypass || !busy) return;
       var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
