@@ -205,6 +205,17 @@
      the state DURABLE: while "keep purged" is on, sim.js deletes the supabase key on EVERY load,
      before auth.js exists. No timing to get wrong, and you can navigate the test space freely with
      the session reliably absent. Turn it off to go back to normal. */
+  /* ⚠⚠ r97 — THE TEST-SPACE BUILD TAG NOW LIVES HERE, AND IN EXACTLY ONE PLACE.
+     Before this there were THREE hand-maintained copies and all three drifted: this file's trace
+     said "BUILD r30b" (68 builds stale, already documented as a trap), playlists.html's eyebrow was
+     hardcoded "r95", and dyn-index.html's said "dyn index r29a". The owner hard-reloaded twice on
+     two devices reading an eyebrow that no deploy could ever move — the docs say "read the build
+     from an eyebrow, never the boot trace", and the eyebrow was lying too.
+     sim.js is the right owner because it loads on EVERY test page and nowhere else, and it loads
+     BEFORE player.js (topic-test.html:549 vs :551), so player.js picks this up as its DYN_BUILD.
+     ▶ BUMP THIS ONE CONSTANT PER TEST-SPACE DEPLOY. Everything else derives from it. */
+  var BUILD = 'r97';
+  try { window.TE_BUILD = BUILD; } catch (_) {}
   var K_KEEP_PURGED = 'te_sim_keep_purged';
   function keepPurged() { return get(K_KEEP_PURGED) === '1'; }
   function setKeepPurged(on) { set(K_KEEP_PURGED, on ? '1' : null); if (!on) return []; return killSbKeys(); }
@@ -342,7 +353,7 @@
     } catch (_) {}
     return n;
   }
-  trace('BUILD r30b');
+  trace('BUILD ' + BUILD);   // r97: was the literal 'r30b' — see the BUILD constant above
   trace('sim tier=' + (tier() || 'real') + ' dis=' + (noIdentity()?1:0) + ' kp=' + (keepPurged()?1:0) + ' kill=' + bootPurged.length +
         ' sb=' + sbKeysPresent().length + ' id=' + (get(K_ID_PEEK)?1:0) +
         ' so=' + (get('thaiear_signed_out')==='1'?1:0));
@@ -646,9 +657,19 @@
     }
     mountBadge();
   }
+  /* r97 — fill every eyebrow that opts in with `data-build`, so a test page's build tag is DERIVED
+     and can never be left behind by a deploy again. The page supplies its own prefix as the
+     element's existing text (e.g. "Owner test build ·"); we only append the number. */
+  function stampBuild() {
+    var els = document.querySelectorAll('[data-build]');
+    for (var i = 0; i < els.length; i++) {
+      var pre = (els[i].getAttribute('data-build') || '').trim();
+      els[i].textContent = (pre ? pre + ' · ' : '') + BUILD;
+    }
+  }
   window.addEventListener('thaiear:auth', function () { setTimeout(remountBadge, 50); });
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountBadge);
-  else mountBadge();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { mountBadge(); stampBuild(); });
+  else { mountBadge(); stampBuild(); }
 
   window.ThaiEarSim = {
     bootPurged: function () { return bootPurged.slice(); },

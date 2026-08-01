@@ -2437,7 +2437,10 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r97';   // visible build tag on the test pages — bump every test-space deploy
+  /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
+     topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
+     ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
+  var DYN_BUILD = (function () { try { return window.TE_BUILD || 'r97'; } catch (_) { return 'r97'; } })();
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

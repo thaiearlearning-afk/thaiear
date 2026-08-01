@@ -166,7 +166,9 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r95</div>
+  <!-- r97: DERIVED, not typed. sim.js fills this from its single BUILD constant — this text was
+       hardcoded "r95" and survived a deploy, which cost the owner two hard reloads on two devices. -->
+  <div class="eyebrow" data-build="Owner test build">Owner test build</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
