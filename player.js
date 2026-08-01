@@ -1403,8 +1403,15 @@
       // Downloaded before, incomplete now — sentences were added and their clips were never
       // fetched. Same action as idle (downloadTopic re-fetches what is missing); only the wording
       // differs, because the missing information is WHY, not how.
+      /* r82: DELETE SITS ALONGSIDE UPDATE. Owner, 2026-08-01: *"if showing 'update available' users
+         cannot clear a download."* True everywhere — this bar offered only the update, and the list
+         row's control selects for download only — so a part-owned download was unremovable by any
+         control on any surface. That breaks the standing rule that REMOVAL IS AVAILABLE AT ALL
+         TIMES (§B9): the user is holding real bytes with no way to reclaim them, and the only
+         offered escape is to download MORE. */
       bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' + DL_ICON_SVG +
-        ' Update download — new sentences added</button>';
+        ' Update download — new sentences added</button>' +
+        '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
     } else { // idle
       bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' + DL_ICON_SVG +
         ' Download for offline</button>';
@@ -2386,7 +2393,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r81';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r82';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

@@ -72,6 +72,10 @@
   .dl-clear-btn:hover:not([disabled]) { background:var(--accent-light); color:var(--accent); }
   .dl-batch-status { font-size:13px; color:var(--text-secondary); min-height:1.15em; }
   .dl-batch-status.err { color:#B00020; }
+  /* r82: transient tap feedback. Deliberately a SEPARATE element from .dl-batch-status, which
+     belongs to the running download — see the note() comment. Muted, so it reads as guidance
+     rather than an error, and it self-clears. */
+  .dl-batch-note { font-size:12.5px; color:var(--text-tertiary); min-height:1.15em; }
   .dl-batch-hint { font-size:12.5px; color:var(--text-tertiary); }
 
   .unit { display:flex; align-items:center; gap:12px; background:var(--surface);
@@ -145,6 +149,7 @@
       <button class="dl-batch-btn dl-clear-btn" id="clear-btn" type="button">Clear Download(s)</button>
     </div>
     <span class="dl-batch-status" id="dl-status"></span>
+    <span class="dl-batch-note" id="dl-note" style="display:none"></span>
     <span class="dl-batch-hint" id="dl-hint">Tap a topic's circle to download, or a ✓ to remove — then pick an action.</span>
   </div>
 
@@ -212,6 +217,22 @@
     var el = document.getElementById('dl-status');
     el.textContent = msg || '';
     el.className = 'dl-batch-status' + (err ? ' err' : '');
+  }
+  /* r82 — TRANSIENT NOTES GO SOMEWHERE ELSE. Owner, 2026-08-01, from the live index: tapping a
+     ticked topic mid-download replaced the PROGRESS line with "Finish or deselect your download
+     choice first", and tapping another circle cleared it outright — *"is my download still
+     continuing, the user will think"*. Both are the same mistake: one element carrying two jobs,
+     so a momentary message evicts the only evidence that work is still happening.
+     `#dl-status` now belongs exclusively to the RUNNING JOB. Anything a tap has to say goes to
+     `#dl-note`, which clears itself. Owner's rule: *"the selector button taps (circles or ticks)
+     should not derail the UI here."* */
+  var noteTimer = null;
+  function note(msg) {
+    var el = document.getElementById('dl-note'); if (!el) return;
+    el.textContent = msg || '';
+    el.style.display = msg ? '' : 'none';
+    if (noteTimer) { clearTimeout(noteTimer); noteTimer = null; }
+    if (msg) noteTimer = setTimeout(function () { note(''); }, 4000);
   }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
   function statusDots(msg) {
@@ -304,18 +325,25 @@
   }
 
   document.addEventListener('click', function (e) {
-    if (busy || !e.target.closest) return;
+    if (!e.target.closest) return;
     var t = e.target.closest('[data-p]');
     if (!t) return;
+    /* r82: while a download runs, a tap on a circle or tick is REFUSED WITH AN EXPLANATION rather
+       than silently ignored — and the explanation goes to the transient note, so the progress line
+       survives. Previously `if (busy) return` meant the tap did nothing at all, with no feedback,
+       which reads exactly like a broken button. */
+    if (busy) { note('Download in progress — you can change your selection when it finishes.'); return; }
     var p = t.getAttribute('data-p');
     if (t.getAttribute('data-mode') === 'dl') {
-      if (Object.keys(clearSel).length) { status('Finish or deselect your removal choice first.'); return; }
+      if (Object.keys(clearSel).length) { note('Finish or deselect your removal choice first.'); return; }
       if (dlSel[p]) delete dlSel[p]; else dlSel[p] = true;
     } else {
-      if (Object.keys(dlSel).length) { status('Finish or deselect your download choice first.'); return; }
+      if (Object.keys(dlSel).length) { note('Finish or deselect your download choice first.'); return; }
       if (clearSel[p]) delete clearSel[p]; else clearSel[p] = true;
     }
-    status(''); render();
+    /* r82: NO `status('')` here. A selection tap must never clear a line it does not own — that is
+       what made the progress text vanish with no message at all. */
+    note(''); render();
   });
 
   // Premium/member clips need a signed URL; free ones come straight off the CDN.
