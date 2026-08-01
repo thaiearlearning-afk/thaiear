@@ -127,22 +127,22 @@
     Free membership
   </span>
   <h1 class="sub-title">Sign in to unlock — it’s free</h1>
-  <p class="sub-lede" id="join-lede">This topic is part of ThaiEar’s free membership. There’s no payment and no card —
-    just sign in with your Google account to unlock member topics, playlists and the full reading course straight away.</p>
+  <p class="sub-lede" id="join-lede">Sign in with your Google account to unlock member topics, playlists and all
+    reading course material straight away. No payment or card required.</p>
 
   <div class="sub-card">
     <ul class="benefits">
-      <li class="benefit">
-        <span class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-        <span class="benefit-text"><strong>Completely free</strong><span>Member topics cost nothing — signing in is all it takes.</span></span>
-      </li>
       <li class="benefit">
         <span class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
         <span class="benefit-text"><strong>One-tap Google sign-in</strong><span>No password to create or remember.</span></span>
       </li>
       <li class="benefit">
         <span class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-        <span class="benefit-text"><strong>Playlists</strong><span>Build custom playlists for any topic’s sentences and listen offline.</span></span>
+        <span class="benefit-text"><strong>Build custom playlists</strong><span>Build custom playlists for any topic’s sentences and listen offline.</span></span>
+      </li>
+      <li class="benefit">
+        <span class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <span class="benefit-text"><strong>Completely free</strong><span>Member topics cost nothing — signing in is all it takes.</span></span>
       </li>
     </ul>
 
@@ -169,17 +169,8 @@ if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.is
   var pn = document.getElementById('premium-note'); if (pn) pn.style.display = 'none';
 }
 
-// Arrived via a member FEATURE (e.g. flagging a sentence) rather than a locked topic?
-// Show feature-oriented copy under the same "Sign in to unlock — it's free" heading.
-(function () {
-  try {
-    if (new URLSearchParams(location.search).get('feature')) {
-      var el = document.getElementById('join-lede');
-      if (el) el.textContent = 'Access member topics, track your progress, and flag sentences. ' +
-        'There’s no payment and no card — just sign in with your Google account to unlock these features straight away.';
-    }
-  } catch (_) {}
-})();
+// (The old ?feature= lede variant is gone — one owner-approved lede serves both arrival
+// paths since 2026-08-01. The ?feature param itself remains harmless in links.)
 
 function nextUrl() {
   var m = new URLSearchParams(location.search).get('next');

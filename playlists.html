@@ -160,7 +160,7 @@
   @keyframes dots { from { width: 0 } to { width: 1.05em } }
   /* image + caption block, mirroring guide.html's .fluency-* (khwai) pattern */
   .fluency-block { text-align: center; margin: 1.25rem 0 1.5rem; }
-  .fluency-img { width: 195px; max-width: 55%; height: auto; display: block; margin: 0 auto 0.4rem; }
+  .fluency-img { width: 150px; max-width: 42%; height: auto; display: block; margin: 0 auto 0.4rem; }   /* meditator's own sizing (from progress.html) — swapped with yak 2026-08-01 */
   .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
   .fluency-text .dots::after { animation-duration: 1.5s; }   /* match the other pages' cadence */
   /* r100 cosmetics view (?cos=1) — mockup-only classes, unused on the real page */
@@ -195,7 +195,7 @@
        CSS width 195px + max-width:55% guards the size on desktop vs mobile; the width/height
        attributes reserve the box pre-load (CLS). -->
   <div class="fluency-block">
-    <img class="fluency-img" src="yak.png" alt="Thai guardian yak" width="200" height="260">
+    <img class="fluency-img" src="meditator.png" alt="Meditating learner" width="150">
     <div class="fluency-text">Eerily effective<span class="dots" aria-hidden="true"></span></div>
   </div>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>

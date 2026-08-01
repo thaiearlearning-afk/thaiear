@@ -74,7 +74,7 @@
 
   /* meditator + "Fluency loading…" with an animated 1→2→3 dot cycle (pure CSS, no JS) */
   .fluency-block { text-align: center; margin: 0.25rem 0 1.75rem; }
-  .fluency-img { width: 150px; max-width: 42%; height: auto; display: block; margin: 0 auto 0.4rem; }
+  .fluency-img { width: 195px; max-width: 55%; height: auto; display: block; margin: 0 auto 0.4rem; }   /* yak's own sizing (from playlists.html) — swapped with meditator 2026-08-01 */
   .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
   /* fixed-width dots so the text never jitters as they cycle */
   .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
@@ -284,7 +284,7 @@ function render() {
 
   var fluency =
     '<div class="fluency-block">' +
-      '<img class="fluency-img" src="meditator.png" alt="Meditating learner" width="150">' +
+      '<img class="fluency-img" src="yak.png" alt="Thai guardian yak" width="200" height="260">' +
       '<div class="fluency-text">Fluency loading<span class="dots" aria-hidden="true"></span></div>' +
     '</div>';
 

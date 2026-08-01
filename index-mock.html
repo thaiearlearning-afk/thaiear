@@ -741,9 +741,6 @@
 
 <!-- ── TOPICS ── -->
 <section class="topics-section">
-  <div class="section-header">
-    <span class="section-title">All topics <span class="section-title-soon">— more coming soon…</span></span>
-  </div>
 
   <!-- ── MODE TOGGLE: sentence listening ⇄ learn to read.
        Sits above the access pills + search, left-aligned with them. ── -->
@@ -800,6 +797,19 @@
     <span class="topic-search-count" id="topic-search-count" aria-live="polite"></span>
   </div>
   </div><!-- /grid-toolbar -->
+
+  <!-- Mockup: the NEW download controls (dyn-index/playlists style) shown statically for
+       cosmetic review — replaces the old two-button app bar at rollout. -->
+  <div class="dl-batch-bar mock-dlbar">
+    <div class="dl-batch-btns">
+      <button class="dl-batch-btn" type="button">Download Topic(s)</button>
+      <button class="dl-batch-btn dl-clear-btn" type="button">Remove Selected Downloads</button>
+    </div>
+    <div class="dl-batch-btns dl-batch-btns-2">
+      <button class="dl-batch-btn dl-removeall-btn" type="button">Remove All Downloads</button>
+    </div>
+    <span class="dl-batch-hint">Tap a topic's circle to download, or a ✓ to remove — then pick an action.</span>
+  </div>
 
   <!-- App-only batch download/clear (shown by JS when running in the Capacitor app). -->
   <div class="dl-batch-bar" id="dl-batch-bar">
@@ -923,6 +933,10 @@
   <!-- ── PLAYLISTS (mockup: signed-out view; every action routes to the sign-in-to-unlock page) ── -->
   <div id="panel-playlists" hidden>
     <p class="mk-lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
+    <div class="mk-flu">
+      <img src="meditator.png" alt="Meditating learner" width="150">
+      <div class="mk-flu-text">Eerily effective<span class="mk-dots" aria-hidden="true"></span></div>
+    </div>
     <div class="mk-add-card">
       <a class="mk-add" href="join.html?feature=playlists">＋ Add playlist</a>
       <span class="mk-hint">Add sentences to your playlists from topic pages</span>
@@ -1712,6 +1726,49 @@ updateBatchBar();          // show the batch-download bar in the app (hidden on 
 .mk-box-name { flex: 1; font-size: 15px; font-weight: 600; color: var(--text-primary); }
 .mk-box-meta { font-size: 12.5px; color: var(--text-tertiary); }
 .mk-note { font-size: 12.5px; color: var(--text-tertiary); margin-top: 1rem; }
+/* ══ ROUND 2 (owner, 2026-08-01) ══════════════════════════════════════════════ */
+/* Intro sentence: hero-purple band, white centred card — contiguous with the hero. */
+.page-intro { max-width: none; margin: 0; padding: 1.3rem 1.5rem 1.5rem; background: #4B41AD; }
+.intro-lead { max-width: 640px; margin: 0 auto; background: var(--surface); border-left: none;
+  border-radius: var(--radius-lg); padding: 0.95rem 1.3rem; text-align: center; font-size: 14.5px; }
+/* Switcher: unselected = gold theme, selected = the blue/purple. */
+.ms-btn { color: #B29234; background: #FBF5DC; }
+.ms-btn:hover { color: #8F7526; }
+.ms-btn.active { background: var(--accent); color: #fff; }
+/* New download controls, shown statically (dyn/playlists styling). */
+.mock-dlbar { display: flex; }
+.dl-removeall-btn { background: transparent; color: var(--text-tertiary); border: 0.5px solid var(--border);
+  font-size: 12.5px; padding: 6px 10px; }
+.dl-removeall-btn:hover { background: #FDF1F2; color: #B00020; border-color: #E8C4C8; }
+/* Vertical compaction: tighter switcher/toolbar/grid, cards ~30% shorter. */
+.mode-switch { margin-bottom: 0.85rem; }
+.grid-toolbar { padding: 9px 11px 11px; margin-bottom: 0.9rem; }
+.topic-grid { gap: 10px; }
+.topic-card { gap: 4px; padding: 0.6rem 1rem 0.55rem; }
+.topic-name { line-height: 1.28; }
+.level-heading { font-size: 17px; margin: 1.4rem 0 0.7rem; padding-top: 1.1rem; }
+.topics-section { padding-top: 1.4rem; }
+/* Playlists panel mascot (meditator) + animated-dots caption. */
+.mk-flu { text-align: center; margin: 0.2rem 0 1.2rem; }
+.mk-flu img { width: 150px; max-width: 42%; height: auto; display: block; margin: 0 auto 0.4rem; }
+.mk-flu-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
+.mk-dots { display: inline-block; width: 1.1em; text-align: left; }
+.mk-dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden;
+  vertical-align: bottom; animation: mk-dots 1.5s steps(3, start) infinite; }
+@keyframes mk-dots { from { width: 0 } to { width: 1.05em } }
+/* Hero: logo +50%, and the stack pulled together so the hero doesn't get taller —
+   smaller tagline, gaps under the Thai script / tagline / rule reclaimed. */
+.hero-logo { width: 132px; margin-bottom: 0.25rem; }
+.hero-thai { margin-bottom: 0.15rem; }
+.hero-tagline { font-size: 10.5px; margin-bottom: 0.55rem; }
+.hero-rule { margin: 0 auto 0.8rem; }
+.hero-inner { padding: 0.5rem 2rem 0; }
+@media (max-width: 600px) {
+  .hero-inner { padding: 1.1rem 1.25rem 0; }
+  .hero-logo { width: 137px; margin-bottom: 0.3rem; }
+  .hero-tagline { font-size: 10px; }
+}
+@media (max-width: 380px) { .hero-logo { width: 116px; } }
 </style>
 <script>
 /* Mockup: the dynamic grid keeps rendering (filters + search work), but its coming-soon block
@@ -1748,8 +1805,12 @@ renderGrid();
           try {
             var d = frame.contentDocument;
             var s = d.createElement('style');
-            s.textContent = '#site-nav-root{display:none!important}';
+            // No nav, no inner mode toggle (inception); eyebrow becomes a subheading under the h1.
+            s.textContent = '#site-nav-root,.mode-toggle-wrap{display:none!important}' +
+              '.read-eyebrow{margin:6px 0 16px}';
             d.head.appendChild(s);
+            var eb = d.querySelector('.read-eyebrow'), t = d.querySelector('.read-title');
+            if (eb && t) t.insertAdjacentElement('afterend', eb);
           } catch (_) {}
           sizeFrame();
         });
