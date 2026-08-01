@@ -116,7 +116,7 @@
     .site-nav { background: var(--surface); border-bottom: 0.5px solid var(--border);
       padding: 0 2rem; height: 54px; display: flex; align-items: center;
       justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo { display: flex; align-items: center; gap: 4px; text-decoration: none; }   /* tight to the swirl — one brand mark, not strangers (owner, 2026-08-02) */
     .nav-logo img { height: 31px; width: auto; display: block; }   /* swirl at 70% of the old 44px slot (owner, 2026-08-02) */
     .nav-wordmark { font-family: var(--font-thai); font-size: 20px; font-weight: 600;
       color: #1C124E; letter-spacing: 0.02em; }
