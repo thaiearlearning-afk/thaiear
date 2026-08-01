@@ -1060,6 +1060,29 @@
     try { return !!JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}')[key.slice(3)]; }
     catch (_) { return false; }
   }
+  /* r79 — twin of playlists.html's dlOwnedNeeded(). Does OUR ref cover every prefix this unit
+     needs, with the files actually present, and does it cover any at all?
+     ⚠ A topic page is unaffected by design: its ref is 'topic', and a classic download writes NO
+     refs field, which is read as an implicit topic claim (§B2d) — so `mine` is true exactly as
+     before. Only PLMODE consults this. */
+  function dynDlOwnedNeeded() {
+    var by = dynDlGroups(), m = getManifest(), ref = dynDlRef();
+    var all = true, some = false, any = false, pfx, i;
+    for (pfx in by) {
+      any = true;
+      var e = m[pfx];
+      var mine = !!(e && (e.refs || ['topic']).indexOf(ref) >= 0);
+      if (mine) {
+        var seen = {};
+        (e.files || []).forEach(function (f) { seen[f] = true; });
+        for (i = 0; i < by[pfx].files.length; i++) {
+          if (!seen[by[pfx].files[i]]) { mine = false; break; }
+        }
+      }
+      if (mine) some = true; else all = false;
+    }
+    return { all: any && all, some: some };
+  }
   function dynDlFile(cache, pfx, tier, file) {
     var gated = (tier === 'member' || tier === 'premium');
     function attempt(tryNo) {
@@ -1455,14 +1478,29 @@
       // No stale/refresh states here: a dyn session is keyed on its own content and settings,
       // so changed text or a changed setting rebuilds by itself. Downloaded means "the clips
       // are all here", which is the only claim worth making.
-      if (!dynDlHasAll()) { setOfflineState(dynDlWasDownloaded() ? 'update' : 'idle'); return; }
       /* ⚠ PLAYLIST: "the clips are here" is NOT "this playlist is downloaded" (r66, owner-specified).
          A playlist whose clips are present only because a TOPIC (or another playlist) holds them
          works today and can vanish the moment that other download is removed. Offering no download
          button there left the user no way to make it durable — and no way to know they needed to.
          So without its own claim we show the ordinary "Download for offline" offer, even though it
          would play right now. A topic is unaffected: a topic download IS its own claim. */
-      if (PLMODE && !dynDlWasDownloaded()) { setOfflineState('idle'); return; }
+      /* r79: OWNERSHIP, not the download RECORD. `dynDlWasDownloaded()` only asks whether a
+         `thaiear_offline_pl` entry exists, so a playlist carrying a STALE record — one claiming a
+         prefix since released — passed this test and the bar said "✓ Downloaded" over clips it did
+         not own. Same defect the row caption had (playlists.html dlState, r79); fixing one surface
+         and not the other is §B8's lesson 3, which has now bitten three times. `some` (partial
+         ownership) is the honest "update available": downloaded once, extended since. */
+      /* ⚠ ORDER MATTERS: the PLAYLIST verdict is decided ENTIRELY by ownership, so it runs BEFORE
+         the content check. Leaving `!dynDlHasAll() → wasDownloaded ? 'update' : 'idle'` ahead of it
+         would keep reading a STALE RECORD as "downloaded once" and label a playlist that owns
+         nothing "update available" — the very label the owner could not account for. Topic pages
+         keep the original content-only path below, unchanged. */
+      if (PLMODE) {
+        var own = dynDlOwnedNeeded();
+        if (!own.all) { setOfflineState(own.some ? 'update' : 'idle'); return; }
+      } else if (!dynDlHasAll()) {
+        setOfflineState('idle'); return;   // topic: dynDlWasDownloaded() is false when !PLMODE anyway
+      }
       cachePage();
       setOfflineState('downloaded');
       dynPaintOfflineSize();
@@ -2349,7 +2387,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r78';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r79';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

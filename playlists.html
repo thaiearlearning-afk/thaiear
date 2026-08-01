@@ -152,7 +152,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r78</div>
+  <div class="eyebrow">Owner test build · r79</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -271,7 +271,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r78</div>
+  <div class="eyebrow">Playlist · r79</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -424,6 +424,30 @@
     }
     return true;
   }
+  /* r79 — OWNERSHIP, per prefix. `{all, some}`: does OUR `pl-<id>` ref cover every prefix this
+     playlist needs (with the files actually present), and does it cover any at all?
+     This is the question `dlHasAll()` cannot answer — that one asks only whether the bytes exist,
+     which is true when a TOPIC download happens to hold them, and that is precisely the borrowed
+     state the four-state model exists to distinguish. A prefix counts as ours only if its manifest
+     entry carries our ref AND every file we need under it is present: a ref alone could survive a
+     partial release. */
+  function dlOwnedNeeded(p) {
+    var by = dlGroup(p), m = dlManifest(), ref = 'pl-' + p.id;
+    var all = true, some = false, any = false, pfx, i;
+    for (pfx in by) {
+      any = true;
+      var e = m[pfx], mine = !!(e && e.refs && e.refs.indexOf(ref) >= 0);
+      if (mine) {
+        var seen = {};
+        (e.files || []).forEach(function (f) { seen[f] = true; });
+        for (i = 0; i < by[pfx].files.length; i++) {
+          if (!seen[by[pfx].files[i]]) { mine = false; break; }
+        }
+      }
+      if (mine) some = true; else all = false;
+    }
+    return { all: any && all, some: some };
+  }
   /* FOUR states, because "its clips happen to be here" and "this playlist is downloaded" are not
      the same promise and users should not have to reason about refcounting to tell them apart
      (owner, 2026-07-31):
@@ -448,8 +472,30 @@
          could neither play nor delete. Owner's rule: removal is available at all times.
        Note dlHasAll() is deliberately NOT called on this branch — the empty group would lie. */
     if (!plOpenItems(p).length) return rec ? 'downloaded' : 'none';
-    if (dlHasAll(p)) return rec ? 'downloaded' : 'available';
-    return rec ? 'update' : 'none';
+    /* r79 — "downloaded" NOW MEANS OWNERSHIP, NOT A RECORD PLUS BORROWED BYTES.
+       `rec` is only "this playlist has SOME download record" and dlHasAll() is a pure content
+       question — are the files in the manifest, no matter who claims them. Together they promised
+       durability the playlist did not have: owner, 2026-08-01, playlist "A" carried a record
+       claiming CommSurvival_BEG (a prefix by then deleted) while its 3 actual sentences were
+       ShoppingAndMoney_BEG, held only by that TOPIC's download (`refs=["topic"]`). It read
+       `· downloaded`; deleting the topic's download left it playing NOT ONE sentence offline.
+       The owner's own words: *"when showing 'downloaded' does reconstruct and play fully — but
+       really that's because it is 'available offline'."* Exactly so.
+       ⚠ NOT a regression from r75–r78: this line is byte-identical since r66 (c9247af). What was
+       new was the precondition — every earlier test used a FRESH playlist, which has no record and
+       so took the correct 'available' branch. The branch that lies needs a record.
+       ⚠ AND "UPDATE AVAILABLE" MEANS PARTIAL OWNERSHIP, NOT "HAS A RECORD" — owner, same day:
+       *"no it is a labelling bug! because this playlist never was downloaded! … But why it is
+       showing 'update available' label at any point idk why."* Correct. `update` is meant to say
+       *you downloaded this and then it grew* (E-D1). A playlist owning NONE of what it needs was
+       never downloaded in its current form, so it is `available` when the bytes are borrowed and
+       `none` when they are not — never `update`. Keying `update` off `rec` produced exactly the
+       label the owner could not account for. */
+    var own = dlOwnedNeeded(p);                       // {all, some} — our ref + files, per prefix
+    if (own.all) return 'downloaded';                 // durable: our own claim covers everything
+    if (own.some) return 'update';                    // genuinely downloaded, then extended
+    if (dlHasAll(p)) return 'available';              // owns none of it; the bytes are borrowed
+    return 'none';
   }
   function dlStatus(msg, err) {
     var el = document.getElementById('dl-status'); if (!el) return;
