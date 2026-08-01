@@ -120,7 +120,14 @@
 .pl-box { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 0.85rem; overflow: hidden; }
 .pl-box-head { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: none; border: none; padding: 1rem 1.15rem; cursor: pointer; font-family: var(--font-ui); }
 .pl-box-name { flex: 1; font-size: 15px; font-weight: 600; color: var(--text-primary); }
-.pl-box-meta { font-size: 12.5px; color: var(--text-tertiary); }
+/* r85 — the state caption sits on its OWN LINE. Owner, 2026-08-01: the caption "jumps left" when
+   it reads `· update available`. Cause: this row is [name flex:1][meta][control], so meta is
+   anchored RIGHT and a longer caption grows leftward, shrinking the name — the position moved with
+   the string length. Giving it a full-width basis drops it under the name, where it cannot compete
+   for horizontal space and never moves. Also serves "the download interface looks like a
+   centrepiece; it is just a function." */
+.pl-box-head { flex-wrap: wrap; }
+.pl-box-meta { font-size: 12.5px; color: var(--text-tertiary); flex: 1 0 100%; order: 3; margin-top: 2px; }
 /* .pl-box-chev removed r31 — the whole .pl-box-head is a button, so the chevron was clutter that
    read as a sibling of the download circles/ticks. Its rules went with it. */
 .pl-box-body { display: none; padding: 0 1.15rem 1.15rem; }
