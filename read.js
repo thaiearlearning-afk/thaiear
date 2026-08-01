@@ -1514,7 +1514,10 @@
     else if (sec.kind === 'tones') renderTones(root);
     else if (sec.kind === 'quiz') renderQuiz(root);
     else if (sec.kind === 'results') renderResults(root);
-    markTerms(document.body);
+    /* No glossary markers on the RESULTS page (owner, 2026-08-01). The ⓘ terms exist to teach a
+       reader who meets a technical word mid-lesson; the results page is a score summary, not a
+       teaching surface, so "Aspirated" there should read as a plain test name. */
+    if (sec.kind !== 'results') markTerms(document.body);
     prefetch(sectionAudioIds(key));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
