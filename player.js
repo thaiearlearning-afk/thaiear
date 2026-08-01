@@ -805,12 +805,22 @@
       Object.keys(by).forEach(function (pfx) {
         var e = m[pfx]; if (!e) return;
         var cur = map[pfx];
+        /* ⚠ r84 — THE FLAG PERTURBS THE PUBLISHED STAMP, IT DOES NOT SHORT-CIRCUIT THE CHECK.
+           Owner's challenge, 2026-08-01: is this an actual TEST or a dumb UI switcher? It was the
+           latter — `if (force) stale = true` sat AFTER this loop and skipped every real question.
+           Now the flag only changes the value we pretend R2 published, and the production path runs
+           in full: the map must load, a manifest entry must exist, the `av` baseline must have been
+           recorded at download time, and the genuine `e.av !== cur` comparison decides.
+           The tell that it is real: a topic that is NOT downloaded, or downloaded before any stamp
+           existed, correctly stays quiet under the flag — a dumb switch would light those up. */
+        if (force && cur != null) cur = String(cur) + '#avtest';
         if (cur == null) return;                                  // nothing published for it
         if (e.av == null) { e.av = cur; adopted = true; return; }  // baseline, don't nag
         if (e.av !== cur) stale = true;
       });
-      if (adopted) setManifest(m);
-      if (force) stale = true;
+      /* ⚠ Do NOT persist an adopted baseline while the flag is on — it would write the perturbed
+         value into the manifest and the topic would stay "stale" after the flag came off. */
+      if (adopted && !force) setManifest(m);
       if (!stale) return;
       var bar = $('offline-bar'); if (!bar) return;
       bar.innerHTML = '<span class="offline-status">⟳ Download audio update?</span>' +
@@ -2404,7 +2414,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r83';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r84';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

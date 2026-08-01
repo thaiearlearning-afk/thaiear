@@ -237,12 +237,23 @@
   /* Does this prefix hold every clip but a SUPERSEDED version of them? Deliberately conservative:
      no map, no stamp published, or no baseline recorded → NOT stale, because nagging on missing
      information is worse than a late prompt. */
+  /* ⚠ r84 — THE FLAG PERTURBS THE PUBLISHED STAMP; IT DOES NOT SHORT-CIRCUIT THE CHECK.
+     Owner, 2026-08-01: *"check that the Sim is actually stimulating the code a new audio file or
+     extra sentence would rather than just being a dumb UI switcher e.g. is it an actual TEST."*
+     It was not: r83 returned true before reading the manifest at all, so it proved only that the
+     ring renders. Now the flag changes ONE input — the value we pretend audio-versions.json
+     published — and everything downstream is the production path: the map still has to load, the
+     manifest entry still has to exist, the `av` baseline still has to have been recorded at
+     download time, and the real `e.av !== cur` comparison still has to fire.
+     Consequence worth knowing, and it is the proof the test is real: a topic that is NOT downloaded,
+     or one downloaded before any stamp existed, correctly does NOT go stale under the flag. A dumb
+     switch would have lit those up too. */
   function avStale(pfx) {
-    if (avForce()) return true;
-    if (!AV) return false;
+    if (!AV && !avForce()) return false;
     var e = manifest()[pfx];
-    if (!e || e.av == null) return false;
-    var cur = AV[pfx];
+    if (!e || e.av == null) return false;              // no baseline → never nag
+    var cur = (AV || {})[pfx];
+    if (avForce()) cur = String(cur == null ? '' : cur) + '#avtest';   // as if R2 had re-rendered
     return cur != null && e.av !== cur;
   }
   function isDownloaded(p, n) {
@@ -350,7 +361,11 @@
         '<div class="unit-main">' +
           '<a class="unit-name" href="' + u.page + '?' + K + '">' + esc(u.name) +
             '<span class="tier-pill tier-' + u.tier + '">' + tierLabel(u.tier) + '</span></a>' +
-          '<div class="unit-meta">' + u.n + ' sentences · ' + (dl ? 'downloaded' : 'not downloaded') + '</div>' +
+          /* r84: a unit needing an update must not still read "downloaded" — the ring said one thing
+             and the caption another (owner, 2026-08-01). The caption is the half people actually
+             read. */
+          '<div class="unit-meta">' + u.n + ' sentences · ' +
+            (upd ? 'update available' : dl ? 'downloaded' : 'not downloaded') + '</div>' +
         '</div>' + sel;
       root.appendChild(el);
     });
