@@ -1065,23 +1065,22 @@
      ⚠ A topic page is unaffected by design: its ref is 'topic', and a classic download writes NO
      refs field, which is read as an implicit topic claim (§B2d) — so `mine` is true exactly as
      before. Only PLMODE consults this. */
+  /* ⚠ r81 — COUNTED PER FILE, NOT PER PREFIX. See the twin in playlists.html for the full note:
+     treating a prefix as a unit made partial ownership invisible for any unit drawn from a SINGLE
+     topic (the common case), so the bar fell through to "Download for offline" and never offered
+     the update. 12 of 14 files owned must read as `update`, not as nothing. */
   function dynDlOwnedNeeded() {
     var by = dynDlGroups(), m = getManifest(), ref = dynDlRef();
-    var all = true, some = false, any = false, pfx, i;
+    var need = 0, owned = 0, pfx, i;
     for (pfx in by) {
-      any = true;
       var e = m[pfx];
-      var mine = !!(e && (e.refs || ['topic']).indexOf(ref) >= 0);
-      if (mine) {
-        var seen = {};
-        (e.files || []).forEach(function (f) { seen[f] = true; });
-        for (i = 0; i < by[pfx].files.length; i++) {
-          if (!seen[by[pfx].files[i]]) { mine = false; break; }
-        }
-      }
-      if (mine) some = true; else all = false;
+      var ours = !!(e && (e.refs || ['topic']).indexOf(ref) >= 0);
+      var seen = {};
+      if (ours) (e.files || []).forEach(function (f) { seen[f] = true; });
+      var files = by[pfx].files;
+      for (i = 0; i < files.length; i++) { need++; if (seen[files[i]]) owned++; }
     }
-    return { all: any && all, some: some };
+    return { all: need > 0 && owned === need, some: owned > 0 };
   }
   function dynDlFile(cache, pfx, tier, file) {
     var gated = (tier === 'member' || tier === 'premium');
@@ -2387,7 +2386,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r80';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r81';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

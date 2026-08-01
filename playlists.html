@@ -152,7 +152,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r80</div>
+  <div class="eyebrow">Owner test build · r81</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -271,7 +271,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r80</div>
+  <div class="eyebrow">Playlist · r81</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -431,22 +431,28 @@
      state the four-state model exists to distinguish. A prefix counts as ours only if its manifest
      entry carries our ref AND every file we need under it is present: a ref alone could survive a
      partial release. */
+  /* ⚠ r81 — COUNTED PER FILE, NOT PER PREFIX. r80 asked "is EVERY needed file under this prefix
+     ours?" and treated the prefix as a unit. For a playlist drawn from a SINGLE topic there is only
+     one prefix, so partial ownership became invisible: one sentence added → that prefix fails the
+     all-files test → `some` AND `all` both false → dlHasAll false too → state 'none' → the row
+     showed NO CAPTION AT ALL, and never offered the update that would fix it.
+     Owner's dump, 2026-08-01, is the whole story in three numbers: ColoursAndDescriptions2_BEG
+     `refs=["pl-bbf1e198"] files=12`, playlist `items=7` — 14 files needed, 12 owned, one prefix.
+     Counting files makes that 12/14 → some=true, all=false → `· update available`, which is the
+     truth. The release logic has been file-level since r34/r75; the ownership question had drifted
+     a level coarser than the thing it describes. */
   function dlOwnedNeeded(p) {
     var by = dlGroup(p), m = dlManifest(), ref = 'pl-' + p.id;
-    var all = true, some = false, any = false, pfx, i;
+    var need = 0, owned = 0, pfx, i;
     for (pfx in by) {
-      any = true;
-      var e = m[pfx], mine = !!(e && e.refs && e.refs.indexOf(ref) >= 0);
-      if (mine) {
-        var seen = {};
-        (e.files || []).forEach(function (f) { seen[f] = true; });
-        for (i = 0; i < by[pfx].files.length; i++) {
-          if (!seen[by[pfx].files[i]]) { mine = false; break; }
-        }
-      }
-      if (mine) some = true; else all = false;
+      var e = m[pfx];
+      var ours = !!(e && e.refs && e.refs.indexOf(ref) >= 0);
+      var seen = {};
+      if (ours) (e.files || []).forEach(function (f) { seen[f] = true; });
+      var files = by[pfx].files;
+      for (i = 0; i < files.length; i++) { need++; if (seen[files[i]]) owned++; }
     }
-    return { all: any && all, some: some };
+    return { all: need > 0 && owned === need, some: owned > 0 };
   }
   /* FOUR states, because "its clips happen to be here" and "this playlist is downloaded" are not
      the same promise and users should not have to reason about refcounting to tell them apart
