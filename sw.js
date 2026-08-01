@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v183';   // v183 / r104: index-mock round 2 (hero band intro, gold switcher, compaction, bigger logo, read-panel dechrome); join.html final copy; yak↔meditator swap on progress/playlists (2026-08-01)
+const VERSION = 'v184';   // v184 / r105: nav logo → swirl (site-wide); index-mock round 3 (intro A/B, Space Grotesk, bigger switcher, one compact dl bar, jump-to-lessons); read.html ?embed=1 (2026-08-02)
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
@@ -133,7 +133,7 @@ const PRECACHE = [
   // PWA install vehicle: manifest + its icons, so "Add to Home Screen" works and the
   // installed app has its launch icon available offline.
   '/manifest.json', '/icon-512.png', '/icon-512-maskable.png',
-  '/logo.png', '/logoshort.png', '/favicon.png', '/favicon.ico',
+  '/logo.png', '/nav-swirl.png', '/favicon.png', '/favicon.ico',
   '/favicon-16.png', '/favicon-32.png', '/favicon-192.png', '/apple-touch-icon.png',
   '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png', '/hornbill.png', '/yak.png',
   // Self-hosted fonts (replaced Google Fonts 2026-06-24): precache the full used set so a

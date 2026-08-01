@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <script>(function(){var ok=/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);try{ok=ok||sessionStorage.getItem('te_test_ok')==='1';}catch(_){}if(!ok&&/[?&]k=cu38961y(&|$)/.test(location.search))ok=true;if(!ok)ok=(prompt('Test page password:')==='cu38961y');if(ok){try{sessionStorage.setItem('te_test_ok','1');}catch(_){}}else location.replace('index.html');})();</script>
+<!-- Mockup-only: candidate ed-tech display font for the intro (rollout would self-host via fetch_fonts.js) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
 <title>ThaiEar — Index mockup (cosmetics)</title>
 <meta name="description" content="A free Thai language listening platform. 43 topics, 1,500+ sentences, native-speed audio. Learn Thai by listening.">
 <link rel="canonical" href="https://thaiear.com/">
@@ -736,6 +740,7 @@
 
 <!-- ── INTRO ── -->
 <section class="page-intro">
+  <div class="intro-ab"><a data-iv="a" class="on">A · white box</a><a data-iv="b">B · gold on purple</a></div>
   <p class="intro-lead">A Thai listening platform built around <strong>complete sentences</strong> — not vocabulary lists. Hear native-speed audio at home or on the go to build <strong>listening comprehension</strong> and <strong>fluency</strong>.</p>
 </section>
 
@@ -940,6 +945,16 @@
     <div class="mk-add-card">
       <a class="mk-add" href="join.html?feature=playlists">＋ Add playlist</a>
       <span class="mk-hint">Add sentences to your playlists from topic pages</span>
+    </div>
+    <div class="dl-batch-bar mock-dlbar">
+      <div class="dl-batch-btns">
+        <button class="dl-batch-btn" type="button">Download Playlist(s)</button>
+        <button class="dl-batch-btn dl-clear-btn" type="button">Remove Selected Downloads</button>
+      </div>
+      <div class="dl-batch-btns dl-batch-btns-2">
+        <button class="dl-batch-btn dl-removeall-btn" type="button">Remove All Downloads</button>
+      </div>
+      <span class="dl-batch-hint">Tap a playlist's circle to download, or a tick to remove, then pick an action.</span>
     </div>
     <a class="mk-box" href="join.html?feature=playlists">
       <span class="mk-box-name">Songs I like</span><span class="mk-box-meta">8 sentences</span>
@@ -1769,6 +1784,30 @@ updateBatchBar();          // show the batch-download bar in the app (hidden on 
   .hero-tagline { font-size: 10px; }
 }
 @media (max-width: 380px) { .hero-logo { width: 116px; } }
+/* ══ ROUND 3 (owner, 2026-08-02) ══════════════════════════════════════════════ */
+/* Tagline: 10% smaller, a couple of px lower. */
+.hero-tagline { font-size: 9.5px; margin: 2px 0 0.55rem; }
+@media (max-width: 600px) { .hero-tagline { font-size: 9px; } }
+/* Intro: tighter lines + Space Grotesk; A = white box (default), B = gold on purple. */
+.intro-lead { font-family: 'Space Grotesk', var(--font-ui); font-size: 13.5px; line-height: 1.5;
+  padding: 0.75rem 1.15rem; }
+.page-intro { padding: 1.05rem 1.5rem 1.2rem; }
+.intro-ab { max-width: 640px; margin: 0 auto 8px; text-align: right; font-size: 11px; letter-spacing: 0.04em; }
+.intro-ab a { color: rgba(255,255,255,0.55); cursor: pointer; text-decoration: none; margin-left: 10px; }
+.intro-ab a.on { color: #F0CC5C; font-weight: 600; }
+body.intro-b .intro-lead { background: transparent; border-radius: 0; padding: 0.15rem 0;
+  color: #F0CC5C; text-shadow: 0 0 1px rgba(29,19,77,1), 0 0 3px rgba(29,19,77,0.8), 0 1px 12px rgba(240,204,92,0.20); }
+body.intro-b .intro-lead strong { color: #F0CC5C; font-weight: 600; }
+/* Switcher: bigger — these buttons should NOT be ignored. */
+.ms-btn { font-size: 14px; padding: 12px 6px; }
+.ms-btn svg { width: 17px; height: 17px; }
+.ms-ico { font-size: 17px; }
+@media (max-width: 480px) { .ms-btn { font-size: 13px; padding: 11px 3px; gap: 5px; } }
+/* ONE download bar only — the old app bar was resurrected by the webdl flag on the owner's PWA. */
+#dl-batch-bar { display: none !important; }
+/* Main download/remove buttons at half height, font sized to a single line. */
+.mock-dlbar .dl-batch-btn { padding: 5px 12px; font-size: 13px; }
+.mock-dlbar .dl-removeall-btn { padding: 4px 10px; font-size: 12px; }
 </style>
 <script>
 /* Mockup: the dynamic grid keeps rendering (filters + search work), but its coming-soon block
@@ -1800,17 +1839,42 @@ renderGrid();
     });
     if (which === 'read') {
       if (!frame.src) {
-        frame.src = 'read.html';
+        frame.src = 'read.html?embed=1';   // embed mode: read.html hides its own nav + mode toggle at source
         frame.addEventListener('load', function () {
           try {
             var d = frame.contentDocument;
             var s = d.createElement('style');
-            // No nav, no inner mode toggle (inception); eyebrow becomes a subheading under the h1.
+            // Belt & braces on the de-chrome; eyebrow becomes a subheading under the h1;
+            // jump control = eyebrow styling + sequential "go faster" chevrons (accent, fast cycle).
             s.textContent = '#site-nav-root,.mode-toggle-wrap{display:none!important}' +
-              '.read-eyebrow{margin:6px 0 16px}';
+              '.read-eyebrow{margin:6px 0 16px}' +
+              '.te-jump{display:block;background:none;border:0;cursor:pointer;padding:0;margin:0 0 10px;text-align:left}' +
+              '.te-jump .jch{display:inline-block;opacity:.22;animation:te-jl .75s linear infinite}' +
+              '.te-jump .jch.j2{animation-delay:.25s}' +
+              '.te-jump .jch.j3{animation-delay:.5s}' +
+              '@keyframes te-jl{0%{opacity:.22}15%{opacity:1}45%,100%{opacity:.22}}';
             d.head.appendChild(s);
             var eb = d.querySelector('.read-eyebrow'), t = d.querySelector('.read-title');
             if (eb && t) t.insertAdjacentElement('afterend', eb);
+            if (t && !d.querySelector('.te-jump')) {
+              var j = d.createElement('button');
+              j.type = 'button';
+              j.className = 'read-eyebrow te-jump';
+              var tri = '<span class="jch j1">&gt;</span><span class="jch j2">&gt;</span><span class="jch j3">&gt;</span>';
+              j.innerHTML = tri + ' Jump to lessons ' + tri;
+              t.insertAdjacentElement('beforebegin', j);
+              j.addEventListener('click', function () {
+                // Scroll the OUTER page (the frame is full-height) to "The learning path…",
+                // with breathing room so it works across phone screen shapes.
+                var lp = Array.prototype.filter.call(d.querySelectorAll('.section-title'), function (el) {
+                  return /learning path/i.test(el.textContent);
+                })[0];
+                var target = lp ? (lp.closest('.section-header') || lp) : null;
+                if (!target) return;
+                var y = window.scrollY + frame.getBoundingClientRect().top + target.getBoundingClientRect().top - 72;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+              });
+            }
           } catch (_) {}
           sizeFrame();
         });
@@ -1820,6 +1884,13 @@ renderGrid();
   }
   document.querySelectorAll('.ms-btn').forEach(function (b) {
     b.addEventListener('click', function () { show(b.getAttribute('data-panel')); });
+  });
+  // Intro style A/B toggle (mockup-only).
+  document.querySelectorAll('.intro-ab a').forEach(function (a) {
+    a.addEventListener('click', function () {
+      document.body.classList.toggle('intro-b', a.getAttribute('data-iv') === 'b');
+      document.querySelectorAll('.intro-ab a').forEach(function (x) { x.classList.toggle('on', x === a); });
+    });
   });
 })();
 </script>
