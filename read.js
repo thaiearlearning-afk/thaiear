@@ -166,9 +166,35 @@
       });
     }).then(function () {
       if (failed) throw failed;
-      localStorage.setItem(DL_KEY, JSON.stringify({ ver: AUDIO_VER, count: ids.length, ts: Date.now() }));
+      /* r92: record the SIZE too, so the card can tell the user what the download costs them —
+         the topic pages have always shown their MB and this one never did (owner, 2026-08-01).
+         Measured from the cache we just filled rather than guessed from a constant, and stored so
+         the card never has to re-measure 200+ clips on every render. */
+      return dlMeasure(ids).then(function (bytes) {
+        localStorage.setItem(DL_KEY, JSON.stringify({
+          ver: AUDIO_VER, count: ids.length, ts: Date.now(), bytes: bytes
+        }));
+      });
     });
   }
+  /* r92 — total bytes of the course's cached clips. Reads each stored response and sums its blob
+     size; a clip that cannot be read is skipped rather than failing the whole measurement, so a
+     partial answer is still better than none. Called once at download time; the result is cached in
+     DL_KEY. Returns 0 if Cache Storage is unavailable, and the caller then shows no figure. */
+  function dlMeasure(ids) {
+    if (!cachesOk()) return Promise.resolve(0);
+    return caches.open(DL_CACHE).then(function (cache) {
+      return Promise.all(ids.map(function (id) {
+        return cache.match(clipUrl(id))
+          .then(function (hit) { return hit ? hit.blob() : null; })
+          .then(function (b) { return b ? b.size : 0; })
+          .catch(function () { return 0; });
+      })).then(function (sizes) {
+        return sizes.reduce(function (a, b) { return a + b; }, 0);
+      });
+    }).catch(function () { return 0; });
+  }
+  function dlFmtMb(b) { return (b / 1048576).toFixed(1) + ' MB'; }
   function dlRemove() {
     localStorage.removeItem(DL_KEY);
     if (!cachesOk()) return Promise.resolve();
@@ -240,7 +266,27 @@
       } else if (state === 'busy') {
         btn.textContent = 'Saving…';
       } else if (state === 'done') {
-        desc.textContent = '✓ Available offline — every step, test and audio clip.';
+        /* r92: show the size alongside, matching the topic pages. Older downloads predate the
+           stored figure, so the sentence simply omits it rather than showing a wrong or zero MB. */
+        var dlm = dlManifest();
+        var mb = (dlm && typeof dlm.bytes === 'number' && dlm.bytes > 0) ? ' (' + dlFmtMb(dlm.bytes) + ')' : '';
+        desc.textContent = '✓ Available offline' + mb + ' — every step, test and audio clip.';
+        /* r92 — BACKFILL FOR DOWNLOADS THAT PREDATE THE FIGURE. Everyone who already had the course
+           saved has a DL_KEY with no `bytes`, so they would see no size at all and reasonably
+           conclude the feature was broken. Measure once, in the background, then write it into the
+           record and repaint — so it appears by itself and never has to be measured again.
+           Guarded by `dlm` so it cannot run when nothing is downloaded, and it only ever ADDS a
+           field: a failed or zero measurement leaves the record untouched rather than storing a
+           wrong figure. */
+        if (dlm && typeof dlm.bytes !== 'number') {
+          dlMeasure(allCourseAudioIds()).then(function (bytes) {
+            if (!bytes) return;
+            var cur = dlManifest(); if (!cur) return;
+            cur.bytes = bytes;
+            try { localStorage.setItem(DL_KEY, JSON.stringify(cur)); } catch (_) {}
+            if (desc.isConnected) desc.textContent = '✓ Available offline (' + dlFmtMb(bytes) + ') — every step, test and audio clip.';
+          }).catch(function () {});
+        }
         btn.textContent = 'Remove';
       } else if (state === 'update') {
         desc.textContent = 'The course audio has been updated since you saved it — refresh your download.';
