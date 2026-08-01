@@ -158,6 +158,11 @@
   .dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom;
     animation: dots 1.2s steps(3,start) infinite; }
   @keyframes dots { from { width: 0 } to { width: 1.05em } }
+  /* image + caption block, mirroring guide.html's .fluency-* (khwai) pattern */
+  .fluency-block { text-align: center; margin: 1.25rem 0 1.5rem; }
+  .fluency-img { width: 195px; max-width: 55%; height: auto; display: block; margin: 0 auto 0.4rem; }
+  .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
+  .fluency-text .dots::after { animation-duration: 1.5s; }   /* match the other pages' cadence */
   /* r100 cosmetics view (?cos=1) — mockup-only classes, unused on the real page */
   .cos-switch { font-size: 12px; color: var(--text-tertiary); margin-bottom: 10px; }
   .cos-switch a { color: var(--accent); text-decoration: none; }
@@ -169,7 +174,7 @@
     border: 0.5px solid var(--accent); border-radius: var(--radius-md); padding: 9px 12px; line-height: 1.45; }
   .cos-add-card { display: flex; flex-direction: column; align-items: center; gap: 8px;
     border: 1.5px dashed var(--accent); border-radius: var(--radius-lg); background: var(--accent-light);
-    padding: 14px 12px; margin-bottom: 1.25rem; }
+    padding: 14px 12px; margin: 0 1px 1.25rem; }   /* 1px inset each side — the dark dashed border reads wider than the white boxes below */
   .cos-add-card .pl-add { margin-bottom: 0; }
   .cos-hint-line { font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--accent);
     text-align: center; line-height: 1.45; }
@@ -186,6 +191,13 @@
   <div class="eyebrow" data-build="Owner test build">Owner test build</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
+  <!-- image + animated-dots caption, same pattern as about/guide (khwai/sakyantelephant):
+       CSS width 195px + max-width:55% guards the size on desktop vs mobile; the width/height
+       attributes reserve the box pre-load (CLS). -->
+  <div class="fluency-block">
+    <img class="fluency-img" src="yak.png" alt="Thai guardian yak" width="200" height="260">
+    <div class="fluency-text">Eerily effective<span class="dots" aria-hidden="true"></span></div>
+  </div>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
   <div class="dl-batch-bar" id="dl-batch-bar" hidden>
     <div class="dl-batch-btns">
