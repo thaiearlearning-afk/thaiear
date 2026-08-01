@@ -166,7 +166,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r92</div>
+  <div class="eyebrow">Owner test build · r93</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -297,7 +297,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r92</div>
+  <div class="eyebrow">Playlist · r93</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -626,7 +626,46 @@
     root.classList.toggle('mode-download', picked.length > 0);
     root.classList.remove('mode-clear');   // r85: the two modes are gone; nothing dims anything now
   }
+  /* ── r93: SWIPE / BACK-GESTURE LEAVE GUARD ──────────────────────────────────────────────────
+     ⚠ THE GAP THE OWNER FOUND, and it explains what looked like "the warning works inconsistently":
+     the leave guard above intercepts a CLICK on `a[href]`. A swipe-back (or the Android gesture /
+     hardware back) is a HISTORY navigation and produces no click at all, so the guard never saw it —
+     and `beforeunload` does not reliably fire for an in-app history back in a WebView either. So it
+     was never inconsistent: buttons were guarded, gestures were not.
+     Owner: *"the two cases where they don't [work] is if i swipe left or right... i think claude
+     maybe didn't build an overlay for these swipe actions."* Correct.
+
+     HOW IT WORKS. While a download runs we push one same-URL SENTINEL entry. A back gesture then
+     pops the sentinel instead of leaving the page; we immediately re-push it (so we stay put) and
+     answer with this page's own modal. Choosing "Leave anyway" goes back TWO entries — the sentinel
+     and the real one — which is the navigation the user originally asked for.
+     ⚠ Same-URL pushState entries are SAME-DOCUMENT, so popping one fires popstate WITHOUT reloading
+     the page — which is what makes this safe to do mid-download. When the download ends we pop our
+     own sentinel back off, so the back button is never left needing two taps. */
+  (function () {
+    var armed = false, skip = false;
+    function push() { try { history.pushState({ teDlGuard: 1 }, '', location.href); } catch (_) {} }
+    window.__teArmLeaveGuard = function () { if (armed) return; armed = true; push(); };
+    window.__teDisarmLeaveGuard = function () {
+      if (!armed) return;
+      armed = false; skip = true;            // our own pop, not the user's - do not prompt on it
+      try { history.back(); } catch (_) { skip = false; }
+    };
+    window.addEventListener('popstate', function () {
+      if (skip) { skip = false; return; }
+      if (!armed) return;
+      push();                                 // cancel the gesture by returning to the sentinel
+      showModal({
+        title: 'Leave this page?',
+        body: 'A download is in progress. If you leave now it won’t finish — you can start it again any time.',
+        confirmText: 'Leave anyway', cancelText: 'Keep downloading', danger: true,
+        onConfirm: function () { armed = false; skip = true; try { history.go(-2); } catch (_) {} }
+      });
+    });
+  })();
   function dlSetBusy(b) {
+    /* r93: the swipe guard is armed exactly while a batch runs - see the note above it. */
+    try { if (b) window.__teArmLeaveGuard(); else window.__teDisarmLeaveGuard(); } catch (_) {}
     dlBusy = b;
     dlKeepOpen(b);
     /* r85: all THREE buttons lock while a job runs — Remove All included. It ignores the selection,

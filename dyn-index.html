@@ -790,6 +790,40 @@
     });
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
   }
+  /* ── r93: SWIPE / BACK-GESTURE LEAVE GUARD ──────────────────────────────────────────────────
+     ⚠ THE GAP THE OWNER FOUND, and it explains what looked like "the warning works inconsistently":
+     the leave guard above intercepts a CLICK on `a[href]`. A swipe-back (or the Android gesture /
+     hardware back) is a HISTORY navigation and produces no click at all, so the guard never saw it —
+     and `beforeunload` does not reliably fire for an in-app history back in a WebView either. So it
+     was never inconsistent: buttons were guarded, gestures were not.
+     Owner: *"the two cases where they don't [work] is if i swipe left or right... i think claude
+     maybe didn't build an overlay for these swipe actions."* Correct.
+
+     HOW IT WORKS. While a download runs we push one same-URL SENTINEL entry. A back gesture then
+     pops the sentinel instead of leaving the page; we immediately re-push it (so we stay put) and
+     answer with this page's own modal. Choosing "Leave anyway" goes back TWO entries — the sentinel
+     and the real one — which is the navigation the user originally asked for.
+     ⚠ Same-URL pushState entries are SAME-DOCUMENT, so popping one fires popstate WITHOUT reloading
+     the page — which is what makes this safe to do mid-download. When the download ends we pop our
+     own sentinel back off, so the back button is never left needing two taps. */
+  (function () {
+    var armed = false, skip = false;
+    function push() { try { history.pushState({ teDlGuard: 1 }, '', location.href); } catch (_) {} }
+    window.__teArmLeaveGuard = function () { if (armed) return; armed = true; push(); };
+    window.__teDisarmLeaveGuard = function () {
+      if (!armed) return;
+      armed = false; skip = true;            // our own pop, not the user's - do not prompt on it
+      try { history.back(); } catch (_) { skip = false; }
+    };
+    window.addEventListener('popstate', function () {
+      if (skip) { skip = false; return; }
+      if (!armed) return;
+      push();                                 // cancel the gesture by returning to the sentinel
+      showConfirm('A download is in progress. If you leave now it won’t finish — you can start it again any time.',
+        function () { armed = false; skip = true; try { history.go(-2); } catch (_) {} },
+        'Leave anyway', 'Keep downloading');
+    });
+  })();
   /* ── LEAVE GUARD ────────────────────────────────────────────────────────────────────────────
      Same reasoning as player.js and playlists.html: `beforeunload`'s dialog cannot be styled or
      reworded (browsers ignore author text and show their own generic string), so intercept the
@@ -921,6 +955,8 @@
     })();
   }
   function setBusy(b) {
+    /* r93: the swipe guard is armed exactly while a batch runs - see the note above it. */
+    try { if (b) window.__teArmLeaveGuard(); else window.__teDisarmLeaveGuard(); } catch (_) {}
     document.getElementById('dl-btn').disabled = b;
     document.getElementById('clear-btn').disabled = b;
     /* r86: Remove All locks too. It ignores the SELECTION, not the busy state - wiping the manifest
