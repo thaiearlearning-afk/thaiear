@@ -160,7 +160,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r90</div>
+  <div class="eyebrow">Owner test build · r91</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -291,7 +291,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r90</div>
+  <div class="eyebrow">Playlist · r91</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -1146,12 +1146,16 @@
         if (k && k.indexOf('te_dyn_meta_') === 0) metas.push(k);
       }
     } catch (_) {}
-    if (!prefixes.length && !metas.length) { dlStatus('There are no downloads to remove.'); return; }
+    /* ⚠ r91 — NO EARLY RETURN ON AN EMPTY MANIFEST. It used to bail with "There are no downloads to
+       remove" whenever the manifest was empty — which is the EXACT state the owner's device was in
+       while holding 41 orphaned clips. The one situation where the sweep is most needed was the one
+       where the button refused to run. The sweep is idempotent and cheap, so it always runs now. */
     showModal({
       title: 'Remove ALL downloads?',
-      body: 'This removes every downloaded topic and playlist from this device — ' +
-        prefixes.length + ' item' + (prefixes.length === 1 ? '' : 's') +
-        '. You can download them again any time, but it can’t be undone.<br><br>' +
+      body: 'This removes every downloaded topic and playlist from this device' +
+        (prefixes.length ? ' — ' + prefixes.length + ' item' + (prefixes.length === 1 ? '' : 's') : '') +
+        ', plus any leftover files from interrupted downloads. ' +
+        'You can download them again any time, but it can’t be undone.<br><br>' +
         'Your <strong>Read Thai course</strong> download is not affected.<br><br>' +
         'Type <strong>REMOVE</strong> to confirm.',
       input: { value: '', maxlength: 10 },
@@ -1160,30 +1164,45 @@
       onConfirm: function () {
         dlSetBusy(true);
         dlStatusDots('Removing all downloads');
-        var chain = Promise.resolve();
-        prefixes.forEach(function (pfx) {
-          var files = (m[pfx] && m[pfx].files) || [];
-          chain = chain.then(function () {
-            if (DL_NATIVE) return DL_FS.rmdir({ directory: 'DATA', path: 'offline/' + pfx, recursive: true }).catch(function () {});
-            if (!window.caches) return null;
-            return caches.open(DL_CACHE).then(function (c) {
-              return Promise.all(files.map(function (f) { return c.delete(dlCacheKey(pfx, f)).catch(function () {}); }));
-            }).catch(function () {});
-          });
+      /* ⚠ r91 — SWEEP THE DISK, NOT THE MANIFEST. This loop used to walk Object.keys(manifest())
+         and delete per prefix, so anything the manifest had never heard of was untouchable — and
+         the owner's r90 measurement found exactly that on a real device: Greetings_BEG (18 files),
+         GettingToKnow_BEG (18), Weather_BEG (5) and an empty ColoursAndDescriptions_BEG directory.
+         41 stranded clips that no control in the app could remove, from ordinary downloads earlier
+         in the project's life. A button called "Remove All Downloads" that leaves 41 files behind
+         is simply lying.
+         Native: rmdir the whole `offline/` tree, which also clears the empty directories a
+         file-level delete leaves behind. Web: delete every Cache Storage key under
+         `/__offline-audio/` (clips) and `/dyn/` (stitched sessions), which also catches a session
+         file whose meta was already gone.
+         ⚠⚠ STILL CANNOT REACH THE READ THAI COURSE, and now by an even clearer argument: its
+         entries are cached under their FULL REMOTE URL (audio.thaiear.com/...), never under these
+         two same-origin paths, and it does not use the Filesystem at all. Both sweeps are scoped by
+         path, so the course is out of range by construction rather than by care.
+         The owner chose this over a load-time sweep, correctly: this one is an explicit user action
+         with an obvious test, where a sweep firing on every page load is one bad manifest read away
+         from deleting good downloads and is far harder to prove correct. */
+      var chain = Promise.resolve().then(function () {
+          if (DL_NATIVE) return DL_FS.rmdir({ directory: 'DATA', path: 'offline', recursive: true }).catch(function () {});
+          if (!window.caches) return null;
+          return caches.open(DL_CACHE).then(function (c) {
+            return c.keys().then(function (reqs) {
+              return Promise.all(reqs.filter(function (rq) {
+                var path = '';
+                try { path = new URL(rq.url).pathname; } catch (_) { path = String(rq.url); }
+                return path.indexOf('/__offline-audio/') === 0 || path.indexOf('/dyn/') === 0;
+              }).map(function (rq) { return c.delete(rq).catch(function () {}); }));
+            });
+          }).catch(function () {});
         });
         metas.forEach(function (k) {
           var meta = null;
           try { meta = JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) {}
           try { localStorage.removeItem(k); } catch (_) {}
-          var rest = k.slice(12), us = rest.lastIndexOf('_');
-          var ns = us > 0 ? rest.slice(0, us) : '', mode = us > 0 ? rest.slice(us + 1) : '';
-          chain = chain.then(function () {
-            if (DL_NATIVE && meta && meta.file) return DL_FS.deleteFile({ path: meta.file, directory: 'DATA' }).catch(function () {});
-            if (!window.caches || !ns) return null;
-            return caches.open(DL_CACHE).then(function (c) {
-              return c.delete('/dyn/' + ns + '/' + mode + '.' + ((meta && meta.ext) || 'wav')).catch(function () {});
-            }).catch(function () {});
-          });
+          /* r91: the FILE is already gone with the sweep above (native rmdir of offline/, or the
+             /dyn/ cache keys). Only the meta needs removing here. Kept as a named step so the two
+             halves of a built session — its record and its bytes — stay visibly paired. */
+          void meta;
         });
         chain.then(function () {
           try { localStorage.removeItem('thaiear_offline'); } catch (_) {}
