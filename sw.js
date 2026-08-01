@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v176';   // v176 / r98: template cosmetics (no tortoise, guide link, premium golds), padlock-free prev/next, ?cos=1 view + 🎨, local-review gate bypass (2026-08-01)
+const VERSION = 'v177';   // v177 / r99: now-playing ring drawn as 1px box-shadow — the 0.5px border's bottom edge sub-pixel-rounded away on some cards (2026-08-01)
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we

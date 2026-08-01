@@ -2440,7 +2440,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = (function () { try { return window.TE_BUILD || 'r98'; } catch (_) { return 'r98'; } })();
+  var DYN_BUILD = (function () { try { return window.TE_BUILD || 'r99'; } catch (_) { return 'r99'; } })();
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4760,7 +4760,11 @@
     '.dyn-card-btn{width:26px;height:26px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}' +
     '.dyn-card-btn svg{width:13px;height:13px}' +
     '.dyn-card-btn:hover{color:var(--accent);border-color:var(--accent)}' +
-    '.sentence-card.dyn-live{border-color:var(--accent);}' +
+    /* r99: the live ring is drawn with a 1px box-shadow ON TOP of the recoloured 0.5px border.
+       A half-pixel border rasterises per-edge, so on some cards the bottom edge rounded away
+       entirely (owner-reported: always the same card per page, immune to refresh/scroll — the
+       classic sub-pixel signature). A shadow ring can't be rounded away and follows the radius. */
+    '.sentence-card.dyn-live{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}' +
     /* owner 2026-07-27: quiet card look (was a solid accent pill — garish next to its neighbours) */
     '.dyn-addpl{display:block;margin:10px auto 0;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:7px 14px;cursor:pointer}' +
     '.dyn-addpl:hover{background:var(--accent-light)}' +
