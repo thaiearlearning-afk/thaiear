@@ -166,7 +166,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r94</div>
+  <div class="eyebrow">Owner test build · r95</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -297,7 +297,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r94</div>
+  <div class="eyebrow">Playlist · r95</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -383,13 +383,19 @@
     if (opts.requireText && inp) {
       okBtn.disabled = true;
       inp.addEventListener('input', function () {
-        okBtn.disabled = inp.value.trim().toUpperCase() !== String(opts.requireText).toUpperCase();
+      /* ⚠ r95 — EXACT MATCH, CASE-SENSITIVE. It compared with .toUpperCase() on BOTH sides, so
+         "Remove" and "remove" armed a control whose whole purpose is to be hard to trigger by
+         accident (owner: "if you type Remove that works too. it should not, right?"). Typing the
+         word in caps IS the deliberate act; accepting any casing gives the friction away.
+         ⚠ And do NOT put `text-transform: uppercase` on the field: the DISPLAY would read REMOVE
+         while `.value` stayed lowercase, so the user would be refused while looking correct. */
+        okBtn.disabled = inp.value.trim() !== String(opts.requireText);
       });
     }
     okBtn.addEventListener('click', function () {
       var v = inp ? inp.value.trim() : null;
       if (opts.requireText) {
-        if (String(v || '').toUpperCase() !== String(opts.requireText).toUpperCase()) { inp.focus(); return; }
+        if (String(v || '') !== String(opts.requireText)) { inp.focus(); return; }
       } else if (inp && !v) { inp.focus(); return; }   // an empty name is never a valid confirm
       close(); opts.onConfirm(v);
     });

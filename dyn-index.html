@@ -146,7 +146,7 @@
     border:0.5px solid var(--border-strong); border-radius:var(--radius-sm); margin-bottom:1rem; background:var(--bg); color:var(--text-primary); }
   .modal-input:focus { outline:none; border-color:var(--accent); }
   .dl-modal-input { width: 100%; box-sizing: border-box; margin: 0 0 1rem; padding: 9px 11px;
-    font: inherit; font-size: 15px; text-align: center; letter-spacing: .06em; text-transform: uppercase;
+    font: inherit; font-size: 15px; text-align: center; letter-spacing: .06em;   /* r95: NO text-transform - the check is case-SENSITIVE, so forcing the display to caps would refuse text the user sees as correct */
     border: .5px solid var(--border-strong); border-radius: 8px; background: var(--bg); color: var(--text-primary); }
   .dl-modal-confirm[disabled] { opacity: .45; cursor: default; }
   .dl-modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 360px;
@@ -755,11 +755,17 @@
     function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
     var inp = ov.querySelector('#ra-input'), ok = ov.querySelector('#ra-ok');
     try { inp.focus({ preventScroll: true }); } catch (_) {}
-    inp.addEventListener('input', function () { ok.disabled = inp.value.trim().toUpperCase() !== 'REMOVE'; });
+      /* ⚠ r95 — EXACT MATCH, CASE-SENSITIVE. It compared with .toUpperCase() on BOTH sides, so
+         "Remove" and "remove" armed a control whose whole purpose is to be hard to trigger by
+         accident (owner: "if you type Remove that works too. it should not, right?"). Typing the
+         word in caps IS the deliberate act; accepting any casing gives the friction away.
+         ⚠ And do NOT put `text-transform: uppercase` on the field: the DISPLAY would read REMOVE
+         while `.value` stayed lowercase, so the user would be refused while looking correct. */
+    inp.addEventListener('input', function () { ok.disabled = inp.value.trim() !== 'REMOVE'; });
     ov.querySelector('#ra-cancel').addEventListener('click', close);
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
     ok.addEventListener('click', function () {
-      if (inp.value.trim().toUpperCase() !== 'REMOVE') return;
+      if (inp.value.trim() !== 'REMOVE') return;
       close(); onConfirm();
     });
   }
@@ -780,12 +786,12 @@
     if (inpEl) {
       try { inpEl.focus({ preventScroll: true }); } catch (_) {}
       inpEl.addEventListener('input', function () {
-        okEl.disabled = inpEl.value.trim().toUpperCase() !== String(requireText).toUpperCase();
+        okEl.disabled = inpEl.value.trim() !== String(requireText);   // r95: exact, see showRemoveModal
       });
     }
     ov.querySelector('.dl-modal-cancel').addEventListener('click', close);
     okEl.addEventListener('click', function () {
-      if (requireText && inpEl && inpEl.value.trim().toUpperCase() !== String(requireText).toUpperCase()) return;
+      if (requireText && inpEl && inpEl.value.trim() !== String(requireText)) return;
       close(); onConfirm();
     });
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
