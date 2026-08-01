@@ -4,12 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<script>(function(){var ok=/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);try{ok=ok||sessionStorage.getItem('te_test_ok')==='1';}catch(_){}if(!ok&&/[?&]k=cu38961y(&|$)/.test(location.search))ok=true;if(!ok)ok=(prompt('Test page password:')==='cu38961y');if(ok){try{sessionStorage.setItem('te_test_ok','1');}catch(_){}}else location.replace('index.html');})();</script>
-<!-- Mockup-only: candidate ed-tech display font for the intro (rollout would self-host via fetch_fonts.js) -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
-<title>ThaiEar — Index mockup (cosmetics)</title>
+<script>(function(){var ok=/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);try{ok=ok||sessionStorage.getItem('te_test_ok')==='1';}catch(_){}if(!ok&&/[?&]k=cu38961y(&|$)/.test(location.search))ok=true;if(!ok)ok=(prompt('Test page password:')==='cu38961y');if(ok){try{sessionStorage.setItem('te_test_ok','1');}catch(_){}}else location.replace('index.html');})();</script><title>ThaiEar — Index mockup (cosmetics)</title>
 <meta name="description" content="A free Thai language listening platform. 43 topics, 1,500+ sentences, native-speed audio. Learn Thai by listening.">
 <link rel="canonical" href="https://thaiear.com/">
 <!-- og:start (homepage — Organization + WebSite, not Course) -->
@@ -715,7 +710,7 @@
 <section class="hero">
   <div class="hero-inner">
     <h1 class="visually-hidden">Learn Thai by Listening — free Thai sentences with native-speed audio, English translations and word-by-word notes.</h1>
-    <img class="hero-logo" src="logo-bloom.png" alt="ThaiEar logo" width="280" height="543">
+    <img class="hero-logo" src="logo.png" alt="ThaiEar logo" width="360" height="1172">
     <div class="hero-thai">หูภาษาไทย</div>
     <div class="hero-tagline">Learn Thai by Ear</div>
     <div class="hero-rule"></div>
@@ -740,7 +735,6 @@
 
 <!-- ── INTRO ── -->
 <section class="page-intro">
-  <div class="intro-ab"><a data-iv="a" class="on">A · white box</a><a data-iv="b">B · gold on purple</a></div>
   <p class="intro-lead">A Thai listening platform built around <strong>complete sentences</strong> — not vocabulary lists. Hear native-speed audio at home or on the go to build <strong>listening comprehension</strong> and <strong>fluency</strong>.</p>
 </section>
 
@@ -965,7 +959,6 @@
     <a class="mk-box" href="join.html?feature=playlists">
       <span class="mk-box-name">Hard tones</span><span class="mk-box-meta">5 sentences</span>
     </a>
-    <p class="mk-note">Playlists are a free member feature — anything you tap here asks you to sign in first.</p>
   </div>
 </section>
 
@@ -1742,10 +1735,7 @@ updateBatchBar();          // show the batch-download bar in the app (hidden on 
 .mk-box-meta { font-size: 12.5px; color: var(--text-tertiary); }
 .mk-note { font-size: 12.5px; color: var(--text-tertiary); margin-top: 1rem; }
 /* ══ ROUND 2 (owner, 2026-08-01) ══════════════════════════════════════════════ */
-/* Intro sentence: hero-purple band, white centred card — contiguous with the hero. */
-.page-intro { max-width: none; margin: 0; padding: 1.3rem 1.5rem 1.5rem; background: #4B41AD; }
-.intro-lead { max-width: 640px; margin: 0 auto; background: var(--surface); border-left: none;
-  border-radius: var(--radius-lg); padding: 0.95rem 1.3rem; text-align: center; font-size: 14.5px; }
+/* (Round 4: hero + intro reverted to the LIVE index styling — owner call 2026-08-02.) */
 /* Switcher: unselected = gold theme, selected = the blue/purple. */
 .ms-btn { color: #B29234; background: #FBF5DC; }
 .ms-btn:hover { color: #8F7526; }
@@ -1771,33 +1761,7 @@ updateBatchBar();          // show the batch-download bar in the app (hidden on 
 .mk-dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden;
   vertical-align: bottom; animation: mk-dots 1.5s steps(3, start) infinite; }
 @keyframes mk-dots { from { width: 0 } to { width: 1.05em } }
-/* Hero: logo +50%, and the stack pulled together so the hero doesn't get taller —
-   smaller tagline, gaps under the Thai script / tagline / rule reclaimed. */
-.hero-logo { width: 132px; margin-bottom: 0.25rem; }
-.hero-thai { margin-bottom: 0.15rem; }
-.hero-tagline { font-size: 10.5px; margin-bottom: 0.55rem; }
-.hero-rule { margin: 0 auto 0.8rem; }
-.hero-inner { padding: 0.5rem 2rem 0; }
-@media (max-width: 600px) {
-  .hero-inner { padding: 1.1rem 1.25rem 0; }
-  .hero-logo { width: 137px; margin-bottom: 0.3rem; }
-  .hero-tagline { font-size: 10px; }
-}
-@media (max-width: 380px) { .hero-logo { width: 116px; } }
-/* ══ ROUND 3 (owner, 2026-08-02) ══════════════════════════════════════════════ */
-/* Tagline: 10% smaller, a couple of px lower. */
-.hero-tagline { font-size: 9.5px; margin: 2px 0 0.55rem; }
-@media (max-width: 600px) { .hero-tagline { font-size: 9px; } }
-/* Intro: tighter lines + Space Grotesk; A = white box (default), B = gold on purple. */
-.intro-lead { font-family: 'Space Grotesk', var(--font-ui); font-size: 13.5px; line-height: 1.5;
-  padding: 0.75rem 1.15rem; }
-.page-intro { padding: 1.05rem 1.5rem 1.2rem; }
-.intro-ab { max-width: 640px; margin: 0 auto 8px; text-align: right; font-size: 11px; letter-spacing: 0.04em; }
-.intro-ab a { color: rgba(255,255,255,0.55); cursor: pointer; text-decoration: none; margin-left: 10px; }
-.intro-ab a.on { color: #F0CC5C; font-weight: 600; }
-body.intro-b .intro-lead { background: transparent; border-radius: 0; padding: 0.15rem 0;
-  color: #F0CC5C; text-shadow: 0 0 1px rgba(29,19,77,1), 0 0 3px rgba(29,19,77,0.8), 0 1px 12px rgba(240,204,92,0.20); }
-body.intro-b .intro-lead strong { color: #F0CC5C; font-weight: 600; }
+/* ══ ROUND 3 (owner, 2026-08-02) ══ (hero/intro overrides removed in round 4 — live styling stands) */
 /* Switcher: bigger — these buttons should NOT be ignored. */
 .ms-btn { font-size: 14px; padding: 12px 6px; }
 .ms-btn svg { width: 17px; height: 17px; }
@@ -1884,13 +1848,6 @@ renderGrid();
   }
   document.querySelectorAll('.ms-btn').forEach(function (b) {
     b.addEventListener('click', function () { show(b.getAttribute('data-panel')); });
-  });
-  // Intro style A/B toggle (mockup-only).
-  document.querySelectorAll('.intro-ab a').forEach(function (a) {
-    a.addEventListener('click', function () {
-      document.body.classList.toggle('intro-b', a.getAttribute('data-iv') === 'b');
-      document.querySelectorAll('.intro-ab a').forEach(function (x) { x.classList.toggle('on', x === a); });
-    });
   });
 })();
 </script>
