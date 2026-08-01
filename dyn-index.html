@@ -130,6 +130,10 @@
      in this UI; the removal prompt has to look like the rest of the site. */
   .dl-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,40,0.55);
     display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
+  .dl-modal-input { width: 100%; box-sizing: border-box; margin: 0 0 1rem; padding: 9px 11px;
+    font: inherit; font-size: 15px; text-align: center; letter-spacing: .06em; text-transform: uppercase;
+    border: .5px solid var(--border-strong); border-radius: 8px; background: var(--bg); color: var(--text-primary); }
+  .dl-modal-confirm[disabled] { opacity: .45; cursor: default; }
   .dl-modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 360px;
     width: 100%; padding: 1.8rem 1.5rem; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
   .dl-modal-card p { color: var(--text-secondary); font-size: 14.5px; line-height: 1.6; margin-bottom: 1.5rem; }
@@ -294,7 +298,7 @@
     if (!prefixes.length && !metas.length) { status('There are no downloads to remove.'); return; }
     showConfirm('Remove ALL downloads from this device — ' + prefixes.length + ' item' +
       (prefixes.length === 1 ? '' : 's') + '? You can download them again any time, but this can’t be undone. ' +
-      'Your Read Thai course download is not affected.',
+      'Your Read Thai course download is not affected. Type REMOVE to confirm.',
       function () {
         setBusy(true);
         statusDots('Removing all downloads');
@@ -331,7 +335,7 @@
           status('All downloads removed.');
           render();
         });
-      }, 'Remove all', 'Cancel');
+      }, 'Remove all', 'Cancel', 'REMOVE');
   }
   function isDownloaded(p, n) {
     var e = manifest()[p];
@@ -533,6 +537,17 @@
     if (e.files.indexOf(file) < 0) e.files.push(file);
     e.refs = (e.refs || []).filter(function (r) { return r !== 'topic'; });
     e.refs.push('topic');
+    /* ⚠ r88 — RECORD THE AUDIO-VERSION BASELINE AT DOWNLOAD TIME. It used to be adopted LAZILY, by
+       player.js on a topic-page visit, which means a topic downloaded and never opened had no
+       baseline at all and could therefore NEVER report an audio update. That is a product gap, not
+       just a test artifact — and it is exactly what the owner hit: Shopping & money, deleted and
+       re-downloaded repeatedly, would never show the update ring while the other two always did,
+       because those two had adopted a baseline on an earlier page visit and it had not.
+       (r84 stopped persisting an adopted baseline while the avtest flag is on — correct, so the
+       perturbed value never lands in the manifest — but that also meant a topic downloaded WITH the
+       flag on could never acquire one. Recording it here closes both.)
+       AV is the real published map; the flag perturbs only the COMPARISON, never what we store. */
+    if (e.av == null && AV && AV[u.prefix] != null) e.av = AV[u.prefix];
     e.tier = u.tier; e.at = Date.now(); e.dyn = true;
     delete e.bytes;
     m[u.prefix] = e;
@@ -592,7 +607,16 @@
       status('Downloading ' + u.name);
       sentenceNums(u.page).then(function (nums) {
         if (!nums.length) throw new Error('no sentences found for ' + u.prefix);
-        var files = clipFiles(u.prefix, nums), done = 0, tDl0 = Date.now();
+        /* r88 — SKIP WHAT IS ALREADY HERE, so a retry RESUMES instead of re-fetching everything.
+           Since r86 each clip is recorded as it lands, so after an interrupted run the manifest
+           already lists the saved ones; re-downloading them wastes the user's data and hides the
+           fact that progress was kept. `have` is the manifest's own file list for this prefix. */
+        var allFiles = clipFiles(u.prefix, nums);
+        var haveEntry = manifest()[u.prefix], have = {};
+        ((haveEntry && haveEntry.files) || []).forEach(function (f) { have[f] = 1; });
+        var files = allFiles.filter(function (f) { return !have[f]; });
+        if (!files.length) files = allFiles;      // nothing missing → a deliberate full refresh
+        var done = 0, tDl0 = Date.now();
         // The destination directory must EXIST first. downloadFile's `recursive` does not
         // create it on Android (ENOENT) — player.js and index.html both mkdir first, and
         // omitting it here was the r18 download failure.
@@ -626,6 +650,7 @@
           e.files = Object.keys(seen);
           e.refs = (e.refs || []).filter(function (r) { return r !== 'topic'; });
           e.refs.push('topic');
+          if (e.av == null && AV && AV[u.prefix] != null) e.av = AV[u.prefix];   // r88, see noteClip
           e.tier = u.tier; e.at = Date.now(); e.dyn = true;
           m[u.prefix] = e;
           setManifest(m);
@@ -663,17 +688,35 @@
 
   // Same dialog the real index uses for this exact action, same wording shape.
   // okLabel/cancelLabel are optional — they default to the removal wording this was written for.
-  function showConfirm(message, onConfirm, okLabel, cancelLabel) {
+  /* r88: `requireText` makes the user TYPE a word before the action arms — the same guard
+     account.html uses for delete-account and playlists.html uses for Remove All. ⚠ It was missing
+     here: r86 wired Remove All to the plain confirm, so the index's most destructive control had a
+     weaker gate than the identical control one page over. Owner caught it. */
+  function showConfirm(message, onConfirm, okLabel, cancelLabel, requireText) {
     var ov = document.createElement('div');
     ov.className = 'dl-modal';
     ov.innerHTML = '<div class="dl-modal-card" role="dialog" aria-modal="true"><p>' + esc(message) + '</p>' +
+      (requireText ? '<input class="dl-modal-input" type="text" maxlength="10" ' +
+        'aria-label="Type ' + esc(requireText) + ' to confirm" placeholder="' + esc(requireText) + '">' : '') +
       '<div class="dl-modal-actions">' +
       '<button class="dl-modal-cancel" type="button">' + esc(cancelLabel || 'Cancel') + '</button>' +
-      '<button class="dl-modal-confirm" type="button">' + esc(okLabel || 'Remove') + '</button></div></div>';
+      '<button class="dl-modal-confirm" type="button"' + (requireText ? ' disabled' : '') + '>' +
+      esc(okLabel || 'Remove') + '</button></div></div>';
     document.body.appendChild(ov);
     function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    var okEl = ov.querySelector('.dl-modal-confirm');
+    var inpEl = ov.querySelector('.dl-modal-input');
+    if (inpEl) {
+      try { inpEl.focus({ preventScroll: true }); } catch (_) {}
+      inpEl.addEventListener('input', function () {
+        okEl.disabled = inpEl.value.trim().toUpperCase() !== String(requireText).toUpperCase();
+      });
+    }
     ov.querySelector('.dl-modal-cancel').addEventListener('click', close);
-    ov.querySelector('.dl-modal-confirm').addEventListener('click', function () { close(); onConfirm(); });
+    okEl.addEventListener('click', function () {
+      if (requireText && inpEl && inpEl.value.trim().toUpperCase() !== String(requireText).toUpperCase()) return;
+      close(); onConfirm();
+    });
     ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
   }
   /* ── LEAVE GUARD ────────────────────────────────────────────────────────────────────────────
