@@ -152,7 +152,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r82</div>
+  <div class="eyebrow">Owner test build · r83</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -244,6 +244,12 @@
       <strong>Enable classic web downloads</strong> — turns on the browser/PWA download button on real
       topic pages (<code>thaiear_webdl</code>). Required for the live-topic download tests on iPhone;
       the dyn pages never needed it.</label>
+    <label class="sim-check"><input type="checkbox" id="sim-avtest">
+      <strong>Force "audio update available"</strong> — pretends the clips on R2 were re-rendered
+      (<code>thaiear_avtest</code>), so any DOWNLOADED dyn topic shows <em>⟳ Download audio update?</em>
+      on the topic page AND a dashed ring on the dyn index. ⚠ Reads only — it never edits
+      <code>audio-versions.json</code>, which is shared with the live site, so bumping a real entry
+      would nag every user who downloaded that topic into re-fetching identical clips. Untick when done.</label>
     <label class="sim-check"><input type="checkbox" id="sim-noid">
       <strong>Disarm the offline-identity fix</strong> — the control: with this ON, purge + reload should log you OUT
       (the original bug). Turn it off and the same steps should keep you signed in.</label>
@@ -271,7 +277,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r82</div>
+  <div class="eyebrow">Playlist · r83</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -1439,6 +1445,18 @@
     /* Plain localStorage, read by player.js's WEB_DL_FLAG on the next page load — no sim.js state,
        because this is not a simulated ACCOUNT, it is a real capability flag. Reflect the stored
        value on paint so the box tells the truth after a reload. */
+    /* r83: same shape as the webdl toggle, and for the same reason — a URL flag is unreachable in
+       the app and the home-screen PWA, neither of which has an address bar (the ?dbg=1 lesson). */
+    var avt = document.getElementById('sim-avtest');
+    if (avt) {
+      try { avt.checked = localStorage.getItem('thaiear_avtest') === '1'; } catch (_) {}
+      avt.addEventListener('change', function () {
+        try {
+          if (avt.checked) localStorage.setItem('thaiear_avtest', '1');
+          else localStorage.removeItem('thaiear_avtest');
+        } catch (_) {}
+      });
+    }
     var wdl = document.getElementById('sim-webdl');
     if (wdl) {
       try { wdl.checked = localStorage.getItem('thaiear_webdl') === '1'; } catch (_) {}

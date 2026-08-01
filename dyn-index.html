@@ -104,6 +104,10 @@
     border:1.5px solid var(--accent-light); transition:background .15s, border-color .15s, transform .1s; }
   .dl-select:hover .dl-dot { border-color:var(--accent); }
   .dl-select.selected .dl-dot { background:var(--accent); border-color:var(--accent); }
+  /* r83: the update ring — dashed, so "there is something to fetch" reads differently from a
+     plain download at a glance. Mirrors playlists.html's .dl-update exactly. */
+  .dl-select.dl-update .dl-dot { background:transparent; border-color:var(--accent); border-style:dashed; }
+  .dl-select.dl-update.selected .dl-dot { background:var(--accent); border-style:solid; }
   .dl-select:active .dl-dot { transform:scale(0.92); }
   .dl-tick { display:inline-flex; align-items:center; justify-content:center; width:27px; height:27px;
     border-radius:50%; color:var(--accent); border:2px solid transparent; transition:border-color .15s, background .15s; }
@@ -209,6 +213,38 @@
     });
     return th >= n && en >= n;
   }
+  /* r83 — AUDIO-UPDATE AWARENESS ON THE INDEX. Until now only the topic PAGE knew that the clips
+     on R2 had been re-rendered (player.js dynCheckAudioUpdate); the index happily showed a tick.
+     Owner, 2026-08-01, merging the two prompts: *"you're missing clips vs your clips are superseded
+     - a pointless distinction. It should just always be 'Download audio update?'"* — right, because
+     the user's action is identical either way, and the reason is our bookkeeping, not their problem.
+     So the index now asks BOTH questions and renders ONE state.
+     ⚠ audio-versions.json is SHARED WITH THE LIVE SITE — the test clones use live topics' audio
+     prefixes — so this only ever READS it. Forcing the state for a test uses the avtest flag, never
+     an edit to that file, which would nag every real user of these topics into re-fetching
+     identical clips. */
+  var AV = null, avLoaded = false;
+  function avForce() {
+    if (/[?&]avtest=1(&|$)/.test(location.search)) return true;
+    try { return localStorage.getItem('thaiear_avtest') === '1'; } catch (_) { return false; }
+  }
+  function loadAv() {
+    if (avLoaded) return Promise.resolve(AV);
+    return fetch('/audio-versions.json').then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (m) { AV = m; avLoaded = true; return AV; })
+      .catch(function () { AV = null; avLoaded = true; return null; });
+  }
+  /* Does this prefix hold every clip but a SUPERSEDED version of them? Deliberately conservative:
+     no map, no stamp published, or no baseline recorded → NOT stale, because nagging on missing
+     information is worse than a late prompt. */
+  function avStale(pfx) {
+    if (avForce()) return true;
+    if (!AV) return false;
+    var e = manifest()[pfx];
+    if (!e || e.av == null) return false;
+    var cur = AV[pfx];
+    return cur != null && e.av !== cur;
+  }
   function isDownloaded(p, n) {
     var e = manifest()[p];
     return ownedByTopic(e) && hasAllClips(e, n);
@@ -285,6 +321,9 @@
     UNITS.forEach(function (u) {
       var w = working[u.prefix];
       var dl = !w && isDownloaded(u.prefix, u.n);
+      /* r83: downloaded AND superseded → offer the update instead of the removal tick. Same single
+         state the topic page shows, same wording, so the two surfaces cannot disagree. */
+      var upd = dl && avStale(u.prefix);
       var el = document.createElement('div');
       el.className = 'unit' + (w ? ' working' : '');
       /* ⚠ TWO DIFFERENT RULES, AND THEY ARE NOT SYMMETRIC (owner, 2026-07-31).
@@ -299,6 +338,8 @@
          logged separately; this file implements the owner's stricter, correct rule. */
       var sel = w
         ? '<span class="dots" aria-hidden="true"></span>'
+        : upd
+        ? '<span class="dl-select dl-update' + (dlSel[u.prefix] ? ' selected' : '') + '" data-p="' + u.prefix + '" data-mode="dl" role="button" title="Download audio update - tap to select and update this download" aria-label="Download audio update - select to update this download"><span class="dl-dot"></span></span>'
         : dl
         ? '<span class="dl-badge' + (clearSel[u.prefix] ? ' clear-selected' : '') + '" data-p="' + u.prefix + '" data-mode="clear" role="button" title="Downloaded · tap to select for removal">' +
             '<span class="dl-tick"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>'
@@ -637,6 +678,9 @@
   document.getElementById('clear-btn').addEventListener('click', runClear);
   window.addEventListener('thaiear:auth', render);
   render();
+  /* r83: the audio-version map arrives async; repaint once it lands so a superseded download shows
+     its update ring without needing a manual refresh. */
+  loadAv().then(function () { render(); }).catch(function () {});
 })();
 </script>
 <script src="sim.js"></script>

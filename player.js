@@ -793,7 +793,10 @@
     // That file is shared with the LIVE site — the test pages use live topics' audio prefixes —
     // so bumping a real entry would nag every user who downloaded topic 3 into re-fetching
     // identical files. A URL flag costs nothing and touches no live data.
+    /* r83: ALSO a sim-panel checkbox. The URL flag is unusable in the app and the home-screen PWA —
+       neither has an address bar — which is the same wall ?dbg=1 and webdl hit (r49). */
     var force = /[?&]avtest=1(&|$)/.test(location.search);
+    try { if (localStorage.getItem('thaiear_avtest') === '1') force = true; } catch (_) {}
     if (!navigator.onLine && !force) return;   // can't check it, and couldn't act on it either
     loadAudioVers().then(function (map) {
       if (!map && !force) return;
@@ -1409,8 +1412,16 @@
          control on any surface. That breaks the standing rule that REMOVAL IS AVAILABLE AT ALL
          TIMES (§B9): the user is holding real bytes with no way to reclaim them, and the only
          offered escape is to download MORE. */
-      bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' + DL_ICON_SVG +
-        ' Update download — new sentences added</button>' +
+      /* r83 — ONE WORDING FOR BOTH UPDATE ROUTES. Owner, 2026-08-01: *"you're missing clips vs
+         your clips are superseded — a pointless distinction. It should just always be
+         'Download audio update?'"* Correct: the user's action is identical either way, and the
+         reason is our bookkeeping. This branch (clips MISSING) and dynCheckAudioUpdate's branch
+         (clips SUPERSEDED) now read the same and offer the same pair of buttons. Only the handler
+         differs, because the work differs: downloadTopic() fetches what is absent, while
+         dynUpdateAudio() must ALSO drop the built session — a stitched mp3 is keyed on settings,
+         not clip content, so it would otherwise keep playing superseded audio forever. */
+      bar.innerHTML = '<span class="offline-status">⟳ Download audio update?</span>' +
+        '<button class="offline-btn" onclick="downloadTopic()">Update</button>' +
         '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
     } else { // idle
       bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' + DL_ICON_SVG +
@@ -2393,7 +2404,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r82';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r83';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
