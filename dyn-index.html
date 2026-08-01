@@ -714,7 +714,9 @@
             status('You’re offline — reconnect to download topics.', true);
           } else {
             /* r87: true since the incremental manifest writes (r85/r86) - a failed run now leaves its
-               progress recorded, so 'retry' really does mean RESUME, not start again. */
+               progress recorded, so a retry can carry on rather than start again. ⚠ Consistency is
+               VARIABLE and that is accepted (plan §B19) — do not present resume as a guarantee, and
+               do not open an investigation into it. */
             status('Stopped (' + msg + '). The clips already saved are kept — tap Download again to carry on.', true);
           }
           render();
