@@ -152,7 +152,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r79</div>
+  <div class="eyebrow">Owner test build · r80</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -271,7 +271,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r79</div>
+  <div class="eyebrow">Playlist · r80</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -1530,6 +1530,34 @@
     if (PLID) return;   // player view: player.js owns the page now; a re-render would clobber it
     if (PL()) PL().load(true).then(render);
   });
+  /* r80 — REPAINT ON RETURN. Owner, 2026-08-01: *"if i download one playlist, that is exactly the
+     same as another, the available offline message does not come until a refresh"* — and the same
+     staleness hid the `· update available` caption after adding sentences from a topic page.
+     ONE cause, two symptoms: this list computes every caption in render(), which runs at page load,
+     but the inputs live elsewhere and other pages change them —
+       · the MANIFEST (download a playlist from its own ?pl= view, or delete a topic) — read fresh
+         from localStorage on every dlManifest() call, so a plain render() is enough to catch up;
+       · the playlist CONTENTS (add sentences on a topic page) — held in auth.js's in-memory
+         plCache, which a restored page still has at its OLD value, so that needs a real reload.
+     Back-navigation on Android restores the page WITHOUT re-running boot(), so neither recomputed
+     and the only cure was a manual refresh — which the app deliberately has no UI for.
+     Hence two different responses:
+       · pageshow[persisted] = a genuine bfcache restore, rare → reload contents AND repaint;
+       · visibilitychange = app foregrounded, frequent → repaint only. Cheap, no network, and it
+         fixes every manifest-derived caption.
+     ⚠ Skipped while a remove-sentences selection is open: render() clears `removing`, so
+     repainting on app-switch would silently discard the user's ticks. */
+  function repaintOnReturn(reload) {
+    if (PLID) return;      // player view
+    if (removing) return;  // never destroy an open selection
+    if (reload && PL() && user() && navigator.onLine) {
+      PL().load(true).then(render).catch(render);
+      return;
+    }
+    render();
+  }
+  window.addEventListener('pageshow', function (e) { if (e && e.persisted) repaintOnReturn(true); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) repaintOnReturn(false); });
   boot();
 })();
 </script>
