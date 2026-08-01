@@ -533,9 +533,14 @@
                clips and Cache Storage is legitimately empty; on iPhone it is the other way round.
                r73 flagged both, so every Android dump screamed MISMATCH about a store nothing
                writes to. Label the idle one instead of accusing it. */
+            /* r78: "unused" must mean EMPTY, not merely "the Filesystem exists". The webdl flag
+               (r49) makes the CLASSIC download path write to Cache Storage ON THE ANDROID APP, so
+               with it ticked real clips live here — and keying the label off FSP alone would label
+               a store that is actually in use, hiding a genuine mismatch in the one configuration
+               Block F requires. Any non-zero count is therefore always checked. */
             storedLines.push(k + '  in-CACHE=' + real + '  manifest=' + claimed +
-              (FSP ? '   (Cache Storage unused on this device)'
-                   : (real !== claimed ? '   ⚠ MISMATCH' : '')));
+              ((FSP && real === 0) ? '   (Cache Storage unused on this device)'
+                                   : (real !== claimed ? '   ⚠ MISMATCH' : '')));
           });
         }).catch(function (e) {
           storedLines.push('(cache read failed: ' + ((e && e.message) || e) + ')');

@@ -152,7 +152,7 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <div class="eyebrow">Owner test build · r77</div>
+  <div class="eyebrow">Owner test build · r78</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
@@ -271,7 +271,7 @@
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r77</div>
+  <div class="eyebrow">Playlist · r78</div>
   <h1 id="pl-player-title">Loading…</h1>
   <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
@@ -744,6 +744,10 @@
       console.log('[dl] dropped orphaned download record for deleted playlist ' + id);
     });
     if (pmChanged) { dlSetPlMap(pmR); changed = true; }
+    /* r78: third sweep in the same authoritative pass — built sessions for playlists that are gone.
+       Deliberately BEFORE the `if (!changed) return false` bail: orphaned sessions are common on a
+       device whose manifest is already tidy, and bailing early would never reach them. */
+    if (dlSweepOrphanSessions(lists)) changed = true;
     if (!changed) return false;
     dlSetManifest(m);
     orphaned.forEach(function (o) {
@@ -753,6 +757,58 @@
       }).catch(function () {});
     });
     console.log('[dl] reconciled ghost playlist refs — freed ' + orphaned.length + ' prefix(es)');
+    return true;
+  }
+  /* r78 — ORPHANED BUILT SESSIONS. A stitched session (te_dyn_meta_<ns>_<mode> + its file) persists
+     INDEPENDENTLY of the clips it was built from, and nothing was removing the ones belonging to
+     playlists that no longer exist. The owner's 2026-08-01 dumps showed FOUR, against three live
+     playlists — three of them legacy uncompressed `.wav`, which at DYN_SR×2 bytes/sec run ~29 MB per
+     ten minutes, so plausibly the largest objects on the device.
+     Two reasons they survived, and the fix has to answer both:
+       1. dlClearOne removes exactly 'te_dyn_meta_pl-<id>_te|et'. The dumps show an OLDER namespace
+          form — `pl_<id>` with an UPPERCASE `_TE` — which that string can never match. So we match
+          BOTH separators and take the mode from the key itself rather than assuming its case.
+       2. The only other reclaimer is player.js's dynSweepSessions(), an LRU that does not fire until
+          total session bytes exceed DYN_CACHE_CAP = 400 MB — i.e. never, in practice. (And
+          dynSweepOrphans() cannot help: it deletes files NO meta claims, and these are still claimed
+          by their own orphaned metas.)
+     ⚠ ONLY EVER FROM THE AUTHORITATIVE PATH. Sweeping against a cache-only or failed load would
+     delete a LIVE playlist's session. Its one caller is dlReconcileRefs, which r76/r77 gated behind
+     PL().authoritative() — do not call this from anywhere else.
+     ⚠ NEVER TOUCH A NAMESPACE THAT IS NOT pl-/pl_ — topic sessions share this key space. */
+  function dlSweepOrphanSessions(lists) {
+    var live = {};
+    (lists || []).forEach(function (p) { live[String(p.id)] = true; });
+    var kill = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf('te_dyn_meta_') !== 0) continue;
+        var rest = k.slice(12), us = rest.lastIndexOf('_');
+        if (us <= 0) continue;
+        var ns = rest.slice(0, us), mode = rest.slice(us + 1);
+        if (ns.indexOf('pl-') !== 0 && ns.indexOf('pl_') !== 0) continue;   // topic session — not ours
+        if (live[ns.slice(3)]) continue;                                    // playlist still exists
+        var meta = null;
+        try { meta = JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) {}
+        kill.push({ key: k, ns: ns, mode: mode, meta: meta });
+      }
+    } catch (_) { return false; }
+    if (!kill.length) return false;
+    kill.forEach(function (o) {
+      try { localStorage.removeItem(o.key); } catch (_) {}
+      var meta = o.meta;
+      if (DL_NATIVE && meta && meta.file) {
+        DL_FS.deleteFile({ path: meta.file, directory: 'DATA' }).catch(function () {});
+      } else if (window.caches) {
+        // Same path shape dlClearOne uses, but built from the KEY's own ns/mode so a legacy
+        // '/dyn/pl_<id>/TE.wav' is reproduced exactly rather than guessed at.
+        caches.open(DL_CACHE).then(function (c) {
+          return c.delete('/dyn/' + o.ns + '/' + o.mode + '.' + ((meta && meta.ext) || 'wav'));
+        }).catch(function () {});
+      }
+    });
+    console.log('[dl] swept ' + kill.length + ' orphaned built session(s)');
     return true;
   }
   /* Twin of player.js's dynNeededByOthers — which clips under `pfx` do the SURVIVING downloaded
@@ -859,6 +915,68 @@
       }).catch(function () {});
     });
     delete pm[p.id]; dlSetPlMap(pm);
+    return chain;
+  }
+  /* r78 — RELEASE CLIPS ORPHANED BY REMOVING SENTENCES (owner-measured 2026-08-01, block RS-1).
+     rmDone() removed the sentences server-side and re-rendered, with no release step anywhere, so
+     the clips stayed on disk claimed by this playlist. Confirmed on device: removing 2 of 4
+     sentences left `files=8`, and re-adding them flipped the row straight back to "downloaded" with
+     no re-download — the clips had never left.
+     Rather than track which files were removed, RE-DERIVE what every downloaded claimant still
+     needs under the affected prefixes and free the remainder. That is the same shape as
+     dlClearOne/dlNeededByOthers and stays correct if several removals race or one half-fails.
+     ⚠ Call only AFTER PL().load(true) has refreshed thaiear_playlists, or `need` is computed from
+     the pre-removal contents and nothing is ever freed.
+     THE THREE BAIL-OUTS ARE THE SAFETY, and each mirrors an existing rule:
+       - no cached list            → cannot evaluate a claim → keep everything (dlNeededByOthers);
+       - a 'topic' ref present     → the topic download needs every clip, so nothing may be trimmed;
+       - a pl- ref we cannot resolve → same "cannot answer safely" rule.
+     Deleting a clip a claimant needs is the one mistake that actually breaks playback. */
+  function dlPruneUnneeded(prefixes) {
+    var chain = Promise.resolve();
+    if (!prefixes || !prefixes.length) return chain;
+    var lists = null;
+    try { lists = JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) {}
+    if (!lists) return chain;                       // cannot evaluate → keep everything
+    var dl = dlPlMap(), m = dlManifest(), changed = false;
+    var known = {};
+    lists.forEach(function (q) { known['pl-' + q.id] = q; });
+    prefixes.forEach(function (pfx) {
+      var e = m[pfx];
+      if (!e || !e.refs) return;                    // no refs field = implicit TOPIC download
+      if (e.refs.indexOf('topic') !== -1) return;   // topic claim needs every clip
+      for (var i = 0; i < e.refs.length; i++) {
+        var r = e.refs[i];
+        if (r.indexOf('pl-') === 0 && !known[r]) return;   // unresolvable claim → keep it all
+      }
+      var need = {};
+      lists.forEach(function (q) {
+        if (!dl[q.id]) return;                      // not a DOWNLOADED claimant
+        (q.items || []).forEach(function (it) {
+          if (it.prefix !== pfx) return;
+          var n = String(it.num).padStart(2, '0');
+          need[pfx + '_S' + n + '_TH.mp3'] = true;
+          need[pfx + '_S' + n + '_EN.mp3'] = true;
+        });
+      });
+      var files = e.files || [];
+      var go = files.filter(function (f) { return !need[f]; });
+      if (!go.length) return;
+      var keep = files.filter(function (f) { return need[f]; });
+      changed = true;
+      if (keep.length) { e.files = keep; delete e.bytes;   /* r65: the cached total now over-counts */ m[pfx] = e; }
+      else { delete m[pfx]; }
+      chain = chain.then(function () {
+        if (DL_NATIVE) return Promise.all(go.map(function (f) {
+          return DL_FS.deleteFile({ path: 'offline/' + pfx + '/' + f, directory: 'DATA' }).catch(function () {});
+        }));
+        if (!window.caches) return null;
+        return caches.open(DL_CACHE).then(function (c) {
+          return Promise.all(go.map(function (f) { return c.delete(dlCacheKey(pfx, f)).catch(function () {}); }));
+        }).catch(function () {});
+      });
+    });
+    if (changed) dlSetManifest(m);
     return chain;
   }
   function dlRunClear() {
@@ -1035,6 +1153,15 @@
     var items = [];
     for (var k in removing.marked) items.push(removing.marked[k]);
     if (!items.length) { exitRemove(); return; }
+    /* r78: capture the prefixes of the sentences about to go. The marked set carries only
+       topic_key + num, so the prefix has to come from the playlist's CURRENT items — after the
+       removals land, those entries are gone and the prefix is unrecoverable. */
+    var affected = {};
+    items.forEach(function (it) {
+      (p.items || []).forEach(function (x) {
+        if (x.topic_key === it.topic_key && x.num === it.num && x.prefix) affected[x.prefix] = 1;
+      });
+    });
     var bar = document.getElementById('dyn-rm-bar');
     var btns = bar ? bar.querySelectorAll('button') : [];
     btns.forEach(function (b) { b.disabled = true; });
@@ -1046,7 +1173,12 @@
         return PL().removeItem(p.id, it.topic_key, it.num);
       });
     });
-    chain.then(function () { exitRemove(); return PL().load(true); }).then(function () { render(); })
+    chain.then(function () { exitRemove(); return PL().load(true); })
+      /* r78: prune AFTER the reload, so `need` is computed from the post-removal contents.
+         Its own .catch: a failed prune is a storage-tidying miss, and must never surface as
+         "Couldn't remove" when the removal itself succeeded. */
+      .then(function () { return dlPruneUnneeded(Object.keys(affected)).catch(function () {}); })
+      .then(function () { render(); })
       .catch(function () {
         btns.forEach(function (b) { b.disabled = false; });
         rmCount();
