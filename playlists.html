@@ -158,6 +158,21 @@
   .dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom;
     animation: dots 1.2s steps(3,start) infinite; }
   @keyframes dots { from { width: 0 } to { width: 1.05em } }
+  /* r100 cosmetics view (?cos=1) — mockup-only classes, unused on the real page */
+  .cos-switch { font-size: 12px; color: var(--text-tertiary); margin-bottom: 10px; }
+  .cos-switch a { color: var(--accent); text-decoration: none; }
+  .cos-switch a:hover { text-decoration: underline; }
+  .cos-addrow { display: flex; gap: 9px; align-items: stretch; margin-bottom: 1.25rem; }
+  .cos-addrow .pl-add.cos-sq { flex: 1; justify-content: center; border-radius: var(--radius-md); margin-bottom: 0; }
+  .cos-add-hint { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;
+    font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--accent);
+    border: 0.5px solid var(--accent); border-radius: var(--radius-md); padding: 9px 12px; line-height: 1.45; }
+  .cos-add-card { display: flex; flex-direction: column; align-items: center; gap: 8px;
+    border: 1.5px dashed var(--accent); border-radius: var(--radius-lg); background: var(--accent-light);
+    padding: 14px 12px; margin-bottom: 1.25rem; }
+  .cos-add-card .pl-add { margin-bottom: 0; }
+  .cos-hint-line { font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--accent);
+    text-align: center; line-height: 1.45; }
 </style>
 <link rel="stylesheet" href="player-dyn.css">
 </head>
@@ -617,6 +632,7 @@
       '" data-mode="sel" role="button" aria-label="Select this playlist"><span class="dl-dot"></span></span>';
   }
   function dlPaintBar() {
+    if (COS) return;   // r100 cosmetics view keeps the bar statically visible
     var bar = document.getElementById('dl-batch-bar'); if (!bar) return;
     var lists = currentLists() || [];
     bar.hidden = !DL_OK || !lists.some(function (p) { return p.items.length; });
@@ -1305,7 +1321,72 @@
     });
   }
 
+  /* ── r100 COSMETICS VIEW (?cos=1) — owner design review only, real page untouched ─────────────
+     Static demo playlists + the two candidate "Add playlist" layouts (default = the owner's two-box
+     suggestion; &alt=1 = the one-card alternative). Nothing is plumbed: demo rows are inert, the
+     batch bar is shown for placement judgement only, and the sim panel/eyebrow are hidden. */
+  var COS = /[?&]cos=1(&|$)/.test(location.search);
+  var COS_ALT = /[?&]alt=1(&|$)/.test(location.search);
+  function renderCosDemo() {
+    var eb = document.querySelector('.eyebrow[data-build]');
+    if (eb) eb.style.display = 'none';
+    var addBtn = document.getElementById('pl-add');
+    if (addBtn && !document.getElementById('cos-addwrap')) {
+      var wrap = document.createElement('div');
+      wrap.id = 'cos-addwrap';
+      addBtn.parentNode.insertBefore(wrap, addBtn);
+      var sw = document.createElement('p');
+      sw.className = 'cos-switch';
+      sw.innerHTML = 'Mockup layout: ' +
+        (COS_ALT ? '<a href="playlists.html?k=cu38961y&cos=1">A — button + info box</a>' : '<strong>A — button + info box</strong>') + ' · ' +
+        (COS_ALT ? '<strong>B — one card</strong>' : '<a href="playlists.html?k=cu38961y&cos=1&alt=1">B — one card</a>');
+      wrap.appendChild(sw);
+      if (COS_ALT) {
+        var card = document.createElement('div');
+        card.className = 'cos-add-card';
+        card.appendChild(addBtn);
+        var hintB = document.createElement('span');
+        hintB.className = 'cos-hint-line';
+        hintB.textContent = 'Add sentences to your playlists from topic pages';
+        card.appendChild(hintB);
+        wrap.appendChild(card);
+      } else {
+        var row = document.createElement('div');
+        row.className = 'cos-addrow';
+        addBtn.classList.add('cos-sq');
+        row.appendChild(addBtn);
+        var hintA = document.createElement('div');
+        hintA.className = 'cos-add-hint';
+        hintA.textContent = 'Add sentences to your playlists from topic pages';
+        row.appendChild(hintA);
+        wrap.appendChild(row);
+      }
+    }
+    var bar = document.getElementById('dl-batch-bar');
+    if (bar) bar.hidden = false;
+    var tick = '<span class="dl-badge" role="button" title="Downloaded"><span class="dl-tick">' +
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" ' +
+      'stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>';
+    var dot = '<span class="dl-select" role="button" aria-label="Select"><span class="dl-dot"></span></span>';
+    root.innerHTML =
+      '<div class="pl-box"><button class="pl-box-head" type="button">' +
+        '<span class="pl-box-name">Songs I like</span>' +
+        '<span class="pl-box-meta">8 sentences · downloaded</span>' + tick + '</button></div>' +
+      '<div class="pl-box open"><button class="pl-box-head" type="button">' +
+        '<span class="pl-box-name">Restaurant survival kit</span>' +
+        '<span class="pl-box-meta">12 sentences</span>' + dot + '</button>' +
+        '<div class="pl-box-body">' +
+          '<a class="pl-open" href="#" onclick="return false">▶ Open player</a>' +
+          '<button class="pl-remsent" type="button">Remove sentences</button>' +
+          '<button class="pl-rename" type="button">Rename playlist</button>' +
+          '<button class="pl-del" type="button">Delete playlist</button>' +
+        '</div></div>' +
+      '<div class="pl-box"><button class="pl-box-head" type="button">' +
+        '<span class="pl-box-name">Hard tones</span>' +
+        '<span class="pl-box-meta">5 sentences · available offline</span>' + dot + '</button></div>';
+  }
   function render() {
+    if (COS) { renderCosDemo(); return; }
     // a re-render invalidates any live batch-remove tick mode
     removing = null;
     setTimeout(dlPaintBar, 0);
@@ -1533,6 +1614,7 @@
      the app has no address bar and sessionStorage dies on restart — and offline testing
      spans restarts), or any test page opened this session. Never renders for a real user. */
   (function wireSim() {
+    if (/[?&]cos=1(&|$)/.test(location.search)) return;   // r100 cosmetics view — no tooling
     var okFlag = false;
     try {
       if (/[?&]k=cu38961y(&|$)/.test(location.search)) localStorage.setItem('te_sim_ok', '1');
