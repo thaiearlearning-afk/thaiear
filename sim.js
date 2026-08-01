@@ -529,8 +529,13 @@
           keys.concat(Object.keys(byPfx)).forEach(function (k) {
             if (seen[k]) return; seen[k] = 1;
             var real = byPfx[k] || 0, claimed = ((man[k] || {}).files || []).length;
+            /* ⚠ Only the store actually IN USE can mismatch. On Android the Filesystem holds the
+               clips and Cache Storage is legitimately empty; on iPhone it is the other way round.
+               r73 flagged both, so every Android dump screamed MISMATCH about a store nothing
+               writes to. Label the idle one instead of accusing it. */
             storedLines.push(k + '  in-CACHE=' + real + '  manifest=' + claimed +
-              (real !== claimed ? '   ⚠ MISMATCH' : ''));
+              (FSP ? '   (Cache Storage unused on this device)'
+                   : (real !== claimed ? '   ⚠ MISMATCH' : '')));
           });
         }).catch(function (e) {
           storedLines.push('(cache read failed: ' + ((e && e.message) || e) + ')');
