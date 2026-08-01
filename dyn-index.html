@@ -64,12 +64,18 @@
   .dl-batch-bar { display:flex; flex-direction:column; gap:8px; background:var(--surface);
     border:.5px solid var(--border); border-radius:var(--radius-md); padding:12px; margin-bottom:1rem; }
   .dl-batch-btns { display:flex; gap:8px; }
-  .dl-batch-btn { flex:1; font-family:var(--font-ui); font-size:15px; font-weight:500; color:#fff;
-    background:var(--accent); border:0; border-radius:8px; padding:11px 10px; cursor:pointer; }
+  /* r86: thinner and quieter, matching playlists.html - "the download interface looks sort of huge
+     like a centrepiece. it is just a function." 15px/11px -> 13.5px/8px. */
+  .dl-batch-btn { flex:1; font-family:var(--font-ui); font-size:13.5px; font-weight:500; color:#fff;
+    background:var(--accent); border:0; border-radius:8px; padding:8px 10px; cursor:pointer; }
   .dl-batch-btn:hover:not([disabled]) { background:var(--accent-mid); }
   .dl-batch-btn[disabled] { background:var(--border); color:var(--text-tertiary); cursor:default; }
   .dl-clear-btn { background:var(--surface); color:var(--text-secondary); border:.5px solid var(--border-strong); }
   .dl-clear-btn:hover:not([disabled]) { background:var(--accent-light); color:var(--accent); }
+  /* r86: quieter Remove All, danger tone on hover only - mirrors playlists.html. */
+  .dl-removeall-btn { background:transparent; color:var(--text-tertiary); border:.5px solid var(--border);
+    font-size:12.5px; padding:6px 10px; }
+  .dl-removeall-btn:hover:not([disabled]) { background:#FDF1F2; color:#B00020; border-color:#E8C4C8; }
   .dl-batch-status { font-size:13px; color:var(--text-secondary); min-height:1.15em; }
   .dl-batch-status.err { color:#B00020; }
   /* r82: transient tap feedback. Deliberately a SEPARATE element from .dl-batch-status, which
@@ -150,7 +156,12 @@
   <div class="dl-batch-bar">
     <div class="dl-batch-btns">
       <button class="dl-batch-btn" id="dl-btn" type="button">Download Topic(s)</button>
-      <button class="dl-batch-btn dl-clear-btn" id="clear-btn" type="button">Clear Download(s)</button>
+      <button class="dl-batch-btn dl-clear-btn" id="clear-btn" type="button">Remove Selected Downloads</button>
+    </div>
+    <!-- r86: mirrors playlists.html. Remove All is SELECTION-INDEPENDENT — a reset, not a third verb
+         for the current selection - and is the only control here with no undo. -->
+    <div class="dl-batch-btns">
+      <button class="dl-batch-btn dl-removeall-btn" id="removeall-btn" type="button">Remove All Downloads</button>
     </div>
     <span class="dl-batch-status" id="dl-status"></span>
     <span class="dl-batch-note" id="dl-note" style="display:none"></span>
@@ -186,7 +197,10 @@
   var FS = (NATIVE && C.Plugins) ? C.Plugins.Filesystem : null;
   var WEB_DL = !NATIVE && !!window.caches;
 
-  var dlSel = {}, clearSel = {}, busy = false, lastDlSecs = null;
+  /* r86 — ONE SELECTION SET, mirroring playlists.html (r85). A row is simply SELECTED; the BUTTON
+     supplies the verb, and rows that cannot perform it are skipped in silence. That removes the two
+     cross-mode guard messages, which only existed because there were two modes. */
+  var dlSel = {}, busy = false, lastDlSecs = null;
   // A unit is only ever shown as downloaded once its clips AND both constructions are done.
   // (The manifest is still written before constructing — an interrupted construction leaves a
   // usable offline topic — but claiming "downloaded" while still working reads as a lie.)
@@ -255,6 +269,69 @@
     var cur = (AV || {})[pfx];
     if (avForce()) cur = String(cur == null ? '' : cur) + '#avtest';   // as if R2 had re-rendered
     return cur != null && e.av !== cur;
+  }
+  /* r86 — WHAT EACH VERB CAN ACT ON. `needsDownload` is true for a unit that is not downloaded AND
+     for one that is downloaded but superseded (the update ring), because both have clips to fetch.
+     A unit that is downloaded and current answers NO here and YES to removal. */
+  function needsDownload(u) {
+    if (!isDownloaded(u.prefix, u.n)) return true;
+    return avStale(u.prefix);
+  }
+  /* r86 — REMOVE ALL. ⚠⚠ ENUMERATE AND DELETE. NEVER `caches.delete('thaiear-audio-dl')`:
+     read.js stores the READ THAI course - 208 clips - in that same bucket. Safe BY CONSTRUCTION,
+     not by care: the Read course keeps its own localStorage key and caches by full URL, and is never
+     listed in `thaiear_offline`, so walking OUR manifest cannot reach it. */
+  function removeAll() {
+    if (busy) return;
+    var m = manifest(), prefixes = Object.keys(m);
+    var metas = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('te_dyn_meta_') === 0) metas.push(k);
+      }
+    } catch (_) {}
+    if (!prefixes.length && !metas.length) { status('There are no downloads to remove.'); return; }
+    showConfirm('Remove ALL downloads from this device — ' + prefixes.length + ' item' +
+      (prefixes.length === 1 ? '' : 's') + '? You can download them again any time, but this can’t be undone. ' +
+      'Your Read Thai course download is not affected.',
+      function () {
+        setBusy(true);
+        statusDots('Removing all downloads');
+        var chain = Promise.resolve();
+        prefixes.forEach(function (pfx) {
+          var files = (m[pfx] && m[pfx].files) || [];
+          chain = chain.then(function () {
+            if (NATIVE) return FS.rmdir({ directory: 'DATA', path: 'offline/' + pfx, recursive: true }).catch(function () {});
+            if (!window.caches) return null;
+            return caches.open(AUDIO_DL_CACHE).then(function (c) {
+              return Promise.all(files.map(function (f) { return c.delete(webCacheKey(pfx, f)).catch(function () {}); }));
+            }).catch(function () {});
+          });
+        });
+        metas.forEach(function (k) {
+          var meta = null;
+          try { meta = JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) {}
+          try { localStorage.removeItem(k); } catch (_) {}
+          var rest = k.slice(12), us = rest.lastIndexOf('_');
+          var ns = us > 0 ? rest.slice(0, us) : '', mode = us > 0 ? rest.slice(us + 1) : '';
+          chain = chain.then(function () {
+            if (NATIVE && meta && meta.file) return FS.deleteFile({ path: meta.file, directory: 'DATA' }).catch(function () {});
+            if (!window.caches || !ns) return null;
+            return caches.open(AUDIO_DL_CACHE).then(function (c) {
+              return c.delete('/dyn/' + ns + '/' + mode + '.' + ((meta && meta.ext) || 'wav')).catch(function () {});
+            }).catch(function () {});
+          });
+        });
+        chain.then(function () {
+          try { localStorage.removeItem('thaiear_offline'); } catch (_) {}
+          try { localStorage.removeItem('thaiear_offline_pl'); } catch (_) {}
+          dlSel = {};
+          setBusy(false);
+          status('All downloads removed.');
+          render();
+        });
+      }, 'Remove all', 'Cancel');
   }
   function isDownloaded(p, n) {
     var e = manifest()[p];
@@ -352,7 +429,7 @@
         : upd
         ? '<span class="dl-select dl-update' + (dlSel[u.prefix] ? ' selected' : '') + '" data-p="' + u.prefix + '" data-mode="dl" role="button" title="Download audio update - tap to select and update this download" aria-label="Download audio update - select to update this download"><span class="dl-dot"></span></span>'
         : dl
-        ? '<span class="dl-badge' + (clearSel[u.prefix] ? ' clear-selected' : '') + '" data-p="' + u.prefix + '" data-mode="clear" role="button" title="Downloaded · tap to select for removal">' +
+        ? '<span class="dl-badge' + (dlSel[u.prefix] ? ' clear-selected' : '') + '" data-p="' + u.prefix + '" data-mode="sel" role="button" title="Downloaded · tap to select">' +
             '<span class="dl-tick"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>'
         : unitLocked(u)
         ? ''      // not entitled and not downloaded → no download control at all
@@ -369,15 +446,21 @@
         '</div>' + sel;
       root.appendChild(el);
     });
+    /* r86: the counts say what each button WILL DO, not how many rows are ticked. An "update
+       available" unit answers YES to both questions - it has clips to fetch AND a download to
+       remove - so the two numbers legitimately differ, and a single selection count would be a lie
+       on one of the buttons. (Owner checked exactly this on r85.) */
     var d = document.getElementById('dl-btn'), c = document.getElementById('clear-btn');
-    var nd = Object.keys(dlSel).length, nc = Object.keys(clearSel).length;
+    var picked = UNITS.filter(function (u) { return dlSel[u.prefix]; });
+    var nd = picked.filter(needsDownload).length;
+    var nc = picked.filter(function (u) { return isDownloaded(u.prefix, u.n); }).length;
     if (!busy) {
       d.textContent = nd ? ('Download Topic(s) (' + nd + ')') : 'Download Topic(s)';
-      c.textContent = nc ? ('Clear Download(s) (' + nc + ')') : 'Clear Download(s)';
+      c.textContent = nc ? ('Remove Selected Downloads (' + nc + ')') : 'Remove Selected Downloads';
     }
-    document.getElementById('dl-hint').style.display = (nd || nc || busy) ? 'none' : '';
-    root.classList.toggle('mode-download', nd > 0);
-    root.classList.toggle('mode-clear', nc > 0);
+    document.getElementById('dl-hint').style.display = (picked.length || busy) ? 'none' : '';
+    root.classList.toggle('mode-download', picked.length > 0);
+    root.classList.remove('mode-clear');
   }
 
   document.addEventListener('click', function (e) {
@@ -391,11 +474,9 @@
     if (busy) { note('Download in progress — you can change your selection when it finishes.'); return; }
     var p = t.getAttribute('data-p');
     if (t.getAttribute('data-mode') === 'dl') {
-      if (Object.keys(clearSel).length) { note('Finish or deselect your removal choice first.'); return; }
       if (dlSel[p]) delete dlSel[p]; else dlSel[p] = true;
     } else {
-      if (Object.keys(dlSel).length) { note('Finish or deselect your download choice first.'); return; }
-      if (clearSel[p]) delete clearSel[p]; else clearSel[p] = true;
+      if (dlSel[p]) delete dlSel[p]; else dlSel[p] = true;
     }
     /* r82: NO `status('')` here. A selection tap must never clear a line it does not own — that is
        what made the progress text vanish with no message at all. */
@@ -443,6 +524,20 @@
     });
     return files;
   }
+  /* r86: one clip, recorded. Mirrors the bulk write that still runs at the end, so it is
+     idempotent - re-downloading never duplicates a file or a ref. */
+  function noteClip(u, file) {
+    var m = manifest();
+    var e = m[u.prefix] || { tier: u.tier, files: [], ver: '', av: null };
+    e.files = e.files || [];
+    if (e.files.indexOf(file) < 0) e.files.push(file);
+    e.refs = (e.refs || []).filter(function (r) { return r !== 'topic'; });
+    e.refs.push('topic');
+    e.tier = u.tier; e.at = Date.now(); e.dyn = true;
+    delete e.bytes;
+    m[u.prefix] = e;
+    setManifest(m);
+  }
   function saveOne(u, file) {
     return fileUrl(file, u.tier).then(function (url) {
       if (NATIVE) {
@@ -460,7 +555,8 @@
   }
   function runDownloads() {
     if (busy) return;
-    var list = UNITS.filter(function (u) { return dlSel[u.prefix]; });
+    /* r86: the download half - selected units that actually have clips to fetch. */
+    var list = UNITS.filter(function (u) { return dlSel[u.prefix] && needsDownload(u); });
     if (!list.length) { status('Please select a topic to download first.'); return; }
     if (!NATIVE && !WEB_DL) { status('This device can’t store downloads.', true); return; }
     if (!navigator.onLine) { status('You’re offline — reconnect to download topics.', true); return; }
@@ -491,6 +587,11 @@
           return pool(files, 6, function (f) {
             return saveOne(u, f).then(function () {
               done++;
+              /* r86 — RECORD EACH CLIP AS IT LANDS (twin of playlists.html r85). The entry was
+                 written only after the whole topic finished, so an interrupted download left clips
+                 on disk with no entry and no ref - invisible to every UI and unreclaimable by any
+                 button. Recording them as they arrive also makes the download RESUMABLE. */
+              noteClip(u, f);
               status('Downloading ' + u.name + ' — clip ' + done + ' of ' + files.length);
             });
           });
@@ -611,7 +712,9 @@
   }
   function runClear() {
     if (busy) return;
-    var list = UNITS.filter(function (u) { return clearSel[u.prefix]; });
+    /* r86: the removal half of the one selection - selected rows that actually hold a download.
+       Anything else selected is skipped in silence (the owner's "harmless" rule). */
+    var list = UNITS.filter(function (u) { return dlSel[u.prefix] && isDownloaded(u.prefix, u.n); });
     if (!list.length) { status('Please select a downloaded topic to clear first.'); return; }
     showConfirm('Are you sure you want to remove the downloaded topic' + (list.length > 1 ? 's' : '') +
       '? You will no longer be able to listen to ' + (list.length > 1 ? 'them' : 'it') + ' offline.',
@@ -624,7 +727,7 @@
       if (i >= list.length) {
         busy = false; setBusy(false);
         status('Removed ' + list.length + ' download' + (list.length > 1 ? 's' : '') + '.');
-        clearSel = {}; render();
+        dlSel = {}; render();
         return;
       }
       var u = list[i], m = manifest(), entry = m[u.prefix] || {}, files = entry.files || [];
@@ -686,11 +789,15 @@
   function setBusy(b) {
     document.getElementById('dl-btn').disabled = b;
     document.getElementById('clear-btn').disabled = b;
+    /* r86: Remove All locks too. It ignores the SELECTION, not the busy state - wiping the manifest
+       mid-download would strand the clips already written. */
+    var ra = document.getElementById('removeall-btn'); if (ra) ra.disabled = b;
     keepOpen(b);
   }
 
   document.getElementById('dl-btn').addEventListener('click', runDownloads);
   document.getElementById('clear-btn').addEventListener('click', runClear);
+  (function () { var ra = document.getElementById('removeall-btn'); if (ra) ra.addEventListener('click', removeAll); })();
   window.addEventListener('thaiear:auth', render);
   render();
   /* r83: the audio-version map arrives async; repaint once it lands so a superseded download shows
