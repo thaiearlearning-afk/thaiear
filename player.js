@@ -2440,7 +2440,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = (function () { try { return window.TE_BUILD || 'r97'; } catch (_) { return 'r97'; } })();
+  var DYN_BUILD = (function () { try { return window.TE_BUILD || 'r98'; } catch (_) { return 'r98'; } })();
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3775,7 +3775,8 @@
     // expectation-setter for the lock screen skipping a unit that has never been constructed.
     player: 'ThaiEar’s Dynamic mp3 Player constructs mp3 audio to your specification. ' +
       'Press play to construct this one — it is then stored on your device and replaced each ' +
-      'time you generate a new dynamic mp3.',
+      'time you generate a new dynamic mp3. Learn more about the Dynamic Player in our ' +
+      '<a href="guide.html">guide</a>.',
     reps: 'This decides how many times a Thai sentence is spoken.',
     engpos: 'This decides where the English sentence is spoken. In the last position, the English ' +
       'is heard after all the Thai repeats of a sentence. But English can also be positioned ' +
@@ -3803,7 +3804,8 @@
     x.innerHTML = '&times;';
     x.addEventListener('click', dynInfoClose);
     var t = document.createElement('span');
-    t.textContent = DYN_INFO[key];
+    // Our own constants (may carry an <a> link, e.g. the guide link in 'player') — never user data.
+    t.innerHTML = DYN_INFO[key];
     box.appendChild(x); box.appendChild(t);
     rowEl.parentNode.insertBefore(box, rowEl.nextSibling);
     dynInfoOpen = key;
@@ -4708,7 +4710,10 @@
     'body.te-v2 .dyn-eq{order:2}' +
     'body.te-v2 .sent-play-btn{order:3}' +
     'body.te-v2 .sent-preview{order:4;flex:1;min-width:0}' +
-    'body.te-v2 .speed-toggle{order:5}' +
+    /* r98: tortoise slow-play button removed from the template — clutter, and slowed Chirp3
+       audio degrades (owner call, 2026-08-01; the speed audit polices pace at source instead).
+       Hidden only under te-v2 so classic live pages keep it until rollout. */
+    'body.te-v2 .speed-toggle{display:none}' +
     'body.te-v2 .sent-flag-btn{order:6}' +
     'body.te-v2 .dyn-x-btn{order:7}' +
     /* Playlist locked rows + their "Premium content" divider. Gold TEXT tone #B29234 (the index
@@ -4735,6 +4740,8 @@
     '.dyn-info-lbl:hover{color:var(--accent)}' +
     '.dyn-info-i{width:13px;height:13px;border-radius:50%;border:1px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font:italic 700 9px/1 Georgia,"Times New Roman",serif;flex-shrink:0}' +
     '.dyn-info-box{position:relative;margin:7px 0 2px;padding:9px 30px 9px 11px;border:.5px solid var(--border-strong);border-radius:var(--radius-md);background:var(--surface);color:var(--text-secondary);font-size:12px;line-height:1.55;max-width:520px}' +
+    '.dyn-info-box a{color:var(--accent);font-weight:500;text-decoration:none}' +
+    '.dyn-info-box a:hover{text-decoration:underline}' +
     '.dyn-info-x{position:absolute;top:3px;right:4px;width:22px;height:22px;border:0;background:none;color:var(--text-tertiary);cursor:pointer;font-size:16px;line-height:1;padding:0}' +
     '.dyn-info-x:hover{color:var(--accent)}' +
     /* r16: "apply to all" sync affordance — bottom-left, under the settings rows */
@@ -4745,6 +4752,9 @@
     '.dyn-sync-btn svg{width:15px;height:15px}' +
     '.dyn-sync-btn:hover{color:var(--accent);border-color:var(--accent)}' +
     'body.premium-topic .dyn-sync-btn:hover{color:#B29234;border-color:#B29234}' +
+    'body.premium-topic .dyn-info-box a{color:#B29234}' +   // text-gold, not the pale graphic gold --accent maps to
+    // Read more / Show less sits OUTSIDE #player-root, so --accent is still purple there — pin to text-gold.
+    'body.premium-topic .te-intro-more{color:#B29234}' +
     '.sentence-card.dyn-off{opacity:.55;border-style:dashed}' +
     '.sentence-card.dyn-off .sent-preview{text-decoration:line-through}' +
     '.dyn-card-btn{width:26px;height:26px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}' +

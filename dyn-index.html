@@ -7,8 +7,8 @@
 <title>Dynamic player test index — ThaiEar</title>
 <script>
 (function () {
-  var ok = false;
-  try { ok = sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
+  var ok = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);  // local review (incl. LAN/phone) — no password
+  try { ok = ok || sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
   if (!ok && /[?&]k=cu38961y(&|$)/.test(location.search)) ok = true;
   if (!ok) ok = (prompt('Test page password:') === 'cu38961y');
   if (ok) { try { sessionStorage.setItem('te_test_ok', '1'); } catch (_) {} }
@@ -195,6 +195,14 @@
     <a href="playlists.html?k=cu38961y">🎵 My Playlists (test)</a>
     <a href="dyn-probe.html?k=cu38961y">📊 Dynamic audio capability probe</a>
     <a href="index.html">← Back to the real site</a>
+  </div>
+
+  <!-- r98: cosmetics review — the template pages WITHOUT the test strip (?cos=1 suppresses it),
+       i.e. exactly what ships at rollout. Unplumbed by design; for viewing on a phone. -->
+  <div class="links">
+    <span style="display:block;font-weight:600;margin-bottom:2px">🎨 Cosmetics (template preview, no test strip)</span>
+    <a href="topic-test.html?k=cu38961y&cos=1">Topic template — free (Communication survival)</a>
+    <a href="topic-test3.html?k=cu38961y&cos=1">Topic template — premium (Colours &amp; descriptions 2)</a>
   </div>
 </div>
 

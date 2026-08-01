@@ -52,6 +52,15 @@
      in the app (and PWA offline on the web). Audio is handled separately. */
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
+      // r98: NEVER register on localhost — a SW registered during a local review session precaches
+      // the pages/JS and then silently serves stale copies across edit rounds (bit twice, 2026-08-01).
+      // Also unregister any worker a previous session already left on this origin.
+      if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname)) {
+        navigator.serviceWorker.getRegistrations().then(function (rs) {
+          rs.forEach(function (r) { r.unregister(); });
+        }).catch(function () {});
+        return;
+      }
       navigator.serviceWorker.register('/sw.js').catch(function (e) { console.warn('SW register failed', e); });
     });
   }

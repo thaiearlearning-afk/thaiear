@@ -507,20 +507,12 @@
     el.textContent = levelText(found.unit.levels);
   }
 
-  // ---- prev/next nav: derive each button's lock state from its target's access ----
-  const NAV_LOCK_SVG =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
-    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  // ---- prev/next nav: normalise each button's destination (no padlocks — gating is object-level) ----
   let navStylesInjected = false;
   function injectNavLockStyles() {
     if (navStylesInjected) return; navStylesInjected = true;
     const s = document.createElement('style');
     s.textContent =
-      '.topic-nav-lock{display:inline-flex;align-items:center;vertical-align:-2px;margin-right:4px}' +
-      '.topic-nav-lock svg{width:11px;height:11px}' +
-      '.topic-nav-lock.premium{color:#B29234}' +            // premium text-gold (matches index pill)
-      '.topic-nav-lock.member{color:var(--accent)}' +       // purple = sign-in
       '.topic-nav-btn.nav-to-premium:hover{background:#FBF5DC;border-color:var(--gold-dark)}';
     (document.head || document.documentElement).appendChild(s);
   }
@@ -566,12 +558,8 @@
     // (reveal/flag/play) enforces the actual restriction.
     a.setAttribute('href', target);
     a.removeAttribute('data-locked-href');
-    if (nameEl) {
-      const span = document.createElement('span');
-      span.className = 'topic-nav-lock ' + access;
-      span.innerHTML = NAV_LOCK_SVG;
-      nameEl.insertBefore(span, nameEl.firstChild);
-    }
+    // r98: no padlock icon on prev/next — any user can open any page; gating is object-level
+    // (audio/reveal/flag on the page itself), so the buttons carry no tier signal (owner, 2026-08-01).
   }
   function decorateTopicNav() {
     document.querySelectorAll('a.topic-nav-btn').forEach(function (a) {

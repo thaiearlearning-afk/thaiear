@@ -7,8 +7,8 @@
 <title>Dyn audio capability probe — ThaiEar</title>
 <script>
 (function () {
-  var ok = false;
-  try { ok = sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
+  var ok = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);  // local review (incl. LAN/phone) — no password
+  try { ok = ok || sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
   if (!ok && /[?&]k=cu38961y(&|$)/.test(location.search)) ok = true;
   if (!ok) ok = (prompt('Test page password:') === 'cu38961y');
   if (ok) { try { sessionStorage.setItem('te_test_ok', '1'); } catch (_) {} }

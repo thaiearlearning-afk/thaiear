@@ -214,7 +214,7 @@
      sim.js is the right owner because it loads on EVERY test page and nowhere else, and it loads
      BEFORE player.js (topic-test.html:549 vs :551), so player.js picks this up as its DYN_BUILD.
      ▶ BUMP THIS ONE CONSTANT PER TEST-SPACE DEPLOY. Everything else derives from it. */
-  var BUILD = 'r97';
+  var BUILD = 'r98';
   try { window.TE_BUILD = BUILD; } catch (_) {}
   var K_KEEP_PURGED = 'te_sim_keep_purged';
   function keepPurged() { return get(K_KEEP_PURGED) === '1'; }
@@ -382,6 +382,10 @@
   ];
   function mountBadge() {
     if (document.getElementById('te-sim-bar')) return;
+    /* r98 cosmetics view: `?cos=1` suppresses the strip so the owner can judge a template page
+       exactly as it will ship (the strip is scaffolding — §E deletes it at rollout). Test entry
+       via the strip links never carries the flag, so normal test navigation is unchanged. */
+    if (/[?&]cos=1(&|$)/.test(location.search)) return;
     var here = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
     var bar = document.createElement('div');
     bar.id = 'te-sim-bar';
@@ -397,6 +401,15 @@
         'text-decoration:none;color:' + (on ? '#2A2118' : '#E8DCC4') + ';background:' + (on ? '#E8DCC4' : 'transparent');
       bar.appendChild(a);
     });
+    /* r98: 🎨 one-tap cosmetics view — reopen THIS page with ?cos=1 (strip suppressed), so the
+       owner can see the shipping template from the phone/PWA without typing a URL. */
+    var cg = document.createElement('a');
+    cg.href = (location.pathname.split('/').pop() || 'dyn-index.html') + '?k=cu38961y&cos=1';
+    cg.textContent = '🎨';
+    cg.title = 'Cosmetics view — this page without the test strip';
+    cg.style.cssText = 'flex:0 0 auto;font:600 11px/1 system-ui,sans-serif;padding:6px 8px;border-radius:5px;' +
+      'text-decoration:none;color:#E8DCC4;background:transparent';
+    bar.appendChild(cg);
     /* ⚠ READ THE TRACE FROM *ANY* TEST PAGE — added 2026-07-31 because this cost two captures.
        The boot trace panel lives on playlists.html, but the faults happen on topic pages, and in
        airplane mode the owner could not get back to it at all (no address bar, strip route lands on
