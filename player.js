@@ -1522,7 +1522,30 @@
          would keep reading a STALE RECORD as "downloaded once" and label a playlist that owns
          nothing "update available" — the very label the owner could not account for. Topic pages
          keep the original content-only path below, unchanged. */
+      /* ⚠ r97 — AN ALL-LOCKED UNIT MUST BE ASKED WHAT IT *HOLDS*, NOT WHAT IT MAY *FETCH*.
+         dynDlOwnedNeeded() counts over dynDlGroups(), which drops locked sentences, so an
+         all-premium playlist without entitlement yields an EMPTY set → need=0 → {all:false,
+         some:false} → the bar fell through to "Download for offline" over a playlist that IS
+         downloaded and that the visitor cannot re-fetch. No delete, no size, and a button offering
+         an action the server would refuse (owner: T-7b, reproduced on BOTH devices; the list row
+         was right, so the two surfaces disagreed again).
+         This is r75's lesson in a place r75 did not reach: what we HOLD is lock-independent, only
+         what we may FETCH is gated. dynOwnedPrefixes() is r75's own helper and is what
+         dynDeleteHere() releases from — so the bar now offers Delete exactly when Delete has
+         something to do, by construction rather than by two predicates agreeing.
+         ⚠ SCOPED TO THE ALL-LOCKED CASE ON PURPOSE. A MIXED playlist still has a non-empty group,
+         so it keeps the r79/r81 ownership path untouched — that is what D-L2/D-L3/D-L4 assert
+         (downloaded while lapsed reads `· downloaded`, NOT "update available"), and what V and B14
+         are written against. `sentences.length` mirrors the r40 guard above: with no sentences yet
+         loaded the old path still runs, so an early render cannot blank the bar. */
       if (PLMODE) {
+        if (sentences.length && !dynDlGroups.hasAny()) {
+          if (!dynOwnedPrefixes().length) { bar.style.display = 'none'; return; }   // stale record, nothing held: nothing to remove and nothing to fetch
+          cachePage();
+          setOfflineState('downloaded');
+          dynPaintOfflineSize();
+          return;   // deliberately NO dynCheckAudioUpdate(): an update is a FETCH, and this visitor may not
+        }
         var own = dynDlOwnedNeeded();
         if (!own.all) { setOfflineState(own.some ? 'update' : 'idle'); return; }
       } else if (!dynDlHasAll()) {
@@ -2414,7 +2437,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r95';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r97';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
