@@ -952,9 +952,21 @@
   }
   /* "Available offline" now means something WEAKER on a playlist — its clips may be here on another
      download's coat-tails (r66). Reaching this label at all means the unit has its own claim, so on
-     a playlist say DOWNLOADED, which is the durable promise the row caption also makes. A topic
-     keeps the original wording: a topic download is always its own claim. */
-  function dynOkLabel() { return PLMODE ? '✓ Downloaded' : '✓ Available offline'; }
+     a playlist say DOWNLOADED, which is the durable promise the row caption also makes.
+     r74 (owner, 2026-08-01): a DYN TOPIC now says "Downloaded for offline" too. Same reasoning one
+     step further — reaching this label means an own claim, and "available" is now the site's word
+     for the borrowed state, so using it for a topic contradicts the vocabulary the playlist rows
+     and the info box teach. V-7 originally asserted the OLD wording; it is updated with this.
+     ⚠ THREE-WAY ON PURPOSE, AND `DYN` IS LOAD-BEARING HERE. setOfflineState() is shared: LIVE topic
+     pages render this very label through it, and the owner's instruction was dyn-only for now
+     ("no need to update live site at this point in time"). Without the DYN test this would silently
+     re-word every live topic page. Porting it to live is logged in §C-PORT of DYNAMIC_PLAYER_PLAN.md.
+     `DYN` is module-scoped (declared once, ~line 2269, no shadow) and this function only ever runs
+     from render/event handlers, so the hoisted assignment has always landed by then. */
+  function dynOkLabel() {
+    if (PLMODE) return '✓ Downloaded';
+    return DYN ? '✓ Downloaded for offline' : '✓ Available offline';   // non-DYN = the live pages
+  }
   function dynFmtMb(b) { return (b / 1048576).toFixed(2) + ' MB'; }
   function dynPaintOfflineSize() {
     var el = document.querySelector('#offline-bar .offline-ok');
@@ -2296,7 +2308,7 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
-  var DYN_BUILD = 'r73';   // visible build tag on the test pages — bump every test-space deploy
+  var DYN_BUILD = 'r74';   // visible build tag on the test pages — bump every test-space deploy
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
