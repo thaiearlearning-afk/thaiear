@@ -843,31 +843,61 @@
   // All methods are additive and guarded — if the tables don't exist yet, load() degrades to
   // the local cache and the UI just shows what it has.
   var plCache = null;
+  /* r76 — MUTATION SEQUENCE GUARD. `load()` ends in a wholesale `plCache = lists`, and it is a
+     TWO-step fetch (playlists, then items), so it holds a stale snapshot across a wide window.
+     playlists.html fires `load(true)` on EVERY `thaiear:auth` event, including TOKEN_REFRESHED,
+     which arrives on its own schedule. A local mutation landing inside that window was therefore
+     overwritten by the older server copy — the user created a playlist, saw it appear, then saw it
+     vanish, assumed the save had failed, created it again, and ended up with a real duplicate.
+     (Owner, 2026-08-01: "on about two occasions of about 20 trials"; the rate is just how often a
+     token refresh overlaps a create.)
+     Every mutating method bumps plSeq. load() captures it at the start and, if it has moved by the
+     time the response lands, DISCARDS the response rather than overwriting a newer local state.
+     The cost is a slightly staler read until the next load; the alternative is silently destroying
+     a write the user just made. This protects create/remove/rename/addItem/removeItem alike — they
+     were all exposed to the same overwrite, not just create. */
+  var plSeq = 0;
+  /* Was the value the LAST resolved load() handed back an authoritative server read?
+     ⚠ LOAD-BEARING: dlReconcileRefs() frees download claims for playlists that "no longer exist",
+     and its contract says it may only ever see an authoritative list — reconciling against a
+     cache-only or failed load could read "no playlists" and free clips that are legitimately
+     claimed. But load() CATCHES INTERNALLY AND RESOLVES with plLocal(), so a failed load already
+     looked identical to a good one at the call site (pre-existing; the sequence guard adds a
+     second such path). Callers that act destructively on the result MUST check this first. */
+  var plLoadAuth = false;
   function plStore() { try { localStorage.setItem('thaiear_playlists', JSON.stringify(plCache)); } catch (_) {} }
   function plLocal() { try { return JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) { return null; } }
   window.ThaiEarAuth.playlists = {
     // Resolves [{id, name, position, items:[{topic_key,num,prefix,tier,thai,translit,english}]}]
     load: function (force) {
-      if (plCache && !force) return Promise.resolve(plCache);
-      if (!client || !currentUser) { plCache = plLocal() || []; return Promise.resolve(plCache); }
+      if (plCache && !force) { plLoadAuth = false; return Promise.resolve(plCache); }
+      if (!client || !currentUser) { plCache = plLocal() || []; plLoadAuth = false; return Promise.resolve(plCache); }
+      var seq = plSeq;   // r76: anything that mutates locally while this is in flight wins
       return client.from('playlists').select('id,name,position').order('position').order('created_at')
         .then(function (r) {
           if (r.error) throw r.error;
           var lists = r.data || [];
-          if (!lists.length) { plCache = []; plStore(); return plCache; }
+          if (plSeq !== seq) { plLoadAuth = false; return plCache; }
+          if (!lists.length) { plCache = []; plStore(); plLoadAuth = true; return plCache; }
           return client.from('playlist_items')
             .select('id,playlist_id,topic_key,num,prefix,tier,thai,translit,english,position')
             .order('position').order('created_at')
             .then(function (ri) {
               if (ri.error) throw ri.error;
+              /* Re-check: the items fetch is the SECOND round trip, and it is the wider half of the
+                 window. Without this the guard would only cover the first query. */
+              if (plSeq !== seq) { plLoadAuth = false; return plCache; }
               var by = {};
               lists.forEach(function (p) { p.items = []; by[p.id] = p; });
               (ri.data || []).forEach(function (it) { if (by[it.playlist_id]) by[it.playlist_id].items.push(it); });
-              plCache = lists; plStore(); return plCache;
+              plCache = lists; plStore(); plLoadAuth = true; return plCache;
             });
         })
-        .catch(function () { plCache = plLocal() || []; return plCache; });
+        .catch(function () { plCache = plLocal() || []; plLoadAuth = false; return plCache; });
     },
+    /* True only if the last resolved load() was a real server read that was not superseded by a
+       local mutation. Check this before any destructive action derived from the list. */
+    authoritative: function () { return plLoadAuth; },
     get: function () { return plCache; },
     // Read-only view of the localStorage copy — safe to call BEFORE the client/auth resolve
     // and never touches plCache (playlists.html uses it for an instant cache-first paint).
@@ -880,6 +910,7 @@
         .then(function (r) {
           if (r.error) throw r.error;
           r.data.items = [];
+          plSeq++;   /* r76: this write must survive any load() already in flight */
           (plCache = plCache || []).push(r.data); plStore();
           return r.data;
         });
@@ -888,6 +919,7 @@
       if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
       return client.from('playlists').delete().eq('id', id).then(function (r) {
         if (r.error) throw r.error;
+        plSeq++;   /* r76 */
         if (plCache) { plCache = plCache.filter(function (p) { return p.id !== id; }); plStore(); }
       });
     },
@@ -896,6 +928,7 @@
       if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
       return client.from('playlists').update({ name: name }).eq('id', id).then(function (r) {
         if (r.error) throw r.error;
+        plSeq++;   /* r76 */
         if (plCache) {
           plCache.forEach(function (p) { if (p.id === id) p.name = name; });
           plStore();
@@ -914,6 +947,7 @@
       return client.from('playlist_items').upsert(row, { onConflict: 'playlist_id,topic_key,num' })
         .then(function (r) {
           if (r.error) throw r.error;
+          plSeq++;   /* r76 */
           if (p && !p.items.some(function (i) { return i.topic_key === row.topic_key && i.num === row.num; })) {
             p.items.push(row); plStore();
           }
@@ -925,6 +959,7 @@
         .eq('playlist_id', id).eq('topic_key', topicKey).eq('num', num)
         .then(function (r) {
           if (r.error) throw r.error;
+          plSeq++;   /* r76 */
           var p = (plCache || []).filter(function (x) { return x.id === id; })[0];
           if (p) { p.items = p.items.filter(function (i) { return !(i.topic_key === topicKey && i.num === num); }); plStore(); }
         });

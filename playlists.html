@@ -67,6 +67,17 @@
   .pl-open { display: inline-block; font-family: var(--font-ui); font-size: 12.5px; font-weight: 600; color: #fff; background: var(--accent); border-radius: 16px; padding: 6px 16px; text-decoration: none; margin: 1rem 8px 0 0; }
   .pl-open:hover { background: var(--accent-mid); }
   .pl-rm-list { margin: 0 0 0.75rem; }
+  /* r76 — while "Remove sentences" select mode is open, the row's OTHER actions are hidden.
+     Owner, 2026-08-01: "you still see the remove sentences button, the rename playlist button, the
+     delete playlist button... these should not be visible when you're selecting sentences to remove
+     because it is confusing." Leaving "Delete playlist" one thumb away from a selection UI is also
+     the kind of adjacency that turns a mis-tap into a destroyed playlist.
+     "▶ Open player" is hidden too: navigating away mid-selection silently discards the selection.
+     CSS-only on a class the JS already brackets (enterRemove/exitRemove) — no new state. */
+  .pl-box.rm-mode .pl-remsent,
+  .pl-box.rm-mode .pl-rename,
+  .pl-box.rm-mode .pl-del,
+  .pl-box.rm-mode .pl-open { display: none; }
   /* Download area — mirrors index.html / dyn-index.html exactly. */
   .dl-batch-bar { display: flex; flex-direction: column; gap: 8px; background: var(--surface);
     border: .5px solid var(--border); border-radius: var(--radius-md); padding: 12px; margin: 0 0 1rem; }
@@ -965,6 +976,7 @@
   function enterRemove(box, p) {
     if (removing) return;
     removing = { id: p.id, marked: {} };
+    box.classList.add('rm-mode');   /* r76: hide this row's other actions while selecting */
     var body = box.querySelector('.pl-box-body');
     var listEl = document.createElement('div');
     listEl.className = 'dyn-list removing pl-rm-list';
@@ -1008,6 +1020,11 @@
   }
   function exitRemove() {
     removing = null;
+    /* r76: clear the select-mode class wherever it is. Queried rather than held on a captured
+       `box` because render() can rebuild the DOM underneath us (it sets `removing = null` on every
+       repaint), so a captured node may no longer be the one on screen. */
+    var rm = document.querySelector('.pl-box.rm-mode');
+    if (rm) rm.classList.remove('rm-mode');
     var bar = document.getElementById('dyn-rm-bar');
     if (bar) bar.parentNode.removeChild(bar);
     var l = document.querySelector('.pl-rm-list');
@@ -1312,8 +1329,18 @@
       if (!authReady()) { setTimeout(wait, 250); return; }
       if (!PL() || !user()) { render(); return; }
       PL().load(true).then(function (lists) {
-        // The one authoritative list on this page — the only safe moment to reconcile ghost refs.
-        var freed = dlReconcileRefs(lists);
+        /* The one authoritative list on this page — the only safe moment to reconcile ghost refs.
+           ⚠ r76: "authoritative" now has to be ASKED FOR, not assumed. load() catches internally
+           and RESOLVES with the localStorage copy, so a failed load has always been indistinguishable
+           from a good one here — and if that copy were empty, reconcile would read "no playlists"
+           and free every pl- claim on the device. The r76 sequence guard adds a second
+           non-authoritative path (a local mutation superseding an in-flight response). One check
+           closes both: reconcile ONLY on a genuine, un-superseded server read. */
+        /* FAIL CLOSED, deliberately: if auth.js is an older cached copy with no authoritative(),
+           we skip reconciling rather than assume the list is trustworthy. Cost of skipping = r69's
+           ghost-ref cleanup waits for the next good load. Cost of wrongly proceeding = every pl-
+           claim on the device is freed. Not a close call. */
+        var freed = (PL().authoritative && PL().authoritative()) ? dlReconcileRefs(lists) : false;
         // repaint when the server copy differs from what's on screen, or the manifest just changed
         if (freed || JSON.stringify(lists || []) !== paintedJson) render();
       }).catch(function () {
