@@ -505,17 +505,39 @@
          (where Capacitor Filesystem exists) it NEVER looked in Cache Storage — and clips living there
          were structurally invisible. The owner proved they must be somewhere: full dynamic
          reconstruction, different lengths/pauses/repeats, with on-disk reading 10 of 50. */
+      /* ⚠ r90 — READ THE DISK ROOT, NOT JUST THE MANIFEST'S KEYS. This branch used to walk
+         `keys` (the manifest) and readdir each one, so a prefix the manifest had NEVER HEARD OF was
+         structurally invisible — and that is precisely the class we are hunting. Every release path
+         enumerates the manifest too, so files written by a download that died before its entry was
+         written can be neither seen nor removed by anything in the app.
+         The proof it mattered: after Remove All the dump printed "(nothing stored)", which read as
+         "the disk is clean" but actually meant "the manifest is empty so I looked nowhere". The
+         cleaner and the instrument were blind in the same way, which is how the residue survived
+         both. Now the prefix list is the UNION of the manifest and what is genuinely in `offline/`,
+         and anything present on disk with no entry is called an ORPHAN. */
       if (FSP) {
-        keys.forEach(function (k) {
-          pending++;
-          FSP.readdir({ path: 'offline/' + k, directory: 'DATA' }).then(function (r) {
-            var n = ((r && r.files) || []).length;
-            storedLines.push(k + '  on-disk=' + n + '  manifest=' + ((man[k] || {}).files || []).length +
-              (n !== ((man[k] || {}).files || []).length ? '   ⚠ MISMATCH' : ''));
-          }).catch(function (e) {
-            storedLines.push(k + '  on-disk=? (' + ((e && e.message) || 'readdir failed') + ')');
-          }).then(function () { if (!--pending) finish(); });
-        });
+        pending++;
+        FSP.readdir({ path: 'offline', directory: 'DATA' }).then(function (root) {
+          // Capacitor returns {name} objects on newer plugin versions and bare strings on older.
+          return ((root && root.files) || []).map(function (f) { return (f && f.name) ? f.name : f; });
+        }).catch(function () { return []; }).then(function (onDisk) {
+          var seen = {}, all = [];
+          keys.concat(onDisk).forEach(function (k) { if (k && !seen[k]) { seen[k] = 1; all.push(k); } });
+          if (!all.length) return null;
+          return Promise.all(all.map(function (k) {
+            return FSP.readdir({ path: 'offline/' + k, directory: 'DATA' }).then(function (r) {
+              var n = ((r && r.files) || []).length;
+              var claimed = ((man[k] || {}).files || []).length;
+              var note = !man[k] ? '   ⚠⚠ ORPHAN — on disk, NOT in the manifest (no control can remove it)'
+                       : (n !== claimed ? '   ⚠ MISMATCH' : '');
+              storedLines.push(k + '  on-disk=' + n + '  manifest=' + claimed + note);
+            }).catch(function (e) {
+              storedLines.push(k + '  on-disk=? (' + ((e && e.message) || 'readdir failed') + ')');
+            });
+          }));
+        }).catch(function (e) {
+          storedLines.push('(filesystem read failed: ' + ((e && e.message) || e) + ')');
+        }).then(function () { if (!--pending) finish(); });
       }
       if (window.caches) {
         pending++;
