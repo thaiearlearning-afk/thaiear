@@ -130,6 +130,21 @@
      in this UI; the removal prompt has to look like the rest of the site. */
   .dl-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,40,0.55);
     display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
+  /* r89: copied verbatim from playlists.html so the shared dialog looks shared. */
+  .modal-overlay { position:fixed; inset:0; background:rgba(20,16,48,0.45); display:flex; align-items:center; justify-content:center; padding:1.25rem; z-index:1000; }
+  .modal-card { background:var(--surface); border-radius:var(--radius-lg); max-width:400px; width:100%; padding:1.5rem 1.5rem 1.35rem; box-shadow:0 12px 40px rgba(0,0,0,0.2); }
+  .modal-card h2 { font-size:18px; font-weight:600; margin-bottom:0.5rem; }
+  .modal-card p { font-size:14px; color:var(--text-secondary); margin-bottom:1rem; line-height:1.55; }
+  .modal-actions { display:flex; gap:8px; justify-content:flex-end; }
+  .btn { font-family:var(--font-ui); font-size:14px; font-weight:500; border-radius:var(--radius-sm); padding:9px 18px; cursor:pointer; border:0.5px solid var(--border-strong); }
+  .btn-ghost { background:var(--surface); color:var(--text-secondary); }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-danger { background:#B00020; color:#fff; border-color:#B00020; }
+  .btn-danger:hover:not([disabled]) { background:#8a0019; }
+  .btn-danger[disabled] { opacity:.45; cursor:default; }
+  .modal-input { width:100%; box-sizing:border-box; font-family:var(--font-ui); font-size:15px; padding:9px 11px;
+    border:0.5px solid var(--border-strong); border-radius:var(--radius-sm); margin-bottom:1rem; background:var(--bg); color:var(--text-primary); }
+  .modal-input:focus { outline:none; border-color:var(--accent); }
   .dl-modal-input { width: 100%; box-sizing: border-box; margin: 0 0 1rem; padding: 9px 11px;
     font: inherit; font-size: 15px; text-align: center; letter-spacing: .06em; text-transform: uppercase;
     border: .5px solid var(--border-strong); border-radius: 8px; background: var(--bg); color: var(--text-primary); }
@@ -296,10 +311,10 @@
       }
     } catch (_) {}
     if (!prefixes.length && !metas.length) { status('There are no downloads to remove.'); return; }
-    showConfirm('Remove ALL downloads from this device — ' + prefixes.length + ' item' +
-      (prefixes.length === 1 ? '' : 's') + '? You can download them again any time, but this can’t be undone. ' +
-      'Your Read Thai course download is not affected. Type REMOVE to confirm.',
-      function () {
+    /* r89: the SAME dialog as playlists.html, word for word. r88 built a second, worse one here —
+       "you have made the remove box different to the one from the playlists?? that's so dumb."
+       Right: one action, two pages, one dialog. Title + rich body + danger button + typed guard. */
+    showRemoveModal(prefixes.length, function () {
         setBusy(true);
         statusDots('Removing all downloads');
         var chain = Promise.resolve();
@@ -335,7 +350,7 @@
           status('All downloads removed.');
           render();
         });
-      }, 'Remove all', 'Cancel', 'REMOVE');
+      });
   }
   function isDownloaded(p, n) {
     var e = manifest()[p];
@@ -616,6 +631,11 @@
         ((haveEntry && haveEntry.files) || []).forEach(function (f) { have[f] = 1; });
         var files = allFiles.filter(function (f) { return !have[f]; });
         if (!files.length) files = allFiles;      // nothing missing → a deliberate full refresh
+        /* r89 — SHOW THE RESUME. r88 skipped the clips already held but still counted from 1 of
+           <remaining>, so a resumed download was indistinguishable from starting over — which is
+           why the owner reported W-3 as "does not work". Counting the skipped ones into the figure
+           makes it read "clip 33 of 44" and the behaviour becomes observable. */
+        var already = allFiles.length - files.length;
         var done = 0, tDl0 = Date.now();
         // The destination directory must EXIST first. downloadFile's `recursive` does not
         // create it on Android (ENOENT) — player.js and index.html both mkdir first, and
@@ -634,7 +654,7 @@
                  on disk with no entry and no ref - invisible to every UI and unreclaimable by any
                  button. Recording them as they arrive also makes the download RESUMABLE. */
               noteClip(u, f);
-              status('Downloading ' + u.name + ' — clip ' + done + ' of ' + files.length);
+              status('Downloading ' + u.name + ' — clip ' + (already + done) + ' of ' + allFiles.length);
             });
           });
         });
@@ -692,6 +712,37 @@
      account.html uses for delete-account and playlists.html uses for Remove All. ⚠ It was missing
      here: r86 wired Remove All to the plain confirm, so the index's most destructive control had a
      weaker gate than the identical control one page over. Owner caught it. */
+  /* r89 — lifted from playlists.html so the two Remove All dialogs are identical. Deliberately a
+     separate function from showConfirm(), which is the index's plain remove-these-topics prompt and
+     is used elsewhere; folding both into one shared modal belongs with the D.1 consolidation. */
+  function showRemoveModal(count, onConfirm) {
+    var ov = document.createElement('div');
+    ov.className = 'modal-overlay';
+    ov.innerHTML =
+      '<div class="modal-card" role="dialog" aria-modal="true">' +
+        '<h2>Remove ALL downloads?</h2>' +
+        '<p>This removes every downloaded topic and playlist from this device — ' + count +
+          ' item' + (count === 1 ? '' : 's') + '. You can download them again any time, but it can’t be undone.' +
+          '<br><br>Your <strong>Read Thai course</strong> download is not affected.' +
+          '<br><br>Type <strong>REMOVE</strong> to confirm.</p>' +
+        '<input class="modal-input" id="ra-input" type="text" maxlength="10">' +
+        '<div class="modal-actions">' +
+          '<button class="btn btn-ghost" id="ra-cancel">Cancel</button>' +
+          '<button class="btn btn-danger" id="ra-ok" disabled>Remove all</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    var inp = ov.querySelector('#ra-input'), ok = ov.querySelector('#ra-ok');
+    try { inp.focus({ preventScroll: true }); } catch (_) {}
+    inp.addEventListener('input', function () { ok.disabled = inp.value.trim().toUpperCase() !== 'REMOVE'; });
+    ov.querySelector('#ra-cancel').addEventListener('click', close);
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ok.addEventListener('click', function () {
+      if (inp.value.trim().toUpperCase() !== 'REMOVE') return;
+      close(); onConfirm();
+    });
+  }
   function showConfirm(message, onConfirm, okLabel, cancelLabel, requireText) {
     var ov = document.createElement('div');
     ov.className = 'dl-modal';
