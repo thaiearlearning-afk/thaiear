@@ -1884,7 +1884,14 @@ renderGrid();
   // Deep link: index-mock.html#playlists / #read opens with that panel selected (the About page's
   // "custom playlists" link relies on this; ship version = index.html#playlists).
   var h = (location.hash || '').replace('#', '');
-  if (panels[h]) show(h);
+  if (panels[h]) {
+    show(h);
+    // land AT the switcher/panel, not the hero (ship version does the same on index.html)
+    setTimeout(function () {
+      var ms = document.querySelector('.mode-switch');
+      if (ms) window.scrollTo({ top: ms.getBoundingClientRect().top + window.scrollY - 8 });
+    }, 0);
+  }
 })();
 </script>
 </body>

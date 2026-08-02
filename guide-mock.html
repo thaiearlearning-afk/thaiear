@@ -402,6 +402,9 @@
   /* the guide page is 640px; the player CSS assumes the topic page width — it fits as-is */
   #player-root { margin-bottom: 0.4rem; }
   /* single-message box below the player (callout family) */
+  #demo-scrubber { touch-action: none; cursor: pointer; }
+  .see-link { color: var(--accent) !important; text-decoration: underline !important; }
+  .see-link strong { color: inherit; }
   .dp-info { background: var(--accent-light); border-radius: var(--radius-md); padding: 0.85rem 1.05rem; margin: 0 0 1rem; }
   .dp-info p { margin: 0; color: #3B3488; font-size: 13.5px; line-height: 1.6; }
   .dp-info p strong { color: #2B2566; }
@@ -434,7 +437,7 @@
   <h2 class="sect">Dynamic mp3 Player</h2>
 
   <p><strong>ThaiEar's</strong> audio material is divided into <strong>topics and subtopics</strong> and you can
-    also make your own <strong>custom playlists</strong> to suit your exact interests. All audio is delivered
+    also make your own <a class="see-link" href="index-mock.html?k=cu38961y#playlists"><strong>Custom playlists</strong></a> to suit your exact interests. All audio is delivered
     through the <strong>Dynamic mp3 player</strong>, which gives you precise control over your Thai learning
     audio, constructing and reconstructing audio to your specification.</p>
 
@@ -484,7 +487,7 @@
         <div class="dyn-slider" id="demo-slider-row">
           <span class="dyn-ctl-group" id="demo-pauses">Pauses <input id="dyn-pf" type="range" min="0.5" max="2" step="0.25" value="1"> <span id="dyn-pf-val">1×</span></span>
           <span class="dyn-ctl-sep">·</span>
-          <span class="dyn-ctl-group" id="demo-reps"><button type="button" class="dyn-info-lbl" id="demo-reps-info">Thai sentence repeats <span class="dyn-info-i" aria-hidden="true">i</span></button> <span class="dyn-reps" id="dyn-reps"><button type="button" class="dyn-rep-btn on">1</button><button type="button" class="dyn-rep-btn">2</button><button type="button" class="dyn-rep-btn">3</button><button type="button" class="dyn-rep-btn">4</button></span></span>
+          <span class="dyn-ctl-group" id="demo-reps"><button type="button" class="dyn-info-lbl" id="demo-reps-info">Thai sentence repeats <span class="dyn-info-i" aria-hidden="true">i</span></button> <span class="dyn-reps" id="dyn-reps"><button type="button" class="dyn-rep-btn">1</button><button type="button" class="dyn-rep-btn on">2</button><button type="button" class="dyn-rep-btn">3</button><button type="button" class="dyn-rep-btn">4</button></span></span>
           <span class="dyn-ctl-sep" id="dyn-en-sep">·</span>
           <label class="dyn-en-lbl dyn-ctl-group" id="dyn-en-wrap"><input type="checkbox" id="dyn-en" checked> English</label>
         </div>
@@ -541,7 +544,7 @@
   var PLAY_BARS = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
   var DUR = 300, BLOCK = 30;
   var pos = 0, playing = false, timer = null;
-  var mode = 'te', repeats = 1, english = true, engPos = 0;   // engPos 0 = unset → after all repeats
+  var mode = 'te', repeats = 2, english = true, engPos = 0;   // 2 repeats by default so English position is visible   // engPos 0 = unset → after all repeats
   var $ = function (id) { return document.getElementById(id); };
   function fmt(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
   function paint() {
@@ -561,10 +564,25 @@
   });
   $('demo-sent-prev').addEventListener('click', function () { pos = Math.max(0, (Math.ceil(pos / BLOCK) - 1) * BLOCK - BLOCK); paint(); });
   $('demo-sent-next').addEventListener('click', function () { pos = (Math.floor(pos / BLOCK) + 1) * BLOCK; if (pos >= DUR) pos = 0; paint(); });
-  $('demo-scrubber').addEventListener('click', function (e) {
-    var r = this.getBoundingClientRect();
-    pos = Math.min(DUR - 0.1, Math.max(0, (e.clientX - r.left) / r.width * DUR)); paint();
-  });
+  /* finger/mouse scrubbing — the position LOCKS to sentence starts (30s blocks); no cycler message */
+  (function () {
+    var track = $('demo-scrubber'), dragging = false;
+    function seek(e) {
+      var r = track.getBoundingClientRect();
+      var raw = Math.max(0, Math.min(DUR - 0.1, (e.clientX - r.left) / r.width * DUR));
+      pos = Math.min(DUR - 0.1, Math.floor(raw / BLOCK) * BLOCK);
+      paint();
+    }
+    track.addEventListener('pointerdown', function (e) {
+      dragging = true;
+      try { track.setPointerCapture(e.pointerId); } catch (_) {}
+      seek(e); e.preventDefault();
+    });
+    track.addEventListener('pointermove', function (e) { if (dragging) seek(e); });
+    ['pointerup', 'pointercancel'].forEach(function (ev) {
+      track.addEventListener(ev, function () { dragging = false; });
+    });
+  })();
 
   /* cycler messages (owner copy) */
   var MSG = {
