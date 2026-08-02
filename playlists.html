@@ -5,7 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Embed mode (?embed=1): hides the site nav so the page can render INSIDE another page (the
      index Playlists panel). Inert on a normal visit. Mirrors read.html's ?embed=1 pattern. -->
-<script>if(/[?&]embed=1(&|$)/.test(location.search))document.documentElement.className+=' te-embed';</script>
+<script>if(/[?&]embed=1(&|$)/.test(location.search)){document.documentElement.className+=' te-embed';
+/* r129: ALL navigation out of the embedded list must break out of the panel iframe. Without this,
+   Open-playlist ran the ?pl= PLAYER inside the panel frame — an untested context where the app's
+   Capacitor bridge isn't available (native audio silently dead: "nothing plays", owner-reported)
+   — and "← All playlists" loaded the whole index INSIDE the panel. The player is a top-level
+   destination (§0d keeps ?pl=); the embed is only ever the LIST. */
+var _b=document.createElement('base');_b.target='_top';document.head.appendChild(_b);}</script>
 <style>.te-embed #site-nav-root,.te-embed nav.site-nav{display:none!important}
 .te-embed .wrap{padding-top:0}/* r128: panel title sits the same distance below the switcher as the topics title */
 <title>My Playlists — ThaiEar</title>
@@ -331,6 +337,18 @@
   // §D.1: device/browser storage capability — shared with dyn-index.html via dl-core.js.
   var DLCAP = ThaiEarDL.capabilities();
   var DL_NATIVE = DLCAP.native, DL_FS = DLCAP.fs, DL_OK = DLCAP.ok;
+  /* r129 — §1f on THIS page too: the list renders inside the index panel, where the outer page's
+     te-no-dl class cannot reach. Download UI is app + installed-PWA only; a plain browser viewing
+     the panel must never see circles/ticks/the batch bar, with normal-flow collapse. Same
+     predicate as the index (native via the parent-bridged capabilities || standalone PWA). */
+  (function () {
+    var standalone = false;
+    try {
+      standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
+                   window.navigator.standalone === true;
+    } catch (_) {}
+    if (!(DL_NATIVE || standalone)) document.documentElement.className += ' te-no-dl';
+  })();
   /* r85 — ONE SELECTION SET. There used to be two (dlSel / dlClearSel) with the row's control
      deciding which you were in, so selecting a download and a removal at once was impossible and the
      UI had to say "Finish or deselect your … choice first". The owner's model replaces that: a row

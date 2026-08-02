@@ -124,6 +124,12 @@
   // (web-capable AND NOT native) — both pages read the field shaped for their own local var.
   function capabilities() {
     var C = window.Capacitor;
+    /* r129: the playlists LIST runs embedded in the index panel (same-origin iframe). Capacitor
+       injects its bridge into the TOP frame only, so inside the panel `window.Capacitor` is
+       undefined and this fell back to the WEB storage path INSIDE THE NATIVE APP — downloads hung
+       (owner: "perpetual ellipsis") and would have landed in Cache Storage where the native player
+       never looks. Same-origin parent lookup restores the real bridge. */
+    if (!C && window.parent && window.parent !== window) { try { C = window.parent.Capacitor; } catch (_) {} }
     var native = !!(C && C.isNativePlatform && C.isNativePlatform());
     var fs = (native && C.Plugins) ? C.Plugins.Filesystem : null;
     var webOk = !native && !!window.caches;

@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Embed mode (?embed=1): hides the site nav + the big mode toggle so the page can render
      INSIDE another page (the index three-way switcher). Inert on a normal visit. -->
-<script>if(/[?&]embed=1(&|$)/.test(location.search))document.documentElement.className+=' te-embed';</script>
+<script>if(/[?&]embed=1(&|$)/.test(location.search)){document.documentElement.className+=' te-embed';
+/* r129: lesson links must leave the panel iframe — a full lesson page nested inside the index
+   panel is broken chrome-in-chrome. Lessons open top-level (their own page, as always); the
+   panel is only ever the hub. */
+var _b=document.createElement('base');_b.target='_top';document.head.appendChild(_b);}</script>
 <style>.te-embed #site-nav-root,.te-embed nav.site-nav,.te-embed .mode-toggle-wrap{display:none!important}
 .te-embed .read-wrap{padding-top:0}/* r128: panel title sits the same distance below the switcher as the topics title */
 <title>Read Thai — Learn the Thai Alphabet, Vowels &amp; Tone Rules | ThaiEar</title>
