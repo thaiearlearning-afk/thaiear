@@ -770,6 +770,8 @@
   -->
 
   <div id="panel-topics">
+  <h2 class="panel-title">Listen and learn by topic</h2>
+  <div class="panel-sub">Learn Thai by Ear</div>
   <div class="grid-toolbar">
   <div class="filter-tabs">
     <button class="filter-tab active" onclick="filterAccess('all', this)">All access</button>
@@ -931,6 +933,8 @@
 
   <!-- ── PLAYLISTS (mockup: signed-out view; every action routes to the sign-in-to-unlock page) ── -->
   <div id="panel-playlists" hidden>
+    <h2 class="panel-title">My playlists</h2>
+    <div class="panel-sub">Thai for Your Ear</div>
     <p class="mk-lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
     <div class="mk-flu">
       <img src="meditator.png" alt="Meditating learner" width="150">
@@ -1780,6 +1784,13 @@ updateBatchBar();          // show the batch-download bar in the app (hidden on 
    the installed iPhone PWA see them; plain browsers (Safari/Chrome, desktop or phone) never do —
    and the layout reflows into the space, no reserved gap. */
 body.te-no-dl .mock-dlbar { display: none; }
+/* ══ ROUND 7 (owner, 2026-08-02) ══ panel headings, matching the read section exactly:
+   title = read.css .read-title; subtitle = .read-eyebrow style, UNDER the title. */
+.panel-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary);
+  margin-bottom: 4px; line-height: 1.2; }
+.panel-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent); margin: 6px 0 16px; }
+@media (max-width: 600px) { .panel-title { font-size: 20px; } }
 </style>
 <script>
 /* Mockup: the dynamic grid keeps rendering (filters + search work), but its coming-soon block
