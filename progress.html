@@ -254,6 +254,13 @@ function applyProgFilter(f) {
 document.addEventListener('click', function (e) {
   var t = e.target.closest && e.target.closest('.filter-tab');
   if (t) applyProgFilter(t.getAttribute('data-f'));
+  // r136a: the collapsible intro's Read more / Show less (delegated — survives re-renders).
+  var m = e.target.closest && e.target.closest('.prog-intro-more');
+  if (m) {
+    var w = m.parentNode;
+    w.classList.toggle('open');
+    m.textContent = w.classList.contains('open') ? 'Show less' : 'Read more';
+  }
 });
 
 // Playlists section (bottom of the list, under a "Playlists" divider). Real data via
@@ -338,7 +345,7 @@ function render() {
     'this is found above the mp3 player. Over time you can see which topics you know well and which topics need more ' +
     'attention. Change your progress goal or reset your progress at any time. After 3 to 5 complete listens of a topic, ' +
     'consider listening to it English-first. Practising producing the Thai yourself will build confidence and fluency.</p>' +
-    '<button type="button" class="prog-intro-more" onclick="var w=this.parentNode;w.classList.toggle('open');this.textContent=w.classList.contains('open')?'Show less':'Read more'">Read more</button></div>';
+    '<button type="button" class="prog-intro-more">Read more</button></div>';
 
   var fluency =
     '<div class="fluency-block">' +
