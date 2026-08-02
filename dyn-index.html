@@ -213,6 +213,7 @@
 </div>
 
 <script src="auth.js" defer></script>
+<script src="dl-core.js"></script>
 <script>
 (function () {
   'use strict';
@@ -227,10 +228,9 @@
   var AUDIO_BASE = 'https://audio.thaiear.com';
   var AUDIO_DL_CACHE = 'thaiear-audio-dl';                                  // must match player.js
   function webCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; }  // must match player.js
-  var C = window.Capacitor;
-  var NATIVE = !!(C && C.isNativePlatform && C.isNativePlatform());
-  var FS = (NATIVE && C.Plugins) ? C.Plugins.Filesystem : null;
-  var WEB_DL = !NATIVE && !!window.caches;
+  // §D.1: device/browser storage capability — shared with playlists.html via dl-core.js.
+  var CAP = ThaiEarDL.capabilities();
+  var NATIVE = CAP.native, FS = CAP.fs, WEB_DL = CAP.webOk;
 
   /* r86 — ONE SELECTION SET, mirroring playlists.html (r85). A row is simply SELECTED; the BUTTON
      supplies the verb, and rows that cannot perform it are skipped in silence. That removes the two
@@ -241,8 +241,10 @@
   // usable offline topic — but claiming "downloaded" while still working reads as a lie.)
   var working = {};
 
-  function manifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
-  function setManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
+  // §D.1: manifest read/write moved to dl-core.js (shared with playlists.html) — these stay as
+  // thin delegates so every existing manifest()/setManifest() call site below is untouched.
+  function manifest() { return ThaiEarDL.getManifest(); }
+  function setManifest(m) { ThaiEarDL.setManifest(m); }
   /* A manifest entry can exist because a PLAYLIST pulled some of this topic's clips. That is
      not the topic being downloaded — it holds only the sentences that playlist uses, so a tick
      here would promise offline playback the topic cannot deliver. Ownership is the 'topic' ref;
@@ -319,30 +321,24 @@
   function removeAll() {
     if (busy) return;
     var m = manifest(), prefixes = Object.keys(m);
-    var metas = [];
-    try {
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf('te_dyn_meta_') === 0) metas.push(k);
-      }
-    } catch (_) {}
     /* ⚠ r91 — NO EARLY RETURN ON AN EMPTY MANIFEST. It used to bail with "There are no downloads to
        remove" whenever the manifest was empty — which is the EXACT state the owner's device was in
        while holding 41 orphaned clips. The one situation where the sweep is most needed was the one
        where the button refused to run. The sweep is idempotent and cheap, so it always runs now. */
-    /* r89: the SAME dialog as playlists.html, word for word. r88 built a second, worse one here —
-       "you have made the remove box different to the one from the playlists?? that's so dumb."
-       Right: one action, two pages, one dialog. Title + rich body + danger button + typed guard. */
-    showRemoveModal(prefixes.length, function () {
+    /* r89: the SAME dialog as playlists.html, word for word — now literally the same function,
+       ThaiEarDL.removeAllModal (§D.1). r88 built a second, worse one here — "you have made the
+       remove box different to the one from the playlists?? that's so dumb." Right: one action,
+       two pages, one dialog. Title + rich body + danger button + typed guard. */
+    ThaiEarDL.removeAllModal(prefixes.length, function () {
         setBusy(true);
         statusDots('Removing all downloads');
-      /* ⚠ r91 — SWEEP THE DISK, NOT THE MANIFEST. This loop used to walk Object.keys(manifest())
-         and delete per prefix, so anything the manifest had never heard of was untouchable — and
-         the owner's r90 measurement found exactly that on a real device: Greetings_BEG (18 files),
-         GettingToKnow_BEG (18), Weather_BEG (5) and an empty ColoursAndDescriptions_BEG directory.
-         41 stranded clips that no control in the app could remove, from ordinary downloads earlier
-         in the project's life. A button called "Remove All Downloads" that leaves 41 files behind
-         is simply lying.
+      /* ⚠ r91 — SWEEP THE DISK, NOT THE MANIFEST (§D.1: now ThaiEarDL.removeAllDownloads). This
+         used to walk Object.keys(manifest()) and delete per prefix, so anything the manifest had
+         never heard of was untouchable — and the owner's r90 measurement found exactly that on a
+         real device: Greetings_BEG (18 files), GettingToKnow_BEG (18), Weather_BEG (5) and an
+         empty ColoursAndDescriptions_BEG directory. 41 stranded clips that no control in the app
+         could remove, from ordinary downloads earlier in the project's life. A button called
+         "Remove All Downloads" that leaves 41 files behind is simply lying.
          Native: rmdir the whole `offline/` tree, which also clears the empty directories a
          file-level delete leaves behind. Web: delete every Cache Storage key under
          `/__offline-audio/` (clips) and `/dyn/` (stitched sessions), which also catches a session
@@ -354,29 +350,7 @@
          The owner chose this over a load-time sweep, correctly: this one is an explicit user action
          with an obvious test, where a sweep firing on every page load is one bad manifest read away
          from deleting good downloads and is far harder to prove correct. */
-      var chain = Promise.resolve().then(function () {
-          if (NATIVE) return FS.rmdir({ directory: 'DATA', path: 'offline', recursive: true }).catch(function () {});
-          if (!window.caches) return null;
-          return caches.open(AUDIO_DL_CACHE).then(function (c) {
-            return c.keys().then(function (reqs) {
-              return Promise.all(reqs.filter(function (rq) {
-                var path = '';
-                try { path = new URL(rq.url).pathname; } catch (_) { path = String(rq.url); }
-                return path.indexOf('/__offline-audio/') === 0 || path.indexOf('/dyn/') === 0;
-              }).map(function (rq) { return c.delete(rq).catch(function () {}); }));
-            });
-          }).catch(function () {});
-        });
-        metas.forEach(function (k) {
-          var meta = null;
-          try { meta = JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) {}
-          try { localStorage.removeItem(k); } catch (_) {}
-          void meta;   // r91: the file itself goes with the disk sweep above
-
-        });
-        chain.then(function () {
-          try { localStorage.removeItem('thaiear_offline'); } catch (_) {}
-          try { localStorage.removeItem('thaiear_offline_pl'); } catch (_) {}
+      ThaiEarDL.removeAllDownloads(CAP, AUDIO_DL_CACHE).then(function () {
           dlSel = {};
           setBusy(false);
           status('All downloads removed.');
@@ -435,20 +409,16 @@
      free + member (a member download stays open once taken); premium subscriber → everything.
      ⚠ Read through the SIM VIEW, or the owner cannot test any of this. Absent sim.js this is a
      plain pass-through to the real account. */
-  function unitLocked(u) {
-    var S = window.ThaiEarSim;
-    var a = S ? S.authView(window.ThaiEarAuth) : window.ThaiEarAuth;
-    if (!a || typeof a.lockedFor !== 'function') return false;   // stale auth.js → never lock out
-    /* ⚠ canStoreOffline:FALSE on purpose. That option enables lockedFor's "a member download stays
-       open once taken" rule, which is about PLAYBACK — keeping access to something you already
-       have. Asking whether to offer a NEW download is a different question, and passing `true` here
-       meant a SIGNED-OUT visitor saw a download circle on the member topic merely because a
-       manifest entry existed for that prefix (left by a playlist that had cached one of its
-       sentences). Owner caught it as T-1. The live index draws the same line: its download-unlock
-       for a downloaded topic applies only when OFFLINE, never to offering a fresh download. */
-    return a.lockedFor({ tier: (u && u.tier) || 'free', prefix: u && u.prefix },
-                       { canStoreOffline: false });
-  }
+  /* ⚠ canStoreOffline:FALSE on purpose. That option enables lockedFor's "a member download stays
+     open once taken" rule, which is about PLAYBACK — keeping access to something you already
+     have. Asking whether to offer a NEW download is a different question, and passing `true` here
+     meant a SIGNED-OUT visitor saw a download circle on the member topic merely because a
+     manifest entry existed for that prefix (left by a playlist that had cached one of its
+     sentences). Owner caught it as T-1. The live index draws the same line: its download-unlock
+     for a downloaded topic applies only when OFFLINE, never to offering a fresh download.
+     §D.1: the AUTH()/lockedFor plumbing itself now lives in dl-core.js (ThaiEarDL.locked) —
+     this page keeps only the `canStoreOffline` value it deliberately differs on from playlists. */
+  function unitLocked(u) { return ThaiEarDL.locked(u, false); }
   /* The pill said "free", which is the INTERNAL tier key, not the label the site uses. The live
      index calls that tier "Non-member" everywhere (topic-nonmember chip), so the test space read as
      a different product. Label only — `u.tier` stays the key that drives the CSS class and every
@@ -463,6 +433,14 @@
       /* r83: downloaded AND superseded → offer the update instead of the removal tick. Same single
          state the topic page shows, same wording, so the two surfaces cannot disagree. */
       var upd = dl && avStale(u.prefix);
+      /* D0 (§D.1 migration, 2026-08-02, ThaiEarDL.looksLikeTopicClaim) — an entry that is not
+         fully downloaded but still LOOKS like a topic claim (a pre-refs / old classic download,
+         or a dyn download interrupted before it finished) reads as an update, not a bare
+         "not downloaded", so it doesn't silently read as gone. Only evaluated in the branch
+         nothing else already explains, and still entitlement-gated exactly like the plain circle
+         it replaces — an update is still a download action, not a removal. */
+      var legacyClaim = !w && !dl && !unitLocked(u) && ThaiEarDL.looksLikeTopicClaim(u.prefix, manifest()[u.prefix]);
+      var showUpdate = upd || legacyClaim;
       var el = document.createElement('div');
       el.className = 'unit' + (w ? ' working' : '');
       /* ⚠ TWO DIFFERENT RULES, AND THEY ARE NOT SYMMETRIC (owner, 2026-07-31).
@@ -477,7 +455,7 @@
          logged separately; this file implements the owner's stricter, correct rule. */
       var sel = w
         ? '<span class="dots" aria-hidden="true"></span>'
-        : upd
+        : showUpdate
         ? '<span class="dl-select dl-update' + (dlSel[u.prefix] ? ' selected' : '') + '" data-p="' + u.prefix + '" data-mode="dl" role="button" title="Download audio update - tap to select and update this download" aria-label="Download audio update - select to update this download"><span class="dl-dot"></span></span>'
         : dl
         ? '<span class="dl-badge' + (dlSel[u.prefix] ? ' clear-selected' : '') + '" data-p="' + u.prefix + '" data-mode="sel" role="button" title="Downloaded · tap to select">' +
@@ -493,7 +471,7 @@
              and the caption another (owner, 2026-08-01). The caption is the half people actually
              read. */
           '<div class="unit-meta">' + u.n + ' sentences · ' +
-            (upd ? 'update available' : dl ? 'downloaded' : 'not downloaded') + '</div>' +
+            (showUpdate ? 'update available' : dl ? 'downloaded' : 'not downloaded') + '</div>' +
         '</div>' + sel;
       root.appendChild(el);
     });
@@ -555,17 +533,8 @@
       return nums;
     });
   }
-  // Bounded-concurrency runner (same shape as player.js's dynPool).
-  function pool(items, n, worker) {
-    var i = 0;
-    function lane() {
-      if (i >= items.length) return Promise.resolve();
-      return worker(items[i++]).then(lane);
-    }
-    var lanes = [];
-    for (var k = 0; k < Math.min(n, items.length); k++) lanes.push(lane());
-    return Promise.all(lanes);
-  }
+  // §D.1: the bounded-concurrency runner now lives in dl-core.js as ThaiEarDL.pool (same shape as
+  // player.js's dynPool) — every call site below uses it directly.
   function clipFiles(prefix, nums) {
     var files = [];
     nums.forEach(function (n) {
@@ -576,62 +545,31 @@
     return files;
   }
   /* r86: one clip, recorded. Mirrors the bulk write that still runs at the end, so it is
-     idempotent - re-downloading never duplicates a file or a ref. */
+     idempotent - re-downloading never duplicates a file or a ref.
+     §D.1: the manifest mechanics (files/refs merge, av-baseline stamping, delete-bytes) now live
+     in dl-core.js as ThaiEarDL.noteClip — see its r88 comment for why the av baseline is stamped
+     here rather than adopted lazily on a topic-page visit. */
   function noteClip(u, file) {
-    var m = manifest();
-    var e = m[u.prefix] || { tier: u.tier, files: [], ver: '', av: null };
-    e.files = e.files || [];
-    if (e.files.indexOf(file) < 0) e.files.push(file);
-    e.refs = (e.refs || []).filter(function (r) { return r !== 'topic'; });
-    e.refs.push('topic');
-    /* ⚠ r88 — RECORD THE AUDIO-VERSION BASELINE AT DOWNLOAD TIME. It used to be adopted LAZILY, by
-       player.js on a topic-page visit, which means a topic downloaded and never opened had no
-       baseline at all and could therefore NEVER report an audio update. That is a product gap, not
-       just a test artifact — and it is exactly what the owner hit: Shopping & money, deleted and
-       re-downloaded repeatedly, would never show the update ring while the other two always did,
-       because those two had adopted a baseline on an earlier page visit and it had not.
-       (r84 stopped persisting an adopted baseline while the avtest flag is on — correct, so the
-       perturbed value never lands in the manifest — but that also meant a topic downloaded WITH the
-       flag on could never acquire one. Recording it here closes both.)
-       AV is the real published map; the flag perturbs only the COMPARISON, never what we store. */
-    if (e.av == null && AV && AV[u.prefix] != null) e.av = AV[u.prefix];
-    e.tier = u.tier; e.at = Date.now(); e.dyn = true;
-    delete e.bytes;
-    m[u.prefix] = e;
-    setManifest(m);
+    ThaiEarDL.noteClip(u.prefix, file, 'topic', {
+      seed: function () { return { tier: u.tier, files: [], ver: '', av: null }; },
+      avMap: AV, tier: u.tier, dyn: true
+    });
   }
   /* ⚠ r87 — RETRY WITH BACKOFF. There was NONE here: a single failed clip threw straight out of
      dlPool and aborted the whole batch, so one transient blip killed a 40-clip download and the user
      started again from nothing. Owner hit it on the dyn index, twice, at different points of the
      same topic: "unable to resolve host …r2.cloudflarestorage.com — no address associated with
      hostname" — a DNS wobble on the PRESIGNED-URL host that gated (member/premium) clips use.
-     ⚠ `player.js` has had downloadFileWithRetry since the classic path; the two DYN implementations
-     never got it. Third-copy problem again (§D.1 folds them together).
-     ⚠ THE URL IS RE-DERIVED ON EVERY ATTEMPT, deliberately: a presigned R2 URL is short-lived, so
-     retrying the SAME url would just fail again once it had expired. Same shape and constants as
-     player.js: 3 tries, 600 ms × attempt. */
-  var DL_MAX_TRIES = 3;
+     §D.1: the retry/backoff loop itself now lives in dl-core.js as ThaiEarDL.downloadOne — same
+     3-tries/600ms×attempt shape, URL still re-derived on every attempt since a presigned R2 URL is
+     short-lived. `saveOne` stays as a thin wrapper supplying this page's URL/path/cache details. */
   function saveOne(u, file) {
-    function attempt(tryNo) {
-      return fileUrl(file, u.tier).then(function (url) {
-        if (NATIVE) {
-          return FS.downloadFile({ url: url, path: 'offline/' + u.prefix + '/' + file, directory: 'DATA',
-            recursive: true, connectTimeout: 15000, readTimeout: 20000 });
-        }
-        return caches.open(AUDIO_DL_CACHE).then(function (cache) {
-          return fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (res) {
-            if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
-            if (res.type === 'opaque') throw new Error('CORS not enabled for ' + file);
-            return cache.put(webCacheKey(u.prefix, file), res);
-          });
-        });
-      }).catch(function (err) {
-        if (tryNo >= DL_MAX_TRIES) throw err;
-        console.warn('dyn-index: download retry ' + (tryNo + 1) + '/' + DL_MAX_TRIES + ' for ' + file, err);
-        return new Promise(function (r) { setTimeout(r, 600 * tryNo); }).then(function () { return attempt(tryNo + 1); });
-      });
-    }
-    return attempt(1);
+    return ThaiEarDL.downloadOne(file, {
+      urlFn: function (f) { return fileUrl(f, u.tier); },
+      native: NATIVE, fs: FS, nativePath: function (f) { return 'offline/' + u.prefix + '/' + f; },
+      cacheName: AUDIO_DL_CACHE, cacheKeyFn: function (f) { return webCacheKey(u.prefix, f); },
+      label: 'dyn-index'
+    });
   }
   function runDownloads() {
     if (busy) return;
@@ -678,7 +616,7 @@
         // r19: SIX AT A TIME, not one. 18 clips downloaded strictly in series is 18 sequential
         // round trips on a phone connection - a prime suspect for where the minutes went.
         chain = chain.then(function () {
-          return pool(files, 6, function (f) {
+          return ThaiEarDL.pool(files, 6, function (f) {
             return saveOne(u, f).then(function () {
               done++;
               /* r86 — RECORD EACH CLIP AS IT LANDS (twin of playlists.html r85). The entry was
@@ -695,16 +633,14 @@
           // so an interrupted pre-build still leaves a fully usable offline topic.
           // Merge rather than overwrite: a playlist may already hold some of these clips, and
           // its ref must survive a topic download (and vice versa).
+          // §D.1: the files+refs merge itself is ThaiEarDL.mergeFiles (shared with playlists.html);
+          // the av/tier/at/dyn stamping stays here exactly as before, applied after the merge.
           var m = manifest();
-          var e = m[u.prefix] || { tier: u.tier, files: [], ver: '', av: null };
-          var seen = {};
-          (e.files || []).concat(files).forEach(function (f) { seen[f] = true; });
-          e.files = Object.keys(seen);
-          e.refs = (e.refs || []).filter(function (r) { return r !== 'topic'; });
-          e.refs.push('topic');
+          var e = ThaiEarDL.mergeFiles(m, u.prefix, files, 'topic', function () {
+            return { tier: u.tier, files: [], ver: '', av: null };
+          });
           if (e.av == null && AV && AV[u.prefix] != null) e.av = AV[u.prefix];   // r88, see noteClip
           e.tier = u.tier; e.at = Date.now(); e.dyn = true;
-          m[u.prefix] = e;
           setManifest(m);
           if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(u.page).catch(function () {}); }).catch(function () {});
           lastDlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
@@ -740,51 +676,9 @@
     })();
   }
 
-  // Same dialog the real index uses for this exact action, same wording shape.
-  // okLabel/cancelLabel are optional — they default to the removal wording this was written for.
-  /* r88: `requireText` makes the user TYPE a word before the action arms — the same guard
-     account.html uses for delete-account and playlists.html uses for Remove All. ⚠ It was missing
-     here: r86 wired Remove All to the plain confirm, so the index's most destructive control had a
-     weaker gate than the identical control one page over. Owner caught it. */
-  /* r89 — lifted from playlists.html so the two Remove All dialogs are identical. Deliberately a
-     separate function from showConfirm(), which is the index's plain remove-these-topics prompt and
-     is used elsewhere; folding both into one shared modal belongs with the D.1 consolidation. */
-  function showRemoveModal(count, onConfirm) {
-    var ov = document.createElement('div');
-    ov.className = 'modal-overlay';
-    ov.innerHTML =
-      '<div class="modal-card" role="dialog" aria-modal="true">' +
-        '<h2>Remove ALL downloads?</h2>' +
-        '<p>This removes every downloaded topic and playlist from this device' +
-          (count ? ' — ' + count + ' item' + (count === 1 ? '' : 's') : '') +
-          ', plus any leftover files from interrupted downloads. ' +
-          'You can download them again any time, but it can’t be undone.' +
-          '<br><br>Your <strong>Read Thai course</strong> download is not affected.' +
-          '<br><br>Type <strong>REMOVE</strong> to confirm.</p>' +
-        '<input class="modal-input" id="ra-input" type="text" maxlength="10">' +
-        '<div class="modal-actions">' +
-          '<button class="btn btn-ghost" id="ra-cancel">Cancel</button>' +
-          '<button class="btn btn-danger" id="ra-ok" disabled>Remove all</button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(ov);
-    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
-    var inp = ov.querySelector('#ra-input'), ok = ov.querySelector('#ra-ok');
-    try { inp.focus({ preventScroll: true }); } catch (_) {}
-      /* ⚠ r95 — EXACT MATCH, CASE-SENSITIVE. It compared with .toUpperCase() on BOTH sides, so
-         "Remove" and "remove" armed a control whose whole purpose is to be hard to trigger by
-         accident (owner: "if you type Remove that works too. it should not, right?"). Typing the
-         word in caps IS the deliberate act; accepting any casing gives the friction away.
-         ⚠ And do NOT put `text-transform: uppercase` on the field: the DISPLAY would read REMOVE
-         while `.value` stayed lowercase, so the user would be refused while looking correct. */
-    inp.addEventListener('input', function () { ok.disabled = inp.value.trim() !== 'REMOVE'; });
-    ov.querySelector('#ra-cancel').addEventListener('click', close);
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-    ok.addEventListener('click', function () {
-      if (inp.value.trim() !== 'REMOVE') return;
-      close(); onConfirm();
-    });
-  }
+  // §D.1: the Remove-All typed-confirm dialog (title/body/typed-REMOVE guard) now lives in
+  // dl-core.js as ThaiEarDL.removeAllModal — byte-identical markup/wording to what was here,
+  // shared with playlists.html so the two Remove All dialogs can never drift again.
   function showConfirm(message, onConfirm, okLabel, cancelLabel, requireText) {
     var ov = document.createElement('div');
     ov.className = 'dl-modal';
@@ -802,7 +696,7 @@
     if (inpEl) {
       try { inpEl.focus({ preventScroll: true }); } catch (_) {}
       inpEl.addEventListener('input', function () {
-        okEl.disabled = inpEl.value.trim() !== String(requireText);   // r95: exact, see showRemoveModal
+        okEl.disabled = inpEl.value.trim() !== String(requireText);   // r95: exact, see ThaiEarDL.removeAllModal
       });
     }
     ov.querySelector('.dl-modal-cancel').addEventListener('click', close);

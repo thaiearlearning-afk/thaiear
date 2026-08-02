@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v201';   // v201 / r120: GUIDE SHIPPED LIVE (owner-approved) — interactive Dynamic mp3 player demo + Spaced repetition structure; final copy "precise control — Construct…" (2026-08-02)
+const VERSION = 'v202';   // v202 / r121: ROLLOUT P1 — shared download engine dl-core.js (§D.1), D0 classic-download migration + lazy dynChain in player.js (2026-08-02)
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
@@ -112,6 +112,7 @@ const PRECACHE = [
   '/read-quiz.html', '/read-results.html',
   '/read.js', '/read-data.js', '/read.css', '/betta.png',
   '/nav.js', '/topics.js', '/player.js', '/auth.js', '/footer.js',
+  '/dl-core.js',   // r121: shared download engine (§D.1) — real product code, consumed by playlists.html (and the index from P2b)
   // Playlists + the owner entitlement simulator. PRECACHED because the offline behaviour is
   // exactly what they exist to test, and runtime caching couldn't guarantee it: bumping VERSION
   // creates a NEW cache and drops the old one, so anything only ever runtime-cached vanishes on

@@ -336,6 +336,7 @@
      reads window.ThaiEarSim on load) and before player.js is injected. Test build only —
      delete this tag, sim.js, and the ThaiEarSim references in player.js at rollout. -->
 <script src="sim.js"></script>
+<script src="dl-core.js"></script>
 <script>
 (function () {
   var root = document.getElementById('pl-root');
@@ -353,22 +354,19 @@
      window.ThaiEarAuth (used above for playlists/getUser) is the REAL account and is deliberately
      left alone; anything asking "may they play/download this" has to go through the simulator or
      the owner cannot test gating on the list side at all. Absent sim.js this is a pass-through. */
-  function AUTHV() {
-    var S = window.ThaiEarSim;
-    return S ? S.authView(window.ThaiEarAuth) : window.ThaiEarAuth;
-  }
+  // §D.1: the AUTH()/lockedFor plumbing now lives in dl-core.js — ThaiEarDL.AUTH is the same
+  // sim-aware accessor AUTHV() was; kept here (as a thin delegate) since player.js's own AUTHV()
+  // is referenced by name in the comment below and elsewhere on this page.
+  function AUTHV() { return ThaiEarDL.AUTH(); }
   /* One lock rule, defined in auth.js and shared with player.js's sentLocked(). Before this,
      dlGroup() walked EVERY item regardless of tier: for a non-entitled user the locked clips
      401/402'd and — because one denied clip aborts the whole batch — the entire playlist download
      failed. r31's content-based dlHasAll() then went on requiring those unreachable clips, so the
      row read "update available" forever while the in-player button correctly said "Available
-     offline". Two surfaces, opposite answers, same question. */
-  function plLocked(it) {
-    var a = AUTHV();
-    if (!a || typeof a.lockedFor !== 'function') return false;   // stale auth.js → never lock out
-    return a.lockedFor({ tier: (it && it.tier) || 'free', prefix: it && it.prefix },
-                       { canStoreOffline: DL_OK });
-  }
+     offline". Two surfaces, opposite answers, same question.
+     §D.1: canStoreOffline stays THIS page's own DL_OK — dyn-index deliberately passes false
+     instead (r38/T-1), and that difference is real product behaviour the consolidation keeps. */
+  function plLocked(it) { return ThaiEarDL.locked(it, DL_OK); }
   // The items this visitor may actually download and play. Locked ones are simply not our business:
   // they are already shown sunk under "Premium content" and padlocked in the ?pl= view.
   function plOpenItems(p) {
@@ -464,10 +462,9 @@
      rather than ever deleting one that something still needs. */
   var DL_CACHE = 'thaiear-audio-dl';                                    // must match player.js
   function dlCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; }
-  var CAP = window.Capacitor;
-  var DL_NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
-  var DL_FS = (DL_NATIVE && CAP.Plugins) ? CAP.Plugins.Filesystem : null;
-  var DL_OK = DL_NATIVE || !!window.caches;
+  // §D.1: device/browser storage capability — shared with dyn-index.html via dl-core.js.
+  var DLCAP = ThaiEarDL.capabilities();
+  var DL_NATIVE = DLCAP.native, DL_FS = DLCAP.fs, DL_OK = DLCAP.ok;
   /* r85 — ONE SELECTION SET. There used to be two (dlSel / dlClearSel) with the row's control
      deciding which you were in, so selecting a download and a removal at once was impossible and the
      UI had to say "Finish or deselect your … choice first". The owner's model replaces that: a row
@@ -477,8 +474,10 @@
      harmless." That also deletes the whole cross-mode-guard message class. */
   var dlSel = {}, dlBusy = false, dlWorking = {};
 
-  function dlManifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
-  function dlSetManifest(m) { try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {} }
+  // §D.1: manifest read/write moved to dl-core.js (shared with dyn-index.html) — these stay as
+  // thin delegates so every existing dlManifest()/dlSetManifest() call site below is untouched.
+  function dlManifest() { return ThaiEarDL.getManifest(); }
+  function dlSetManifest(m) { ThaiEarDL.setManifest(m); }
   function dlPlMap() { try { return JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}'); } catch (_) { return {}; } }
   function dlSetPlMap(m) { try { localStorage.setItem('thaiear_offline_pl', JSON.stringify(m)); } catch (_) {} }
   /* "Downloaded" is a CONTENT question, never a flag — the standing rule, and this list was the
@@ -495,13 +494,8 @@
        update     — clips missing, but this playlist WAS downloaded before
        none       — clips missing and it never was */
   function dlHasAll(p) {
-    var by = dlGroup(p), m = dlManifest(), pfx, i;
-    for (pfx in by) {
-      var have = (m[pfx] && m[pfx].files) || [];
-      var seen = {};
-      have.forEach(function (f) { seen[f] = true; });
-      for (i = 0; i < by[pfx].files.length; i++) if (!seen[by[pfx].files[i]]) return false;
-    }
+    var by = dlGroup(p), pfx;
+    for (pfx in by) if (!ThaiEarDL.hasFiles(pfx, by[pfx].files)) return false;
     return true;
   }
   /* r79 — OWNERSHIP, per prefix. `{all, some}`: does OUR `pl-<id>` ref cover every prefix this
@@ -522,15 +516,11 @@
      truth. The release logic has been file-level since r34/r75; the ownership question had drifted
      a level coarser than the thing it describes. */
   function dlOwnedNeeded(p) {
-    var by = dlGroup(p), m = dlManifest(), ref = 'pl-' + p.id;
-    var need = 0, owned = 0, pfx, i;
+    var by = dlGroup(p), ref = 'pl-' + p.id;
+    var need = 0, owned = 0, pfx;
     for (pfx in by) {
-      var e = m[pfx];
-      var ours = !!(e && e.refs && e.refs.indexOf(ref) >= 0);
-      var seen = {};
-      if (ours) (e.files || []).forEach(function (f) { seen[f] = true; });
-      var files = by[pfx].files;
-      for (i = 0; i < files.length; i++) { need++; if (seen[files[i]]) owned++; }
+      var c = ThaiEarDL.ownedCount(pfx, by[pfx].files, ref);
+      need += c.need; owned += c.owned;
     }
     return { all: need > 0 && owned === need, some: owned > 0 };
   }
@@ -581,6 +571,14 @@
     if (own.all) return 'downloaded';                 // durable: our own claim covers everything
     if (own.some) return 'update';                    // genuinely downloaded, then extended
     if (dlHasAll(p)) return 'available';              // owns none of it; the bytes are borrowed
+    /* D0 (§D.1 migration, 2026-08-02, ThaiEarDL.looksLikeTopicClaim) — none of OUR claim is here
+       and the bytes aren't fully borrowed either, but if a prefix this playlist needs already
+       carries a legacy/topic claim (an old classic download, or a dyn download interrupted before
+       a single clip landed) that just doesn't cover our per-clip files, that reads as something to
+       UPDATE, not as if it never existed. Same predicate dyn-index's render() now uses, so the two
+       surfaces agree on this edge case rather than one saying "update" and the other "none". */
+    var by = dlGroup(p), m = ThaiEarDL.getManifest(), pfx;
+    for (pfx in by) if (ThaiEarDL.looksLikeTopicClaim(pfx, m[pfx])) return 'update';
     return 'none';
   }
   function dlStatus(msg, err) {
@@ -739,46 +737,20 @@
      started again from nothing. Owner hit it on the dyn index, twice, at different points of the
      same topic: "unable to resolve host …r2.cloudflarestorage.com — no address associated with
      hostname" — a DNS wobble on the PRESIGNED-URL host that gated (member/premium) clips use.
-     ⚠ `player.js` has had downloadFileWithRetry since the classic path; the two DYN implementations
-     never got it. Third-copy problem again (§D.1 folds them together).
-     ⚠ THE URL IS RE-DERIVED ON EVERY ATTEMPT, deliberately: a presigned R2 URL is short-lived, so
-     retrying the SAME url would just fail again once it had expired. Same shape and constants as
-     player.js: 3 tries, 600 ms × attempt. */
-  var DL_MAX_TRIES = 3;
+     §D.1: the retry/backoff loop itself now lives in dl-core.js as ThaiEarDL.downloadOne — same
+     3-tries/600ms×attempt shape, URL still re-derived on every attempt since a presigned R2 URL is
+     short-lived. `dlSaveOne` stays as a thin wrapper supplying this page's URL/path/cache details. */
   function dlSaveOne(prefix, tier, file) {
-    function attempt(tryNo) {
-      return dlFileUrl(file, tier).then(function (url) {
-        if (DL_NATIVE) {
-          return DL_FS.downloadFile({ url: url, path: 'offline/' + prefix + '/' + file, directory: 'DATA',
-            recursive: true, connectTimeout: 15000, readTimeout: 20000 });
-        }
-        return caches.open(DL_CACHE).then(function (cache) {
-          return fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (res) {
-            if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
-            if (res.type === 'opaque') throw new Error('CORS not enabled for ' + file);
-            return cache.put(dlCacheKey(prefix, file), res);
-          });
-        });
-      }).catch(function (err) {
-        if (tryNo >= DL_MAX_TRIES) throw err;
-        console.warn('playlists: download retry ' + (tryNo + 1) + '/' + DL_MAX_TRIES + ' for ' + file, err);
-        return new Promise(function (r) { setTimeout(r, 600 * tryNo); }).then(function () { return attempt(tryNo + 1); });
-      });
-    }
-    return attempt(1);
+    return ThaiEarDL.downloadOne(file, {
+      urlFn: function (f) { return dlFileUrl(f, tier); },
+      native: DL_NATIVE, fs: DL_FS, nativePath: function (f) { return 'offline/' + prefix + '/' + f; },
+      cacheName: DL_CACHE, cacheKeyFn: function (f) { return dlCacheKey(prefix, f); },
+      label: 'playlists'
+    });
   }
   // Group a playlist's sentences by the topic their clips live under.
-  // Bounded-concurrency runner (same shape as player.js's dynPool).
-  function dlPool(items, n, worker) {
-    var i = 0;
-    function lane() {
-      if (i >= items.length) return Promise.resolve();
-      return worker(items[i++]).then(lane);
-    }
-    var lanes = [];
-    for (var k = 0; k < Math.min(n, items.length); k++) lanes.push(lane());
-    return Promise.all(lanes);
-  }
+  // §D.1: the bounded-concurrency runner now lives in dl-core.js as ThaiEarDL.pool (same shape as
+  // player.js's dynPool) — every call site below uses it directly.
   /* ── LEAVE GUARD (list view) ────────────────────────────────────────────────────────────────
      Leaving mid-batch abandons the download. ⚠ This page had NO guard of any kind — not even a
      `beforeunload` — so a batch download could be walked away from in complete silence.
@@ -834,17 +806,13 @@
      what the end-of-run block used to do in bulk. Idempotent: re-downloading never duplicates a file
      or a ref. An entry with no refs field predates refs and IS a topic download, so it is read as an
      implicit 'topic' claim before ours is appended (§B2d). */
+  // §D.1: the manifest mechanics (files/refs merge, delete-bytes) now live in dl-core.js as
+  // ThaiEarDL.noteClip — this page never refreshes tier/dyn on an existing entry (only on a fresh
+  // one, via the seed), so no `tier`/`dyn`/`avMap` options are passed here, matching the original.
   function dlNoteClip(pfx, tier, file, ref) {
-    var m = dlManifest();
-    var e = m[pfx] || { tier: tier, files: [], at: Date.now(), dyn: true };
-    e.files = e.files || [];
-    if (e.files.indexOf(file) < 0) e.files.push(file);
-    e.refs = (e.refs || (m[pfx] ? ['topic'] : [])).filter(function (r) { return r !== ref; });
-    e.refs.push(ref);
-    e.at = Date.now();
-    delete e.bytes;                 // the cached per-prefix total is stale the moment files change
-    m[pfx] = e;
-    dlSetManifest(m);
+    ThaiEarDL.noteClip(pfx, file, ref, {
+      seed: function () { return { tier: tier, files: [], at: Date.now(), dyn: true }; }
+    });
   }
   function dlRunDownloads() {
     if (dlBusy) return;
@@ -875,7 +843,7 @@
             : null;
         }).then(function () {
           // r19: six at a time, not one - see dyn-index.
-          return dlPool(by[pfx].files, 6, function (f) {
+          return ThaiEarDL.pool(by[pfx].files, 6, function (f) {
             return dlSaveOne(pfx, by[pfx].tier, f).then(function () {
               done++;
               /* r85 — RECORD EACH CLIP AS IT LANDS. The manifest used to be written only after the
@@ -892,20 +860,18 @@
       });
       chain.then(function () {
         // Register this playlist as a referrer of every prefix it needed.
+        // §D.1: the files+refs merge itself is ThaiEarDL.mergeFiles (shared with dyn-index.html);
+        // the `at` refresh stays here exactly as before, applied after the merge.
         var m = dlManifest();
         prefixes.forEach(function (pfx) {
-          var e = m[pfx] || { tier: by[pfx].tier, files: [], at: Date.now(), dyn: true };
-          var seen = {};
-          (e.files || []).concat(by[pfx].files).forEach(function (f) { seen[f] = true; });
-          e.files = Object.keys(seen);
           // NOT ['topic'] — a playlist pulls only the sentences IT uses, so claiming the whole
           // topic is downloaded is a lie: the topic would show a tick and then fail to build
           // offline because most of its clips were never fetched. Only a topic download adds
           // the 'topic' ref. An entry with NO refs at all predates this and IS a topic download.
-          e.refs = (e.refs || (m[pfx] ? ['topic'] : [])).filter(function (r) { return r !== 'pl-' + p.id; });
-          e.refs.push('pl-' + p.id);
+          var e = ThaiEarDL.mergeFiles(m, pfx, by[pfx].files, 'pl-' + p.id, function () {
+            return { tier: by[pfx].tier, files: [], at: Date.now(), dyn: true };
+          });
           e.at = Date.now();
-          m[pfx] = e;
         });
         dlSetManifest(m);
         var pm = dlPlMap(); pm[p.id] = { prefixes: prefixes, at: Date.now() }; dlSetPlMap(pm);
@@ -1228,38 +1194,23 @@
   function dlRemoveAll() {
     if (dlBusy) return;
     var m = dlManifest(), prefixes = Object.keys(m);
-    var metas = [];
-    try {
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf('te_dyn_meta_') === 0) metas.push(k);
-      }
-    } catch (_) {}
     /* ⚠ r91 — NO EARLY RETURN ON AN EMPTY MANIFEST. It used to bail with "There are no downloads to
        remove" whenever the manifest was empty — which is the EXACT state the owner's device was in
        while holding 41 orphaned clips. The one situation where the sweep is most needed was the one
        where the button refused to run. The sweep is idempotent and cheap, so it always runs now. */
-    showModal({
-      title: 'Remove ALL downloads?',
-      body: 'This removes every downloaded topic and playlist from this device' +
-        (prefixes.length ? ' — ' + prefixes.length + ' item' + (prefixes.length === 1 ? '' : 's') : '') +
-        ', plus any leftover files from interrupted downloads. ' +
-        'You can download them again any time, but it can’t be undone.<br><br>' +
-        'Your <strong>Read Thai course</strong> download is not affected.<br><br>' +
-        'Type <strong>REMOVE</strong> to confirm.',
-      input: { value: '', maxlength: 10 },
-      requireText: 'REMOVE',
-      confirmText: 'Remove all', danger: true,
-      onConfirm: function () {
+    // §D.1: the typed-REMOVE dialog (title/body/typed-REMOVE guard) now lives in dl-core.js as
+    // ThaiEarDL.removeAllModal — byte-identical to the showModal({...}) call this replaces, shared
+    // with dyn-index.html so the two Remove All dialogs can never drift again.
+    ThaiEarDL.removeAllModal(prefixes.length, function () {
         dlSetBusy(true);
         dlStatusDots('Removing all downloads');
-      /* ⚠ r91 — SWEEP THE DISK, NOT THE MANIFEST. This loop used to walk Object.keys(manifest())
-         and delete per prefix, so anything the manifest had never heard of was untouchable — and
-         the owner's r90 measurement found exactly that on a real device: Greetings_BEG (18 files),
-         GettingToKnow_BEG (18), Weather_BEG (5) and an empty ColoursAndDescriptions_BEG directory.
-         41 stranded clips that no control in the app could remove, from ordinary downloads earlier
-         in the project's life. A button called "Remove All Downloads" that leaves 41 files behind
-         is simply lying.
+      /* ⚠ r91 — SWEEP THE DISK, NOT THE MANIFEST (§D.1: now ThaiEarDL.removeAllDownloads). This
+         used to walk Object.keys(manifest()) and delete per prefix, so anything the manifest had
+         never heard of was untouchable — and the owner's r90 measurement found exactly that on a
+         real device: Greetings_BEG (18 files), GettingToKnow_BEG (18), Weather_BEG (5) and an
+         empty ColoursAndDescriptions_BEG directory. 41 stranded clips that no control in the app
+         could remove, from ordinary downloads earlier in the project's life. A button called
+         "Remove All Downloads" that leaves 41 files behind is simply lying.
          Native: rmdir the whole `offline/` tree, which also clears the empty directories a
          file-level delete leaves behind. Web: delete every Cache Storage key under
          `/__offline-audio/` (clips) and `/dyn/` (stitched sessions), which also catches a session
@@ -1271,38 +1222,13 @@
          The owner chose this over a load-time sweep, correctly: this one is an explicit user action
          with an obvious test, where a sweep firing on every page load is one bad manifest read away
          from deleting good downloads and is far harder to prove correct. */
-      var chain = Promise.resolve().then(function () {
-          if (DL_NATIVE) return DL_FS.rmdir({ directory: 'DATA', path: 'offline', recursive: true }).catch(function () {});
-          if (!window.caches) return null;
-          return caches.open(DL_CACHE).then(function (c) {
-            return c.keys().then(function (reqs) {
-              return Promise.all(reqs.filter(function (rq) {
-                var path = '';
-                try { path = new URL(rq.url).pathname; } catch (_) { path = String(rq.url); }
-                return path.indexOf('/__offline-audio/') === 0 || path.indexOf('/dyn/') === 0;
-              }).map(function (rq) { return c.delete(rq).catch(function () {}); }));
-            });
-          }).catch(function () {});
-        });
-        metas.forEach(function (k) {
-          var meta = null;
-          try { meta = JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) {}
-          try { localStorage.removeItem(k); } catch (_) {}
-          /* r91: the FILE is already gone with the sweep above (native rmdir of offline/, or the
-             /dyn/ cache keys). Only the meta needs removing here. Kept as a named step so the two
-             halves of a built session — its record and its bytes — stay visibly paired. */
-          void meta;
-        });
-        chain.then(function () {
-          try { localStorage.removeItem('thaiear_offline'); } catch (_) {}
-          try { localStorage.removeItem('thaiear_offline_pl'); } catch (_) {}
+      ThaiEarDL.removeAllDownloads(DLCAP, DL_CACHE).then(function () {
           dlSel = {};
           dlSetBusy(false);
           dlStatus('All downloads removed.');
           render();
         });
-      }
-    });
+      });
   }
   function dlRunClear() {
     if (dlBusy) return;

@@ -143,6 +143,7 @@
      so ANY page can show a now-playing bar and a topic page can sync its top player to the live track. */
   function writeNowPlaying() {
     try {
+      if (DYN) resolveDynChain();   // D4 first-use lazy retry — see resolveDynChain's own note
       var np = { page: mainPage, name: nativeMeta.title, prefix: mainPrefix, mode: currentMode, access: mainTier || 'free' };
       // Dyn units also stamp their chain key (playlists have no prefix — the key is their identity).
       if (DYN) np.key = (dynChain && dynChain[dynChainIdx]) ? dynChain[dynChainIdx].dynKey : (cfg.dynKey || null);
@@ -167,6 +168,7 @@
       if (userStartedHere) { done = true; return; } // user is driving THIS page → never hijack its label
       done = true;
       if (DYN) {
+        resolveDynChain();   // D4 first-use lazy retry — see resolveDynChain's own note
         // Round-11 item 3: dyn adoption is chain-based and is the ONE source of page state
         // (icon, strip, pointer) — fixes the r10 "bar moves but icon shows play" desync,
         // where the pre-r11 guard bailed on prefix-less playlist units and nothing set state.
@@ -1139,7 +1141,15 @@
           return OFFLINE ? Filesystem.mkdir({ directory: 'DATA', path: offlineDir(pfx), recursive: true })
             .catch(function () {}) : null;      // downloadFile does NOT create parents on Android
         }).then(function () {
-          return dynPool(by[pfx].files, function (f) { return dynDlFile(cache, pfx, by[pfx].tier, f).then(step); });
+          /* D0b (rollout P1): a clip already on disk — a classic download's TH clips (same
+             filenames as the dyn set), or a clip a previous partial dyn download already fetched
+             — doesn't need re-fetching. Skip the network call but still count it via step(), so
+             an "Update" over a classic download reads as a genuine top-up (only the missing _EN
+             clips actually move) instead of grinding through everything again. */
+          return dynPool(by[pfx].files, function (f) {
+            if (hasLocalFile(pfx, f)) { step(); return Promise.resolve(); }
+            return dynDlFile(cache, pfx, by[pfx].tier, f).then(step);
+          });
         });
       });
       return c;
@@ -1148,6 +1158,7 @@
       // Merge into whatever is already recorded — a playlist and a topic can legitimately both
       // claim the same prefix, and neither may erase the other's files or ref.
       var m = getManifest(), ref = dynDlRef();
+      var purgeFiles = [];   // D0c (rollout P1): TE/ET this topic's own dyn download makes redundant
       prefixes.forEach(function (pfx) {
         var existed = !!m[pfx];
         var e = m[pfx] || { tier: by[pfx].tier, files: [], ver: '', av: null };
@@ -1165,9 +1176,36 @@
         e.tier = by[pfx].tier; e.at = Date.now(); e.dyn = true;
         delete e.bytes;                       // file set changed → re-measure rather than lie
         if (avMap && avMap[pfx] != null) e.av = avMap[pfx];   // baseline for "audio update?"
+        /* D0c (rollout P1): this topic's OWN dyn download now covers everything the player needs
+           (mainSrcFor/ensureMainSrc never touch the combined file once DYN is true — see
+           dynEnsureMainSrc), so the classic TE/ET pair is dead weight the moment the per-sentence
+           clips are in. Topic pages only, and only THIS topic's own claim: a playlist sharing the
+           prefix has ref !== 'topic' and must never drop a pair it doesn't own. */
+        if (!PLMODE && ref === 'topic') {
+          ['_TE.mp3', '_ET.mp3'].forEach(function (suf) {
+            var f = pfx + suf, idx = e.files.indexOf(f);
+            if (idx >= 0) { e.files.splice(idx, 1); purgeFiles.push({ pfx: pfx, file: f }); }
+          });
+        }
         m[pfx] = e;
       });
       setManifest(m);
+      /* Best-effort, fire-and-forget: the manifest entry has already dropped these filenames
+         above, so nothing reads them for playback — a failed physical delete just leaves harmless
+         orphaned bytes, never a broken download. Mirrors dynDeleteHere's native/web split. */
+      if (purgeFiles.length) {
+        try {
+          purgeFiles.forEach(function (pf) {
+            if (OFFLINE) {
+              Filesystem.deleteFile({ path: offlineDir(pf.pfx) + '/' + pf.file, directory: 'DATA' }).catch(function () {});
+            } else if (CACHES) {
+              caches.open(AUDIO_DL_CACHE).then(function (c) {
+                c.delete(webCacheKey(pf.pfx, pf.file)).catch(function () {});
+              }).catch(function () {});
+            }
+          });
+        } catch (_) {}
+      }
       if (PLMODE) {   // so the playlists page's own Clear knows which prefixes to release
         try {
           var pm = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}');
@@ -1549,7 +1587,23 @@
         var own = dynDlOwnedNeeded();
         if (!own.all) { setOfflineState(own.some ? 'update' : 'idle'); return; }
       } else if (!dynDlHasAll()) {
-        setOfflineState('idle'); return;   // topic: dynDlWasDownloaded() is false when !PLMODE anyway
+        /* D0a (rollout P1): a classic-downloaded topic — or a genuinely partial dyn one — still
+           holds real bytes on disk, and blindly saying 'idle' here read as "your download is
+           gone". dynDlOwnedNeeded() already credits any TH clips that share a filename with the
+           dyn set (classic and dyn clips ARE named identically — see dynClipRef/topicFiles), so
+           calling it here — the way the PLMODE branch above already does — turns "owned nothing,
+           therefore idle" into the correct partial-ownership 'update'. The hasTopicClaim/combined
+           check is belt-and-braces for an entry whose overlap the file-count alone might miss (an
+           edge dynDlOwnedNeeded() doesn't reach if dynDlGroups() is momentarily empty). A topic
+           with NO claim at all — no manifest entry, and none of the combined TE/ET pair a classic
+           download always writes — still resolves to 'idle', unchanged. This mirrors r97's own
+           lesson (ownership, not the fetchable group) one level up; r97's own all-locked PLMODE
+           guard above is untouched. */
+        var ownT = dynDlOwnedNeeded();
+        var entT = getManifest()[PREFIX];
+        var hasCombinedT = !!(entT && entT.files && (entT.files.indexOf(PREFIX + '_TE.mp3') >= 0 || entT.files.indexOf(PREFIX + '_ET.mp3') >= 0));
+        setOfflineState((ownT.some || hasTopicClaim(PREFIX) || hasCombinedT) ? 'update' : 'idle');
+        return;
       }
       cachePage();
       setOfflineState('downloaded');
@@ -2625,28 +2679,98 @@
   // cfg.dynChain = ordered units of the whole space ({page, prefix, tier, name, dynKey});
   // transport/lock-screen prev/next ONLY ever moves an index pointer and swaps audio in
   // place — never location.href. Footer links remain the way to change pages.
-  var dynChain = (DYN && Array.isArray(cfg.dynChain) && cfg.dynChain.length) ? cfg.dynChain : null;
-  // Deploy-skew safety net (round-12): the r11 topic-page regression was HTML still shipping
-  // the old pairwise dynNav while player.js only understood dynChain — prev/next went dead.
-  // A stale page now gets its chain SYNTHESIZED from dynNav so nav keeps working either way.
-  if (!dynChain && DYN && cfg.dynNav && (cfg.dynNav.prev || cfg.dynNav.next)) {
-    var _ownName = (document.title || 'ThaiEar')
-      .replace(/^Dynamic player test\s*[—–-]\s*/i, '')
-      .replace(/\s*[|·—–-]\s*ThaiEar.*$/i, '').trim() || 'This topic';
-    dynChain = [];
-    if (cfg.dynNav.prev) dynChain.push(cfg.dynNav.prev);
-    dynChain.push({ page: PAGE_FILE, prefix: PREFIX || '', tier: TIER || 'free', name: _ownName, dynKey: cfg.dynKey || '__self__' });
-    if (cfg.dynNav.next) dynChain.push(cfg.dynNav.next);
-  }
-  var dynHomeIdx = 0;
-  if (dynChain) {
-    for (var _ci = 0; _ci < dynChain.length; _ci++) {
-      if (dynChain[_ci] && (dynChain[_ci].dynKey === cfg.dynKey || dynChain[_ci].dynKey === '__self__')) { dynHomeIdx = _ci; break; }
+  var dynChain = null, dynHomeIdx = 0, dynChainIdx = 0, dynChainWrap = false, dynTitle = null;
+  var dynChainWrapDerived = false;   // set true only by the topics.js-derived fallback below
+  /* rollout P1 item D4 — LAZY resolution (round-13 follow-up to the original synchronous-only
+     version). resolveDynChain() is now the ONE place dynChain/dynHomeIdx/dynChainIdx/
+     dynChainWrap/dynTitle get computed, and it is idempotent/cheap to call repeatedly: an
+     already-resolved chain (this page's own explicit array, the legacy dynNav synthesis, or a
+     chain already derived on an earlier call) short-circuits on the first line and does no
+     recomputation. Three sources, tried in order, exactly as before:
+       1. explicit cfg.dynChain (every current test page) — resolves synchronously, first call.
+       2. legacy cfg.dynNav synthesis (round-12 deploy-skew net) — also synchronous, first call.
+       3. D4: derived from topics.js's own live sequence, for a page shipping DYN with neither of
+          the above. Shape matches the test pages' own inline arrays exactly (topic-test.html's
+          window.ThaiEarTopic.dynChain: {page, prefix, tier, name, dynKey}) — dynKey is the bare
+          page id (no .html, mirroring topics.js's own bare()), tier is topics.js's accessFor(),
+          prefix is the unit's audio handle. Playlists (!PLMODE required) and pages topics.js
+          doesn't recognise never populate a chain via this source.
+     Sources 1 and 2 need no retry — they come straight off cfg and always resolve on the very
+     first call, so THAT path is byte-for-byte the same outcome and timing as before this round.
+     Source 3 is the one that can miss on a cold load: player.js's <script> tag precedes
+     topics.js's on every page that ships both (verified across the live topic-*.html pages), and
+     defer scripts execute strictly in tag order, so window.ThaiEarTopics is typically NOT yet
+     populated the first time resolveDynChain() runs (the same gap resolveMainTitle's own comment
+     documents for a different symptom) — hence "if available", not forced.
+     Callers: resolved once synchronously right below (preserves exact timing for sources 1/2).
+     Re-attempted on DOMContentLoaded (guaranteed after topics.js — both scripts are deferred, so
+     DOMContentLoaded fires only once every deferred script has run), which also re-runs
+     dynPrefetchNeighbours() — the one EAGER side effect (iPhone lock-screen neighbour pre-resolve)
+     that fires at mount time, before that retry can land. Also re-attempted, as a first-use safety
+     net, at the top of every consumer that can run before DOMContentLoaded in principle
+     (writeNowPlaying, syncToPlayingTrack's DYN branch, dynPrefetchNeighbours itself, advanceTopic's
+     DYN branch) — everything else (dynChainStep, dynChainPlayable, dynReturnLocal,
+     dynApplyAdoptState/dynAdvance's revert branch, setupMediaSession's dynTitle read) runs strictly
+     downstream of one of those, after a chain is already known one way or the other, so needs no
+     separate call. */
+  function resolveDynChain() {
+    if (dynChain) return true;                     // already resolved (any source) — nothing to do
+    if (!DYN) return false;
+    if (Array.isArray(cfg.dynChain) && cfg.dynChain.length) {
+      dynChain = cfg.dynChain;
+    } else if (cfg.dynNav && (cfg.dynNav.prev || cfg.dynNav.next)) {
+      // Deploy-skew safety net (round-12): the r11 topic-page regression was HTML still shipping
+      // the old pairwise dynNav while player.js only understood dynChain — prev/next went dead.
+      // A stale page gets its chain SYNTHESIZED from dynNav so nav keeps working either way.
+      var _ownName = (document.title || 'ThaiEar')
+        .replace(/^Dynamic player test\s*[—–-]\s*/i, '')
+        .replace(/\s*[|·—–-]\s*ThaiEar.*$/i, '').trim() || 'This topic';
+      var _synth = [];
+      if (cfg.dynNav.prev) _synth.push(cfg.dynNav.prev);
+      _synth.push({ page: PAGE_FILE, prefix: PREFIX || '', tier: TIER || 'free', name: _ownName, dynKey: cfg.dynKey || '__self__' });
+      if (cfg.dynNav.next) _synth.push(cfg.dynNav.next);
+      dynChain = _synth;
+    } else if (!PLMODE && window.ThaiEarTopics && window.ThaiEarTopics.liveSequence &&
+               window.ThaiEarTopics.pageUnit && window.ThaiEarTopics.accessFor) {
+      try {
+        if (window.ThaiEarTopics.pageUnit(PAGE_FILE)) {   // this page IS a live, playable unit
+          var _seq = window.ThaiEarTopics.liveSequence();
+          var _derived = _seq.map(function (u) {
+            return { page: u.page, prefix: u.audio, tier: window.ThaiEarTopics.accessFor(u), name: u.name,
+              dynKey: String(u.page || '').replace(/\.html$/i, '') };
+          });
+          if (_derived.length > 1) { dynChain = _derived; dynChainWrapDerived = true; }
+        }
+      } catch (_) {}
     }
+    if (!dynChain) return false;
+    var _pageBareForHome = PAGE_FILE.replace(/\.html$/i, '');
+    for (var _ci = 0; _ci < dynChain.length; _ci++) {
+      var _dcE = dynChain[_ci];
+      if (!_dcE) continue;
+      var _dcIsHome = (_dcE.dynKey === cfg.dynKey || _dcE.dynKey === '__self__') ||
+        // Derived-chain entries carry no cfg.dynKey to match against — fall back to comparing the
+        // entry's own page to this page's filename, bare of any .html either side.
+        (cfg.dynKey == null && String(_dcE.page || '').toLowerCase().replace(/\.html$/i, '') === _pageBareForHome);
+      if (_dcIsHome) { dynHomeIdx = _ci; break; }
+    }
+    dynChainIdx = dynHomeIdx;        // pointer = the unit the top player is CURRENTLY on
+    dynChainWrap = (cfg.dynChainWrap === true) || dynChainWrapDerived;   // playlists: circular; topic test pages: clamp; derived: circular
+    dynTitle = dynChain[dynHomeIdx] ? dynChain[dynHomeIdx].name : null;   // lock-screen title = the unit actually playing
+    return true;
   }
-  var dynChainIdx = dynHomeIdx;        // pointer = the unit the top player is CURRENTLY on
-  var dynChainWrap = cfg.dynChainWrap === true;   // playlists: circular; topic test pages: clamp
-  var dynTitle = (dynChain && dynChain[dynHomeIdx]) ? dynChain[dynHomeIdx].name : null;   // lock-screen title = the unit actually playing
+  resolveDynChain();   // synchronous attempt — resolves sources 1/2 immediately, exactly as this
+                        // file always has; only source 3 (derived) may need the retry below.
+  // D4 lazy fallback: only source 3 can still be pending here (sources 1/2 either resolved just
+  // above or never apply on this page). document.readyState can only be 'loading' or 'interactive'
+  // at this point — never 'complete' — because this line runs synchronously inside player.js's own
+  // deferred execution, which (being itself deferred) always finishes before DOMContentLoaded
+  // fires; registering the listener here is therefore always in time.
+  if (!dynChain && DYN && !PLMODE) {
+    document.addEventListener('DOMContentLoaded', function () {
+      if (resolveDynChain()) dynPrefetchNeighbours();   // backfill the one eager side effect that ran too early
+    });
+  }
   var dynAttached = false;             // adopted a live native track via attach() — src must not be rebuilt under it
   var dynStdRemote = false;   // adopted target is playing its STATIC combined file (no session/map)
   var DYN_KEY_NS = cfg.dynKey || PREFIX;   // namespace for exclusions + persisted sessions
@@ -3953,6 +4077,7 @@
   // switch) into this cache, and the persisted-session meta is pre-checked synchronously.
   var dynAdoptCache = {};   // t.page → { mode, src (placeholder URL), sess (restored persisted session) }
   function dynPrefetchNeighbours() {
+    resolveDynChain();   // D4 first-use lazy retry — see resolveDynChain's own note
     if (!dynChain) return;
     // Pre-resolve the CURRENT pointer's two chain neighbours (re-run after every hop/mode switch).
     [dynChainStep(-1), dynChainStep(1)].forEach(function (stp) {
@@ -5385,6 +5510,7 @@
   function advanceTopic(dir) {
     // Dyn pages (round-11): walk the CHAIN in place — audio swaps, the page never navigates.
     if (DYN) {
+      resolveDynChain();   // D4 first-use lazy retry — see resolveDynChain's own note
       // Round-11: prev/next ALWAYS moves the chain pointer and swaps audio IN PLACE —
       // never a navigation. When locked, units with nothing playable (no persisted
       // session, no placeholder) are skipped, mirroring classic's nextPlayable walk;
