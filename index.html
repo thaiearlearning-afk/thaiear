@@ -1908,10 +1908,29 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
        The 3s safety timer means a failed mount can never strand a blank page. */
     requestAnimationFrame(landSwitcher);
     var unveil = function () { document.documentElement.classList.remove('te-warp'); };
+    /* r134 — PIN THE LANDING. On mobile the engine re-applies the PREVIOUS page's scroll offset
+       AFTER our positioning (owner: arriving from a far-scrolled topic lands at the panel bottom;
+       from a high one, correct — the offset carry-over is the only thing that scales like that).
+       So after landing we keep asserting the position every frame for ~1.6s: a no-op when nothing
+       fights it, an instant same-frame correction when the engine tries. The user's own first
+       touch/wheel/key releases the pin immediately so it can never fight a real scroll. */
+    var pinUntil = 0;
+    function pin() {
+      if (!pinUntil || Date.now() > pinUntil) return;
+      land();
+      requestAnimationFrame(pin);
+    }
+    ['touchstart', 'wheel', 'keydown', 'pointerdown'].forEach(function (ev) {
+      window.addEventListener(ev, function () { pinUntil = 0; }, { once: true, passive: true });
+    });
     afterMount.then(function () {
       requestAnimationFrame(function () {
         land();
-        setTimeout(function () { land(); unveil(); }, 120);
+        setTimeout(function () {
+          land(); unveil();
+          pinUntil = Date.now() + 1600;
+          requestAnimationFrame(pin);
+        }, 120);
       });
     });
     setTimeout(unveil, 3000);
