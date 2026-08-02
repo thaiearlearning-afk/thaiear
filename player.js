@@ -356,18 +356,20 @@
      differs (Cache Storage instead of @capacitor/filesystem).
 
      A cross-origin fetch needs CORS on the audio (Access-Control-Allow-Origin) or it rejects; that's
-     enabled on both R2 buckets. Gated behind a flag (off by default) so it can ship dark and be
-     proven on a real iPhone before going live: enable with ?webdl=1 (sticky, survives navigation)
-     or localStorage thaiear_webdl='1'. Never active in the native app (which uses Filesystem). */
-  var WEB_DL_FLAG = (function () {
+     enabled on both R2 buckets.
+     ROLLOUT P2a (§1f, owner 2026-08-02): the old `thaiear_webdl` beta flag is RETIRED. Download UI
+     is for the native app and the INSTALLED PWA only — standalone-display detection replaces the
+     flag, so an installed iPhone PWA gets downloads automatically and a plain browser tab (Safari
+     or Chrome, desktop or phone) never sees them. Never active in the native app path (which uses
+     Filesystem). Absence leaves no hole: the bar is display:none, normal flow closes over it. */
+  var STANDALONE_PWA = (function () {
     try {
-      var m = location.search.match(/[?&]webdl=([01])/);
-      if (m) localStorage.setItem('thaiear_webdl', m[1]);   // sticky toggle for on-device testing
-      return localStorage.getItem('thaiear_webdl') === '1';
+      return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
+             window.navigator.standalone === true;
     } catch (_) { return false; }
   })();
   var CACHES = (window.caches && window.isSecureContext) ? window.caches : null;
-  var WEB_DL = !NATIVE && !!CACHES && WEB_DL_FLAG;
+  var WEB_DL = !NATIVE && !!CACHES && STANDALONE_PWA;
   /* r23: the DYN test space must not be behind that dark flag. dyn-index.html enables its own
      Cache-Storage download whenever caches exist, so on an iPhone the clips DID download — but
      player.js then refused to READ them (WEB_DL false without the flag), went to the network,
@@ -1009,15 +1011,12 @@
      step further — reaching this label means an own claim, and "available" is now the site's word
      for the borrowed state, so using it for a topic contradicts the vocabulary the playlist rows
      and the info box teach. V-7 originally asserted the OLD wording; it is updated with this.
-     ⚠ THREE-WAY ON PURPOSE, AND `DYN` IS LOAD-BEARING HERE. setOfflineState() is shared: LIVE topic
-     pages render this very label through it, and the owner's instruction was dyn-only for now
-     ("no need to update live site at this point in time"). Without the DYN test this would silently
-     re-word every live topic page. Porting it to live is logged in §C-PORT of DYNAMIC_PLAYER_PLAN.md.
-     `DYN` is module-scoped (declared once, ~line 2269, no shadow) and this function only ever runs
-     from render/event handlers, so the hoisted assignment has always landed by then. */
+     P2a ROLLOUT (2026-08-02): the deliberate three-way split (non-DYN live pages said
+     "✓ Available offline") is RETIRED — every topic page is dyn:true now, so the held-back DYN
+     test was deleted exactly as §C-PORT item 7 planned. Two-way: playlist vs topic. */
   function dynOkLabel() {
     if (PLMODE) return '✓ Downloaded';
-    return DYN ? '✓ Downloaded for offline' : '✓ Available offline';   // non-DYN = the live pages
+    return '✓ Downloaded for offline';   // P2a rollout: the DYN test is gone — every topic page is dyn now
   }
   function dynFmtMb(b) { return (b / 1048576).toFixed(2) + ' MB'; }
   function dynPaintOfflineSize() {
@@ -1325,7 +1324,9 @@
   }
 
   function downloadTopic() {
-    if (!OFFLINE && !WEB_DL && !(DYN && DYN_WEB_DL)) return;
+    // P2a (§1f): app + installed PWA only — WEB_DL now carries the standalone test, and the old
+    // `DYN && DYN_WEB_DL` escape (any cache-capable browser) is gone with the beta flag.
+    if (!OFFLINE && !WEB_DL) return;
     // Gated topic + not entitled → same preview-only gate as play/reveal/flag (premium → "preview
     // only" toast in-app; member → sign-in), instead of attempting the download and erroring on /api/audio.
     if (!entitledForPage()) { gate(TIER); return; }
@@ -1502,7 +1503,7 @@
   }
   function renderOfflineBar() {
     var bar = $('offline-bar'); if (!bar) return;
-    if (!OFFLINE && !WEB_DL && !(DYN && DYN_WEB_DL)) { bar.style.display = 'none'; return; }  // plain website (no app, flag off): never shown
+    if (!OFFLINE && !WEB_DL) { bar.style.display = 'none'; return; }  // §1f: plain browser tab (not app, not installed PWA): never shown, no reserved space
     bar.style.display = 'flex';
     if (DYN) {
       /* NOTHING THIS VISITOR MAY PLAY → no download bar at all (r40, owner-reported).
