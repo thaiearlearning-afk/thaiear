@@ -4892,6 +4892,7 @@
        audio degrades (owner call, 2026-08-01; the speed audit polices pace at source instead).
        Hidden only under te-v2 so classic live pages keep it until rollout. */
     'body.te-v2 .speed-toggle{display:none}' +
+    'body.dyn-plmode .speed-toggle{display:none}' +   // r132: playlist player matches the topic template - no tortoise (owner)
     'body.te-v2 .sent-flag-btn{order:6}' +
     'body.te-v2 .dyn-x-btn{order:7}' +
     /* Playlist locked rows + their "Premium content" divider. Gold TEXT tone #B29234 (the index
