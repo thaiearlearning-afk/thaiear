@@ -201,6 +201,15 @@
   /* Same-origin embedded panels (Read Thai / Playlists) — lazy-loaded iframes, auto-sized to
      their content by the switcher script so they scroll as part of this page. */
   /* r130: the panel iframes are GONE (true native panels) — no .embed-frame, no frame sizing. */
+  /* r131 — anti-jank (owner: switches/teleports "visually jerky"). Three parts:
+     1. every panel swap fades in (.18s) instead of popping;
+     2. an UNMOUNTED panel keeps 65vh of reserved height while its assets load, so the page never
+        collapses and a deep-link scroll can never clamp to the bottom then snap up;
+     3. .panel-veiled holds opacity 0 with NO transition while loading — removing it lets the
+        .18s transition play the reveal. */
+  .topics-section { transition: opacity .18s ease; }
+  .topics-section.panel-pending { min-height: 65vh; }
+  .topics-section.panel-veiled { opacity: 0; transition: none; }
 
     /* ── TOPICS SECTION ──
        Reused (same class) by the Read Thai + Playlists panel sections below, so all three panels
@@ -1833,14 +1842,32 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
     return plReady;
   }
   function show(which) {
+    var target = panels[which];
+    var needsMount = (which === 'read' && !readReady) || (which === 'playlists' && !plReady);
+    /* r131: veil the incoming panel — unmounted panels also reserve height (panel-pending) so
+       the page can't shrink under the user mid-load. The veil lifts one frame after the panel
+       is real, riding the .18s opacity transition instead of popping. */
+    if (target) {
+      target.classList.add('panel-veiled');
+      if (needsMount) target.classList.add('panel-pending');
+    }
     Object.keys(panels).forEach(function (k) { if (panels[k]) panels[k].hidden = (k !== which); });
     document.querySelectorAll('.ms-btn').forEach(function (b) {
       var on = b.getAttribute('data-panel') === which;
       b.classList.toggle('active', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-    if (which === 'read') ensureRead();
-    else if (which === 'playlists') ensurePlaylists();
+    var mounted = (which === 'read') ? ensureRead()
+                : (which === 'playlists') ? ensurePlaylists()
+                : Promise.resolve();
+    mounted.then(function () {
+      requestAnimationFrame(function () {
+        if (!target) return;
+        target.classList.remove('panel-pending');
+        target.classList.remove('panel-veiled');
+      });
+    });
+    return mounted;
   }
   document.querySelectorAll('.ms-btn').forEach(function (b) {
     b.addEventListener('click', function () { show(b.getAttribute('data-panel')); });
@@ -1854,21 +1881,26 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
        60/72px clear the 54px sticky nav. #read-lessons lands at the learning path instead
        (the lesson pages' "← All reading sections" target). */
     try { history.scrollRestoration = 'manual'; } catch (_) {}
-    show(h);
+    var afterMount = show(h);
+    var landSwitcher = function () {
+      var ms = document.querySelector('.mode-switch');
+      if (ms) window.scrollTo({ top: ms.getBoundingClientRect().top + window.scrollY - 60 });
+    };
     var land = function () {
       if (toLessons) {
         var lp = document.getElementById('lessons');
         if (lp) { window.scrollTo({ top: lp.getBoundingClientRect().top + window.scrollY - 72 }); return; }
       }
-      var ms = document.querySelector('.mode-switch');
-      if (ms) window.scrollTo({ top: ms.getBoundingClientRect().top + window.scrollY - 60 });
+      landSwitcher();
     };
-    var afterMount = (h === 'read' || toLessons) ? ensureRead()
-                   : (h === 'playlists') ? ensurePlaylists()
-                   : Promise.resolve();
-    afterMount.then(function () { requestAnimationFrame(land); setTimeout(land, 300); setTimeout(land, 900); });
-    requestAnimationFrame(land);   // immediate first pass so the viewport moves at once; the
-                                   // post-mount re-asserts above correct any late layout shift
+    /* r131 sequence: the immediate scroll goes only to the SWITCHER — hero + switcher exist from
+       the first frame and the pending panel holds 65vh, so this can never clamp to the page
+       bottom (the old "bottom for a split second" flash). The exact landing (incl. #read-lessons'
+       learning-path position) happens once, right after the mount resolves, while the panel is
+       still veiled — the user sees the fade-in already in place. One late re-assert catches
+       stragglers (fonts/images). */
+    requestAnimationFrame(landSwitcher);
+    afterMount.then(function () { requestAnimationFrame(land); setTimeout(land, 900); });
   }
 })();
 
