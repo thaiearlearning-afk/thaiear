@@ -8,7 +8,7 @@
 .read-wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 .read-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
 .read-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
-.read-intro { font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin: 0.6rem 0 1.5rem; max-width: 680px; }
+.read-intro { font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin: 0.6rem 0 1.5rem; }  /* r136b: full wrapper width on desktop (owner) — was max-width:680px; phones (<680px) unaffected */
 .read-intro strong { color: var(--text-primary); font-weight: 500; }
 .read-intro .th { font-family: var(--font-thai); }
 
