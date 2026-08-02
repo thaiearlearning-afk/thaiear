@@ -354,6 +354,17 @@
 
   /* ---- mount ------------------------------------------------------------ */
   function mount() {
+    /* EMBED MODE (r126): a page loaded with ?embed=1 (read/playlists inside the index switcher
+       panels) must not build a nav AT ALL. The CSS hide (`.te-embed #site-nav-root`) was never
+       enough by itself: the injection below REPLACES #site-nav-root with <nav class="site-nav">,
+       so the selector stopped matching the moment the nav existed — a second full ThaiEar header
+       rendered inside each panel (owner-reported, 2026-08-02). The pages' embed CSS now also
+       covers nav.site-nav as a backstop, but skipping the build here is the real fix (and it keeps
+       the app's now-playing bar from duplicating inside embedded panels too).
+       ⚠ ensureAuth() must STILL run: read.html and playlists.html carry no auth.js tag of their
+       own — the nav loader is what brings auth in, and the embedded panels (member-gated read
+       tests, the playlists list) need a signed-in ThaiEarAuth exactly as much as the full pages. */
+    if (document.documentElement.className.indexOf('te-embed') >= 0) { ensureAuth(); return; }
     ensureAuth();
     ensureFooter();
     if (!document.getElementById('site-nav-styles')) {
