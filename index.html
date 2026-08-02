@@ -173,22 +173,27 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
+  /* The intro sentence lives INSIDE the stats band (owner, 2026-08-02): same voice as the hero
+     Thai — Sarabun, hero gold, light weight — so it reads as part of the hero, not an outlier
+     below it. The band stretches down to hold it. */
+  .hero-intro-line {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 2rem 1.15rem;
+    text-align: center;
+    font-family: var(--font-thai);
+    font-size: 17px;
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    line-height: 1.55;
+    color: #F0CC5C;
+  }
+  .hero-intro-line strong { font-weight: 600; color: inherit; }
+  @media (max-width: 600px) { .hero-intro-line { font-size: 14.5px; padding: 0 1.25rem 1rem; } }
 
   /* ── PAGE INTRO (gold accent bar) ── */
-  /* Owner 2026-08-02 (index redesign, round 5): whitespace halved above/below so the switcher
-     lands in view on first load. Ported from index-mock.html. */
-  .page-intro { max-width: 900px; margin: 0 auto; padding: 1.3rem 1.5rem 0.2rem; }
-  .intro-lead {
-    max-width: 660px;
-    font-size: 15px;
-    line-height: 1.72;
-    padding: 0.15rem 0;
-    color: var(--text-primary);   /* owner 2026-08-02 round 2: ALL text black (no brown/secondary), only the strong words bold */
-  }
-  .intro-lead strong { color: var(--text-primary); font-weight: 700; }
-  /* "app" → the app page: accent + underline so it's unmistakably a link (owner, 2026-08-02). */
-  .intro-app-link { color: var(--accent); text-decoration: underline; }
-  .intro-app-link:hover { color: var(--accent-mid); }
+  /* Owner 2026-08-02 (round 6): the intro sentence moved INTO the hero stats band
+     (.hero-intro-line above) — the standalone intro section and its CSS are gone. */
 
   /* ── THREE-WAY SWITCHER (Topic Sentences / Read Thai / Playlists) ──
      Replaces the old sentences⇄read toggle (superseded). Ported from index-mock.html, the
@@ -687,7 +692,6 @@
     .hero-logo { width: 91px; margin-bottom: 1.25rem; }
     .hero-thai { font-size: 30px; }
     .hero-tagline { font-size: 11px; letter-spacing: 0.16em; }
-    .intro-lead { font-size: 14.5px; }
     .hero-stats { gap: 2rem; padding: 1.25rem 1.25rem; flex-wrap: wrap; }
     .hero-stat-num { font-size: 20px; }
     .switcher-wrap {
@@ -777,12 +781,8 @@
         <span class="hero-stat-label">Unique words</span>
       </div>
     </div>
+    <p class="hero-intro-line">A Thai language learning <strong>platform and app</strong> built around <strong>complete sentences</strong> — not vocabulary lists.</p>
   </div>
-</section>
-
-<!-- ── INTRO ── -->
-<section class="page-intro">
-  <p class="intro-lead">A Thai language learning <a class="intro-app-link" href="app.html">App</a> built around <strong>complete sentences</strong> — not vocabulary lists.</p>
 </section>
 
 <!-- ── SWITCHER (Topic Sentences / Read Thai / Playlists) ──
