@@ -2492,6 +2492,17 @@
      constraint is that all current functionality must remain. Set on topic-test only, so
      topic-test2 stays as-is for side-by-side comparison. */
   var STYLE2 = DYN && cfg.style2 === true;
+  /* r127 — the playlist-chooser / dynMsg / dynConfirm dialogs render through #dyn-pl-pop +
+     .dyn-pl-card, whose styles live in player-dyn.css. The TEST pages linked it in their HTML;
+     the 93 real topic pages never did (P2a added only the two config flags), so on live pages the
+     Add-to-playlist popup appended UNSTYLED — invisible at the page bottom, "button does nothing"
+     (owner-reported). Inject the stylesheet once on any dyn page that lacks it. The file is
+     precached (sw.js) so this is offline-safe. ⚠ §E cleanup: player-dyn.css must now STAY. */
+  if (DYN && !document.querySelector('link[href^="player-dyn.css"]')) {
+    var _pdl = document.createElement('link');
+    _pdl.rel = 'stylesheet'; _pdl.href = 'player-dyn.css';
+    (document.head || document.documentElement).appendChild(_pdl);
+  }
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
@@ -5168,7 +5179,7 @@
       if (orient) { orient.parentNode.insertBefore(apl, orient); orient.style.display = 'none'; }
       else aplAnchor.parentNode.insertBefore(apl, aplAnchor.nextSibling);
       var pll = document.createElement('a');
-      pll.className = 'dyn-pl-link'; pll.href = 'playlists.html';
+      pll.className = 'dyn-pl-link'; pll.href = 'index.html#playlists';   // r127: bare playlists.html now redirects — link the panel directly
       // The build tag already shows in the corner of the settings block, so the link does not
       // need to carry it once these are proper side-by-side buttons.
       pll.textContent = STYLE2 ? '🎵 My playlists' : ('🎵 My Playlists · build ' + DYN_BUILD);

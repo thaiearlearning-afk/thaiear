@@ -212,7 +212,9 @@
 
   /* Same-origin embedded panels (Read Thai / Playlists) — lazy-loaded iframes, auto-sized to
      their content by the switcher script so they scroll as part of this page. */
-  .embed-frame { width: 100%; border: 0; display: block; min-height: 400px; }
+  .embed-frame { width: 100%; border: 0; display: block; min-height: 400px; overflow: hidden; }
+  /* r127: scrolling="no" + reactive sizing — the frame must NEVER scroll internally; the page is
+     the only scroller (owner: nested scrolling "really nasty"). */
 
     /* ── TOPICS SECTION ──
        Reused (same class) by the Read Thai + Playlists panel sections below, so all three panels
@@ -982,7 +984,7 @@
      toggle at source), auto-height-sized to its content by the switcher script below. Loads on
      first show of this panel, not on page load. -->
 <section class="topics-section" id="panel-read" hidden>
-  <iframe id="read-frame" title="Read Thai — Alphabet &amp; Tones" class="embed-frame"></iframe>
+  <iframe id="read-frame" title="Read Thai — Alphabet &amp; Tones" class="embed-frame" scrolling="no"></iframe>
 </section>
 
 <!-- ── PLAYLISTS PANEL ──
@@ -990,7 +992,7 @@
      source) — NOT static markup: signed-out/signed-in behaviour comes from the embedded page
      itself. Auto-height-sized like the Read panel. -->
 <section class="topics-section" id="panel-playlists" hidden>
-  <iframe id="playlists-frame" title="My Playlists" class="embed-frame"></iframe>
+  <iframe id="playlists-frame" title="My Playlists" class="embed-frame" scrolling="no"></iframe>
 </section>
 
 <!-- ── FOOTER ── -->
@@ -1822,6 +1824,22 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
       if (d && d.documentElement) frame.style.height = d.documentElement.scrollHeight + 'px';
     } catch (_) {}
   }
+  /* r127: reactive height. Polling at 600ms let the frame's real height lag behind (fonts, images,
+     auth re-render), and a lagging height + a scrollable iframe = the nested-scroll trap the owner
+     hit. A same-origin ResizeObserver on the embedded document resizes the frame the moment its
+     content moves; the (faster) poll stays as a fallback for engines without RO in iframes. */
+  function watchFrame(frame) {
+    if (frame._teWatched) return;
+    try {
+      var d = frame.contentDocument;
+      if (d && d.documentElement && window.ResizeObserver) {
+        var ro = new ResizeObserver(function () { sizeFrame(frame); });
+        ro.observe(d.documentElement);
+        if (d.body) ro.observe(d.body);
+        frame._teWatched = true;
+      }
+    } catch (_) {}
+  }
   function show(which) {
     Object.keys(panels).forEach(function (k) { if (panels[k]) panels[k].hidden = (k !== which); });
     document.querySelectorAll('.ms-btn').forEach(function (b) {
@@ -1870,15 +1888,18 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
             }
           } catch (_) {}
           sizeFrame(readFrame);
+          watchFrame(readFrame);
         });
       }
-      frameTimer = setInterval(function () { sizeFrame(readFrame); }, 600);
+      sizeFrame(readFrame); watchFrame(readFrame);
+      frameTimer = setInterval(function () { sizeFrame(readFrame); }, 300);
     } else if (which === 'playlists') {
       if (!plFrame.src) {
         plFrame.src = 'playlists.html?embed=1';   // embed mode: playlists.html hides its own nav at source
-        plFrame.addEventListener('load', function () { sizeFrame(plFrame); });
+        plFrame.addEventListener('load', function () { sizeFrame(plFrame); watchFrame(plFrame); });
       }
-      frameTimer = setInterval(function () { sizeFrame(plFrame); }, 600);
+      sizeFrame(plFrame); watchFrame(plFrame);
+      frameTimer = setInterval(function () { sizeFrame(plFrame); }, 300);
     }
   }
   document.querySelectorAll('.ms-btn').forEach(function (b) {
