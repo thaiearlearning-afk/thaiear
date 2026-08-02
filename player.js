@@ -3068,8 +3068,8 @@
   function dynFetchClip(ref) {
     var file = ref.file, temp = null;
     if (dynClipCache[file]) { dynTally('mem'); return Promise.resolve(dynClipCache[file]); }
-    function fetchDecode(url) {
-      return fetch(url).then(function (r) {
+    function fetchDecode(url, bustHttpCache) {
+      return fetch(url, bustHttpCache ? { cache: 'reload' } : undefined).then(function (r) {
         if (!r.ok) return Promise.reject({ code: r.status });
         return r.arrayBuffer();
       }).then(function (ab) {
@@ -3095,7 +3095,17 @@
            "⟳ Download audio update?" and an Update re-fetches it), best-effort delete the bad
            file, and take the network copy for THIS build so playback just works. Offline, or if
            the network copy itself is bad, fail exactly as before. */
-        if (!wasLocal || !navigator.onLine) return Promise.reject(e);
+        if (!navigator.onLine) return Promise.reject(e);
+        /* r124 — AND THE HTTP-CACHE TWIN (the case the owner actually hit on Greetings): a
+           truncated 200 cached by the WebView's ordinary HTTP cache during a flaky network gets
+           re-served on every streaming build — free-topic clip URLs are stable, so the poison
+           sticks until the user clears the app cache (deleting the download can't reach it).
+           Decode-fail on a NETWORK-sourced clip → one retry with cache:'reload', which bypasses
+           and overwrites the poisoned entry. */
+        if (!wasLocal) {
+          dynTally('heal');
+          return buildUrl(ref.file, ref.gated).then(function (u2) { return fetchDecode(u2, true); });
+        }
         if (temp) { try { URL.revokeObjectURL(temp); } catch (_) {} temp = null; }
         try {
           var m = getManifest(), ent = m[ref.prefix];

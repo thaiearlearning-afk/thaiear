@@ -214,7 +214,7 @@
      sim.js is the right owner because it loads on EVERY test page and nowhere else, and it loads
      BEFORE player.js (topic-test.html:549 vs :551), so player.js picks this up as its DYN_BUILD.
      ▶ BUMP THIS ONE CONSTANT PER TEST-SPACE DEPLOY. Everything else derives from it. */
-  var BUILD = 'r123';
+  var BUILD = 'r124';
   try { window.TE_BUILD = BUILD; } catch (_) {}
   var K_KEEP_PURGED = 'te_sim_keep_purged';
   function keepPurged() { return get(K_KEEP_PURGED) === '1'; }
