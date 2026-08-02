@@ -467,7 +467,7 @@
         </div>
       </div>
       <div class="now-playing show" id="now-playing"><span class="np-dot"></span><span id="now-playing-text">Now playing: <strong>Click the Dynamic mp3 player to explore</strong></span></div>
-      <div class="dyn-head"><button type="button" class="dyn-info-lbl">Dynamic mp3 Player <span class="dyn-info-i" aria-hidden="true">i</span></button></div>
+      <div class="dyn-head"><span class="dyn-info-lbl" style="cursor:default">Dynamic mp3 Player</span></div>
       <div class="audio-row">
         <button class="skip-btn dyn-sent-btn" id="demo-sent-prev" type="button" aria-label="Previous sentence" title="Previous sentence"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/><path d="M12.36 15.94v-4.27h-.09l-1.77.63v.69l1.01-.31v3.26h.85z"/></svg></button>
         <button class="play-btn" id="demo-play" type="button" aria-label="Play audio">
@@ -484,12 +484,12 @@
         <div class="dyn-slider" id="demo-slider-row">
           <span class="dyn-ctl-group" id="demo-pauses">Pauses <input id="dyn-pf" type="range" min="0.5" max="2" step="0.25" value="1"> <span id="dyn-pf-val">1×</span></span>
           <span class="dyn-ctl-sep">·</span>
-          <span class="dyn-ctl-group" id="demo-reps"><button type="button" class="dyn-info-lbl">Thai sentence repeats <span class="dyn-info-i" aria-hidden="true">i</span></button> <span class="dyn-reps" id="dyn-reps"><button type="button" class="dyn-rep-btn on">1</button><button type="button" class="dyn-rep-btn">2</button><button type="button" class="dyn-rep-btn">3</button><button type="button" class="dyn-rep-btn">4</button></span></span>
+          <span class="dyn-ctl-group" id="demo-reps"><button type="button" class="dyn-info-lbl" id="demo-reps-info">Thai sentence repeats <span class="dyn-info-i" aria-hidden="true">i</span></button> <span class="dyn-reps" id="dyn-reps"><button type="button" class="dyn-rep-btn on">1</button><button type="button" class="dyn-rep-btn">2</button><button type="button" class="dyn-rep-btn">3</button><button type="button" class="dyn-rep-btn">4</button></span></span>
           <span class="dyn-ctl-sep" id="dyn-en-sep">·</span>
           <label class="dyn-en-lbl dyn-ctl-group" id="dyn-en-wrap"><input type="checkbox" id="dyn-en" checked> English</label>
         </div>
-        <div class="dyn-slider dyn-ep-row" id="dyn-ep-row">
-          <span class="dyn-ctl-group"><button type="button" class="dyn-info-lbl">English position <span class="dyn-info-i" aria-hidden="true">i</span></button> <span class="dyn-ep-boxes" id="dyn-ep-boxes"><button type="button" class="dyn-ep-box on" data-ep="1"></button></span></span>
+        <div class="dyn-slider dyn-ep-row" id="dyn-ep-row" style="display:none">
+          <span class="dyn-ctl-group"><button type="button" class="dyn-info-lbl" id="demo-ep-info">English position <span class="dyn-info-i" aria-hidden="true">i</span></button> <span class="dyn-ep-boxes" id="dyn-ep-boxes"></span></span>
         </div>
         <div class="dyn-sync-row">
           <span class="dyn-fmt-tag" id="dyn-fmt-tag">mp3 · 0.84 MB</span>
@@ -533,15 +533,15 @@
 </div>
 
 <script>
-/* ══ DEMO ENGINE ══ Fake 5-minute session: play/pause really run/stop the clock; a new sentence
-   block every 30s; ①±1 jumps blocks; ±10s skips. Clicking an element WITH an explanation swaps
-   the message box below (persists until superseded); elements without one leave it unchanged.
-   The initial "Click to explore" message never returns (until refresh). */
+/* ══ DEMO ENGINE ══ Fake 5-minute session over the REAL player UI. Clicking an element with an
+   explanation swaps the message box below (persists until superseded); the ⓘ icons open the same
+   pop-under info boxes as the live player; nothing loads or plays audio. */
 (function () {
   var PLAY_TRI = '<polygon points="5,2 14,8 5,14"/>';
   var PLAY_BARS = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
   var DUR = 300, BLOCK = 30;
   var pos = 0, playing = false, timer = null;
+  var mode = 'te', repeats = 1, english = true, engPos = 0;   // engPos 0 = unset → after all repeats
   var $ = function (id) { return document.getElementById(id); };
   function fmt(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
   function paint() {
@@ -549,8 +549,10 @@
     $('demo-cur').textContent = fmt(pos);
     document.body.classList.toggle('dyn-playing', playing);
   }
-  function setIcon() { $('demo-play-icon').innerHTML = playing ? PLAY_BARS : PLAY_TRI;
-    $('demo-play').setAttribute('aria-label', playing ? 'Pause audio' : 'Play audio'); }
+  function setIcon() {
+    $('demo-play-icon').innerHTML = playing ? PLAY_BARS : PLAY_TRI;
+    $('demo-play').setAttribute('aria-label', playing ? 'Pause audio' : 'Play audio');
+  }
   function tick() { pos += 0.25; if (pos >= DUR) pos = 0; paint(); }
   $('demo-play').addEventListener('click', function () {
     playing = !playing;
@@ -559,68 +561,122 @@
   });
   $('demo-sent-prev').addEventListener('click', function () { pos = Math.max(0, (Math.ceil(pos / BLOCK) - 1) * BLOCK - BLOCK); paint(); });
   $('demo-sent-next').addEventListener('click', function () { pos = (Math.floor(pos / BLOCK) + 1) * BLOCK; if (pos >= DUR) pos = 0; paint(); });
-  // scrubber tap = seek
   $('demo-scrubber').addEventListener('click', function (e) {
     var r = this.getBoundingClientRect();
     pos = Math.min(DUR - 0.1, Math.max(0, (e.clientX - r.left) / r.width * DUR)); paint();
   });
 
-  /* messages (owner copy, 2026-08-02) */
+  /* cycler messages (owner copy) */
   var MSG = {
     mode: '<strong>Thai first / English first:</strong> Two separate “sides” of the Dynamic player. Each with their own dynamic mp3 file, enabling you to have two audio streams set up — one for comprehension (Thai first) and one for practising recall and speaking (English first).',
     reps: '<strong>Thai repeats:</strong> Choose how many times a given Thai sentence is repeated.',
     pauses: '<strong>Pauses:</strong> Adjust the pause length between sentences (shorter pauses give you less time to recall, but are good for passive review).',
     english: '<strong>English sentence toggle (on Thai first side):</strong> Choose to remove the English entirely.',
+    engpos: '<strong>English position:</strong> When there are at least two Thai repeats, choose when you hear the English sentence. After all Thai repeats? Midway through? The choice is yours.',
     include: '<strong>Include selected sentences:</strong> On a topic page, exclude any sentences not relevant to you, the Dynamic mp3 will construct your audio without it.',
     sync: '<strong>Sync:</strong> sync your Dynamic mp3 player settings across all Thai first or English first topics and playlists.',
     skip: '<strong>+1/−1:</strong> skip forward or back to next or previous sentence.',
     autoplay: '<strong>Autoplay:</strong> When one topic or playlist finishes, the next automatically starts playing.',
-    prevnext: '<strong>Next/Previous:</strong> Play next or previous topic or playlist.',
+    prevtopic: '<strong>Previous:</strong> Play previous topic or playlist.',
+    nexttopic: '<strong>Next:</strong> Play next topic or playlist.',
     repeat: '<strong>Repeat:</strong> This Dynamic mp3 will play again after it finishes.'
   };
   function say(key) { var m = MSG[key]; if (m) $('dp-msg').innerHTML = m; }
-  // mode tabs: real active flip + the English toggle exists on the Thai-first side only
+  ['demo-sent-prev', 'demo-sent-next'].forEach(function (id) { $(id).addEventListener('click', function () { say('skip'); }); });
+
+  /* ⓘ pop-under info boxes — same texts and mechanics as the live player (player.js DYN_INFO) */
+  var INFO = {
+    reps: 'This decides how many times a Thai sentence is spoken.',
+    engpos: 'This decides where the English sentence is spoken. In the last position, the English is heard after all the Thai repeats of a sentence. But English can also be positioned between Thai sentences, which can help with comprehension when first getting to know a topic. To hear English spoken first, before any Thai, switch to the English first mode at the top of the dynamic mp3 player.'
+  };
+  var infoOpen = null;
+  function infoClose() {
+    var box = document.getElementById('dyn-info-box');
+    if (box && box.parentNode) box.parentNode.removeChild(box);
+    infoOpen = null;
+  }
+  function infoToggle(key, rowEl) {
+    var was = infoOpen;
+    infoClose();
+    if (was === key || !rowEl || !INFO[key]) return;
+    var box = document.createElement('div');
+    box.id = 'dyn-info-box'; box.className = 'dyn-info-box'; box.setAttribute('role', 'note');
+    var x = document.createElement('button');
+    x.type = 'button'; x.className = 'dyn-info-x';
+    x.setAttribute('aria-label', 'Close'); x.title = 'Close'; x.innerHTML = '&times;';
+    x.addEventListener('click', infoClose);
+    var t = document.createElement('span');
+    t.textContent = INFO[key];
+    box.appendChild(x); box.appendChild(t);
+    rowEl.parentNode.insertBefore(box, rowEl.nextSibling);
+    infoOpen = key;
+  }
+  $('demo-reps-info').addEventListener('click', function (e) { e.stopPropagation(); infoToggle('reps', $('demo-slider-row')); });
+  $('demo-ep-info').addEventListener('click', function (e) { e.stopPropagation(); infoToggle('engpos', $('dyn-ep-row')); });
+
+  /* English position — the REAL rules: Thai-first + English on + ≥2 repeats; "Thai ☐" per repeat,
+     radio-style; unset selection = after all repeats. */
+  function epEff() { return (engPos >= 1 && engPos <= repeats) ? engPos : repeats; }
+  function epRender() {
+    var row = $('dyn-ep-row'), box = $('dyn-ep-boxes');
+    var show = mode !== 'et' && english && repeats >= 2;
+    row.style.display = show ? '' : 'none';
+    if (!show) { if (infoOpen === 'engpos') infoClose(); return; }
+    var eff = epEff(), html = '';
+    for (var i = 1; i <= repeats; i++) {
+      html += '<span class="dyn-ep-th">Thai</span>' +
+        '<button type="button" class="dyn-ep-box' + (i === eff ? ' on' : '') + '" data-ep="' + i + '"' +
+        ' role="radio" aria-checked="' + (i === eff ? 'true' : 'false') + '"' +
+        ' aria-label="English after Thai repeat ' + i + '"></button>';
+    }
+    box.innerHTML = html;
+    box.querySelectorAll('.dyn-ep-box').forEach(function (b) {
+      b.addEventListener('click', function () {
+        engPos = parseInt(b.getAttribute('data-ep'), 10);
+        epRender(); say('engpos');
+      });
+    });
+  }
+
+  /* mode tabs — English toggle + position exist on the Thai-first side only */
   [['btn-te', 'te'], ['btn-et', 'et']].forEach(function (p) {
     $(p[0]).addEventListener('click', function () {
-      $('btn-te').classList.toggle('active', p[1] === 'te');
-      $('btn-et').classList.toggle('active', p[1] === 'et');
-      var off = p[1] === 'et';
+      mode = p[1];
+      $('btn-te').classList.toggle('active', mode === 'te');
+      $('btn-et').classList.toggle('active', mode === 'et');
+      var off = mode === 'et';
       $('dyn-en-wrap').style.display = off ? 'none' : '';
       $('dyn-en-sep').style.display = off ? 'none' : '';
-      say('mode');
+      epRender(); say('mode');
     });
   });
   document.querySelectorAll('.dyn-rep-btn').forEach(function (b) {
     b.addEventListener('click', function () {
+      repeats = parseInt(b.textContent, 10) || 1;
       document.querySelectorAll('.dyn-rep-btn').forEach(function (x) { x.classList.toggle('on', x === b); });
-      say('reps');
+      epRender(); say('reps');
     });
   });
   var pf = $('dyn-pf'), pv = $('dyn-pf-val');
   pf.addEventListener('input', function () { pv.textContent = (parseFloat(pf.value) || 1) + '×'; say('pauses'); });
-  pf.addEventListener('click', function () { say('pauses'); });
   $('demo-pauses').addEventListener('click', function () { say('pauses'); });
-  $('dyn-en').addEventListener('change', function () { say('english'); });
+  $('dyn-en').addEventListener('change', function () { english = this.checked; epRender(); say('english'); });
   $('demo-sync').addEventListener('click', function () { say('sync'); });
-  ['demo-sent-prev', 'demo-sent-next'].forEach(function (id) {
-    $(id).addEventListener('click', function () { say('skip'); });
-  });
-  // no-message interactive bits behave but leave the box alone
   $('demo-autoplay').addEventListener('click', function () {
     var on = this.getAttribute('aria-pressed') === 'true';
     this.setAttribute('aria-pressed', on ? 'false' : 'true');
     this.classList.toggle('active', !on);
     say('autoplay');
   });
-  ['demo-prevtopic', 'demo-nexttopic'].forEach(function (id) {
-    $(id).addEventListener('click', function () { say('prevnext'); });
-  });
+  $('demo-prevtopic').addEventListener('click', function () { say('prevtopic'); });
+  $('demo-nexttopic').addEventListener('click', function () { say('nexttopic'); });
   $('demo-repeat').addEventListener('click', function () {
     var on = this.getAttribute('aria-pressed') === 'true';
     this.setAttribute('aria-pressed', on ? 'false' : 'true');
     this.classList.toggle('active', !on);
     say('repeat');
   });
+  epRender();
 })();
 </script>
 <script src="nav.js" defer></script>

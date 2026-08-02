@@ -87,6 +87,10 @@
   .contact a { color: var(--accent); text-decoration: none; font-weight: 500; }
   .wrap p a { color: var(--accent); text-decoration: none; }
   .wrap p a:hover { text-decoration: underline; }
+  /* Guide/App/Custom-playlists links: always underlined and accent-blue, even with <strong> inside
+     (the generic strong colour would otherwise override the link colour). Owner-approved 2026-08-02. */
+  .see-link { color: var(--accent) !important; text-decoration: underline !important; }
+  .see-link strong { color: inherit; }
   .ref { font-size: 12.5px; color: var(--text-tertiary); margin-top: 1.5rem; line-height: 1.6; }
   @media (max-width: 600px) { .wrap { padding: 2rem 1.1rem 2.5rem; } h1 { font-size: 24px; } }
 </style>
@@ -113,10 +117,16 @@
     how Thai is <strong>actually spoken</strong>, sentence by sentence, learning vocabulary and
     the structure of the language in a <strong>realistic context</strong>.</p>
 
-  <p>ThaiEar’s listening resources are the perfect way to develop both <strong>listening comprehension</strong>
-    and to practise your <strong>spoken Thai</strong>. You can listen to our topics both ways: Thai first then
-    English, or English first then Thai. <strong>Thai-first</strong> is great for building understanding, but
-    when it comes to actually being able to speak Thai, <strong>English-first</strong> is a must.</p>
+  <p>Your Thai learning experience is delivered by the <strong>ThaiEar Dynamic mp3 player</strong> which delivers
+    audio to your exact specification (see <a class="see-link" href="guide.html"><strong>Guide</strong></a>) and can
+    be taken offline in our <a class="see-link" href="app.html"><strong>App</strong></a>.</p>
+
+  <p>Whether you make your own <a class="see-link" href="index.html#playlists"><strong>Custom
+    playlists</strong></a> or listen by topic, <strong>ThaiEar’s</strong> listening resources are
+    the perfect way to develop both <strong>listening comprehension</strong> and to practise your
+    <strong>spoken Thai</strong>. You can listen to our topics both ways: Thai first then English, or English first
+    then Thai. <strong>Thai-first</strong> is great for building understanding, but when it comes to actually being
+    able to speak Thai, <strong>English-first</strong> is a must.</p>
 
   <p>ThaiEar works best once you can already <strong>read Thai script</strong>. Reading comes first for a
     reason: the script is what tells you a syllable’s tone, so learning to read is how you understand where
