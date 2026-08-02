@@ -159,16 +159,6 @@
     <h1 class="prog-head-title">Toby’s progress</h1>
   </div>
 
-  <!-- ── FILTER PILLS (mockup) — index pill styling; All default; only Premium is gold;
-       Playlists takes the free-member (accent) colouring. ── -->
-  <div class="filter-tabs" id="prog-tabs">
-    <button class="filter-tab active" data-f="all" type="button">All</button>
-    <button class="filter-tab tab-premium" data-f="premium" type="button">Premium</button>
-    <button class="filter-tab" data-f="member" type="button">Member</button>
-    <button class="filter-tab tab-free" data-f="free" type="button">Free</button>
-    <button class="filter-tab" data-f="playlist" type="button">Playlists</button>
-  </div>
-
   <p class="prog-intro">This page is designed as a tool for you to track your progress.
     We recommend each time you listen to a topic in full to add <strong>“one progress”</strong> to that topic —
     this is found above the mp3 player. Over time you can see which topics you know well and which topics need more
@@ -178,6 +168,18 @@
   <div class="fluency-block">
     <img class="fluency-img" src="yak.png" alt="Thai guardian yak" width="200" height="260">
     <div class="fluency-text">Fluency loading<span class="dots" aria-hidden="true"></span></div>
+  </div>
+
+  <!-- ── FILTER PILLS in their own box — below the yak, above the lists. Index pill styling;
+       All default; only Premium gold; Playlists takes the free-member (accent) colouring. ── -->
+  <div class="prog-tabs-box">
+    <div class="filter-tabs" id="prog-tabs">
+      <button class="filter-tab active" data-f="all" type="button">All</button>
+      <button class="filter-tab tab-premium" data-f="premium" type="button">Premium</button>
+      <button class="filter-tab" data-f="member" type="button">Member</button>
+      <button class="filter-tab tab-free" data-f="free" type="button">Non-member</button>
+      <button class="filter-tab" data-f="playlist" type="button">Playlists</button>
+    </div>
   </div>
 
   <div class="prog-list" id="prog-list">
@@ -300,7 +302,9 @@
 
 <style>
 /* pills — lifted from index.html's filter styling */
-.filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.prog-tabs-box { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
+  padding: 10px 12px; margin-bottom: 1.1rem; }
+.filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .filter-tab { font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; padding: 6px 14px;
   border-radius: 20px; border: 0.5px solid var(--border-strong); background: var(--surface);
   color: var(--text-secondary); cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
