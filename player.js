@@ -475,24 +475,13 @@
     var t = Date.parse(v); return isNaN(t) ? 0 : t;             // ISO string
   }
   // On each successful online check, record WHEN we checked + the membership's real end date.
-  /* Is an owner simulation armed? Read localStorage DIRECTLY, never window.ThaiEarSim: sim.js is
-     only loaded on the test pages, so on the homepage or any live topic this file runs without it,
-     saw no simulator, and re-stamped the licence markers from the real subscription — silently
-     wiping a 51-day simulation every time the owner passed through the index to reach the test
-     space. The flag is localStorage, which is shared across pages; the object is not. */
-  function T(m) { try { if (window.ThaiEarSim && window.ThaiEarSim.trace) window.ThaiEarSim.trace('player: ' + m); } catch (_) {} }
-  function simArmed() {
-    try { var v = localStorage.getItem('te_sim_tier') || ''; return !!v && v !== 'off'; }
-    catch (_) { return false; }
-  }
+  /* P3 cleanup (r135): the owner entitlement simulator (sim.js) went with the test space. */
   function stampVerified() {
     try {
       // Owner simulator: hold the licence markers still while an account state is armed. Without
       // this, setting "51 days" online and THEN going offline lost the backdating on the way out
       // (this fires from canUseOffline's online-and-subscribed branch), so the offline half of the
       // test could never be set up. The simulator owns these inputs while armed.
-      if (simArmed()) { T('stampVerified SUPPRESSED'); return; }
-      T('stampVerified WROTE');
       localStorage.setItem('thaiear_lastVerified', String(Date.now()));
       var a = window.ThaiEarAuth, sub = a && a.getSubscription && a.getSubscription();
       var end = sub && sub.current_period_end;
@@ -520,25 +509,14 @@
      ⚠ What it CANNOT simulate: the SERVER's answer. /api/audio still sees the real token, so a
      really-subscribed owner would still be handed signed URLs. Use the separate "simulate server
      denial" switch to exercise that path. */
-  function simDenies() { var S = window.ThaiEarSim; return !!(S && S.denies()); }
-  // The auth view every entitlement check reads: the real ThaiEarAuth unless sim.js is present
-  // AND armed, in which case a same-shape shim reporting the simulated account. Absent sim.js
-  // (i.e. every real page) this is a plain pass-through.
-  function AUTHV() {
-    var S = window.ThaiEarSim;
-    return S ? S.authView(window.ThaiEarAuth) : window.ThaiEarAuth;
-  }
 
   /* May an offline download of this tier be played right now? free/member: always.
      premium: live subscription when online; else within the verified-online window.
      ⚠ THE RULE NOW LIVES IN auth.js (ThaiEarAuth.canUseOffline) — one predicate shared with
      playlists.html's download path, which previously had NO tier awareness at all. This is a thin
-     delegate; every existing call site is unchanged. AUTHV() is used so the owner simulator still
-     injects at the ThaiEarAuth boundary (sim.js's Object.create view inherits the new method and
-     its `this` resolves to the SIMULATED isSubscribed/isSubscriptionFresh — which is exactly what
-     makes the A/B/X/R/2.x tests meaningful). */
+     delegate; every existing call site is unchanged. */
   function canUseOffline(tier) {
-    var a = AUTHV();
+    var a = window.ThaiEarAuth;
     if (a && typeof a.canUseOffline === 'function') return a.canUseOffline(tier);
     return canUseOfflineLegacy(tier);
   }
@@ -553,7 +531,7 @@
     // The flag is maintained by auth.js ONLY when the server confirms lifetime+active while online,
     // so a regular paying user can never reach this early-return.
     try { if (localStorage.getItem('thaiear_lifetime') === '1') return true; } catch (_) {}
-    var a = AUTHV();
+    var a = window.ThaiEarAuth;
     var subbed = a && a.isSubscribed && a.isSubscribed();
     /* ONE question decides everything here: DID THE SERVER ANSWER US THIS SESSION?
        This used to ask navigator.onLine, which the WebView lies about — it reports online in
@@ -1654,7 +1632,7 @@
        conditions are mutually exclusive, so control can cross once and never bounce back. If either
        condition is ever loosened, re-check that — it would become an infinite loop, not a bug you
        can see in a diff. */
-    var a = AUTHV();
+    var a = window.ThaiEarAuth;
     if (a && a.isSubscriptionFresh && a.isSubscriptionFresh() &&
         !(a.isSubscribed && a.isSubscribed())) { gate(TIER || 'premium'); return; }
     if (document.getElementById('te-licence-overlay')) return;
@@ -2110,7 +2088,6 @@
     // Owner test switch: pretend /api/audio refused. This is the ONE thing the entitlement
     // simulator can't fake on its own — the server sees the owner's real (valid) token — so it
     // is what exercises the "server disagrees with the client" fallback in dynBuildSessionFor.
-    if (simDenies()) return Promise.reject({ code: 402 });
     var token = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken)
       ? window.ThaiEarAuth.getAccessToken() : null;
     if (!token) return Promise.reject({ code: 'noauth' });
@@ -2141,7 +2118,7 @@
        Downloaded content needs no separate branch: canUseOffline covers it, and a download that
        is no longer licensed should not play either. */
     if (TIER === 'premium') return canUseOffline('premium');
-    var a = AUTHV();
+    var a = window.ThaiEarAuth;
     if (!a || !a.isReady) return true;                          // auth still resolving → don't wrongly gate a paying user
     if (TIER === 'member') return !!(a.getUser && a.getUser()); // member = any signed-in user
     return !!(a.isSubscribed && a.isSubscribed());              // premium = active subscription
@@ -2159,7 +2136,7 @@
        isSubscribed() still reporting true (from the last known state) with canUseOffline() false
        is exactly the second case. */
     if (tier === 'premium') {
-      var a = AUTHV();
+      var a = window.ThaiEarAuth;
       var lastKnownSubbed = !!(a && a.isSubscribed && a.isSubscribed());
       if (lastKnownSubbed && !canUseOffline('premium')) { showLicenceOverlay(); return; }
     }
@@ -2202,7 +2179,7 @@
      the topic page. That call site was fixed and this sibling missed. One predicate now. */
   function sentLocked(s) {
     if (!PLMODE) return false;                 // topic pages gate the whole page, not per sentence
-    var a = AUTHV();
+    var a = window.ThaiEarAuth;
     var item = { tier: sentTierOf(s), prefix: (s && s.prefix) ? s.prefix : PREFIX };
     var canStore = !!(OFFLINE || WEB_DL || DYN_WEB_DL);
     if (a && typeof a.lockedFor === 'function') return a.lockedFor(item, { canStoreOffline: canStore });
@@ -2506,7 +2483,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = (function () { try { return window.TE_BUILD || 'r129'; } catch (_) { return 'r120'; } })();
+  var DYN_BUILD = 'r135';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2547,7 +2524,6 @@
     } catch (_) {}
   }
   if (DYN_DBG) {
-    window.ThaiEarDynLog = dynLog;   // the factory (player-dyn.js) logs through this when present
     window.addEventListener('error', function (e) { dynLog('ERR ' + ((e && e.message) || e.type)); });
     window.addEventListener('unhandledrejection', function (e) {
       var r = e && e.reason;
@@ -3012,12 +2988,7 @@
     // ≥2 repeats + not at the default end position) — so irrelevant toggles never churn keys
     // AND every pre-r15 persisted session stays valid (no migration wipe).
     var ep = (currentMode !== 'et' && st.en && st.rp > 1 && epEff !== st.rp) ? epEff : 0;
-    // Owner sim only: fold the server-denial switch into the key so toggling it forces a REBUILD.
-    // Without this, a session persisted before the switch was flipped is simply restored and the
-    // denied sentences play as normal — which reads as "the denial did nothing". simDenies() is
-    // always false without sim.js, so production keys are byte-identical and no session churns.
-    var dny = simDenies() ? '|d' : '';
-    return currentMode + '|' + st.pf + '|r' + st.rp + '|e' + en + (ep ? '|p' + ep : '') + dny + '|' + sents.map(function (s) {
+    return currentMode + '|' + st.pf + '|r' + st.rp + '|e' + en + (ep ? '|p' + ep : '') + '|' + sents.map(function (s) {
       return s.prefix ? (s.prefix + ':' + (s.clipNum != null ? s.clipNum : s.num)) : s.num;
     }).join(',');
   }
@@ -3523,19 +3494,14 @@
          come back with a gate code, how many sentences survived, and was the build re-thrown.
          Instrument before theorising — every bug on this build attempted by inference first was
          solved wrong. */
-      T('build: inc=' + inc.length + ' gate=' + (lastGate ? (lastGate.code || 'y') : 'none') +
-        ' denied=' + Object.keys(denied).length +
-        ' src[mem=' + dynSrcTally.mem + ' local=' + dynSrcTally.local +
-        ' cache=' + dynSrcTally.cache + ' net=' + dynSrcTally.net + ']');
       if (lastGate) {
         var kept = inc.filter(function (s) {
           var r = dynClipRef(s, 'TH');
           return !denied[r.prefix + '|' + r.file.replace(/_(TH|EN)\.mp3$/, '')];
         });
-        if (!kept.length) { T('build: ALL denied → reject ' + (lastGate.code || '?')); return Promise.reject(lastGate); }
+        if (!kept.length) { return Promise.reject(lastGate); }
         if (kept.length !== inc.length) {
           dynLog('build: ' + (inc.length - kept.length) + ' sentence(s) denied — stitching ' + kept.length);
-          T('build: dropped ' + (inc.length - kept.length) + ' → stitching ' + kept.length);
           inc = kept;
         }
       }
@@ -4181,7 +4147,7 @@
      here — that would be a fifth divergent copy, and divergent copies are what produced bug #7,
      §B4 and r40. */
   function dynUnitLocked(t) {
-    var a = AUTHV();
+    var a = window.ThaiEarAuth;
     if (!a || typeof a.lockedFor !== 'function') return false;   // stale auth.js → never lock a payer out
     return a.lockedFor({ tier: (t && t.tier) || 'free', prefix: t && t.prefix },
                        { canStoreOffline: !!(OFFLINE || WEB_DL || DYN_WEB_DL) });
@@ -4229,7 +4195,6 @@
        (network-only — dyn downloads never fetch TE/ET, so offline it CANNOT work). That distinction
        is the likeliest explanation for the iPhone-airplane failure passing on Android, and it can
        only be told apart by looking. */
-    T('adopt branch ' + (t.dynKey || t.prefix || '?') + ' meta=' + (meta ? 1 : 0) + ' online=' + (navigator.onLine ? 1 : 0));
     if (!meta) {
       dynLog('adopt: placeholder (no meta)');
       return dynAdoptPlaceholder(t, mode).catch(function (e) {
@@ -4379,7 +4344,6 @@
       return mainAudio.play();
     }).then(function () {
       dynLog('play ok');
-      T('adopt play ok');   // pairs with the FAIL line below — tells the two apart in one trace
       // r28a: RE-REGISTER the media-session handlers after a hop. iOS derives the lock-screen
       // control set from which handlers are present, and a new media source can drop them —
       // when that happened the owner saw ±15s skip + a scrubber (iOS's defaults) instead of our
@@ -4394,7 +4358,6 @@
          the page snaps back to 0:00 paused: that is this revert). The error NAME is the whole
          diagnosis — `NotAllowedError` means play() lost the user-gesture token across the adopt
          (WebKit is strict where Android is not), which is a different fix from a load failure. */
-      T('adopt FAIL ' + ((e && (e.name || e.code)) || '?') + ' ' + ((e && e.message) || ''));
       // Round-11: never location.href from transport/lock — put the pointer back where it was.
       if (revertIdx != null && dynChain) {
         dynChainIdx = revertIdx;
@@ -4445,7 +4408,7 @@
   function dynPendWrite(p) { try { sessionStorage.setItem('te_plsel', JSON.stringify(p)); } catch (_) {} }
   function dynPendClear() { try { sessionStorage.removeItem('te_plsel'); } catch (_) {} }
   function dynAddPlClick() {
-    var a = AUTHV();
+    var a = window.ThaiEarAuth;
     // Playlists are a signed-in feature (they live in the account dropdown alongside My Progress
     // and My Sentences). Signed out → the standard member sign-in route, not a raw alert().
     // gate('member') goes to join.html on web AND in the app — login is not payment steering.
@@ -5187,7 +5150,7 @@
       // Same gate as Add-to-playlist: a signed-out visitor gets the sign-in page, not a
       // playlists page that can only tell them it's empty.
       pll.addEventListener('click', function (e) {
-        var au = AUTHV();
+        var au = window.ThaiEarAuth;
         if (!au || !(au.getUser && au.getUser())) { e.preventDefault(); gate('member'); }
       });
       apl.parentNode.insertBefore(pll, apl.nextSibling);
@@ -5585,19 +5548,16 @@
            topic. Entitlement is not a can-we question, so it is checked before that shortcut. */
         if (dynUnitLocked(stp.t)) {
           dynLog('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (not entitled)');
-          T('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (not entitled)');
           continue;
         }
         if (fg || dynChainPlayable(stp.t, stp.idx)) { hop = stp; break; }
         dynLog('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (locked, nothing playable)');
-        T('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (nothing playable)');
       }
       dynLog('advanceTopic dir=' + dir + (hop ? ' → ' + (hop.t.dynKey || hop.t.prefix) : ' (nothing playable)'));
       /* ⚠ The OUTCOME of the walk, to the boot trace. The r52 capture showed no adopt lines at all,
          which means nothing was adopted — so either the walk skipped everything (r50 working) or it
          never ran. Those are opposite conclusions and dynLog could not tell them apart, because it
          does not reach the trace. This line does. */
-      T('advanceTopic dir=' + dir + ' fg=' + (fg ? 1 : 0) + (hop ? ' → ' + (hop.t.dynKey || hop.t.prefix) : ' → NOTHING'));
       if (!hop) return;
       dynChainIdx = hop.idx;
       if (hop.idx === dynHomeIdx) { dynReturnLocal(); return; }
@@ -6264,12 +6224,6 @@
     downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete, refreshTopic: refreshTopic,
     dynUpdateAudio: dynUpdateAudio, gateSentence: gateSent });
 
-  // Let the owner simulator panel show the REAL verdict rather than restating its own inputs.
-  if (window.ThaiEarSim) {
-    window.ThaiEarSim.canUseOffline = canUseOffline;
-    // strip was built before this existed — rebuild it so the licence verdict appears
-    if (window.ThaiEarSim.remountBadge) window.ThaiEarSim.remountBadge();
-  }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();

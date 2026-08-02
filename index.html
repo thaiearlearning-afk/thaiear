@@ -1937,58 +1937,7 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
   }
 })();
 
-// Owner-only link to the dynamic-player test page (DYNAMIC_PLAYER_PLAN.md). Gated on a
-// SHA-256 of the signed-in email so the deployed JS carries no address; invisible to
-// everyone else. Appended AFTER the grid section so renderGrid() re-renders never wipe it.
-(function () {
-  /* A LIST, not a single hash (2026-08-01). The owner's own account is LIFETIME, which
-     short-circuits canUseOffline before any expiry arithmetic — so it can never test the
-     paying-non-lifetime path. A second, genuinely paid non-lifetime account was created for exactly
-     that, and it needs the same test-space links or the boot trace is unreachable on a device with
-     no address bar. Still hashed, so the deployed JS carries no address. */
-  var OWNER_HASHES = [
-    'f158e8ba0177149ebd33d06f08ac400709d39133f9f366f7bdb3ac17bcb1c171',   // primary owner
-    'b923407d6637d0f83f9eaa4b5cf324523a265685ae444805e0422ea85c2b142e'    // paid non-lifetime test account
-  ];
-  function maybeShow() {
-    if (document.getElementById('owner-test-link')) return;
-    var u = window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser();
-    if (!u || !u.email || !window.crypto || !crypto.subtle) return;
-    crypto.subtle.digest('SHA-256', new TextEncoder().encode(u.email.toLowerCase()))
-      .then(function (buf) {
-        var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) {
-          return ('0' + b.toString(16)).slice(-2);
-        }).join('');
-        if (OWNER_HASHES.indexOf(hex) === -1 || document.getElementById('owner-test-link')) return;
-        var sec = document.querySelector('.topics-section');
-        if (!sec) return;
-        // The APP has no address bar, so every owner-only test page needs a link here or it
-        // simply cannot be reached on Android.
-        [['owner-dynidx-link', 'dyn-index.html?k=cu38961y', '🧪 Dynamic player test index', '2.25rem auto 0'],
-         ['owner-test-link', 'topic-test.html?k=cu38961y', '🧪 Dynamic player test (owner preview)', '.6rem auto 0'],
-         ['owner-probe-link', 'dyn-probe.html?k=cu38961y', '📊 Dynamic audio capability probe', '.6rem auto 0'],
-         // The app has no address bar, so ?dbg=1 was unreachable there — the overlay it turns
-         // on is the artifact for iPhone lock-screen failures, so it needs its own link.
-         ['owner-dbg-link', 'topic-test.html?k=cu38961y&dbg=1', '🐞 Dynamic player test (debug overlay)', '.6rem auto 0'],
-         ['owner-avtest-link', 'topic-test.html?k=cu38961y&avtest=1', '🔄 Dynamic player test (simulate audio update)', '.6rem auto 0'],
-         // Premium test unit + the entitlement simulator panel. The ?k= also ARMS the simulator
-         // (it persists to localStorage), so this link is how the panel becomes reachable in-app.
-         ['owner-test3-link', 'topic-test3.html?k=cu38961y', '🧪 Dynamic player test 3 (PREMIUM topic)', '.6rem auto 0'],
-         ['owner-sim-link', 'playlists.html?k=cu38961y', '🎚 Playlists + entitlement simulator', '.6rem auto 0']
-        ].forEach(function (L) {
-          if (document.getElementById(L[0])) return;
-          var a = document.createElement('a');
-          a.id = L[0];
-          a.href = L[1];
-          a.textContent = L[2];
-          a.style.cssText = 'display:block;text-align:center;margin:' + L[3] + ';font-size:13px;color:var(--text-tertiary);text-decoration:none;';
-          sec.appendChild(a);
-        });
-      }).catch(function () {});
-  }
-  window.addEventListener('thaiear:auth', maybeShow);
-  maybeShow();
-})();
+// P3 cleanup (r135): the owner-gated test-space links are gone with the test space itself.
 </script>
 <!-- ============================================================
      TOPIC NUMBERING — display vs ID (do not conflate)

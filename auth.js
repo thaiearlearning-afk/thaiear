@@ -130,16 +130,11 @@
      is a duplicate so a library-internal purge cannot strand the user. Cleared ONLY by a real
      signOut(). */
   // Boot trace (test build only; inert without sim.js) — see sim.js BOOT TRACE.
-  function T(m) { try { if (window.ThaiEarSim && window.ThaiEarSim.trace) window.ThaiEarSim.trace('auth: ' + m); } catch (_) {} }
   var ID_KEY = 'thaiear_identity';
   var SIGNED_OUT_KEY = 'thaiear_signed_out';
   function readIdentity() {
     try {
       if (localStorage.getItem(SIGNED_OUT_KEY) === '1') return null;  // they really did log out
-      // Owner CONTROL (sim.js, test build): disarm this mechanism so the pre-fix behaviour can be
-      // reproduced on demand. With it on, purge + reload logs you out — which is what proves the
-      // fix is doing the work rather than something else keeping the session alive.
-      if (window.ThaiEarSim && window.ThaiEarSim.noIdentity && window.ThaiEarSim.noIdentity()) return null;
       var o = JSON.parse(localStorage.getItem(ID_KEY) || 'null');
       return (o && o.user && o.user.id) ? o : null;
     } catch (_) { return null; }
@@ -198,7 +193,6 @@
     if (reseeding || !client) return Promise.resolve(false);
     var id = readIdentity();
     if (!id || !id.refresh_token) return Promise.resolve(false);
-    T('reseed try');
     reseeding = true;
     return client.auth.setSession({ access_token: id.access_token || '', refresh_token: id.refresh_token })
       .then(function (r) {
@@ -206,7 +200,6 @@
         var s = r && r.data && r.data.session;
         if (s) {
           writeIdentity(s);
-          T('reseed OK');
           restoredFromIdentity = false;   // supabase owns a real session again
           currentSession = s;             // so getAccessToken() stops handing out the stale token
           return true;
@@ -227,24 +220,9 @@
   // the membership online + its real end date. Mirrors player.js stampVerified but lives here so it
   // fires on any page the moment auth confirms an active sub — including the index grid download path,
   // where player.js never loads. (current_period_end may be an ISO string or epoch s/ms.)
-  /* Is an owner simulation armed? Read localStorage DIRECTLY, never window.ThaiEarSim: sim.js is
-     only loaded on the test pages, so on the homepage or any live topic this file runs without it,
-     saw no simulator, and re-stamped the licence markers from the real subscription — silently
-     wiping a 51-day simulation every time the owner passed through the index to reach the test
-     space. The flag is localStorage, which is shared across pages; the object is not. */
-  function simArmed() {
-    try { var v = localStorage.getItem('te_sim_tier') || ''; return !!v && v !== 'off'; }
-    catch (_) { return false; }
-  }
+  /* P3 cleanup (r135): the owner entitlement simulator went with the test space. */
   function stampOfflineLicence() {
     try {
-      /* Owner simulator: never re-stamp while an account state is simulated. This reads the REAL
-         subscriptions row, so on a genuinely-active account it rewrote lastVerified to now and
-         sub_until to the real period end within a second of page load — silently undoing the
-         31/41/51-day backdating and making those buttons look inert. The simulator owns the
-         licence INPUTS while armed; canUseOffline's arithmetic over them is untouched. */
-      if (simArmed()) { T('stampOfflineLicence SUPPRESSED'); return; }
-      T('stampOfflineLicence WROTE');
       localStorage.setItem('thaiear_lastVerified', String(Date.now()));
       var end = currentSub && currentSub.current_period_end;
       if (end != null && end !== '') {
@@ -318,12 +296,6 @@
        arithmetic runs, so on a genuinely-lifetime device this re-granted full offline access a
        second after every page load — which is why "Expired" and the 31/41/51-day buttons appeared
        to do nothing. Overrides the SERVER's answer only; the expiry decision still runs for real. */
-    try {
-      if (simArmed()) {
-        localStorage.removeItem('thaiear_lifetime');
-        return;
-      }
-    } catch (_) {}
     if (!client || !currentUser || !navigator.onLine) return; // offline → keep whatever's cached
     client.from('subscriptions').select('lifetime,status').maybeSingle()
       .then(function (res) {
@@ -1067,8 +1039,6 @@
       // still has no session, but our record carries an access_token — so a "do we have a token?"
       // test looks satisfied while getAccessToken() is handing /api/audio a STALE one. Gated audio
       // would then 401 on a page that looks perfectly signed in. Track it explicitly and re-seed.
-      T('init gs=' + (session && session.user ? 1 : 0) + ' sb=' + (readStoredSession() ? 1 : 0) +
-        ' id=' + (readIdentity() ? 1 : 0));
       if (!session || !session.user) {
         var restored = readIdentity();
         if (restored) { session = restored; restoredFromIdentity = true; }
@@ -1076,7 +1046,6 @@
       currentSession = session || null;
       currentUser = userFromSession(currentSession);
       if (currentSession && currentSession.access_token) writeIdentity(currentSession);
-      T('init done user=' + (currentUser?1:0) + ' fromId=' + (restoredFromIdentity?1:0));
       window.ThaiEarAuth.isReady = true;
       notify();
       refreshSubscription(); // async; fires another notify when it resolves
@@ -1095,12 +1064,10 @@
         // that happened the guard could not fire and the user was logged out for good. anySignedIn()
         // consults our own record first, so only a real signOut() (which clears it and sets the
         // signed-out marker) can now reach the logout path.
-        T('chg ' + _event + ' u=' + (user?1:0) + ' any=' + (anySignedIn()?1:0) + ' sb=' + (readStoredSession()?1:0) + ' id=' + (readIdentity()?1:0));
-        if (!user && anySignedIn()) { T(' KEPT'); return; }
-        T(' APPLIED u=' + (user?1:0));
+        if (!user && anySignedIn()) { return; }
         currentSession = session || null;
         currentUser = user;
-        if (session && session.access_token) { T(' writeId'); writeIdentity(session); }
+        if (session && session.access_token) { writeIdentity(session); }
         currentProgress = null; progressLoaded = false; // re-fetch for the new (or no) user
         currentFlags = null; flagsLoaded = false;
         notify();

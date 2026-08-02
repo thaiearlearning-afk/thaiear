@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v221';   // v202 / r121: ROLLOUT P1 — shared download engine dl-core.js (§D.1), D0 classic-download migration + lazy dynChain in player.js (2026-08-02)
+const VERSION = 'v222';   // v202 / r121: ROLLOUT P1 — shared download engine dl-core.js (§D.1), D0 classic-download migration + lazy dynChain in player.js (2026-08-02)
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
@@ -119,7 +119,7 @@ const PRECACHE = [
   // creates a NEW cache and drops the old one, so anything only ever runtime-cached vanishes on
   // every deploy until it is visited online again. That is why the toggles were missing in
   // airplane mode. (Both disappear at rollout — playlists.html becomes a normal shell page.)
-  '/playlists.html', '/sim.js',
+  '/playlists.html',
   /* ⚠ THE TEST SPACE ITSELF MUST BE PRECACHED, FOR EXACTLY THE REASON GIVEN ABOVE — and these were
      missed (2026-07-31). Runtime caching cannot hold them: bumping VERSION creates a NEW cache and
      drops the old one, so a topic-test page only ever runtime-cached VANISHES on every deploy until
@@ -130,8 +130,7 @@ const PRECACHE = [
      disappearing, and why the owner had to route back in via the live homepage.
      The offline behaviour of these pages IS the thing under test, so they cannot be left to a cache
      that a deploy destroys. They go with the rest of the scaffolding at rollout (§E). */
-  '/dyn-index.html', '/topic-test.html', '/topic-test2.html', '/topic-test3.html',
-  '/player-dyn.js', '/player-dyn.css',
+  '/player-dyn.css',   // playlist-chooser/modal styles — REAL product code (r127)
   // PWA install vehicle: manifest + its icons, so "Add to Home Screen" works and the
   // installed app has its launch icon available offline.
   '/manifest.json', '/icon-512.png', '/icon-512-maskable.png',
