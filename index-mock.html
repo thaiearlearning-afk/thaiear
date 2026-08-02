@@ -1881,6 +1881,10 @@ renderGrid();
   document.querySelectorAll('.ms-btn').forEach(function (b) {
     b.addEventListener('click', function () { show(b.getAttribute('data-panel')); });
   });
+  // Deep link: index-mock.html#playlists / #read opens with that panel selected (the About page's
+  // "custom playlists" link relies on this; ship version = index.html#playlists).
+  var h = (location.hash || '').replace('#', '');
+  if (panels[h]) show(h);
 })();
 </script>
 </body>
