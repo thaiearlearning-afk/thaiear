@@ -3068,18 +3068,49 @@
   function dynFetchClip(ref) {
     var file = ref.file, temp = null;
     if (dynClipCache[file]) { dynTally('mem'); return Promise.resolve(dynClipCache[file]); }
+    function fetchDecode(url) {
+      return fetch(url).then(function (r) {
+        if (!r.ok) return Promise.reject({ code: r.status });
+        return r.arrayBuffer();
+      }).then(function (ab) {
+        if (temp) { try { URL.revokeObjectURL(temp); } catch (_) {} temp = null; }
+        return new Promise(function (res, rej) {
+          var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+          var ctx = new OAC(1, 1, DYN_SR);
+          ctx.decodeAudioData(ab, res, rej);
+        });
+      });
+    }
     return dynClipUrl(ref).then(function (u) {
       if (u.temp) temp = u.url;
-      return fetch(u.url);
-    }).then(function (r) {
-      if (!r.ok) return Promise.reject({ code: r.status });
-      return r.arrayBuffer();
-    }).then(function (ab) {
-      if (temp) { try { URL.revokeObjectURL(temp); } catch (_) {} temp = null; }
-      return new Promise(function (res, rej) {
-        var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-        var ctx = new OAC(1, 1, DYN_SR);
-        ctx.decodeAudioData(ab, res, rej);
+      var wasLocal = u.temp;
+      return fetchDecode(u.url).catch(function (e) {
+        /* r123 — SELF-HEAL A CORRUPT LOCAL CLIP. A truncated/damaged stored file (e.g. a partial
+           write from an interrupted native downloadFile) fails decodeAudioData here, and before
+           this catch the whole build died with "Couldn't load the audio — check your connection"
+           — on a fine connection, forever, because the manifest kept claiming the file and the
+           skip logic kept trusting the manifest (owner hit exactly this on Greetings, 2026-08-02).
+           When the bad bytes came from LOCAL storage and we are online: drop the file from the
+           manifest entry (ownership arithmetic then honestly reads PARTIAL → the bar offers
+           "⟳ Download audio update?" and an Update re-fetches it), best-effort delete the bad
+           file, and take the network copy for THIS build so playback just works. Offline, or if
+           the network copy itself is bad, fail exactly as before. */
+        if (!wasLocal || !navigator.onLine) return Promise.reject(e);
+        if (temp) { try { URL.revokeObjectURL(temp); } catch (_) {} temp = null; }
+        try {
+          var m = getManifest(), ent = m[ref.prefix];
+          if (ent && ent.files) {
+            var ix = ent.files.indexOf(file);
+            if (ix >= 0) { ent.files.splice(ix, 1); delete ent.bytes; setManifest(m); }
+          }
+          if (OFFLINE) {
+            Filesystem.deleteFile({ path: offlineDir(ref.prefix) + '/' + file, directory: 'DATA' }).catch(function () {});
+          } else if (CACHES) {
+            caches.open(AUDIO_DL_CACHE).then(function (c) { c.delete(webCacheKey(ref.prefix, file)).catch(function () {}); }).catch(function () {});
+          }
+        } catch (_) {}
+        dynTally('heal');
+        return buildUrl(ref.file, ref.gated).then(fetchDecode);
       });
     }).then(function (buf) { dynClipCache[file] = buf; return buf; })
       .catch(function (e) {
