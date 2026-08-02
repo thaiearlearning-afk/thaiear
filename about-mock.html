@@ -91,7 +91,10 @@
   .wrap p a:hover { text-decoration: underline; }
   .ref { font-size: 12.5px; color: var(--text-tertiary); margin-top: 1.5rem; line-height: 1.6; }
   @media (max-width: 600px) { .wrap { padding: 2rem 1.1rem 2.5rem; } h1 { font-size: 24px; } }
-  .see-link { text-decoration: underline !important; }
+  /* Links must read BLUE (accent) even when the text inside is <strong> — the page's generic
+     `strong { color: var(--text-primary) }` was overriding the link colour (owner, 2026-08-02). */
+  .see-link { color: var(--accent) !important; text-decoration: underline !important; }
+  .see-link strong { color: inherit; }
 </style>
 </head>
 <body>
@@ -120,7 +123,7 @@
     audio to your exact specification (see <a class="see-link" href="guide.html"><strong>Guide</strong></a>) and can
     be taken offline in our <a class="see-link" href="app.html"><strong>App</strong></a>.</p>
 
-  <p>Whether you make your own <a class="see-link" href="index-mock.html?k=cu38961y#playlists"><strong>custom
+  <p>Whether you make your own <a class="see-link" href="index-mock.html?k=cu38961y#playlists"><strong>Custom
     playlists</strong></a> or <strong>listen by topic</strong>, <strong>ThaiEar’s</strong> listening resources are
     the perfect way to develop both <strong>listening comprehension</strong> and to practise your
     <strong>spoken Thai</strong>. You can listen to our topics both ways: Thai first then English, or English first
