@@ -14,7 +14,17 @@
   'use strict';
 
   var D = window.ThaiEarRead;
-  if (!D) return;
+  if (!D) {
+    // read-data.js (which sets window.ThaiEarRead to the data object) hasn't loaded — e.g. a host
+    // page pulled in read.js without it. Stand up a harmless stub so window.ThaiEarRead.mountHub(...)
+    // (r130 native-panel API, see mountHub below) fails soft with a console warning instead of
+    // throwing "Cannot read properties of undefined". Nothing else in this file can run without D.
+    window.ThaiEarRead = window.ThaiEarRead || {};
+    window.ThaiEarRead.mountHub = function () {
+      console.warn('ThaiEarRead.mountHub: read-data.js has not loaded — nothing to render.');
+    };
+    return;
+  }
 
   // Reading audio lives in the public R2 bucket under read/ (deployed 2026-07-22).
   // Localhost override: define window.ThaiEarReadAudioBase = 'read-audio/' before this loads.
@@ -558,8 +568,12 @@
     }
     nav.innerHTML = btn(prev, 'l') + btn(next, 'r');
     var all = document.getElementById('read-all');
-    // Lands at the hub's "learning path" heading, not the hub top (owner spec, DYN_ROLLOUT §2.2b) — see #lessons in renderHub/boot.
-    if (all) all.innerHTML = '<a href="read.html#lessons">← All reading sections</a>';
+    // r130: the hub now lives natively in the index's Read panel (mountHub, above), so this
+    // back-link routes THERE, not to read.html — index.html#read-lessons is a new deep-link hash
+    // the index side handles (opens the Read panel, scrolls to the learning-path/#lessons position
+    // minus ~72px; coordinator's side, not this file). read.html itself is still live for SEO/direct
+    // visits and its OWN #lessons hash-landing (scrollToLessons, boot(), above) is unchanged.
+    if (all) all.innerHTML = '<a href="index.html#read-lessons">← All reading sections</a>';
   }
 
   /* ── explainer grid (letters + vowels share it) ────────── */
@@ -1458,7 +1472,11 @@
   }
 
   /* ── hub page ──────────────────────────────────────────── */
-  function renderHub(root) {
+  // Split into hubBodyHtml() (markup only) + wireHub() (listeners) so both renderHub() — read.html's
+  // own #read-root, unchanged — and mountHub() (r130, below) — the index panel's native container —
+  // build and wire the identical hub body. renderHub()'s own behaviour is byte-equivalent to before
+  // this split: same HTML string assigned to root.innerHTML, same listeners wired straight after.
+  function hubBodyHtml() {
     var teach = D.sections;
     var html =
       '<div class="read-panel"><h2>Every letter belongs to a class — and the class carries the tone</h2>' +
@@ -1491,18 +1509,84 @@
           '<span class="path-name">' + esc(s.title) + '</span>' +
           '<span class="path-blurb">' + s.blurb + '</span>' + progress + '</a>';
       }).join('') + '</div>';
-    root.innerHTML = html;
+    return html;
+  }
+  function wireHub(root) {
     root.querySelectorAll('.tone-chip').forEach(function (chip) {
       chip.addEventListener('click', function () { play(chip.getAttribute('data-audio'), chip); });
     });
     mountDlCard(root);
   }
+  function renderHub(root) {
+    root.innerHTML = hubBodyHtml();
+    wireHub(root);
+  }
 
-  // A lesson's back-link (renderChrome) points at read.html#lessons so it lands on the "learning
-  // path" heading instead of the hub top — minus 72px of grace so it isn't glued to the viewport
-  // edge (owner spec, DYN_ROLLOUT §2.2b). #lessons only exists once renderHub has built the DOM, so
-  // this must run AFTER that, and must win over the browser's own native hash-jump-on-load — take
-  // over scroll restoration and scroll on the next paint once layout has settled.
+  /* ── native hub mount (r130) ──────────────────────────────────────────────
+     window.ThaiEarRead.mountHub(rootEl) — renders the hub INTO A HOST PAGE'S OWN CONTAINER,
+     natively (no iframe). Built to retire the index page's <iframe src="read.html?embed=1">:
+     that iframe showed the whole read.html page with its nav/mode-toggle hidden via the
+     `.te-embed` CSS (still in read.html, untouched, for any other embed use); this instead
+     renders just the hub BODY straight into the caller's element, and the caller (index.html,
+     NOT edited by this change — a separate integration step wires the container + loads
+     read.css) supplies its own page chrome.
+     Renders: the "Jump to lessons" control, the h1 + eyebrow + two intro paragraphs (copied
+     verbatim from read.html's static markup — read.html itself is untouched, so this is a
+     second, hand-kept-in-sync copy; update both if that copy ever changes), then the same hub
+     body as renderHub() (tone-demo panel, transliteration key, and the learning-path grid with
+     its `#lessons` anchor).
+     Deliberately OMITS vs the full page: the site nav, the Topic Sentences/Read Thai mode
+     toggle, and the decorative betta-mascot "Don't break my flow" block — none of those are
+     part of "the hub", they're page chrome/decoration the host page already owns or doesn't need.
+     Idempotent: a second call is a no-op (one panel per page load). */
+  var hubMounted = false;
+  function injectHubMountCss() {
+    if (document.getElementById('te-hub-mount-css')) return;
+    var s = document.createElement('style');
+    s.id = 'te-hub-mount-css';
+    // Same rules the index's iframe-onload script used to inject into read.html's embedded
+    // document (index.html, pre-r130): reposition the eyebrow under the h1, and animate the
+    // jump control's three chevrons in sequence (.75s cycle, .25s stagger per chevron).
+    s.textContent =
+      '.read-eyebrow{margin:6px 0 16px}' +
+      '.te-jump{display:block;background:none;border:0;cursor:pointer;padding:0;margin:0 0 10px;text-align:left}' +
+      '.te-jump .jch{display:inline-block;opacity:.22;animation:te-jl .75s linear infinite}' +
+      '.te-jump .jch.j2{animation-delay:.25s}' +
+      '.te-jump .jch.j3{animation-delay:.5s}' +
+      '@keyframes te-jl{0%{opacity:.22}15%{opacity:1}45%,100%{opacity:.22}}';
+    document.head.appendChild(s);
+  }
+  function mountHub(rootEl) {
+    if (!rootEl || hubMounted) return;
+    hubMounted = true;
+    injectHubMountCss();
+    var chevrons = '<span class="jch j1">&gt;</span><span class="jch j2">&gt;</span><span class="jch j3">&gt;</span>';
+    rootEl.innerHTML =
+      '<button type="button" class="read-eyebrow te-jump" id="te-jump-btn">' + chevrons + ' Jump to lessons ' + chevrons + '</button>' +
+      '<h1 class="read-title">Learn to read Thai, from zero</h1>' +
+      '<div class="read-eyebrow">Read Thai — the on-ramp</div>' +
+      '<p class="read-intro" style="margin-bottom:0.8rem">Reading Thai script enables you to determine a word\'s tone, and therefore its meaning. For example, "mǎa" (rising tone) means "dog", "máa" (high tone) means "horse", and "maa" (mid tone) is the verb "come".</p>' +
+      '<p class="read-intro" style="margin-top:0">Thai script may look intimidating at first, but it follows a clear logic and can be learned with a systematic approach. This section takes you from nothing to reading real words in twelve steps. This reading course does not just present you with information, but gives you the opportunity to test yourself, and re-test at each step, until you are confident. Tests shuffle every time, so you\'re recognising sounds and symbols, not memorising an order. You will be reading Thai script in no time. Congratulations for taking this important step of your Thai learning journey.</p>' +
+      hubBodyHtml();
+    wireHub(rootEl);
+    var jumpBtn = rootEl.querySelector('#te-jump-btn');
+    // Plain in-document scroll — content is native now, no iframe offset math needed. Reuses the
+    // exact same landing spot (#lessons, minus 72px) as read.html's own #lessons hash-landing.
+    if (jumpBtn) jumpBtn.addEventListener('click', scrollToLessons);
+    markTerms(rootEl);   // scoped to rootEl, not document.body — the index page has plenty of
+                          // other text on it that must never pick up a glossary marker.
+    prefetch(sectionAudioIds('hub'));
+  }
+  window.ThaiEarRead.mountHub = mountHub;
+
+  // read.html's own #lessons hash-landing (boot(), below) uses this to land on the "learning path"
+  // heading instead of the hub top — minus 72px of grace so it isn't glued to the viewport edge
+  // (owner spec, DYN_ROLLOUT §2.2b). mountHub()'s "Jump to lessons" button (above) reuses it too,
+  // now that the hub can render on the index natively. #lessons only exists once the hub body has
+  // been built (renderHub or mountHub), so this must run AFTER that, and must win over the browser's
+  // own native hash-jump-on-load — take over scroll restoration and scroll on the next paint once
+  // layout has settled. (A lesson's back-link routes to index.html#read-lessons since r130 — see
+  // renderChrome, above — not to read.html#lessons; that hash remains read.html's own, unchanged.)
   function scrollToLessons() {
     var el = document.getElementById('lessons');
     if (!el) return;
@@ -1517,7 +1601,11 @@
   /* ── boot ──────────────────────────────────────────────── */
   function boot() {
     var root = document.getElementById('read-root');
-    if (!root) return;
+    // Belt & braces (r130): every real read.html/read-*.html page wraps #read-root in .read-wrap
+    // (see read.html and e.g. read-mid.html); a host page that merely happens to reuse the id
+    // "read-root" for something unrelated — the index page's native panel container is deliberately
+    // given a DIFFERENT id precisely to avoid this — still won't trip the self-boot.
+    if (!root || !root.closest('.read-wrap')) return;
     var key = root.getAttribute('data-read');
     if (key === 'hub') {
       var toLessons = location.hash === '#lessons';

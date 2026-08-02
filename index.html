@@ -173,27 +173,10 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
-  /* The intro sentence lives INSIDE the stats band (owner, 2026-08-02): same voice as the hero
-     Thai — Sarabun, hero gold, light weight — so it reads as part of the hero, not an outlier
-     below it. The band stretches down to hold it. */
-  .hero-intro-line {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 0 2rem 1.15rem;
-    text-align: center;
-    font-family: var(--font-thai);
-    font-size: 17px;
-    font-weight: 300;
-    letter-spacing: 0.04em;
-    line-height: 1.55;
-    color: #F0CC5C;
-  }
-  .hero-intro-line strong { font-weight: 600; color: inherit; }
-  @media (max-width: 600px) { .hero-intro-line { font-size: 14.5px; padding: 0 1.25rem 1rem; } }
 
   /* ── PAGE INTRO (gold accent bar) ── */
-  /* Owner 2026-08-02 (round 6): the intro sentence moved INTO the hero stats band
-     (.hero-intro-line above) — the standalone intro section and its CSS are gone. */
+  /* Owner 2026-08-02 (round 7): the intro sentence is GONE entirely — hero → switcher, no
+     in-between copy ("users can navigate the website to see what we are about"). */
 
   /* ── THREE-WAY SWITCHER (Topic Sentences / Read Thai / Playlists) ──
      Replaces the old sentences⇄read toggle (superseded). Ported from index-mock.html, the
@@ -217,9 +200,7 @@
 
   /* Same-origin embedded panels (Read Thai / Playlists) — lazy-loaded iframes, auto-sized to
      their content by the switcher script so they scroll as part of this page. */
-  .embed-frame { width: 100%; border: 0; display: block; min-height: 400px; overflow: hidden; }
-  /* r127: scrolling="no" + reactive sizing — the frame must NEVER scroll internally; the page is
-     the only scroller (owner: nested scrolling "really nasty"). */
+  /* r130: the panel iframes are GONE (true native panels) — no .embed-frame, no frame sizing. */
 
     /* ── TOPICS SECTION ──
        Reused (same class) by the Read Thai + Playlists panel sections below, so all three panels
@@ -781,7 +762,6 @@
         <span class="hero-stat-label">Unique words</span>
       </div>
     </div>
-    <p class="hero-intro-line">A Thai language learning <strong>platform and app</strong> built around <strong>complete sentences</strong> — not vocabulary lists.</p>
   </div>
 </section>
 
@@ -979,20 +959,20 @@
   </div>
 </section>
 
-<!-- ── READ THAI PANEL ──
-     Lazy-loaded same-origin iframe of read.html?embed=1 (te-embed hides its own nav + mode
-     toggle at source), auto-height-sized to its content by the switcher script below. Loads on
-     first show of this panel, not on page load. -->
+<!-- ── READ THAI PANEL (r130: TRUE NATIVE — no iframe) ──
+     The read hub renders directly into this container via ThaiEarRead.mountHub() (read.js).
+     Assets (read.css + read-data.js + read.js) lazy-load on first show of the panel.
+     ⚠ Container id deliberately NOT "read-root" — read.js boots itself on that id. -->
 <section class="topics-section" id="panel-read" hidden>
-  <iframe id="read-frame" title="Read Thai — Alphabet &amp; Tones" class="embed-frame" scrolling="no"></iframe>
+  <div id="read-hub-mount"></div>
 </section>
 
-<!-- ── PLAYLISTS PANEL ──
-     Lazy-loaded same-origin iframe of playlists.html?embed=1 (te-embed hides its own nav at
-     source) — NOT static markup: signed-out/signed-in behaviour comes from the embedded page
-     itself. Auto-height-sized like the Read panel. -->
+<!-- ── PLAYLISTS PANEL (r130: TRUE NATIVE — no iframe) ──
+     The playlist list renders directly into this container via ThaiEarPlList.mount() (pl-list.js,
+     the single shared list module — same machinery playlists.html's legacy embed view consumes).
+     dl-core.js and auth.js are already on this page; pl-list.js lazy-loads on first show. -->
 <section class="topics-section" id="panel-playlists" hidden>
-  <iframe id="playlists-frame" title="My Playlists" class="embed-frame" scrolling="no"></iframe>
+  <div id="pl-list-mount"></div>
 </section>
 
 <!-- ── FOOTER ── -->
@@ -1806,39 +1786,51 @@ updateBatchBar();          // show the batch-download bar in the app (hidden on 
 loadAv().then(function () { renderGrid(); }).catch(function () {});
 
 /* ── SWITCHER (Topic Sentences / Read Thai / Playlists) ──────────────────────────────────────
-   Ported from index-mock.html (owner-approved, 2026-08-02). Read Thai + Playlists load lazily
-   into same-origin iframes on first show: their own nav is hidden at source (?embed=1) and the
-   frame is auto-sized to its content so it scrolls as part of THIS page, not inside a scrollbox.
-   Deep links: index.html#playlists / index.html#read select that panel and scroll to the
-   switcher (about.html / guide.html already link to index.html#playlists). */
+   r130 — TRUE NATIVE PANELS (owner directive, 2026-08-02: "make the read section and the
+   playlists section a true part of the index"). The iframe substrate is GONE: the read hub
+   mounts via ThaiEarRead.mountHub() and the playlist list via ThaiEarPlList.mount(), both
+   rendering into this document. No frame boundaries → modals/leave-guards are full-screen,
+   scroll is one page, the app's Capacitor bridge is directly present, and no JS navigation can
+   ever produce page-in-panel inception. Assets lazy-load on first show of each panel.
+   Deep links: #playlists / #read select the panel + scroll to the switcher; #read-lessons
+   (lesson back-links) opens Read and lands at the learning path. */
 (function () {
   var panels = { topics: document.getElementById('panel-topics'),
                  read: document.getElementById('panel-read'),
                  playlists: document.getElementById('panel-playlists') };
-  var readFrame = document.getElementById('read-frame');
-  var plFrame = document.getElementById('playlists-frame');
-  var frameTimer = null;
-  function sizeFrame(frame) {
-    try {
-      var d = frame.contentDocument;
-      if (d && d.documentElement) frame.style.height = d.documentElement.scrollHeight + 'px';
-    } catch (_) {}
+  function loadScript(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = res; s.onerror = function () { rej(new Error('load ' + src)); };
+      document.head.appendChild(s);
+    });
   }
-  /* r127: reactive height. Polling at 600ms let the frame's real height lag behind (fonts, images,
-     auth re-render), and a lagging height + a scrollable iframe = the nested-scroll trap the owner
-     hit. A same-origin ResizeObserver on the embedded document resizes the frame the moment its
-     content moves; the (faster) poll stays as a fallback for engines without RO in iframes. */
-  function watchFrame(frame) {
-    if (frame._teWatched) return;
-    try {
-      var d = frame.contentDocument;
-      if (d && d.documentElement && window.ResizeObserver) {
-        var ro = new ResizeObserver(function () { sizeFrame(frame); });
-        ro.observe(d.documentElement);
-        if (d.body) ro.observe(d.body);
-        frame._teWatched = true;
-      }
-    } catch (_) {}
+  var readReady = null;
+  function ensureRead() {
+    if (readReady) return readReady;
+    if (!document.querySelector('link[href^="read.css"]')) {
+      var l = document.createElement('link');
+      l.rel = 'stylesheet'; l.href = 'read.css';
+      document.head.appendChild(l);
+    }
+    readReady = (window.ThaiEarRead && window.ThaiEarRead.mountHub ? Promise.resolve()
+        : loadScript('read-data.js').then(function () { return loadScript('read.js'); }))
+      .then(function () {
+        window.ThaiEarRead.mountHub(document.getElementById('read-hub-mount'));
+      })
+      .catch(function (e) { readReady = null; console.warn('read panel load failed', e); });
+    return readReady;
+  }
+  var plReady = null;
+  function ensurePlaylists() {
+    if (plReady) return plReady;
+    plReady = (window.ThaiEarPlList ? Promise.resolve() : loadScript('pl-list.js'))
+      .then(function () {
+        window.ThaiEarPlList.mount(document.getElementById('pl-list-mount'));
+      })
+      .catch(function (e) { plReady = null; console.warn('playlists panel load failed', e); });
+    return plReady;
   }
   function show(which) {
     Object.keys(panels).forEach(function (k) { if (panels[k]) panels[k].hidden = (k !== which); });
@@ -1847,80 +1839,36 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
       b.classList.toggle('active', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-    if (frameTimer) { clearInterval(frameTimer); frameTimer = null; }
-    if (which === 'read') {
-      if (!readFrame.src) {
-        readFrame.src = 'read.html?embed=1';   // embed mode: read.html hides its own nav + mode toggle at source
-        readFrame.addEventListener('load', function () {
-          try {
-            var d = readFrame.contentDocument;
-            var s = d.createElement('style');
-            // Belt & braces on the de-chrome; eyebrow becomes a subheading under the h1;
-            // jump control = eyebrow styling + sequential "go faster" chevrons (accent, fast cycle).
-            s.textContent = '#site-nav-root,.mode-toggle-wrap{display:none!important}' +
-              '.read-eyebrow{margin:6px 0 16px}' +
-              '.te-jump{display:block;background:none;border:0;cursor:pointer;padding:0;margin:0 0 10px;text-align:left}' +
-              '.te-jump .jch{display:inline-block;opacity:.22;animation:te-jl .75s linear infinite}' +
-              '.te-jump .jch.j2{animation-delay:.25s}' +
-              '.te-jump .jch.j3{animation-delay:.5s}' +
-              '@keyframes te-jl{0%{opacity:.22}15%{opacity:1}45%,100%{opacity:.22}}';
-            d.head.appendChild(s);
-            var eb = d.querySelector('.read-eyebrow'), t = d.querySelector('.read-title');
-            if (eb && t) t.insertAdjacentElement('afterend', eb);
-            if (t && !d.querySelector('.te-jump')) {
-              var j = d.createElement('button');
-              j.type = 'button';
-              j.className = 'read-eyebrow te-jump';
-              var tri = '<span class="jch j1">&gt;</span><span class="jch j2">&gt;</span><span class="jch j3">&gt;</span>';
-              j.innerHTML = tri + ' Jump to lessons ' + tri;
-              t.insertAdjacentElement('beforebegin', j);
-              j.addEventListener('click', function () {
-                // Scroll the OUTER page (the frame is full-height) to "The learning path…",
-                // with breathing room so it works across phone screen shapes.
-                var lp = Array.prototype.filter.call(d.querySelectorAll('.section-title'), function (el) {
-                  return /learning path/i.test(el.textContent);
-                })[0];
-                var target = lp ? (lp.closest('.section-header') || lp) : null;
-                if (!target) return;
-                var y = window.scrollY + readFrame.getBoundingClientRect().top + target.getBoundingClientRect().top - 72;
-                window.scrollTo({ top: y, behavior: 'smooth' });
-              });
-            }
-          } catch (_) {}
-          sizeFrame(readFrame);
-          watchFrame(readFrame);
-        });
-      }
-      sizeFrame(readFrame); watchFrame(readFrame);
-      frameTimer = setInterval(function () { sizeFrame(readFrame); }, 300);
-    } else if (which === 'playlists') {
-      if (!plFrame.src) {
-        plFrame.src = 'playlists.html?embed=1';   // embed mode: playlists.html hides its own nav at source
-        plFrame.addEventListener('load', function () { sizeFrame(plFrame); watchFrame(plFrame); });
-      }
-      sizeFrame(plFrame); watchFrame(plFrame);
-      frameTimer = setInterval(function () { sizeFrame(plFrame); }, 300);
-    }
+    if (which === 'read') ensureRead();
+    else if (which === 'playlists') ensurePlaylists();
   }
   document.querySelectorAll('.ms-btn').forEach(function (b) {
     b.addEventListener('click', function () { show(b.getAttribute('data-panel')); });
   });
   var h = (location.hash || '').replace('#', '');
+  var toLessons = (h === 'read-lessons');
+  if (toLessons) h = 'read';
   if (panels[h]) {
-    /* r128 — land AT the switcher, RELIABLY. One setTimeout(0) scroll lost to late layout: fonts/
-       hero images settle and the growing iframe re-flows AFTER the scroll fired, so arriving from
-       a scrolled topic page dumped the user part-way down (owner-reported). Take scroll ownership
-       (scrollRestoration=manual) and re-assert the position as layout settles — instant, not
-       smooth, so the re-asserts are invisible. 60px clears the 54px sticky nav. */
+    /* r128 — land AT the switcher, RELIABLY. Take scroll ownership (scrollRestoration=manual)
+       and re-assert as layout settles — instant, not smooth, so re-asserts are invisible.
+       60/72px clear the 54px sticky nav. #read-lessons lands at the learning path instead
+       (the lesson pages' "← All reading sections" target). */
     try { history.scrollRestoration = 'manual'; } catch (_) {}
     show(h);
-    var landAtSwitcher = function () {
+    var land = function () {
+      if (toLessons) {
+        var lp = document.getElementById('lessons');
+        if (lp) { window.scrollTo({ top: lp.getBoundingClientRect().top + window.scrollY - 72 }); return; }
+      }
       var ms = document.querySelector('.mode-switch');
       if (ms) window.scrollTo({ top: ms.getBoundingClientRect().top + window.scrollY - 60 });
     };
-    requestAnimationFrame(landAtSwitcher);
-    setTimeout(landAtSwitcher, 250);
-    setTimeout(landAtSwitcher, 800);
+    var afterMount = (h === 'read' || toLessons) ? ensureRead()
+                   : (h === 'playlists') ? ensurePlaylists()
+                   : Promise.resolve();
+    afterMount.then(function () { requestAnimationFrame(land); setTimeout(land, 300); setTimeout(land, 900); });
+    requestAnimationFrame(land);   // immediate first pass so the viewport moves at once; the
+                                   // post-mount re-asserts above correct any late layout shift
   }
 })();
 
