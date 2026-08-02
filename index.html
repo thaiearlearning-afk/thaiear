@@ -1907,12 +1907,20 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
   });
   var h = (location.hash || '').replace('#', '');
   if (panels[h]) {
+    /* r128 — land AT the switcher, RELIABLY. One setTimeout(0) scroll lost to late layout: fonts/
+       hero images settle and the growing iframe re-flows AFTER the scroll fired, so arriving from
+       a scrolled topic page dumped the user part-way down (owner-reported). Take scroll ownership
+       (scrollRestoration=manual) and re-assert the position as layout settles — instant, not
+       smooth, so the re-asserts are invisible. 60px clears the 54px sticky nav. */
+    try { history.scrollRestoration = 'manual'; } catch (_) {}
     show(h);
-    // land AT the switcher/panel, not the hero
-    setTimeout(function () {
+    var landAtSwitcher = function () {
       var ms = document.querySelector('.mode-switch');
-      if (ms) window.scrollTo({ top: ms.getBoundingClientRect().top + window.scrollY - 8 });
-    }, 0);
+      if (ms) window.scrollTo({ top: ms.getBoundingClientRect().top + window.scrollY - 60 });
+    };
+    requestAnimationFrame(landAtSwitcher);
+    setTimeout(landAtSwitcher, 250);
+    setTimeout(landAtSwitcher, 800);
   }
 })();
 

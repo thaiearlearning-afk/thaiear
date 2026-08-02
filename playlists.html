@@ -6,7 +6,8 @@
 <!-- Embed mode (?embed=1): hides the site nav so the page can render INSIDE another page (the
      index Playlists panel). Inert on a normal visit. Mirrors read.html's ?embed=1 pattern. -->
 <script>if(/[?&]embed=1(&|$)/.test(location.search))document.documentElement.className+=' te-embed';</script>
-<style>.te-embed #site-nav-root,.te-embed nav.site-nav{display:none!important}</style>
+<style>.te-embed #site-nav-root,.te-embed nav.site-nav{display:none!important}
+.te-embed .wrap{padding-top:0}/* r128: panel title sits the same distance below the switcher as the topics title */
 <title>My Playlists — ThaiEar</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -32,7 +33,10 @@
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
   .wrap { max-width: 680px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; }
   .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
-  h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+  /* r128: matched to the index .panel-title / read .read-title spec (26px/500, 20px mobile) so the
+     three switcher-panel titles are identical in font, size and colour (owner, 2026-08-02). */
+  h1 { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 0.4rem; line-height: 1.2; }
+  @media (max-width: 600px) { h1 { font-size: 20px; } }
   .lede { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 1.4rem; }
   /* ── modal (pattern copied from account.html's delete-account modal) ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(20,16,48,0.45); display: flex; align-items: center; justify-content: center; padding: 1.25rem; z-index: 1000; }
