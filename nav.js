@@ -94,10 +94,7 @@
     // 'Home' and 'About' now live in the Menu dropdown (see MENU_ITEMS) to keep
     // the top bar uncramped on mobile. (Home is redundant anyway — the logo links
     // to the index page.)
-    // The learn-to-read on-ramp — also reachable via the big toggle on the index.
-    // Top bar on DESKTOP only; on mobile/app it moves into the Menu dropdown
-    // (no room in the bar) — see .nav-read-top / .menu-read-mobile CSS below.
-    { label: 'Read Thai', href: 'read.html', cls: 'nav-read-top' },
+    // Read Thai top-bar entry removed — reading is reached via the index's Read panel now (owner, 2026-08-02).
     // { label: 'Blog',  href: 'blog.html' },
   ];
 
@@ -159,14 +156,10 @@
     .nav-menu-drop a.active { color: var(--accent); }
     .nav-menu-drop[hidden] { display: none; }
 
-    /* Read Thai: top bar on desktop, Menu dropdown on mobile/app */
-    .nav-menu-drop .menu-read-mobile { display: none; }
     @media (max-width: 600px) {
       .site-nav { padding: 0 1rem; }
       .nav-links { gap: 1rem; }
       .nav-links a { font-size: 12px; }
-      .nav-links > a.nav-read-top { display: none; }
-      .nav-menu-drop .menu-read-mobile { display: block; }
     }
     @media (max-width: 380px) {
       .nav-wordmark { font-size: 18px; }
@@ -210,9 +203,7 @@
   // login page (join.html) which bounces back via ?next after sign-in.
   const MENU_ITEMS = [
     { label: 'Home', page: 'index.html', public: true },
-    // Mobile/app home for the Read Thai link (hidden on desktop, where it
-    // lives in the top bar) — keeps the cramped phone bar clean.
-    { label: 'Read Thai', page: 'read.html', public: true, cls: 'menu-read-mobile' },
+    // Read Thai mobile-menu entry removed — reading is reached via the index's Read panel now (owner, 2026-08-02).
     { label: 'About', page: 'about.html', public: true },
     { label: 'Guide', page: 'guide.html', public: true },
     { label: 'Socials', page: 'socials.html', public: true },

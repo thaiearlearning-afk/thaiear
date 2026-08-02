@@ -3,27 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex, nofollow">
-<title>My Playlists (test) — ThaiEar</title>
-<script>
-(function () {
-  var ok = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);  // local review (incl. LAN/phone) — no password
-  try { ok = ok || sessionStorage.getItem('te_test_ok') === '1'; } catch (_) {}
-  if (!ok && /[?&]k=cu38961y(&|$)/.test(location.search)) ok = true;
-  if (!ok) ok = (prompt('Test page password:') === 'cu38961y');
-  /* ⚠ PERSIST THE TEST-SPACE FLAG, not just the session one (2026-07-31). te_sim_ok — which is what
-     actually reveals the sim PANEL and the boot trace — was written ONLY when `?k=` appeared in
-     THIS page's URL. The owner enters via the owner-gated index links, which carry `?k=` to
-     dyn-index/topic-test but NOT here, so arriving from a topic page left the panel hidden and the
-     boot trace unreachable. That bit exactly when it mattered: reproduce a fault offline, then have
-     no way back to the trace. Any successful entry now sets both. */
-  if (ok) {
-    try { sessionStorage.setItem('te_test_ok', '1'); } catch (_) {}
-    try { localStorage.setItem('te_sim_ok', '1'); } catch (_) {}
-  }
-  else location.replace('index.html');
-})();
-</script>
+<!-- Embed mode (?embed=1): hides the site nav so the page can render INSIDE another page (the
+     index Playlists panel). Inert on a normal visit. Mirrors read.html's ?embed=1 pattern. -->
+<script>if(/[?&]embed=1(&|$)/.test(location.search))document.documentElement.className+=' te-embed';</script>
+<style>.te-embed #site-nav-root{display:none!important}</style>
+<title>My Playlists — ThaiEar</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -102,23 +86,6 @@
   .dl-removeall-btn { background: transparent; color: var(--text-tertiary); border: .5px solid var(--border);
     font-size: 12.5px; padding: 6px 10px; }
   .dl-removeall-btn:hover:not([disabled]) { background: #FDF1F2; color: #B00020; border-color: #E8C4C8; }
-  /* Owner entitlement simulator — deliberately utilitarian, and visually unlike the product
-     (dashed amber) so it can never be mistaken for shipped UI in a screenshot. */
-  .sim-panel { margin-top: 26px; padding: 14px 15px 12px; border: 1px dashed #C08A2E; border-radius: 10px;
-    background: #FFFBF2; }
-  .sim-head { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: #8A6417; margin-bottom: 10px; }
-  .sim-warn { font-weight: 500; color: #B00020; margin-left: 6px; }
-  .sim-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
-  .sim-lbl { font-family: var(--font-ui); font-size: 12px; color: var(--text-secondary); min-width: 92px; }
-  .sim-seg { display: inline-flex; border: .5px solid #D8C08C; border-radius: 7px; overflow: hidden; flex-wrap: wrap; }
-  .sim-seg button { font-family: var(--font-ui); font-size: 12.5px; padding: 6px 11px; border: 0; background: #fff;
-    color: var(--text-secondary); cursor: pointer; border-right: .5px solid #E6D8B4; }
-  .sim-seg button:last-child { border-right: 0; }
-  .sim-seg button.on { background: #C08A2E; color: #fff; font-weight: 600; }
-  .sim-check { display: flex; align-items: center; gap: 7px; font-family: var(--font-ui); font-size: 12.5px;
-    color: var(--text-secondary); margin: 4px 0 8px; cursor: pointer; }
-  .sim-note { font-family: var(--font-ui); font-size: 12px; line-height: 1.5; color: #8A6417; margin: 0 0 6px; }
-  .sim-note.sim-dim { color: var(--text-tertiary); }
   .dl-batch-status { font-size: 13px; color: var(--text-secondary); min-height: 1.15em; }
   .dl-batch-status.err { color: #B00020; }
   .dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); }
@@ -163,20 +130,13 @@
   .fluency-img { width: 150px; max-width: 42%; height: auto; display: block; margin: 0 auto 0.4rem; }   /* meditator's own sizing (from progress.html) — swapped with yak 2026-08-01 */
   .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
   .fluency-text .dots::after { animation-duration: 1.5s; }   /* match the other pages' cadence */
-  /* r100 cosmetics view (?cos=1) — mockup-only classes, unused on the real page */
-  .cos-switch { font-size: 12px; color: var(--text-tertiary); margin-bottom: 10px; }
-  .cos-switch a { color: var(--accent); text-decoration: none; }
-  .cos-switch a:hover { text-decoration: underline; }
-  .cos-addrow { display: flex; gap: 9px; align-items: stretch; margin-bottom: 1.25rem; }
-  .cos-addrow .pl-add.cos-sq { flex: 1; justify-content: center; border-radius: var(--radius-md); margin-bottom: 0; }
-  .cos-add-hint { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;
-    font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--accent);
-    border: 0.5px solid var(--accent); border-radius: var(--radius-md); padding: 9px 12px; line-height: 1.45; }
-  .cos-add-card { display: flex; flex-direction: column; align-items: center; gap: 8px;
+  /* Layout B (owner-approved r101) — the full-width dashed "add playlist" card. Real layout since
+     P2b; was the ?cos=1 mockup's .cos-add-card, folded into a properly-named class here. */
+  .pl-add-card { display: flex; flex-direction: column; align-items: center; gap: 8px;
     border: 1.5px dashed var(--accent); border-radius: var(--radius-lg); background: var(--accent-light);
     padding: 14px 12px; margin: 0 1px 1.25rem; }   /* 1px inset each side — the dark dashed border reads wider than the white boxes below */
-  .cos-add-card .pl-add { margin-bottom: 0; }
-  .cos-hint-line { font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--accent);
+  .pl-add-card .pl-add { margin-bottom: 0; }
+  .pl-add-hint { font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--accent);
     text-align: center; line-height: 1.45; }
 </style>
 <link rel="stylesheet" href="player-dyn.css">
@@ -186,9 +146,6 @@
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <!-- r97: DERIVED, not typed. sim.js fills this from its single BUILD constant — this text was
-       hardcoded "r95" and survived a deploy, which cost the owner two hard reloads on two devices. -->
-  <div class="eyebrow" data-build="Owner test build">Owner test build</div>
   <h1>My Playlists</h1>
   <p class="lede">Build custom sessions from sentences you've added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>
   <!-- image + animated-dots caption, same pattern as about/guide (khwai/sakyantelephant):
@@ -198,7 +155,12 @@
     <img class="fluency-img" src="meditator.png" alt="Meditating learner" width="150">
     <div class="fluency-text">Eerily effective<span class="dots" aria-hidden="true"></span></div>
   </div>
-  <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
+  <!-- Layout B (owner-approved r101): full-width dashed accent "add" card — button + hint, in
+       that order: lede → meditator+caption → add-card → download bar → boxes. -->
+  <div class="pl-add-card">
+    <button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>
+    <span class="pl-add-hint">Add sentences to your playlists from topic pages</span>
+  </div>
   <div class="dl-batch-bar" id="dl-batch-bar" hidden>
     <div class="dl-batch-btns">
       <button class="dl-batch-btn" id="dl-btn" type="button">Download Playlist(s)</button>
@@ -220,122 +182,17 @@
          #dl-hint stays its own element because dlKeepOpen() rewrites and hides it. -->
   </div>
   <div id="pl-root"><p class="pl-note">Loading…</p></div>
-
-  <!-- ══ OWNER ENTITLEMENT SIMULATOR ══════════════════════════════════════════════════════
-       Hidden unless the test flag is set (?k=cu38961y once, or any test page visited this
-       session) so it can never appear for a real user. Lets the owner test premium gating —
-       online AND offline — without touching a real account.
-       It overrides ONLY the auth answer; every downstream check (canUseOffline, the 30-day
-       grace arithmetic, the lock UI, the licence overlay) runs unmodified. "Elapsed" doesn't
-       override anything at all — it backdates the real localStorage markers. -->
-  <div class="sim-panel" id="sim-panel" hidden>
-    <div class="sim-head">🧪 Simulate account <span class="sim-warn" id="sim-warn"></span></div>
-    <div class="sim-row">
-      <span class="sim-lbl">Account</span>
-      <div class="sim-seg" id="sim-seg">
-        <button type="button" data-v="">Real</button>
-        <button type="button" data-v="premium">Premium</button>
-        <button type="button" data-v="premium-nolife">Premium (no lifetime)</button>
-        <button type="button" data-v="expired">Expired</button>
-        <button type="button" data-v="signedout">Signed out</button>
-      </div>
-    </div>
-    <div class="sim-row">
-      <span class="sim-lbl">Last verified</span>
-      <div class="sim-seg" id="sim-elapse">
-        <button type="button" data-d="0">Now</button>
-        <button type="button" data-d="31">31d</button>
-        <button type="button" data-d="41">41d</button>
-        <button type="button" data-d="51">51d</button>
-      </div>
-    </div>
-    <label class="sim-check"><input type="checkbox" id="sim-deny"> Simulate server denial (402 from /api/audio)</label>
-    <div class="sim-row">
-      <span class="sim-lbl">Session damage</span>
-      <div class="sim-seg">
-        <button type="button" id="sim-purge">Purge Supabase session</button>
-        <button type="button" id="sim-expire">Expire access token (~1h idle)</button>
-      </div>
-    </div>
-    <!-- Step 1.4 in place: testing gated audio used to mean LEAVING this page, at which point you
-         are no longer testing the state you just created. -->
-    <div class="sim-row">
-      <span class="sim-lbl">Audio gate</span>
-      <div class="sim-seg" id="sim-probe">
-        <button type="button" data-k="free">▶ Free</button>
-        <button type="button" data-k="member">▶ Member</button>
-        <button type="button" data-k="premium">▶ Premium</button>
-      </div>
-    </div>
-    <p class="sim-note" id="sim-probe-out" style="margin:-2px 0 8px"></p>
-
-    <!-- The app has no address bar and no F5, so a reload has to be a button. Every test here is
-         "change something, then reload" — without this the sequence can't be run on a device. -->
-    <div class="sim-row">
-      <span class="sim-lbl">Reload</span>
-      <div class="sim-seg">
-        <button type="button" id="sim-reload">↻ Reload</button>
-        <button type="button" id="sim-signout">Sign out</button>
-        <button type="button" id="sim-hardreload">⟳ Hard reload</button>
-      </div>
-      <span class="sim-note" style="margin:0"><strong>↻</strong> re-runs auth init — use this for every
-        test, works offline. <strong>⟳</strong> also drops the app-shell cache to pull a new build —
-        <strong>online only</strong>; it never touches your downloads.</span>
-    </div>
-    <label class="sim-check"><input type="checkbox" id="sim-keeppurged">
-      <strong>Keep Supabase session purged</strong> — deletes the session key on EVERY load, so it stays gone however you navigate. Set automatically by the Purge button.</label>
-    <!-- ⚠ THE PWA AND THE ANDROID APP HAVE NO ADDRESS BAR, so a URL-only flag does not exist for the
-         owner (the same lesson as the ?dbg=1 overlay). thaiear_webdl gates the CLASSIC web download
-         on real topic pages — needed for the P1-P7 block on iPhone, where there is no native app —
-         and it was reachable ONLY by typing ?webdl=1. This checkbox is the way in. localStorage is
-         per-ORIGIN, so setting it here also applies to the live topic pages in the same PWA. -->
-    <label class="sim-check"><input type="checkbox" id="sim-webdl">
-      <strong>Enable classic web downloads</strong> — turns on the browser/PWA download button on real
-      topic pages (<code>thaiear_webdl</code>). Required for the live-topic download tests on iPhone;
-      the dyn pages never needed it.</label>
-    <label class="sim-check"><input type="checkbox" id="sim-avtest">
-      <strong>Force "audio update available"</strong> — pretends the clips on R2 were re-rendered
-      (<code>thaiear_avtest</code>), so any DOWNLOADED dyn topic shows <em>⟳ Download audio update?</em>
-      on the topic page AND a dashed ring on the dyn index. ⚠ Reads only — it never edits
-      <code>audio-versions.json</code>, which is shared with the live site, so bumping a real entry
-      would nag every user who downloaded that topic into re-fetching identical clips. Untick when done.</label>
-    <label class="sim-check"><input type="checkbox" id="sim-noid">
-      <strong>Disarm the offline-identity fix</strong> — the control: with this ON, purge + reload should log you OUT
-      (the original bug). Turn it off and the same steps should keep you signed in.</label>
-    <p class="sim-note" id="sim-state"></p>
-    <!-- Boot trace. Deliberately big and legible: the owner tests on a phone, so a SCREENSHOT has
-         to be enough — no typing, no copying a long string out of a WebView. -->
-    <div class="sim-row" style="margin-bottom:4px">
-      <span class="sim-lbl">Boot trace</span>
-      <div class="sim-seg"><button type="button" id="sim-copytrace">📋 Copy</button><button type="button" id="sim-cleartrace">Clear</button></div>
-    </div>
-    <!-- MUST wrap, never scroll sideways: the whole point is that one screenshot captures the lot. -->
-    <pre id="sim-trace" style="font:600 11px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#1E1811;
-      color:#E8DCC4;padding:9px 10px;border-radius:7px;white-space:pre-wrap;word-break:break-word;
-      overflow-wrap:anywhere;overflow-x:hidden;max-width:100%;margin:0 0 4px"></pre>
-    <p class="sim-note sim-dim" style="margin:0 0 8px">dis=disarmed · pf=purge flag survived · kill=keys
-      deleted · sb=supabase key present · id=identity present · so=signed-out mark · gs=getSession returned
-      · u=user · any=anySignedIn · KEPT=guard kept the user in</p>
-    <p class="sim-note sim-dim">“31 days ago” backdates the real last-verified / period-end markers past the
-      30-day grace window, then lets the real check decide. It only bites <strong>offline</strong> — online with a
-      live subscription the app legitimately re-verifies and re-stamps. Put the device in airplane mode to see the
-      “Reconnect to keep listening” overlay. Restoring puts the markers back exactly as they were.</p>
-  </div>
 </div>
 
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist · r95</div>
+  <div class="eyebrow">Playlist</div>
   <h1 id="pl-player-title">Loading…</h1>
-  <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists.html" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
+  <p style="font-size:12.5px;margin:-2px 0 16px"><a href="index.html#playlists" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
 </div>
 
-<!-- Owner entitlement simulator. Must be SYNCHRONOUS and before the inline block below (which
-     reads window.ThaiEarSim on load) and before player.js is injected. Test build only —
-     delete this tag, sim.js, and the ThaiEarSim references in player.js at rollout. -->
-<script src="sim.js"></script>
 <script src="dl-core.js"></script>
 <script>
 (function () {
@@ -347,6 +204,11 @@
     if (!m) return null;
     try { return decodeURIComponent(m[1]); } catch (_) { return null; }
   })();
+  /* Bare playlists.html (no ?pl= player view, no ?embed=1 panel) is not a user-facing destination —
+     the index switcher's Playlists panel is the ONLY entry point (§0d, no-duplication rule).
+     Redirect immediately, before any of the page's own setup runs. ?pl= and ?embed=1 (together or
+     apart) are both left alone: the player view and the embedded panel are exactly what stays. */
+  if (!PLID && !/[?&]embed=1(&|$)/.test(location.search)) { location.replace('index.html#playlists'); return; }
 
   function PL() { return window.ThaiEarAuth && window.ThaiEarAuth.playlists; }
   function user() { return window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser(); }
@@ -642,7 +504,6 @@
       '" data-mode="sel" role="button" aria-label="Select this playlist"><span class="dl-dot"></span></span>';
   }
   function dlPaintBar() {
-    if (COS) return;   // r100 cosmetics view keeps the bar statically visible
     var bar = document.getElementById('dl-batch-bar'); if (!bar) return;
     var lists = currentLists() || [];
     bar.hidden = !DL_OK || !lists.some(function (p) { return p.items.length; });
@@ -1259,72 +1120,7 @@
     });
   }
 
-  /* ── r100 COSMETICS VIEW (?cos=1) — owner design review only, real page untouched ─────────────
-     Static demo playlists + the two candidate "Add playlist" layouts (default = the owner's two-box
-     suggestion; &alt=1 = the one-card alternative). Nothing is plumbed: demo rows are inert, the
-     batch bar is shown for placement judgement only, and the sim panel/eyebrow are hidden. */
-  var COS = /[?&]cos=1(&|$)/.test(location.search);
-  var COS_ALT = /[?&]alt=1(&|$)/.test(location.search);
-  function renderCosDemo() {
-    var eb = document.querySelector('.eyebrow[data-build]');
-    if (eb) eb.style.display = 'none';
-    var addBtn = document.getElementById('pl-add');
-    if (addBtn && !document.getElementById('cos-addwrap')) {
-      var wrap = document.createElement('div');
-      wrap.id = 'cos-addwrap';
-      addBtn.parentNode.insertBefore(wrap, addBtn);
-      var sw = document.createElement('p');
-      sw.className = 'cos-switch';
-      sw.innerHTML = 'Mockup layout: ' +
-        (COS_ALT ? '<a href="playlists.html?k=cu38961y&cos=1">A — button + info box</a>' : '<strong>A — button + info box</strong>') + ' · ' +
-        (COS_ALT ? '<strong>B — one card</strong>' : '<a href="playlists.html?k=cu38961y&cos=1&alt=1">B — one card</a>');
-      wrap.appendChild(sw);
-      if (COS_ALT) {
-        var card = document.createElement('div');
-        card.className = 'cos-add-card';
-        card.appendChild(addBtn);
-        var hintB = document.createElement('span');
-        hintB.className = 'cos-hint-line';
-        hintB.textContent = 'Add sentences to your playlists from topic pages';
-        card.appendChild(hintB);
-        wrap.appendChild(card);
-      } else {
-        var row = document.createElement('div');
-        row.className = 'cos-addrow';
-        addBtn.classList.add('cos-sq');
-        row.appendChild(addBtn);
-        var hintA = document.createElement('div');
-        hintA.className = 'cos-add-hint';
-        hintA.textContent = 'Add sentences to your playlists from topic pages';
-        row.appendChild(hintA);
-        wrap.appendChild(row);
-      }
-    }
-    var bar = document.getElementById('dl-batch-bar');
-    if (bar) bar.hidden = false;
-    var tick = '<span class="dl-badge" role="button" title="Downloaded"><span class="dl-tick">' +
-      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" ' +
-      'stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>';
-    var dot = '<span class="dl-select" role="button" aria-label="Select"><span class="dl-dot"></span></span>';
-    root.innerHTML =
-      '<div class="pl-box"><button class="pl-box-head" type="button">' +
-        '<span class="pl-box-name">Songs I like</span>' +
-        '<span class="pl-box-meta">8 sentences · downloaded</span>' + tick + '</button></div>' +
-      '<div class="pl-box open"><button class="pl-box-head" type="button">' +
-        '<span class="pl-box-name">Restaurant survival kit</span>' +
-        '<span class="pl-box-meta">12 sentences</span>' + dot + '</button>' +
-        '<div class="pl-box-body">' +
-          '<a class="pl-open" href="#" onclick="return false">▶ Open player</a>' +
-          '<button class="pl-remsent" type="button">Remove sentences</button>' +
-          '<button class="pl-rename" type="button">Rename playlist</button>' +
-          '<button class="pl-del" type="button">Delete playlist</button>' +
-        '</div></div>' +
-      '<div class="pl-box"><button class="pl-box-head" type="button">' +
-        '<span class="pl-box-name">Hard tones</span>' +
-        '<span class="pl-box-meta">5 sentences · available offline</span>' + dot + '</button></div>';
-  }
   function render() {
-    if (COS) { renderCosDemo(); return; }
     // a re-render invalidates any live batch-remove tick mode
     removing = null;
     setTimeout(dlPaintBar, 0);
@@ -1547,190 +1343,6 @@
     s.src = 'player.js';
     document.body.appendChild(s);
   }
-  /* ── Owner entitlement simulator panel ─────────────────────────────────────────────────
-     Visible only once the test flag is set: ?k=cu38961y (persisted to localStorage, because
-     the app has no address bar and sessionStorage dies on restart — and offline testing
-     spans restarts), or any test page opened this session. Never renders for a real user. */
-  (function wireSim() {
-    if (/[?&]cos=1(&|$)/.test(location.search)) return;   // r100 cosmetics view — no tooling
-    var okFlag = false;
-    try {
-      if (/[?&]k=cu38961y(&|$)/.test(location.search)) localStorage.setItem('te_sim_ok', '1');
-      okFlag = localStorage.getItem('te_sim_ok') === '1' || sessionStorage.getItem('te_test_ok') === '1';
-    } catch (_) {}
-    var panel = document.getElementById('sim-panel');
-    if (!panel || !okFlag || !window.ThaiEarSim) return;
-    panel.hidden = false;
-
-    var S = window.ThaiEarSim;
-    var seg = document.getElementById('sim-seg');
-    var elapseSeg = document.getElementById('sim-elapse');
-    var denyBox = document.getElementById('sim-deny');
-
-    function fmt(k) {
-      var v;
-      try { v = localStorage.getItem(k); } catch (_) { v = null; }
-      if (!v) return k + ': —';
-      var n = parseInt(v, 10);
-      if (!isNaN(n) && n > 1e11) {
-        var days = Math.round((Date.now() - n) / 86400000);
-        return k + ': ' + new Date(n).toISOString().slice(0, 10) +
-          ' (' + (days >= 0 ? days + 'd ago' : (-days) + 'd ahead') + ')';
-      }
-      return k + ': ' + v;
-    }
-    function paint() {
-      var st = S.get();
-      Array.prototype.forEach.call(seg.querySelectorAll('button'), function (b) {
-        b.classList.toggle('on', (b.getAttribute('data-v') || '') === st.tier);
-      });
-      Array.prototype.forEach.call(elapseSeg.querySelectorAll('button'), function (b) {
-        b.classList.toggle('on', parseInt(b.getAttribute('data-d'), 10) === st.elapsedDays);
-      });
-      denyBox.checked = st.deny;
-      var nb = document.getElementById('sim-noid'); if (nb) nb.checked = st.noIdentity;
-      var kp = document.getElementById('sim-keeppurged'); if (kp) kp.checked = S.keepPurged();
-      var bp = (S.bootPurged && S.bootPurged()) || [];
-      document.getElementById('sim-warn').textContent =
-        (bp.length ? '✓ purged on boot (' + bp.length + ') ' : '') + (S.active() ? '● SIMULATION ACTIVE' : '');
-      // Report the real marker VALUES, not a second opinion on what they mean — the verdict is
-      // whatever the player does when you open a playlist.
-      var line = 'account: ' + (st.tier || 'real') + '  ·  ' + fmt('thaiear_lastVerified') +
-        '  ·  ' + fmt('thaiear_sub_until') + '  ·  ' + fmt('thaiear_lifetime');
-      document.getElementById('sim-state').textContent = line;
-      // Show the SHELL CACHE actually on the device — after a deploy this is how you tell whether
-      // you are running the new build or a cached old one, without guessing.
-      if (S.shellCaches) S.shellCaches().then(function (c) {
-        document.getElementById('sim-state').textContent =
-          line + '  ·  shell cache: ' + (c.length ? c.join(', ') : 'none');
-      });
-    }
-    seg.addEventListener('click', function (e) {
-      var b = e.target.closest('button'); if (!b) return;
-      S.setTier(b.getAttribute('data-v')); paint();
-    });
-    elapseSeg.addEventListener('click', function (e) {
-      var b = e.target.closest('button'); if (!b) return;
-      var d = parseInt(b.getAttribute('data-d'), 10);
-      if (d) S.elapse(d); else S.restore();
-      paint();
-    });
-    denyBox.addEventListener('change', function () { S.setDeny(denyBox.checked); paint(); });
-    // Reproduces the 8h-offline logout in one tap by deleting exactly the key supabase-js
-    // deletes. Reload after tapping: you should STILL be signed in.
-    // Gated-audio probe: hit /api/audio with the CURRENT token and actually play the bytes, so
-    // "is the token stale after a purge?" is answerable without navigating away.
-    var probeOut = document.getElementById('sim-probe-out');
-    var probeAudioEl = new Audio();
-    var probeSeg = document.getElementById('sim-probe');
-    if (probeSeg) probeSeg.addEventListener('click', function (e) {
-      var b = e.target.closest('button'); if (!b) return;
-      var kind = b.getAttribute('data-k');
-      probeOut.textContent = kind + ': requesting ' + S.probeFile(kind) + ' …';
-      S.probeAudio(kind).then(function (r) {
-        if (!r.ok) { probeOut.textContent = '✗ ' + kind + ' — ' + r.note; return; }
-        probeOut.textContent = '✓ ' + kind + ' — ' + r.note + ' — playing…';
-        probeAudioEl.src = r.url;
-        probeAudioEl.play().then(function () {
-          probeOut.textContent = '✓ ' + kind + ' — ' + r.note + ' — PLAYING';
-        }).catch(function (err) {
-          probeOut.textContent = '⚠ ' + kind + ' — URL issued but playback failed (' + (err && err.name) + ')';
-        });
-      });
-    });
-
-    // Boot trace: what actually happened on THIS load, newest last. Screenshot-sized.
-    function paintTrace() {
-      var el = document.getElementById('sim-trace');
-      if (!el || !S.traceRead) return;
-      var lines = S.traceRead();
-      el.textContent = lines.length ? lines.join('\n') : '(no trace — reload to capture one)';
-    }
-    var ct = document.getElementById('sim-copytrace');
-    if (ct) ct.addEventListener('click', function () {
-      var txt = (S.traceRead() || []).join('\n');
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(function () { ct.textContent = '✓ copied'; },
-          function () { ct.textContent = '✗ copy failed — screenshot it'; });
-      } else { ct.textContent = '✗ no clipboard — screenshot it'; }
-    });
-    // The subscription read resolves AFTER first paint — offline it takes seconds to fail — so a
-    // one-shot render misses exactly the lines that matter. Repaint while the panel is open.
-    setInterval(paintTrace, 1000);
-    var ctr = document.getElementById('sim-cleartrace');
-    if (ctr) ctr.addEventListener('click', function () { S.traceClear(); paintTrace(); });
-    paintTrace();
-
-    // Sign out without leaving the test space (4.1 previously required the nav person icon).
-    var so = document.getElementById('sim-signout');
-    if (so) so.addEventListener('click', function () {
-      var a = window.ThaiEarAuth;
-      if (!a || !a.signOut) { alert('auth not ready'); return; }
-      so.disabled = true; so.textContent = 'signing out…';
-      a.signOut().then(function () { location.reload(); });
-    });
-    var reload = document.getElementById('sim-reload');
-    if (reload) reload.addEventListener('click', function () { location.reload(); });
-    var hard = document.getElementById('sim-hardreload');
-    if (hard) hard.addEventListener('click', function () {
-      if (!navigator.onLine && !confirm('You appear to be OFFLINE. A hard reload drops the app-shell ' +
-        'cache and there is nothing to re-fetch, so the app may not come back until you reconnect.\n\n' +
-        'Your downloads are NOT affected. Continue anyway?')) return;
-      hard.disabled = true; hard.textContent = '⟳ …';
-      S.hardReload();
-    });
-
-    var purge = document.getElementById('sim-purge');
-    if (purge) purge.addEventListener('click', function () {
-      var killed = S.purgeSupabaseSession();
-      paint();
-      if (!killed.length) { alert('No Supabase session key found (already purged, or not signed in).'); return; }
-      // confirm() rather than alert(): the reload IS the test, and on a device there is no other
-      // way to trigger one — so offer it in the same tap instead of leaving them stranded.
-      if (confirm('Deleted ' + killed.length + ' Supabase session key(s):\n' + killed.join('\n') +
-        '\n\nExpected after reload:\n• fix ARMED  → still signed in\n• fix DISARMED → logged out\n\nReload now?')) location.reload();
-    });
-    var exp = document.getElementById('sim-expire');
-    if (exp) exp.addEventListener('click', function () {
-      var hits = S.expireAccessToken();
-      paint();
-      if (!hits.length) { alert('No Supabase session key found.'); return; }
-      if (confirm('Backdated expires_at on ' + hits.length + ' session key(s).\n\nThis is the state the ' +
-        'app reaches after ~1h idle — supabase must refresh the token and (offline) cannot.\n\n' +
-        'Expected: still signed in AND premium still works.\n\nReload now?')) location.reload();
-    });
-    var kpBox = document.getElementById('sim-keeppurged');
-    if (kpBox) kpBox.addEventListener('change', function () { S.setKeepPurged(kpBox.checked); paint(); });
-    var noid = document.getElementById('sim-noid');
-    if (noid) noid.addEventListener('change', function () { S.setNoIdentity(noid.checked); paint(); });
-    /* Plain localStorage, read by player.js's WEB_DL_FLAG on the next page load — no sim.js state,
-       because this is not a simulated ACCOUNT, it is a real capability flag. Reflect the stored
-       value on paint so the box tells the truth after a reload. */
-    /* r83: same shape as the webdl toggle, and for the same reason — a URL flag is unreachable in
-       the app and the home-screen PWA, neither of which has an address bar (the ?dbg=1 lesson). */
-    var avt = document.getElementById('sim-avtest');
-    if (avt) {
-      try { avt.checked = localStorage.getItem('thaiear_avtest') === '1'; } catch (_) {}
-      avt.addEventListener('change', function () {
-        try {
-          if (avt.checked) localStorage.setItem('thaiear_avtest', '1');
-          else localStorage.removeItem('thaiear_avtest');
-        } catch (_) {}
-      });
-    }
-    var wdl = document.getElementById('sim-webdl');
-    if (wdl) {
-      try { wdl.checked = localStorage.getItem('thaiear_webdl') === '1'; } catch (_) {}
-      wdl.addEventListener('change', function () {
-        try {
-          if (wdl.checked) localStorage.setItem('thaiear_webdl', '1');
-          else localStorage.removeItem('thaiear_webdl');
-        } catch (_) {}
-      });
-    }
-    paint();
-  })();
-
   (function wireDownloads() {
     var d = document.getElementById('dl-btn'), c = document.getElementById('clear-btn');
     var ra = document.getElementById('removeall-btn');

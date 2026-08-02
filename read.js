@@ -558,7 +558,8 @@
     }
     nav.innerHTML = btn(prev, 'l') + btn(next, 'r');
     var all = document.getElementById('read-all');
-    if (all) all.innerHTML = '<a href="read.html">← All reading sections</a>';
+    // Lands at the hub's "learning path" heading, not the hub top (owner spec, DYN_ROLLOUT §2.2b) — see #lessons in renderHub/boot.
+    if (all) all.innerHTML = '<a href="read.html#lessons">← All reading sections</a>';
   }
 
   /* ── explainer grid (letters + vowels share it) ────────── */
@@ -1478,7 +1479,7 @@
       }).join('') + '</div>' +
       '</div>' +
 
-      '<div class="section-header" style="margin-top:2rem"><span class="section-title" style="font-size:13px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary)">The learning path — test yourself at every step</span></div>' +
+      '<div class="section-header" id="lessons" style="margin-top:2rem"><span class="section-title" style="font-size:13px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary)">The learning path — test yourself at every step</span></div>' +
       '<div class="read-path">' + teach.map(function (s, i) {
         var progress = anyTested(s)
           ? '<div class="path-progress done">' + statLinesHtml(s) + '</div>'
@@ -1497,12 +1498,36 @@
     mountDlCard(root);
   }
 
+  // A lesson's back-link (renderChrome) points at read.html#lessons so it lands on the "learning
+  // path" heading instead of the hub top — minus 72px of grace so it isn't glued to the viewport
+  // edge (owner spec, DYN_ROLLOUT §2.2b). #lessons only exists once renderHub has built the DOM, so
+  // this must run AFTER that, and must win over the browser's own native hash-jump-on-load — take
+  // over scroll restoration and scroll on the next paint once layout has settled.
+  function scrollToLessons() {
+    var el = document.getElementById('lessons');
+    if (!el) return;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        var y = el.getBoundingClientRect().top + window.pageYOffset - 72;
+        window.scrollTo(0, y < 0 ? 0 : y);
+      });
+    });
+  }
+
   /* ── boot ──────────────────────────────────────────────── */
   function boot() {
     var root = document.getElementById('read-root');
     if (!root) return;
     var key = root.getAttribute('data-read');
-    if (key === 'hub') { renderHub(root); markTerms(document.body); prefetch(sectionAudioIds('hub')); return; }
+    if (key === 'hub') {
+      var toLessons = location.hash === '#lessons';
+      if (toLessons && 'scrollRestoration' in history) history.scrollRestoration = 'manual';
+      renderHub(root);
+      markTerms(document.body);
+      prefetch(sectionAudioIds('hub'));
+      if (toLessons) scrollToLessons();
+      return;
+    }
     var sec = sectionByKey(key);
     if (!sec) return;
     currentSecKey = sec.key;

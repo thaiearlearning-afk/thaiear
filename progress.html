@@ -112,6 +112,21 @@
   .prog-row.premium .prog-bar-fill { background: #F0CC5C; }
   .prog-row.premium .prog-bar-fill.full { background: linear-gradient(90deg, #F0CC5C, #D4A82C); }
 
+  /* filter pills — lifted from index.html's filter styling (approved design, r111) */
+  .prog-tabs-box { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
+    padding: 10px 12px; margin-bottom: 1.1rem; }
+  .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-tab { font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; padding: 6px 14px;
+    border-radius: 20px; border: 0.5px solid var(--border-strong); background: var(--surface);
+    color: var(--text-secondary); cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+  .filter-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .filter-tab.tab-free:not(.active):hover { border-color: var(--text-tertiary); color: var(--text-primary); }
+  .filter-tab.tab-premium:not(.active):hover { border-color: var(--gold-dark); color: #B29234; }
+  /* small "Playlists" divider inside the list */
+  .prog-sub { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-tertiary); margin: 1rem 0 0.1rem; padding-top: 0.9rem; border-top: 0.5px solid var(--border); }
+
   /* goal toggle */
   .goal-box { margin-top: 2rem; padding: 1.1rem 1.1rem 1.2rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); }
   .goal-box h2 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
@@ -210,6 +225,40 @@ function showModal(opts) {
   ov.querySelector('#modal-ok').addEventListener('click', function () { close(); opts.onConfirm(); });
 }
 
+// Filter pills (All / Premium / Member / Non-member / Playlists) — a pure DOM show/hide over the
+// already-rendered rows, never a re-render, so real per-row progress state (built from `data` at
+// render time, not held in the DOM) is never at risk. progFilter persists across re-renders (goal
+// change, reset, auth refresh) and is reapplied at the end of render() so the chosen pill sticks.
+var progFilter = 'all';
+function applyProgFilter(f) {
+  progFilter = f;
+  var tabs = document.querySelectorAll('#prog-tabs .filter-tab');
+  if (!tabs.length) return;
+  tabs.forEach(function (x) { x.classList.toggle('active', x.getAttribute('data-f') === f); });
+  document.querySelectorAll('#prog-list [data-tier]').forEach(function (el) {
+    var tier = el.getAttribute('data-tier');
+    var show = f === 'all' ? true
+      : f === 'playlist' ? (tier === 'playlist' || tier === 'playlist-head')
+      : tier === f;
+    el.style.display = show ? '' : 'none';
+  });
+}
+document.addEventListener('click', function (e) {
+  var t = e.target.closest && e.target.closest('.filter-tab');
+  if (t) applyProgFilter(t.getAttribute('data-f'));
+});
+
+// Playlists section (bottom of the list, under a "Playlists" divider). Real data via
+// ThaiEarAuth.playlists: load(force) resolves [{id,name,items:[...]}.], get() reads the resolved
+// cache, peek() reads the localStorage copy synchronously (instant paint before load() resolves) —
+// same pattern playlists.html uses. Kicked from the thaiear:auth handler below, not from render()
+// itself, so goal/reset re-renders never trigger a refetch.
+function refreshPlaylists() {
+  var a = window.ThaiEarAuth;
+  if (!a || !a.playlists) return;
+  a.playlists.load(true).then(render).catch(function () { render(); });
+}
+
 function setGoalTo(step) {
   var a = window.ThaiEarAuth;
   if (!a || !a.setProgressGoal) return;
@@ -288,8 +337,39 @@ function render() {
       '<div class="fluency-text">Fluency loading<span class="dots" aria-hidden="true"></span></div>' +
     '</div>';
 
+  var tabs =
+    '<div class="prog-tabs-box">' +
+      '<div class="filter-tabs" id="prog-tabs">' +
+        '<button class="filter-tab active" data-f="all" type="button">All</button>' +
+        '<button class="filter-tab tab-premium" data-f="premium" type="button">Premium</button>' +
+        '<button class="filter-tab" data-f="member" type="button">Member</button>' +
+        '<button class="filter-tab tab-free" data-f="free" type="button">Non-member</button>' +
+        '<button class="filter-tab" data-f="playlist" type="button">Playlists</button>' +
+      '</div>' +
+    '</div>';
+
+  // Playlists section — always at the bottom of the list under a quiet "Playlists" divider,
+  // shown for both the All and Playlists filters (data-tier="playlist"/"playlist-head").
+  function plHtml() {
+    var pl = (a.playlists && (a.playlists.get() || a.playlists.peek())) || [];
+    var rowsHtml = pl.length ? pl.map(function (p) {
+      var n = (p.items || []).length;
+      var phref = 'playlists.html?pl=' + encodeURIComponent(p.id);
+      return '<div class="prog-row" data-tier="playlist">' +
+        '<div class="prog-row-top" style="margin-bottom:0">' +
+          '<span class="prog-name-wrap">' +
+            '<span class="prog-name"><a href="' + phref + '">' + esc(p.name) + '</a></span>' +
+            '<a class="prog-goto" href="' + phref + '">Open playlist</a>' +
+          '</span>' +
+          '<span class="prog-num">' + n + ' sentence' + (n === 1 ? '' : 's') + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('') : '<p class="muted" data-tier="playlist" style="padding:0.2rem 0.1rem 0.4rem">No playlists yet — add sentences from any topic page.</p>';
+    return '<div class="prog-sub" data-tier="playlist-head">Playlists</div>' + rowsHtml;
+  }
+
   var T = window.ThaiEarTopics;
-  var list = '<div class="prog-list">' + rows.map(function (r) {
+  var list = '<div class="prog-list" id="prog-list">' + rows.map(function (r) {
     var c = topics[r.key] || 0;
     var pct = goal ? Math.min(100, Math.round((c / goal) * 100)) : 0;
     var full = c >= goal ? ' full' : '';
@@ -314,7 +394,7 @@ function render() {
       lock = '<span class="lock">' + LOCK_SVG + '</span>';
     }
 
-    return '<div class="' + rowCls + '">' +
+    return '<div class="' + rowCls + '" data-tier="' + access + '">' +
       '<div class="prog-row-top">' +
         '<span class="prog-name-wrap">' +
           '<span class="prog-name"><a href="' + href + '">' + esc(r.name) + '</a></span>' +
@@ -324,7 +404,7 @@ function render() {
       '</div>' +
       '<div class="prog-bar"><div class="prog-bar-fill' + full + '" style="width:' + pct + '%"></div></div>' +
     '</div>';
-  }).join('') + '</div>';
+  }).join('') + plHtml() + '</div>';
 
   // Goal toggle — a step is disabled when it sits below your highest tally (a bar
   // must never overflow), exactly mirroring setProgressGoal's clamp in auth.js.
@@ -349,11 +429,13 @@ function render() {
       '<button class="btn btn-ghost" onclick="resetAll()" style="font-size:13px;color:#B00020;border-color:rgba(176,0,32,0.35)">Reset all progress</button>' +
     '</div>';
 
-  root.innerHTML = head + intro + fluency + list + toggle + reset;
+  root.innerHTML = head + intro + fluency + tabs + list + toggle + reset;
+  applyProgFilter(progFilter);   // reapply the chosen pill to the freshly-built rows (display only)
 }
 
-// On any auth change (login/logout/token refresh) clear a prior load error and re-render.
-window.addEventListener('thaiear:auth', function () { loadErr = null; render(); });
+// On any auth change (login/logout/token refresh) clear a prior load error, refresh playlists
+// (real data — see refreshPlaylists above) and re-render.
+window.addEventListener('thaiear:auth', function () { loadErr = null; refreshPlaylists(); render(); });
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
 else render();
 </script>

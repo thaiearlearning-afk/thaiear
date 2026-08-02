@@ -175,7 +175,9 @@
   }
 
   /* ── PAGE INTRO (gold accent bar) ── */
-  .page-intro { max-width: 900px; margin: 0 auto; padding: 2.6rem 1.5rem 0.4rem; }
+  /* Owner 2026-08-02 (index redesign, round 5): whitespace halved above/below so the switcher
+     lands in view on first load. Ported from index-mock.html. */
+  .page-intro { max-width: 900px; margin: 0 auto; padding: 1.3rem 1.5rem 0.2rem; }
   .intro-lead {
     max-width: 660px;
     font-size: 15px;
@@ -190,46 +192,46 @@
   .intro-app-link { color: var(--accent); text-decoration: underline; }
   .intro-app-link:hover { color: var(--accent-mid); }
 
-  /* ── SENTENCES ⇄ READ THAI MODE TOGGLE ──
-     The site's two arms: topic-sentence listening (this page) and the
-     learn-to-read section (read.html). Mirrored on read.html via read.css. */
-  .mode-toggle-wrap { display: flex; justify-content: flex-start; margin: 0 0 1.5rem; }
-  .mode-toggle { display: flex; background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 14px; padding: 4px; gap: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
-  .mt-btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; padding: 9px 20px; border-radius: 10px; transition: background 0.15s, color 0.15s; }
-  .mt-btn:hover { color: var(--accent); }
-  .mt-btn.active { background: var(--accent); color: #fff; }
-  .mt-btn.active:hover { color: #fff; }
-  .mt-ico { font-family: var(--font-thai); font-weight: 600; font-size: 15px; line-height: 1; }
-  .mt-btn svg { width: 15px; height: 15px; }
-  @media (max-width: 480px) { .mt-btn { font-size: 12.5px; padding: 8px 12px; gap: 6px; } }
+  /* ── THREE-WAY SWITCHER (Topic Sentences / Read Thai / Playlists) ──
+     Replaces the old sentences⇄read toggle (superseded). Ported from index-mock.html, the
+     owner-approved cosmetics pass (2026-08-02, rounds 1-7): unselected = gold theme, selected =
+     accent purple. Sits in its own slim wrapper OUTSIDE .topics-section (below) so the panel
+     sections can each stay a single <section class="topics-section">, which is what keeps
+     gen_home.js's #topic-grid regex (topic-grid's closing </div> immediately followed by
+     </section>) matching correctly — see the deploy notes at the end of this file. */
+  .switcher-wrap { max-width: 900px; margin: 0 auto; padding: 0.7rem 1.5rem 0; }
+  .mode-switch { display: flex; gap: 3px; background: var(--surface); border: 0.5px solid var(--border-strong);
+    border-radius: 14px; padding: 3px; margin-bottom: 0.85rem; }
+  .ms-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: #B29234; background: #FBF5DC;
+    border: none; border-radius: 11px; padding: 12px 6px; cursor: pointer;
+    transition: background 0.15s, color 0.15s; white-space: nowrap; }
+  .ms-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+  .ms-ico { font-family: var(--font-thai); font-size: 17px; font-weight: 600; line-height: 1; }
+  .ms-btn:hover { color: #8F7526; }
+  .ms-btn.active { background: var(--accent); color: #fff; }
+  @media (max-width: 480px) { .ms-btn { font-size: 13px; padding: 11px 3px; gap: 5px; } }
 
-    /* ── TOPICS SECTION ── */
+  /* Same-origin embedded panels (Read Thai / Playlists) — lazy-loaded iframes, auto-sized to
+     their content by the switcher script so they scroll as part of this page. */
+  .embed-frame { width: 100%; border: 0; display: block; min-height: 400px; }
+
+    /* ── TOPICS SECTION ──
+       Reused (same class) by the Read Thai + Playlists panel sections below, so all three panels
+       share one container width/padding. padding-top is 0 here because .switcher-wrap (above)
+       now supplies the vertical gap before the switcher — see its comment. */
   .topics-section {
     max-width: 900px;
     margin: 0 auto;
-    padding: 1.4rem 1.5rem 5rem;
+    padding: 0 1.5rem 5rem;
   }
-  .section-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 1.25rem;
-  }
-  .section-title {
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-tertiary);
-  }
-  /* Quieter than the title beside it: lighter weight, normal case, more faded. */
-  .section-title-soon {
-    font-weight: 400;
-    text-transform: none;
-    letter-spacing: 0;
-    font-style: italic;
-    opacity: 0.6;
-  }
+  /* Panel heading style (owner round 7): title = read.css .read-title; subtitle = the eyebrow
+     style, UNDER the title. Used by #panel-topics's "Listen and learn by topic" heading. */
+  .panel-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary);
+    margin-bottom: 4px; line-height: 1.2; }
+  .panel-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); margin: 6px 0 16px; }
+  @media (max-width: 600px) { .panel-title { font-size: 20px; } }
 
   /* ── LEVEL FILTER ── */
   .filter-tabs {
@@ -260,6 +262,17 @@
      selected pill keeps its solid styling. Member + All access stay purple by design. */
   .filter-tab.tab-free:not(.active):hover { border-color: var(--text-tertiary); color: var(--text-primary); }
   .filter-tab.tab-premium:not(.active):hover { border-color: var(--gold-dark); color: #B29234; }
+
+  /* ── GRID TOOLBAR ── pills + search in ONE quiet card instead of stacked loose rows
+     (ported from index-mock.html). */
+  .grid-toolbar { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
+    padding: 9px 11px 11px; margin-bottom: 0.9rem; }
+  .grid-toolbar .filter-tabs { margin: 0 0 9px; gap: 6px; }
+  .grid-toolbar .filter-tab { font-size: 12px; padding: 4px 12px; }
+  .grid-toolbar .topic-search-wrap { margin: 0; }
+  .grid-toolbar .topic-search { background: var(--bg); border-color: transparent; }
+  .grid-toolbar .topic-search:focus { border-color: var(--accent); background: var(--surface); }
+  .grid-toolbar .topic-search-count { position: static; display: block; margin-top: 4px; min-height: 0; }
 
   /* ── TOPIC SEARCH ──
      Sits directly under the access pills. The pills stay the outer gate; this narrows
@@ -314,21 +327,24 @@
   .topic-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
+  /* Cards ~30% shorter (owner 2026-08-02): tighter padding + gap. */
   .topic-card {
     background: var(--surface);
     border: 0.5px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 1.1rem 1.15rem 1rem;
+    padding: 0.6rem 1rem 0.55rem;
     text-decoration: none;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
     transition: border-color 0.15s, box-shadow 0.15s;
     cursor: pointer;
     position: relative;
   }
+  /* App/PWA only: accent border while this card's download is in progress. */
+  .topic-card.dl-working { border-color: var(--accent); }
   /* "Now playing" equalizer — app-only cue on the card whose audio is currently playing. */
   .te-eq { position: absolute; top: 0.85rem; right: 1.05rem; display: none; align-items: flex-end;
            gap: 2px; height: 13px; pointer-events: none; }
@@ -340,11 +356,12 @@
   .te-eq i:nth-child(3) { animation-delay: 0.15s; }
   .te-eq i:nth-child(4) { animation-delay: 0.45s; }
   @keyframes te-eq-bounce { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
-  /* Default hover = the NON-MEMBER (free) tier: neutral grey, matching the grey tier chip.
+  /* Default hover = accent purple, matching the de-greyed non-member chip below (owner
+     2026-08-02: reverted the grey scheme back to the free-member accent scheme).
      Member + premium cards override this below with their own purple / gold hovers. */
   .topic-card:hover {
-    border-color: var(--text-tertiary);
-    box-shadow: 0 0 0 3px #F0F0F3;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
   }
   .topic-card.coming-soon {
     opacity: 0.48;
@@ -374,31 +391,10 @@
     padding-top: 1.5rem;
     border-top: 0.5px solid var(--border);
   }
-  /* Not-yet-built topics render as ONE compact multi-column list (not faded cards): far less
-     vertical space, and it reads as a quiet "what's planned" footnote rather than a wall of
-     placeholders. One line PER TOPIC — a future a/b split only surfaces at build time. */
-  .soon-block { grid-column: 1 / -1; }
-  .soon-block .coming-soon-heading { margin-bottom: 0.7rem; }
-  .soon-items {
-    list-style: none;
-    columns: 3;
-    column-gap: 34px;
-    margin: 0;
-  }
-  .soon-items li {
-    break-inside: avoid;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 0;
-    font-size: 13.5px;
-    line-height: 1.3;
-    color: var(--text-secondary);
-  }
-  .soon-lk { display: inline-flex; flex-shrink: 0; opacity: 0.7; }
-  .soon-lk svg { width: 12px; height: 12px; }
-  .soon-lk.premium { color: #B29234; }
-  .soon-lk.member  { color: var(--accent); }
+  /* The multi-column "Coming soon" list block (soon-block/soon-items/soon-lk) is GONE
+     (2026-08-02 index redesign) — not-yet-built topics now collapse to a single
+     ".coming-soon-heading" line ("More coming soon") at the grid bottom; see soonList()
+     in the script below. .coming-soon-heading itself is kept — it's reused for that line. */
   .grid-msg {
     grid-column: 1 / -1;
     color: var(--text-tertiary);
@@ -406,15 +402,16 @@
     padding: 1rem 0;
   }
   /* Difficulty band heading for LIVE topics — deliberately MORE assertive than the
-     subtle grey "Coming soon" divider: navy, larger, sentence-case. */
+     subtle grey "Coming soon" divider: navy, larger, sentence-case. Slimmed 2026-08-02
+     alongside the shorter cards (ported from index-mock.html). */
   .level-heading {
     grid-column: 1 / -1;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 600;
     letter-spacing: -0.01em;
     color: #1C124E;
-    margin: 2.25rem 0 0.9rem;
-    padding-top: 1.6rem;
+    margin: 1.4rem 0 0.7rem;
+    padding-top: 1.1rem;
     border-top: 0.5px solid var(--border);
   }
   .level-heading:first-child { margin-top: 0; padding-top: 0; border-top: none; }
@@ -461,7 +458,7 @@
     font-size: 14px;
     font-weight: 500;
     color: var(--text-primary);
-    line-height: 1.35;
+    line-height: 1.28;
     flex: 1;
   }
   .topic-meta-row {
@@ -527,19 +524,26 @@
   .topic-member svg { width: 11px; height: 11px; }
   /* Entitled view: same soft Beginner-pill palette, no padlock (was a strong solid purple). */
   .topic-member.unlocked { background: var(--accent-light); color: var(--accent); }
-  /* ── NON-MEMBER (free, open) CARD — neutral grey chip, for parity with the tier pills ── */
+  /* ── NON-MEMBER (free, open) CARD — accent chip (de-greyed, owner 2026-08-02: reverted to the
+     free-member accent scheme so it doesn't read as locked/disabled). ── */
   .topic-nonmember {
     display: inline-flex;
     align-items: center;
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.02em;
-    color: var(--text-tertiary);
-    background: #F0F0F3;
+    color: var(--accent);
+    background: var(--accent-light);
     padding: 2px 9px;
     border-radius: 20px;
     white-space: nowrap;
   }
+  /* Slimmer tier pills (owner 2026-08-02): less card height. Same specificity as the three
+     per-tier rules above and comes later in source order, so it wins on the shared properties. */
+  .topic-premium, .topic-member, .topic-nonmember {
+    font-size: 10px; padding: 1px 7px; gap: 3px; letter-spacing: 0.03em;
+  }
+  .topic-premium svg, .topic-member svg { width: 10px; height: 10px; }
   /* App-only selection controls. The OUTER span is a big, finger-friendly tap target; the inner
      dot/tick is the smaller visible mark — so they're easy to hit without catching the card link. */
   .dl-select, .dl-badge { position: relative; display: inline-flex; align-items: center; justify-content: center;
@@ -557,26 +561,51 @@
   .dl-select[data-tier="premium"] .dl-dot { background: var(--gold-light); border-color: var(--gold-light); }
   .dl-select[data-tier="premium"]:hover .dl-dot { border-color: #F0CC5C; }
   .dl-select[data-tier="premium"].selected .dl-dot { background: #F0CC5C; border-color: #F0CC5C; }
+  /* Update ring (dl-core §D.1, ported from dyn-index.html r83): dashed border = "there is
+     something to fetch" — a superseded download or a D0 legacy claim — distinct from a plain
+     download circle at a glance. */
+  .dl-select.dl-update .dl-dot { background: transparent; border-color: var(--accent); border-style: dashed; }
+  .dl-select.dl-update.selected .dl-dot { background: var(--accent); border-style: solid; }
+  .dl-select[data-tier="premium"].dl-update .dl-dot { border-color: #F0CC5C; }
+  .dl-select[data-tier="premium"].dl-update.selected .dl-dot { background: #F0CC5C; border-style: solid; }
   /* Downloaded tick: a lavender ring appears when selected for removal. */
   .dl-tick { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px;
     border-radius: 50%; color: var(--accent); border: 2px solid transparent; transition: border-color 0.15s, background 0.15s; }
   .dl-badge.clear-selected .dl-tick { border-color: #9d92e0; background: var(--accent-light); }
   /* Premium downloaded topics: gold tick (graphic accent gold), not purple. */
   .dl-badge[data-tier="premium"] .dl-tick { color: #F0CC5C; }
-  /* While selecting one kind, dim the other so the two modes can't mix. */
-  .mode-download .dl-badge { opacity: 0.4; }
-  .mode-clear .dl-select { opacity: 0.4; }
-  .dl-batch-bar { display: none; flex-direction: column; align-items: stretch; gap: 8px;
+  /* Working (downloading) row: an animated ellipsis in place of the circle/tick. */
+  .dl-working-dots { display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; margin-left: 4px; vertical-align: middle; }
+  .dots { display: inline-block; width: 1.1em; text-align: left; }
+  .dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom;
+    animation: te-dl-dots 1.2s steps(3, start) infinite; }
+  @keyframes te-dl-dots { from { width: 0 } to { width: 1.05em } }
+  /* Download/remove controls (dl-core §D.1, ported from index-mock.html + dyn-index.html): ONE
+     selection set + a three-button layout — Download/Remove Selected on one half-height row,
+     a quiet Remove All beneath. display:flex is the BASE state now (was JS-toggled); visibility
+     is governed entirely by body.te-no-dl (§1f, below) so a plain browser tab reflows into the
+     space instead of reserving it. */
+  .dl-batch-bar { display: flex; flex-direction: column; align-items: stretch; gap: 8px;
     background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md);
     padding: 0.7rem 0.9rem; margin-bottom: 0.9rem; }
   .dl-batch-btns { display: flex; gap: 8px; }
-  .dl-batch-btn { flex: 1; font-family: var(--font-ui); font-size: 15px; font-weight: 500; color: #fff;
-    background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 12px 16px; cursor: pointer; }
+  .dl-batch-btn { flex: 1; font-family: var(--font-ui); font-size: 13px; font-weight: 500; color: #fff;
+    background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; }
   .dl-batch-btn:hover:not([disabled]) { background: var(--accent-mid); }
   .dl-batch-btn[disabled] { background: var(--border); color: var(--text-tertiary); cursor: default; }
   .dl-clear-btn { background: var(--surface); color: var(--text-secondary); border: 0.5px solid var(--border-strong); }
   .dl-clear-btn:hover:not([disabled]) { background: var(--bg); color: var(--accent); border-color: var(--accent); }
+  /* Quiet Remove All — a reset, not a third verb for the current selection; danger tone on hover only. */
+  .dl-removeall-btn { background: transparent; color: var(--text-tertiary); border: 0.5px solid var(--border);
+    font-size: 12px; padding: 4px 10px; }
+  .dl-removeall-btn:hover:not([disabled]) { background: #FDF1F2; color: #B00020; border-color: #E8C4C8; }
+  /* #dl-batch-status = the RUNNING JOB's progress; #dl-batch-note = transient tap feedback.
+     Deliberately separate elements (dl-core §D.1) so a selection tap mid-download can never
+     evict the only evidence that work is still happening. */
   .dl-batch-status { font-size: 13px; color: var(--text-secondary); min-height: 1.1em; }
+  .dl-batch-status.err { color: #B00020; }
+  .dl-batch-note { font-size: 12.5px; color: var(--text-tertiary); min-height: 1.1em; }
   .dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); }
   /* Confirm dialog (clear downloads). */
   .dl-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,40,0.55); display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
@@ -587,6 +616,21 @@
   .dl-modal-cancel { background: var(--surface); color: var(--text-secondary); border: 0.5px solid var(--border-strong); }
   .dl-modal-confirm { background: #C0392B; color: #fff; border: none; }
   .dl-modal-confirm:hover { background: #a93226; }
+
+  /* ── §1f DOWNLOAD-UI VISIBILITY (owner rule, 2026-08-02, ported from index-mock.html) ──
+     Download interfaces are APP/PWA-ONLY: the Android app and an installed (standalone) PWA see
+     them; a plain browser tab (Safari/Chrome, desktop or phone) never does. Everything below is
+     a normal-flow element, so hiding it reflows the layout — nothing reserves the space. Belt &
+     braces alongside the JS-level gate: dlCardState() (below) already returns null when
+     !OFFLINE_UI, so a plain browser tab never even gets this markup — the caption text it would
+     add to .topic-sent-count is skipped at the source, not merely hidden. The predicate that adds
+     this class lives in the download-engine script, below. */
+  body.te-no-dl .dl-batch-bar,
+  body.te-no-dl .dl-select,
+  body.te-no-dl .dl-badge,
+  body.te-no-dl .dl-working-dots {
+    display: none !important;
+  }
 
   /* ── FOOTER ── */
   .site-footer {
@@ -627,7 +671,6 @@
     .topic-grid {
       grid-template-columns: repeat(2, 1fr);
     }
-    .soon-items { columns: 2; }
     .hero-thai { font-size: 36px; }
     .hero-stats { gap: 2.5rem; }
   }
@@ -637,9 +680,8 @@
     .topic-grid {
       grid-template-columns: 1fr;
     }
-    .soon-items { columns: 1; }
 
-    
+
     
     .hero-inner { padding: 2.5rem 1.25rem 0; }
     .hero-logo { width: 91px; margin-bottom: 1.25rem; }
@@ -648,8 +690,11 @@
     .intro-lead { font-size: 14.5px; }
     .hero-stats { gap: 2rem; padding: 1.25rem 1.25rem; flex-wrap: wrap; }
     .hero-stat-num { font-size: 20px; }
+    .switcher-wrap {
+      padding: 0.7rem 1rem 0;
+    }
     .topics-section {
-      padding: 1.5rem 1rem 3rem;
+      padding: 0 1rem 3rem;
     }
     .filter-tabs {
       gap: 5px;
@@ -740,26 +785,33 @@
   <p class="intro-lead">A Thai learning <a class="intro-app-link" href="app.html">App</a> built around <strong>complete sentences</strong> — not vocabulary lists. Hear native-speed audio at home or on the go to build <strong>listening comprehension</strong> and <strong>fluency</strong>.</p>
 </section>
 
-<!-- ── TOPICS ── -->
-<section class="topics-section">
-  <div class="section-header">
-    <span class="section-title">All topics <span class="section-title-soon">— more coming soon…</span></span>
+<!-- ── SWITCHER (Topic Sentences / Read Thai / Playlists) ──
+     Ported from index-mock.html (owner-approved, 2026-08-02). Lives in its own slim wrapper,
+     a sibling of the three panel sections below (not nested inside one), so it stays visible
+     no matter which panel is showing, and so each panel below can remain a single
+     <section class="topics-section"> — see the .switcher-wrap CSS comment for why that
+     matters (gen_home.js's #topic-grid regex). -->
+<div class="switcher-wrap">
+  <div class="mode-switch" role="tablist" aria-label="Section">
+    <button class="ms-btn active" type="button" data-panel="topics" role="tab" aria-selected="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+      Topic Sentences
+    </button>
+    <button class="ms-btn" type="button" data-panel="read" role="tab" aria-selected="false">
+      <span class="ms-ico">ก</span>
+      Read Thai
+    </button>
+    <button class="ms-btn" type="button" data-panel="playlists" role="tab" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15V6"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/></svg>
+      Playlists
+    </button>
   </div>
+</div>
 
-  <!-- ── MODE TOGGLE: sentence listening ⇄ learn to read.
-       Sits above the access pills + search, left-aligned with them. ── -->
-  <div class="mode-toggle-wrap">
-    <div class="mode-toggle">
-      <a class="mt-btn active" href="index.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-        Topic Sentences
-      </a>
-      <a class="mt-btn" href="read.html">
-        <span class="mt-ico">ก</span>
-        Read Thai — Alphabet &amp; Tones
-      </a>
-    </div>
-  </div>
+<!-- ── TOPICS PANEL ── -->
+<section class="topics-section" id="panel-topics">
+  <h2 class="panel-title">Listen and learn by topic</h2>
+  <div class="panel-sub">Learn Thai by Ear</div>
 
   <!-- TEMP-DISABLED (level filter): live topics are now grouped under difficulty
        headings, so this row is hidden. Re-enable by uncommenting this block. The
@@ -772,38 +824,45 @@
   </div>
   -->
 
-  <div class="filter-tabs">
-    <button class="filter-tab active" onclick="filterAccess('all', this)">All access</button>
-    <button class="filter-tab tab-free" onclick="filterAccess('free', this)">Non-member</button>
-    <button class="filter-tab" onclick="filterAccess('member', this)">Free member</button>
-    <button class="filter-tab tab-premium" onclick="filterAccess('premium', this)">Premium</button>
+  <!-- Access pills + search in one quiet toolbar card (ported from index-mock.html). The pills
+       are the outer gate; search only ever returns what they already allow (see renderGrid).
+       Progressive enhancement — the pre-rendered grid below is the no-JS/crawler default. -->
+  <div class="grid-toolbar">
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="filterAccess('all', this)">All access</button>
+      <button class="filter-tab tab-free" onclick="filterAccess('free', this)">Non-member</button>
+      <button class="filter-tab" onclick="filterAccess('member', this)">Free member</button>
+      <button class="filter-tab tab-premium" onclick="filterAccess('premium', this)">Premium</button>
+    </div>
+    <div class="topic-search-wrap">
+      <label class="visually-hidden" for="topic-search">Search topics</label>
+      <svg class="topic-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+      </svg>
+      <input id="topic-search" class="topic-search" type="search" role="searchbox"
+             placeholder="Search topics — try “temple” or “วัด”"
+             autocomplete="off" spellcheck="false"
+             oninput="onSearchInput(this.value)">
+      <button id="topic-search-clear" class="topic-search-clear" type="button"
+              onclick="clearSearch()" aria-label="Clear search" hidden>&times;</button>
+      <span class="topic-search-count" id="topic-search-count" aria-live="polite"></span>
+    </div>
   </div>
 
-  <!-- Topic search. Sits UNDER the access pills because the pills are the outer gate:
-       search only ever returns what they already allow (see renderGrid). Progressive
-       enhancement — the pre-rendered grid below is the no-JS/crawler default. -->
-  <div class="topic-search-wrap">
-    <label class="visually-hidden" for="topic-search">Search topics</label>
-    <svg class="topic-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" aria-hidden="true">
-      <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
-    </svg>
-    <input id="topic-search" class="topic-search" type="search" role="searchbox"
-           placeholder="Search topics — try “temple” or “วัด”"
-           autocomplete="off" spellcheck="false"
-           oninput="onSearchInput(this.value)">
-    <button id="topic-search-clear" class="topic-search-clear" type="button"
-            onclick="clearSearch()" aria-label="Clear search" hidden>&times;</button>
-    <span class="topic-search-count" id="topic-search-count" aria-live="polite"></span>
-  </div>
-
-  <!-- App-only batch download/clear (shown by JS when running in the Capacitor app). -->
+  <!-- App/PWA-only download machinery (dl-core §D.1 engine, hidden in a plain browser tab via
+       body.te-no-dl — see that CSS rule). ONE selection set; Download + Remove Selected share a
+       half-height row, Remove All sits quietly beneath. -->
   <div class="dl-batch-bar" id="dl-batch-bar">
     <div class="dl-batch-btns">
-      <button class="dl-batch-btn" id="dl-batch-btn" onclick="runBatchDownload()">Download Topic(s)</button>
-      <button class="dl-batch-btn dl-clear-btn" id="dl-clear-btn" onclick="runClearDownloads()">Clear Download(s)</button>
+      <button class="dl-batch-btn" id="dl-batch-btn" onclick="runDownloads()">Download Topic(s)</button>
+      <button class="dl-batch-btn dl-clear-btn" id="dl-clear-btn" onclick="runClear()">Remove Selected Downloads</button>
+    </div>
+    <div class="dl-batch-btns dl-batch-btns-2">
+      <button class="dl-batch-btn dl-removeall-btn" id="dl-removeall-btn" onclick="removeAllDownloads()">Remove All Downloads</button>
     </div>
     <span class="dl-batch-status" id="dl-batch-status"></span>
+    <span class="dl-batch-note" id="dl-batch-note" style="display:none"></span>
     <span class="dl-batch-hint" id="dl-batch-hint">Tap a topic's circle to download, or a ✓ to remove — then pick an action.</span>
   </div>
   <div class="topic-grid" id="topic-grid">
@@ -920,6 +979,22 @@
   </div>
 </section>
 
+<!-- ── READ THAI PANEL ──
+     Lazy-loaded same-origin iframe of read.html?embed=1 (te-embed hides its own nav + mode
+     toggle at source), auto-height-sized to its content by the switcher script below. Loads on
+     first show of this panel, not on page load. -->
+<section class="topics-section" id="panel-read" hidden>
+  <iframe id="read-frame" title="Read Thai — Alphabet &amp; Tones" class="embed-frame"></iframe>
+</section>
+
+<!-- ── PLAYLISTS PANEL ──
+     Lazy-loaded same-origin iframe of playlists.html?embed=1 (te-embed hides its own nav at
+     source) — NOT static markup: signed-out/signed-in behaviour comes from the embedded page
+     itself. Auto-height-sized like the Read panel. -->
+<section class="topics-section" id="panel-playlists" hidden>
+  <iframe id="playlists-frame" title="My Playlists" class="embed-frame"></iframe>
+</section>
+
 <!-- ── FOOTER ── -->
 <footer class="site-footer">
   <span class="footer-note">thaiear.com · © <span id="copyright-year">2026</span> ThaiEar. All rights reserved.</span>
@@ -938,6 +1013,11 @@
      shared with every topic page (it also fills each page's "Topic X of N" eyebrow).
      Loaded before the grid render below so window.ThaiEarTopics is ready. -->
 <script src="topics.js"></script>
+<!-- Shared download/remove engine (§D.1) — manifest read/write, retry/backoff downloader,
+     bounded-concurrency pool, D0 legacy-claim predicate, Remove-All disk sweep + typed-REMOVE
+     modal. Same module dyn-index.html and playlists.html use. Must load before the inline
+     script below (it calls window.ThaiEarDL at top level). -->
+<script src="dl-core.js"></script>
 <script>
 /* Index grid render. The topic list, level badges and filter logic all come from
    topics.js (window.ThaiEarTopics), so the index and the topic pages never drift —
@@ -976,22 +1056,28 @@ const LOCK_SVG =
   'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 
-// "Downloaded for offline" tick (app only — the manifest is written by the offline download feature).
-const DL_BADGE =
-  '<span class="dl-badge" title="Downloaded for offline">' +
-  '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" ' +
-  'stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>';
-function offlineManifest() { try { return JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) { return {}; } }
+function offlineManifest() { return ThaiEarDL.getManifest(); }
 /* A manifest entry is not the same as THIS TOPIC being downloaded. A playlist download creates an
-   entry under the topic's prefix while holding only the sentences that playlist uses (and no
-   combined _TE/_ET at all), so "entry exists" put a downloaded tick on topics the user had never
-   downloaded and could not play offline. Ownership is the 'topic' ref — the same test dyn-index.html
-   already uses. An entry with NO refs field predates refs and IS a topic download. */
+   entry under the topic's prefix while holding only the sentences that playlist uses, so "entry
+   exists" put a downloaded tick on topics the user had never downloaded and could not play
+   offline. Ownership is the 'topic' ref. An entry with NO refs field predates refs and IS a topic
+   download.
+   ⚠ Rollout P2a (commit 1da8f5f) — every topic page is now dyn:true: the player plays
+   per-sentence _TH/_EN clips, NEVER the combined _TE/_ET. So ownership alone is no longer enough
+   to call an entry "downloaded" — an owned entry holding only _TH (± the old _TE/_ET, from before
+   this rollout) is a CLASSIC download that hasn't been topped up with _EN clips, and must read as
+   an UPDATE, not "downloaded" (dlCardState's legacyClaim branch, via
+   ThaiEarDL.looksLikeTopicClaim, is what surfaces that). So this also requires at least one _EN
+   clip — cheap and file-list-only, still deliberately NOT a full per-file count: with ~90 units on
+   this grid, checking every file is present at RENDER time would mean fetching every topic page's
+   sentence list just to paint the grid. Full completeness is verified properly at download/resume
+   time (fetchSentenceNums + diffing, below), same as before this pass. */
 function isDownloaded(prefix) {
   const e = prefix && offlineManifest()[prefix];
   if (!e) return false;
-  if (!e.refs) return true;
-  return e.refs.indexOf('topic') !== -1;
+  const owns = !e.refs || e.refs.indexOf('topic') !== -1;
+  if (!owns) return false;
+  return (e.files || []).some(function (f) { return /_EN\.mp3$/.test(f); });
 }
 // When online, persist the PAGES of every downloaded topic into the SW's persistent cache, so they
 // open offline (and survive SW updates) without the user re-visiting each one. No-op on the website.
@@ -1018,45 +1104,108 @@ function precacheDownloadedPages() {
   }).catch(function () {});
 }
 
-// ── App-only batch download / clear: pick topics on the grid, act on them all at once. ──
-// Reuses the same file set / manifest / page-cache as the per-topic Download button, so the
-// topic pages recognise grid-managed topics. Entirely hidden on the website.
-const NA_OFFLINE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
-  && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem);
-const FS = NA_OFFLINE ? window.Capacitor.Plugins.Filesystem : null;
-// Web/PWA offline (the browser equivalent of NA_OFFLINE): the SAME thaiear_webdl beta flag player.js
-// reads, so the "Offline downloads (beta)" toggle turns on BOTH the per-topic Download button and
-// this grid's download controls together. Never in the native app (uses NA_OFFLINE/Filesystem) and
-// never on the plain website (the flag is unset for normal visitors). Stores into the SAME Cache
-// Storage bucket + thaiear_offline manifest the topic page reads, so a grid download plays on the page.
-const WEB_DL_PWA = (function () {
-  try {
-    const native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-    return !native && !!window.caches && localStorage.getItem('thaiear_webdl') === '1';
-  } catch (_) { return false; }
-})();
-const OFFLINE_UI = NA_OFFLINE || WEB_DL_PWA;   // drives the select circles + the batch download bar
+// ── DOWNLOAD ENGINE (dl-core.js §D.1, ported from dyn-index.html — the owner-approved reference
+//    implementation). Rollout P2a (commit 1da8f5f) put every one of the 93 production topic
+//    pages on dyn:true, so this targets the SAME per-sentence _TH/_EN clip need list dyn-index.html
+//    and playlists.html use — never the combined _TE/_ET.mp3, which the dyn player doesn't play.
+//    A pre-rollout classic manifest entry (still holding _TE/_ET) reads as "update available" via
+//    ThaiEarDL.looksLikeTopicClaim (see isDownloaded/dlCardState) until it's topped up with its
+//    missing _EN clips, at which point the stale _TE/_ET are purged — see the D0c purge in
+//    runDownloads' finalize, below. Manifest format/key ('thaiear_offline') is unchanged. ──
+const CAP = window.ThaiEarDL.capabilities();
+const NATIVE = CAP.native, FS = CAP.fs, WEB_DL = CAP.webOk;
+// §1f visibility predicate: native app OR an installed (standalone) PWA. A plain browser tab
+// never sees download UI — see the body.te-no-dl CSS. Recomputed independently of the switcher's
+// own copy (below) since this script block can, in principle, run before it.
+const STANDALONE = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
+  window.navigator.standalone === true;
+const OFFLINE_UI = NATIVE || STANDALONE;
+if (!OFFLINE_UI) document.body.classList.add('te-no-dl');
 const AUDIO_DL_CACHE = 'thaiear-audio-dl';     // must match player.js
 function webCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; } // must match player.js
 const DL_AUDIO_BASE = 'https://audio.thaiear.com';
-const dlSelected = new Map();    // undownloaded topics chosen to DOWNLOAD
-const clearSelected = new Map(); // downloaded topics chosen to REMOVE
-let batchRunning = false;
-function cardItem(el) { return { prefix: el.getAttribute('data-prefix'), page: el.getAttribute('data-page'), tier: el.getAttribute('data-tier') }; }
 
-// Circle for an undownloaded topic (download selection): light purple → dark when selected.
-function selectCircle(audio, page, tier) {
-  if (!OFFLINE_UI || !audio || !page) return '';
-  const on = dlSelected.has(audio) ? ' selected' : '';
-  return '<span class="dl-select' + on + '" data-prefix="' + audio + '" data-page="' + page +
-    '" data-tier="' + (tier || 'free') + '" role="button" aria-label="Select for offline download"><span class="dl-dot"></span></span>';
+const dlSel = {};    // ONE selection set: prefix -> {prefix,page,tier,name} (dl-core §D.1 — a row
+                      // is simply SELECTED, the BUTTON supplies the verb; a row that can't perform
+                      // it is skipped in silence)
+let busy = false;
+const working = {};  // prefix -> truthy while that topic's download is in flight
+let lastDlSecs = null;
+
+function topicNameForPrefix(p) {
+  const u = topics.find(function (x) { return x.audio === p; });
+  return u ? u.name : p;
 }
-// Tick for a downloaded topic (clear selection): a lavender ring appears when selected.
-function downloadedTick(audio, page, tier) {
-  const on = clearSelected.has(audio) ? ' clear-selected' : '';
-  return '<span class="dl-badge' + on + '" data-prefix="' + audio + '" data-page="' + (page || '') +
-    '" data-tier="' + (tier || 'free') + '" role="button" title="Downloaded · tap to select for removal" aria-label="Downloaded — tap to select for removal">' +
-    '<span class="dl-tick"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>';
+
+// ── audio-version awareness (ported from dyn-index.html r83/r88) ──
+let AV = null, avLoaded = false;
+function loadAv() {
+  if (avLoaded) return Promise.resolve(AV);
+  return fetch('/audio-versions.json').then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (m) { AV = m; avLoaded = true; return AV; })
+    .catch(function () { AV = null; avLoaded = true; return null; });
+}
+// Does this downloaded prefix hold clips that have since been re-rendered? Conservative: no
+// published map, or no baseline recorded at download time → NOT stale (nagging on missing
+// information is worse than a late prompt).
+function avStale(pfx) {
+  if (!AV) return false;
+  const e = offlineManifest()[pfx];
+  if (!e || e.av == null) return false;
+  const cur = AV[pfx];
+  return cur != null && e.av !== cur;
+}
+// May this visitor download this unit? The ONE shared predicate (ThaiEarAuth.lockedFor via
+// dl-core's locked()). canStoreOffline:false on purpose — this is "offer a NEW download", not
+// "keep access to one already taken" (dyn-index.html r38/T-1).
+function dlLocked(prefix, tier) { return ThaiEarDL.locked({ tier: tier, prefix: prefix }, false); }
+// Needs a download action? Not-yet-downloaded, OR downloaded-but-superseded.
+function needsDownload(prefix) { return !isDownloaded(prefix) || avStale(prefix); }
+
+// Per-card download state + control markup (ported from dyn-index.html's render()). Returns
+// {html, caption} — the circle/tick/update/dots control for the meta row, and the caption text
+// appended to the sentence count ("23 sentences · downloaded"). null when this card carries no
+// download UI at all (website / non-live / no audio prefix).
+function dlCardState(prefix, page, tier) {
+  if (!OFFLINE_UI || !prefix || !page) return null;
+  const w = working[prefix];
+  const dl = !w && isDownloaded(prefix);
+  const upd = dl && avStale(prefix);
+  const locked = !w && !dl && dlLocked(prefix, tier);
+  /* D0 migration rule (dl-core ThaiEarDL.looksLikeTopicClaim): an entry that isn't a complete
+     download by our count but still LOOKS like a topic claim (a pre-refs / classic download, or
+     one interrupted before any clip landed under this ref) reads as an UPDATE, not a bare "not
+     downloaded" — so it never silently reads as gone. Still entitlement-gated, exactly like the
+     plain circle it replaces — an update is still a download action, not a removal. */
+  const legacyClaim = !w && !dl && !locked && ThaiEarDL.looksLikeTopicClaim(prefix, offlineManifest()[prefix]);
+  const showUpdate = upd || legacyClaim;
+  const on = !!dlSel[prefix];
+  const t = tier || 'free';
+  let html;
+  if (w) {
+    html = '<span class="dl-working-dots"><span class="dots" aria-hidden="true"></span></span>';
+  } else if (showUpdate) {
+    html = '<span class="dl-select dl-update' + (on ? ' selected' : '') + '" data-prefix="' + prefix +
+      '" data-page="' + page + '" data-tier="' + t + '" role="button" ' +
+      'title="Download audio update — tap to select and update this download" ' +
+      'aria-label="Download audio update — select to update this download"><span class="dl-dot"></span></span>';
+  } else if (dl) {
+    // REMOVAL IS ALWAYS AVAILABLE (dl-core §D.1 rule) — the tick renders whenever `dl` is true,
+    // checked BEFORE any entitlement question, so a lapsed premium download can still be cleared
+    // while online (the bug the live index used to have: entitled = canAccess() || (dl &&
+    // offline), which hid the tick for a lapsed-but-online user).
+    html = '<span class="dl-badge' + (on ? ' clear-selected' : '') + '" data-prefix="' + prefix +
+      '" data-page="' + page + '" data-tier="' + t + '" role="button" ' +
+      'title="Downloaded · tap to select for removal" aria-label="Downloaded — tap to select for removal">' +
+      '<span class="dl-tick"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>';
+  } else if (locked) {
+    html = '';   // not entitled and not downloaded → no control at all; DOWNLOAD is entitlement-gated
+  } else {
+    html = '<span class="dl-select' + (on ? ' selected' : '') + '" data-prefix="' + prefix +
+      '" data-page="' + page + '" data-tier="' + t + '" role="button" aria-label="Select for offline download"><span class="dl-dot"></span></span>';
+  }
+  const caption = w ? 'downloading' : showUpdate ? 'update available' : dl ? 'downloaded' : 'not downloaded';
+  return { html: html, caption: caption };
 }
 
 function dlFileUrl(file, tier) { // free → public CDN; member/premium → signed /api/audio
@@ -1088,97 +1237,158 @@ function fetchSentenceNums(page) {
     return nums;
   });
 }
+/* Rollout P2a (commit 1da8f5f): every topic page is dyn:true now — the player builds each
+   listen from per-sentence _TH + _EN clips and never touches the combined _TE/_ET, so those are
+   NOT part of the need list any more (they only ever appear as something to PURGE from an older
+   classic entry — see the D0c purge in runDownloads' finalize, and ThaiEarDL.looksLikeTopicClaim
+   in dlCardState, which is what makes a still-classic entry read as "update available" here). */
 function topicFileList(prefix, nums) {
-  const files = [prefix + '_TE.mp3', prefix + '_ET.mp3'];
-  nums.forEach(function (n) { files.push(prefix + '_S' + String(n).padStart(2, '0') + '_TH.mp3'); });
+  const files = [];
+  nums.forEach(function (n) {
+    const p = String(n).padStart(2, '0');
+    files.push(prefix + '_S' + p + '_TH.mp3');
+    files.push(prefix + '_S' + p + '_EN.mp3');
+  });
   return files;
 }
-function downloadOne(item) {
-  return fetchSentenceNums(item.page).then(function (nums) {
-    // A topic always has sentences; zero means the scrape failed — fail the download rather than
-    // silently saving only TE/ET and marking it "downloaded" (which left sentence clips missing).
-    if (!nums.length) throw new Error('No sentences found for ' + item.prefix + ' — not downloading');
-    const files = topicFileList(item.prefix, nums);
-    // Shared completion: write the manifest entry the topic page reads + cache the page for offline.
-    const finish = function () {
-      const m = offlineManifest(); m[item.prefix] = { tier: item.tier || 'free', files: files, at: Date.now() };
-      try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {}
-      if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(item.page).catch(function () {}); }).catch(function () {});
-    };
-    // Web/PWA: fetch each file (signed URL for premium) → Cache Storage under the SAME key player.js
-    // plays from. cors-mode fetch rejects without the CORS header, so a CORS gap fails cleanly.
-    if (WEB_DL_PWA) {
-      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {}
-      return caches.open(AUDIO_DL_CACHE).then(function (cache) {
-        let chain = Promise.resolve();
-        files.forEach(function (file) {
-          chain = chain.then(function () {
-            return dlFileUrl(file, item.tier).then(function (url) {
-              return fetch(url, { mode: 'cors', cache: 'no-store' }).then(function (res) {
-                if (!res || !res.ok) throw new Error('http ' + (res && res.status) + ' for ' + file);
-                if (res.type === 'opaque') throw new Error('CORS not enabled for ' + file);
-                return cache.put(webCacheKey(item.prefix, file), res);
-              });
-            });
-          });
-        });
-        return chain;
-      }).then(finish);
-    }
-    // Native (Capacitor Filesystem).
-    let chain = FS.mkdir({ directory: 'DATA', path: 'offline/' + item.prefix, recursive: true }).catch(function () {});
-    files.forEach(function (file) {
-      chain = chain.then(function () {
-        return dlFileUrl(file, item.tier).then(function (url) {
-          return FS.downloadFile({ url: url, path: 'offline/' + item.prefix + '/' + file, directory: 'DATA', recursive: true });
-        });
-      });
-    });
-    return chain.then(finish);
+// One clip, recorded (dl-core noteClip) — resumable progress if the run is interrupted.
+// dyn:true is stamped so the manifest dump reads consistently with dyn-index.html/player.js.
+function noteClip(item, file) {
+  ThaiEarDL.noteClip(item.prefix, file, 'topic', {
+    seed: function () { return { tier: item.tier, files: [] }; },
+    avMap: AV, tier: item.tier, dyn: true
   });
 }
-function setBatchStatus(msg, offline) {
+// Retry-with-backoff single-file download (dl-core downloadOne): free/member/premium URL via
+// dlFileUrl, native Filesystem or web Cache Storage depending on capabilities().
+function saveOne(item, file) {
+  return ThaiEarDL.downloadOne(file, {
+    urlFn: function (f) { return dlFileUrl(f, item.tier); },
+    native: NATIVE, fs: FS, nativePath: function (f) { return 'offline/' + item.prefix + '/' + f; },
+    cacheName: AUDIO_DL_CACHE, cacheKeyFn: function (f) { return webCacheKey(item.prefix, f); },
+    label: 'index'
+  });
+}
+function setBatchStatus(msg, err) {
   const el = document.getElementById('dl-batch-status'); if (!el) return;
   el.textContent = msg || '';
-  el.style.color = offline ? '#B00020' : '';   // red "you're offline" message, matching the account page
+  el.className = 'dl-batch-status' + (err ? ' err' : '');
+}
+/* Transient tap feedback — a SEPARATE element from #dl-batch-status, which belongs to the RUNNING
+   JOB (dl-core §D.1 rule): a selection tap mid-download must never evict the only evidence that
+   work is still happening. Self-clears after 4s. */
+let noteTimer = null;
+function setBatchNote(msg) {
+  const el = document.getElementById('dl-batch-note'); if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? '' : 'none';
+  if (noteTimer) { clearTimeout(noteTimer); noteTimer = null; }
+  if (msg) noteTimer = setTimeout(function () { setBatchNote(''); }, 4000);
 }
 function setBatchBusy(b) {
-  const d = document.getElementById('dl-batch-btn'), c = document.getElementById('dl-clear-btn');
-  if (d) d.disabled = b; if (c) c.disabled = b;
+  // The swipe/back-gesture guard is armed exactly while a batch runs — see the leave guards below.
+  try { if (b) window.__teArmLeaveGuard(); else window.__teDisarmLeaveGuard(); } catch (_) {}
+  const d = document.getElementById('dl-batch-btn'), c = document.getElementById('dl-clear-btn'),
+        ra = document.getElementById('dl-removeall-btn'), hint = document.getElementById('dl-batch-hint');
+  if (d) d.disabled = b;
+  if (c) c.disabled = b;
+  if (ra) ra.disabled = b;   // Remove All locks too — it ignores the SELECTION, not busy state, so
+                              // wiping the manifest mid-download would strand the clips already written
+  if (hint) hint.textContent = b ? 'Please keep this page open'
+    : "Tap a topic's circle to download, or a ✓ to remove — then pick an action.";
 }
+// Button counts say what each button WILL DO, not how many rows are ticked — an "update available"
+// row answers YES to both (it has clips to fetch AND a download to remove), so the two numbers
+// legitimately differ (dyn-index r86).
 function updateBatchBar() {
-  const bar = document.getElementById('dl-batch-bar'); if (!bar) return;
-  if (!OFFLINE_UI) { bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
   const dBtn = document.getElementById('dl-batch-btn'), cBtn = document.getElementById('dl-clear-btn'), hint = document.getElementById('dl-batch-hint');
-  if (dBtn && !batchRunning) dBtn.textContent = dlSelected.size ? ('Download Topic(s) (' + dlSelected.size + ')') : 'Download Topic(s)';
-  if (cBtn && !batchRunning) cBtn.textContent = clearSelected.size ? ('Clear Download(s) (' + clearSelected.size + ')') : 'Clear Download(s)';
-  if (hint) hint.style.display = (dlSelected.size || clearSelected.size || batchRunning) ? 'none' : '';
-  const grid = document.getElementById('topic-grid');
-  if (grid) {
-    grid.classList.toggle('mode-download', dlSelected.size > 0);
-    grid.classList.toggle('mode-clear', clearSelected.size > 0);
+  const picked = Object.keys(dlSel);
+  const nd = picked.filter(needsDownload).length;
+  const nc = picked.filter(isDownloaded).length;
+  if (!busy) {
+    if (dBtn) dBtn.textContent = nd ? ('Download Topic(s) (' + nd + ')') : 'Download Topic(s)';
+    if (cBtn) cBtn.textContent = nc ? ('Remove Selected Downloads (' + nc + ')') : 'Remove Selected Downloads';
+    if (hint) hint.style.display = picked.length ? 'none' : '';
   }
 }
-function runBatchDownload() {
-  if (!OFFLINE_UI || batchRunning) return;
-  if (dlSelected.size === 0) { setBatchStatus('Please select a topic to download first.'); return; }
+function runDownloads() {
+  if (busy) return;
+  const list = Object.keys(dlSel).filter(needsDownload).map(function (p) { return dlSel[p]; });
+  if (!list.length) { setBatchStatus('Please select a topic to download first.'); return; }
+  if (!NATIVE && !WEB_DL) { setBatchStatus('This device can’t store downloads.', true); return; }
   if (!navigator.onLine) { setBatchStatus('You’re offline — reconnect to download topics.', true); return; }
-  const items = Array.from(dlSelected.values());
+  busy = true; setBatchBusy(true);
   let i = 0;
-  batchRunning = true; setBatchBusy(true);
-  const btn = document.getElementById('dl-batch-btn');
-  if (btn) btn.textContent = 'Downloading…';
   (function next() {
-    if (i >= items.length) {
-      batchRunning = false; setBatchBusy(false);
-      setBatchStatus('Done — ' + items.length + ' topic' + (items.length > 1 ? 's' : '') + ' saved offline.');
-      dlSelected.clear(); renderGrid(); updateBatchBar();
+    if (i >= list.length) {
+      busy = false; setBatchBusy(false);
+      setBatchStatus('Done — ' + list.length + ' topic' + (list.length > 1 ? 's' : '') + ' saved offline.');
+      list.forEach(function (it) { delete dlSel[it.prefix]; });
+      renderGrid(); updateBatchBar();
       return;
     }
-    setBatchStatus('Downloading ' + (i + 1) + '/' + items.length + ' — keep this page open');
-    downloadOne(items[i]).then(function () { i++; next(); }).catch(function (err) {
-      batchRunning = false; setBatchBusy(false);
+    const item = list[i];
+    working[item.prefix] = 1; renderGrid();
+    setBatchStatus('Downloading ' + item.name);
+    fetchSentenceNums(item.page).then(function (nums) {
+      // A topic always has sentences; zero means the scrape failed — fail the download rather than
+      // silently marking it "downloaded" with clips missing.
+      if (!nums.length) throw new Error('No sentences found for ' + item.prefix + ' — not downloading');
+      const allFiles = topicFileList(item.prefix, nums);
+      // Skip what's already here, so a retry / update RESUMES instead of re-fetching everything
+      // (ported from dyn-index r88/r89 — each clip is recorded as it lands, below).
+      const haveEntry = offlineManifest()[item.prefix], have = {};
+      ((haveEntry && haveEntry.files) || []).forEach(function (f) { have[f] = 1; });
+      let files = allFiles.filter(function (f) { return !have[f]; });
+      if (!files.length) files = allFiles;   // nothing missing → a deliberate full refresh (e.g. an update)
+      const already = allFiles.length - files.length;
+      let done = 0; const tDl0 = Date.now();
+      let chain = NATIVE
+        ? FS.mkdir({ directory: 'DATA', path: 'offline/' + item.prefix, recursive: true }).catch(function () {})
+        : Promise.resolve();
+      // Six at a time, not one — the same lane structure as player.js's dynPool / dl-core's pool.
+      chain = chain.then(function () {
+        return ThaiEarDL.pool(files, 6, function (f) {
+          return saveOne(item, f).then(function () {
+            done++; noteClip(item, f);
+            setBatchStatus('Downloading ' + item.name + ' — clip ' + (already + done) + ' of ' + allFiles.length);
+          });
+        });
+      });
+      return chain.then(function () {
+        // Merge rather than overwrite: a playlist may already hold some of these clips, and its
+        // ref must survive a topic download (and vice versa).
+        const m = offlineManifest();
+        const e = ThaiEarDL.mergeFiles(m, item.prefix, files, 'topic', function () { return { tier: item.tier, files: [] }; });
+        if (e.av == null && AV && AV[item.prefix] != null) e.av = AV[item.prefix];
+        e.tier = item.tier; e.at = Date.now(); e.dyn = true;
+        /* D0c purge (rollout P2a, commit 1da8f5f) — mirrors player.js's r122 purge exactly. The
+           dyn player never plays _TE/_ET; an entry that still carries them (a classic download
+           from before this rollout, just topped up with its missing _EN clips above) drops them
+           from the manifest, and we best-effort delete the physical bytes too. Two surfaces
+           (here + player.js), same predicate, same commit. */
+        const legacy = [item.prefix + '_TE.mp3', item.prefix + '_ET.mp3'];
+        const toPurge = legacy.filter(function (f) { return e.files.indexOf(f) >= 0; });
+        if (toPurge.length) e.files = e.files.filter(function (f) { return legacy.indexOf(f) < 0; });
+        ThaiEarDL.setManifest(m);
+        if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(item.page).catch(function () {}); }).catch(function () {});
+        lastDlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
+        if (!toPurge.length) return;
+        return NATIVE
+          ? Promise.all(toPurge.map(function (f) {
+              return FS.deleteFile({ path: 'offline/' + item.prefix + '/' + f, directory: 'DATA' }).catch(function () {});
+            }))
+          : (window.caches ? caches.open(AUDIO_DL_CACHE).then(function (c) {
+              return Promise.all(toPurge.map(function (f) { return c.delete(webCacheKey(item.prefix, f)).catch(function () {}); }));
+            }).catch(function () {}) : Promise.resolve());
+      });
+    }).then(function () {
+      delete working[item.prefix];
+      setBatchStatus(item.name + ' saved offline in ' + lastDlSecs + 's.');
+      renderGrid(); i++; next();
+    }).catch(function (err) {
+      delete working[item.prefix];
+      busy = false; setBatchBusy(false);
       // navigator.onLine lies in the WebView (often "online" in airplane mode), so also treat a
       // network/fetch failure as offline → show the same polished red message, not "failed to fetch".
       const m = (err && (err.message || '')) || '';
@@ -1193,49 +1403,69 @@ function runBatchDownload() {
         const why = (ec === 402 || ec === 'licence') ? 'premium membership needed'
                   : (ec === 401 || ec === 403 || ec === 'noauth') ? 'sign in to download this'
                   : (ec || (err && err.message) || 'error');
-        setBatchStatus('Stopped (' + why + '). Keep this page open and retry.');
+        // r87-era resume promise: the clips already saved this run are kept via the incremental
+        // noteClip() above, so a retry can carry on rather than start again.
+        setBatchStatus('Stopped (' + why + '). The clips already saved are kept — tap Download again to carry on.', true);
       }
-      updateBatchBar();
+      renderGrid();
     });
   })();
 }
-function runClearDownloads() {
-  if (!OFFLINE_UI || batchRunning) return;
-  if (clearSelected.size === 0) { setBatchStatus('Please select a downloaded topic to clear first.'); return; }
-  const n = clearSelected.size;
+function runClear() {
+  if (busy) return;
+  const list = Object.keys(dlSel).filter(isDownloaded).map(function (p) { return dlSel[p]; });
+  if (!list.length) { setBatchStatus('Please select a downloaded topic to clear first.'); return; }
+  const n = list.length;
   showConfirm('Are you sure you want to remove the downloaded topic' + (n > 1 ? 's' : '') +
-    '? You will no longer be able to listen to ' + (n > 1 ? 'them' : 'it') + ' offline.', doClear);
+    '? You will no longer be able to listen to ' + (n > 1 ? 'them' : 'it') + ' offline.', function () { doClear(list); });
 }
-function doClear() {
-  const items = Array.from(clearSelected.values());
+function doClear(list) {
+  busy = true; setBatchBusy(true);
   let i = 0;
-  batchRunning = true; setBatchBusy(true);
-  const cBtn = document.getElementById('dl-clear-btn');
-  if (cBtn) cBtn.textContent = 'Removing…';
   (function next() {
-    if (i >= items.length) {
-      batchRunning = false; setBatchBusy(false);
-      setBatchStatus('Removed ' + items.length + ' download' + (items.length > 1 ? 's' : '') + '.');
-      clearSelected.clear(); renderGrid(); updateBatchBar();
+    if (i >= list.length) {
+      busy = false; setBatchBusy(false);
+      setBatchStatus('Removed ' + list.length + ' download' + (list.length > 1 ? 's' : '') + '.');
+      list.forEach(function (it) { delete dlSel[it.prefix]; });
+      renderGrid(); updateBatchBar();
       return;
     }
-    const it = items[i];
+    const it = list[i];
     const done = function () {
       const m = offlineManifest(); delete m[it.prefix];
-      try { localStorage.setItem('thaiear_offline', JSON.stringify(m)); } catch (_) {}
+      ThaiEarDL.setManifest(m);
       if (window.caches && it.page) caches.open('thaiear-dl').then(function (c) { c.delete(it.page); }).catch(function () {});
-      i++; next();
+      i++; renderGrid(); next();
     };
-    if (WEB_DL_PWA && window.caches) {
-      const fl = (offlineManifest()[it.prefix] && offlineManifest()[it.prefix].files) || [];
+    const fl = (offlineManifest()[it.prefix] && offlineManifest()[it.prefix].files) || [];
+    if (NATIVE) FS.rmdir({ directory: 'DATA', path: 'offline/' + it.prefix, recursive: true }).then(done).catch(done);
+    else if (window.caches) {
       caches.open(AUDIO_DL_CACHE).then(function (c) {
         return Promise.all(fl.map(function (f) { return c.delete(webCacheKey(it.prefix, f)).catch(function () {}); }));
       }).then(done).catch(done);
-    } else if (FS) FS.rmdir({ directory: 'DATA', path: 'offline/' + it.prefix, recursive: true }).then(done).catch(done);
-    else done();
+    } else done();
   })();
 }
-// Small confirm dialog (used by Clear Download(s)).
+// Remove All Downloads: the typed-REMOVE dialog + full disk sweep, both shared with
+// dyn-index.html/playlists.html via dl-core (ThaiEarDL.removeAllModal / removeAllDownloads) so
+// the three pages can never drift. Selection-independent — a reset, not a third verb for the
+// current selection.
+function removeAllDownloads() {
+  if (busy) return;
+  const count = Object.keys(offlineManifest()).length;
+  ThaiEarDL.removeAllModal(count, function () {
+    busy = true; setBatchBusy(true);
+    setBatchStatus('Removing all downloads…');
+    ThaiEarDL.removeAllDownloads(CAP, AUDIO_DL_CACHE).then(function () {
+      Object.keys(dlSel).forEach(function (p) { delete dlSel[p]; });
+      busy = false; setBatchBusy(false);
+      setBatchStatus('All downloads removed.');
+      renderGrid(); updateBatchBar();
+    });
+  });
+}
+// Confirm dialog for Remove Selected Downloads (the typed-REMOVE dialog is reserved for Remove
+// All — ThaiEarDL.removeAllModal, above).
 function showConfirm(message, onConfirm) {
   const ov = document.createElement('div');
   ov.className = 'dl-modal';
@@ -1248,29 +1478,78 @@ function showConfirm(message, onConfirm) {
   ov.querySelector('.dl-modal-confirm').addEventListener('click', function () { close(); onConfirm(); });
   ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
 }
-// Tap a card's circle (download) or ✓ tick (clear) → toggle, without following the card link.
-// The two modes are mutually exclusive: while one has a selection, the other's taps are blocked.
+// Same modal chrome, for the leave-guards below (a download in progress, not a removal).
+function showConfirmLeave(onConfirm) {
+  const ov = document.createElement('div');
+  ov.className = 'dl-modal';
+  ov.innerHTML = '<div class="dl-modal-card"><p>A download is in progress. If you leave now it won’t finish — you can start it again any time.</p>' +
+    '<div class="dl-modal-actions">' +
+    '<button class="dl-modal-cancel" type="button">Keep downloading</button>' +
+    '<button class="dl-modal-confirm" type="button">Leave anyway</button></div></div>';
+  document.body.appendChild(ov);
+  function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+  ov.querySelector('.dl-modal-cancel').addEventListener('click', close);
+  ov.querySelector('.dl-modal-confirm').addEventListener('click', function () { close(); onConfirm(); });
+  ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+}
+// Tap a card's circle (download/update) or ✓ tick (clear) → toggle ONE selection set, without
+// following the card link (dl-core §D.1 — one set, the button supplies the verb).
 document.addEventListener('click', function (e) {
   if (!e.target.closest) return;
-  const circle = e.target.closest('.dl-select');
-  const tick = e.target.closest('.dl-badge');
-  if (circle) {
-    e.preventDefault(); e.stopPropagation();
-    if (clearSelected.size > 0) { setBatchStatus('Finish or deselect your removal choice first.'); return; }
-    const p = circle.getAttribute('data-prefix');
-    if (dlSelected.has(p)) { dlSelected.delete(p); circle.classList.remove('selected'); }
-    else { dlSelected.set(p, cardItem(circle)); circle.classList.add('selected'); }
-    setBatchStatus(''); updateBatchBar();
-  } else if (tick && tick.getAttribute('data-prefix')) {
-    e.preventDefault(); e.stopPropagation();
-    if (dlSelected.size > 0) { setBatchStatus('Finish or deselect your download choice first.'); return; }
-    const p = tick.getAttribute('data-prefix');
-    if (clearSelected.has(p)) { clearSelected.delete(p); tick.classList.remove('clear-selected'); }
-    else { clearSelected.set(p, cardItem(tick)); tick.classList.add('clear-selected'); }
-    setBatchStatus(''); updateBatchBar();
-  }
+  const el = e.target.closest('.dl-select, .dl-badge');
+  if (!el) return;
+  e.preventDefault(); e.stopPropagation();
+  // A tap is REFUSED WITH AN EXPLANATION while a download runs, not silently ignored — and the
+  // explanation goes to the transient note so the progress line survives (dyn-index r82).
+  if (busy) { setBatchNote('Download in progress — you can change your selection when it finishes.'); return; }
+  const p = el.getAttribute('data-prefix');
+  if (dlSel[p]) delete dlSel[p];
+  else dlSel[p] = { prefix: p, page: el.getAttribute('data-page'), tier: el.getAttribute('data-tier') || 'free', name: topicNameForPrefix(p) };
+  setBatchNote('');
+  renderGrid(); updateBatchBar();
 });
-window.addEventListener('beforeunload', function (e) { if (batchRunning) { e.preventDefault(); e.returnValue = ''; } });
+/* ── LEAVE GUARDS (ported from dyn-index.html r93/r94) ──────────────────────────────────────
+   beforeunload's dialog cannot be styled or reworded, so intercept the realistic ways out on a
+   phone and answer with this page's own modal: an internal-link click, AND a swipe-back /
+   hardware-back gesture — a HISTORY navigation that produces no click at all, so the click guard
+   alone never saw it. While a download runs we push one same-URL sentinel history entry; a back
+   gesture pops it (same-document, no reload) and we immediately re-push it, prompting instead of
+   leaving. Choosing "Leave anyway" goes back TWO entries — the sentinel and the real one. */
+(function () {
+  let armed = false, skip = false;
+  function push() { try { history.pushState({ teDlGuard: 1 }, '', location.href); } catch (_) {} }
+  window.__teArmLeaveGuard = function () { if (armed) return; armed = true; push(); };
+  window.__teDisarmLeaveGuard = function () {
+    if (!armed) return;
+    armed = false; skip = true;
+    try { history.back(); } catch (_) { skip = false; }
+  };
+  window.addEventListener('popstate', function () {
+    if (skip) { skip = false; return; }
+    if (!armed) return;
+    push();
+    showConfirmLeave(function () {
+      armed = false; skip = true;
+      try { window.__teLeaveBypass(); } catch (_) {}
+      try { history.go(-2); } catch (_) {}
+    });
+  });
+})();
+(function () {
+  let bypass = false;
+  window.__teLeaveBypass = function () { bypass = true; };
+  document.addEventListener('click', function (e) {
+    if (bypass || !busy) return;
+    const a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (!href || href.charAt(0) === '#' || /^(mailto:|tel:|javascript:)/i.test(href)) return;
+    if (a.target && a.target !== '_self') return;
+    e.preventDefault(); e.stopPropagation();
+    showConfirmLeave(function () { bypass = true; window.location.href = a.href; });
+  }, true);
+  window.addEventListener('beforeunload', function (e) { if (busy && !bypass) { e.preventDefault(); e.returnValue = ''; } });
+})();
 
 // One card. access ∈ free | member | premium. pageHref = the real topic page (or null).
 // ALL built topics (incl. locked member/premium) link to their page — a "navigable preview" where
@@ -1283,12 +1562,15 @@ function renderCard(t, sentences, access, pageHref, audio) {
   const dl = isDownloaded(audio);
   // Offline, a downloaded topic unlocks its own card (the user was entitled when they downloaded;
   // playback is still gated by the licence window on the page). Online, normal access rules apply,
-  // so nothing changes for the website or for a connected app.
+  // so nothing changes for the website or for a connected app. (This is PAGE-ACCESS entitlement —
+  // whether the card links straight to the unlocked page. It's separate from the DOWNLOAD control's
+  // own entitlement check below, which follows the dl-core "removal always available" rule instead.)
   const entitled = canAccess(access) || (dl && !navigator.onLine);
   // tierPill = the access chip, shown at the TOP of the card (where the topic number used to
-  // be — the number carried no value, so it's gone). metaRight = app-only download controls,
-  // which stay in the bottom meta row. Splitting them keeps the chip and the controls apart.
-  let href = null, tierPill, metaRight = '';
+  // be — the number carried no value, so it's gone). dlState = the app/PWA-only download control +
+  // caption (dl-core §D.1 engine, above), which stay in the bottom meta row.
+  let href = null, tierPill;
+  const dlState = live ? dlCardState(audio, pageHref, access) : null;
   if (!live) {
     // Not built yet → ALWAYS a faded, non-clickable "coming soon" card, whatever the tier.
     // Show the (locked) tier chip if gated so the eventual access level is still visible.
@@ -1298,13 +1580,11 @@ function renderCard(t, sentences, access, pageHref, audio) {
   } else if (!gated) {
     href = pageHref;
     tierPill = '<span class="topic-nonmember">Non-member</span>';
-    metaRight = dl ? downloadedTick(audio, pageHref, access) : selectCircle(audio, pageHref, access);
   } else if (entitled) {
     href = pageHref; // entitled (or downloaded + offline) → straight to the page
     tierPill = access === 'premium'
       ? '<span class="topic-premium unlocked">Premium</span>'
       : '<span class="topic-member unlocked">Member</span>';
-    metaRight = dl ? downloadedTick(audio, pageHref, access) : selectCircle(audio, pageHref, access);
   } else if (access === 'premium') {
     href = pageHref;  // navigable preview: open the page; on-page gating blocks reveal/flag/play
     tierPill = `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
@@ -1312,6 +1592,8 @@ function renderCard(t, sentences, access, pageHref, audio) {
     href = pageHref;  // navigable preview: open the page; reveal/flag/play prompt sign-in
     tierPill = `<span class="topic-member">${LOCK_SVG}Members</span>`;
   }
+  let sentCount = (typeof sentences === 'number' && sentences > 0) ? `${sentences} sentences` : '';
+  if (dlState && dlState.caption) sentCount += (sentCount ? ' · ' : '') + dlState.caption;
   const inner =
       `<span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <div class="topic-card-top">
@@ -1320,11 +1602,12 @@ function renderCard(t, sentences, access, pageHref, audio) {
       </div>
       <div class="topic-name">${t.name}</div>
       <div class="topic-meta-row">
-        <span class="topic-sent-count">${(typeof sentences === 'number' && sentences > 0) ? `${sentences} sentences` : ''}</span>
-        ${metaRight}
+        <span class="topic-sent-count">${sentCount}</span>
+        ${dlState ? dlState.html : ''}
       </div>`;
   if (!live) return `<div class="topic-card coming-soon">${inner}</div>`;
-  const cls = 'topic-card' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '');
+  const cls = 'topic-card' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '')
+    + (audio && working[audio] ? ' dl-working' : '');
   return `<a class="${cls}" href="${href}" data-audio="${audio || ''}">${inner}</a>`;
 }
 
@@ -1337,20 +1620,12 @@ function cardForUnit(u) {
   return renderCard(u, u.sentences, accessFor(u), u.page || null, u.audio);
 }
 
-// Not-yet-built topics render as ONE compact list, not faded cards — far less vertical space.
-// One <li> PER TOPIC regardless of any future a/b parts (the split only surfaces at build time),
-// so a multi-part coming-soon topic shows once by its base name. The padlock = the topic's
-// headline access tier (gold premium / purple member); free → no icon.
-function soonItem(t) {
-  const access = accessFor(t, null);
-  const lk = access === 'premium' ? `<span class="soon-lk premium">${LOCK_SVG}</span>`
-           : access === 'member'  ? `<span class="soon-lk member">${LOCK_SVG}</span>`
-           : '';
-  return `<li>${lk}<span>${t.name}</span></li>`;
-}
-function soonList(soon) {
-  return '<div class="soon-block"><h2 class="coming-soon-heading">Coming soon</h2>'
-       + '<ul class="soon-items">' + soon.map(o => soonItem(o.u)).join('') + '</ul></div>';
+// Not-yet-built topics collapse to ONE line at the grid bottom — replaces the old
+// soon-block/soon-items compact list (owner 2026-08-02 index redesign, ported from
+// index-mock.html). Reuses .coming-soon-heading, the same "old heading style" the divider
+// used before.
+function soonList() {
+  return '<h2 class="coming-soon-heading">More coming soon</h2>';
 }
 
 // Two independent filter dimensions that combine (AND): level + access tier.
@@ -1526,6 +1801,101 @@ window.addEventListener('online', function () { renderGrid(); precacheDownloaded
 window.addEventListener('offline', renderGrid);
 precacheDownloadedPages(); // on load (when online), persist downloaded topics' pages for offline
 updateBatchBar();          // show the batch-download bar in the app (hidden on the website)
+// The audio-version map arrives async; repaint once it lands so a superseded download shows its
+// update ring/caption without needing a manual refresh (ported from dyn-index.html r83).
+loadAv().then(function () { renderGrid(); }).catch(function () {});
+
+/* ── SWITCHER (Topic Sentences / Read Thai / Playlists) ──────────────────────────────────────
+   Ported from index-mock.html (owner-approved, 2026-08-02). Read Thai + Playlists load lazily
+   into same-origin iframes on first show: their own nav is hidden at source (?embed=1) and the
+   frame is auto-sized to its content so it scrolls as part of THIS page, not inside a scrollbox.
+   Deep links: index.html#playlists / index.html#read select that panel and scroll to the
+   switcher (about.html / guide.html already link to index.html#playlists). */
+(function () {
+  var panels = { topics: document.getElementById('panel-topics'),
+                 read: document.getElementById('panel-read'),
+                 playlists: document.getElementById('panel-playlists') };
+  var readFrame = document.getElementById('read-frame');
+  var plFrame = document.getElementById('playlists-frame');
+  var frameTimer = null;
+  function sizeFrame(frame) {
+    try {
+      var d = frame.contentDocument;
+      if (d && d.documentElement) frame.style.height = d.documentElement.scrollHeight + 'px';
+    } catch (_) {}
+  }
+  function show(which) {
+    Object.keys(panels).forEach(function (k) { if (panels[k]) panels[k].hidden = (k !== which); });
+    document.querySelectorAll('.ms-btn').forEach(function (b) {
+      var on = b.getAttribute('data-panel') === which;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    if (frameTimer) { clearInterval(frameTimer); frameTimer = null; }
+    if (which === 'read') {
+      if (!readFrame.src) {
+        readFrame.src = 'read.html?embed=1';   // embed mode: read.html hides its own nav + mode toggle at source
+        readFrame.addEventListener('load', function () {
+          try {
+            var d = readFrame.contentDocument;
+            var s = d.createElement('style');
+            // Belt & braces on the de-chrome; eyebrow becomes a subheading under the h1;
+            // jump control = eyebrow styling + sequential "go faster" chevrons (accent, fast cycle).
+            s.textContent = '#site-nav-root,.mode-toggle-wrap{display:none!important}' +
+              '.read-eyebrow{margin:6px 0 16px}' +
+              '.te-jump{display:block;background:none;border:0;cursor:pointer;padding:0;margin:0 0 10px;text-align:left}' +
+              '.te-jump .jch{display:inline-block;opacity:.22;animation:te-jl .75s linear infinite}' +
+              '.te-jump .jch.j2{animation-delay:.25s}' +
+              '.te-jump .jch.j3{animation-delay:.5s}' +
+              '@keyframes te-jl{0%{opacity:.22}15%{opacity:1}45%,100%{opacity:.22}}';
+            d.head.appendChild(s);
+            var eb = d.querySelector('.read-eyebrow'), t = d.querySelector('.read-title');
+            if (eb && t) t.insertAdjacentElement('afterend', eb);
+            if (t && !d.querySelector('.te-jump')) {
+              var j = d.createElement('button');
+              j.type = 'button';
+              j.className = 'read-eyebrow te-jump';
+              var tri = '<span class="jch j1">&gt;</span><span class="jch j2">&gt;</span><span class="jch j3">&gt;</span>';
+              j.innerHTML = tri + ' Jump to lessons ' + tri;
+              t.insertAdjacentElement('beforebegin', j);
+              j.addEventListener('click', function () {
+                // Scroll the OUTER page (the frame is full-height) to "The learning path…",
+                // with breathing room so it works across phone screen shapes.
+                var lp = Array.prototype.filter.call(d.querySelectorAll('.section-title'), function (el) {
+                  return /learning path/i.test(el.textContent);
+                })[0];
+                var target = lp ? (lp.closest('.section-header') || lp) : null;
+                if (!target) return;
+                var y = window.scrollY + readFrame.getBoundingClientRect().top + target.getBoundingClientRect().top - 72;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+              });
+            }
+          } catch (_) {}
+          sizeFrame(readFrame);
+        });
+      }
+      frameTimer = setInterval(function () { sizeFrame(readFrame); }, 600);
+    } else if (which === 'playlists') {
+      if (!plFrame.src) {
+        plFrame.src = 'playlists.html?embed=1';   // embed mode: playlists.html hides its own nav at source
+        plFrame.addEventListener('load', function () { sizeFrame(plFrame); });
+      }
+      frameTimer = setInterval(function () { sizeFrame(plFrame); }, 600);
+    }
+  }
+  document.querySelectorAll('.ms-btn').forEach(function (b) {
+    b.addEventListener('click', function () { show(b.getAttribute('data-panel')); });
+  });
+  var h = (location.hash || '').replace('#', '');
+  if (panels[h]) {
+    show(h);
+    // land AT the switcher/panel, not the hero
+    setTimeout(function () {
+      var ms = document.querySelector('.mode-switch');
+      if (ms) window.scrollTo({ top: ms.getBoundingClientRect().top + window.scrollY - 8 });
+    }, 0);
+  }
+})();
 
 // Owner-only link to the dynamic-player test page (DYNAMIC_PLAYER_PLAN.md). Gated on a
 // SHA-256 of the signed-in email so the deployed JS carries no address; invisible to
