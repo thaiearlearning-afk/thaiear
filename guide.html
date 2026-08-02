@@ -591,14 +591,16 @@
     engpos: '<strong>English position:</strong> When there are at least two Thai repeats, choose when you hear the English sentence. After all Thai repeats? Midway through? The choice is yours.',
     include: '<strong>Include selected sentences:</strong> On a topic page, exclude any sentences not relevant to you, the Dynamic mp3 will construct your audio without it.',
     sync: '<strong>Sync:</strong> sync your Dynamic mp3 player settings across all Thai first or English first topics and playlists.',
-    skip: '<strong>+1/−1:</strong> skip forward or back to next or previous sentence.',
+    skipfwd: '<strong>+1:</strong> skip forward to next sentence.',
+    skipback: '<strong>−1:</strong> skip back to previous sentence.',
     autoplay: '<strong>Autoplay:</strong> When one topic or playlist finishes, the next automatically starts playing.',
     prevtopic: '<strong>Previous:</strong> Play previous topic or playlist.',
     nexttopic: '<strong>Next:</strong> Play next topic or playlist.',
     repeat: '<strong>Repeat:</strong> This Dynamic mp3 will play again after it finishes.'
   };
   function say(key) { var m = MSG[key]; if (m) $('dp-msg').innerHTML = m; }
-  ['demo-sent-prev', 'demo-sent-next'].forEach(function (id) { $(id).addEventListener('click', function () { say('skip'); }); });
+  $('demo-sent-prev').addEventListener('click', function () { say('skipback'); });
+  $('demo-sent-next').addEventListener('click', function () { say('skipfwd'); });
 
   /* ⓘ pop-under info boxes — same texts and mechanics as the live player (player.js DYN_INFO) */
   var INFO = {
@@ -678,18 +680,21 @@
   $('demo-pauses').addEventListener('click', function () { say('pauses'); });
   $('dyn-en').addEventListener('change', function () { english = this.checked; epRender(); say('english'); });
   $('demo-sync').addEventListener('click', function () { say('sync'); });
+  // r136: Autoplay and Repeat are mutually exclusive (matches the real player) — the most
+  // recently pressed wins; turning one OFF leaves the other alone.
+  function demoToggle(el, on) { el.setAttribute('aria-pressed', on ? 'true' : 'false'); el.classList.toggle('active', on); }
   $('demo-autoplay').addEventListener('click', function () {
     var on = this.getAttribute('aria-pressed') === 'true';
-    this.setAttribute('aria-pressed', on ? 'false' : 'true');
-    this.classList.toggle('active', !on);
+    demoToggle(this, !on);
+    if (!on) demoToggle($('demo-repeat'), false);
     say('autoplay');
   });
   $('demo-prevtopic').addEventListener('click', function () { say('prevtopic'); });
   $('demo-nexttopic').addEventListener('click', function () { say('nexttopic'); });
   $('demo-repeat').addEventListener('click', function () {
     var on = this.getAttribute('aria-pressed') === 'true';
-    this.setAttribute('aria-pressed', on ? 'false' : 'true');
-    this.classList.toggle('active', !on);
+    demoToggle(this, !on);
+    if (!on) demoToggle($('demo-autoplay'), false);
     say('repeat');
   });
   epRender();

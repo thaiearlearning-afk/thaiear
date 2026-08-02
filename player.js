@@ -2483,7 +2483,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r135';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r136';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5273,6 +5273,9 @@
   function prefSet(key, on) { try { localStorage.setItem(key, on ? '1' : '0'); } catch (_) {} }
   var autoplayOn = prefOn('thaiear_autoplay');
   var repeatOn = prefOn('thaiear_repeat');
+  // r136: the two are mutually exclusive now — a device with BOTH remembered on (stored before
+  // this rule) keeps Autoplay and drops Repeat, matching the ambiguity the rule exists to remove.
+  if (autoplayOn && repeatOn) { repeatOn = false; prefSet('thaiear_repeat', false); }
 
   var mainAudio = NA ? makeNativeAudio() : new Audio();
   mainAudio.preload = 'metadata';
@@ -5747,13 +5750,26 @@
   }
 
   /* ---- autoplay / repeat toggles ---- */
+  /* r136 (owner): Autoplay and Repeat are MUTUALLY EXCLUSIVE — both on at once leaves the
+     end-of-track outcome ambiguous, so the most recently pressed one wins and switches the other
+     off. Turning one OFF never touches the other. */
   function toggleAutoplay() {
     autoplayOn = !autoplayOn; prefSet('thaiear_autoplay', autoplayOn);
+    if (autoplayOn && repeatOn) {
+      repeatOn = false; prefSet('thaiear_repeat', false);
+      var rb = $('btn-repeat');
+      if (rb) { rb.classList.remove('active'); rb.setAttribute('aria-pressed', 'false'); }
+    }
     var b = $('btn-autoplay');
     if (b) { b.classList.toggle('active', autoplayOn); b.setAttribute('aria-pressed', autoplayOn ? 'true' : 'false'); }
   }
   function toggleRepeat() {
     repeatOn = !repeatOn; prefSet('thaiear_repeat', repeatOn);
+    if (repeatOn && autoplayOn) {
+      autoplayOn = false; prefSet('thaiear_autoplay', false);
+      var ab = $('btn-autoplay');
+      if (ab) { ab.classList.remove('active'); ab.setAttribute('aria-pressed', 'false'); }
+    }
     var b = $('btn-repeat');
     if (b) { b.classList.toggle('active', repeatOn); b.setAttribute('aria-pressed', repeatOn ? 'true' : 'false'); }
   }

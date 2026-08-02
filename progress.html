@@ -68,9 +68,17 @@
   .muted { font-size: 13px; color: var(--text-tertiary); }
 
   /* intro blurb */
-  .prog-intro { font-size: 13.5px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 1.5rem;
-    padding: 0.9rem 1.1rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
+  .prog-intro-wrap { position: relative; margin-bottom: 1.5rem; padding: 0.9rem 1.1rem;
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
+  .prog-intro { font-size: 13.5px; color: var(--text-secondary); line-height: 1.65; margin: 0; overflow: hidden; }
   .prog-intro strong { color: var(--text-primary); font-weight: 500; }
+  /* r136 (owner): collapsible like the topic-page intros — 2 lines + fade when closed. */
+  .prog-intro-wrap:not(.open) .prog-intro { max-height: 3.3em; }
+  .prog-intro-wrap:not(.open)::after { content: ''; position: absolute; left: 0.9rem; right: 0.9rem; bottom: 2.35em;
+    height: 2.1em; background: linear-gradient(to bottom, rgba(255,255,255,0), var(--surface)); pointer-events: none; }
+  .prog-intro-more { margin-top: 4px; font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+    color: var(--accent); background: none; border: 0; padding: 2px 0; cursor: pointer; }
+  .prog-intro-more:hover { text-decoration: underline; }
 
   /* meditator + "Fluency loading…" with an animated 1→2→3 dot cycle (pure CSS, no JS) */
   .fluency-block { text-align: center; margin: 0.25rem 0 1.75rem; }
@@ -325,11 +333,12 @@ function render() {
     '</div>';
 
   var intro =
-    '<p class="prog-intro">This page is designed as a tool for you to track your progress. ' +
+    '<div class="prog-intro-wrap"><p class="prog-intro">This page is designed as a tool for you to track your progress. ' +
     'We recommend each time you listen to a topic in full to add <strong>“one progress”</strong> to that topic — ' +
     'this is found above the mp3 player. Over time you can see which topics you know well and which topics need more ' +
     'attention. Change your progress goal or reset your progress at any time. After 3 to 5 complete listens of a topic, ' +
-    'consider listening to it English-first. Practising producing the Thai yourself will build confidence and fluency.</p>';
+    'consider listening to it English-first. Practising producing the Thai yourself will build confidence and fluency.</p>' +
+    '<button type="button" class="prog-intro-more" onclick="var w=this.parentNode;w.classList.toggle('open');this.textContent=w.classList.contains('open')?'Show less':'Read more'">Read more</button></div>';
 
   var fluency =
     '<div class="fluency-block">' +
