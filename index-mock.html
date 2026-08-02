@@ -1776,6 +1776,10 @@ updateBatchBar();          // show the batch-download bar in the app (hidden on 
    three switcher pills land in view on first load. */
 .page-intro { padding: 1.3rem 1.5rem 0.2rem; }
 .topics-section { padding-top: 0.7rem; }
+/* ══ ROUND 6 (owner, 2026-08-02) ══ download interfaces are APP/PWA-ONLY: the Android app and
+   the installed iPhone PWA see them; plain browsers (Safari/Chrome, desktop or phone) never do —
+   and the layout reflows into the space, no reserved gap. */
+body.te-no-dl .mock-dlbar { display: none; }
 </style>
 <script>
 /* Mockup: the dynamic grid keeps rendering (filters + search work), but its coming-soon block
@@ -1783,6 +1787,16 @@ updateBatchBar();          // show the batch-download bar in the app (hidden on 
    so reassigning it here changes every future render. */
 soonList = function () { return '<h2 class="coming-soon-heading">More coming soon</h2>'; };
 renderGrid();
+
+/* Download-UI visibility (owner rule 2026-08-02): show for the native app OR an installed
+   (standalone) PWA; hide for every plain browser tab. The blocks are normal flow elements,
+   so hiding them reflows the layout — nothing reserves their space. */
+(function () {
+  var native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  var pwa = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
+            window.navigator.standalone === true;
+  if (!(native || pwa)) document.body.classList.add('te-no-dl');
+})();
 
 /* Three-way switcher. Read Thai loads lazily into a same-origin iframe: its own nav is hidden and
    the frame is sized to its content so it scrolls as part of THIS page. */
