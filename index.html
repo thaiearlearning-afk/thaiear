@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ThaiEar — Learn Thai by Listening</title>
+<!-- r133 — PRE-PAINT WARP VEIL. A deep-link arrival (#playlists / #read / #read-lessons — the
+     "My playlists" / "All reading sections" teleports) hides the page BEFORE first paint and the
+     switcher script fades it in only once the panel is mounted and the viewport is already in
+     final position — the user never sees the hero flash past or the scroll travel (owner:
+     "user is always in the right bit of page"). Safety timer in the switcher script guarantees
+     the veil always lifts. -->
+<script>if(/^#(playlists|read|read-lessons)$/.test(location.hash))document.documentElement.className+=' te-warp';</script>
+<style>html.te-warp body{opacity:0}body{transition:opacity .25s ease}</style>
 <meta name="description" content="A free Thai language listening platform. 43 topics, 1,500+ sentences, native-speed audio. Learn Thai by listening.">
 <link rel="canonical" href="https://thaiear.com/">
 <!-- og:start (homepage — Organization + WebSite, not Course) -->
@@ -207,7 +215,7 @@
         collapses and a deep-link scroll can never clamp to the bottom then snap up;
      3. .panel-veiled holds opacity 0 with NO transition while loading — removing it lets the
         .18s transition play the reveal. */
-  .topics-section { transition: opacity .18s ease; }
+  .topics-section { transition: opacity .26s ease; }   /* r133: 180ms read as a pop (owner) */
   .topics-section.panel-pending { min-height: 65vh; }
   .topics-section.panel-veiled { opacity: 0; transition: none; }
 
@@ -1893,14 +1901,20 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
       }
       landSwitcher();
     };
-    /* r131 sequence: the immediate scroll goes only to the SWITCHER — hero + switcher exist from
-       the first frame and the pending panel holds 65vh, so this can never clamp to the page
-       bottom (the old "bottom for a split second" flash). The exact landing (incl. #read-lessons'
-       learning-path position) happens once, right after the mount resolves, while the panel is
-       still veiled — the user sees the fade-in already in place. One late re-assert catches
-       stragglers (fonts/images). */
+    /* r133 sequence (supersedes r131's visible two-beat): the WHOLE PAGE is invisible on a
+       deep-link arrival (pre-paint te-warp veil in <head>). Under it: position at the switcher
+       immediately, mount the panel, take the exact landing, re-assert once — and only THEN lift
+       the veil, fading the user straight into the final view. No visible travel, no nudge.
+       The 3s safety timer means a failed mount can never strand a blank page. */
     requestAnimationFrame(landSwitcher);
-    afterMount.then(function () { requestAnimationFrame(land); setTimeout(land, 900); });
+    var unveil = function () { document.documentElement.classList.remove('te-warp'); };
+    afterMount.then(function () {
+      requestAnimationFrame(function () {
+        land();
+        setTimeout(function () { land(); unveil(); }, 120);
+      });
+    });
+    setTimeout(unveil, 3000);
   }
 })();
 
