@@ -216,9 +216,9 @@
     { label: 'About', page: 'about.html', public: true },
     { label: 'Guide', page: 'guide.html', public: true },
     { label: 'Socials', page: 'socials.html', public: true },
-    // Hidden inside the Capacitor app — you're already in the app, so advertising it there
-    // breaks the fourth wall. Shows on the website only (isNativeApp() filter in menuHtml).
-    { label: 'ThaiEar App', page: 'app.html', public: true, hideInApp: true },
+    // Visible everywhere INCLUDING inside the Capacitor app (owner, 2026-08-02 — the page now
+    // documents offline downloads/playlists, useful in-app; supersedes the old fourth-wall hide).
+    { label: 'ThaiEar App', page: 'app.html', public: true },
   ];
   // Personal / account items — these live in the person-icon dropdown (logged in only),
   // NOT the generic Menu above.
