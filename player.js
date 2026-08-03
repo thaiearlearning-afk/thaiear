@@ -755,6 +755,19 @@
      re-rendered. A missing stamp ADOPTS the current value rather than nagging, exactly as the
      classic path does for downloads that predate the mechanism. */
   function dynDropSessions() {
+    /* r137 — ONE IMPLEMENTATION WHEREVER BOTH EXIST. dl-core.js now carries this too, because the
+       index and the playlists list change a unit's clips as well and until r137 neither dropped
+       the session that was built from the old ones. Topic pages do NOT load dl-core.js — folding
+       player.js into it is still the separate pass dl-core's own header describes — so the inline
+       copy below stays as the fallback rather than adding a script tag to 93 pages for one
+       function. The shared version also deletes the file for a MALFORMED meta, which dynReadMeta's
+       validation makes this one skip (it would orphan the bytes until the cap sweep). */
+    if (window.ThaiEarDL && window.ThaiEarDL.dropSessions) {
+      var FSP = (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Filesystem : null;
+      window.ThaiEarDL.dropSessions(DYN_KEY_NS, { native: NATIVE, fs: FSP }, AUDIO_DL_CACHE);
+      dynSession = null; mainSrcReady = false;
+      return;
+    }
     ['te', 'et'].forEach(function (mode) {
       var meta = dynReadMeta(DYN_KEY_NS, mode);
       try { localStorage.removeItem(dynMetaLsKey(DYN_KEY_NS, mode)); } catch (_) {}
@@ -770,6 +783,25 @@
     });
     dynSession = null; mainSrcReady = false;
   }
+  /* ── r137: a PLAYLIST's audio baseline lives in ITS OWN download record ──────────────────
+     Twin of pl-list.js's dlPlAv/dlAvSnapshot — the long note there carries the reasoning. Short
+     version: the published stamp fingerprints a whole TOPIC's audio, but a playlist holds a SUBSET
+     of a prefix's clips and spans several prefixes, so writing the shared prefix-level `av` from a
+     playlist download would tell the index card and the topic page that the entire topic is
+     current when only a few of its clips were fetched — suppressing a real update prompt.
+     The list and this player MUST read the same record or they will disagree about the same
+     playlist, which is the two-surfaces-drift this file's own comments keep flagging. */
+  function dynPlKeyId() { var k = String(cfg.dynKey || ''); return k.indexOf('pl-') === 0 ? k.slice(3) : null; }
+  function dynPlRecMap() { try { return JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}'); } catch (_) { return {}; } }
+  function dynPlAv() { var id = dynPlKeyId(); if (!id) return null; var r = dynPlRecMap()[id]; return (r && r.av) || null; }
+  function dynPlAvSet(avByPfx) {
+    var id = dynPlKeyId(); if (!id) return;
+    try {
+      var pm = dynPlRecMap(), r = pm[id] || (pm[id] = {});
+      r.av = avByPfx;
+      localStorage.setItem('thaiear_offline_pl', JSON.stringify(pm));
+    } catch (_) {}
+  }
   function dynCheckAudioUpdate() {
     // &avtest=1 forces the prompt so the flow can be SEEN without editing audio-versions.json.
     // That file is shared with the LIVE site — the test pages use live topics' audio prefixes —
@@ -784,6 +816,9 @@
       if (!map && !force) return;
       map = map || {};
       var by = dynDlGroups(), m = getManifest(), adopted = false, stale = false;
+      // r137: a playlist compares against its OWN baseline (see dynPlAv), a topic against the
+      // prefix-level one. Same question, different record, because they hold different things.
+      var plAv = PLMODE ? (dynPlAv() || {}) : null;
       Object.keys(by).forEach(function (pfx) {
         var e = m[pfx]; if (!e) return;
         var cur = map[pfx];
@@ -797,12 +832,16 @@
            existed, correctly stays quiet under the flag — a dumb switch would light those up. */
         if (force && cur != null) cur = String(cur) + '#avtest';
         if (cur == null) return;                                  // nothing published for it
-        if (e.av == null) { e.av = cur; adopted = true; return; }  // baseline, don't nag
-        if (e.av !== cur) stale = true;
+        var base = PLMODE ? plAv[pfx] : e.av;
+        if (base == null) {                                       // baseline, don't nag
+          if (PLMODE) plAv[pfx] = cur; else e.av = cur;
+          adopted = true; return;
+        }
+        if (base !== cur) stale = true;
       });
       /* ⚠ Do NOT persist an adopted baseline while the flag is on — it would write the perturbed
          value into the manifest and the topic would stay "stale" after the flag came off. */
-      if (adopted && !force) setManifest(m);
+      if (adopted && !force) { if (PLMODE) dynPlAvSet(plAv); else setManifest(m); }
       if (!stale) return;
       var bar = $('offline-bar'); if (!bar) return;
       bar.innerHTML = '<span class="offline-status">⟳ Download audio update?</span>' +
@@ -1110,9 +1149,42 @@
     downloadingNow = true;
     setOfflineState('downloading', 0, total);
     if (DYN_WEB_DL) { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {} }
-    var chain = DYN_WEB_DL ? caches.open(AUDIO_DL_CACHE) : Promise.resolve(null);
-    chain = chain.then(function (cache) {
-      var c = Promise.resolve();
+    /* ⚠⚠ r137 — "DOWNLOAD AUDIO UPDATE?" DID NOT DOWNLOAD THE AUDIO UPDATE.
+       D0b's skip (below) asks hasLocalFile(), which reads the MANIFEST, not the bytes — so for a
+       fully-downloaded topic whose clips had been re-rendered on R2, EVERY file was "already
+       present" and every one was skipped. dynUpdateAudio() therefore dropped the built session,
+       re-stitched from the very same superseded clips, and then stamped the current audio version
+       onto the entry — after which no surface would ever offer the update again. The prompt was
+       real, the button was not.
+       The skip is still right for its actual purpose (topping up a partial or classic download).
+       It is wrong exactly when the published stamp says this prefix has MOVED, so that is the one
+       case it now yields to. Per prefix, because a playlist spans several topics and only some of
+       them may have been re-rendered.
+       Deliberately conservative: no published map, no recorded baseline, or a matching stamp all
+       mean "not stale" and leave the resume behaviour untouched. */
+    var chain = loadAudioVers().catch(function () { return null; }).then(function (avMap) {
+      var forceAll = {}, anyForced = false, mNow = getManifest();
+      var plBase = PLMODE ? (dynPlAv() || {}) : null;   // r137: playlists compare their own baseline
+      prefixes.forEach(function (pfx) {
+        var e = mNow[pfx];
+        if (!avMap || !e) return;
+        var base = PLMODE ? plBase[pfx] : e.av;
+        if (base == null) return;
+        var cur = avMap[pfx];
+        if (cur != null && base !== cur) { forceAll[pfx] = true; anyForced = true; }
+      });
+      // The stitched session was built from the clips we are about to replace, and its key encodes
+      // settings rather than clip content — so it cannot notice. Drop it here as well as in
+      // dynUpdateAudio(), which covers the routes that reach this function without going through
+      // that button (the !dynDlHasAll 'update' branch calls downloadTopic() directly).
+      if (anyForced) dynDropSessions();
+      return { force: forceAll, cache: null };
+    }).then(function (st) {
+      return (DYN_WEB_DL ? caches.open(AUDIO_DL_CACHE) : Promise.resolve(null))
+        .then(function (cache) { st.cache = cache; return st; });
+    });
+    chain = chain.then(function (st) {
+      var cache = st.cache, c = Promise.resolve();
       prefixes.forEach(function (pfx) {
         c = c.then(function () {
           return OFFLINE ? Filesystem.mkdir({ directory: 'DATA', path: offlineDir(pfx), recursive: true })
@@ -1122,9 +1194,10 @@
              filenames as the dyn set), or a clip a previous partial dyn download already fetched
              — doesn't need re-fetching. Skip the network call but still count it via step(), so
              an "Update" over a classic download reads as a genuine top-up (only the missing _EN
-             clips actually move) instead of grinding through everything again. */
+             clips actually move) instead of grinding through everything again.
+             r137: unless this prefix is SUPERSEDED — see the note above. */
           return dynPool(by[pfx].files, function (f) {
-            if (hasLocalFile(pfx, f)) { step(); return Promise.resolve(); }
+            if (!st.force[pfx] && hasLocalFile(pfx, f)) { step(); return Promise.resolve(); }
             return dynDlFile(cache, pfx, by[pfx].tier, f).then(step);
           });
         });
@@ -1152,7 +1225,18 @@
         e.refs.push(ref);
         e.tier = by[pfx].tier; e.at = Date.now(); e.dyn = true;
         delete e.bytes;                       // file set changed → re-measure rather than lie
-        if (avMap && avMap[pfx] != null) e.av = avMap[pfx];   // baseline for "audio update?"
+        /* r137 — TOPIC DOWNLOADS ONLY. A topic download fetches every clip under the prefix, so
+           stamping the shared prefix-level baseline is honest. A PLAYLIST download fetches a
+           subset, and writing it here would claim the whole topic is current — silencing a real
+           update prompt on the index card and the topic page. A playlist records its own baseline
+           in its own download record instead (dynPlAvSet, below). */
+        if (!PLMODE && avMap && avMap[pfx] != null) e.av = avMap[pfx];   // baseline for "audio update?"
+        /* r137 — record the complete-download file count for the INDEX's benefit (dl-core
+           hasNeeded / index isDownloaded). Only for a topic's own download: a playlist needs just
+           a SUBSET of a prefix's clips, so stamping its count would tell the index grid that a
+           partial holding is a whole topic — the very confusion this field exists to end. Written
+           at finalize, where every file has landed, so the number is true when it is written. */
+        if (!PLMODE && ref === 'topic') e.need = by[pfx].files.length;
         /* D0c (rollout P1): this topic's OWN dyn download now covers everything the player needs
            (mainSrcFor/ensureMainSrc never touch the combined file once DYN is true — see
            dynEnsureMainSrc), so the classic TE/ET pair is dead weight the moment the per-sentence
@@ -1185,8 +1269,13 @@
       }
       if (PLMODE) {   // so the playlists page's own Clear knows which prefixes to release
         try {
+          // r137: …and its own audio baseline, in the same shape pl-list.js writes (dlAvSnapshot),
+          // so a playlist downloaded from the player and one downloaded from the list are
+          // indistinguishable afterwards.
+          var snap = {};
+          if (avMap) prefixes.forEach(function (pfx) { if (avMap[pfx] != null) snap[pfx] = avMap[pfx]; });
           var pm = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}');
-          pm[String(DYN_KEY_NS).replace(/^pl-/, '')] = { prefixes: prefixes, at: Date.now() };
+          pm[String(DYN_KEY_NS).replace(/^pl-/, '')] = { prefixes: prefixes, at: Date.now(), av: snap };
           localStorage.setItem('thaiear_offline_pl', JSON.stringify(pm));
         } catch (_) {}
       }
@@ -1479,11 +1568,30 @@
     if (c != null) return 'error ' + c;
     return 'please try again';
   }
+  /* r137 — BACKFILL THE NEED COUNT ONTO DOWNLOADS THAT PREDATE IT. The index can only tell a
+     partial download from a complete one if `need` was recorded, and every entry written before
+     this existed carries none — including the interrupted premium download that exposed the bug,
+     which would otherwise keep reading "downloaded" on the grid forever. A topic page already
+     knows the true count for its own prefix with no fetch, so record it on any visit: one integer,
+     written only when it differs, after which the index is right about that topic even though the
+     download itself long predates the field.
+     Topic pages only, and only onto an entry that already exists — a playlist needs a SUBSET of a
+     prefix's clips (see the finalize note in dynDownloadHere), and stamping a count onto a prefix
+     nobody has downloaded would invent a claim. */
+  function dynStampNeed() {
+    if (PLMODE || !sentences.length) return;
+    var g = dynDlGroups()[PREFIX];
+    if (!g || !g.files.length) return;
+    var m = getManifest(), e = m[PREFIX];
+    if (!e || e.need === g.files.length) return;
+    e.need = g.files.length; m[PREFIX] = e; setManifest(m);
+  }
   function renderOfflineBar() {
     var bar = $('offline-bar'); if (!bar) return;
     if (!OFFLINE && !WEB_DL) { bar.style.display = 'none'; return; }  // §1f: plain browser tab (not app, not installed PWA): never shown, no reserved space
     bar.style.display = 'flex';
     if (DYN) {
+      dynStampNeed();   // r137: keep the index honest about downloads made before `need` existed
       /* NOTHING THIS VISITOR MAY PLAY → no download bar at all (r40, owner-reported).
          dynDlGroups() excludes locked sentences, so an all-premium playlist without entitlement
          produces an EMPTY group — and "is every needed clip present?" over an empty set is
@@ -2483,7 +2591,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r136';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r137';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

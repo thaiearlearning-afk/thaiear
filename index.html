@@ -1068,12 +1068,25 @@ function offlineManifest() { return ThaiEarDL.getManifest(); }
    clip — cheap and file-list-only, still deliberately NOT a full per-file count: with ~90 units on
    this grid, checking every file is present at RENDER time would mean fetching every topic page's
    sentence list just to paint the grid. Full completeness is verified properly at download/resume
-   time (fetchSentenceNums + diffing, below), same as before this pass. */
+   time (fetchSentenceNums + diffing, below), same as before this pass.
+   ⚠ r137 — THE HEURISTIC WAS NOT ONLY IMPRECISE, IT WAS UNRECOVERABLE. Any download interrupted
+   after its first _EN clip landed (a premium topic whose token lapsed mid-run is the likely
+   producer — every gated clip mints its own signed URL) satisfied "≥1 _EN" and read as
+   "downloaded" here, while the topic page's per-file dynDlHasAll() correctly read "update
+   available". Worse than a cosmetic disagreement: needsDownload() is derived from THIS predicate,
+   so the card offered only the removal tick and runDownloads() dropped the topic from the batch —
+   the index's own "tap Download again to carry on" message was unreachable for exactly the
+   downloads it was written for. The fix keeps the no-fetch property: the downloader stamps a
+   `need` COUNT (dl-core noteClip), and ThaiEarDL.hasNeeded() compares it against the clip files
+   actually recorded. Entries predating the stamp answer null and keep the old heuristic, so no
+   existing download is retroactively declared broken. */
 function isDownloaded(prefix) {
   const e = prefix && offlineManifest()[prefix];
   if (!e) return false;
   const owns = !e.refs || e.refs.indexOf('topic') !== -1;
   if (!owns) return false;
+  const complete = ThaiEarDL.hasNeeded(prefix);
+  if (complete !== null) return complete;
   return (e.files || []).some(function (f) { return /_EN\.mp3$/.test(f); });
 }
 // When online, persist the PAGES of every downloaded topic into the SW's persistent cache, so they
@@ -1250,10 +1263,12 @@ function topicFileList(prefix, nums) {
 }
 // One clip, recorded (dl-core noteClip) — resumable progress if the run is interrupted.
 // dyn:true is stamped so the manifest dump reads consistently with dyn-index.html/player.js.
-function noteClip(item, file) {
+// `need` (r137) is the FULL file count for a complete download, stamped from the first clip on so
+// an interrupted run is visibly short here as well as on the topic page — see isDownloaded().
+function noteClip(item, file, need) {
   ThaiEarDL.noteClip(item.prefix, file, 'topic', {
     seed: function () { return { tier: item.tier, files: [] }; },
-    avMap: AV, tier: item.tier, dyn: true
+    avMap: AV, tier: item.tier, dyn: true, need: need
   });
 }
 // Retry-with-backoff single-file download (dl-core downloadOne): free/member/premium URL via
@@ -1336,7 +1351,13 @@ function runDownloads() {
       // (ported from dyn-index r88/r89 — each clip is recorded as it lands, below).
       const haveEntry = offlineManifest()[item.prefix], have = {};
       ((haveEntry && haveEntry.files) || []).forEach(function (f) { have[f] = 1; });
-      let files = allFiles.filter(function (f) { return !have[f]; });
+      /* r137 — A SUPERSEDED DOWNLOAD MUST NOT BE "RESUMED". Skipping what is already on disk is
+         right for an interrupted run and WRONG for an audio update: every clip is present, just
+         stale, so the resume logic would skip all of them and the topic would keep its old audio
+         while being marked current. When audio-versions.json says this prefix has been
+         re-rendered, re-fetch the lot (cache.put / downloadFile overwrite in place). */
+      const wasStale = avStale(item.prefix);
+      let files = wasStale ? allFiles : allFiles.filter(function (f) { return !have[f]; });
       if (!files.length) files = allFiles;   // nothing missing → a deliberate full refresh (e.g. an update)
       const already = allFiles.length - files.length;
       let done = 0; const tDl0 = Date.now();
@@ -1347,7 +1368,7 @@ function runDownloads() {
       chain = chain.then(function () {
         return ThaiEarDL.pool(files, 6, function (f) {
           return saveOne(item, f).then(function () {
-            done++; noteClip(item, f);
+            done++; noteClip(item, f, allFiles.length);
             setBatchStatus('Downloading ' + item.name + ' — clip ' + (already + done) + ' of ' + allFiles.length);
           });
         });
@@ -1357,7 +1378,14 @@ function runDownloads() {
         // ref must survive a topic download (and vice versa).
         const m = offlineManifest();
         const e = ThaiEarDL.mergeFiles(m, item.prefix, files, 'topic', function () { return { tier: item.tier, files: [] }; });
-        if (e.av == null && AV && AV[item.prefix] != null) e.av = AV[item.prefix];
+        /* r137 — REFRESH THE AUDIO STAMP, DON'T MERELY ADOPT IT. `av == null &&` meant an entry
+           that already carried a stamp kept the OLD one through an update, so avStale() stayed
+           true forever: the card said "update available" after a successful update, and every
+           press re-downloaded the whole topic again. This block only runs once every file has
+           landed, so the download IS complete by construction and the current stamp is honest.
+           Matches player.js's dynDownloadHere, which has always written it unconditionally. */
+        if (AV && AV[item.prefix] != null) e.av = AV[item.prefix];
+        e.need = allFiles.length;          // r137: complete download → the count is now authoritative
         e.tier = item.tier; e.at = Date.now(); e.dyn = true;
         /* D0c purge (rollout P2a, commit 1da8f5f) — mirrors player.js's r122 purge exactly. The
            dyn player never plays _TE/_ET; an entry that still carries them (a classic download
@@ -1368,6 +1396,13 @@ function runDownloads() {
         const toPurge = legacy.filter(function (f) { return e.files.indexOf(f) >= 0; });
         if (toPurge.length) e.files = e.files.filter(function (f) { return legacy.indexOf(f) < 0; });
         ThaiEarDL.setManifest(m);
+        /* r137 — INVALIDATE THE BUILT SESSION. A stitched session is keyed on SETTINGS, not clip
+           content (player.js dynKeyFor), so clips that just changed on disk would go on playing
+           from the old stitched file — the "audio choking after an update" failure, which until
+           now was only fixed on the topic page (dynUpdateAudio → dynDropSessions). Unconditional
+           on purpose: this run wrote bytes either way, and a dropped session is rebuildable from
+           the clips on device, offline included — the only cost is one rebuild on next play. */
+        ThaiEarDL.dropSessions(item.prefix, CAP, AUDIO_DL_CACHE);
         if (window.caches) caches.open('thaiear-dl').then(function (c) { c.add(item.page).catch(function () {}); }).catch(function () {});
         lastDlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
         if (!toPurge.length) return;
@@ -1431,6 +1466,11 @@ function doClear(list) {
     const done = function () {
       const m = offlineManifest(); delete m[it.prefix];
       ThaiEarDL.setManifest(m);
+      /* r137 — the built session goes with the download. player.js's own Delete has always done
+         this (dynDropSessions at the deleteTopic call site); removing from the index left the
+         stitched file and its te_dyn_meta_* record behind, reachable by no button and reclaimed
+         only when the 400 MB cap sweep eventually got to it. */
+      ThaiEarDL.dropSessions(it.prefix, CAP, AUDIO_DL_CACHE);
       if (window.caches && it.page) caches.open('thaiear-dl').then(function (c) { c.delete(it.page); }).catch(function () {});
       i++; renderGrid(); next();
     };

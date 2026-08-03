@@ -306,6 +306,55 @@
     function dlSetManifest(m) { ThaiEarDL.setManifest(m); }
     function dlPlMap() { try { return JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}'); } catch (_) { return {}; } }
     function dlSetPlMap(m) { try { localStorage.setItem('thaiear_offline_pl', JSON.stringify(m)); } catch (_) {} }
+
+    /* ── r137: AUDIO-VERSION AWARENESS FOR PLAYLISTS ────────────────────────────────────────
+       This list had none. A topic knew when its clips had been re-rendered on R2 (the index card
+       and the topic page both read audio-versions.json); a playlist made of the very same clips
+       never did, so a downloaded playlist quietly went on playing superseded audio with no surface
+       offering the update. Mirrors the topic side rather than inventing a second mechanism.
+       ⚠ THE BASELINE IS PER PLAYLIST, NOT PER PREFIX — and that difference is the whole design.
+       The published stamp fingerprints a WHOLE TOPIC's audio, but a playlist holds a SUBSET of a
+       prefix's clips and usually spans several prefixes. Writing the shared prefix-level `av` from
+       a playlist download would tell the index and the topic page that the entire topic is current
+       when only a handful of its clips were fetched — a lie that would suppress a real update
+       prompt. So a playlist records its own baseline inside its own download record
+       (thaiear_offline_pl[id].av = {prefix: stamp}) and never touches the manifest's.
+       Conservative in the safe direction: a prefix's stamp moves when ANY clip in that topic
+       changes, which may not be one this playlist uses, so it can offer an update that turns out
+       to re-fetch identical bytes. Re-fetching a few clips we didn't need beats missing one we
+       did — the same trade the topic side already makes. */
+    var DL_AV = null, dlAvLoaded = false;
+    function dlAvLoad() {
+      if (dlAvLoaded) return Promise.resolve(DL_AV);
+      return fetch('/audio-versions.json').then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (m) { DL_AV = m; dlAvLoaded = true; return DL_AV; })
+        .catch(function () { DL_AV = null; dlAvLoaded = true; return null; });
+    }
+    // The stamps this playlist's clips were fetched against, or null if it has no record yet.
+    function dlPlAv(id) { var r = dlPlMap()[id]; return (r && r.av) || null; }
+    // Build the baseline to record for a run: the live stamp of every prefix it just fetched.
+    function dlAvSnapshot(prefixes) {
+      var out = {};
+      if (!DL_AV) return out;
+      prefixes.forEach(function (pfx) { if (DL_AV[pfx] != null) out[pfx] = DL_AV[pfx]; });
+      return out;
+    }
+    /* Has any prefix this playlist uses been re-rendered since it was downloaded? Conservative on
+       every unknown — no published map, no recorded baseline, or nothing published for a prefix all
+       mean "not stale". A download made before this existed carries no baseline and therefore never
+       nags; it adopts one the first time it is downloaded or updated again. */
+    function dlAvStale(p) {
+      if (!DL_AV) return false;
+      var base = dlPlAv(p.id);
+      if (!base) return false;
+      var by = dlGroup(p), pfx;
+      for (pfx in by) {
+        var was = base[pfx], cur = DL_AV[pfx];
+        if (was == null || cur == null) continue;
+        if (was !== cur) return true;
+      }
+      return false;
+    }
     /* "Downloaded" is a CONTENT question, never a flag.
          downloaded — every clip this playlist needs is present, whatever put it there
          update     — clips missing, but this playlist WAS downloaded before
@@ -340,7 +389,11 @@
          single sentence of it. Note dlHasAll() is deliberately NOT called on this branch. */
       if (!plOpenItems(p).length) return rec ? 'downloaded' : 'none';
       var own = dlOwnedNeeded(p);                       // {all, some} — our ref + files, per prefix
-      if (own.all) return 'downloaded';                 // durable: our own claim covers everything
+      /* r137 — SUPERSEDED COUNTS AS 'update', exactly as it does on a topic card. Placed on the
+         own.all branch only: a playlist that doesn't own everything already reads 'update', and one
+         that owns nothing has nothing to be stale. Note the all-locked branch ABOVE deliberately
+         never reaches here — r97's rule, an update is a FETCH and that visitor may not. */
+      if (own.all) return dlAvStale(p) ? 'update' : 'downloaded';
       if (own.some) return 'update';                    // genuinely downloaded, then extended
       if (dlHasAll(p)) return 'available';              // owns none of it; the bytes are borrowed
       /* D0 (§D.1, ThaiEarDL.looksLikeTopicClaim) — a legacy/topic claim that doesn't cover our
@@ -382,9 +435,14 @@
           ' aria-label="Available offline via another download - select to download this playlist itself"><span class="dl-dot"></span></span>';
       }
       if (st === 'update') {
+        /* r137 — ONE WORDING FOR BOTH UPDATE ROUTES, the owner's r83 ruling applied here too:
+           "you're missing clips vs your clips are superseded — a pointless distinction. It should
+           just always be 'Download audio update?'" This row can now reach 'update' either way
+           (added sentences, or re-rendered audio), and the action is identical, so the old
+           "New sentences added" wording would be wrong half the time. */
         return '<span class="dl-select dl-update' + (dlSel[p.id] ? ' selected' : '') + '" data-dl="' + p.id +
-          '" data-mode="sel" role="button" title="New sentences added - tap to select and update this download"' +
-          ' aria-label="New sentences added - select to update this download"><span class="dl-dot"></span></span>';
+          '" data-mode="sel" role="button" title="Download audio update - tap to select and update this download"' +
+          ' aria-label="Download audio update - select to update this download"><span class="dl-dot"></span></span>';
       }
       if (st === 'downloaded') {
         return '<span class="dl-badge' + (dlSel[p.id] ? ' clear-selected' : '') + '" data-dl="' + p.id +
@@ -569,7 +627,10 @@
             });
           });
         });
-        chain.then(function () {
+        // r137: make sure the version map is in hand before recording the baseline — the mount-time
+        // load may not have resolved yet if the user tapped Download immediately (same ordering
+        // player.js uses: the clips land, THEN loadAudioVers, THEN the manifest write).
+        chain.then(function () { return dlAvLoad(); }).then(function () {
           var m = dlManifest();
           prefixes.forEach(function (pfx) {
             // NOT ['topic'] — a playlist pulls only the sentences IT uses.
@@ -579,7 +640,25 @@
             e.at = Date.now();
           });
           dlSetManifest(m);
-          var pm = dlPlMap(); pm[p.id] = { prefixes: prefixes, at: Date.now() }; dlSetPlMap(pm);
+          /* r137 — INVALIDATE THIS PLAYLIST'S BUILT SESSION. Every file above was re-fetched and
+             written over (this loop has no already-present skip), so the stitched mp3 may now be
+             built from clips that no longer exist on disk in that form — and its key encodes
+             SETTINGS, not clip content (player.js dynKeyFor), so it will never notice by itself.
+             The same miss the index had: three surfaces change clips, only the topic page dropped
+             the session. Safe unconditionally — a session is rebuildable from the clips on device.
+             ⚠ Deliberately only the PLAYLIST's own namespace. A topic sharing these prefixes has
+             its own session, and whether ITS audio actually moved is an audio-version question
+             this list has no stamp for (see the note in the finalize loop above); the topic page
+             and the index both answer it properly and drop their own session when it has. */
+          ThaiEarDL.dropSessions('pl-' + p.id, DLCAP, DL_CACHE);
+          /* r137 — record THIS PLAYLIST's audio baseline (see dlAvStale). Written here, where every
+             clip has just landed, so the stamps are true when stored. Deliberately NOT written to
+             the manifest's prefix-level `av`: this run fetched only the clips this playlist uses,
+             and claiming the whole topic is current would suppress a genuine update prompt on the
+             index card and the topic page. */
+          var pm = dlPlMap();
+          pm[p.id] = { prefixes: prefixes, at: Date.now(), av: dlAvSnapshot(prefixes) };
+          dlSetPlMap(pm);
           dlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
           console.log('[dl] playlist ' + p.id + ': ' + total + ' clips in ' + dlSecs + 's');
         }).then(function () {
@@ -760,15 +839,9 @@
       });
       dlSetManifest(m);
       // The playlist's own built sessions go too - otherwise "cleared" leaves them behind.
-      ['te', 'et'].forEach(function (mode) {
-        var mk = 'te_dyn_meta_pl-' + p.id + '_' + mode, meta = null;
-        try { meta = JSON.parse(localStorage.getItem(mk) || 'null'); } catch (_) {}
-        try { localStorage.removeItem(mk); } catch (_) {}
-        if (DL_NATIVE && meta && meta.file) DL_FS.deleteFile({ path: meta.file, directory: 'DATA' }).catch(function () {});
-        else if (window.caches) caches.open(DL_CACHE).then(function (c) {
-          c.delete('/dyn/pl-' + p.id + '/' + mode + '.' + (meta && meta.ext ? meta.ext : 'wav')).catch(function () {});
-        }).catch(function () {});
-      });
+      // r137: this block was the original of ThaiEarDL.dropSessions — now the shared one, so the
+      // four surfaces that invalidate a session cannot drift apart again.
+      ThaiEarDL.dropSessions('pl-' + p.id, DLCAP, DL_CACHE);
       delete pm[p.id]; dlSetPlMap(pm);
       return chain;
     }
@@ -1057,6 +1130,11 @@
       if (d) d.addEventListener('click', dlRunDownloads);
       if (c) c.addEventListener('click', dlRunClear);
       if (ra) ra.addEventListener('click', dlRemoveAll);
+      /* r137 — the audio-version map arrives async, and dlState() reads it synchronously, so the
+         first paint can legitimately miss a stale playlist. Repaint once it lands (same pattern as
+         the index's loadAv().then(renderGrid)). Offline this simply resolves to null and nothing
+         is ever flagged — the conservative default dlAvStale() is built on. */
+      dlAvLoad().then(function () { render(); }).catch(function () {});
     })();
 
     (function () {

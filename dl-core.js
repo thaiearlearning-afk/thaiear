@@ -47,6 +47,15 @@
     e.refs.push(ref);
     if (opts.avMap && e.av == null && opts.avMap[prefix] != null) e.av = opts.avMap[prefix];
     if (opts.tier != null) e.tier = opts.tier;
+    /* r137 — HOW MANY FILES A COMPLETE DOWNLOAD HAS. Recorded from the FIRST clip on, so an
+       interrupted run leaves behind a manifest entry that can be seen to be short. Without it the
+       index could only ask a heuristic question ("does it hold ≥1 _EN clip?") and a download that
+       stopped after two clips read as fully "downloaded" while the topic page — which counts every
+       needed file — correctly read "update available". Same entry, two surfaces, opposite answers,
+       and the index's own Download button then skipped the topic because it believed it was
+       complete (owner hit this on a premium topic, 2026-08-03). Cheap by construction: it is one
+       integer written by the downloader, never a render-time recount of 93 units. */
+    if (opts.need != null) e.need = opts.need;
     e.at = Date.now();
     if (opts.dyn) e.dyn = true;
     delete e.bytes;             // the cached per-prefix total is stale the moment files change
@@ -161,6 +170,52 @@
     have.forEach(function (f) { seen[f] = true; });
     for (var i = 0; i < neededFiles.length; i++) if (!seen[neededFiles[i]]) return false;
     return true;
+  }
+
+  /* Is every file a COMPLETE download needs present? Uses the `need` count stamped by the
+     downloader above, so it costs one localStorage read and no network. Returns null — "cannot
+     answer" — for an entry that predates the stamp, leaving the caller on whatever heuristic it
+     used before rather than silently declaring an old, perfectly good download incomplete.
+     Counts only per-sentence CLIP files: the combined _TE/_ET pair a pre-rollout classic download
+     carries is not part of the dyn need list and must not pad the total (it would let a classic
+     entry masquerade as a complete dyn one). */
+  var CLIP_RE = /_S\d+_(TH|EN)\.mp3$/;
+  function hasNeeded(prefix) {
+    var e = getManifest()[prefix];
+    if (!e || e.need == null) return null;
+    var n = 0;
+    (e.files || []).forEach(function (f) { if (CLIP_RE.test(f)) n++; });
+    return n >= e.need;
+  }
+
+  // ── built (stitched) session invalidation ────────────────────────────────────────────────
+  /* r137 — DROP A UNIT'S BUILT SESSIONS. Lifted from player.js's dynDropSessions so every surface
+     that CHANGES a unit's clips can invalidate the stitched audio the same way the topic page
+     does.
+     ⚠ WHY THIS MUST RUN WHEREVER CLIPS CHANGE: a built session's key encodes SETTINGS
+     (mode|pauses|repeats|english|sentence-list — player.js dynKeyFor), never clip CONTENT. So
+     re-downloading superseded clips does NOT rebuild it and never will. Before this, an update run
+     from the index fetched fresh clips and the topic went on playing the old stitched audio
+     indefinitely — the exact failure the topic page's dynUpdateAudio() was written to prevent,
+     on the surface that fix never reached.
+     `ns` is the dyn key namespace: a topic's audio prefix, or 'pl-{id}' for a playlist. Removing
+     a session is always safe — it is rebuildable from the clips on device, offline included. */
+  function dropSessions(ns, cap, cacheName) {
+    cacheName = cacheName || 'thaiear-audio-dl';
+    cap = cap || capabilities();
+    ['te', 'et'].forEach(function (mode) {
+      var lsKey = 'te_dyn_meta_' + ns + '_' + mode, meta = null;
+      try { meta = JSON.parse(localStorage.getItem(lsKey) || 'null'); } catch (_) {}
+      try { localStorage.removeItem(lsKey); } catch (_) {}
+      if (!meta) return;
+      if (cap.native && cap.fs && meta.file) {
+        try { cap.fs.deleteFile({ path: meta.file, directory: 'DATA' }).catch(function () {}); } catch (_) {}
+      } else if (window.caches) {
+        caches.open(cacheName).then(function (c) {
+          c.delete('/dyn/' + ns + '/' + mode + '.' + (meta.ext || 'wav')).catch(function () {});
+        }).catch(function () {});
+      }
+    });
   }
 
   // ── D0 caption/state predicate ───────────────────────────────────────────────────────────
@@ -302,6 +357,8 @@
     capabilities: capabilities,
     ownedCount: ownedCount,
     hasFiles: hasFiles,
+    hasNeeded: hasNeeded,
+    dropSessions: dropSessions,
     looksLikeTopicClaim: looksLikeTopicClaim,
     collectDynMetaKeys: collectDynMetaKeys,
     sweepAllDisk: sweepAllDisk,
