@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v234';   // v234 / r137b: Read panel heading matches the other two switcher panels (2026-08-03)
+const VERSION = 'v235';   // v235 / r138: dyn player CSS lands before first paint (gen_dyncss.js) — kills the topic-page load flash (2026-08-03)
 const CACHE = 'thaiear-' + VERSION;
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
@@ -130,7 +130,13 @@ const PRECACHE = [
      disappearing, and why the owner had to route back in via the live homepage.
      The offline behaviour of these pages IS the thing under test, so they cannot be left to a cache
      that a deploy destroys. They go with the rest of the scaffolding at rollout (§E). */
-  '/player-dyn.css',   // playlist-chooser/modal styles — REAL product code (r127)
+  '/player-dyn.css',   // the whole dyn player chrome — REAL product code (r127)
+  /* r138 — GENERATED (gen_dyncss.js) from player.js's DYN_STYLES so topic pages can link the dyn
+     control styles + the r28 body.te-v2 restyle in <head> and have them apply at FIRST PAINT.
+     ⚠ MUST STAY PRECACHED alongside player-dyn.css: both are now render-blocking <link>s on every
+     topic page, so an un-precached copy would mean a network round trip before a downloaded topic
+     could paint offline — exactly the case the offline download exists to serve. */
+  '/player-dyn-mount.css',
   // PWA install vehicle: manifest + its icons, so "Add to Home Screen" works and the
   // installed app has its launch icon available offline.
   '/manifest.json', '/icon-512.png', '/icon-512-maskable.png',
