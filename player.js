@@ -1810,11 +1810,31 @@
   /* ---- styles (the player owns its own CSS; page keeps only chrome) ----
      Depends on the page's :root design tokens, which every page defines. */
   var STYLES = `
-    /* Reserve the late-loading (auth-gated) progress card's slot on desktop/tablet too, so it
-       doesn't shove the player's controls down when it appears (CLS). 54px = its measured desktop
-       height (logged-in card; the logged-out card is 45px and sits in the same slot). Mobile
-       overrides to 73px below. */
-    .progress-controls { margin-bottom: 0.9rem; min-height: 54px; }
+    /* ══ THE PROGRESS CARD'S RESERVED SLOT (r139 — re-measured across the whole width range) ══
+       WHY IT IS ALWAYS THE LAST THING TO APPEAR, and why that is not about its size: renderProgress()
+       returns early until ThaiEarAuth.isReady, so this card waits on a Supabase auth round trip
+       (session restore / token refresh against auth.thaiear.com) and then on the user's progress
+       rows. Everything else on the page — the whole dyn player included — is local DOM and local
+       CSS and needs no network at all. On a slow connection the card can be seconds behind. That
+       is inherent; what must NOT happen is the page moving when it lands.
+       ⚠ ONE min-height CANNOT COVER THIS CARD — it has FOUR distinct heights, because the flex row
+       wraps at different points in each auth state. Measured (Chrome, real page, per viewport):
+           vw ≤374   logged-in 80.4   logged-out 93.4   ← label wraps to 3 lines
+           375–438   logged-in 80.4   logged-out 73.4   ← every current iPhone lives here
+           439–600   logged-in 46.9   logged-out 73.4
+           ≥601      logged-in 52.9   logged-out 44.7
+       The old flat 73px was taken from the logged-out card at phone width, so a SIGNED-IN user on
+       any iPhone got a 7.4px downshift of everything below when the card landed (owner-reported as
+       "downshifts a fraction", 2026-08-03) — and a signed-out user at ≤374 got 20.4px. Below 600 it
+       was also over-reserved by up to 26px at tablet widths, leaving a visible gap.
+       Each band now reserves its own local maximum, and the card STRETCHES to fill the reservation
+       (display:flex + flex:1 on the card) so an over-reserved band reads as a slightly roomier card
+       rather than a gap above the player. Net: no shift in any state at any width.
+       ⚠ Re-measure these four numbers if the card's copy, padding or type size changes — they are
+       measurements, not round numbers. The dyn-plmode display:none rule (2 classes) still beats
+       the display:flex here, so the playlist player is unaffected. */
+    .progress-controls { margin-bottom: 0.9rem; min-height: 54px; display: flex; }
+    .progress-controls > .prog-ctl-card { flex: 1; }
     .prog-ctl-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
       background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.7rem 0.9rem; }
     .prog-ctl-left { display: flex; align-items: baseline; gap: 7px; }
@@ -1841,13 +1861,24 @@
     .prog-tick { display: inline-block; font-weight: 700; animation: prog-tick-pop 0.4s cubic-bezier(0.2,0.8,0.3,1.3) both; }
     @keyframes prog-tick-pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
     @media (max-width: 600px) {
-      /* Reserve the late-loading (auth-gated) progress card's slot so it doesn't shove the
-         player's controls down when it appears (CLS). 73px = its measured mobile height. */
-      .progress-controls { min-height: 73px; }
+      /* 439–600px band: max(logged-in 46.9, logged-out 73.4) — see the measurement table above. */
+      .progress-controls { min-height: 74px; }
       .prog-ctl-card { padding: 0.6rem 0.7rem; }
       .prog-ctl-count { font-size: 18px; }
       .prog-ctl-btn { font-size: 12px; padding: 5px 10px; }
     }
+    /* 375–438px — EVERY CURRENT IPHONE. The logged-in card wraps here and becomes the taller of
+       the two (80.4 vs 73.4); the wrap point is between 437 and 439, measured.
+       ⚠ THE .98 IS NOT A TYPO AND MUST NOT BE ROUNDED. On a fractional devicePixelRatio (1.35 on
+       the machine these were measured on, and every modern phone) the viewport width is itself
+       fractional, so an integer max-width: 438px evaluates FALSE at innerWidth 438 — verified. An
+       breakpoint therefore leaves exactly one pixel column of width at which the reserve is one
+       band too small and the shift comes straight back. Same reason Bootstrap offsets its own
+       max-width breakpoints by .98. */
+    @media (max-width: 438.98px) { .progress-controls { min-height: 81px; } }
+    /* ≤374px — the logged-out label wraps to a third line and takes over as the tallest (93.4);
+       the wrap point is between 374 and 375, measured. */
+    @media (max-width: 374.98px) { .progress-controls { min-height: 94px; } }
     .player-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1rem; margin-bottom: 1.75rem; }
     .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
     .audio-toggle { display: flex; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
@@ -4069,18 +4100,39 @@
   }
   /* Collapse the SEO intro to two lines with a Read more. The paragraph is only WRAPPED and
      height-clamped — the text is never removed or display:none'd, so it stays fully indexable. */
+  /* r139 — ADOPT A STATICALLY-SHIPPED WRAPPER INSTEAD OF BAILING OUT.
+     The clamp lives on `body.te-v2 .te-intro-wrap:not(.open) .topic-intro`, so it can only bite
+     once the wrapper EXISTS — and building it here, at mount, meant the intro painted at full
+     height and then snapped to two lines. gen_dyncss.js now ships the wrapper and the button in
+     the HTML so the clamp applies at first paint; this function's job on those pages is only to
+     wire the button.
+     ⚠ The old guard returned the moment it saw a wrapper, which was correct while the wrapper
+     could only be self-built (nothing to wire) and is exactly wrong now — it would have left a
+     dead "Read more" button on all 93 pages. Wire-then-mark, so a second call is still a no-op.
+     Still builds the wrapper itself when absent, so a page that has not been through the
+     generator behaves exactly as before. */
   function dynCollapseIntro() {
     var p = document.querySelector('.topic-intro');
-    if (!p || (p.parentNode && p.parentNode.className === 'te-intro-wrap')) return;
-    var w = document.createElement('div');
-    w.className = 'te-intro-wrap';
-    p.parentNode.insertBefore(w, p);
-    w.appendChild(p);
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'te-intro-more';
-    b.textContent = 'Read more';
-    w.appendChild(b);
+    if (!p) return;
+    var w = (p.parentNode && p.parentNode.classList && p.parentNode.classList.contains('te-intro-wrap'))
+      ? p.parentNode : null;
+    var b;
+    if (w) {
+      b = w.querySelector('.te-intro-more');
+      if (!b) return;                     // wrapper without a button: nothing to wire
+    } else {
+      w = document.createElement('div');
+      w.className = 'te-intro-wrap';
+      p.parentNode.insertBefore(w, p);
+      w.appendChild(p);
+      b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'te-intro-more';
+      b.textContent = 'Read more';
+      w.appendChild(b);
+    }
+    if (b.__teIntroWired) return;
+    b.__teIntroWired = true;
     b.addEventListener('click', function () {
       b.textContent = w.classList.toggle('open') ? 'Show less' : 'Read more';
     });
