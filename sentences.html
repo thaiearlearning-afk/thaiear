@@ -61,6 +61,7 @@
 
   /* boxer image + "Thai inbound…" with the same animated 1→2→3 dot cycle as the progress page */
   .fluency-block { text-align: center; margin: 0.25rem 0 1.75rem; }
+  .sf-slot { display: contents; }   /* r144: slots must not affect layout */
   .fluency-img { width: 158px; max-width: 42%; height: auto; display: block; margin: 0 auto 0.4rem; }
   .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
   .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
@@ -267,9 +268,15 @@ function mountFluencyImg() {
     fluencyImgNode.className = 'fluency-img';
     fluencyImgNode.src = 'muaythai.png';
     fluencyImgNode.alt = 'Muay Thai boxer';
-    fluencyImgNode.width = 150;
+    fluencyImgNode.width = 150; fluencyImgNode.height = 257;   // 185x317 intrinsic — reserves the box
   }
   slot.parentNode.replaceChild(fluencyImgNode, slot);
+}
+
+// r144: rewrite a slot ONLY when its markup actually changed — see the note in render().
+function setSlot(id, html) {
+  var el = document.getElementById(id);
+  if (el && el.innerHTML !== html) el.innerHTML = html;
 }
 
 var openCards = Object.create(null);
@@ -398,9 +405,25 @@ function render() {
     return '<div class="topic-group">' + headRow + bodyRows + '</div>';
   }).join('');
 
-  root.innerHTML = head + intro + muaythai + groups;
-
-  mountFluencyImg();   // r141: move the ONE <img> back in — never re-created
+  /* r144 — SHELL ONCE, THEN ONLY WHAT CHANGED. Same treatment as progress.html, and for the same
+     reason: this rebuilt every element on the page on every render, and render() runs on the
+     initial paint, again when loadFlags() resolves, and again after EVERY flag removal. That is
+     what collapsed expanded cards (r140a), re-created the image (r141), and makes the page churn
+     on a slow link. The card list is the only part that normally changes, so the header, intro
+     and image are now left completely untouched between renders.
+     ⚠ #sf-list presence is the shell test, not a flag — the loading / signed-out / error paths
+     above replace root.innerHTML wholesale and the shell must rebuild itself after any of them. */
+  if (!document.getElementById('sf-list')) {
+    root.innerHTML =
+      '<div class="sf-slot" id="sf-head"></div>' +
+      '<div class="sf-slot" id="sf-intro"></div>' +
+      muaythai +                              // static, and holds the reused <img> (r141)
+      '<div class="sf-slot" id="sf-list"></div>';
+    mountFluencyImg();   // r141: move the ONE <img> in — never re-created
+  }
+  setSlot('sf-head', head);
+  setSlot('sf-intro', intro);
+  setSlot('sf-list', groups);
 }
 
 // reset play icon when a clip finishes (the <audio> exists above this script already)

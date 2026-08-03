@@ -118,6 +118,7 @@
   .prog-bar-fill.full { background: linear-gradient(90deg, var(--accent), var(--purple-mid)); }
   /* r140: a playlist row's sentence count, moved below its new progress bar — the top-right slot
      is the tally now, matching a topic row exactly. */
+  .pr-slot { display: contents; }   /* r144: slots must not affect layout */
   .prog-plcount { font-size: 12px; color: var(--text-tertiary); margin-top: 5px; }
   /* Premium topic rows: gold progress bar (Thai-script gold; gold gradient when full). */
   .prog-row.premium .prog-bar-fill { background: #F0CC5C; }
@@ -311,6 +312,12 @@ var loadErr = null;
 // r140: the intro's expanded state, held OUTSIDE the DOM so render() can restore it — see the
 // note where `intro` is built. Module-scope on purpose: render() is called from several places.
 var introOpen = false;
+// r144: rewrite a slot ONLY when its markup actually changed — an untouched node cannot flash,
+// cannot lose a CSS transition, and cannot discard state held on its children.
+function setSlot(id, html) {
+  var el = document.getElementById(id);
+  if (el && el.innerHTML !== html) el.innerHTML = html;
+}
 
 /* r141 — REUSE THE IMAGE NODE ACROSS RENDERS.
    render() rebuilds this page by assigning root.innerHTML, which DESTROYS the old <img> and
@@ -499,8 +506,42 @@ function render() {
       '<button class="btn btn-ghost" onclick="resetAll()" style="font-size:13px;color:#B00020;border-color:rgba(176,0,32,0.35)">Reset all progress</button>' +
     '</div>';
 
-  root.innerHTML = head + intro + fluency + tabs + list + toggle + reset;
-  mountFluencyImg();                       // r141: move the ONE <img> back in — never re-created
+  /* ══ r144 — BUILD THE SHELL ONCE, THEN ONLY REPLACE WHAT ACTUALLY CHANGED ══════════════
+     This line used to rebuild the ENTIRE page on every render — header, intro, image, tabs, list,
+     goal toggle and reset button — and render() runs several times on a normal load (initial,
+     again when loadProgress() resolves, again when playlists.load() resolves, again on the
+     thaiear:auth event). Every one of those rebuilds threw away and re-created every element on
+     the page. That single fact is the root cause of three separately-reported bugs: the intro
+     collapsing as you expanded it (r140a), the yak pulsing two or three times (r141), and the
+     general "objects moving" on a slow link — the slower the connection, the wider the gaps
+     between renders and the more visible each rebuild becomes.
+     Now the shell is built once with stable slots, and each slot is rewritten ONLY if its HTML
+     actually differs. On a typical re-render the only thing that changed is the list, so the
+     header, intro, image, tabs, toggle and reset are not touched at all — no destruction, no
+     re-creation, nothing to flash.
+     ⚠ The slots use display:contents so they generate no boxes and the layout is byte-identical
+     to the old flat markup. Neither page's CSS uses child or sibling combinators (checked), so
+     even where display:contents is unsupported the wrappers are harmless.
+     ⚠ Presence of #pr-list is the shell test, NOT a boolean — the loading / signed-out / error
+     paths above legitimately replace root.innerHTML wholesale, and the shell has to be rebuilt
+     after any of those without a flag to keep in step. */
+  if (!document.getElementById('pr-list')) {
+    root.innerHTML =
+      '<div class="pr-slot" id="pr-head"></div>' +
+      '<div class="pr-slot" id="pr-intro"></div>' +
+      fluency +                                   // static, and holds the reused <img> (r141)
+      '<div class="pr-slot" id="pr-tabs"></div>' +
+      '<div class="pr-slot" id="pr-list"></div>' +
+      '<div class="pr-slot" id="pr-toggle"></div>' +
+      '<div class="pr-slot" id="pr-reset"></div>';
+    mountFluencyImg();                     // r141: move the ONE <img> in — never re-created
+  }
+  setSlot('pr-head', head);
+  setSlot('pr-intro', intro);
+  setSlot('pr-tabs', tabs);
+  setSlot('pr-list', list);
+  setSlot('pr-toggle', toggle);
+  setSlot('pr-reset', reset);
   applyProgFilter(progFilter);   // reapply the chosen pill to the freshly-built rows (display only)
 }
 
