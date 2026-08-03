@@ -5098,7 +5098,10 @@
     '#dyn-plsel-back{display:block;margin:10px 0 14px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:8px 14px;cursor:pointer}' +
     '#dyn-plsel-back:hover{background:var(--accent-light)}' +
     /* playlist mode (round-10): flags + per-topic progress don't apply to playlists */
-    'body.dyn-plmode .progress-controls{display:none}' +
+    /* r140: the progress card is NO LONGER hidden in playlist mode — a playlist can be listened
+       through and counted like a topic, keyed on its 'pl-<id>' namespace (see progressKey()).
+       The .progress-controls reserve above therefore now applies on playlists.html too, which is
+       why that page needed its own #player-root reserve at the same time. */
     'body.dyn-plmode .sent-flag-btn{display:none}' +
     /* round-10 addendum C: animated equalizer on the playing sentence card (index .te-eq design);
        visible only while actually playing; premium pages get the gold tone */
@@ -6198,22 +6201,43 @@
      Logged in → a live tally with +/- buttons that write to the user's row. */
   var progLock = false;
 
+  /* r140 — PLAYLISTS TRACK PROGRESS TOO (owner, 2026-08-03). This row used to blank itself in
+     PLMODE; there is no reason a playlist cannot be "listened through" and counted like a topic.
+     THE KEY. Progress is stored as a free-form JSONB map (progress.topics, auth.js) — any string
+     works, so this needed NO schema, RLS or migration change. A topic keys on TOPIC_KEY, i.e. its
+     page file minus .html ('topic-01'). A playlist CANNOT do that: every playlist is served by the
+     same playlists.html, so a page-derived key would make every playlist share one counter. It
+     keys on its dyn namespace instead — 'pl-<id>' — which is per-playlist by construction and
+     cannot collide with the 'topic-' space.
+     ⚠ Read lazily, never cached into a var at load: DYN_KEY_NS is assigned further down the file,
+     and a playlist page can swap units in place along the dyn chain, so the key must be re-read
+     each time rather than frozen at mount.
+     ⚠ The `pl-` test is the safety: DYN_KEY_NS falls back to PREFIX when cfg.dynKey is absent, and
+     silently counting a playlist listen under an AUDIO PREFIX would corrupt a topic's tally. No
+     usable key → behave exactly as before and render nothing. */
+  function progressKey() {
+    if (!PLMODE) return TOPIC_KEY;
+    var k = String(DYN_KEY_NS || '');
+    return k.indexOf('pl-') === 0 ? k : null;
+  }
   function renderProgress() {
     var box = $('progress-controls');
     if (!box) return;
-    if (PLMODE) { box.innerHTML = ''; return; }   // playlists: no per-topic progress tracking
+    var key = progressKey();
+    if (!key) { box.innerHTML = ''; return; }   // playlist without a resolvable id → as before
     var a = window.ThaiEarAuth;
     if (!a || !a.isReady) { box.innerHTML = ''; return; } // hold until auth resolves
     var user = a.getUser && a.getUser();
+    var thing = PLMODE ? 'playlist' : 'topic';
     if (!user) {
       box.innerHTML =
         '<div class="prog-ctl-card">' +
-          '<span class="prog-ctl-label">Track how many times you’ve listened to this topic.</span>' +
-          '<a class="prog-ctl-join" href="join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE) + '">Sign in to track progress →</a>' +
+          '<span class="prog-ctl-label">Track how many times you’ve listened to this ' + thing + '.</span>' +
+          '<a class="prog-ctl-join" href="join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE + location.search) + '">Sign in to track progress →</a>' +
         '</div>';
       return;
     }
-    var count = a.getTopicProgress ? a.getTopicProgress(TOPIC_KEY) : 0;
+    var count = a.getTopicProgress ? a.getTopicProgress(key) : 0;
     box.innerHTML =
       '<div class="prog-ctl-card">' +
         '<div class="prog-ctl-left">' +
@@ -6245,10 +6269,12 @@
     if (addBtn) addBtn.disabled = true;
     if (remBtn) remBtn.disabled = true;
     if (actBtn) actBtn.innerHTML = '<span class="prog-spin"></span>';
-    var op = kind === 'add' ? a.addProgress(TOPIC_KEY) : a.removeProgress(TOPIC_KEY);
+    var pkey = progressKey();                      // r140: 'topic-NN' or a playlist's 'pl-<id>'
+    if (!pkey) { progLock = false; return; }
+    var op = kind === 'add' ? a.addProgress(pkey) : a.removeProgress(pkey);
     op.then(function () {
       if (countEl) {
-        countEl.textContent = a.getTopicProgress(TOPIC_KEY);
+        countEl.textContent = a.getTopicProgress(pkey);
         countEl.classList.remove('bump'); void countEl.offsetWidth; countEl.classList.add('bump');
       }
       if (actBtn) actBtn.innerHTML = '<span class="prog-tick">✓</span>';
@@ -6268,7 +6294,11 @@
 
   // Load the user's progress once, then render; re-run whenever auth resolves/changes.
   function initProgress() {
-    if (PLMODE) { renderProgress(); return; }   // playlists: renderProgress just clears the slot
+    /* r140: the PLMODE short-circuit is gone. It skipped loadProgress() entirely — correct while a
+       playlist had no card, and now the difference between a real tally and a permanent 0.
+       DYN_KEY_NS is assigned once from cfg.dynKey and never reassigned, so a chain hop (which swaps
+       the AUDIO in place without navigating) cannot drift this key: the card keeps counting THE
+       PAGE'S playlist, which is the one the user is looking at and the one the +/- buttons name. */
     var a = window.ThaiEarAuth;
     if (!a || !a.isReady) { renderProgress(); return; }
     if (a.getUser && a.getUser() && a.loadProgress) {
