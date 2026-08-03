@@ -10,7 +10,22 @@
      final position — the user never sees the hero flash past or the scroll travel (owner:
      "user is always in the right bit of page"). Safety timer in the switcher script guarantees
      the veil always lifts. -->
-<script>if(/^#(playlists|read|read-lessons)$/.test(location.hash))document.documentElement.className+=' te-warp';</script>
+<script>/* Pre-paint veil. Two reasons to raise it, and BOTH are deliberately narrow — this is the
+   homepage, so it must never be veiled for a first-time visitor or a crawler.
+   1. A deep link to a panel (#playlists/#read/#read-lessons): the landing logic below positions,
+      mounts and lands under the veil, then lifts it. Crawlers do not request these hashes.
+   2. r142 — A BACK/FORWARD RETURN. The browser restores the previous scroll position, but only
+      AFTER first paint, so returning to the index flashes the hero and then jumps down to where
+      you were (owner, 2026-08-03). Gated on navigation type rather than applied to every load:
+      a fresh load lands at the top with nothing to correct, and `back_forward` is a type no
+      crawler and no first-time visitor ever produces. getEntriesByType is the modern signal;
+      performance.navigation.type===2 is the Safari-safe fallback, and Safari is exactly where
+      this matters. Lifted a couple of frames later, capped at 180ms — see the unveil below. */
+(function(){var d=document.documentElement;
+if(/^#(playlists|read|read-lessons)$/.test(location.hash)){d.className+=' te-warp';return;}
+var bf=false;try{var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];
+bf=n?n.type==='back_forward':(performance.navigation&&performance.navigation.type===2);}catch(e){}
+if(bf)d.className+=' te-warp';})();</script>
 <style>html.te-warp body{opacity:0}body{transition:opacity .25s ease}</style>
 <meta name="description" content="A free Thai language listening platform. 43 topics, 1,500+ sentences, native-speed audio. Learn Thai by listening.">
 <link rel="canonical" href="https://thaiear.com/">
@@ -216,7 +231,19 @@
      3. .panel-veiled holds opacity 0 with NO transition while loading — removing it lets the
         .18s transition play the reveal. */
   .topics-section { transition: opacity .26s ease; }   /* r133: 180ms read as a pop (owner) */
-  .topics-section.panel-pending { min-height: 65vh; }
+  /* ⚠⚠ 100vh, NOT 65vh — AND IT IS ARITHMETIC, NOT TASTE (r142).
+     The topics panel is ~3675px of a ~4337px document. Switching hides it and leaves only this
+     reserve, so the document collapses and the browser CLAMPS scrollY to the new maximum. With
+     65vh the sums do not work: scrolled so the switcher sat at the top of the viewport
+     (scrollY 523), the post-switch maximum scroll was 470 — 53px short — so the page slid up and
+     the switcher dropped down the screen. Measured on the live site, 2026-08-03.
+     The requirement is: the incoming panel alone must be able to fill the viewport, so the
+     switcher can still reach the top. reserve >= vh - switcherHeight - footerHeight, and 100vh
+     satisfies that for every viewport by construction.
+     ⚠ WHY ONLY IPHONE REPORTED IT: Chrome implements scroll anchoring (overflow-anchor) and
+     silently compensates for the collapse; WebKit has never shipped it. The bug was always
+     present everywhere — Safari and the iPhone PWA are just the only places it is visible. */
+  .topics-section.panel-pending { min-height: 100vh; }
   .topics-section.panel-veiled { opacity: 0; transition: none; }
 
     /* ── TOPICS SECTION ──
@@ -1896,8 +1923,40 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
       .catch(function (e) { plReady = null; console.warn('playlists panel load failed', e); });
     return plReady;
   }
-  function show(which) {
+  /* r142 — HOLD THE SWITCHER STILL ACROSS A PANEL SWAP.
+     The 100vh reserve above stops the document collapsing WHILE the panel loads, but it cannot
+     help once `panel-pending` is released: if the real panel turns out shorter than the reserve
+     the document shrinks then, and the scroll clamps just as it did before — the same jump, only
+     later. So the swap also remembers where the switcher sat in the viewport and puts it back.
+     This is the honest definition of the bug the owner reported: "a scroll I did not ask for".
+     Not the same thing as the deep-link `land()` path below, which deliberately scrolls TO the
+     switcher on arrival — this one preserves wherever the user already was, including the top of
+     the page, so it is opt-in from the click handler only (keepScroll). */
+  function switcherTop() {
+    var ms = document.querySelector('.mode-switch');
+    return ms ? ms.getBoundingClientRect().top : null;
+  }
+  function holdSwitcher(was, target) {
+    if (was == null) return;
+    var now = switcherTop();
+    if (now == null || Math.abs(now - was) < 1) return;
+    window.scrollTo(0, window.scrollY + (now - was));       // instant: a smooth scroll would BE the jump
+    /* Still short? Then the document physically cannot hold the position — the panel is shorter
+       than the space the user was scrolled into. Give it exactly the floor it needs (never more),
+       so we add the least whitespace that removes the jump, rather than a blanket min-height that
+       would pad every short panel forever. */
+    var after = switcherTop();
+    if (target && after != null && after - was > 1) {
+      var deficit = after - was;
+      var cur = parseFloat(getComputedStyle(target).minHeight) || 0;
+      target.style.minHeight = (target.getBoundingClientRect().height + deficit) + 'px';
+      var fin = switcherTop();
+      if (fin != null) window.scrollTo(0, window.scrollY + (fin - was));
+    }
+  }
+  function show(which, keepScroll) {
     var target = panels[which];
+    var wasTop = keepScroll ? switcherTop() : null;
     var needsMount = (which === 'read' && !readReady) || (which === 'playlists' && !plReady);
     /* r131: veil the incoming panel — unmounted panels also reserve height (panel-pending) so
        the page can't shrink under the user mid-load. The veil lifts one frame after the panel
@@ -1906,7 +1965,9 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
       target.classList.add('panel-veiled');
       if (needsMount) target.classList.add('panel-pending');
     }
+    if (target) target.style.minHeight = '';        // drop any floor a previous swap computed
     Object.keys(panels).forEach(function (k) { if (panels[k]) panels[k].hidden = (k !== which); });
+    holdSwitcher(wasTop, target);                   // same frame, before paint: the swap itself
     document.querySelectorAll('.ms-btn').forEach(function (b) {
       var on = b.getAttribute('data-panel') === which;
       b.classList.toggle('active', on);
@@ -1920,12 +1981,14 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
         if (!target) return;
         target.classList.remove('panel-pending');
         target.classList.remove('panel-veiled');
+        holdSwitcher(wasTop, target);   // and again after the reserve is released — that release
+                                        // is its own chance to collapse the document
       });
     });
     return mounted;
   }
   document.querySelectorAll('.ms-btn').forEach(function (b) {
-    b.addEventListener('click', function () { show(b.getAttribute('data-panel')); });
+    b.addEventListener('click', function () { show(b.getAttribute('data-panel'), true); });
   });
   var h = (location.hash || '').replace('#', '');
   var toLessons = (h === 'read-lessons');
@@ -1981,6 +2044,18 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
       });
     });
     setTimeout(unveil, 3000);
+  } else if (document.documentElement.classList.contains('te-warp')) {
+    /* r142 — the BACK/FORWARD return veil (raised pre-paint in <head>). Nothing to mount or land
+       here: the browser is restoring the scroll position itself, and all the veil has to do is
+       hide the frame or two where it has not done so yet.
+       Lifted on the SECOND animation frame — by then the restore has landed and the veil is
+       usually gone in well under 180ms — with the 180ms timer as a HARD CAP, not the normal path.
+       A fixed 180ms wait would make every return feel slower than it needs to.
+       ⚠ Two independent lifts on purpose: rAF does not fire in a background tab, so the timer is
+       what guarantees a restored-but-hidden page can never be left blank. */
+    var lift = function () { document.documentElement.classList.remove('te-warp'); };
+    requestAnimationFrame(function () { requestAnimationFrame(lift); });
+    setTimeout(lift, 180);
   }
 })();
 
