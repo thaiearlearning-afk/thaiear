@@ -274,9 +274,20 @@ function mountFluencyImg() {
 }
 
 // r144: rewrite a slot ONLY when its markup actually changed — see the note in render().
+var _slotCache = Object.create(null);
 function setSlot(id, html) {
+  /* ⚠ COMPARE AGAINST WHAT WE LAST WROTE, NEVER AGAINST el.innerHTML. Reading innerHTML back
+     returns the browser's NORMALISED serialisation — attribute order, quote style and entity
+     encoding can all differ from the string we generated — so `el.innerHTML !== html` can be true
+     for markup that is semantically identical, and the slot then gets rebuilt on every render
+     anyway. That is exactly what happened to the header slot here: every other slot compared
+     equal by luck, the header did not, and it was destroyed and re-created every time while
+     appearing to be covered. Caching the written string makes the check exact. */
+  if (_slotCache[id] === html) return;
   var el = document.getElementById(id);
-  if (el && el.innerHTML !== html) el.innerHTML = html;
+  if (!el) return;
+  el.innerHTML = html;
+  _slotCache[id] = html;
 }
 
 var openCards = Object.create(null);
@@ -414,6 +425,7 @@ function render() {
      ⚠ #sf-list presence is the shell test, not a flag — the loading / signed-out / error paths
      above replace root.innerHTML wholesale and the shell must rebuild itself after any of them. */
   if (!document.getElementById('sf-list')) {
+    _slotCache = Object.create(null);   // shell rebuilt → slots are empty again
     root.innerHTML =
       '<div class="sf-slot" id="sf-head"></div>' +
       '<div class="sf-slot" id="sf-intro"></div>' +
