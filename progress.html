@@ -258,11 +258,12 @@ document.addEventListener('click', function (e) {
   var t = e.target.closest && e.target.closest('.filter-tab');
   if (t) applyProgFilter(t.getAttribute('data-f'));
   // r136a: the collapsible intro's Read more / Show less (delegated — survives re-renders).
+  // r140: and the state is now HOISTED out of the DOM, so a later render() cannot discard it.
   var m = e.target.closest && e.target.closest('.prog-intro-more');
   if (m) {
     var w = m.parentNode;
-    w.classList.toggle('open');
-    m.textContent = w.classList.contains('open') ? 'Show less' : 'Read more';
+    introOpen = w.classList.toggle('open');
+    m.textContent = introOpen ? 'Show less' : 'Read more';
   }
 });
 
@@ -307,6 +308,9 @@ function loggedOutHtml() {
 }
 
 var loadErr = null;
+// r140: the intro's expanded state, held OUTSIDE the DOM so render() can restore it — see the
+// note where `intro` is built. Module-scope on purpose: render() is called from several places.
+var introOpen = false;
 function render() {
   var root = document.getElementById('progress-root');
   if (!root) return;
@@ -342,12 +346,20 @@ function render() {
       '<h1 class="prog-head-title">' + esc(user.username) + '’s progress</h1>' +
     '</div>';
 
+  /* r140 — the open/closed state comes from `introOpen`, NOT from whatever class happens to be on
+     the node right now. render() rebuilds this markup, and it runs several times on a normal page
+     load (initial, then again after loadProgress() and after playlists.load(), both network round
+     trips). Any expansion the user made in that window was silently thrown away and the intro
+     snapped shut — the owner's "it collapses a few times before it stays expanded", and precisely
+     why waiting a few seconds before clicking made it behave. r136a made the HANDLER delegated so
+     it survives re-renders; the STATE still had to survive them too. */
   var intro =
-    '<div class="prog-intro-wrap"><p class="prog-intro">This page is designed as a tool for you to track your progress. ' +
-    'We recommend each time you listen to a topic in full to add <strong>“one progress”</strong> to that topic — ' +
-    'this is found above the Dynamic mp3 player. Over time you can see which topics you know well and which topics need more ' +
-    'attention. Change your progress goal or reset your progress at any time.</p>' +
-    '<button type="button" class="prog-intro-more">Read more</button></div>';
+    '<div class="prog-intro-wrap' + (introOpen ? ' open' : '') + '"><p class="prog-intro">' +
+    'This page is designed as a tool for you to track your learning. ' +
+    'We recommend each time you listen to a topic or playlist in full to add <strong>“one progress”</strong> — ' +
+    'this is found above the Dynamic mp3 player. Over time you can see which topics and playlists you know well and ' +
+    'which need more attention. Change your progress goal or reset your progress at any time.</p>' +
+    '<button type="button" class="prog-intro-more">' + (introOpen ? 'Show less' : 'Read more') + '</button></div>';
 
   var fluency =
     '<div class="fluency-block">' +

@@ -233,13 +233,23 @@ function removeItem(e, topicKey, num) {
   stopAudio();
   var btn = e.currentTarget;
   if (btn) btn.classList.add('pending');
+  delete openCards['sf-' + topicKey + '-' + num];   // r140: don't strand an open-state for a removed card
   a.removeFlag(topicKey, num).then(function () { render(); })
     .catch(function (err) { console.warn('remove flag failed', err); if (btn) btn.classList.remove('pending'); })
     .then(function () { setTimeout(function () { removeLock = false; }, 250); });
 }
+/* r140 — WHICH CARDS ARE OPEN IS HELD OUTSIDE THE DOM.
+   render() rebuilds every card's markup, and it runs several times on a normal page load (initial,
+   then again once loadFlags() resolves) plus after every flag removal. Any card the user expanded
+   in that window was silently collapsed again — the same defect the progress page's intro had, and
+   part of why this page "behaves badly on a slow connection". Card ids are stable
+   ('sf-<topicKey>-<num>'), so remembering the open ids and re-emitting the class in cardHtml()
+   makes an expansion survive any number of re-renders. */
+var openCards = Object.create(null);
 function toggleExpand(id) {
   var card = document.getElementById(id);
-  if (card && !card.classList.contains('locked')) card.classList.toggle('open');
+  if (!card || card.classList.contains('locked')) return;
+  if (card.classList.toggle('open')) openCards[id] = true; else delete openCards[id];
 }
 
 function chipHtml(gloss) {
@@ -279,7 +289,7 @@ function cardHtml(row, rec) {
         : '') +
     '</div>';
 
-  return '<div class="sc" id="' + esc(id) + '">' +
+  return '<div class="sc' + (openCards[id] ? ' open' : '') + '" id="' + esc(id) + '">' +
     '<div class="sc-head" onclick="toggleExpand(\'' + esc(id) + '\')">' +
       '<button class="sc-play' + (row.access === 'premium' ? ' prem' : '') + '" data-play="' + esc(id) + '" onclick="playFlagged(event,\'' + esc(id) + '\',\'' + esc(s.audioPrefix || '') + '\',' + rec.num + ',' + (gated ? 'true' : 'false') + ')" aria-label="Play sentence">' +
         '<svg viewBox="0 0 16 16">' + PLAY_TRI + '</svg>' +
