@@ -14,18 +14,26 @@
    homepage, so it must never be veiled for a first-time visitor or a crawler.
    1. A deep link to a panel (#playlists/#read/#read-lessons): the landing logic below positions,
       mounts and lands under the veil, then lifts it. Crawlers do not request these hashes.
-   2. r142 — A BACK/FORWARD RETURN. The browser restores the previous scroll position, but only
-      AFTER first paint, so returning to the index flashes the hero and then jumps down to where
-      you were (owner, 2026-08-03). Gated on navigation type rather than applied to every load:
-      a fresh load lands at the top with nothing to correct, and `back_forward` is a type no
-      crawler and no first-time visitor ever produces. getEntriesByType is the modern signal;
-      performance.navigation.type===2 is the Safari-safe fallback, and Safari is exactly where
-      this matters. Lifted a couple of frames later, capped at 180ms — see the unveil below. */
+   2. r143 — A PENDING SCROLL RESTORE. This is the one that actually fires in practice, and r142
+      guessed wrong about it. The index restores its own scroll position from sessionStorage
+      (thaiear_index_scroll, saved on pagehide — see the block before </body>), so the trigger is
+      NOT the navigation type: clicking the ThaiEar logo or Menu > Home is an ordinary link
+      navigation, `back_forward` is false, and the flash happened anyway (owner, 2026-08-03).
+      The honest test is "is a restore about to happen", which is a synchronous sessionStorage
+      read, and it must use the SAME freshness rule as the restore itself or the veil and the
+      scroll disagree. A first-time visitor has no saved position and is never veiled.
+   3. A back/forward return, kept from r142 for the case where the browser restores natively and
+      sessionStorage has nothing (e.g. bfcache-less back with a cleared key).
+   Lifted by whoever owns the correction — see __teRestorePending below. */
 (function(){var d=document.documentElement;
 if(/^#(playlists|read|read-lessons)$/.test(location.hash)){d.className+=' te-warp';return;}
+var pend=false;
+try{var v=JSON.parse(sessionStorage.getItem('thaiear_index_scroll')||'null');
+pend=!!(v&&v.y&&(Date.now()-(v.t||0)<=300000));}catch(e){}
+window.__teRestorePending=pend;
 var bf=false;try{var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];
 bf=n?n.type==='back_forward':(performance.navigation&&performance.navigation.type===2);}catch(e){}
-if(bf)d.className+=' te-warp';})();</script>
+if(pend||bf)d.className+=' te-warp';})();</script>
 <style>html.te-warp body{opacity:0}body{transition:opacity .25s ease}</style>
 <meta name="description" content="A free Thai language listening platform. 43 topics, 1,500+ sentences, native-speed audio. Learn Thai by listening.">
 <link rel="canonical" href="https://thaiear.com/">
@@ -2044,7 +2052,12 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
       });
     });
     setTimeout(unveil, 3000);
-  } else if (document.documentElement.classList.contains('te-warp')) {
+  } else if (document.documentElement.classList.contains('te-warp') && !window.__teRestorePending) {
+    /* ⚠ r143 — NOT when a scroll restore is pending. The restore block before </body> owns the
+       veil in that case and lifts it only once the page has actually landed at the saved offset;
+       lifting here after two frames would reveal the pre-restore position and put the flash
+       straight back — which is the whole bug. This branch is now only the bfcache-less
+       back/forward case, where the browser does the restoring and we are just covering the gap. */
     /* r142 — the BACK/FORWARD return veil (raised pre-paint in <head>). Nothing to mount or land
        here: the browser is restoring the scroll position itself, and all the veil has to do is
        hide the frame or two where it has not done so yet.
@@ -2109,18 +2122,31 @@ loadAv().then(function () { renderGrid(); }).catch(function () {});
     }
     window.addEventListener('pagehide', save);
     window.addEventListener('beforeunload', save);
+    /* r143 — RESTORE AS EARLY AS POSSIBLE, AND OWN THE VEIL WHILE DOING IT.
+       This used to run on the `load` event, i.e. after every image and font had finished. The
+       hero therefore sat fully painted at scroll 0 for hundreds of milliseconds and then jumped —
+       the flash the owner sees on the ThaiEar logo and on Menu > Home. Two changes:
+       · Run at DOMContentLoaded (or immediately if we are already past it). The grid is
+         PRE-RENDERED into the HTML by gen_home.js, so the document is close to its final height at
+         parse time; the existing rAF retry loop already covers it still growing.
+       · Lift the pre-paint veil only once the scroll has actually landed, so the user never sees
+         the pre-restore position at all. The 400ms cap is the backstop — a page that somehow never
+         reaches the saved offset must never be left invisible. */
+    function unveil() { document.documentElement.classList.remove('te-warp'); }
     function restore() {
       var v;
-      try { v = JSON.parse(sessionStorage.getItem(KEY) || 'null'); sessionStorage.removeItem(KEY); } catch (_) { return; }
-      if (!v || !v.y || (Date.now() - (v.t || 0) > 300000)) return; // ignore none / stale (>5 min)
+      try { v = JSON.parse(sessionStorage.getItem(KEY) || 'null'); sessionStorage.removeItem(KEY); } catch (_) { unveil(); return; }
+      if (!v || !v.y || (Date.now() - (v.t || 0) > 300000)) { unveil(); return; } // ignore none / stale (>5 min)
       var tries = 0;
       (function attempt() {
         window.scrollTo(0, v.y);
-        if (Math.abs((window.scrollY || 0) - v.y) > 4 && tries++ < 40) requestAnimationFrame(attempt); // grid still growing
+        if (Math.abs((window.scrollY || 0) - v.y) > 4 && tries++ < 40) { requestAnimationFrame(attempt); return; } // grid still growing
+        requestAnimationFrame(unveil);   // landed — reveal at the correct position, not before
       })();
     }
-    if (document.readyState === 'complete') restore();
-    else window.addEventListener('load', restore);
+    setTimeout(unveil, 400);   // hard cap: never leave the page hidden, whatever happens above
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', restore);
+    else restore();
   })();
 </script>
 </body>
