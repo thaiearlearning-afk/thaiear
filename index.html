@@ -989,6 +989,13 @@
      the single shared list module — same machinery playlists.html's legacy embed view consumes).
      dl-core.js and auth.js are already on this page; pl-list.js lazy-loads on first show. -->
 <section class="topics-section" id="panel-playlists" hidden>
+  <!-- r137: the panel had no heading at all, so switching to Playlists dropped the reader into an
+       untitled list. Deliberately the SAME two classes #panel-topics uses (.panel-title /
+       .panel-sub) rather than a copy of their declarations — size, weight, letter-spacing, colour,
+       the uppercase transform and the title→subtitle gap then come from one rule each and cannot
+       drift apart from the topics side later. -->
+  <h2 class="panel-title">Playlists</h2>
+  <div class="panel-sub">Learn Thai by Your Ear</div>
   <div id="pl-list-mount"></div>
 </section>
 
