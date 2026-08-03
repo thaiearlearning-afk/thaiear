@@ -24,6 +24,12 @@
   Cache-Control: public, max-age=0, must-revalidate
 /player.js
   Cache-Control: public, max-age=0, must-revalidate
+# r139: GENERATED from player.js by gen_dyncss.js, and now a render-blocking <link> in every topic
+# page's head — so it changes on exactly the deploys player.js does, and a stale copy is the same
+# failure this whole file was written to prevent (a returning visitor running old app logic), except
+# it would show up as the load flash coming back rather than as a missing topic.
+/player-dyn-mount.css
+  Cache-Control: public, max-age=0, must-revalidate
 /nav.js
   Cache-Control: public, max-age=0, must-revalidate
 /auth.js
