@@ -1544,12 +1544,19 @@
     if (document.getElementById('te-hub-mount-css')) return;
     var s = document.createElement('style');
     s.id = 'te-hub-mount-css';
-    // Same rules the index's iframe-onload script used to inject into read.html's embedded
-    // document (index.html, pre-r130): reposition the eyebrow under the h1, and animate the
-    // jump control's three chevrons in sequence (.75s cycle, .25s stagger per chevron).
+    /* Same rules the index's iframe-onload script used to inject into read.html's embedded
+       document (index.html, pre-r130), animating the jump control's three chevrons in sequence
+       (.75s cycle, .25s stagger per chevron).
+       r137b — THE JUMP CONTROL *IS* THE SUBTITLE NOW (owner). The old '.read-eyebrow{margin:...}'
+       rule is gone with the eyebrow it repositioned; the margin moves onto .te-jump so the read
+       panel's title→subtitle gap is the same 6px/16px the topics and playlists panels get from
+       .panel-sub. `font-family:inherit` matters here and did not before: a <button> does not
+       inherit the page font, and .read-eyebrow sets everything EXCEPT the family — so as a
+       decoration under the title that passed unnoticed, but as the subtitle it would have been the
+       one property visibly out of step with the other two panels. */
     s.textContent =
-      '.read-eyebrow{margin:6px 0 16px}' +
-      '.te-jump{display:block;background:none;border:0;cursor:pointer;padding:0;margin:0 0 10px;text-align:left}' +
+      '.te-jump{display:block;background:none;border:0;cursor:pointer;padding:0;margin:6px 0 16px;' +
+        'text-align:left;font-family:inherit}' +
       '.te-jump .jch{display:inline-block;opacity:.22;animation:te-jl .75s linear infinite}' +
       '.te-jump .jch.j2{animation-delay:.25s}' +
       '.te-jump .jch.j3{animation-delay:.5s}' +
@@ -1562,9 +1569,16 @@
     injectHubMountCss();
     var chevrons = '<span class="jch j1">&gt;</span><span class="jch j2">&gt;</span><span class="jch j3">&gt;</span>';
     rootEl.innerHTML =
-      '<button type="button" class="read-eyebrow te-jump" id="te-jump-btn">' + chevrons + ' Jump to lessons ' + chevrons + '</button>' +
+      /* r137b — TITLE THEN SUBTITLE, like the other two panels (owner). Was: jump button ABOVE the
+         h1, then a "Read Thai — the on-ramp" eyebrow beneath it. The eyebrow is deleted and the
+         jump control takes its slot, so all three panels of the index switcher now read
+         title-then-subtitle with identical type and spacing (.read-title is property-for-property
+         .panel-title, including the 600px step to 20px; .te-jump now carries .panel-sub's margin).
+         ⚠ THIS DELIBERATELY DIVERGES FROM read.html, which keeps its own eyebrow — that page has
+         its own chrome (nav, mode toggle) and is the SEO landing page. The "hand-kept-in-sync copy"
+         note above applies to the INTRO PARAGRAPHS, not to this heading block any more. */
       '<h1 class="read-title">Learn to read Thai, from zero</h1>' +
-      '<div class="read-eyebrow">Read Thai — the on-ramp</div>' +
+      '<button type="button" class="read-eyebrow te-jump" id="te-jump-btn">' + chevrons + ' Jump to lessons ' + chevrons + '</button>' +
       '<p class="read-intro" style="margin-bottom:0.8rem">Reading Thai script enables you to determine a word\'s tone, and therefore its meaning. For example, "mǎa" (rising tone) means "dog", "máa" (high tone) means "horse", and "maa" (mid tone) is the verb "come".</p>' +
       '<p class="read-intro" style="margin-top:0">Thai script may look intimidating at first, but it follows a clear logic and can be learned with a systematic approach. This section takes you from nothing to reading real words in twelve steps. This reading course does not just present you with information, but gives you the opportunity to test yourself, and re-test at each step, until you are confident. Tests shuffle every time, so you\'re recognising sounds and symbols, not memorising an order. You will be reading Thai script in no time. Congratulations for taking this important step of your Thai learning journey.</p>' +
       hubBodyHtml();
