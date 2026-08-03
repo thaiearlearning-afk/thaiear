@@ -245,6 +245,33 @@ function removeItem(e, topicKey, num) {
    part of why this page "behaves badly on a slow connection". Card ids are stable
    ('sf-<topicKey>-<num>'), so remembering the open ids and re-emitting the class in cardHtml()
    makes an expansion survive any number of re-renders. */
+
+/* r141 — REUSE THE IMAGE NODE ACROSS RENDERS.
+   render() rebuilds this page by assigning root.innerHTML, which DESTROYS the old <img> and
+   creates a fresh one. A brand-new <img> has nothing decoded yet, so it paints empty for a frame
+   or two before the picture appears — and render() runs several times on a normal load (initial,
+   again when loadProgress()/loadFlags() resolves, again when playlists.load() resolves, again on
+   the thaiear:auth event). Two to four rebuilds = the two or three pulses the owner sees. It only
+   shows on a COLD load: once the bitmap is warm the re-decode is instant, which is why it is not
+   reproducible by poking at an already-open page.
+   Keeping ONE element alive and moving it back in after each rebuild fixes it outright: a detached
+   node holds its decoded bitmap, and re-inserting it neither re-fetches nor re-decodes. The markup
+   emits a placeholder that this swaps for the real node, so the DOM shape is unchanged.
+   ⚠ Do NOT "simplify" this back to an <img> tag in the template string — that IS the bug. */
+var fluencyImgNode = null;
+function mountFluencyImg() {
+  var slot = document.getElementById('fluency-slot');
+  if (!slot) return;                       // a loading/empty state that has no image — nothing to do
+  if (!fluencyImgNode) {
+    fluencyImgNode = document.createElement('img');
+    fluencyImgNode.className = 'fluency-img';
+    fluencyImgNode.src = 'muaythai.png';
+    fluencyImgNode.alt = 'Muay Thai boxer';
+    fluencyImgNode.width = 150;
+  }
+  slot.parentNode.replaceChild(fluencyImgNode, slot);
+}
+
 var openCards = Object.create(null);
 function toggleExpand(id) {
   var card = document.getElementById(id);
@@ -341,7 +368,7 @@ function render() {
   // on the progress page (same font/style), with the animated ellipsis.
   var muaythai =
     '<div class="fluency-block">' +
-      '<img class="fluency-img" src="muaythai.png" alt="Muay Thai boxer" width="150">' +
+      '<span id="fluency-slot"></span>' +   // r141: replaced with the reused <img> after render
       '<div class="fluency-text">In training<span class="dots" aria-hidden="true"></span></div>' +
     '</div>';
 
@@ -372,6 +399,8 @@ function render() {
   }).join('');
 
   root.innerHTML = head + intro + muaythai + groups;
+
+  mountFluencyImg();   // r141: move the ONE <img> back in — never re-created
 }
 
 // reset play icon when a clip finishes (the <audio> exists above this script already)
