@@ -380,7 +380,11 @@
     if (sec.kind === 'letters') return [['s2l', 'Sound → letter'], ['l2s', 'Letter → sound']];
     if (sec.kind === 'vowels')  return [['s2l', 'Sound → vowel'], ['l2s', 'Vowel → sound']];
     if (sec.kind === 'sounds')  return [['asp', 'Aspirated or not?'], ['fam', 'Which family?']];
-    if (sec.kind === 'finals')  return [['l2f', 'Letter → final sound'], ['pick', 'Round up the letters'], ['hear', 'Hear the ending']];
+    // finals: 'l2f' was ONE 12-random-letter test; it is now the two fixed halves l2fA/l2fB that
+    // between them cover all 35 letters. The old 'finals:l2f' progress record is deliberately
+    // orphaned rather than migrated — a "best 12/12" from the old test would sit on a part that
+    // is now 18 questions and, being ratio-ranked, could never be displaced.
+    if (sec.kind === 'finals')  return [['l2fA', 'Letter → final sound 1'], ['l2fB', 'Letter → final sound 2'], ['pick', 'Round up the letters'], ['hear', 'Hear the ending']];
     if (sec.kind === 'clusters') return [['read', 'Read the cluster'], ['hear', 'Hear → pick the word']];
     if (sec.kind === 'quiz')    return [['partA', 'Part A'], ['partB', 'Part B'], ['partC', 'Part C']];
     return [];
@@ -664,10 +668,17 @@
       var others = shuffle(items.filter(function (x) { return x !== target; })).slice(0, 3);
       return shuffle(others.concat([target]));
     }
+    // Score is repainted in place on grading, not only on the next render — the question now stays
+    // on screen after it's answered, so a header still showing the old score next to a "Correct"
+    // message would look broken.
+    function countText() { return 'Question ' + (qi + 1) + ' of ' + order.length + ' · Score ' + score; }
+    function paintCount() {
+      var el = panel.querySelector('.tq-count');
+      if (el) el.textContent = countText();
+    }
     function progressHtml() {
       return '<div class="tq-top">' +
-        '<span class="tq-count">Question ' + (qi + 1) + ' of ' + order.length +
-        ' · Score ' + score + '</span>' +
+        '<span class="tq-count">' + countText() + '</span>' +
         '<span class="tq-actions">' +
         '<button class="tq-icon-btn" id="tq-refresh" type="button" title="Shuffle and restart">' + SVG_REFRESH + 'Restart</button>' +
         '<button class="tq-icon-btn" id="tq-exit" type="button">Exit</button>' +
@@ -701,17 +712,12 @@
       panel.innerHTML = html;
 
       var fb = panel.querySelector('#tq-feedback');
-      var advTimer = null;
-      // Tapping tiles after answering plays them for contrast; if the auto-advance
-      // is pending (correct answer), the first tap cancels it and shows Next.
-      function cancelAuto() {
-        if (!advTimer) return;
-        clearTimeout(advTimer);
-        advTimer = null;
-        if (!panel.querySelector('#tq-next')) {
-          fb.insertAdjacentHTML('beforeend', '<br><button class="tq-next" id="tq-next" type="button">Next →</button>');
-          panel.querySelector('#tq-next').addEventListener('click', nextQuestion);
-        }
+      // Same contract as the custom-test runner: never auto-advance, never auto-replay. The learner
+      // presses Next when they're done comparing; the HINT tells them the options are tappable.
+      function showNextBtn() {
+        if (panel.querySelector('#tq-next')) return;
+        fb.insertAdjacentHTML('beforeend', '<br><button class="tq-next" id="tq-next" type="button">Next →</button>');
+        panel.querySelector('#tq-next').addEventListener('click', nextQuestion);
       }
       var HINT = '<span class="tq-hint">Tap the other options to hear and compare.</span>';
       function finishQuestion(chosenIdx, choiceEls) {
@@ -721,18 +727,13 @@
         choiceEls.forEach(function (el, i) {
           if (choices[i] === target) el.classList.add(right && i === chosenIdx ? 'correct' : 'revealed');
         });
-        if (right) {
-          score++;
-          choiceEls[chosenIdx].classList.add('correct');
-          fb.innerHTML = '<span class="ok">Correct — ' + esc(target.name) + '</span>' + HINT;
-          advTimer = setTimeout(nextQuestion, 1100);
-        } else {
-          choiceEls[chosenIdx].classList.add('wrong');
-          fb.innerHTML = '<span class="no">Not quite — this is ' + esc(target.name) + '</span>' + HINT +
-            '<button class="tq-next" id="tq-next" type="button">Next →</button>';
-          play(target.audio);
-          panel.querySelector('#tq-next').addEventListener('click', nextQuestion);
-        }
+        choiceEls[chosenIdx].classList.add(right ? 'correct' : 'wrong');
+        if (right) score++;
+        fb.innerHTML = (right
+          ? '<span class="ok">Correct — ' + esc(target.name) + '</span>'
+          : '<span class="no">Not quite — this is ' + esc(target.name) + '</span>') + HINT;
+        paintCount();
+        showNextBtn();
       }
 
       var choiceEls = Array.prototype.slice.call(panel.querySelectorAll('.tq-choice'));
@@ -743,7 +744,7 @@
         choiceEls.forEach(function (el) {
           var i = parseInt(el.getAttribute('data-i'), 10);
           el.addEventListener('click', function () {
-            if (answered) { play(choices[i].audio, el); cancelAuto(); return; }
+            if (answered) { play(choices[i].audio, el); return; }
             finishQuestion(i, choiceEls);
           });
         });
@@ -753,7 +754,6 @@
           el.addEventListener('click', function (e) {
             if (e.target.closest('.c-pick')) { if (!answered) finishQuestion(i, choiceEls); return; }
             play(choices[i].audio, el);
-            if (answered) cancelAuto();
           });
         });
       }
@@ -826,9 +826,17 @@
     var qs = buildFn();
     var qi = 0, score = 0, answered = false;
 
+    // Score is repainted in place the moment a question is graded, not only on the next render —
+    // the question now stays on screen after it's answered, so a header still reading the old score
+    // next to a "Correct" message would look broken.
+    function countText() { return 'Question ' + (qi + 1) + ' of ' + qs.length + ' · Score ' + score; }
+    function paintCount() {
+      var el = panel.querySelector('.tq-count');
+      if (el) el.textContent = countText();
+    }
     function head() {
       return '<div class="tq-top">' +
-        '<span class="tq-count">Question ' + (qi + 1) + ' of ' + qs.length + ' · Score ' + score + '</span>' +
+        '<span class="tq-count">' + countText() + '</span>' +
         '<span class="tq-actions">' +
         '<button class="tq-icon-btn" id="tq-refresh" type="button" title="Shuffle and restart">' + SVG_REFRESH + 'Restart</button>' +
         '<button class="tq-icon-btn" id="tq-exit" type="button">Exit</button>' +
@@ -885,6 +893,29 @@
         if (sym) sym.addEventListener('click', function () { play(q.audio, sym); });
         setTimeout(function () { play(q.audio, pb || sym); }, 250);
       }
+      // Every graded question ends the same way: feedback, then a "Next →" the learner presses when
+      // they're ready. Nothing auto-advances and nothing auto-replays — a right answer isn't proof
+      // they knew it, and a wrong one is when they most want to sit and compare. Audio they've
+      // already heard is theirs to replay by tapping (the symbol / the tiles / the play button).
+      function showNextBtn() {
+        if (panel.querySelector('#tq-next')) return;
+        fb.insertAdjacentHTML('beforeend', '<br><button class="tq-next" id="tq-next" type="button">Next →</button>');
+        panel.querySelector('#tq-next').addEventListener('click', next);
+      }
+      // revealAudio is the ONE sound that still plays on grading, because it is not a replay:
+      // "Read the cluster" shows a written word with no audio at all until it's answered (its mode
+      // description promises "the audio confirms after you answer"), so this is the first hearing.
+      // Make the word tappable once answered — before that a tap would hand over the answer.
+      function playReveal() {
+        if (!q.revealAudio) return;
+        play(q.revealAudio);
+        if (q.audio) return;                       // already has its own replay affordance
+        var s = panel.querySelector('.tq-big-symbol');
+        if (!s) return;
+        s.classList.add('clickable');
+        s.setAttribute('title', 'Tap to hear this word again');
+        s.addEventListener('click', function () { play(q.revealAudio, s); });
+      }
       function gradeSingle(i) {
         if (answered) return;
         answered = true;
@@ -893,20 +924,13 @@
           el.setAttribute('disabled', '');
           if (j === q.correctIdx) el.classList.add(right && j === i ? 'correct' : 'revealed');
         });
-        if (right) {
-          score++;
-          tiles[i].classList.add('correct');
-          fb.innerHTML = '<span class="ok">Correct — ' + esc(q.answerText) + '</span>';
-          if (q.revealAudio) play(q.revealAudio);
-          advTimer = setTimeout(next, q.revealAudio ? 1500 : 1100);
-        } else {
-          tiles[i].classList.add('wrong');
-          fb.innerHTML = '<span class="no">Not quite — ' + esc(q.answerText) + '</span><br>' +
-            '<button class="tq-next" id="tq-next" type="button">Next →</button>';
-          var replay = q.audio || q.revealAudio;
-          if (replay) play(replay);
-          panel.querySelector('#tq-next').addEventListener('click', next);
-        }
+        tiles[i].classList.add(right ? 'correct' : 'wrong');
+        if (right) { score++; paintCount(); }
+        fb.innerHTML = right
+          ? '<span class="ok">Correct — ' + esc(q.answerText) + '</span>'
+          : '<span class="no">Not quite — ' + esc(q.answerText) + '</span>';
+        playReveal();
+        showNextBtn();
       }
       function gradeMulti() {
         if (answered) return;
@@ -921,32 +945,18 @@
         });
         var sub = panel.querySelector('#tq-submit');
         if (sub) sub.style.display = 'none';
-        var hint = '<span class="tq-hint">Tap the letters to hear them again and compare.</span>';
-        if (right) {
-          score++;
-          fb.innerHTML = '<span class="ok">Correct — ' + esc(q.answerText) + '</span>' + hint;
-          advTimer = setTimeout(next, 1300);
-        } else {
-          fb.innerHTML = '<span class="no">Not quite — ' + esc(q.answerText) + '</span>' + hint +
-            '<button class="tq-next" id="tq-next" type="button">Next →</button>';
-          panel.querySelector('#tq-next').addEventListener('click', next);
-        }
-      }
-      var advTimer = null;
-      function cancelAuto() {
-        if (!advTimer) return;
-        clearTimeout(advTimer);
-        advTimer = null;
-        if (!panel.querySelector('#tq-next')) {
-          fb.insertAdjacentHTML('beforeend', '<br><button class="tq-next" id="tq-next" type="button">Next →</button>');
-          panel.querySelector('#tq-next').addEventListener('click', next);
-        }
+        if (right) { score++; paintCount(); }
+        fb.innerHTML = (right
+          ? '<span class="ok">Correct — ' + esc(q.answerText) + '</span>'
+          : '<span class="no">Not quite — ' + esc(q.answerText) + '</span>') +
+          '<span class="tq-hint">Tap the letters to hear them again and compare.</span>';
+        showNextBtn();
       }
       tiles.forEach(function (el, i) {
         el.addEventListener('click', function () {
           if (answered) {
             // post-answer: letter tiles replay their names for contrast
-            if (q.multi && q.choices[i].audio) { play(q.choices[i].audio, el); cancelAuto(); }
+            if (q.multi && q.choices[i].audio) play(q.choices[i].audio, el);
             return;
           }
           if (q.multi) {
@@ -1068,20 +1078,28 @@
   var SOUND8 = ['-k', '-t', '-p', '-ng', '-n', '-m', '-y', '-w'];
   function finalsTestHome(panel, sec) {
     showAnswers();
+    var lp = finalsLetterParts();
     panel.innerHTML =
       '<div class="test-head"><h2>Test yourself</h2></div>' +
       (anyTested(sec) ? '<div class="test-stat-lines">' + statLinesHtml(sec) + '</div>' : '') +
-      '<p class="test-sub">Three tests, shuffled every run.</p>' +
-      '<div class="test-modes">' +
-      customModeBtn(sec, 'l2f', 'mode-l2f', 'Letter → final sound',
-        'See a letter, pick the sound it makes at the end of a word. 12 random letters.') +
+      '<p class="test-sub">Four tests, shuffled every run.</p>' +
+      '<div class="test-modes modes-4">' +
+      customModeBtn(sec, 'l2fA', 'mode-l2fa', 'Letter → final sound 1',
+        'Part 1 of 2 — see a letter, pick the sound it makes at the end of a word. ' +
+        lp[0].length + ' letters, endings mixed.') +
+      customModeBtn(sec, 'l2fB', 'mode-l2fb', 'Letter → final sound 2',
+        'Part 2 of 2 — the other ' + lp[1].length + ' letters. Together the parts cover every ' +
+        'letter that can end a syllable.') +
       customModeBtn(sec, 'pick', 'mode-pick', 'Round up the letters',
         'Select ALL the letters that make the given final sound — one or many.') +
       customModeBtn(sec, 'hear', 'mode-hear', 'Hear the ending',
         'Hear a word, pick the sound it ends with. ' + D.finalsPage.hearTest.length + ' words.') +
       '</div>';
-    panel.querySelector('#mode-l2f').addEventListener('click', function () {
-      runCustomTest(panel, sec, 'l2f', buildL2fTest, finalsTestHome);
+    panel.querySelector('#mode-l2fa').addEventListener('click', function () {
+      runCustomTest(panel, sec, 'l2fA', function () { return buildL2fTest(0); }, finalsTestHome);
+    });
+    panel.querySelector('#mode-l2fb').addEventListener('click', function () {
+      runCustomTest(panel, sec, 'l2fB', function () { return buildL2fTest(1); }, finalsTestHome);
     });
     panel.querySelector('#mode-pick').addEventListener('click', function () {
       runCustomTest(panel, sec, 'pick', buildPickTest, finalsTestHome);
@@ -1097,9 +1115,22 @@
     });
     return map;
   }
-  function buildL2fTest() {
+  // The two halves of the letter → final sound test. Every letter on the chart appears in
+  // exactly one part, so doing both covers the lot — that's the point of the split (the old
+  // single test drew 12 at random from all 35, so most letters never came up).
+  //
+  // Dealt ALTERNATELY over the chart order, which is grouped by ending sound. That mixes the
+  // endings evenly through both parts — a part cut along the groups would give its own answers
+  // away. The deal is FIXED, not random, so a part's best score means the same thing every run;
+  // only the question ORDER shuffles (in buildL2fTest).
+  function finalsLetterParts() {
+    var a = [], b = [];
+    finalsLetterMap().forEach(function (p, i) { (i % 2 ? b : a).push(p); });
+    return [a, b];
+  }
+  function buildL2fTest(part) {
     var la = letterAudioMap();
-    return shuffle(finalsLetterMap()).slice(0, 12).map(function (p) {
+    return shuffle(finalsLetterParts()[part]).map(function (p) {
       var li = la[p.ch] || {};
       var others = shuffle(SOUND8.filter(function (s) { return s !== p.sound; })).slice(0, 3);
       var choices = shuffle(others.concat([p.sound]));
