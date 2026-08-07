@@ -664,6 +664,7 @@ function dlLifetime() {
           // Unlike downloads, this one genuinely needs an account: it writes a subscription row
           // keyed by user id, and there is no user id to key it to until they have signed in once.
           if (d.result === 'lifetime_granted') dlSay('Lifetime membership granted to ' + em + '.', 'good');
+          else if (d.result === 'already_lifetime') dlSay(em + ' already has lifetime membership — nothing was changed.');
           else if (d.result === 'no_account') dlSay('No ThaiEar account with that address yet. They need to sign in once first — then grant it.', 'bad');
           else if (d.result === 'bad_email') dlSay('That does not look like an email address.', 'bad');
           else dlSay('Could not grant lifetime: ' + (d.error || d.result || 'unknown error'), 'bad');

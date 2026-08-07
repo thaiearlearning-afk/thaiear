@@ -107,6 +107,22 @@ async function revoke(env, actor, target) {
 async function grantLifetime(env, actor, target) {
   const account = await accountFor(env, target);
   if (!account) return { result: 'no_account', email: target };
+
+  /* ALREADY-LIFETIME IS A NO-OP, NOT A SUCCESS — the same courtesy `grant` gives above. Reporting
+     "granted" for something that was already true reads as though the click did something, which
+     is exactly how someone ends up clicking it repeatedly, or believing a mis-typed address was
+     fixed. No write either, so updated_at keeps pointing at the real grant.
+     ⚠ The check is lifetime AND still-active, not lifetime alone. `lifetime` is STICKY — the
+     Stripe webhook only ever sets it true, never false — so a lapsed member can legitimately
+     carry lifetime:true on a canceled row, and re-granting them SHOULD write (it is what
+     reactivates them). Testing the flag on its own would refuse the one case that needs the write. */
+  const rows = await sbGet(env,
+    '/rest/v1/subscriptions?user_id=eq.' + enc(account.id) + '&select=lifetime,status');
+  const cur = rows && rows[0];
+  if (cur && cur.lifetime === true && (cur.status === 'active' || cur.status === 'trialing')) {
+    return { result: 'already_lifetime', email: target };
+  }
+
   /* Only the columns being changed are sent. PostgREST's merge-duplicates upsert updates exactly
      the columns present, so an existing Stripe-managed row keeps its customer/subscription ids —
      sending them as null here would wipe the link to Stripe. */
