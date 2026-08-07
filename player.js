@@ -4186,6 +4186,38 @@
     return name + '_' + bits.join('_') + '.mp3';
   }
 
+  /* IS THIS A COMPUTER? The feature saves a file into a Downloads FOLDER, for someone who will then
+     open it, move it, or copy it onto other hardware. On a phone that is at best confusing and at
+     worst useless — the file lands somewhere the person cannot easily reach, and every phone user
+     already has the far better offline download. So the control is desktop-only, and hidden rather
+     than disabled: an explained-away button still invites the tap.
+
+     ⚠ NOT a `pointer: fine` / screen-width test. Touchscreen laptops report a coarse pointer and
+     small desktop windows report a narrow screen; both are real computers. The question here is
+     "does this device have a user-facing filesystem", which tracks the PLATFORM, not the input
+     method or the viewport. So: known mobile platforms are excluded by name and everything else is
+     treated as a computer.
+
+     Order matters — the UA test runs BEFORE userAgentData.mobile, because Chrome reports
+     `mobile: false` for Android TABLETS, which are not computers for this purpose. An Android or
+     iOS user agent is never a desktop, whatever the hints say.
+
+     `?pcdl=1` forces it on, so the owner can test the real flow on a phone browser. It grants
+     nothing by itself — entitlement is still checked immediately below. */
+  function dynIsDesktop() {
+    try {
+      if (new URLSearchParams(location.search).get('pcdl') === '1') return true;
+    } catch (_) {}
+    if (NATIVE) return false;                     // the app: a blob download has nowhere to land
+    var ua = navigator.userAgent || '';
+    if (/Android|iPhone|iPod|iPad|IEMobile|Opera Mini|Mobile|Silk|Kindle|BlackBerry|webOS|Windows Phone/i.test(ua)) return false;
+    // iPadOS 13+ deliberately reports itself as "Macintosh"; the touch points give it away.
+    if (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1) return false;
+    var uad = navigator.userAgentData;
+    if (uad && uad.mobile === true) return false;
+    return true;
+  }
+
   /* Entitlement. Deliberately a single ASK of auth.js rather than any local flag: the answer has
      to survive a monk losing access, and a localStorage boolean would not. A stale auth.js
      (cached older copy) simply has no such method → feature absent, which is the safe direction. */
@@ -4299,8 +4331,9 @@
 
   /* Build the row and put it after `afterEl`. Returns nothing — absence IS the not-allowed state,
      so no allow-listed-only markup is ever shipped to an ordinary visitor's DOM.
-     Hidden in the native app on purpose: this saves a file to a computer, and a blob download in
-     the app WebView has nowhere to land. The app already has the real offline download. */
+     Two independent gates, both of which must pass: dynIsDesktop() (this is a computer) and
+     dynPcDlAllowed() (this account may download). Covers topic pages and playlists alike — a
+     playlist runs through this same mount. */
   var dynPcDlAnchor = null, dynPcDlMounted = false;
   function dynPcDlMount(afterEl) {
     if (afterEl) {
@@ -4311,7 +4344,7 @@
          look again. Listener attached once, on the first mount call only. */
       window.addEventListener('thaiear:auth', function () { dynPcDlMount(null); });
     }
-    if (dynPcDlMounted || NATIVE || !dynPcDlAnchor || !dynPcDlAnchor.parentNode) return;
+    if (dynPcDlMounted || !dynIsDesktop() || !dynPcDlAnchor || !dynPcDlAnchor.parentNode) return;
     if (!dynPcDlAllowed()) return;
     var wrap = document.createElement('div');
     wrap.className = 'dyn-pcdl';
