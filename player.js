@@ -4313,7 +4313,6 @@
     }
     if (dynPcDlMounted || NATIVE || !dynPcDlAnchor || !dynPcDlAnchor.parentNode) return;
     if (!dynPcDlAllowed()) return;
-    dynPcDlMounted = true;
     var wrap = document.createElement('div');
     wrap.className = 'dyn-pcdl';
     wrap.innerHTML =
@@ -4322,7 +4321,14 @@
         dynInfoLabel('About this download', 'pcdl') +
       '</div>' +
       '<div class="dyn-pcdl-note" id="dyn-pcdl-note" role="status" aria-live="polite"></div>';
-    afterEl.parentNode.insertBefore(wrap, afterEl.nextSibling);
+    /* ⚠ dynPcDlAnchor, NEVER `afterEl`. The whole point of this function is that it gets called a
+       SECOND time with null once entitlement resolves — `afterEl` is only ever non-null on the
+       first, too-early call. Using it here threw "Cannot read properties of null" on the very run
+       that was supposed to build the button, and because the mounted flag had already been set the
+       retry on the next auth event was skipped too. Hence also: set the flag only once the node is
+       actually in the document, so a failure genuinely retries. */
+    dynPcDlAnchor.parentNode.insertBefore(wrap, dynPcDlAnchor.nextSibling);
+    dynPcDlMounted = true;
     var lbl = wrap.querySelector('.dyn-info-lbl');
     if (lbl) lbl.addEventListener('click', function () { dynInfoToggle('pcdl', wrap.querySelector('.dyn-pcdl-row')); });
     var btn = wrap.querySelector('#dyn-pcdl-btn'), note = wrap.querySelector('#dyn-pcdl-note');
