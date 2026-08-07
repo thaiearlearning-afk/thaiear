@@ -916,19 +916,34 @@
         s.setAttribute('title', 'Tap to hear this word again');
         s.addEventListener('click', function () { play(q.revealAudio, s); });
       }
+      // Answering opens a post-answer review: the tiles lock as answers but stay tappable so any
+      // that carry audio can be played and compared before moving on. Locking is a CLASS, not the
+      // `disabled` attribute — a disabled button never fires a click, which is exactly what was
+      // swallowing those taps on "Hear → pick the word". The `answered` guard is what actually
+      // prevents re-grading, so nothing is lost by dropping the attribute.
+      function lockTiles() {
+        tiles.forEach(function (el, j) {
+          el.classList.add('locked');
+          if (q.choices[j] && q.choices[j].audio) el.classList.add('replayable');
+        });
+      }
+      var anyTileAudio = q.choices.some(function (c) { return !!c.audio; });
+      var REPLAY_HINT = '<span class="tq-hint">Tap the ' + (q.multi ? 'letters' : 'options') +
+        ' to hear them again and compare.</span>';
       function gradeSingle(i) {
         if (answered) return;
         answered = true;
         var right = i === q.correctIdx;
         tiles.forEach(function (el, j) {
-          el.setAttribute('disabled', '');
           if (j === q.correctIdx) el.classList.add(right && j === i ? 'correct' : 'revealed');
         });
         tiles[i].classList.add(right ? 'correct' : 'wrong');
+        lockTiles();
         if (right) { score++; paintCount(); }
-        fb.innerHTML = right
+        fb.innerHTML = (right
           ? '<span class="ok">Correct — ' + esc(q.answerText) + '</span>'
-          : '<span class="no">Not quite — ' + esc(q.answerText) + '</span>';
+          : '<span class="no">Not quite — ' + esc(q.answerText) + '</span>') +
+          (anyTileAudio ? REPLAY_HINT : '');
         playReveal();
         showNextBtn();
       }
@@ -945,23 +960,28 @@
         });
         var sub = panel.querySelector('#tq-submit');
         if (sub) sub.style.display = 'none';
+        lockTiles();
         if (right) { score++; paintCount(); }
         fb.innerHTML = (right
           ? '<span class="ok">Correct — ' + esc(q.answerText) + '</span>'
           : '<span class="no">Not quite — ' + esc(q.answerText) + '</span>') +
-          '<span class="tq-hint">Tap the letters to hear them again and compare.</span>';
+          (anyTileAudio ? REPLAY_HINT : '');
         showNextBtn();
       }
       tiles.forEach(function (el, i) {
         el.addEventListener('click', function () {
           if (answered) {
-            // post-answer: letter tiles replay their names for contrast
-            if (q.multi && q.choices[i].audio) play(q.choices[i].audio, el);
+            // post-answer review: ANY tile that has audio speaks it, so the learner can hear the
+            // one they picked against the right one. Was multi-only, which left the single-choice
+            // "Hear → pick the word" silent even though its tiles are real words with recordings.
+            if (q.choices[i].audio) play(q.choices[i].audio, el);
             return;
           }
           if (q.multi) {
             el.classList.toggle('selected');
-            // reinforce: a letter tile speaks its name as you pick it
+            // reinforce: a letter tile speaks its name as you pick it (multi only — this is a
+            // selection, not the answer; the answer is the Check button. A single-choice tap IS
+            // the answer, so it must stay silent.)
             if (q.choices[i].audio) play(q.choices[i].audio, el);
           } else gradeSingle(i);
         });
@@ -1251,7 +1271,9 @@
       return {
         promptText: 'Listen — which word did you hear?',
         audio: w.audio,
-        choices: opts.map(function (x) { return { label: x.thai, thai: x.thai }; }),
+        // each option is a real word with its own recording, so after answering they can all be
+        // tapped and compared against the clip that was played
+        choices: opts.map(function (x) { return { label: x.thai, thai: x.thai, audio: x.audio }; }),
         correctIdx: opts.indexOf(w),
         answerText: w.thai + ' ' + w.t + ' (' + w.en + ')'
       };

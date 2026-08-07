@@ -131,6 +131,10 @@
 .tq-choice.wrong { border-color: #C0392B; background: #FBEDEB; }
 .tq-choice.revealed { border-color: #2E8B57; }
 .tq-choice[disabled] { cursor: default; }
+/* Post-answer: tiles are locked as answers but not inert — those carrying audio stay tappable so
+   they can be replayed and compared (the ones with nothing to play just lose the pointer). */
+.tq-choice.locked { cursor: default; }
+.tq-choice.locked.replayable { cursor: pointer; }
 /* letter→sound: audio option tiles */
 .tq-choice.audio-opt { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0.9rem 0.6rem; }
 .tq-choice.audio-opt .c-play { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: var(--accent-light); color: var(--accent); transition: background 0.15s; }
