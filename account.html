@@ -484,6 +484,9 @@ function renderAccount() {
     if (consentSig() !== _acctConsentSig) updateConsentArea();
     var sig = subSig();
     if (sig !== _acctRenderedSubSig) { _acctRenderedSubSig = sig; renderMembershipBox(cacheSub()); }
+    // The admin answer arrives on a LATER notify than the first render, so it has to be checked
+    // on the cheap path too — otherwise the panel only ever appears after a reload.
+    renderDesktopDlAdmin();
     return;
   }
   _acctRenderedUid = uid;
@@ -522,6 +525,9 @@ function renderAccount() {
     '<p>Signed in as <span class="email">' + esc(user.email || user.username) + '</span></p>' +
     '<div id="membership" style="min-height:80px"></div>' +
     consentHtml +
+    // Admin-only; stays an empty div for everyone else. Populated by renderDesktopDlAdmin() once
+    // auth.js has a SERVER answer — never rendered optimistically.
+    '<div id="desktop-dl-admin"></div>' +
     resetHtml +
     '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="confirmLogout()">Log out</button></p>' +
     '<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">' +
@@ -531,6 +537,8 @@ function renderAccount() {
   renderMembershipBox(cacheSub()); // instant from the cached Supabase state
   _acctRenderedSubSig = subSig();
   loadMembership();                // then refine with the authoritative Stripe state
+  _dlPanelBuilt = false;           // the body was rebuilt — the panel node is gone with it
+  renderDesktopDlAdmin();
   if (doReset) loadResetDebug();
 }
 function loadResetDebug() {
@@ -543,6 +551,207 @@ function loadResetDebug() {
     .then(function (t) { if (pre) pre.textContent = t; })
     .catch(function (e) { if (pre) pre.textContent = 'debug error: ' + e; });
 }
+/* ══ DESKTOP DOWNLOAD ADMIN (2026-08-07) ══════════════════════════════════════════════════════
+   Lets a trusted person enable the desktop MP3 download for someone else without going through
+   the owner. Renders ONLY for accounts in desktop_dl_admins — and that is a convenience, not the
+   permission: /api/desktop-dl re-checks the caller on every request, so this panel existing or
+   not existing changes nothing about what the server will accept.
+
+   ⚠ ADDING BY EMAIL WORKS BEFORE THE PERSON HAS AN ACCOUNT. That is why "granted" and "granted,
+   no account yet" are different messages rather than one being an error — addresses are collected
+   on paper, in person, and typed in later. The "no account yet" line is also the typo-catcher: it
+   is what someone sees when they mistype an address, and the thing that catches a monk who signed
+   in with a different Google address from the one they wrote down.
+
+   ⚠ DOWNLOADS AND LIFETIME ARE TWO DIFFERENT GRANTS. Downloads decide whether a file may leave
+   the browser; lifetime decides whether they pay. They are deliberately separate buttons with
+   separate confirmations — someone who should get one does not automatically get the other. */
+var _dlPanelBuilt = false;
+
+function dlApi(method, body) {
+  var a = window.ThaiEarAuth;
+  var token = a && a.getAccessToken && a.getAccessToken();
+  if (!token) return Promise.reject(new Error('not signed in'));
+  return fetch('/api/desktop-dl', {
+    method: method,
+    headers: body
+      ? { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }
+      : { Authorization: 'Bearer ' + token },
+    cache: 'no-store',
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(function (r) { return r.json(); });
+}
+
+function renderDesktopDlAdmin() {
+  var host = document.getElementById('desktop-dl-admin');
+  var a = window.ThaiEarAuth;
+  if (!host) return;
+  if (!a || !a.isDesktopDlAdmin || !a.isDesktopDlAdmin()) {
+    host.innerHTML = ''; _dlPanelBuilt = false; return;
+  }
+  // Build the chrome once. Rebuilding on every auth notify would wipe a half-typed address.
+  if (_dlPanelBuilt) { dlLoadList(); return; }
+  _dlPanelBuilt = true;
+  host.innerHTML =
+    '<div style="margin-top:1.5rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
+      '<h2 style="font-size:16px;font-weight:600;margin-bottom:4px">Desktop downloads</h2>' +
+      '<p class="acct-muted" style="margin-bottom:12px;line-height:1.55">Lets someone save the ' +
+        'constructed Dynamic mp3 as a file on their computer. You can add an address before they ' +
+        'have a ThaiEar account — access starts as soon as they sign up with it.</p>' +
+      '<input id="dl-email" class="login-input" type="email" inputmode="email" autocomplete="off" ' +
+        'placeholder="their@email.com" style="max-width:320px">' +
+      '<input id="dl-note" class="login-input" type="text" autocomplete="off" ' +
+        'placeholder="Note (optional) — e.g. Wat Suan Mokkh" style="max-width:320px;margin-top:8px">' +
+      '<div class="btn-row">' +
+        '<button class="btn btn-primary" id="dl-grant-btn">Enable downloads</button>' +
+        '<button class="btn btn-gold" id="dl-life-btn">Grant lifetime membership</button>' +
+      '</div>' +
+      '<p id="dl-status" class="acct-muted" style="margin-top:10px;min-height:1.2em"></p>' +
+      '<div id="dl-list" style="margin-top:14px"></div>' +
+      '<details style="margin-top:12px">' +
+        '<summary class="acct-muted" style="cursor:pointer">Recent activity</summary>' +
+        '<div id="dl-audit" style="margin-top:8px"></div>' +
+      '</details>' +
+    '</div>';
+  document.getElementById('dl-grant-btn').addEventListener('click', dlGrant);
+  document.getElementById('dl-life-btn').addEventListener('click', dlLifetime);
+  dlLoadList();
+}
+
+function dlSay(msg, kind) {
+  var el = document.getElementById('dl-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = kind === 'bad' ? '#B00020' : (kind === 'good' ? '#2E7D52' : 'var(--text-tertiary)');
+}
+
+function dlGrant() {
+  var em = (document.getElementById('dl-email').value || '').trim();
+  var note = (document.getElementById('dl-note').value || '').trim();
+  if (!em) { dlSay('Type an email address first.', 'bad'); return; }
+  dlSay('Working…');
+  dlApi('POST', { action: 'grant', email: em, note: note || null })
+    .then(function (d) {
+      // Four outcomes, four different sentences. A single "done" would hide the two that matter:
+      // the address that has no account (possible typo) and the one already enabled (no-op).
+      if (d.result === 'granted') dlSay('User found — downloads enabled for ' + em + '.', 'good');
+      else if (d.result === 'granted_no_account') dlSay('Enabled for ' + em + ' — but there is no ThaiEar account with that address yet. Downloads will turn on automatically when they sign up. Check the spelling if that is unexpected.', 'good');
+      else if (d.result === 'already') dlSay(em + ' already has desktop downloads enabled.');
+      else if (d.result === 'bad_email') dlSay('That does not look like an email address.', 'bad');
+      else dlSay('Could not enable downloads: ' + (d.error || d.result || 'unknown error'), 'bad');
+      if (d.result === 'granted' || d.result === 'granted_no_account') {
+        document.getElementById('dl-email').value = '';
+        document.getElementById('dl-note').value = '';
+      }
+      dlLoadList();
+      if (window.ThaiEarAuth.refreshDesktopDl) window.ThaiEarAuth.refreshDesktopDl();
+    })
+    .catch(function () { dlSay('Network error — nothing was changed. Try again.', 'bad'); });
+}
+
+function dlLifetime() {
+  var em = (document.getElementById('dl-email').value || '').trim();
+  if (!em) { dlSay('Type an email address first.', 'bad'); return; }
+  showModal({
+    title: 'Grant lifetime membership?',
+    body: 'This gives <strong>' + esc(em) + '</strong> full premium access, free, with no end date. ' +
+          'It is separate from desktop downloads and does not enable them.',
+    confirmText: 'Grant lifetime',
+    onConfirm: function () {
+      dlSay('Working…');
+      dlApi('POST', { action: 'grant_lifetime', email: em })
+        .then(function (d) {
+          // Unlike downloads, this one genuinely needs an account: it writes a subscription row
+          // keyed by user id, and there is no user id to key it to until they have signed in once.
+          if (d.result === 'lifetime_granted') dlSay('Lifetime membership granted to ' + em + '.', 'good');
+          else if (d.result === 'no_account') dlSay('No ThaiEar account with that address yet. They need to sign in once first — then grant it.', 'bad');
+          else if (d.result === 'bad_email') dlSay('That does not look like an email address.', 'bad');
+          else dlSay('Could not grant lifetime: ' + (d.error || d.result || 'unknown error'), 'bad');
+          dlLoadList();
+        })
+        .catch(function () { dlSay('Network error — nothing was changed. Try again.', 'bad'); });
+    },
+  });
+}
+
+function dlRevoke(em) {
+  showModal({
+    title: 'Turn off desktop downloads?',
+    body: '<strong>' + esc(em) + '</strong> will no longer be able to save MP3 files to a computer. ' +
+          'Files they have already downloaded stay on their computer — those cannot be taken back. ' +
+          'Their ThaiEar membership is not affected.',
+    confirmText: 'Turn off',
+    danger: true,
+    onConfirm: function () {
+      dlSay('Working…');
+      dlApi('POST', { action: 'revoke', email: em })
+        .then(function (d) {
+          dlSay(d.result === 'revoked' ? 'Downloads turned off for ' + em + '.' : 'Nothing to change for ' + em + '.');
+          dlLoadList();
+          if (window.ThaiEarAuth.refreshDesktopDl) window.ThaiEarAuth.refreshDesktopDl();
+        })
+        .catch(function () { dlSay('Network error — nothing was changed. Try again.', 'bad'); });
+    },
+  });
+}
+
+function dlLoadList() {
+  dlApi('GET').then(function (d) {
+    var wrap = document.getElementById('dl-list');
+    if (!wrap) return;
+    var rows = d.list || [];
+    if (!rows.length) { wrap.innerHTML = '<p class="acct-muted">Nobody is enabled yet.</p>'; return; }
+    var on = rows.filter(function (r) { return r.enabled; }).length;
+    wrap.innerHTML =
+      '<p class="acct-muted" style="margin-bottom:6px">' + on + ' enabled' +
+        (rows.length > on ? ' · ' + (rows.length - on) + ' turned off' : '') + '</p>' +
+      '<div style="display:flex;flex-direction:column;gap:6px">' +
+      rows.map(function (r) {
+        var when = r.added_at ? new Date(r.added_at).toLocaleDateString('en-GB',
+          { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;' +
+            'border:0.5px solid var(--border);border-radius:8px;background:' +
+            (r.enabled ? 'var(--surface)' : 'transparent') + '">' +
+            '<span style="font-size:13.5px;' + (r.enabled ? '' : 'text-decoration:line-through;opacity:.6') + '">' +
+              esc(r.email) + '</span>' +
+            (r.note ? '<span class="acct-muted">' + esc(r.note) + '</span>' : '') +
+            '<span class="acct-muted" style="margin-left:auto;font-size:12px">' +
+              (r.added_by_email ? 'by ' + esc(r.added_by_email) + ' · ' : '') + esc(when) + '</span>' +
+            (r.enabled
+              ? '<button class="btn btn-ghost" data-dl-off="' + esc(r.email) + '" style="font-size:12px;padding:5px 10px">Turn off</button>'
+              : '<button class="btn btn-ghost" data-dl-on="' + esc(r.email) + '" style="font-size:12px;padding:5px 10px">Re-enable</button>') +
+          '</div>';
+      }).join('') + '</div>';
+    wrap.querySelectorAll('[data-dl-off]').forEach(function (b) {
+      b.addEventListener('click', function () { dlRevoke(b.getAttribute('data-dl-off')); });
+    });
+    wrap.querySelectorAll('[data-dl-on]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var em = b.getAttribute('data-dl-on');
+        dlSay('Working…');
+        dlApi('POST', { action: 'grant', email: em })
+          .then(function () { dlSay('Downloads re-enabled for ' + em + '.', 'good'); dlLoadList(); })
+          .catch(function () { dlSay('Network error — nothing was changed. Try again.', 'bad'); });
+      });
+    });
+
+    var au = document.getElementById('dl-audit');
+    if (au) {
+      var log = d.audit || [];
+      au.innerHTML = log.length
+        ? '<div style="display:flex;flex-direction:column;gap:3px">' + log.map(function (x) {
+            var t = x.at ? new Date(x.at).toLocaleString('en-GB',
+              { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+            return '<div class="acct-muted" style="font-size:12px">' + esc(t) + ' — ' +
+              esc(x.actor_email || '?') + ' ' + esc(String(x.action || '').replace(/_/g, ' ')) + ' ' +
+              esc(x.target_email || '') + (x.detail ? ' <span style="opacity:.7">(' + esc(x.detail) + ')</span>' : '') +
+              '</div>';
+          }).join('') + '</div>'
+        : '<p class="acct-muted">Nothing yet.</p>';
+    }
+  }).catch(function () {});
+}
+
 // auth.js (loaded by nav.js) fires this when the session resolves or changes
 window.addEventListener('thaiear:auth', renderAccount);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderAccount);

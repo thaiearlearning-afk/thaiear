@@ -3594,7 +3594,7 @@
   // Parametrised stitcher (round-11): the chain can BUILD a FOREIGN playlist's session in
   // place (foreground only) from the local playlist cache — sents/keyNs/key come from the
   // caller instead of this page's own state.
-  function dynBuildSessionFor(inc, keyNs, key, onProg, st) {
+  function dynBuildSessionFor(inc, keyNs, key, onProg, st, opts) {
     if (!inc.length) return Promise.reject({ code: 'empty' });
     var mode = currentMode;   // captured: the key/filename must match the mode this build is FOR
     st = st || dynCurrentSet();   // r16: settings are per unit — a foreign build passes ITS unit's
@@ -3684,6 +3684,19 @@
       });
       var duration = pos / DYN_SR;
       tStitch = Date.now() - tFetch0 - tFetch;
+      /* PCM ESCAPE HATCH (2026-08-07) — the desktop MP3 export takes the stitch and stops here,
+         BEFORE dynEncodeSession. It must not reuse the stored session: that is 32 kbps AAC (or
+         24 kbps Opus), and re-encoding it to MP3 would stack a second lossy generation on top of
+         clips that are already MP3 from R2. Same stitch, same settings, same map — one encode
+         instead of two. Nothing is persisted on this path (no meta write, no native file, no
+         session object), so an export can never disturb the built session the player is using.
+         `map` rides along because its block ends are the only safe MP3 lane cuts — see the
+         boundaries note in mp3-export.js. */
+      if (opts && opts.pcm) {
+        dynLog('build ' + mode + ' ' + Math.round(duration) + 's PCM for export: fetch ' + tFetch +
+               'ms (' + (files.length - cached0) + ' new/' + files.length + ') · stitch ' + tStitch + 'ms');
+        return { pcm: out, duration: duration, map: map, rate: DYN_SR, key: key, mode: mode, sentences: inc };
+      }
       var tEnc0 = Date.now();
       // r17: encode rather than store raw PCM (~20× smaller). Falls back to WAV on any device
       // that can't produce a verified format, so this path can never be worse than before.
@@ -4064,7 +4077,14 @@
       'is heard after all the Thai repeats of a sentence. But English can also be positioned ' +
       'between Thai sentences, which can help with comprehension when first getting to know a ' +
       'topic. To hear English spoken first, before any Thai, switch to the English first mode at ' +
-      'the top of the dynamic mp3 player.'
+      'the top of the dynamic mp3 player.',
+    // Desktop MP3 download. Says the two things a person cannot find out any other way: the file
+    // is a snapshot of what they built, and the site has no further hold on it once it is saved.
+    pcdl: 'The latest Dynamic mp3 you have constructed will be downloaded — the Thai first or ' +
+      'English first version, whichever you are on. Play this topic first to enable downloads. ' +
+      'Your pause, repeat and English settings are fixed into the file, so change a setting and ' +
+      'play again to build a new one. The file is saved onto this computer and is yours to keep, ' +
+      'move or delete — ThaiEar cannot see it or update it afterwards.'
   };
   var dynInfoOpen = null;
   function dynInfoClose() {
@@ -4097,6 +4117,216 @@
     return '<button type="button" class="dyn-info-lbl" data-info="' + key + '" ' +
       'aria-label="' + escapeHtml(text) + ' — what is this?">' + escapeHtml(text) +
       ' <span class="dyn-info-i" aria-hidden="true">i</span></button>';
+  }
+
+  /* ══ DESKTOP MP3 DOWNLOAD (2026-08-07) ═══════════════════════════════════════════════════════
+     Saves the constructed dynamic mp3 as a real FILE on the computer, for allow-listed accounts.
+     Built for people who have no phone: the audio has to leave the browser and live on a PC (and
+     often be copied onto whatever hardware they own), so it ships as MPEG-1 MP3 — see the format
+     reasoning in mp3-export.js.
+
+     HOW IT DIFFERS FROM THE OFFLINE DOWNLOAD (dl-core.js) — they share nothing, deliberately:
+       · offline download  = per-sentence clips into Cache Storage / app storage, refcounted
+                             between topics and playlists, removable, staleness-checked.
+       · this              = one finished MP3 into the user's Downloads folder.
+     There is therefore NO remove button and NO update button here, and none should be added: the
+     file belongs to the operating system the moment it lands, the site cannot see it, cannot know
+     if it is stale, and must not pretend otherwise.
+
+     WHAT GETS DOWNLOADED. The session the visitor actually built on the side they are looking at
+     — TE downloads the built TE session, ET the built ET one. The settings are read back out of
+     the STORED SESSION KEY (dynKeyFor's `mode|pf|rN|eN[|pN]|nums`), never from the live controls,
+     so a file can never disagree with the audio it was made from: move a slider without pressing
+     play and the download still gives you what you heard. Those settings are then re-stitched to
+     PCM (dynBuildSessionFor's `{pcm:true}` hatch) so the MP3 is encoded once from the original
+     clips rather than transcoded from the 32 kbps session. ═══════════════════════════════════ */
+
+  // Mirror of dynKeyFor's per-sentence token — the two MUST agree or a key cannot be resolved
+  // back to its sentences. Kept adjacent in spirit; if you change one, change both.
+  function dynSentToken(s) {
+    return s.prefix ? (s.prefix + ':' + (s.clipNum != null ? s.clipNum : s.num)) : String(s.num);
+  }
+  /* Read a persisted session key back into the settings that produced it. The nums list is always
+     the LAST field; the optional English-position token sits between `e…` and it. Returns null on
+     anything unrecognised so a key written by a future format degrades to "can't export" rather
+     than to a silently wrong file. */
+  function dynParseSessionKey(key) {
+    var p = String(key || '').split('|');
+    if (p.length < 5) return null;
+    var mode = p[0], pf = parseFloat(p[1]), rp = parseInt(String(p[2]).slice(1), 10);
+    var en = parseInt(String(p[3]).slice(1), 10);
+    if ((mode !== 'te' && mode !== 'et') || !isFinite(pf) || !isFinite(rp) || !isFinite(en)) return null;
+    var ep = 0, i;
+    for (i = 4; i < p.length - 1; i++) if (String(p[i]).charAt(0) === 'p') ep = parseInt(String(p[i]).slice(1), 10) || 0;
+    var toks = String(p[p.length - 1]).split(',').filter(Boolean);
+    if (!toks.length) return null;
+    return { mode: mode, pf: pf, rp: rp, en: !!en, ep: ep, tokens: toks };
+  }
+  // The unit's human name. Playlists render theirs into #pl-player-title; topic pages carry an
+  // <h1 class="topic-title">. Never the audio prefix — that is a filename handle, not a name.
+  function dynUnitName() {
+    var el = PLMODE ? document.getElementById('pl-player-title') : document.querySelector('h1.topic-title');
+    var n = el && (el.textContent || '').trim();
+    if (!n || n === 'Loading…') n = (document.title || '').split('—')[0].trim();
+    return n || PREFIX || 'ThaiEar';
+  }
+  /* Filename carries everything that distinguishes one build from another — because there is no
+     Update button and no manifest, the filename is the ONLY place a person can tell two downloads
+     apart six months later. Mode and repeat count always; English only when it is a real choice
+     (ET always has it); pauses only when moved off 1× ; "12of18" only when sentences were
+     excluded, which is otherwise completely invisible in a file that is simply shorter. */
+  function dynExportName(st) {
+    var bits = [st.mode.toUpperCase(), st.rp + 'repeat' + (st.rp === 1 ? '' : 's')];
+    if (st.mode === 'te' && st.en) bits.push('english');
+    if (st.pf !== 1) bits.push('pauses' + String(st.pf).replace('.', 'p') + 'x');
+    var total = sentences.length;
+    if (st.tokens.length < total) bits.push(st.tokens.length + 'of' + total);
+    // Strip only what Windows/macOS actually reject in a filename; keep the name otherwise verbatim.
+    var name = dynUnitName().replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim();
+    return name + '_' + bits.join('_') + '.mp3';
+  }
+
+  /* Entitlement. Deliberately a single ASK of auth.js rather than any local flag: the answer has
+     to survive a monk losing access, and a localStorage boolean would not. A stale auth.js
+     (cached older copy) simply has no such method → feature absent, which is the safe direction. */
+  function dynPcDlAllowed() {
+    var a = window.ThaiEarAuth;
+    return !!(a && typeof a.canDesktopDownload === 'function' && a.canDesktopDownload());
+  }
+
+  /* LOADED ON DEMAND, NOT BY THE PAGES. mp3-export.js pulls in a 156 KB LGPL encoder that maybe a
+     dozen accounts will ever run. Injecting it on first click keeps it off all 93 topic pages for
+     everyone else — and, just as usefully, means adding this feature required no edit to a single
+     topic page, so nothing has to be re-generated when it changes. Resolves once, then memoised. */
+  var dynPcDlEnc = null;
+  function dynPcDlLoadEncoder() {
+    if (dynPcDlEnc) return dynPcDlEnc;
+    dynPcDlEnc = new Promise(function (resolve, reject) {
+      if (window.ThaiEarMp3) return resolve();
+      var s = document.createElement('script');
+      s.src = '/mp3-export.js';
+      s.async = true;
+      s.onload = function () { window.ThaiEarMp3 ? resolve() : reject({ code: 'noencoder' }); };
+      s.onerror = function () { reject({ code: 'noencoder' }); };
+      document.head.appendChild(s);
+    }).then(function () {
+      if (!window.ThaiEarMp3.supported()) throw { code: 'unsupported' };
+    });
+    // A failed load must not poison every later attempt — forget it so a retry re-fetches.
+    dynPcDlEnc.catch(function () { dynPcDlEnc = null; });
+    return dynPcDlEnc;
+  }
+
+  var dynPcDlBusy = false;
+  function dynPcDlRun(btn, note) {
+    if (dynPcDlBusy) return;
+    function say(msg, cls) { note.textContent = msg; note.className = 'dyn-pcdl-note' + (cls ? ' ' + cls : ''); }
+
+    var meta = dynReadMeta(DYN_KEY_NS, currentMode);
+    /* THE "PLAY IT FIRST" GATE. Not a technical necessity — the settings could be taken from the
+       live controls and built on demand — but a deliberate one: it guarantees the file is audio
+       the person has actually heard, on the side they are looking at, rather than a silent
+       construction from controls they may have nudged and never listened to. */
+    if (!meta) {
+      say('Please play this ' + (PLMODE ? 'playlist' : 'topic') + ' to construct a Dynamic mp3 first.', 'warn');
+      return;
+    }
+    var st = dynParseSessionKey(meta.key);
+    if (!st) { say('That saved session can’t be read. Press play to rebuild it, then try again.', 'warn'); return; }
+
+    var byTok = {};
+    sentences.forEach(function (s) { byTok[dynSentToken(s)] = s; });
+    var inc = st.tokens.map(function (t) { return byTok[t]; }).filter(Boolean);
+    // A sentence in the key that is no longer on the page (playlist edited since the build).
+    if (inc.length !== st.tokens.length) {
+      say('This ' + (PLMODE ? 'playlist' : 'topic') + ' has changed since that audio was built. Press play to rebuild it, then try again.', 'warn');
+      return;
+    }
+    dynPcDlBusy = true;
+    btn.disabled = true;
+    var label = btn.textContent;
+    say('Preparing audio…');
+    btn.textContent = 'Preparing…';
+
+    dynPcDlLoadEncoder()
+      .then(function () {
+        return dynBuildSessionFor(inc, DYN_KEY_NS, meta.key, function (d, tot) {
+          say('Preparing audio… ' + Math.round(d / tot * 100) + '%');
+        }, { pf: st.pf, rp: st.rp, en: st.en, ep: st.ep }, { pcm: true });
+      })
+      .then(function (r) {
+        // Lane cuts may only fall at a sentence block's END — every one of those sits at the far
+        // side of a ~3 s gap, so the join artefact lands in silence. See mp3-export.js.
+        var bounds = (r.map || []).slice(0, -1).map(function (b) { return b.end; });
+        var filename = dynExportName(st);
+        return window.ThaiEarMp3.encode({
+          pcm: r.pcm,
+          sampleRate: r.rate,
+          boundaries: bounds,
+          tags: {
+            title: dynUnitName() + ' (' + st.mode.toUpperCase() + ', ' + st.rp +
+                   ' repeat' + (st.rp === 1 ? '' : 's') + ')',
+            artist: 'ThaiEar',
+            album: 'ThaiEar — ' + (PLMODE ? 'Playlists' : 'Topic Sentences'),
+            genre: 'Speech'
+          },
+          onProgress: function (f, phase) {
+            var pct = Math.round(f * 100);
+            say(phase === 'encode' ? 'Creating MP3… ' + pct + '%' : 'Preparing audio…');
+            btn.textContent = phase === 'encode' ? 'Creating… ' + pct + '%' : 'Preparing…';
+          }
+        }).then(function (blob) {
+          window.ThaiEarMp3.saveAs(blob, filename);
+          say('Saved ' + filename + ' (' + (blob.size / 1048576).toFixed(1) + ' MB) to your Downloads folder.', 'ok');
+        });
+      })
+      .catch(function (e) {
+        var code = e && e.code;
+        if (code === 'noencoder') say('Couldn’t load the MP3 encoder. Check your connection and try again.', 'warn');
+        else if (code === 'unsupported') say('This browser can’t create MP3 files. Try Chrome, Edge or Firefox on a computer.', 'warn');
+        else if (code === 401 || code === 'noauth') say('Please sign in again, then try the download.', 'warn');
+        else if (code === 402 || code === 403 || code === 'licence') say('Your subscription doesn’t cover this audio.', 'warn');
+        else if (code === 'empty') say('There are no sentences to download.', 'warn');
+        else say('Sorry — the download failed. Check your connection and try again.', 'warn');
+        dynLog('pc-download failed: ' + (code || '') + ' ' + ((e && e.detail) || (e && e.message) || ''));
+      })
+      .then(function () {
+        dynPcDlBusy = false;
+        btn.disabled = false;
+        btn.textContent = label;
+      });
+  }
+
+  /* Build the row and put it after `afterEl`. Returns nothing — absence IS the not-allowed state,
+     so no allow-listed-only markup is ever shipped to an ordinary visitor's DOM.
+     Hidden in the native app on purpose: this saves a file to a computer, and a blob download in
+     the app WebView has nowhere to land. The app already has the real offline download. */
+  var dynPcDlAnchor = null, dynPcDlMounted = false;
+  function dynPcDlMount(afterEl) {
+    if (afterEl) {
+      dynPcDlAnchor = afterEl;
+      /* Entitlement is a Supabase round trip, so at mount time the answer is usually still
+         unknown — and "unknown" must render as ABSENT, never as a button that might vanish.
+         auth.js fires thaiear:auth when it settles (and on sign-in/out), which is the moment to
+         look again. Listener attached once, on the first mount call only. */
+      window.addEventListener('thaiear:auth', function () { dynPcDlMount(null); });
+    }
+    if (dynPcDlMounted || NATIVE || !dynPcDlAnchor || !dynPcDlAnchor.parentNode) return;
+    if (!dynPcDlAllowed()) return;
+    dynPcDlMounted = true;
+    var wrap = document.createElement('div');
+    wrap.className = 'dyn-pcdl';
+    wrap.innerHTML =
+      '<div class="dyn-pcdl-row">' +
+        '<button type="button" class="dyn-pcdl-btn" id="dyn-pcdl-btn">Download MP3 to this computer</button>' +
+        dynInfoLabel('About this download', 'pcdl') +
+      '</div>' +
+      '<div class="dyn-pcdl-note" id="dyn-pcdl-note" role="status" aria-live="polite"></div>';
+    afterEl.parentNode.insertBefore(wrap, afterEl.nextSibling);
+    var lbl = wrap.querySelector('.dyn-info-lbl');
+    if (lbl) lbl.addEventListener('click', function () { dynInfoToggle('pcdl', wrap.querySelector('.dyn-pcdl-row')); });
+    var btn = wrap.querySelector('#dyn-pcdl-btn'), note = wrap.querySelector('#dyn-pcdl-note');
+    btn.addEventListener('click', function () { dynPcDlRun(btn, note); });
   }
   /* Collapse the SEO intro to two lines with a Read more. The paragraph is only WRAPPED and
      height-clamped — the text is never removed or display:none'd, so it stays fully indexable. */
@@ -4971,6 +5201,17 @@
     '.dyn-ep-box{width:16px;height:16px;border-radius:4px;border:.5px solid var(--border-strong);background:var(--surface);cursor:pointer;padding:0;position:relative}' +
     '.dyn-ep-box.on{background:var(--accent);border-color:var(--accent)}' +
     ".dyn-ep-box.on::after{content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}" +
+    /* Desktop MP3 download (2026-08-07). Sits under the controls, quiet by default — it is a
+       rare, deliberate action, not a primary transport control. The note line is a live region so
+       progress and the "play it first" refusal are announced, not just painted. */
+    '.dyn-pcdl{margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:5px}' +
+    '.dyn-pcdl-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 10px}' +
+    '.dyn-pcdl-btn{font:600 12.5px var(--font-ui);color:#fff;background:var(--accent);border:0;border-radius:8px;padding:9px 14px;cursor:pointer}' +
+    '.dyn-pcdl-btn:hover{filter:brightness(1.08)}' +
+    '.dyn-pcdl-btn:disabled{opacity:.55;cursor:default;filter:none}' +
+    '.dyn-pcdl-note{font-size:11.5px;line-height:1.5;color:var(--text-tertiary);text-align:center;max-width:34em}' +
+    '.dyn-pcdl-note.warn{color:#A33A2A}' +
+    '.dyn-pcdl-note.ok{color:#2E7D52}' +
     /* ══ r28 STYLE2 — opt-in restyle, everything scoped to body.te-v2 ══════════════
        1. The intro collapses to two lines. It is a HEIGHT CLAMP, never display:none — the
           full text stays in the DOM so search engines still read every word, which is the
@@ -5265,6 +5506,11 @@
         det.appendChild(epRow);
         det.appendChild(syncRow);
       }
+      /* Desktop MP3 download — OUTSIDE the STYLE2 "Playback settings" disclosure on purpose. It
+         is an action, not a setting, and the people it exists for should not have to know to open
+         a collapsed panel to find it. Mounts after whatever the last settings node turned out to
+         be, so it sits below the controls in both layouts. */
+      dynPcDlMount(STYLE2 ? det : syncRow);
       dynSyncEnToggle();
       var skips = row.querySelectorAll('.skip-btn');   // [back-10, fwd-10] (dyn buttons not yet inserted)
       var prevB = document.createElement('button');

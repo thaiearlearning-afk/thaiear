@@ -310,6 +310,34 @@
       .catch(function () {});                                  // network/error → leave cached flag intact
   }
 
+  /* ══ DESKTOP MP3 DOWNLOAD ENTITLEMENT (2026-08-07) ═══════════════════════════════════════════
+     Answers two questions for the whole site: may I save MP3s to this computer, and may I grant
+     that to other people. Both come from /api/desktop-dl, which re-derives them from the caller's
+     JWT — this is a CACHE OF A SERVER ANSWER, never a decision made here.
+
+     ⚠ NOT DERIVED FROM `lifetime`, AND NOT PERSISTED TO localStorage. Deliberately different from
+     the offline-licence markers a few functions above. Those exist so a paid-up member keeps their
+     downloads while offline; this one has no offline job at all — you cannot save a new MP3 without
+     the clips anyway. Persisting it would create exactly the forgeable flag this feature was
+     designed to avoid: a monk who loses access must lose the button, and a localStorage boolean
+     anyone can set is not a permission. Unknown/offline reads as NO. */
+  var dlAllowed = false, dlAdmin = false, dlChecked = false;
+  function refreshDesktopDl() {
+    if (!currentUser || !currentSession) { dlAllowed = false; dlAdmin = false; dlChecked = false; return; }
+    var tok = currentSession.access_token;
+    if (!tok || !navigator.onLine) return;
+    fetch('/api/desktop-dl', { headers: { Authorization: 'Bearer ' + tok }, cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        // A failed/absent answer leaves the previous state alone rather than granting anything —
+        // the initial state is already "no", so a first-load failure is a closed door, not an open one.
+        if (!d) return;
+        dlAllowed = !!d.canDownload; dlAdmin = !!d.isAdmin; dlChecked = true;
+        notify();   // player.js re-checks on thaiear:auth and mounts the button then
+      })
+      .catch(function () {});
+  }
+
   // Read the user's marketing-consent flag (profiles row), cache it, re-notify.
   function refreshProfile() {
     if (!client || !currentUser) { currentConsent = false; consentLoaded = false; return; }
@@ -545,6 +573,17 @@
     // True only when a clean server read answered this session — see subFresh.
     isSubscriptionFresh: function () { return subFresh && (Date.now() - subFreshAt) < SUB_FRESH_TTL_MS; },
     getSubscription: function () { return currentSub; }, // {status, cancel_at_period_end, current_period_end}
+
+    /* ── desktop MP3 download (see refreshDesktopDl) ────────────────────────────────────────
+       Synchronous + cached, like isSubscribed(). False until the server answers, and false again
+       the moment the user signs out. player.js calls this to decide whether the button exists at
+       all; account.html calls isDesktopDlAdmin() to decide whether the granting panel exists. */
+    canDesktopDownload: function () { return dlAllowed; },
+    isDesktopDlAdmin: function () { return dlAdmin; },
+    isDesktopDlChecked: function () { return dlChecked; },
+    // Re-ask the server — used by the admin panel after it grants or revokes, so an admin who
+    // changes their OWN access sees it take effect without a reload.
+    refreshDesktopDl: function () { refreshDesktopDl(); },
 
     /* ══ THE ONE OFFLINE-ENTITLEMENT PREDICATE (added 2026-07-31) ═══════════════════════════════
        Both surfaces ask THIS. Previously player.js decided entitlement and playlists.html had no
@@ -787,6 +826,7 @@
         } catch (_) {}
         currentSession = null; currentUser = null;
         currentSubscribed = false; currentSub = null;
+        dlAllowed = false; dlAdmin = false; dlChecked = false;   // desktop-dl: never survives a sign-out
         // Clear the premium OFFLINE licence stamps too, so a DIFFERENT account signing in on this
         // device can't reuse the previous user's verification to play their premium downloads offline.
         // (A real premium user re-stamps automatically next time they're online — see stampVerified.)
@@ -1050,6 +1090,7 @@
       notify();
       refreshSubscription(); // async; fires another notify when it resolves
       refreshProfile();      // marketing-consent flag
+      refreshDesktopDl();    // desktop MP3 download entitlement (server-derived, not cached to disk)
       dpFlush();             // push any dyn settings changed while offline
       // keep in sync on login / logout / token refresh
       client.auth.onAuthStateChange(function (_event, session) {
@@ -1073,6 +1114,7 @@
         notify();
         refreshSubscription();
         refreshProfile();
+        refreshDesktopDl();
         dpFlush();
       });
       /* Back online → if supabase lost its session while we were away, hand our tokens back so
