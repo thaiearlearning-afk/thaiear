@@ -438,6 +438,11 @@
      blue underlined marker + ⓘ; hover/click opens a definition popover
      with a link to the step where the term is taught. ─────────────── */
   var GLOSSARY = {
+    // "stop" is the term the reader meets EARLIEST and had no entry for: the finals page (step 8)
+    // says "Three are stops" and labels every group "stop · dead", a whole step before the sounds
+    // page (step 9) defines it. Every other term on that page was already covered.
+    stop:        { re: /\bstops?\b/i, title: 'stop',
+                   def: 'A sound made by blocking the air completely, then releasing it in a burst: g, k, b, p, d, t, j, ch. Only stops can be aspirated or unaspirated — and at the end of a Thai syllable the burst never comes.', ref: 'sounds' },
     aspirated:   { re: /\b(aspirated|aspiration)\b/i, title: 'aspirated',
                    def: 'Said with a puff of air right after the consonant — hold your palm in front of your mouth and you’ll feel it. English p, t, k at the start of a word are aspirated.', ref: 'sounds' },
     unaspirated: { re: /\bunaspirated\b/i, title: 'unaspirated',
@@ -1337,7 +1342,7 @@
       '<p class="read-p">Thai doesn’t write tones directly. Instead, each syllable’s tone is <strong>derived</strong> from four things: the <strong>class</strong> of its first consonant (that’s why you learned the classes), whether the syllable is <strong>live or dead</strong>, the <strong>vowel length</strong>, and any <strong>tone mark</strong>. Learn the rules and you can read the tone of any word you meet.</p>' +
 
       '<h2 class="read-h2">Live and dead syllables</h2>' +
-      '<p class="read-p">A syllable is <strong>live</strong> if it can ring on: it ends in a long vowel or a sonorant sound — m, n, ng, y, w (<span class="th">มา</span>, <span class="th">นอน</span>, <span class="th">ยาว</span>). It’s <strong>dead</strong> if it stops short: a short open vowel, or a p / t / k stop at the end (<span class="th">จะ</span>, <span class="th">รัก</span>, <span class="th">มาก</span>). Note the four self-contained vowels <span class="th">◌ำ ใ◌ ไ◌ เ◌า</span> end in m / y / w sounds, so they’re always <strong>live</strong>.</p>' +
+      '<p class="read-p">A syllable is <strong>live</strong> if it can ring on: it ends in a long vowel or a sonorant sound — m, n, ng, y, w (<span class="th">มา</span>, <span class="th">นอน</span>, <span class="th">ยาว</span>). It’s <strong>dead</strong> if it cuts off short: a short open vowel, or a p / t / k stop at the end (<span class="th">จะ</span>, <span class="th">รัก</span>, <span class="th">มาก</span>). Note the four self-contained vowels <span class="th">◌ำ ใ◌ ไ◌ เ◌า</span> end in m / y / w sounds, so they’re always <strong>live</strong>.</p>' +
 
       '<h2 class="read-h2">The four tone marks</h2>' +
       '<p class="read-p">Marks sit above the initial consonant. What they produce depends on the class — the names are just the Thai numbers 1–4.</p>' +

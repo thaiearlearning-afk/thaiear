@@ -162,14 +162,21 @@ window.ThaiEarRead = {
 
   "soundsPage": {
     "sections": [
-      { "heading": "Aspirated and unaspirated",
-        "body": "Hold your palm in front of your mouth and say English \"pie\" — you feel a puff of air. That puff is aspiration. In English it never changes a word's meaning; in Thai it does. Compare:",
+      { "heading": "Three kinds of consonant sound",
+        "body": "Every Thai consonant makes its sound in one of three ways, and which one it is decides everything else on this page. A stop blocks the air completely, then lets it go in a burst — g, k, b, p, d, t, j, ch. A fricative never blocks it: the air is squeezed through a narrow gap and hisses on — s, f, h. A sonorant lets the voice ring out freely — m, n, ng, y, r, l, w. Say the three words below and feel what your mouth does at the very start of each: a block, a hiss, a ring.",
+        "chips": [
+          { "thai": "ไก่",  "t": "gài",  "en": "chicken", "tag": "stop — a block",      "audio": "gaw-gai-word" },
+          { "thai": "เสือ", "t": "sǔea", "en": "tiger",   "tag": "fricative — a hiss",  "audio": "saw-suea-word" },
+          { "thai": "งู",   "t": "nguu", "en": "snake",   "tag": "sonorant — a ring",   "audio": "ngaw-nguu-word" }
+        ] },
+      { "heading": "Aspiration — the question only stops answer",
+        "body": "Hold your palm in front of your mouth and say English \"pie\" — you feel a puff of air. That puff is aspiration. In English it never changes a word's meaning; in Thai it does. ไก่ and ไข่ both OPEN with a stop, made in the same place in the mouth, and the puff is the only thing standing between chicken and egg. So ก and ข are the same kind of sound asked the same question: puff, or no puff? That question is only ever asked of stops — the other two kinds have no burst to put a puff on.",
         "chips": [
           { "thai": "ไก่", "t": "gài", "en": "chicken", "tag": "unaspirated", "audio": "gaw-gai-word" },
           { "thai": "ไข่", "t": "khài", "en": "egg",     "tag": "aspirated",   "audio": "khaw-khai-word" }
         ] },
       { "heading": "The three-way split",
-        "body": "Where English has b and p, Thai has three separate sounds. บ is voiced — your voicebox vibrates from the start (put your fingers on your throat and say b to feel it). ป is unaspirated — no puff of air, and no vibration until the vowel starts. พ and ผ are aspirated — said with the puff. ป is the one to practise, because English never uses it on its own. The same three points apply respectively to the following letters: ด, ต, ท.",
+        "body": "All six sounds below are stops — three made with the lips, three with the tip of the tongue. Where English has b and p, Thai has three separate sounds. บ is voiced — your voicebox vibrates from the start (put your fingers on your throat and say b to feel it). ป is unaspirated — no puff of air, and no vibration until the vowel starts. พ and ผ are aspirated — said with the puff. ป is the one to practise, because English never uses it on its own. The same three points apply respectively to the following letters: ด, ต, ท.",
         "chips": [
           { "thai": "บ้า", "t": "bâa",  "en": "crazy",   "tag": "b",  "audio": "sd-baa" },
           { "thai": "ป้า", "t": "bpâa", "en": "aunt",    "tag": "bp", "audio": "sd-bpaa" },
@@ -178,22 +185,22 @@ window.ThaiEarRead = {
           { "thai": "ตี",  "t": "dtii", "en": "to hit",  "tag": "dt", "audio": "sd-dtii" },
           { "thai": "ที",  "t": "thii", "en": "turn / occasion", "tag": "th", "audio": "sd-thii" }
         ] },
-      { "heading": "Fricatives",
-        "body": "Sounds made from air friction rather than a burst: s, f, h. Nothing new to an English speaker — and the aspirated/unaspirated question doesn't apply to them.",
-        "chips": [
-          { "thai": "เสือ", "t": "sǔea", "en": "tiger", "tag": "s", "audio": "saw-suea-word" },
-          { "thai": "ฟัน",  "t": "fan",  "en": "tooth", "tag": "f", "audio": "faw-fan-word" },
-          { "thai": "ห้า",  "t": "hâa",  "en": "five",  "tag": "h", "audio": "quiz-haa" }
-        ] },
-      { "heading": "Stops — and why final ones sound swallowed",
-        "body": "p, t, k and their aspirated versions are stops: the air is blocked, then released. At the END of a Thai syllable a stop is never released — the mouth closes on the sound and simply stops. That's why มาก can sound like \"maa\" with a sudden cut. Listen for the closure:",
+      { "heading": "The same stops at the END of a syllable",
+        "body": "Everything so far has been about stops at the START of a syllable. The very same letters can end one too — and there they behave differently. At the end of a Thai syllable a stop is never released: the mouth closes on the sound and simply stays closed. No burst, so no puff, so the aspirated/unaspirated question never arises at the end of a word. That is why มาก can sound like \"maa\" with a sudden cut. Listen for the closure:",
         "chips": [
           { "thai": "กับ", "t": "gàp",  "en": "with",    "tag": "-p", "audio": "rule-gap" },
           { "thai": "พูด", "t": "phûut", "en": "to speak","tag": "-t", "audio": "quiz-phuut" },
           { "thai": "มาก", "t": "mâak", "en": "very",    "tag": "-k", "audio": "rule-maak" }
         ] },
+      { "heading": "Fricatives",
+        "body": "Here the air never fully stops — it is squeezed through a narrow gap and hisses continuously: s, f, h. Because there is no burst to release, a fricative is neither aspirated nor unaspirated; the question simply does not arise. Nothing here is new to an English speaker:",
+        "chips": [
+          { "thai": "เสือ", "t": "sǔea", "en": "tiger", "tag": "s", "audio": "saw-suea-word" },
+          { "thai": "ฟัน",  "t": "fan",  "en": "tooth", "tag": "f", "audio": "faw-fan-word" },
+          { "thai": "ห้า",  "t": "hâa",  "en": "five",  "tag": "h", "audio": "quiz-haa" }
+        ] },
       { "heading": "Sonorants",
-        "body": "The sounds that can ring on: m, n, ng, y, r, l, w — the whole of low class group 2. Only one is genuinely new to English speakers: ng at the START of a word. English has it only at the end (si-ng); Thai is happy to open with it:",
+        "body": "The sounds that can ring on: m, n, ng, y, r, l, w — the whole of low class group 2. Like fricatives they have no burst, so the aspiration question does not apply to them either. Only one is genuinely new to English speakers: ng at the START of a word. English has it only at the end (si-ng); Thai is happy to open with it:",
         "chips": [
           { "thai": "งู",   "t": "nguu", "en": "snake",    "tag": "ng-", "audio": "ngaw-nguu-word" },
           { "thai": "สาม", "t": "sǎam", "en": "three",    "tag": "-m",  "audio": "quiz-saam" },
@@ -202,7 +209,7 @@ window.ThaiEarRead = {
     ],
     "rule": {
       "heading": "Which letters are which — the rule",
-      "body": "Every MID-class stop is unaspirated: ก จ ฎ ฏ ด ต บ ป all have that hard, flat sound, and บ and ด go one step further and are voiced, like English b and d. Every HIGH- or LOW-class stop is aspirated. The fricatives and sonorants sit outside the question — no burst of air to aspirate. (อ stands apart as the silent vowel-carrier.) So when you meet a stop letter, its class already tells you whether it carries the puff:",
+      "body": "So every consonant carries two independent labels: the KIND of sound it makes — stop, fricative or sonorant — and the CLASS it belongs to. Put the two together and the puff is completely settled. Every MID-class stop is unaspirated: ก จ ฎ ฏ ด ต บ ป all have that hard, flat sound, and บ and ด go one step further and are voiced, like English b and d. Every HIGH- or LOW-class stop is aspirated. Fricatives and sonorants sit outside the question entirely — no burst to aspirate. (อ stands apart as the silent vowel-carrier.) These four groups are the four answers in the \"Which family?\" test below:",
       "families": [
         { "label": "Unaspirated stops", "letters": "ก จ ฎ ฏ ด ต บ ป", "note": "all mid class · บ ด voiced" },
         { "label": "Aspirated stops",   "letters": "ข ฉ ฐ ถ ผ · ค ฆ ช ฌ ฑ ฒ ท ธ พ ภ", "note": "high class · low class" },
