@@ -2622,7 +2622,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r147';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r148';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5301,7 +5301,19 @@
     '.scrubber-fill::after{width:18px;height:18px;right:-9px}' +
     '.dyn-slider{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 8px;font-size:11.5px;color:var(--text-tertiary);margin-top:8px}' +
     '.dyn-ctl-group{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}' +
-    '.dyn-slider input[type=range]{width:90px;accent-color:var(--accent);height:3px}' +
+    /* r148 — GRABBABLE, WITHOUT LOOKING ANY DIFFERENT (owner: "flickery … doesn't know quite what
+       to lock on to"). Two separate causes, both measured:
+       1. `height:3px` made the whole control a THREE-PIXEL-TALL hit target. `padding` with
+          content-box leaves the UA to draw its track inside the 3px content box — so the line and
+          thumb render exactly as before — while the element's box becomes 21px tall. Verified by
+          screenshot: identical track, 7x the grab band.
+       2. r147's 0.25 step added a stop (7 intervals, was 6) without lengthening the track, so
+          per-step spacing shrank from 15px to 12.9px. 90 x 7/6 = 105 restores the ORIGINAL
+          spacing exactly — the smallest change that undoes it, as asked.
+       ⚠ Do not "tidy" the padding into `height` — a taller height makes the UA draw a thicker
+       track, which is a visual change. And if the step or range moves again, rescale the width
+       with it or the stops crowd up once more. */
+    '.dyn-slider input[type=range]{width:105px;accent-color:var(--accent);height:3px;padding:9px 0;box-sizing:content-box}' +
     '.dyn-ctl-sep{color:var(--border-strong)}' +
     '.dyn-reps{display:inline-flex;gap:3px}' +
     '.dyn-rep-btn{width:20px;height:20px;border-radius:5px;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);font:600 10.5px var(--font-ui);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}' +
