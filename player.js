@@ -2622,7 +2622,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r137';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r145';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4820,11 +4820,21 @@
     for (var i = 0; i < sentences.length; i++) { if (sentences[i].num === num) return sentences[i]; }
     return null;
   }
+  /* r145 — THE NUGGET NOW CARRIES THE NOTES (gloss chips + cultural note).
+     A playlist item is a self-contained display nugget by design (playlists_schema.sql: "items
+     carry a display nugget … so playlist pages render without loading topic pages"), but it only
+     ever captured thai/translit/english. The playlist player therefore built every sentence with
+     `gloss: []`, its stage-3 row rendered nothing, and cycle() shortened the cycle to 3 — which is
+     exactly the owner-reported bug: "third tap, no gloss chips, just closes". Capture them at ADD
+     time from the topic page, which is the authoritative source for both fields.
+     ⚠ gloss rows are PAIRS ["word","gloss"] on most topics and TRIPLES ["word","gloss","translit"]
+     on 01–03 — store the array as-is (jsonb), never normalise it; chipHtml() handles both shapes. */
   function dynItemPayload(num) {
     var s = dynSentByNum(num);
     if (!s) return null;
     return { topic_key: dynTopicKey(), num: num, prefix: PREFIX, tier: TIER || 'free',
-      thai: s.thai, translit: s.translit || null, english: s.english };
+      thai: s.thai, translit: s.translit || null, english: s.english,
+      gloss: (s.gloss && s.gloss.length) ? s.gloss : null, cultural: s.cultural || null };
   }
   // Cross-page pending state for the plsel flow.
   function dynPendRead() {
@@ -6393,7 +6403,16 @@
         '<button class="speed-toggle' + (slowMode ? ' active' : '') + '" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>' +
         flagBtn +
         '<span class="sent-preview">' + s.preview + '<span class="ell">…</span></span>' +
-        '<div class="prog-wrap" aria-hidden="true">' + seg(st >= 1) + seg(st >= 2) + seg(st >= 3) + '</div>' +
+        /* r145 — NO reveal-stage segment bar on a PLAYLIST card (owner, 2026-08-08: "the old pill
+           expander thing … is defunct"). All 93 topic pages ship style2, and body.te-v2 hides
+           .prog-wrap outright; the playlist player is deliberately NOT a te-v2 page (it takes
+           targeted `body.dyn-plmode` rules instead — see DYN_STYLES), so it was the one surface
+           left still drawing it. And it was wrong there in a way it never was on a topic page:
+           three segments on a card whose notes stage was empty, so the third could never fill.
+           Not emitted rather than display:none'd — the element is dead markup here, and the SSR
+           topic pages still ship it statically, so the CSS itself has to stay. Tap-to-expand
+           mechanics are untouched. */
+        (PLMODE ? '' : '<div class="prog-wrap" aria-hidden="true">' + seg(st >= 1) + seg(st >= 2) + seg(st >= 3) + '</div>') +
       '</div>' +
       (st > 0 ? '<div class="sentence-body">' +
         '<div class="reveal-row row-thai">' + displayThai + (s.translit ? '<div class="thai-translit">' + cleanThai(s.translit) + '</div>' : '') + '</div>' +

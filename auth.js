@@ -879,8 +879,39 @@
   var plLoadAuth = false;
   function plStore() { try { localStorage.setItem('thaiear_playlists', JSON.stringify(plCache)); } catch (_) {} }
   function plLocal() { try { return JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) { return null; } }
+
+  /* ── r145: the notes columns (gloss jsonb, cultural text) — see playlists_gloss_migration.sql ──
+     The nugget gained two fields so the playlist player can open a card to its third stage (gloss
+     chips + cultural note) exactly like a topic page. They are ADDITIVE and the deploy is not
+     ordered against the migration: if this JS reaches a browser before the SQL has been run,
+     PostgREST answers a select/insert naming an unknown column with a hard error, which would
+     empty every playlist read and break every "add to playlist" write.
+     So the first schema error demotes this flag once, for the session, and the call is retried
+     without the two fields — old behaviour, no notes, nothing broken. Once the columns exist the
+     flag never trips and the retry never runs. Do NOT "simplify" this away before confirming the
+     migration has run on production; it is the only thing making the two deploys order-free. */
+  var plNotes = true;
+  var PL_COLS = 'id,playlist_id,topic_key,num,prefix,tier,thai,translit,english,position';
+  // PGRST204 = "column not found in schema cache"; the message text catches the 42703 variants.
+  function plSchemaErr(e) {
+    if (!e) return false;
+    if (e.code === 'PGRST204' || e.code === '42703') return true;
+    return /gloss|cultural/.test(String(e.message || '')) && /column|schema/i.test(String(e.message || ''));
+  }
+  function plItemsQuery(c) {
+    var sel = PL_COLS + (plNotes ? ',gloss,cultural' : '');
+    return c.from('playlist_items').select(sel).order('position').order('created_at')
+      .then(function (r) {
+        if (r.error && plNotes && plSchemaErr(r.error)) {
+          plNotes = false;
+          return c.from('playlist_items').select(PL_COLS).order('position').order('created_at');
+        }
+        return r;
+      });
+  }
   window.ThaiEarAuth.playlists = {
-    // Resolves [{id, name, position, items:[{topic_key,num,prefix,tier,thai,translit,english}]}]
+    // Resolves [{id, name, position, items:[{topic_key,num,prefix,tier,thai,translit,english,
+    //                                        gloss,cultural}]}]   (r145 added the last two)
     load: function (force) {
       if (plCache && !force) { plLoadAuth = false; return Promise.resolve(plCache); }
       if (!client || !currentUser) { plCache = plLocal() || []; plLoadAuth = false; return Promise.resolve(plCache); }
@@ -891,9 +922,7 @@
           var lists = r.data || [];
           if (plSeq !== seq) { plLoadAuth = false; return plCache; }
           if (!lists.length) { plCache = []; plStore(); plLoadAuth = true; return plCache; }
-          return client.from('playlist_items')
-            .select('id,playlist_id,topic_key,num,prefix,tier,thai,translit,english,position')
-            .order('position').order('created_at')
+          return plItemsQuery(client)
             .then(function (ri) {
               if (ri.error) throw ri.error;
               /* Re-check: the items fetch is the SECOND round trip, and it is the wider half of the
@@ -956,7 +985,18 @@
         thai: item.thai, translit: item.translit || null, english: item.english,
         position: p ? p.items.length : 0
       };
-      return client.from('playlist_items').upsert(row, { onConflict: 'playlist_id,topic_key,num' })
+      // r145: the notes travel with the nugget (see plNotes above for why this is conditional).
+      if (plNotes) { row.gloss = item.gloss || null; row.cultural = item.cultural || null; }
+      var conflict = { onConflict: 'playlist_id,topic_key,num' };
+      return client.from('playlist_items').upsert(row, conflict)
+        .then(function (r) {
+          if (r.error && plNotes && plSchemaErr(r.error)) {
+            plNotes = false;
+            delete row.gloss; delete row.cultural;
+            return client.from('playlist_items').upsert(row, conflict);
+          }
+          return r;
+        })
         .then(function (r) {
           if (r.error) throw r.error;
           plSeq++;   /* r76 */

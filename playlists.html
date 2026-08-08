@@ -152,8 +152,13 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
           thai: it.thai,
           translit: it.translit || null,
           english: it.english,
-          gloss: [],
-          cultural: '',
+          /* r145 — the notes come from the item's own nugget (auth.js/playlists_schema.sql). They
+             used to be hardcoded empty here, so a playlist card's third reveal stage had nothing
+             to show and the player cycled straight back to closed. An item added before the notes
+             columns existed (or one whose sentence genuinely has no chips) still falls back to
+             empty, and cycle() skips the empty stage for exactly those — see player.js. */
+          gloss: Array.isArray(it.gloss) ? it.gloss : [],
+          cultural: it.cultural || '',
           prefix: it.prefix,       // per-sentence audio prefix/tier (a playlist mixes topics)
           tier: it.tier || 'free'
         };
