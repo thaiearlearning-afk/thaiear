@@ -2622,7 +2622,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r145';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r147';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -2716,7 +2716,10 @@
   function dynNormSet(o) {
     var d = { pf: DYN_DEFAULTS.pf, rp: DYN_DEFAULTS.rp, en: DYN_DEFAULTS.en, ep: DYN_DEFAULTS.ep };
     if (!o) return d;
-    var pf = parseFloat(o.pf); if (isFinite(pf) && pf >= 0.5 && pf <= 2) d.pf = pf;
+    // r147: floor lowered 0.5 → 0.25 with the slider. Widening the ACCEPTED range is safe in this
+    // direction only — a stored 0.25 from a device on the new build must survive being read by an
+    // old one, and this is the guard that would otherwise silently reset it to 1.
+    var pf = parseFloat(o.pf); if (isFinite(pf) && pf >= 0.25 && pf <= 2) d.pf = pf;
     var rp = parseInt(o.rp, 10); if (rp >= 1 && rp <= 4) d.rp = rp;
     if (typeof o.en === 'boolean') d.en = o.en;
     var ep = parseInt(o.ep, 10); if (!isNaN(ep) && ep >= 0 && ep <= 4) d.ep = ep;
@@ -3653,10 +3656,40 @@
       inc.forEach(function (s) {
         var th = dynClipCache[dynClipRef(s, 'TH').file];
         var en = needEn ? dynClipCache[dynClipRef(s, 'EN').file] : null;
+        /* r147 — THE FLOOR NO LONGER SCALES (owner, 2026-08-08). It used to sit OUTSIDE the
+           multiplier — `Math.max(3.0, syl*0.5) * pf` — so `pf` shrank everything uniformly and the
+           spread between the shortest and longest pause stayed pinned at 5:1 wherever you put the
+           slider. That is why no value felt right: turn it down far enough for a 30-syllable
+           sentence and a 7-syllable one dropped to 1.75s at 0.5x (0.88s at 0.25x — "almost
+           ridiculous", and correctly predicted before it shipped).
+           Inside the max, the floor holds while only the proportional part shrinks, so the slider
+           becomes a PROPORTIONAL→FLAT continuum: 1x fully scaled, 0.25x effectively flat. That,
+           not a second control, is what "flat pauses" means here — and it is why playlists and
+           topics can keep ONE model despite a playlist having the widest length spread on the site.
+
+           The floors are measured, not chosen by feel (2,743 local clips, sampled by syllable):
+           • 2.0s base — at 1x it governs syllables 1-3 ONLY, whose longest clip is 1.85s, so it
+             can never deny a repeat you could actually make, and never stalls after one you
+             finished. A 3.0s floor would govern up to 5 syllables (longest clip 2.66s) and idle
+             ~1.2s of dead air on each. Perceived gap also runs ~0.2-0.3s longer than inserted,
+             since clip edges keep Chirp's own lead-in/trail-out.
+           • gap gets the SAME floor as repeat (owner: not 3s within and 1.5s between).
+           • recall keeps its 1.5x ratio (was 4.5/3.0, now 3.0/2.0): ET asks you to PRODUCE the
+             Thai from the English, which is a harder task than echoing what you just heard.
+           No cache invalidation: `pf` is part of the session key, so a new setting builds a new
+           session. An existing cached session keeps its old timing until naturally rebuilt. */
+        /* ⚠ THE FLOOR RISES WITH THE SLIDER BUT NEVER FALLS BELOW ITS BASE — that is what `up` is.
+           A strictly flat floor fixes the shrink side and quietly breaks the other one: at 2x a
+           1-syllable sentence would go from today's 6.0s to 2.0s, and dragging 1x → 2x would do
+           NOTHING for short sentences (2.00 → 2.00), a dead zone in the top half of the control.
+           Only the DOWN direction was ever the complaint. `up` is inert for `gap`, whose
+           proportional term (3.0*pf) always outruns 2.0*pf above 1x; it is written the same way
+           for all three so the rule reads as one rule. */
+        var up = Math.max(1, st.pf);
         var syl = dynSyllables(s.thai);
-        var repeat = Math.max(3.0, syl * 0.5) * st.pf;
-        var recall = Math.max(4.5, syl * 0.7) * st.pf;
-        var gap = 3.0 * st.pf;
+        var repeat = Math.max(2.0 * up, syl * 0.5 * st.pf);
+        var recall = Math.max(3.0 * up, syl * 0.7 * st.pf);
+        var gap = Math.max(2.0 * up, 3.0 * st.pf);
         var start = pos / DYN_SR;
         var r;
         if (mode === 'et') {
@@ -5516,7 +5549,9 @@
       sl.className = 'dyn-slider';
       // Each control is a NON-WRAPPING group — the row wraps between groups, never inside one
       // (round-10 addendum B: "Thai sentence repeats" was wrapping away from its 1-4 boxes).
-      sl.innerHTML = '<span class="dyn-ctl-group">Pauses <input id="dyn-pf" type="range" min="0.5" max="2" step="0.25"> <span id="dyn-pf-val">1×</span></span>' +
+      // r147: min 0.25 (was 0.5) — long sentences kept long gaps even at 0.5x. Serves the topic
+      // pages AND the playlist player; they share this control, which is why one model was kept.
+      sl.innerHTML = '<span class="dyn-ctl-group">Pauses <input id="dyn-pf" type="range" min="0.25" max="2" step="0.25"> <span id="dyn-pf-val">1×</span></span>' +
         '<span class="dyn-ctl-sep">·</span>' +
         '<span class="dyn-ctl-group">' + dynInfoLabel('Thai sentence repeats', 'reps') + ' <span class="dyn-reps" id="dyn-reps"></span></span>' +
         '<span class="dyn-ctl-sep" id="dyn-en-sep">·</span>' +
