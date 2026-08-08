@@ -486,7 +486,7 @@
           <!-- r147: min 0.25, matching the real control in player.js. This demo is a hand-kept
                COPY of that markup, so any change to the slider's range/step has to land here too
                or the guide teaches a player the site no longer has. -->
-          <span class="dyn-ctl-group" id="demo-pauses">Pauses <input id="dyn-pf" type="range" min="0.25" max="2" step="0.25" value="1"> <span id="dyn-pf-val">1×</span></span>
+          <span class="dyn-ctl-group" id="demo-pauses"><button type="button" class="dyn-info-lbl" id="demo-pauses-info" aria-label="Pauses — what is this?">Pauses <span class="dyn-info-i" aria-hidden="true">i</span></button> <input id="dyn-pf" type="range" min="0.25" max="2" step="0.25" value="1"> <span id="dyn-pf-val">1×</span></span>
           <span class="dyn-ctl-sep">·</span>
           <span class="dyn-ctl-group" id="demo-reps"><button type="button" class="dyn-info-lbl" id="demo-reps-info">Thai sentence repeats <span class="dyn-info-i" aria-hidden="true">i</span></button> <span class="dyn-reps" id="dyn-reps"><button type="button" class="dyn-rep-btn">1</button><button type="button" class="dyn-rep-btn on">2</button><button type="button" class="dyn-rep-btn">3</button><button type="button" class="dyn-rep-btn">4</button></span></span>
           <span class="dyn-ctl-sep" id="dyn-en-sep">·</span>
@@ -608,6 +608,9 @@
   /* ⓘ pop-under info boxes — same texts and mechanics as the live player (player.js DYN_INFO) */
   var INFO = {
     reps: 'This decides how many times a Thai sentence is spoken.',
+    // r151: kept word-for-word identical to player.js's DYN_INFO.pauses — the demo teaches the
+    // real player, so a paraphrase here would be a second, quietly diverging source of truth.
+    pauses: 'This decides the length of pause between repeats of a sentence and between different sentences. Pauses are naturally longer for longer sentences and shorter for shorter sentences. There is always a minimum length pause of a couple of seconds, even if you select 0.25x.',
     engpos: 'This decides where the English sentence is spoken. In the last position, the English is heard after all the Thai repeats of a sentence. But English can also be positioned between Thai sentences, which can help with comprehension when first getting to know a topic. To hear English spoken first, before any Thai, switch to the English first mode at the top of the dynamic mp3 player.'
   };
   var infoOpen = null;
@@ -632,6 +635,7 @@
     rowEl.parentNode.insertBefore(box, rowEl.nextSibling);
     infoOpen = key;
   }
+  $('demo-pauses-info').addEventListener('click', function (e) { e.stopPropagation(); infoToggle('pauses', $('demo-slider-row')); });
   $('demo-reps-info').addEventListener('click', function (e) { e.stopPropagation(); infoToggle('reps', $('demo-slider-row')); });
   $('demo-ep-info').addEventListener('click', function (e) { e.stopPropagation(); infoToggle('engpos', $('dyn-ep-row')); });
 

@@ -2622,7 +2622,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r150';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r151';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4106,6 +4106,13 @@
       'time you generate a new dynamic mp3. Learn more about the Dynamic Player in our ' +
       '<a href="guide.html">guide</a>.',
     reps: 'This decides how many times a Thai sentence is spoken.',
+    // r151 (owner-authored, verbatim). The last sentence is the one that earns its place: after
+    // r147 the floor no longer scales, so 0.25x really does bottom out at a couple of seconds
+    // rather than shrinking away — that is a promise worth making explicit rather than surprising.
+    pauses: 'This decides the length of pause between repeats of a sentence and between different ' +
+      'sentences. Pauses are naturally longer for longer sentences and shorter for shorter ' +
+      'sentences. There is always a minimum length pause of a couple of seconds, even if you ' +
+      'select 0.25x.',
     engpos: 'This decides where the English sentence is spoken. In the last position, the English ' +
       'is heard after all the Thai repeats of a sentence. But English can also be positioned ' +
       'between Thai sentences, which can help with comprehension when first getting to know a ' +
@@ -5589,7 +5596,8 @@
       // (round-10 addendum B: "Thai sentence repeats" was wrapping away from its 1-4 boxes).
       // r147: min 0.25 (was 0.5) — long sentences kept long gaps even at 0.5x. Serves the topic
       // pages AND the playlist player; they share this control, which is why one model was kept.
-      sl.innerHTML = '<span class="dyn-ctl-group">Pauses <input id="dyn-pf" type="range" min="0.25" max="2" step="0.25"> <span id="dyn-pf-val">1×</span></span>' +
+      sl.innerHTML = '<span class="dyn-ctl-group">' + dynInfoLabel('Pauses', 'pauses') +
+          ' <input id="dyn-pf" type="range" min="0.25" max="2" step="0.25"> <span id="dyn-pf-val">1×</span></span>' +
         '<span class="dyn-ctl-sep">·</span>' +
         '<span class="dyn-ctl-group">' + dynInfoLabel('Thai sentence repeats', 'reps') + ' <span class="dyn-reps" id="dyn-reps"></span></span>' +
         '<span class="dyn-ctl-sep" id="dyn-en-sep">·</span>' +
@@ -5639,14 +5647,17 @@
       epRow.innerHTML = '<span class="dyn-ctl-group">' + dynInfoLabel('English position', 'engpos') +
         ' <span class="dyn-ep-boxes" id="dyn-ep-boxes"></span></span>';
       sl.parentNode.insertBefore(epRow, sl.nextSibling);
-      // Both ⓘ labels share one handler; the box lands under whichever row was tapped.
-      var infoRow = { reps: sl, engpos: epRow };
+      /* Every ⓘ label shares one handler; the box lands under whichever row was tapped.
+         ⚠ querySelectorAll, NOT querySelector. The slider row now holds TWO labels (Pauses and
+         Thai sentence repeats, r151) and the old single-element lookup would have wired only the
+         first — silently leaving the repeats ⓘ dead while looking entirely correct. */
+      var infoRow = { pauses: sl, reps: sl, engpos: epRow };
       [sl, epRow].forEach(function (r) {
-        var lbl = r.querySelector('.dyn-info-lbl');
-        if (!lbl) return;
-        lbl.addEventListener('click', function () {
-          var k = lbl.getAttribute('data-info');
-          dynInfoToggle(k, infoRow[k]);
+        r.querySelectorAll('.dyn-info-lbl').forEach(function (lbl) {
+          lbl.addEventListener('click', function () {
+            var k = lbl.getAttribute('data-info');
+            dynInfoToggle(k, infoRow[k] || r);
+          });
         });
       });
       // r16 item 3: the "apply to all" affordance — bottom-left of the player controls.
