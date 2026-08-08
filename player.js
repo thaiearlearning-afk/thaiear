@@ -5014,29 +5014,56 @@
   // pend (optional) = the cross-page plsel state; its presence switches on plsel behaviour.
   function dynEnterSelect(p, pend) {
     var tk = dynTopicKey();
-    var real = {}, k;
-    (p.items || []).forEach(function (it) { if (it.topic_key === tk) real[it.num] = true; });
+    /* r146 — MATCH ON ANY OF THIS PAGE'S IDENTITIES, NOT JUST TODAY'S KEY (owner, 2026-08-08:
+       "all already held sentences should pre-tick").
+       playlist_items.topic_key is not one thing. dynTopicKey() is `cfg.dynKey || PREFIX` and no
+       live topic page sets dynKey, so an item added from a topic page is keyed by its AUDIO
+       PREFIX ('ColoursAndDescriptions2_BEG'); rows keyed by PAGE FILE ('topic-04b') also exist,
+       written by the rollout's owner test pages, which did set dynKey. 51 of the 70 live rows are
+       the page-file kind. Matching only `tk` therefore left them unticked — the sentence WAS in
+       the playlist, the page said it wasn't, and re-selecting it wrote a SECOND row under the
+       other key.
+       Any of the three identities counts, and the item's own key is remembered (realKey) so a
+       removal deletes the row that actually exists rather than one that never did. Prefix is not
+       eternal either — the 2026-07 split program minted new handles — which is exactly why this
+       is an OR across all of them and not a migration to one "true" key. */
+    var real = {}, realKey = {}, k;
+    function itemHere(it) {
+      return it.topic_key === tk || it.topic_key === TOPIC_KEY || (!!PREFIX && it.prefix === PREFIX);
+    }
+    (p.items || []).forEach(function (it) {
+      if (!itemHere(it)) return;
+      real[it.num] = true;
+      realKey[it.num] = it.topic_key;   // delete by the key the row was WRITTEN with
+    });
     // pre-ticks = the playlist's real items for this topic, adjusted by any pending diffs
     var pre = {};
     for (k in real) pre[k] = true;
     if (pend) {
       (pend.adds[tk] || []).forEach(function (it) { pre[it.num] = true; });
-      (pend.removes[tk] || []).forEach(function (num) { delete pre[num]; });
+      // entries are {num,tk} since r146, bare nums in a flow stashed by an older build
+      (pend.removes[tk] || []).forEach(function (r) { delete pre[typeof r === 'object' ? r.num : r]; });
     }
     var now = {};
     for (k in pre) now[k] = true;
-    dynSel = { id: p.id, name: p.name || (pend && pend.name) || '', pre: pre, real: real, now: now, plsel: !!pend, pend: pend || null };
+    dynSel = { id: p.id, name: p.name || (pend && pend.name) || '', pre: pre, real: real, realKey: realKey, now: now, plsel: !!pend, pend: pend || null };
     var list = $('sentence-list');
     if (list) {
       list.classList.add('dyn-selecting');
       dynSelListener = function (e) {
         var el = e.target;
         if (!el || !el.closest) return;
-        // ticking happens ONLY on the tick circle itself
+        /* Ticking happens on the tick (and its enlarged invisible pad — see .dyn-tick::before),
+           plus the sentence NUMBER beside it: r146 widens the target and the number is the one
+           thing inside it that can stick out, since .sent-num grows past its 20px min-width on a
+           3-digit card. Nothing else in the header changes behaviour — play, tortoise and the
+           reveal cycle are all still live mid-selection. */
         var tick = el.closest('.dyn-tick');
+        var card0 = !tick && el.closest('.sent-num') ? el.closest('.sentence-card') : null;
+        if (card0) tick = card0.querySelector('.dyn-tick');
         if (tick) {
           e.preventDefault(); e.stopPropagation();
-          var card = tick.closest('.sentence-card');
+          var card = card0 || tick.closest('.sentence-card');
           if (card) dynSelToggle(card, tick);
           return;
         }
@@ -5109,7 +5136,8 @@
     if (!pend) return;
     var tk = dynTopicKey(), adds = [], removes = [], k;
     for (k in dynSel.now) { if (!dynSel.real[k]) { var pl = dynItemPayload(+k); if (pl) adds.push(pl); } }
-    for (k in dynSel.real) { if (!dynSel.now[k]) removes.push(+k); }
+    // r146: carry the row's OWN topic_key — see dynEnterSelect for why it may not be this page's.
+    for (k in dynSel.real) { if (!dynSel.now[k]) removes.push({ num: +k, tk: dynSel.realKey[k] || tk }); }
     if (adds.length) pend.adds[tk] = adds; else delete pend.adds[tk];
     if (removes.length) pend.removes[tk] = removes; else delete pend.removes[tk];
     dynPendWrite(pend);
@@ -5178,13 +5206,17 @@
       }
       for (k in pend.removes) {
         (function (tk2) {
-          pend.removes[tk2].forEach(function (num) { ops.push({ rmTk: tk2, rmNum: num }); });
+          // r146: {num,tk} since r146, a bare num from a flow stashed by an older build
+          pend.removes[tk2].forEach(function (r) {
+            ops.push(typeof r === 'object' ? { rmTk: r.tk || tk2, rmNum: r.num } : { rmTk: tk2, rmNum: r });
+          });
         })(k);
       }
     } else {
       var tk = dynTopicKey();
       for (k in dynSel.now) { if (!dynSel.real[k]) { var pl = dynItemPayload(+k); if (pl) ops.push({ add: pl }); } }
-      for (k in dynSel.real) { if (!dynSel.now[k]) ops.push({ rmTk: tk, rmNum: +k }); }
+      // r146: delete by the key the row was written with, not by this page's current key.
+      for (k in dynSel.real) { if (!dynSel.now[k]) ops.push({ rmTk: dynSel.realKey[k] || tk, rmNum: +k }); }
     }
     var addsN = 0;
     ops.forEach(function (o) { if (o.add) addsN++; });
@@ -5363,7 +5395,23 @@
     '.dyn-pl-link{display:block;text-align:center;font-size:12px;margin:6px 0 14px;color:var(--text-tertiary);text-decoration:none}' +
     '.dyn-pl-link:hover{color:var(--accent)}' +
     '.dyn-tick{display:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border-strong);flex-shrink:0;margin-right:2px;position:relative;cursor:pointer}' +
-    ".dyn-tick::before{content:'';position:absolute;inset:-7px}" +   /* ~34px tap target */
+    /* r146 — BIGGER TAP TARGET, IDENTICAL LOOK (owner, 2026-08-08: "easy to miss and I end up
+       interacting with the pill instead"). An invisible pad, so the circle is unchanged: 20px
+       drawn, ~60×48 tappable (was 34×34), which is the whole header row height and everything
+       left of the number.
+       The numbers are measured, not guessed, and each side is bounded by what it must not reach:
+       • left -16px  = the header's own padding, i.e. exactly the card edge. Nothing lives there.
+       • ±14px       = half the 48px header, so a vertically-off tap cannot fall through to the
+                       pill. Cards sit 7px apart, so even where the header is shorter this cannot
+                       reach the neighbouring card.
+       • right -24px = covers the number and stops ≥12px short of the play button. Clearance is
+                       8px gap + `.sent-num{min-width:20px}` + 8px gap ≥ 36px at every width.
+       ⚠ The pad MUST NOT reach the play button. The tick is position:relative, so this pseudo is
+       a positioned box and hit-tests ABOVE the (unpositioned) button that follows it — overlap
+       would silently eat play taps rather than losing to them. Widen the right side only after
+       re-measuring. Only live during select mode: .dyn-tick is display:none otherwise, which
+       takes its ::before with it, so normal browsing is untouched. */
+    ".dyn-tick::before{content:'';position:absolute;inset:-14px -24px -14px -16px}" +
     '#sentence-list.dyn-selecting .dyn-tick{display:inline-block}' +
     /* select mode: flag + exclude are out of play (the capture listener also swallows them) */
     '#sentence-list.dyn-selecting .sent-flag-btn,#sentence-list.dyn-selecting .dyn-card-btn{opacity:.35;pointer-events:none}' +
