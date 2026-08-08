@@ -2622,7 +2622,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r148';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r149';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5313,7 +5313,17 @@
        ⚠ Do not "tidy" the padding into `height` — a taller height makes the UA draw a thicker
        track, which is a visual change. And if the step or range moves again, rescale the width
        with it or the stops crowd up once more. */
-    '.dyn-slider input[type=range]{width:105px;accent-color:var(--accent);height:3px;padding:9px 0;box-sizing:content-box}' +
+    /* r149 — `touch-action:none` is what makes it track your finger on iOS. Found by the owner's
+       own comparison: the demo player's SCRUBBER is "flawlessly smooth" on the same phone, and the
+       scrubber is a custom div that declares `touch-action:none` (guide.html .scrubber-track, and
+       .te-mini-scrub does the same). A native range left at `touch-action:auto` inside a
+       vertically scrollable page hands the gesture to the SCROLLER the moment the drag has any
+       vertical component — the thumb stops tracking, then snaps to catch up. That is the
+       "flickery, doesn't know what to lock on to", and why it reads as a scrolling problem: it is
+       one. Widening the track (r148) helped the aim but could not fix the gesture.
+       The cost is that a swipe STARTING on this 105x21 strip no longer scrolls the page — the
+       same trade the scrubber has always made, on a much bigger target. */
+    '.dyn-slider input[type=range]{width:105px;accent-color:var(--accent);height:3px;padding:9px 0;box-sizing:content-box;touch-action:none}' +
     '.dyn-ctl-sep{color:var(--border-strong)}' +
     '.dyn-reps{display:inline-flex;gap:3px}' +
     '.dyn-rep-btn{width:20px;height:20px;border-radius:5px;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);font:600 10.5px var(--font-ui);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}' +

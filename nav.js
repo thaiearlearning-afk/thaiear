@@ -353,6 +353,7 @@
   }
 
   /* ---- mount ------------------------------------------------------------ */
+  let lastNavHtml = null;   // r149: the exact string we last wrote — see the note in mount()
   function mount() {
     /* EMBED MODE (r126): a page loaded with ?embed=1 (read/playlists inside the index switcher
        panels) must not build a nav AT ALL. The CSS hide (`.te-embed #site-nav-root`) was never
@@ -373,15 +374,52 @@
       style.textContent = STYLES;
       document.head.appendChild(style);
     }
+    /* r149 — REBUILD ONLY WHEN THE MARKUP ACTUALLY CHANGED (owner, 2026-08-08: on the iPhone PWA
+       the index logo flickers and the Menu dropdown "promptly snaps shut", settling after a second
+       or two).
+       CAUSE: auth.js's notify() calls ThaiEarNav.refresh() — i.e. this function — from NINE places,
+       several of which fire during a normal load (cached subscription status, then the live read,
+       then consent, then the lifetime refresh). Every one of them threw the whole <nav> away and
+       built a new one. Two consequences, and the owner reported both:
+         • the open dropdown is INSIDE the discarded node, so the menu shuts under your finger;
+         • the logo <img> is brand new each time, with nothing decoded, so it paints empty for a
+           frame — the same defect fixed on sentences.html at r141, same cause, same cure.
+       Nearly every one of those refreshes produces byte-identical markup: nothing in the nav
+       changes between "cached status says subscribed" and "the server agrees".
+       ⚠ COMPARE AGAINST WHAT WE LAST WROTE, NEVER AGAINST el.outerHTML — reading it back gives the
+       browser's NORMALISED serialisation (attribute order, quote style, entity encoding), so an
+       identical nav can compare unequal and rebuild on every call anyway. That exact trap cost
+       progress.html a full rebuild per render before r144; this is the same fix. */
+    const html = navHtml();
+    const existing = document.querySelector('nav.site-nav');
+    if (existing && lastNavHtml === html) { setupNowPlayingBar(existing); return; }
+    lastNavHtml = html;
+
     // Place the <nav> at BODY level (replace the placeholder rather than nest
     // inside it) so position:sticky works down the whole page. The 54px
     // placeholder is swapped 1:1 for the 54px nav, so there's no layout jump.
     const tmp = document.createElement('div');
-    tmp.innerHTML = navHtml();
+    tmp.innerHTML = html;
     const el = tmp.firstElementChild;
-    const slot = document.getElementById('site-nav-root') || document.querySelector('nav.site-nav');
+    /* Carry the DECODED logo bitmap across a genuine rebuild (r141's lesson from sentences.html:
+       a detached node keeps its decode, a fresh <img> re-decodes and flashes). The one surviving
+       rebuild — signing in or out — then costs no flicker either. */
+    const oldImg = existing ? existing.querySelector('.nav-logo img') : null;
+    const newImg = el.querySelector('.nav-logo img');
+    if (oldImg && newImg && oldImg.src === newImg.src) newImg.replaceWith(oldImg);
+    // Re-open whatever was open, so a rebuild that DOES happen mid-interaction is not felt either.
+    const openBtnIdx = existing
+      ? [].slice.call(existing.querySelectorAll('.nav-menu-btn'))
+          .findIndex(function (b) { return b.getAttribute('aria-expanded') === 'true'; })
+      : -1;
+    const slot = document.getElementById('site-nav-root') || existing;
     if (slot) slot.replaceWith(el);
     wireMenus();
+    if (openBtnIdx >= 0) {
+      const btn = el.querySelectorAll('.nav-menu-btn')[openBtnIdx];
+      const drop = btn && btn.closest('.nav-menu') ? btn.closest('.nav-menu').querySelector('.nav-menu-drop') : null;
+      if (drop) { drop.removeAttribute('hidden'); btn.setAttribute('aria-expanded', 'true'); }
+    }
     setupNowPlayingBar(el);
   }
 
