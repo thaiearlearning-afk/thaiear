@@ -2622,7 +2622,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r149';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r150';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5301,6 +5301,22 @@
     '.scrubber-fill::after{width:18px;height:18px;right:-9px}' +
     '.dyn-slider{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 8px;font-size:11.5px;color:var(--text-tertiary);margin-top:8px}' +
     '.dyn-ctl-group{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}' +
+    /* r150 — THE VALUE LABEL MUST NOT CHANGE THE ROW'S WIDTH (owner: "the LENGTH of the pause
+       selector bar CHANGES slightly as you select different pauses … hesitant … subtly vibrating").
+       MEASURED: the label is 12.3px wide at "1×" and 31.7px at "0.25×". `.dyn-slider` is centred
+       (justify-content:center), so that 19px swing RE-CENTRES the whole group and slides the track
+       sideways — up to 9px of drift at a 300px row (x = 453 → 456 → 462 across the stops). Mid-drag
+       that is a feedback loop, not a wobble: the track moves out from under a stationary finger →
+       the browser maps that finger to a different point on it → the value flips to a neighbour →
+       the label changes width → it re-centres again. Hence "doesn't know which option to snap
+       towards", and hence worst on the guide, whose demo row is the narrowest and centred.
+       A fixed min-width (34px covers the widest label, "0.25×"/"1.75×") makes the row's width
+       constant, so nothing moves and the loop cannot start. flex-shrink:0 stops the track itself
+       being squeezed when the row is tight — the other way the same wobble could get in.
+       ⚠ Neither r148's wider track nor r149's touch-action could have fixed this: aim and gesture
+       were never the problem, a moving target was. */
+    '#dyn-pf-val{display:inline-block;min-width:34px;text-align:left;font-variant-numeric:tabular-nums}' +
+    '.dyn-slider input[type=range]{flex-shrink:0}' +
     /* r148 — GRABBABLE, WITHOUT LOOKING ANY DIFFERENT (owner: "flickery … doesn't know quite what
        to lock on to"). Two separate causes, both measured:
        1. `height:3px` made the whole control a THREE-PIXEL-TALL hit target. `padding` with
