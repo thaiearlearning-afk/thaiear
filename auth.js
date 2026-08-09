@@ -393,8 +393,12 @@
       else delete currentFlags[key];
     });
   }
-  // Flush queued writes whenever the connection returns.
-  window.addEventListener('online', function () { flushProgress(); flushFlags(); dpFlush(); });
+  /* Flush queued writes whenever the connection returns.
+     ⚠ plFlush() is declared further down (with the playlists API) — a hoisted function
+     declaration, and this listener only runs on an event, so the ordering is safe. It matters
+     more than the others: until the playlist outbox drains, playlists.authoritative() stays false
+     and dlReconcileRefs() cannot reap ghost download claims. */
+  window.addEventListener('online', function () { flushProgress(); flushFlags(); dpFlush(); plFlush(); });
 
   // ---- listening progress (own `progress` row, RLS) ----------------------
   // One jsonb row per user: { goal, topics:{ topicKey:count } }. Read on demand
@@ -880,6 +884,271 @@
   function plStore() { try { localStorage.setItem('thaiear_playlists', JSON.stringify(plCache)); } catch (_) {} }
   function plLocal() { try { return JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) { return null; } }
 
+  /* ══ OFFLINE WRITE OUTBOX (2026-08-09, OFFLINE_PLAYLISTS_PLAN.md Part A) ═════════════════════
+     Every playlist mutation used to POST and reject with no connection, so nothing a user did
+     offline survived — you could flag a sentence on a plane but not add it to a playlist. This is
+     the flags outbox (pendingFlags/pushFlag/flushFlags/applyPendingFlags above) generalised to
+     four operation types, and it is keyed by uid() for the same non-negotiable reason: a queued
+     write must never leak into whichever account signs in next.
+
+     ⚠ IDS ARE MINTED CLIENT-SIDE AND ARE FINAL FROM BIRTH. `playlists.id` is a plain uuid primary
+     key and RLS only checks user_id, so an explicit id is allowed. DO NOT "simplify" this into a
+     temporary id that gets replaced by a server id on reconnect: a playlist id is not just a
+     database key, it is a NAMESPACE across four local stores —
+        · manifest download claims   refs: ['pl-<id>']        (pl-list.js dlReconcileRefs)
+        · download records           dlPlMap()[<id>]
+        · built session metadata     te_dyn_meta_pl-<id>_<mode>
+        · the stitched audio itself  /dyn/pl-<id>/<mode>.(wav|m4a|ogg)
+     — and the code that walks them is the one function on this project that can DELETE the user's
+     downloaded audio. Remapping an id means rewriting all four. Minting the real UUID up front
+     means nothing is ever remapped.
+
+     SHAPE — a collapsed two-tier outbox, not a raw op log. Playlists have ordering constraints
+     (a list must exist before its items) but the ops still COLLAPSE, exactly like flags:
+        lists:   { <listId>: {op:'create'|'delete', name, position, at} }
+        renames: { <listId>: name }
+        items:   { '<listId>:<topicKey>:<num>': {op:'add'|'remove', listId, tk, num, payload, at} }
+     Toggling an item on/off/on collapses to ONE entry. A list created AND deleted while offline
+     collapses to nothing sent at all. Flush order per round: creates → renames → items → deletes,
+     and every push is idempotent (upsert / delete) so an interrupted flush is safely re-runnable. */
+  var PL_PEND_KEY = 'thaiear_pl_pending';
+  var PL_PEND_MAX_AGE = 30 * 24 * 3600 * 1000;   // see plPendPrune()
+  function plPendGet() {
+    var c = lsGet(PL_PEND_KEY);
+    var o = (c && c.uid === uid())
+      ? { lists: c.lists || {}, renames: c.renames || {}, items: c.items || {} }
+      : { lists: {}, renames: {}, items: {} };
+    return plPendPrune(o);
+  }
+  function plPendSet(o) { if (uid()) lsSet(PL_PEND_KEY, { uid: uid(), lists: o.lists, renames: o.renames, items: o.items }); }
+  function plPendEmpty(o) {
+    o = o || plPendGet();
+    return !Object.keys(o.lists).length && !Object.keys(o.renames).length && !Object.keys(o.items).length;
+  }
+  /* AGE CAP — the release valve for anything plOpFatal() fails to recognise. An op that can never
+     succeed but is not classified fatal would sit in the outbox forever, and because
+     authoritative() is gated on the outbox being empty (see below) that would permanently disable
+     dlReconcileRefs — the garbage collector for downloads. The device would quietly stop
+     reclaiming space, with no symptom until it is full. Unknown errors stay TRANSIENT on purpose
+     (discarding a user's write on an unclassified blip is worse than a delayed reap), so this cap
+     is what guarantees the outbox always drains eventually. */
+  function plPendPrune(o) {
+    var now = Date.now(), changed = false;
+    ['lists', 'items'].forEach(function (bucket) {
+      Object.keys(o[bucket]).forEach(function (k) {
+        var e = o[bucket][k];
+        if (e && e.at && (now - e.at) > PL_PEND_MAX_AGE) {
+          delete o[bucket][k]; changed = true;
+          console.warn('[pl] dropped a queued playlist op older than 30 days (' + bucket + ' ' + k + ')');
+        }
+      });
+    });
+    if (changed) plPendSet(o);
+    return o;
+  }
+  function plItemKey(listId, tk, num) { return listId + ':' + tk + ':' + num; }
+  /* crypto.randomUUID() needs a secure context AND Safari 15.4+ — the app and thaiear.com are both
+     https, but an older iPhone still on 15.0 would otherwise throw here and take create() with it.
+     getRandomValues() is available far further back; the version/variant bits are set by hand so
+     the result is a well-formed v4 and Postgres accepts it as a uuid. */
+  function plUuidFallback() {
+    var b = new Uint8Array(16);
+    (window.crypto || window.msCrypto).getRandomValues(b);
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    var h = [], i;
+    for (i = 0; i < 16; i++) h.push((b[i] + 0x100).toString(16).slice(1));
+    return h.slice(0, 4).join('') + '-' + h.slice(4, 6).join('') + '-' + h.slice(6, 8).join('') +
+           '-' + h.slice(8, 10).join('') + '-' + h.slice(10, 16).join('');
+  }
+  /* Can this error EVER succeed on a retry? Only a known-semantic failure is dropped; everything
+     else — fetch failure, 5xx, 429, timeout, an expired token (401 recovers after a refresh), a
+     missing table mid-migration — stays queued. Direction chosen deliberately: unknown → retry,
+     because losing a user's write is worse than a late reap, and the age cap catches the rest. */
+  function plOpFatal(e) {
+    if (!e) return false;
+    var code = String(e.code || '');
+    // 23503 FK violation (the playlist was deleted on another device — the canonical case),
+    // 23505 unique violation, 42501 insufficient privilege / RLS refusal.
+    if (code === '23503' || code === '23505' || code === '42501') return true;
+    var st = e.status || (e.originalError && e.originalError.status) || 0;
+    return st === 403 || st === 404 || st === 409;
+  }
+  function plUnqueue(bucket, key) {
+    var o = plPendGet();
+    if (o[bucket] && o[bucket][key] !== undefined) { delete o[bucket][key]; plPendSet(o); }
+  }
+  // Forget every queued op belonging to a list — used when a create+delete pair collapses, and
+  // when a create is dropped as unsyncable (its items could only ever FK-fail after it).
+  function plPendPurgeList(id, o) {
+    var own = !o; o = o || plPendGet();
+    delete o.lists[id]; delete o.renames[id];
+    Object.keys(o.items).forEach(function (k) { if (o.items[k].listId === id) delete o.items[k]; });
+    if (own) plPendSet(o);
+    return o;
+  }
+  function plQueueCreate(id, name, position) {
+    var o = plPendGet();
+    o.lists[id] = { op: 'create', name: name, position: position || 0, at: Date.now() };
+    plPendSet(o);
+  }
+  function plQueueDelete(id) {
+    var o = plPendGet();
+    // Created AND deleted while offline → nothing ever reaches the server.
+    if (o.lists[id] && o.lists[id].op === 'create') { plPendPurgeList(id, o); plPendSet(o); return; }
+    plPendPurgeList(id, o);                                  // its item ops are moot now
+    o.lists[id] = { op: 'delete', at: Date.now() };
+    plPendSet(o);
+  }
+  function plQueueRename(id, name) {
+    var o = plPendGet();
+    // A list that has not been created on the server yet is renamed in place, not separately.
+    if (o.lists[id] && o.lists[id].op === 'create') o.lists[id].name = name;
+    else o.renames[id] = name;
+    plPendSet(o);
+  }
+  function plQueueItem(op, listId, tk, num, payload) {
+    var o = plPendGet();
+    o.items[plItemKey(listId, tk, num)] = { op: op, listId: listId, tk: tk, num: num, payload: payload || null, at: Date.now() };
+    plPendSet(o);
+  }
+
+  /* The raw server calls, factored out so the immediate attempt and the replay share ONE
+     implementation (in particular the plNotes fallback below, which must not be duplicated). */
+  function plChk(r) { if (r && r.error) throw r.error; return r; }
+  function plPushCreate(rec) {
+    return client.from('playlists')
+      .upsert({ id: rec.id, user_id: currentUser.id, name: rec.name, position: rec.position || 0 })
+      .then(plChk);
+  }
+  function plPushRename(id, name) {
+    return client.from('playlists').update({ name: name }).eq('id', id).then(plChk);
+  }
+  function plPushDelete(id) {
+    return client.from('playlists').delete().eq('id', id).then(plChk);
+  }
+  function plPushItemAdd(row) {
+    var conflict = { onConflict: 'playlist_id,topic_key,num' };
+    var send = {};
+    Object.keys(row).forEach(function (k) { send[k] = row[k]; });
+    if (!plNotes) { delete send.gloss; delete send.cultural; }
+    return client.from('playlist_items').upsert(send, conflict)
+      .then(function (r) {
+        // r145: the notes columns may not exist yet — demote once and retry without them.
+        if (r.error && plNotes && plSchemaErr(r.error)) {
+          plNotes = false;
+          delete send.gloss; delete send.cultural;
+          return client.from('playlist_items').upsert(send, conflict);
+        }
+        return r;
+      })
+      .then(plChk);
+  }
+  function plPushItemRemove(listId, tk, num) {
+    return client.from('playlist_items').delete()
+      .eq('playlist_id', listId).eq('topic_key', tk).eq('num', num).then(plChk);
+  }
+  /* One attempt at one queued op. Resolves either way — the caller is a fire-and-forget write
+     path, never a place to surface an exception. Returns true if the op left the outbox. */
+  function plRunOp(bucket, key, fn, onFatal) {
+    if (!client || !currentUser) return Promise.resolve(false);
+    return fn()
+      .then(function () { plUnqueue(bucket, key); return true; })
+      .catch(function (e) {
+        if (!plOpFatal(e)) return false;                     // transient — stays queued, retried later
+        /* SILENT BY DESIGN (owner, 2026-08-09): a console line and nothing else. The op that gets
+           dropped is nearly always one whose intent is already moot — you deleted the playlist on
+           another device, so "add a sentence to it" no longer means anything — and a dialog saying
+           "1 offline change couldn't be saved" invites worry about a deliberate action. */
+        console.warn('[pl] dropped an unsyncable queued op (' + bucket + ' ' + key + '):', e && (e.code || e.message));
+        plUnqueue(bucket, key);
+        if (onFatal) onFatal();
+        return true;
+      });
+  }
+  var plFlushing = null;
+  /* Replay the outbox in dependency order: creates → renames → items → deletes. Sequential, not
+     parallel — a list has to exist before its items can reference it. Re-entrant-safe (the online
+     event and a thaiear:auth event routinely arrive together). */
+  function plFlush() {
+    if (!client || !currentUser || !navigator.onLine) return Promise.resolve();
+    if (plFlushing) return plFlushing;
+    var o = plPendGet();
+    if (plPendEmpty(o)) return Promise.resolve();
+    var chain = Promise.resolve(), blocked = {};
+    Object.keys(o.lists).forEach(function (id) {
+      if (o.lists[id].op !== 'create') return;
+      chain = chain.then(function () {
+        var rec = { id: id, name: o.lists[id].name, position: o.lists[id].position }, fatal = false;
+        return plRunOp('lists', id, function () { return plPushCreate(rec); },
+          function () { fatal = true; plPendPurgeList(id); })   // fatal create → its items can never land
+          /* Block on EITHER outcome. Not-left = transient, retry next round. Fatal = the items were
+             just purged from storage, but this chain still holds their closures from the snapshot
+             taken at the top of plFlush(), so without this they would be attempted anyway. */
+          .then(function (left) { if (!left || fatal) blocked[id] = true; });
+      });
+    });
+    Object.keys(o.renames).forEach(function (id) {
+      chain = chain.then(function () {
+        if (blocked[id]) return false;
+        return plRunOp('renames', id, function () { return plPushRename(id, o.renames[id]); });
+      });
+    });
+    Object.keys(o.items).forEach(function (k) {
+      var it = o.items[k];
+      chain = chain.then(function () {
+        /* ⚠ SKIP, DO NOT ATTEMPT, items whose parent create is still queued. A create that failed
+           transiently leaves the list absent server-side, so its items would FK-fail — and an FK
+           violation is classified FATAL, so attempting them here would silently DELETE the user's
+           queued additions on a passing network blip. */
+        if (blocked[it.listId]) return false;
+        // A malformed 'add' with no payload could only come from a hand-edited or truncated
+        // localStorage record; drop it rather than push `undefined` at PostgREST.
+        if (it.op === 'add' && !it.payload) { plUnqueue('items', k); return true; }
+        return plRunOp('items', k, function () {
+          return it.op === 'add' ? plPushItemAdd(it.payload) : plPushItemRemove(it.listId, it.tk, it.num);
+        });
+      });
+    });
+    Object.keys(o.lists).forEach(function (id) {
+      if (o.lists[id].op !== 'delete') return;
+      chain = chain.then(function () { return plRunOp('lists', id, function () { return plPushDelete(id); }); });
+    });
+    plFlushing = chain.then(function () { plFlushing = null; }, function () { plFlushing = null; });
+    return plFlushing;
+  }
+  /* Overlay unsynced local ops on top of a freshly-fetched server list — the exact role
+     applyPendingFlags() plays for flags. Without it a server read that predates the flush would
+     silently undo whatever the user just did offline. Mutates and returns `lists`. */
+  function applyPendingPlaylistOps(lists) {
+    var o = plPendGet();
+    if (plPendEmpty(o)) return lists;
+    var by = {};
+    lists.forEach(function (p) { by[p.id] = p; });
+    Object.keys(o.lists).forEach(function (id) {
+      var e = o.lists[id];
+      if (e.op === 'create' && !by[id]) {
+        var p = { id: id, name: e.name, position: e.position || lists.length, items: [] };
+        lists.push(p); by[id] = p;
+      } else if (e.op === 'delete' && by[id]) {
+        lists.splice(lists.indexOf(by[id]), 1); delete by[id];
+      }
+    });
+    Object.keys(o.renames).forEach(function (id) { if (by[id]) by[id].name = o.renames[id]; });
+    Object.keys(o.items).forEach(function (k) {
+      var it = o.items[k], p = by[it.listId];
+      if (!p) return;
+      p.items = p.items || [];
+      var at = -1, i;
+      for (i = 0; i < p.items.length; i++) {
+        if (p.items[i].topic_key === it.tk && p.items[i].num === it.num) { at = i; break; }
+      }
+      if (it.op === 'add') { if (at < 0 && it.payload) p.items.push(it.payload); }
+      else if (at >= 0) p.items.splice(at, 1);
+    });
+    return lists;
+  }
+
   /* ── r145: the notes columns (gloss jsonb, cultural text) — see playlists_gloss_migration.sql ──
      The nugget gained two fields so the playlist player can open a card to its third stage (gloss
      chips + cultural note) exactly like a topic page. They are ADDITIVE and the deploy is not
@@ -931,53 +1200,83 @@
               var by = {};
               lists.forEach(function (p) { p.items = []; by[p.id] = p; });
               (ri.data || []).forEach(function (it) { if (by[it.playlist_id]) by[it.playlist_id].items.push(it); });
-              plCache = lists; plStore(); plLoadAuth = true; return plCache;
+              applyPendingPlaylistOps(lists);   // unsynced offline ops win over the server copy
+              plCache = lists; plStore(); plLoadAuth = true; plFlush(); return plCache;
             });
         })
         .catch(function () { plCache = plLocal() || []; plLoadAuth = false; return plCache; });
     },
     /* True only if the last resolved load() was a real server read that was not superseded by a
-       local mutation. Check this before any destructive action derived from the list. */
-    authoritative: function () { return plLoadAuth; },
+       local mutation. Check this before any destructive action derived from the list.
+       ⚠ ALSO FALSE WHILE THE OUTBOX IS NON-EMPTY (2026-08-09). dlReconcileRefs() frees download
+       claims for playlists that "no longer exist" — and a playlist created offline does not exist
+       on the server until the outbox flushes. The reconnect race is real: pl-list.js fires
+       load(true) from thaiear:auth/pageshow, which can easily beat the flush, and the reconciler
+       would then read a brand-new playlist as a ghost and delete its downloaded audio. Never
+       reconcile against a read we already know is incomplete. */
+    authoritative: function () {
+      /* ⚠ Evaluated BEFORE the && on purpose — do not fold this back into one expression.
+         plPendEmpty() → plPendGet() → plPendPrune() is what applies the 30-day age cap, and
+         short-circuiting on a false plLoadAuth would skip it exactly when the outbox is most
+         likely to be holding something stuck. */
+      var outboxClear = plPendEmpty();
+      return plLoadAuth && outboxClear;
+    },
     get: function () { return plCache; },
     // Read-only view of the localStorage copy — safe to call BEFORE the client/auth resolve
     // and never touches plCache (playlists.html uses it for an instant cache-first paint).
     peek: function () { return plLocal(); },
+    /* ── The four mutations, all offline-capable since 2026-08-09 ────────────────────────────
+       Uniform shape, taken from pushFlag(): apply to plCache OPTIMISTICALLY, bump plSeq, queue the
+       op, then attempt one push that unqueues on success. There is deliberately NO branch on
+       navigator.onLine — it reports *online* in airplane mode in this WebView (documented all over
+       player.js), so only a failed attempt proves anything. Offline the attempt simply fails and
+       the op stays queued for the next `online` event.
+       They therefore RESOLVE rather than reject on a lost connection; that is the point. A genuine
+       server refusal still drops the op (plOpFatal) and the local copy self-corrects on the next
+       authoritative load. */
     create: function (name) {
-      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
-      return client.from('playlists')
-        .insert({ user_id: currentUser.id, name: name, position: (plCache || []).length })
-        .select('id,name,position').single()
-        .then(function (r) {
-          if (r.error) throw r.error;
-          r.data.items = [];
-          plSeq++;   /* r76: this write must survive any load() already in flight */
-          (plCache = plCache || []).push(r.data); plStore();
-          return r.data;
-        });
+      if (!currentUser) return Promise.reject(new Error('not signed in'));
+      // ⚠ Client-minted and FINAL — never remapped later. See the outbox header for why.
+      var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : plUuidFallback();
+      var p = { id: id, name: name, position: (plCache || []).length, items: [] };
+      plSeq++;   /* r76: this write must survive any load() already in flight */
+      (plCache = plCache || []).push(p); plStore();
+      plQueueCreate(id, name, p.position);
+      return plRunOp('lists', id, function () { return plPushCreate(p); },
+        function () {   // unsyncable → undo the optimistic insert rather than show a ghost list
+          plPendPurgeList(id);
+          if (plCache) { plCache = plCache.filter(function (x) { return x.id !== id; }); plStore(); }
+        })
+        .then(function () { return p; });   // resolves with the row either way — the id is already real
     },
     remove: function (id) {
-      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
-      return client.from('playlists').delete().eq('id', id).then(function (r) {
-        if (r.error) throw r.error;
-        plSeq++;   /* r76 */
-        if (plCache) { plCache = plCache.filter(function (p) { return p.id !== id; }); plStore(); }
-      });
+      if (!currentUser) return Promise.reject(new Error('not signed in'));
+      plSeq++;   /* r76 */
+      if (plCache) { plCache = plCache.filter(function (p) { return p.id !== id; }); plStore(); }
+      var o = plPendGet();
+      var neverExisted = !!(o.lists[id] && o.lists[id].op === 'create');
+      plQueueDelete(id);
+      // Created and deleted before it ever reached the server — nothing to push.
+      if (neverExisted) return Promise.resolve();
+      return plRunOp('lists', id, function () { return plPushDelete(id); }).then(function () {});
     },
     // Metadata only — touches no prefix, claim or manifest, so it can never affect a download.
     rename: function (id, name) {
-      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
-      return client.from('playlists').update({ name: name }).eq('id', id).then(function (r) {
-        if (r.error) throw r.error;
-        plSeq++;   /* r76 */
-        if (plCache) {
-          plCache.forEach(function (p) { if (p.id === id) p.name = name; });
-          plStore();
-        }
-      });
+      if (!currentUser) return Promise.reject(new Error('not signed in'));
+      plSeq++;   /* r76 */
+      if (plCache) {
+        plCache.forEach(function (p) { if (p.id === id) p.name = name; });
+        plStore();
+      }
+      plQueueRename(id, name);
+      var o = plPendGet();
+      // Still queued as a create → the new name travels with it; nothing separate to push.
+      if (o.lists[id] && o.lists[id].op === 'create') return Promise.resolve();
+      return plRunOp('renames', id, function () { return plPushRename(id, name); }).then(function () {});
     },
     addItem: function (id, item) {
-      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
+      if (!currentUser) return Promise.reject(new Error('not signed in'));
       var p = (plCache || []).filter(function (x) { return x.id === id; })[0];
       var row = {
         playlist_id: id, topic_key: item.topic_key, num: item.num,
@@ -986,35 +1285,27 @@
         position: p ? p.items.length : 0
       };
       // r145: the notes travel with the nugget (see plNotes above for why this is conditional).
-      if (plNotes) { row.gloss = item.gloss || null; row.cultural = item.cultural || null; }
-      var conflict = { onConflict: 'playlist_id,topic_key,num' };
-      return client.from('playlist_items').upsert(row, conflict)
-        .then(function (r) {
-          if (r.error && plNotes && plSchemaErr(r.error)) {
-            plNotes = false;
-            delete row.gloss; delete row.cultural;
-            return client.from('playlist_items').upsert(row, conflict);
-          }
-          return r;
-        })
-        .then(function (r) {
-          if (r.error) throw r.error;
-          plSeq++;   /* r76 */
-          if (p && !p.items.some(function (i) { return i.topic_key === row.topic_key && i.num === row.num; })) {
-            p.items.push(row); plStore();
-          }
-        });
+      // Always carried in the QUEUED payload; plPushItemAdd() strips them if the columns are absent.
+      row.gloss = item.gloss || null; row.cultural = item.cultural || null;
+      plSeq++;   /* r76 */
+      if (p && !p.items.some(function (i) { return i.topic_key === row.topic_key && i.num === row.num; })) {
+        p.items.push(row); plStore();
+      }
+      plQueueItem('add', id, row.topic_key, row.num, row);
+      return plRunOp('items', plItemKey(id, row.topic_key, row.num),
+        function () { return plPushItemAdd(row); }).then(function () {});
     },
     removeItem: function (id, topicKey, num) {
-      if (!client || !currentUser) return Promise.reject(new Error('not signed in'));
-      return client.from('playlist_items').delete()
-        .eq('playlist_id', id).eq('topic_key', topicKey).eq('num', num)
-        .then(function (r) {
-          if (r.error) throw r.error;
-          plSeq++;   /* r76 */
-          var p = (plCache || []).filter(function (x) { return x.id === id; })[0];
-          if (p) { p.items = p.items.filter(function (i) { return !(i.topic_key === topicKey && i.num === num); }); plStore(); }
-        });
+      if (!currentUser) return Promise.reject(new Error('not signed in'));
+      plSeq++;   /* r76 */
+      var p = (plCache || []).filter(function (x) { return x.id === id; })[0];
+      if (p) { p.items = p.items.filter(function (i) { return !(i.topic_key === topicKey && i.num === num); }); plStore(); }
+      var key = plItemKey(id, topicKey, num);
+      var o = plPendGet();
+      // Added and removed before either reached the server — the pair cancels.
+      if (o.items[key] && o.items[key].op === 'add') { delete o.items[key]; plPendSet(o); return Promise.resolve(); }
+      plQueueItem('remove', id, topicKey, num, null);
+      return plRunOp('items', key, function () { return plPushItemRemove(id, topicKey, num); }).then(function () {});
     },
     // Which playlists contain this sentence? (from cache — call load() first)
     idsFor: function (topicKey, num) {
