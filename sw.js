@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v273';   // v273 / r159: entering select mode twice no longer kills selection
+const VERSION = 'v274';   // v274: the offline recovery probe stops racing the response it just served
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -317,10 +317,16 @@ self.addEventListener('fetch', function (e) {
   // we have the resource cached, serve the cache immediately while the network keeps running in the
   // background to refresh it (stale-while-revalidate). On a real network failure, fall back fully.
   e.respondWith((function () {
-    function fromNetwork() {
+    /* probeOnly: report recovery but DO NOT touch the cache. Used by the offline fast path below,
+       which has already handed the CACHED response to the page. Writing the same entry while its
+       body is still streaming can abort that read in WebKit — surfacing as a blob error page on
+       navigation (owner saw one once, tapping the logo in airplane mode just after an update).
+       The next request that goes through the normal path caches as usual, so nothing goes stale;
+       this only removes a write that was racing a read for no benefit. */
+    function fromNetwork(probeOnly) {
       return fetch(req).then(function (res) {
         noteNetUp();
-        if (res && res.ok && res.type === 'basic') {
+        if (!probeOnly && res && res.ok && res.type === 'basic') {
           var copy = res.clone();
           cleanRedirect(copy).then(function (clean) { caches.open(CACHE).then(function (c) { c.put(req, clean); }); });
         }
@@ -339,7 +345,7 @@ self.addEventListener('fetch', function (e) {
     if (netLooksDown()) {
       return positiveCacheMatch(req, url).then(function (hit) {
         if (!hit) return fromNetwork().catch(function () { return cacheFallback(req, url); });
-        fromNetwork().catch(function () {});   // revalidate + recovery probe, not awaited
+        fromNetwork(true).catch(function () {});   // recovery PROBE only — never writes the entry we are serving
         return cleanRedirect(hit);
       });
     }
