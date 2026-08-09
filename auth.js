@@ -1476,8 +1476,33 @@
       }
     })
     .catch(function (err) {
+      /* ⚠ 2026-08-09 — FALL BACK TO THE DURABLE IDENTITY HERE TOO. This used to just set isReady
+         and notify(), with the comment "nav stays in logged-out state" — so ANY failure to load
+         supabase-js presented as a full logout on a device that was still perfectly signed in.
+         That is the exact promise the success path above makes and this one broke: "a long spell
+         without a network can never present as logged out."
+         The common trigger was a deploy: the esm.sh bundle was runtime-cached in the version-keyed
+         SW cache, so every VERSION bump wiped it and the next OFFLINE open could not import it
+         (fixed separately in sw v255 with the never-swept vendor cache). But esm.sh being slow,
+         blocked or down does the same thing, which is why the guard belongs here as well.
+         Owner, 2026-08-09: "inexplicably i found myself logged out" on iPhone AND the Android app.
+         Nothing was ever signed out — clearIdentity() only runs on a real signOut(), so the record
+         was intact the whole time and the app simply could not see it.
+         Safe by construction: readIdentity() returns null once the signed-out marker is set, so a
+         genuine logout cannot be resurrected. restoredFromIdentity is set for the same reason the
+         success path sets it — supabase has NO session here, so getAccessToken() may hand out a
+         stale token and gated audio must know to re-seed rather than trust it. With client === null
+         every data method already degrades to its localStorage mirror, and queued playlist writes
+         stay in the outbox until a page loads with a working client. */
       console.error('ThaiEar auth failed to initialise:', err);
+      var restored = readIdentity();
+      if (restored && restored.user) {
+        currentSession = restored;
+        currentUser = userFromSession(restored);
+        restoredFromIdentity = true;
+        console.warn('[auth] running on the durable identity — supabase-js unavailable');
+      }
       window.ThaiEarAuth.isReady = true;
-      notify(); // nav stays in logged-out state
+      notify();
     });
 })();
