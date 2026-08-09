@@ -2704,7 +2704,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r159';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r160';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5515,6 +5515,15 @@
          short - i can hardly have time to read it." The plain online confirmation keeps 2.5s;
          only the one worth reading gets the longer dwell. */
       setTimeout(function () { if (seq === dynStatusSeq) dynStatus(null); }, savedLocally ? 7000 : 2500);
+      /* …and take them back to the top (owner, 2026-08-09). Choosing sentences means scrolling
+         down the list, so Done used to leave you stranded at the bottom of a page you had just
+         finished with. It also puts the confirmation in view: dynStatus() renders up by the
+         player, so the line written just above was landing off-screen for exactly the people who
+         had scrolled furthest.
+         Done only — Cancel changed nothing, so moving the page under someone who backed out would
+         be the more annoying behaviour. Object form guarded: older WebKit ignores it and throws. */
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      catch (_) { window.scrollTo(0, 0); }
     }).catch(function (e) {
       btns.forEach(function (b) { b.disabled = false; });   // stay in select mode so nothing chosen is lost
       dynSelCountPaint();
