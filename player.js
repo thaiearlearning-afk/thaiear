@@ -2704,7 +2704,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r158';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r159';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5224,27 +5224,14 @@
         '<button type="button" class="dyn-sel-cancel">Cancel</button>' +
         '<button type="button" class="dyn-sel-done">Done</button>' +
       '</span>';
-    /* ⚠ CLICK-THROUGH GUARD (2026-08-09, owner-reported: "a few sentences flash up as selected …
-       then the selection ticks are gone a moment later. after this i cannot select anything").
-       The bar is appended at the moment select mode opens. Reached via "＋ New playlist", that
-       moment is the same gesture in which the user tapped CREATE at the bottom-right of the name
-       dialog — and Done lands in almost exactly that spot. A WebView synthesises `click` after
-       `touchend`, so the click for the button that just disappeared hits the button that just
-       appeared: Done fires with nothing selected, its op chain is already resolved, and
-       dynExitSelect() runs instantly. Hence ticks flashing on and vanishing, and no way back
-       without reloading the page.
-       Choosing an EXISTING playlist never hit this — those rows are mid-screen, far from the bar.
-       A short dead time is the fix rather than a swallowed event, because the stray click may
-       arrive on either button and either one destroys the selection. */
-    var readyAt = Date.now() + 450;
-    function guarded(fn) {
-      return function (e) {
-        if (Date.now() < readyAt) { if (e) { e.preventDefault(); e.stopPropagation(); } return; }
-        fn();
-      };
-    }
-    bar.querySelector('.dyn-sel-cancel').addEventListener('click', guarded(plsel ? dynPlselCancel : dynExitSelect));
-    bar.querySelector('.dyn-sel-done').addEventListener('click', guarded(dynSelDone));
+    /* r158 briefly added a 450ms dead time on these buttons, on the theory that a synthesised
+       click was firing Done the instant the bar appeared. WRONG, and the owner caught it in one
+       line: "if done is clicked - why am i still on the selection screen?" dynExitSelect() hides
+       this bar and restores the cards, so a stray Done would have ejected him from select mode
+       rather than leaving him in it. The real cause was a duplicated click listener — see the ⚠⚠
+       note in dynEnterSelect(). Reverted, because it delayed a legitimate tap for no reason. */
+    bar.querySelector('.dyn-sel-cancel').addEventListener('click', plsel ? dynPlselCancel : dynExitSelect);
+    bar.querySelector('.dyn-sel-done').addEventListener('click', dynSelDone);
     return bar;
   }
   function dynSelCountPaint() {
@@ -5310,6 +5297,25 @@
     dynSel = { id: p.id, name: p.name || (pend && pend.name) || '', pre: pre, real: real, realKey: realKey, now: now, plsel: !!pend, pend: pend || null };
     var list = $('sentence-list');
     if (list) {
+      /* ⚠⚠ REMOVE THE PREVIOUS LISTENER FIRST — THE r158 BUG (owner, 2026-08-09).
+         This used to overwrite dynSelListener and attach a new listener without detaching the old
+         one, so ENTERING SELECT MODE TWICE left two live handlers on #sentence-list. Every tap
+         then ran dynSelToggle twice — on, then straight back off — so nothing could be selected,
+         while the bar and the ticks looked completely normal. Exactly the reported
+         "i cannot select anything".
+         The second entry also explains the rest of the report: it recomputes `now` from the chosen
+         playlist, so a moment after the first entry every tick flicks OFF ("a few sentences flash
+         up as selected … then the selection ticks are gone"), and dynSelBarBuild() re-renders the
+         bar, so the user is still sitting in select mode — which is precisely why "if done is
+         clicked why am i still on the selection screen" was the right question to ask. Done was
+         never clicked; there were simply two listeners.
+         HOW IT DOUBLE-ENTERS: an abandoned cross-page plsel flow leaves `te_plsel` in
+         sessionStorage, and the restore path below re-enters select mode on the next page load;
+         choosing a playlist by hand then enters a second time. sessionStorage is per-session, so
+         fully closing and reopening the PWA clears it — the owner's "the only way to get it
+         working again is to exit and re-enter". Detaching here makes re-entry idempotent whatever
+         the route in. */
+      if (dynSelListener) list.removeEventListener('click', dynSelListener, true);
       list.classList.add('dyn-selecting');
       dynSelListener = function (e) {
         var el = e.target;
