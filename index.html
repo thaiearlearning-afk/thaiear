@@ -795,10 +795,14 @@ if(pend||bf)d.className+=' te-warp';})();</script>
       padding: max(12px, calc(20px * var(--te-ui, 1))) max(10px, calc(16px * var(--te-ui, 1)));
       flex-wrap: wrap;
     }
-    /* Equal thirds that wrap INSIDE their own column, so the widest stat ("3,000+ / UNIQUE
-       WORDS") reflows onto two lines instead of dropping the whole band onto a second row.
-       Phones only — desktop has the room and keeps its natural centred spacing. */
-    .hero-stats > div { flex: 1 1 0; min-width: 0; text-align: center; }
+    /* ⚠ BASIS `auto`, NOT `0` — equal thirds were CAUSING the wrap, not absorbing it. With
+       basis 0 all three columns get 87px at 320px/2x, and "UNIQUE WORDS" needs ~100px, so it
+       broke onto two lines and took the band to 117px. Content-sized columns let the widest
+       label claim the room the two short ones do not want (58 / 89 / 115), and it fits on one
+       line — band 83px. Exactly the same mistake, and the same fix, as the .ms-btn switcher.
+       `min-width: 0` stays so that at some more extreme size they can still shrink and wrap
+       rather than overflow. Phones only; desktop keeps its natural centred spacing. */
+    .hero-stats > div { flex: 1 1 auto; min-width: 0; text-align: center; }
     .hero-stat-num { font-size: calc(20px * var(--te-ui, 1)); }
     .switcher-wrap {
       padding: 0.7rem 1rem 0;

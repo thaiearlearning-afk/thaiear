@@ -1910,8 +1910,8 @@
     @media (max-width: 374.98px) { .progress-controls { min-height: 94px; } }
     .player-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1rem; margin-bottom: 1.75rem; }
     .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
-    .audio-toggle { display: flex; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
-    .toggle-btn { font-size: 12px; font-family: var(--font-ui); font-weight: 400; color: var(--text-secondary); background: none; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
+    .audio-toggle { display: flex; flex-wrap: wrap; max-width: 100%; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
+    .toggle-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); font-weight: 400; color: var(--text-secondary); background: none; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
     .toggle-btn:hover { color: var(--text-primary); }
     .toggle-btn.active { background: var(--accent); color: white; font-weight: 500; }
     .audio-row { display: flex; align-items: center; gap: 12px; }
@@ -2078,7 +2078,7 @@
     @media (max-width: 600px) {
       /* keep the whole control row on ONE line on phones (portrait) */
       .player-top { gap: 6px; }
-      .audio-toggle .toggle-btn { font-size: 11px; padding: 4px 7px; }
+      .audio-toggle .toggle-btn { font-size: calc(11px * var(--te-ui, 1)); padding: 4px 7px; }
       .xtra-controls { gap: 2px; }
       .xtra-toggle { font-size: 11px; padding: 5px 7px; gap: 4px; }
       .xtra-toggle svg { width: 12px; height: 12px; }
@@ -5513,7 +5513,11 @@
     '.scrubber-fill{border-radius:4px}' +
     '.scrubber-fill::after{width:18px;height:18px;right:-9px}' +
     '.dyn-slider{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 8px;font-size:11.5px;color:var(--text-tertiary);margin-top:8px}' +
-    '.dyn-ctl-group{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}' +
+    /* ⚠ `white-space:nowrap` is GONE and flex-wrap added. The nowrap pinned each group's min-content
+       to its full label, so at a large OS font size "English position" + its boxes could not give
+       anywhere and the boxes were pushed out of the panel (owner-reported, 2026-08-09). Wrapping
+       is a no-op at normal size — nothing here wraps until it genuinely cannot fit. */
+    '.dyn-ctl-group{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:100%;min-width:0}' +
     /* r150 — THE VALUE LABEL MUST NOT CHANGE THE ROW'S WIDTH (owner: "the LENGTH of the pause
        selector bar CHANGES slightly as you select different pauses … hesitant … subtly vibrating").
        MEASURED: the label is 12.3px wide at "1×" and 31.7px at "0.25×". `.dyn-slider` is centred
@@ -5555,14 +5559,19 @@
     '.dyn-slider input[type=range]{width:105px;accent-color:var(--accent);height:3px;padding:9px 0;box-sizing:content-box;touch-action:none}' +
     '.dyn-ctl-sep{color:var(--border-strong)}' +
     '.dyn-reps{display:inline-flex;gap:3px}' +
-    '.dyn-rep-btn{width:20px;height:20px;border-radius:5px;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);font:600 10.5px var(--font-ui);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}' +
+    /* ⚠ THE SQUARE IS SIZED IN `em`, ON PURPOSE — do not put it back to px. The digit is real text,
+       so Android inflates it; a fixed 20px box therefore could not hold it and the "1" climbed out
+       (owner-reported, 2026-08-09). em locks the box to its OWN glyph, so the two can never come
+       apart at any zoom: 20/10.5 = 1.905em, 5/10.5 = .476em, which resolve to exactly 20px and 5px
+       at --te-ui: 1. The font-size cap then stops the pair growing without limit. */
+    '.dyn-rep-btn{width:1.905em;height:1.905em;border-radius:.476em;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);font:600 10.5px var(--font-ui);font-size:calc(10.5px * var(--te-ui, 1));cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}' +
     '.dyn-rep-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}' +
     '.dyn-en-lbl{display:inline-flex;align-items:center;gap:4px;cursor:pointer}' +
     '.dyn-en-lbl input{accent-color:var(--accent);margin:0;width:13px;height:13px}' +
     /* round-15 item 4: English-position line (|thai ☐ thai ☐| radio boxes) */
     '.dyn-ep-row{margin-top:2px}' +
-    '.dyn-ep-boxes{display:inline-flex;align-items:center;gap:4px}' +
-    '.dyn-ep-th{font-size:10.5px;color:var(--text-tertiary);font-style:italic}' +
+    '.dyn-ep-boxes{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}' +
+    '.dyn-ep-th{font-size:calc(10.5px * var(--te-ui, 1));color:var(--text-tertiary);font-style:italic}' +
     '.dyn-ep-box{width:16px;height:16px;border-radius:4px;border:.5px solid var(--border-strong);background:var(--surface);cursor:pointer;padding:0;position:relative}' +
     '.dyn-ep-box.on{background:var(--accent);border-color:var(--accent)}' +
     ".dyn-ep-box.on::after{content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}" +
@@ -5657,7 +5666,8 @@
     /* r16a: the ⓘ explainer labels + their dismissible box */
     '.dyn-info-lbl{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-align:left}' +
     '.dyn-info-lbl:hover{color:var(--accent)}' +
-    '.dyn-info-i{width:13px;height:13px;border-radius:50%;border:1px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font:italic 700 9px/1 Georgia,"Times New Roman",serif;flex-shrink:0}' +
+    /* Same em trick as .dyn-rep-btn — the italic "i" was climbing out of its circle. 13/9 = 1.444em. */
+    '.dyn-info-i{width:1.444em;height:1.444em;border-radius:50%;border:1px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font:italic 700 9px/1 Georgia,"Times New Roman",serif;font-size:calc(9px * var(--te-ui, 1));flex-shrink:0}' +
     '.dyn-info-box{position:relative;margin:7px 0 2px;padding:9px 30px 9px 11px;border:.5px solid var(--border-strong);border-radius:var(--radius-md);background:var(--surface);color:var(--text-secondary);font-size:12px;line-height:1.55;max-width:520px}' +
     '.dyn-info-box a{color:var(--accent);font-weight:500;text-decoration:none}' +
     '.dyn-info-box a:hover{text-decoration:underline}' +
