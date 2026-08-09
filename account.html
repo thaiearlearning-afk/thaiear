@@ -66,7 +66,7 @@
   .acct-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 1.5rem; line-height: 1.2; }
   .acct-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem 1.4rem; }
   .acct-card p { color: var(--text-secondary); margin-bottom: 1rem; }
-  .acct-card .email { color: var(--text-primary); font-weight: 500; }
+  .acct-card .email { color: var(--text-primary); font-weight: 500; overflow-wrap: anywhere; }
   .acct-muted { font-size: 13px; color: var(--text-tertiary); }
   .btn { font-family: var(--font-ui); font-size: 14px; font-weight: 500; border-radius: var(--radius-sm); padding: 9px 18px; cursor: pointer; border: 0.5px solid var(--border-strong); transition: background 0.15s, border-color 0.15s, color 0.15s; }
   .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -126,6 +126,13 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+/* An email address is ONE unbreakable string, so a long one runs straight out of its card on a
+   narrow screen — and a large Android font size gets you there much sooner. <wbr> marks a
+   PREFERRED break point after the @, so it splits as tobygeorgeralph@ / gmail.com instead of
+   through the middle of a name. Applied AFTER esc() on purpose: it injects real markup, and @
+   never appears inside an HTML entity, so escaping first is safe and order-independent.
+   `.email { overflow-wrap: anywhere }` is the backstop when even that will not fit. */
+function escEmail(s) { return esc(s).replace('@', '@<wbr>'); }
 function openPortal() {
   if (offlineGuard('portal-status', 'You’re offline — reconnect to manage payment.')) return;
   var a = window.ThaiEarAuth;
@@ -522,7 +529,7 @@ function renderAccount() {
       '</div>'
     : '';
   el.innerHTML =
-    '<p>Signed in as <span class="email">' + esc(user.email || user.username) + '</span></p>' +
+    '<p>Signed in as <span class="email">' + escEmail(user.email || user.username) + '</span></p>' +
     '<div id="membership" style="min-height:80px"></div>' +
     consentHtml +
     // Admin-only; stays an empty div for everyone else. Populated by renderDesktopDlAdmin() once
@@ -713,8 +720,11 @@ function dlLoadList() {
         return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;' +
             'border:0.5px solid var(--border);border-radius:8px;background:' +
             (r.enabled ? 'var(--surface)' : 'transparent') + '">' +
-            '<span style="font-size:13.5px;' + (r.enabled ? '' : 'text-decoration:line-through;opacity:.6') + '">' +
-              esc(r.email) + '</span>' +
+            // overflow-wrap here as well as the <wbr>: this span is a FLEX ITEM, so allowing the
+            // break also drops its min-content width and lets the row shrink instead of forcing
+            // itself wide. Owner-only screen, same defect class as the signed-in-as line.
+            '<span style="font-size:13.5px;overflow-wrap:anywhere;' + (r.enabled ? '' : 'text-decoration:line-through;opacity:.6') + '">' +
+              escEmail(r.email) + '</span>' +
             (r.note ? '<span class="acct-muted">' + esc(r.note) + '</span>' : '') +
             '<span class="acct-muted" style="margin-left:auto;font-size:12px">' +
               (r.added_by_email ? 'by ' + esc(r.added_by_email) + ' · ' : '') + esc(when) + '</span>' +

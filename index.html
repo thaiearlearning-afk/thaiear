@@ -187,6 +187,13 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     justify-content: center;
     gap: 3.5rem;
     flex-wrap: wrap;
+    /* ⚠ THE LEADING HAS TO BE SET HERE, NOT ON .hero-stat-label. The label is an INLINE element,
+       so its own line-height sizes its inline box but does NOT size the line box it sits in — the
+       containing block's strut does, and that was inheriting 1.6 from the body. Tightening only
+       the label left "UNIQUE" and "WORDS" visibly adrift from each other with the old leading
+       still between them. Setting it on the flex container inherits to both the columns and the
+       labels. Resolves to plain 1.6 at --te-ui: 1, so normal view is unchanged. */
+    line-height: max(1.15, calc(1.6 * var(--te-ui, 1)));
     padding: 1.1rem 2rem;
     max-width: 620px;
     margin: 0 auto;
@@ -200,13 +207,24 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     font-weight: 500;
     color: #F0CC5C;
     display: block;
-    line-height: 1.2;
+    line-height: max(1.05, calc(1.2 * var(--te-ui, 1)));
     text-shadow: 0 0 1px rgba(29,19,77,1), 0 0 3px rgba(29,19,77,0.8);
   }
+  /* ⚠ EVERY VALUE HERE IS A NO-OP AT NORMAL SIZE, BY CONSTRUCTION. --te-ui is exactly 1 unless
+     Android is inflating text, so `calc(X * var(--te-ui, 1))` resolves to plain X on desktop, on
+     iOS, and on an Android phone at the default font size. The max() floors only ever bite on the
+     inflated side. That is what lets the band tighten under pressure while normal view is
+     untouched — verified by measuring with these rules and with them overridden away.
+     WHY tighten at all: at 320px/2x the band reached 204px, and "UNIQUE WORDS" wrapping at an
+     inherited 1.6 line-height was 63px of it. Owner keeps the word "unique" (it is a real claim),
+     so the height has to come out of the leading and the letter-spacing instead.
+     ⚠ line-height was INHERITED (1.6, from the body) before this; pinning it means a future change
+     to the body's line-height will no longer reach this label. Deliberate, but easy to forget. */
   .hero-stat-label {
     font-size: calc(11px * var(--te-ui, 1));
     color: rgba(255,255,255,0.44);
-    letter-spacing: 0.08em;
+    line-height: max(1.15, calc(1.6 * var(--te-ui, 1)));
+    letter-spacing: calc(0.08em * var(--te-ui, 1));
     text-transform: uppercase;
   }
 
@@ -768,7 +786,15 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     /* ⚠ px + vw, NOT rem. Android's textZoom scales the ROOT font size, so every `rem` length
        inflates with the text — a 2rem gap became 33.6px and ate 67px of a 345px viewport,
        which is what pushed the third stat onto its own row. px and vw are immune. */
-    .hero-stats { gap: clamp(10px, 4vw, 32px); padding: 1.25rem 1rem; flex-wrap: wrap; }
+    /* Padding was 80px of that 204px band - `1.25rem` doubling under textZoom, nothing to do
+       with the text itself. px stops it inflating; * var(--te-ui) actively tightens it when
+       inflated; max() stops it collapsing. At --te-ui: 1 this is exactly 20px/16px, i.e.
+       byte-identical to the 1.25rem/1rem it replaces. */
+    .hero-stats {
+      gap: clamp(10px, 4vw, 32px);
+      padding: max(12px, calc(20px * var(--te-ui, 1))) max(10px, calc(16px * var(--te-ui, 1)));
+      flex-wrap: wrap;
+    }
     /* Equal thirds that wrap INSIDE their own column, so the widest stat ("3,000+ / UNIQUE
        WORDS") reflows onto two lines instead of dropping the whole band onto a second row.
        Phones only — desktop has the room and keeps its natural centred spacing. */

@@ -85,6 +85,13 @@
   @keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
   .contact { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-top: 2rem; text-align: center; }
   .contact a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  /* ⚠ An email address is ONE unbreakable string - no spaces, so the browser has no legal
+     place to wrap it and it runs straight out of the card on a narrow screen (worse, but not
+     caused by, a large OS font size). The <wbr> after the @ gives it a PREFERRED break point
+     so it splits as hello@ / thaiear.com rather than mid-word; overflow-wrap is the backstop
+     for when even that is not enough. This <span> also used to carry an inline
+     `white-space:nowrap`, which FORBADE wrapping outright - that had to go first. */
+  .te-mail { overflow-wrap: anywhere; }
   .wrap p a { color: var(--accent); text-decoration: none; }
   .wrap p a:hover { text-decoration: underline; }
   /* Guide/App/Custom-playlists links: always underlined and accent-blue, even with <strong> inside
@@ -152,7 +159,7 @@
 
   <div class="contact">
     <p style="margin:0">Questions, feedback, or a topic you’d love to see?<br>
-      <span style="white-space:nowrap">Email <a href="mailto:hello@thaiear.com">hello@thaiear.com</a>.</span></p>
+      <span>Email <a class="te-mail" href="mailto:hello@thaiear.com">hello@<wbr>thaiear.com</a>.</span></p>
   </div>
 
   <p class="ref">Further reading: Krashen, <em>The Input Hypothesis</em> (1985); Paivio, <em>Dual Coding
