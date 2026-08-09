@@ -2622,7 +2622,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r151';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r154';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4892,17 +4892,13 @@
     // and My Sentences). Signed out → the standard member sign-in route, not a raw alert().
     // gate('member') goes to join.html on web AND in the app — login is not payment steering.
     if (!a || !(a.getUser && a.getUser())) { gate('member'); return; }
-    /* Playlist writes are server-only (auth.js create/addItem/remove all POST and reject with no
-       connection), so offline the old flow let you pick sentences and THEN failed with a raw
-       "TypeError: failed to fetch". Say it before the work, not after.
-       ⚠ Only the FALSE case is trusted: navigator.onLine reports *online* in airplane mode in this
-       WebView (documented all over this file), so `true` proves nothing — hence the friendly
-       network-error message on the save path as well. Together they cover both. */
-    if (!navigator.onLine) {
-      dynMsg('You’re offline',
-        'Playlists are saved to your account, so adding or removing sentences needs a connection. Your downloads keep working in the meantime.');
-      return;
-    }
+    /* 2026-08-09 — THE OFFLINE BLOCK IS GONE. It used to bail here with "adding or removing
+       sentences needs a connection", because auth.js's create/addItem/remove all POSTed and
+       rejected with no connection, so the old flow let you pick sentences and THEN failed with a
+       raw "TypeError: failed to fetch". Those methods now apply locally and queue to an outbox
+       (see the OFFLINE WRITE OUTBOX header in auth.js), so the whole flow works on a plane and
+       syncs on reconnect. Nothing here needs a network check any more — dynSelDone's own
+       network-error branch stays as the backstop for the case navigator.onLine lies about. */
     var PL = a.playlists;
     if (!PL || !PL.load) { dynMsg('Playlists unavailable', 'Try again in a moment.'); return; }
     PL.load().then(function (lists) { dynShowChooser(lists || []); })
@@ -5275,7 +5271,13 @@
     chain.then(function () {
       if (plsel) { dynPendClear(); location.href = 'playlists.html'; return; }
       dynExitSelect();
-      dynStatus('“' + name + '” updated — ' + addsN + ' selected, ' + remsN + ' removed', false);
+      /* ⚠ Only the FALSE case is trusted — navigator.onLine reports *online* in airplane mode in
+         this WebView, so `true` proves nothing. That asymmetry is fine here: a genuinely offline
+         device gets the reassurance, and a lying one gets the plain message while the outbox syncs
+         it anyway. Never the reverse (promising a sync that already happened would be noise). */
+      var savedLocally = !navigator.onLine;
+      dynStatus('“' + name + '” updated — ' + addsN + ' selected, ' + remsN + ' removed' +
+        (savedLocally ? ' · saved on this device, syncs when you’re back online' : ''), false);
       var seq = dynStatusSeq;
       setTimeout(function () { if (seq === dynStatusSeq) dynStatus(null); }, 2500);
     }).catch(function (e) {
