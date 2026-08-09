@@ -18,8 +18,23 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v254';   // v254 / r154: add-to-playlist works offline (2026-08-09)
+const VERSION = 'v255';   // v255: the Supabase bundle survives a deploy — offline auth stops breaking (2026-08-09)
 const CACHE = 'thaiear-' + VERSION;
+/* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
+   The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
+   and it is only ever RUNTIME-cached, so nothing put it back until the user next opened the site
+   ONLINE. In that window auth.js's `import(SUPABASE_ESM)` could not resolve offline, so the client
+   was never created, getUser() stayed null, and every signed-in offline surface fell back to its
+   logged-out state: the playlists panel showed "Sign in (via the Menu)…" instead of the playlists
+   sitting in localStorage a few lines away. Reported 2026-08-09 as "I see none of my playlists"
+   in airplane mode, immediately after two deploys.
+   This is the same trap the PRECACHE comment below already warns about for the shell pages —
+   "anything only ever runtime-cached vanishes on every deploy" — with the one asset that offline
+   AUTH depends on left on the wrong side of it.
+   A separate cache, not a PRECACHE entry, because the @2 entry point pulls further chunks from
+   esm.sh at import time; a bucket that survives keeps the whole module graph without this file
+   needing to know esm.sh's internal layout. */
+const VENDOR_CACHE = 'thaiear-vendor';
 // Network-first is great online but offline the WebView's fetch can hang for many seconds before it
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
 // have the page cached, serve the cache at once (and let the network refresh it in the background).
@@ -167,7 +182,7 @@ self.addEventListener('activate', function (e) {
       // Keep the current shell cache, the persistent downloaded-PAGES cache ('thaiear-dl'), and the
       // downloaded-AUDIO cache ('thaiear-audio-dl', the web/PWA offline-audio store) — neither
       // downloads cache is ever version-wiped, so offline content survives an SW update.
-      .then(function (keys) { return Promise.all(keys.filter(function (k) { return k !== CACHE && k !== 'thaiear-dl' && k !== 'thaiear-audio-dl'; }).map(function (k) { return caches.delete(k); })); })
+      .then(function (keys) { return Promise.all(keys.filter(function (k) { return k !== CACHE && k !== VENDOR_CACHE && k !== 'thaiear-dl' && k !== 'thaiear-audio-dl'; }).map(function (k) { return caches.delete(k); })); })
       .then(function () { return self.clients.claim(); })
   );
 });
@@ -183,10 +198,20 @@ self.addEventListener('fetch', function (e) {
   // (Fonts used to be Google-hosted and cached here; they're self-hosted now — handled same-origin.)
   if (url.origin !== self.location.origin) {
     if (url.hostname === 'esm.sh') {
+      /* Stale-while-revalidate out of the SURVIVING vendor cache (see VENDOR_CACHE above).
+         Cache-first so offline auth works instantly; the background refresh keeps the pinned @2
+         copy current without there ever being a moment when it is absent. The revalidate must
+         swallow its own failure — offline it always rejects, and an uncaught rejection here would
+         surface as an SW error on every page load. */
       e.respondWith(
-        caches.open(CACHE).then(function (c) {
+        caches.open(VENDOR_CACHE).then(function (c) {
           return c.match(req).then(function (hit) {
-            return hit || fetch(req).then(function (res) { try { c.put(req, res.clone()); } catch (_) {} return res; });
+            var net = fetch(req).then(function (res) {
+              if (res && res.ok) { try { c.put(req, res.clone()); } catch (_) {} }
+              return res;
+            }).catch(function () { return null; });
+            if (hit) return hit;                     // serve at once, refresh behind it
+            return net.then(function (res) { return res || Response.error(); });
           });
         })
       );
