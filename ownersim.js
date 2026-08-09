@@ -204,6 +204,25 @@
     d.addEventListener('change', function (e) {
       if (e.target && e.target.name === 'ownersim') setState(e.target.value);
     });
+    /* ── WHICH BUILD IS THIS DEVICE ACTUALLY RUNNING? ──────────────────────────────────────────
+       "have you picked up the new service worker?" was the blocker behind half a day of
+       false-negative testing (2026-08-09) — an iOS PWA in particular holds an old worker across
+       several launches, so a shipped fix looks like a fix that did not work.
+       No sw.js change and no message channel needed: the cache NAME is 'thaiear-' + VERSION, so
+       reading caches.keys() from the page answers it exactly. Shown only in this owner panel.
+       ⚠ It reports the ACTIVE cache, which is what the page is really being served from — that is
+       the question, not what the server last published. */
+    var ver = document.createElement('div');
+    ver.style.cssText = 'margin-top:10px;font-size:12px;color:#7A1F1F';
+    ver.textContent = 'build: checking…';
+    d.appendChild(ver);
+    try {
+      window.caches.keys().then(function (ks) {
+        var shell = ks.filter(function (k) { return /^thaiear-v\d+$/.test(k); });
+        ver.textContent = 'build on this device: ' + (shell.length ? shell.join(', ') : 'no shell cache yet') +
+          (window.ThaiEarPlayerBuild ? ' · player ' + window.ThaiEarPlayerBuild : '');
+      }).catch(function () { ver.textContent = 'build: unavailable'; });
+    } catch (_) { ver.textContent = 'build: unavailable'; }
     document.body.appendChild(d);
   }
 

@@ -1070,7 +1070,15 @@
      path, never a place to surface an exception. Returns true if the op left the outbox. */
   function plRunOp(bucket, key, fn, onFatal) {
     if (!client || !currentUser) return Promise.resolve(false);
-    return fn()
+    /* ⚠ fn() IS CALLED INSIDE THE TRY. Since 2026-08-09 the mutations no longer await this — they
+       fire it and return — so a SYNCHRONOUS throw from the query builder would escape into the
+       caller instead of being caught by the .catch below, taking create()/addItem() down with it
+       and losing the very write the outbox exists to protect. The op stays queued either way, so
+       plFlush() still delivers it. */
+    var p;
+    try { p = fn(); } catch (e) { return Promise.resolve(false); }
+    if (!p || typeof p.then !== 'function') return Promise.resolve(false);
+    return p
       .then(function () { plUnqueue(bucket, key); return true; })
       .catch(function (e) {
         if (!plOpFatal(e)) return false;                     // transient — stays queued, retried later
