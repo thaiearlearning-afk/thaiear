@@ -1016,6 +1016,15 @@
     else o.renames[id] = name;
     plPendSet(o);
   }
+  /* Is this list still waiting to be CREATED server-side? An item push must not overtake its
+     parent: the row would fail the foreign key, plOpFatal() would correctly judge that unsyncable,
+     and the user's addition would be silently dropped. While a create is queued the immediate
+     attempt is skipped entirely and plFlush() delivers it — that replays in dependency order and
+     already has the same guard (`blocked`). */
+  function plCreatePending(id) {
+    var o = plPendGet();
+    return !!(o.lists[id] && o.lists[id].op === 'create');
+  }
   function plQueueItem(op, listId, tk, num, payload) {
     var o = plPendGet();
     o.items[plItemKey(listId, tk, num)] = { op: op, listId: listId, tk: tk, num: num, payload: payload || null, at: Date.now() };
@@ -1270,12 +1279,24 @@
       plSeq++;   /* r76: this write must survive any load() already in flight */
       (plCache = plCache || []).push(p); plStore();
       plQueueCreate(id, name, p.position);
-      return plRunOp('lists', id, function () { return plPushCreate(p); },
+      /* ⚠ FIRE AND FORGET — NEVER await the push here (2026-08-09, owner-reported on iPhone PWA:
+         create a playlist in airplane mode and select mode never opened).
+         This used to return plRunOp(...).then(→ p), so the caller waited for a network attempt.
+         Offline in a WebView a fetch does not fail fast — it HANGS for many seconds before
+         rejecting — so player.js's dynEnterSelect(p) ran only after that timeout: the dialog
+         closed and, to the user, nothing happened.
+         It was masked until sw v255. Before that the esm.sh bundle was wiped by every deploy, so
+         `client` was usually null offline and plRunOp returned instantly; making the client
+         reliably available offline is what started the real fetch attempt.
+         Waiting was never right in any case: the outbox IS the delivery guarantee and plCache is
+         authoritative the moment it is written, so there is nothing for the caller to learn by
+         waiting. Same reasoning as raceLocal() on the read path. */
+      plRunOp('lists', id, function () { return plPushCreate(p); },
         function () {   // unsyncable → undo the optimistic insert rather than show a ghost list
           plPendPurgeList(id);
           if (plCache) { plCache = plCache.filter(function (x) { return x.id !== id; }); plStore(); }
-        })
-        .then(function () { return p; });   // resolves with the row either way — the id is already real
+        });
+      return Promise.resolve(p);          // the id is already real — see the outbox header
     },
     remove: function (id) {
       if (!currentUser) return Promise.reject(new Error('not signed in'));
@@ -1286,7 +1307,8 @@
       plQueueDelete(id);
       // Created and deleted before it ever reached the server — nothing to push.
       if (neverExisted) return Promise.resolve();
-      return plRunOp('lists', id, function () { return plPushDelete(id); }).then(function () {});
+      plRunOp('lists', id, function () { return plPushDelete(id); });   // fire and forget
+      return Promise.resolve();
     },
     // Metadata only — touches no prefix, claim or manifest, so it can never affect a download.
     rename: function (id, name) {
@@ -1300,7 +1322,8 @@
       var o = plPendGet();
       // Still queued as a create → the new name travels with it; nothing separate to push.
       if (o.lists[id] && o.lists[id].op === 'create') return Promise.resolve();
-      return plRunOp('renames', id, function () { return plPushRename(id, name); }).then(function () {});
+      plRunOp('renames', id, function () { return plPushRename(id, name); });   // fire and forget
+      return Promise.resolve();
     },
     addItem: function (id, item) {
       if (!currentUser) return Promise.reject(new Error('not signed in'));
@@ -1319,8 +1342,14 @@
         p.items.push(row); plStore();
       }
       plQueueItem('add', id, row.topic_key, row.num, row);
-      return plRunOp('items', plItemKey(id, row.topic_key, row.num),
-        function () { return plPushItemAdd(row); }).then(function () {});
+      /* ⚠ FIRE AND FORGET, like create() — see the note there. dynSelDone() chains these
+         SEQUENTIALLY ("Saving… 1 of 5"), so awaiting a hanging offline fetch multiplied the delay
+         by the number of sentences chosen: the owner's "they add really really slowly - when
+         before they were near instant" on Android, same root cause as the iPhone create hang. */
+      if (!plCreatePending(id)) {
+        plRunOp('items', plItemKey(id, row.topic_key, row.num), function () { return plPushItemAdd(row); });
+      }
+      return Promise.resolve();
     },
     removeItem: function (id, topicKey, num) {
       if (!currentUser) return Promise.reject(new Error('not signed in'));
@@ -1332,7 +1361,10 @@
       // Added and removed before either reached the server — the pair cancels.
       if (o.items[key] && o.items[key].op === 'add') { delete o.items[key]; plPendSet(o); return Promise.resolve(); }
       plQueueItem('remove', id, topicKey, num, null);
-      return plRunOp('items', key, function () { return plPushItemRemove(id, topicKey, num); }).then(function () {});
+      if (!plCreatePending(id)) {
+        plRunOp('items', key, function () { return plPushItemRemove(id, topicKey, num); });
+      }
+      return Promise.resolve();
     },
     // Which playlists contain this sentence? (from cache — call load() first)
     idsFor: function (topicKey, num) {
