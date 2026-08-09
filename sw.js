@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v257';   // v257 / r155: offline chooser opens instantly; queue flushes on app open (2026-08-09)
+const VERSION = 'v258';   // v258: a deploy can no longer punch holes in the offline cache (2026-08-09)
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -168,10 +168,59 @@ const PRECACHE = [
   '/fonts/sarabun-latin-500.woff2', '/fonts/sarabun-latin-600.woff2'
 ];
 
+/* Add a list of URLs a few at a time. ~150 simultaneous fetches on a phone is exactly how the
+   install below used to end up half-finished: the burst is throttled or the radio drops, entries
+   fail, and .catch() swallows it. Small batches are far more likely to complete. */
+function addBatched(c, urls, width) {
+  var i = 0;
+  function lane() {
+    if (i >= urls.length) return Promise.resolve();
+    var u = urls[i++];
+    return c.add(u).catch(function () {}).then(lane);
+  }
+  var lanes = [];
+  for (var n = 0; n < Math.min(width || 6, urls.length); n++) lanes.push(lane());
+  return Promise.all(lanes);
+}
+
+/* ⚠ PRECACHE REPAIR (2026-08-09) — WHY A DEPLOY MUST NOT BE ABLE TO BREAK OFFLINE.
+   install() fires one c.add() per PRECACHE entry and swallows every failure, and skipWaiting()
+   activates the new worker whether or not they landed. activate() then DELETES the previous
+   version's cache — which still held all of them. So one flaky install left permanent holes, and
+   the device came out of the deploy WORSE offline than it went in, with nothing ever retrying.
+   Reported 2026-08-09 after five VERSION bumps in a day: the Read hub rendered as unstyled plain
+   text (read.css missing), lessons fell through to the offline page (read-*.html missing), and
+   meditator.png had vanished from the playlists panel — all of them precache entries.
+   Two-stage repair, in this order, because the first stage needs NO network and therefore works
+   even when the new worker is picked up offline:
+     1. fill any gap from the OUTGOING cache before deleting it — a deploy can then never lose
+        content the device already had;
+     2. re-fetch just those gaps once the old caches are gone, so a migrated (possibly stale) copy
+        is replaced by the current one whenever there IS a connection.
+   Only ever fills gaps — an entry the install DID land is never overwritten by an older copy. */
+function precacheGaps(c) {
+  var gaps = [];
+  return Promise.all(PRECACHE.map(function (u) {
+    return c.match(u).then(function (hit) { if (!hit) gaps.push(u); }).catch(function () { gaps.push(u); });
+  })).then(function () { return gaps; });
+}
+function migrateGaps(c, gaps, olds) {
+  if (!gaps.length || !olds.length) return Promise.resolve(gaps);
+  return Promise.all(gaps.map(function (u) {
+    return (function tryOld(i) {
+      if (i >= olds.length) return Promise.resolve();
+      return caches.open(olds[i])
+        .then(function (oc) { return oc.match(u); })
+        .then(function (hit) { return hit ? c.put(u, hit.clone()) : tryOld(i + 1); })
+        .catch(function () { return tryOld(i + 1); });
+    })(0);
+  })).then(function () { return gaps; });
+}
+
 self.addEventListener('install', function (e) {
   e.waitUntil(
     caches.open(CACHE)
-      .then(function (c) { return Promise.all(PRECACHE.map(function (u) { return c.add(u).catch(function () {}); })); })
+      .then(function (c) { return addBatched(c, PRECACHE, 6); })
       .then(function () { return self.skipWaiting(); })
   );
 });
@@ -182,7 +231,22 @@ self.addEventListener('activate', function (e) {
       // Keep the current shell cache, the persistent downloaded-PAGES cache ('thaiear-dl'), and the
       // downloaded-AUDIO cache ('thaiear-audio-dl', the web/PWA offline-audio store) — neither
       // downloads cache is ever version-wiped, so offline content survives an SW update.
-      .then(function (keys) { return Promise.all(keys.filter(function (k) { return k !== CACHE && k !== VENDOR_CACHE && k !== 'thaiear-dl' && k !== 'thaiear-audio-dl'; }).map(function (k) { return caches.delete(k); })); })
+      .then(function (keys) {
+        var doomed = keys.filter(function (k) {
+          return k !== CACHE && k !== VENDOR_CACHE && k !== 'thaiear-dl' && k !== 'thaiear-audio-dl';
+        });
+        return caches.open(CACHE).then(function (c) {
+          return precacheGaps(c)
+            // 1. rescue what the install missed from the cache we are about to delete (no network)
+            .then(function (gaps) { return migrateGaps(c, gaps, doomed); })
+            // 2. only now is it safe to drop the old versions
+            .then(function (gaps) {
+              return Promise.all(doomed.map(function (k) { return caches.delete(k); }))
+                // 3. and replace those rescued/absent copies with current ones if we are online
+                .then(function () { return addBatched(c, gaps, 6); });
+            });
+        });
+      })
       .then(function () { return self.clients.claim(); })
   );
 });
