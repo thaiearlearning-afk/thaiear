@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v268';   // v268: harden the fire-and-forget push; owner build readout (2026-08-09)
+const VERSION = 'v269';   // v269: owner sim reachable without an address bar (PWA/app) (2026-08-09)
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —

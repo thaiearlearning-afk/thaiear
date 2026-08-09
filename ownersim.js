@@ -226,7 +226,10 @@
     document.body.appendChild(d);
   }
 
-  function paint() { banner(); if (get(K_ON) === '1') picker(); }
+  /* The email hash IS the gate — K_ON is not consulted here any more. Requiring a URL-set flag
+     made the picker unreachable in a standalone PWA / the Android app, which have no address bar
+     and are exactly where the simulator is needed. */
+  function paint() { banner(); picker(); }
   function ui() {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paint);
     else paint();

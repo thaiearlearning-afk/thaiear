@@ -505,7 +505,14 @@
   function ensureOwnerSim() {
     try {
       if (/[?&]ownersim=1/.test(location.search)) localStorage.setItem('te_ownersim', '1');
-      if (localStorage.getItem('te_ownersim') !== '1') return;
+      /* ⚠ DO NOT re-gate this on a URL flag. It was `?ownersim=1` only, and that is unusable in the
+         very places the tool is needed: a standalone PWA and the Android app have NO ADDRESS BAR,
+         so an arm-by-query-string switch does not exist there — the same trap already recorded for
+         the app's debug flag. Load for anyone SIGNED IN and let ownersim.js do the real gate: it
+         is inert unless the address matches one of two SHA-256 hashes. Cost is one ~7 KB cached
+         file for signed-in visitors; the alternative was a tool the owner could not reach on the
+         two devices he actually tests on. */
+      if (localStorage.getItem('te_ownersim') !== '1' && !localStorage.getItem('thaiear_identity')) return;
     } catch (_) { return; }
     if (document.getElementById('thaiear-ownersim-js')) return;
     const s = document.createElement('script');
