@@ -186,6 +186,7 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     display: flex;
     justify-content: center;
     gap: 3.5rem;
+    flex-wrap: wrap;
     padding: 1.1rem 2rem;
     max-width: 620px;
     margin: 0 auto;
@@ -352,9 +353,12 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     position: absolute; left: 12px; width: 15px; height: 15px;
     color: var(--text-tertiary); pointer-events: none;
   }
+  /* Capped: the placeholder ("Search topics — try “temple” or “วัด”") is a single unwrappable
+     line inside an input, so it cannot reflow — past a certain size it just runs out through
+     the end of the field. Capping the type is the only thing that keeps it readable. */
   .topic-search {
     width: 100%;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--te-ui, 1));
     font-family: var(--font-ui);
     padding: 8px 34px 8px 34px;
     border-radius: 20px;
@@ -519,6 +523,8 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     justify-content: flex-end;
   }
   .topic-name {
+    min-width: 0;
+    overflow-wrap: break-word;   /* only bites when a word genuinely cannot fit */
     font-size: 14px;
     font-weight: 500;
     color: var(--text-primary);
@@ -763,12 +769,16 @@ if(pend||bf)d.className+=' te-warp';})();</script>
        inflates with the text — a 2rem gap became 33.6px and ate 67px of a 345px viewport,
        which is what pushed the third stat onto its own row. px and vw are immune. */
     .hero-stats { gap: clamp(10px, 4vw, 32px); padding: 1.25rem 1rem; flex-wrap: wrap; }
+    /* Equal thirds that wrap INSIDE their own column, so the widest stat ("3,000+ / UNIQUE
+       WORDS") reflows onto two lines instead of dropping the whole band onto a second row.
+       Phones only — desktop has the room and keeps its natural centred spacing. */
+    .hero-stats > div { flex: 1 1 0; min-width: 0; text-align: center; }
     .hero-stat-num { font-size: calc(20px * var(--te-ui, 1)); }
     .switcher-wrap {
       padding: 0.7rem 1rem 0;
     }
     .topics-section {
-      padding: 0 1rem 3rem;
+      padding: 0 16px 3rem;      /* px sides — see .topic-card */
     }
     .filter-tabs {
       gap: 5px;
@@ -778,9 +788,10 @@ if(pend||bf)d.className+=' te-warp';})();</script>
       padding: 5px 12px;
     }
     .topic-search-wrap { max-width: none; margin-top: -1rem; }
-    .topic-search { font-size: 12.5px; padding: 7px 30px; }
+    .topic-search { font-size: calc(12.5px * var(--te-ui, 1)); padding: 7px 30px; }
     .topic-card {
-      padding: 0.9rem 1rem 0.85rem;
+      padding: 14px 16px 13px;   /* px, not rem — rem padding inflates under Android textZoom */
+      min-width: 0;              /* grid item: stop min-content blowing past the 1fr column */
     }
     .level-badge {
       font-size: calc(9px * var(--te-ui, 1));
