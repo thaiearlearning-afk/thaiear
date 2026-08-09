@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v263';   // v263 / r159: "Unique words" on one line; player glyphs stay in their shapes (2026-08-09)
+const VERSION = 'v264';   // v264 / r160: owner-only iOS text-scaling diagnostic (temporary) (2026-08-09)
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —

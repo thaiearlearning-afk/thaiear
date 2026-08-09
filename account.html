@@ -494,6 +494,7 @@ function renderAccount() {
     // The admin answer arrives on a LATER notify than the first render, so it has to be checked
     // on the cheap path too — otherwise the panel only ever appears after a reload.
     renderDesktopDlAdmin();
+    renderTextScaleProbe();
     return;
   }
   _acctRenderedUid = uid;
@@ -535,6 +536,8 @@ function renderAccount() {
     // Admin-only; stays an empty div for everyone else. Populated by renderDesktopDlAdmin() once
     // auth.js has a SERVER answer — never rendered optimistically.
     '<div id="desktop-dl-admin"></div>' +
+    // TEMPORARY iOS text-scaling diagnostic (2026-08-09) - owner-only, delete once answered.
+    '<div id="ios-textscale-probe"></div>' +
     resetHtml +
     '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="confirmLogout()">Log out</button></p>' +
     '<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">' +
@@ -546,6 +549,7 @@ function renderAccount() {
   loadMembership();                // then refine with the authoritative Stripe state
   _dlPanelBuilt = false;           // the body was rebuilt — the panel node is gone with it
   renderDesktopDlAdmin();
+  renderTextScaleProbe();
   if (doReset) loadResetDebug();
 }
 function loadResetDebug() {
@@ -558,6 +562,122 @@ function loadResetDebug() {
     .then(function (t) { if (pre) pre.textContent = t; })
     .catch(function (e) { if (pre) pre.textContent = 'debug error: ' + e; });
 }
+/* ══ iOS TEXT-SCALING DIAGNOSTIC — TEMPORARY, DELETE WHEN ANSWERED (2026-08-09) ══════════════
+   Answers two questions that decide whether iPhone can ever get Android's text-only enlargement,
+   and that CANNOT be answered off-device or from a spec:
+
+     1. Does iOS pass the user's Dynamic Type setting to web content?
+        The only door is `font: -apple-system-body`, which renders at the user's chosen size
+        (17px at default). Every other font declaration ignores Dynamic Type entirely.
+     2. Does `-webkit-text-size-adjust: <percentage>` actually scale text — and ONLY text?
+        That is the CSS equivalent of Android's textZoom, and the lever we would drive.
+
+   ⚠ IT LIVES HERE, IN THE OWNER-ONLY PANEL, FOR A STRUCTURAL REASON. The context under test is
+   the INSTALLED PWA, which has no address bar and no console — so a standalone diagnostic page
+   would be unreachable in the very mode we need to measure. Account is reachable from the person
+   icon inside the installed app. Gated on isDesktopDlAdmin() so it is invisible to everyone else;
+   it reads nothing and writes nothing, so the gate is tidiness, not security.
+
+   ⚠ RE-MEASURES ON RETURN TO THE APP (visibilitychange + focus). The whole test is "change a
+   setting in Settings, come back, read the number" — a value captured once at load would be stale
+   exactly when it matters, and a stale number reads as a failure.
+
+   ⚠ THE A/B PAIR IS DELIBERATELY VISIBLE AS WELL AS MEASURED. WebKit's text autosizing has width
+   and viewport heuristics, so an off-screen measurement could plausibly disagree with what the
+   page actually does. Two lines you can look at cannot lie. */
+function _tsMeasureBodyFont() {
+  var p = document.createElement('div');
+  p.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;margin:0;padding:0';
+  p.style.font = '-apple-system-body';        // Safari/WKWebView only; other engines reject it
+  var supported = !!p.style.font;             // '' means the CSSOM refused the value
+  p.textContent = 'M';
+  document.body.appendChild(p);
+  var px = parseFloat(getComputedStyle(p).fontSize) || 0;
+  var rendered = p.offsetHeight;
+  if (p.parentNode) p.parentNode.removeChild(p);
+  return { supported: supported, px: px, rendered: rendered };
+}
+
+function _tsMeasureAdjust() {
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;width:320px';
+  wrap.innerHTML =
+    '<div style="width:320px"><span style="white-space:nowrap;font-size:16px">Adjust probe sample</span></div>' +
+    '<div style="width:320px;-webkit-text-size-adjust:150%;text-size-adjust:150%">' +
+      '<span style="white-space:nowrap;font-size:16px">Adjust probe sample</span></div>';
+  document.body.appendChild(wrap);
+  var a = wrap.children[0].firstElementChild.getBoundingClientRect().width;
+  var b = wrap.children[1].firstElementChild.getBoundingClientRect().width;
+  if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+  return { control: a, adjusted: b, ratio: a ? b / a : 0 };
+}
+
+function _tsRefresh() {
+  var out = document.getElementById('ts-readout');
+  if (!out) return;
+  var body = _tsMeasureBodyFont();
+  var adj = _tsMeasureAdjust();
+  var raw = (window.ThaiEarUIScale && window.ThaiEarUIScale.raw) ? window.ThaiEarUIScale.raw() : 1;
+  var standalone = window.navigator.standalone === true ||
+    !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  var locked = !!document.getElementById('te-nozoom');
+
+  var dtVerdict = !body.supported
+    ? 'n/a — this browser rejects -apple-system-body (expected off iOS)'
+    : (body.px > 17.5
+        ? 'YES — iOS is passing it through'
+        : 'no change (17px = default). Set Larger Text to MAX, reopen, read again.');
+  var adjVerdict = adj.ratio > 1.35
+    ? 'YES — the text-only lever works'
+    : (adj.ratio > 1.05 ? 'PARTIAL (' + adj.ratio.toFixed(2) + '×)' : 'NO — the percentage is ignored');
+
+  function row(k, v) {
+    return '<div style="display:flex;gap:10px;justify-content:space-between;align-items:baseline;' +
+      'padding:5px 0;border-bottom:0.5px solid var(--border)"><span class="acct-muted">' + k +
+      '</span><strong style="text-align:right;min-width:0;overflow-wrap:anywhere">' + v + '</strong></div>';
+  }
+  out.innerHTML =
+    row('1. Body text size', body.supported ? body.px.toFixed(1) + 'px' : 'unsupported') +
+    row('&nbsp;&nbsp;&nbsp;&rarr; Dynamic Type?', dtVerdict) +
+    row('2. Adjust 150% test', adj.ratio.toFixed(2) + '&times;') +
+    row('&nbsp;&nbsp;&nbsp;&rarr; Text-only lever?', adjVerdict) +
+    row('3. Measured inflation', (Math.round(raw * 100) / 100) + '&times;') +
+    row('4. Display mode', (standalone ? 'standalone (installed app)' : 'browser tab') +
+        (locked ? ' · zoom locked' : '')) +
+    row('&nbsp;&nbsp;&nbsp;&rarr; Viewport', Math.round(document.documentElement.clientWidth) +
+        ' css px @ dpr ' + (window.devicePixelRatio || 1));
+}
+
+function renderTextScaleProbe() {
+  var host = document.getElementById('ios-textscale-probe');
+  var a = window.ThaiEarAuth;
+  if (!host) return;
+  if (!a || !a.isDesktopDlAdmin || !a.isDesktopDlAdmin()) { host.innerHTML = ''; return; }
+  // Build once — a rebuild on every auth notify would restart the listeners each time.
+  if (host.getAttribute('data-built')) { _tsRefresh(); return; }
+  host.setAttribute('data-built', '1');
+  host.innerHTML =
+    '<div style="margin-top:1.5rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
+      '<h2 style="font-size:16px;font-weight:600;margin-bottom:4px">iOS text scaling (diagnostic)</h2>' +
+      '<p class="acct-muted" style="margin-bottom:12px;line-height:1.55">Temporary. Change ' +
+        'Settings &rarr; Accessibility &rarr; Display &amp; Text Size &rarr; Larger Text, reopen ' +
+        'this app from the home screen, and read the values below. Screenshot and send.</p>' +
+      '<div id="ts-readout" style="font-size:13px;line-height:1.5"></div>' +
+      '<div style="margin-top:14px;padding:10px;border:0.5px solid var(--border);border-radius:8px">' +
+        '<div style="width:100%">A (100%): The quick brown fox</div>' +
+        '<div style="width:100%;-webkit-text-size-adjust:150%;text-size-adjust:150%">' +
+          'B (150%): The quick brown fox</div>' +
+      '</div>' +
+      '<p class="acct-muted" style="margin-top:6px;line-height:1.5">If line B looks bigger than ' +
+        'line A, the lever works — trust your eyes over the number.</p>' +
+      '<div class="btn-row"><button class="btn btn-ghost" id="ts-again">Re-measure</button></div>' +
+    '</div>';
+  document.getElementById('ts-again').addEventListener('click', _tsRefresh);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) _tsRefresh(); });
+  window.addEventListener('focus', _tsRefresh);
+  _tsRefresh();
+}
+
 /* ══ DESKTOP DOWNLOAD ADMIN (2026-08-07) ══════════════════════════════════════════════════════
    Lets a trusted person enable the desktop MP3 download for someone else without going through
    the owner. Renders ONLY for accounts in desktop_dl_admins — and that is a convenience, not the
