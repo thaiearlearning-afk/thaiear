@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v269';   // v269: owner sim reachable without an address bar (PWA/app) (2026-08-09)
+const VERSION = 'v270';   // v270: activation stops blocking on the network; offline loads stop paying the 2s timeout
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -39,6 +39,18 @@ const VENDOR_CACHE = 'thaiear-vendor';
 // rejects, making cached pages crawl in. If the network hasn't answered within this window and we
 // have the page cached, serve the cache at once (and let the network refresh it in the background).
 const NET_TIMEOUT_MS = 2000;
+/* ADAPTIVE OFFLINE HINT (2026-08-09). `navigator.onLine` is useless here — it reports *online* in
+   airplane mode in this WebView — so the worker learns from what actually happened instead: once a
+   request has failed or blown NET_TIMEOUT_MS, assume the network is down for a short window and
+   answer from cache immediately (see the fast path in the fetch handler). Any success clears it.
+   Short on purpose: the cost of being wrong is serving a cached copy for a few seconds while the
+   background revalidate refreshes it, which is what the timeout path already did anyway. The state
+   is in memory, so a terminated worker simply re-learns it — nothing to invalidate. */
+const NET_DOWN_MS = 10000;
+var netDownUntil = 0;
+function netLooksDown() { return Date.now() < netDownUntil; }
+function noteNetDown() { netDownUntil = Date.now() + NET_DOWN_MS; }
+function noteNetUp() { netDownUntil = 0; }
 
 // Topic pages (topic-NN.html) 308-redirect to clean URLs (/topic-NN). A *redirected* Response
 // can't be used for a navigation (the browser throws net::ERR_FAILED), so rebuild a clean,
@@ -242,8 +254,21 @@ self.addEventListener('activate', function (e) {
             // 2. only now is it safe to drop the old versions
             .then(function (gaps) {
               return Promise.all(doomed.map(function (k) { return caches.delete(k); }))
-                // 3. and replace those rescued/absent copies with current ones if we are online
-                .then(function () { return addBatched(c, gaps, 6); });
+                .then(function () {
+                  /* 3. refresh the rescued copies — ⚠ DELIBERATELY NOT RETURNED, so activation
+                     does NOT wait for it. Returning it (v258) was a serious regression: OFFLINE
+                     every gap is a fetch that HANGS for many seconds, and with ~73 gaps after a
+                     failed install that kept waitUntil pending for minutes — during which
+                     clients.claim() below had not run, so the new worker controlled nothing and
+                     every request bypassed the SW straight into a dead network. That is what the
+                     owner saw on 2026-08-09: downloaded topics taking 5-6s to open, a totally
+                     white screen, auth flickering signed-out-then-back-in, and playlist writes
+                     failing because currentUser was still null.
+                     The content is already correct at this point — stage 1 migrated it out of the
+                     outgoing cache with no network — so this is purely an opportunistic
+                     freshening and must never gate activation. */
+                  addBatched(c, gaps, 6);
+                });
             });
         });
       })
@@ -292,16 +317,41 @@ self.addEventListener('fetch', function (e) {
   // we have the resource cached, serve the cache immediately while the network keeps running in the
   // background to refresh it (stale-while-revalidate). On a real network failure, fall back fully.
   e.respondWith((function () {
-    var network = fetch(req).then(function (res) {
-      if (res && res.ok && res.type === 'basic') {
-        var copy = res.clone();
-        cleanRedirect(copy).then(function (clean) { caches.open(CACHE).then(function (c) { c.put(req, clean); }); });
-      }
-      return res;
-    });
+    function fromNetwork() {
+      return fetch(req).then(function (res) {
+        noteNetUp();
+        if (res && res.ok && res.type === 'basic') {
+          var copy = res.clone();
+          cleanRedirect(copy).then(function (clean) { caches.open(CACHE).then(function (c) { c.put(req, clean); }); });
+        }
+        return res;
+      }, function (err) { noteNetDown(); throw err; });
+    }
+    /* ⚠ FAST PATH — the network is already known to be down, so do NOT pay NET_TIMEOUT_MS again.
+       This is what made every offline page load slow (owner, 2026-08-09: a downloaded topic taking
+       "5 or 6 seconds to open", and "issues each time airplane mode is on" rather than once after a
+       deploy). Each same-origin request waited the full 2 s before falling back to cache, and a page
+       is many requests in waves, so the cost stacked on EVERY load — the worker re-discovered the
+       outage per resource instead of remembering it.
+       Cache-first here, with the network still fired in the background so recovery is noticed and
+       the copy refreshes. Falls through to the normal path on a cache miss, so nothing that is not
+       cached is answered any less correctly. */
+    if (netLooksDown()) {
+      return positiveCacheMatch(req, url).then(function (hit) {
+        if (!hit) return fromNetwork().catch(function () { return cacheFallback(req, url); });
+        fromNetwork().catch(function () {});   // revalidate + recovery probe, not awaited
+        return cleanRedirect(hit);
+      });
+    }
+    var network = fromNetwork();
     return new Promise(function (resolve) {
       var settled = false;
       var timer = setTimeout(function () {
+        /* Did not answer in time — remember that, so the NEXT request skips the wait entirely.
+           Deliberately also on a TIMEOUT, not just a rejection: offline in this WebView a fetch
+           usually hangs rather than failing, so waiting for the rejection would never teach us
+           anything in the case that matters most. */
+        noteNetDown();
         positiveCacheMatch(req, url).then(function (hit) {
           if (hit && !settled) { settled = true; resolve(cleanRedirect(hit)); }
         });
