@@ -1092,6 +1092,26 @@
         return true;
       });
   }
+  /* ⚠ BOUNDED AWAIT — the correct middle ground, after both extremes failed (2026-08-09).
+       · Original: the mutations AWAITED the push. Online that is right and is what the owner
+         tested and confirmed. Offline a WebView fetch HANGS for many seconds, so create() only
+         resolved after that and player.js never reached dynEnterSelect — "I cannot select any
+         sentences" on iPhone; and dynSelDone chains addItem sequentially, so N sentences meant
+         N hangs on Android.
+       · Then fire-and-forget. That fixed the hang but changed the ONLINE path too, and the owner
+         lost adding-to-playlists online — a far worse failure than a slow one.
+     So: wait, but never longer than OFFLINE_FALLBACK_MS. Online the push settles well inside that
+     and behaviour is byte-identical to the version that worked; offline the caller is released at
+     1.2 s while the op stays queued for plFlush(). Same instrument raceLocal() already uses on the
+     read path — do not replace this with either extreme again. */
+  function plSettle(p, value) {
+    return new Promise(function (resolve) {
+      var done = false;
+      function fin() { if (!done) { done = true; clearTimeout(t); resolve(value); } }
+      var t = setTimeout(function () { if (!done) { done = true; resolve(value); } }, OFFLINE_FALLBACK_MS);
+      p.then(fin, fin);
+    });
+  }
   var plFlushing = null;
   /* Replay the outbox in dependency order: creates → renames → items → deletes. Sequential, not
      parallel — a list has to exist before its items can reference it. Re-entrant-safe (the online
@@ -1299,12 +1319,11 @@
          Waiting was never right in any case: the outbox IS the delivery guarantee and plCache is
          authoritative the moment it is written, so there is nothing for the caller to learn by
          waiting. Same reasoning as raceLocal() on the read path. */
-      plRunOp('lists', id, function () { return plPushCreate(p); },
+      return plSettle(plRunOp('lists', id, function () { return plPushCreate(p); },
         function () {   // unsyncable → undo the optimistic insert rather than show a ghost list
           plPendPurgeList(id);
           if (plCache) { plCache = plCache.filter(function (x) { return x.id !== id; }); plStore(); }
-        });
-      return Promise.resolve(p);          // the id is already real — see the outbox header
+        }), p);                           // the id is already real — see the outbox header
     },
     remove: function (id) {
       if (!currentUser) return Promise.reject(new Error('not signed in'));
@@ -1315,8 +1334,7 @@
       plQueueDelete(id);
       // Created and deleted before it ever reached the server — nothing to push.
       if (neverExisted) return Promise.resolve();
-      plRunOp('lists', id, function () { return plPushDelete(id); });   // fire and forget
-      return Promise.resolve();
+      return plSettle(plRunOp('lists', id, function () { return plPushDelete(id); }));
     },
     // Metadata only — touches no prefix, claim or manifest, so it can never affect a download.
     rename: function (id, name) {
@@ -1330,8 +1348,7 @@
       var o = plPendGet();
       // Still queued as a create → the new name travels with it; nothing separate to push.
       if (o.lists[id] && o.lists[id].op === 'create') return Promise.resolve();
-      plRunOp('renames', id, function () { return plPushRename(id, name); });   // fire and forget
-      return Promise.resolve();
+      return plSettle(plRunOp('renames', id, function () { return plPushRename(id, name); }));
     },
     addItem: function (id, item) {
       if (!currentUser) return Promise.reject(new Error('not signed in'));
@@ -1354,10 +1371,9 @@
          SEQUENTIALLY ("Saving… 1 of 5"), so awaiting a hanging offline fetch multiplied the delay
          by the number of sentences chosen: the owner's "they add really really slowly - when
          before they were near instant" on Android, same root cause as the iPhone create hang. */
-      if (!plCreatePending(id)) {
-        plRunOp('items', plItemKey(id, row.topic_key, row.num), function () { return plPushItemAdd(row); });
-      }
-      return Promise.resolve();
+      if (plCreatePending(id)) return Promise.resolve();   // parent not on the server yet — plFlush orders it
+      return plSettle(plRunOp('items', plItemKey(id, row.topic_key, row.num),
+        function () { return plPushItemAdd(row); }));
     },
     removeItem: function (id, topicKey, num) {
       if (!currentUser) return Promise.reject(new Error('not signed in'));
@@ -1369,10 +1385,8 @@
       // Added and removed before either reached the server — the pair cancels.
       if (o.items[key] && o.items[key].op === 'add') { delete o.items[key]; plPendSet(o); return Promise.resolve(); }
       plQueueItem('remove', id, topicKey, num, null);
-      if (!plCreatePending(id)) {
-        plRunOp('items', key, function () { return plPushItemRemove(id, topicKey, num); });
-      }
-      return Promise.resolve();
+      if (plCreatePending(id)) return Promise.resolve();
+      return plSettle(plRunOp('items', key, function () { return plPushItemRemove(id, topicKey, num); }));
     },
     // Which playlists contain this sentence? (from cache — call load() first)
     idsFor: function (topicKey, num) {
