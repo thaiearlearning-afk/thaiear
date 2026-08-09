@@ -114,6 +114,18 @@
    dialog is "stay". Sits left of it — destructive-ish on the left, safe on the right. */
 .dyn-pl-alt { background: var(--surface); color: var(--text-secondary); border: 0.5px solid var(--border-strong); margin-right: 8px; }
 
+/* "＋ New playlist" — the first row of the add-to-playlist chooser (2026-08-09). Accent-coloured
+   so it reads as an action among a list of destinations, and separated by a hairline so it does
+   not look like one of the user's own playlists. */
+.dyn-pl-new .dyn-pl-name { color: var(--accent); font-weight: 600; }
+.dyn-pl-row.dyn-pl-new { border-bottom: 0.5px solid var(--border); border-radius: 0; margin-bottom: 4px; }
+/* Name field for dynPrompt(). 16px is not a style choice: anything smaller makes iOS Safari zoom
+   the whole page on focus, which throws the dialog off-centre and cannot be undone by the user. */
+.dyn-pl-input { width: 100%; box-sizing: border-box; font-family: var(--font-ui); font-size: 16px;
+  color: var(--text-primary); background: var(--bg); border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-md); padding: 10px 12px; }
+.dyn-pl-input:focus { outline: none; border-color: var(--accent); }
+
 /* playlists page */
 .pl-add { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-ui); font-size: 13.5px; font-weight: 600; color: #fff; background: var(--accent); border: none; border-radius: 20px; padding: 9px 20px; cursor: pointer; margin-bottom: 1.25rem; }
 .pl-add:hover { background: var(--accent-mid); }

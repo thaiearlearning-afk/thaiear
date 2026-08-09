@@ -2305,9 +2305,42 @@
   function sentCardClasses(s) {
     if (!PLMODE || !s) return '';
     var cls = '';
+    /* ⚠ PRECEDENCE: locked BEATS not-downloaded (owner, 2026-08-08: "if any sentences happened to
+       be premium and user didn't have access to them then that's fine, we don't need to grey out
+       or say they aren't downloaded as user doesn't have access anyway"). else-if, not two ifs —
+       a locked card must look exactly as it always has. */
     if (sentLocked(s)) cls += ' sent-locked';
+    else if (sentNoDl(s)) cls += ' sent-nodl';
     if (sentTierOf(s) === 'premium') cls += ' sent-premium';
     return cls;
+  }
+  /* ── NOT DOWNLOADED (2026-08-09, OFFLINE_PLAYLISTS_PLAN.md Part B) ───────────────────────────
+     A playlist mixes topics, so offline it is NORMAL for some of its sentences to be on the device
+     and others not. Before this, one missing clip failed as a network error inside the build and
+     killed the whole thing — the owner's "if some of the playlist is not downloaded, the entire
+     playlist won't play".
+     ⚠ ONLY THE FALSE CASE OF navigator.onLine IS TRUSTED. It reports *online* in airplane mode in
+     this WebView (documented throughout this file), so this predicate is layer 1: it greys and
+     skips only when the browser ADMITS to being offline. Layer 2 — the build-side skip in
+     dynBuildSessionFor — catches the case where it lied. Two layers on purpose; do not collapse.
+     ⚠ PLAYLISTS ONLY. A partly-downloaded TOPIC is possible (an interrupted download keeps what it
+     got) but the owner ruled it a rare edge case, so topic pages keep their existing behaviour.
+     Presence is the MANIFEST test (hasLocalFile), which is synchronous and therefore usable during
+     render. The manifest can lie about a corrupt file (see the r123 self-heal note in
+     dynFetchClip), which is exactly why the BUILD still trusts the actual fetch instead of this. */
+  function sentNoDl(s) {
+    if (!PLMODE || !s) return false;
+    if (navigator.onLine) return false;        // only FALSE is trustworthy — see above
+    if (sentLocked(s)) return false;           // premium lock wins; never both
+    if (!(OFFLINE || WEB_DL || DYN_WEB_DL)) return false;   // no offline store on this platform
+    var ref = dynClipRef(s, 'TH');
+    return !(isDownloaded(ref.prefix) && hasLocalFile(ref.prefix, ref.file));
+  }
+  function sentNoDlCount() {
+    if (!PLMODE) return 0;
+    var n = 0;
+    for (var i = 0; i < sentences.length; i++) if (sentNoDl(sentences[i])) n++;
+    return n;
   }
   /* ⚠ THE RULE NOW LIVES IN auth.js (ThaiEarAuth.lockedFor) — shared with playlists.html's
      dlGroup(), which previously had no tier awareness and so tried to download locked clips.
@@ -2352,6 +2385,18 @@
     for (var i = 0; i < sentences.length; i++) if (sentences[i].num === num) { s = sentences[i]; break; }
     if (!s || !sentLocked(s)) return false;
     gate(sentTierOf(s));
+    return true;
+  }
+  /* Tap on a greyed, not-downloaded card. Returns true when it swallowed the interaction, so the
+     call sites read exactly like gateSent() above. Deliberately a plain message and NOT a gate:
+     nothing is being withheld and there is nothing to buy — the audio simply is not on the device,
+     and offline the user cannot fix it right now. */
+  function noDlSent(num) {
+    var s = null;
+    for (var i = 0; i < sentences.length; i++) if (sentences[i].num === num) { s = sentences[i]; break; }
+    if (!s || !sentNoDl(s)) return false;
+    dynMsg('Not downloaded',
+      'This sentence’s audio isn’t on your device. Download this playlist, or reconnect to play it.');
     return true;
   }
 
@@ -2622,7 +2667,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r155';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r156';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3110,7 +3155,10 @@
     // Filtering locked sentences out HERE is what makes "skip the denied ones and stitch the
     // rest" the normal path rather than an error path: their clips are never requested, so the
     // build never sees a 402 at all.
-    if (PLMODE) return sentences.filter(function (s) { return !sentLocked(s); });
+    /* …and, offline, the ones whose clips are not on the device (Part B, 2026-08-09). Filtering
+       here is what makes "stitch the rest" the NORMAL path rather than an error path — their clips
+       are never requested, so the build never sees a failure at all, exactly as with locked rows. */
+    if (PLMODE) return sentences.filter(function (s) { return !sentLocked(s) && !sentNoDl(s); });
     return sentences.filter(function (s) { return !dynExcluded[s.num]; });
   }
   function dynKey() {
@@ -3618,14 +3666,30 @@
        Real faults (network, decode) still reject, and an all-denied build rejects with the gate
        code so the visitor still gets the paywall/sheet rather than silence. */
     dynTallyReset();          // count where this build's clips come from (see dynSrcTally)
-    var denied = {}, lastGate = null;
+    var denied = {}, lastGate = null, missedOffline = 0;
     function isGateCode(c) { return c === 401 || c === 402 || c === 403 || c === 'noauth' || c === 'licence'; }
+    /* LAYER 2 of the not-downloaded handling (Part B, 2026-08-09). dynIncluded() already drops the
+       rows we KNOW are absent, but it can only act when navigator.onLine admits to being offline —
+       and in this WebView it reports *online* in airplane mode. So a clip can still fail here as a
+       plain network error, which used to re-throw and kill the entire build: the owner's "if some
+       of the playlist is not downloaded, the entire playlist won't play".
+       A network failure on a PLAYLIST clip is therefore skippable in the same way a gate denial is,
+       and tracked separately so the caller can say "not downloaded" rather than "premium".
+       ⚠ PLMODE ONLY. On a topic page a network error still re-throws — one missing clip there means
+       a broken or half-finished download, which should surface, not be silently stitched around. */
+    function isMissingOffline(e) {
+      if (!PLMODE) return false;
+      var c = e && e.code;
+      if (isGateCode(c)) return false;             // a denial is a denial, not an absence
+      return true;                                 // network/decode failure on a playlist clip
+    }
     return dynPool(files, function (f) {
       return dynFetchClip(f).then(function (b) { done++; if (onProg) onProg(done, files.length); return b; })
         .catch(function (e) {
-          if (!isGateCode(e && e.code)) throw e;
+          var gated = isGateCode(e && e.code);
+          if (!gated && !isMissingOffline(e)) throw e;
           denied[f.prefix + '|' + f.file.replace(/_(TH|EN)\.mp3$/, '')] = true;
-          lastGate = e;
+          if (gated) lastGate = e; else missedOffline++;
           done++; if (onProg) onProg(done, files.length);
           return null;
         });
@@ -3636,14 +3700,18 @@
          come back with a gate code, how many sentences survived, and was the build re-thrown.
          Instrument before theorising — every bug on this build attempted by inference first was
          solved wrong. */
-      if (lastGate) {
+      if (lastGate || missedOffline) {
         var kept = inc.filter(function (s) {
           var r = dynClipRef(s, 'TH');
           return !denied[r.prefix + '|' + r.file.replace(/_(TH|EN)\.mp3$/, '')];
         });
-        if (!kept.length) { return Promise.reject(lastGate); }
+        /* Nothing survived. A denial still reports the gate (the visitor needs the paywall/sheet);
+           otherwise every clip was simply absent, which is its own message, not a network fault. */
+        if (!kept.length) { return Promise.reject(lastGate || { code: 'nodl' }); }
         if (kept.length !== inc.length) {
-          dynLog('build: ' + (inc.length - kept.length) + ' sentence(s) denied — stitching ' + kept.length);
+          dynLog('build: ' + (inc.length - kept.length) + ' sentence(s) skipped (' +
+            (missedOffline ? missedOffline + ' unavailable' : '') + (lastGate ? ' denied' : '') +
+            ') — stitching ' + kept.length);
           inc = kept;
         }
       }
@@ -3806,6 +3874,13 @@
        nothing to build: the answer is known before any fetch.
        ⚠ Wording is deliberately NEUTRAL — no price, no link, no subscribe path — because this same
        string renders inside the Android app, where Google Play's no-steering rule applies. */
+    /* Same shape as the entitlement case below, different cause: offline with none of this
+       playlist's audio on the device. Distinguished FIRST because "Premium membership needed"
+       would be a lie — the visitor may be fully entitled and simply not have downloaded it. */
+    if (PLMODE && sentences.length && !dynIncluded().length && sentNoDlCount()) {
+      dynStatus('Nothing in this playlist is downloaded yet', false);
+      return Promise.reject({ code: 'nothing-playable' });
+    }
     if (PLMODE && sentences.length && !dynIncluded().length) {
       dynStatus('Premium membership needed', false);
       /* ⚠ NOT code:'licence' — that is the RECONNECT overlay's code (handleDenied →
@@ -3841,11 +3916,29 @@
       mainSrcReady = true;
       dynPreAdvanced = false;
       dynPosStale = false;      // new timeline in place; positions may be tracked again
-      dynStatus(null);
+      /* SAY THAT IT IS A SUBSET (owner, 2026-08-08 decision 7). Silently playing 12 of 15
+         sentences reads as a bug — the session is shorter than the list and nothing explains why.
+         Only when some are actually missing; a fully-downloaded playlist clears the line as before.
+         Held for 7s like the other line worth reading, not the 2.5s throwaway. */
+      var nodl = sentNoDlCount();
+      if (nodl) {
+        var playing = dynIncluded().length;
+        dynStatus('Playing ' + playing + ' of ' + (playing + nodl) + ' · ' + nodl + ' not downloaded', false);
+        var nseq = dynStatusSeq;
+        setTimeout(function () { if (nseq === dynStatusSeq) dynStatus(null); }, 7000);
+      } else dynStatus(null);
     }).catch(function (e) {
       var code = e && e.code;
       if (code === 'noauth' || code === 401 || code === 403) {
         dynStatus('Sign in to play this topic', false);
+        return Promise.reject(e);
+      }
+      /* Every clip was unavailable and none of it was an entitlement problem — i.e. the
+         not-downloaded case reached via layer 2, because navigator.onLine claimed to be online.
+         "Check your connection" would be the wrong advice: the connection is the thing that is
+         missing, but what the user actually needs to do is download the playlist. */
+      if (code === 'nodl') {
+        dynStatus('Nothing in this playlist is downloaded yet', false);
         return Promise.reject(e);
       }
       dynStatus('Couldn’t load the audio — check your connection', false);
@@ -4929,6 +5022,42 @@
     wrap.addEventListener('click', function (e) { if (e.target === wrap) shut(); });
     wrap.querySelector('.dyn-pl-done').addEventListener('click', shut);
   }
+  /* Single text input in the same shell as dynMsg/dynConfirm. Added 2026-08-09 for "＋ New
+     playlist" in the chooser; player.js had a message box and a confirm but no prompt, and a raw
+     window.prompt() is the grey system dialog the owner has objected to repeatedly (it is also
+     blocked outright in some WebViews). Calls back only with a non-empty, trimmed name. */
+  function dynPrompt(title, placeholder, okLabel, onOk) {
+    var old = document.getElementById('dyn-pl-pop'); if (old) old.remove();
+    var wrap = document.createElement('div');
+    wrap.id = 'dyn-pl-pop';
+    wrap.innerHTML = '<div class="dyn-pl-card">' +
+      '<div class="dyn-pl-head">' + escapeHtml(title) + '</div>' +
+      '<div class="dyn-pl-body"><input type="text" class="dyn-pl-input" maxlength="60" ' +
+        'placeholder="' + escapeHtml(placeholder || '') + '" autocomplete="off"></div>' +
+      /* ⚠ Button roles are the REVERSE of dynConfirm's on purpose. There, .dyn-pl-alt (the quiet
+         outlined one) carries the destructive "leave anyway" and the accent pill is the safe
+         "stay" — per the note on .dyn-pl-alt in player-dyn.css. Creating a playlist is not
+         destructive, it is the primary action, so here the accent pill IS Create and the quiet
+         button is Cancel. Same convention underneath: safe/primary on the right. */
+      '<div class="dyn-pl-foot">' +
+        '<button type="button" class="dyn-pl-done dyn-pl-alt">Cancel</button>' +
+        '<button type="button" class="dyn-pl-done">' + escapeHtml(okLabel || 'OK') + '</button>' +
+      '</div></div>';
+    document.body.appendChild(wrap);
+    var input = wrap.querySelector('.dyn-pl-input');
+    function shut() { wrap.remove(); }
+    function go() {
+      var v = (input.value || '').trim();
+      if (!v) { input.focus(); return; }   // never create an unnamed playlist
+      shut(); onOk(v);
+    }
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) shut(); });
+    wrap.querySelector('.dyn-pl-alt').addEventListener('click', shut);
+    wrap.querySelector('.dyn-pl-done:not(.dyn-pl-alt)').addEventListener('click', go);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+    // Deferred: iOS ignores focus() called synchronously inside the tap that opened the dialog.
+    setTimeout(function () { try { input.focus(); } catch (_) {} }, 60);
+  }
   /* Two-button confirm in the same shell as dynMsg — used by the leave-guard below. */
   function dynConfirm(title, text, okLabel, cancelLabel, onOk) {
     var old = document.getElementById('dyn-pl-pop'); if (old) old.remove();
@@ -4982,20 +5111,45 @@
     var old = document.getElementById('dyn-pl-pop'); if (old) old.remove();
     var wrap = document.createElement('div');
     wrap.id = 'dyn-pl-pop';
-    var rows = lists.length
-      ? lists.map(function (p, i) {
-          return '<button type="button" class="dyn-pl-row" data-i="' + i + '">' +
-            '<span class="dyn-pl-name">' + escapeHtml(p.name) + '</span>' +
-            '<span class="dyn-pl-count">' + ((p.items && p.items.length) || 0) + '</span></button>';
-        }).join('')
-      : '<div class="dyn-pl-empty">No playlists yet — create one in <a href="playlists.html">My Playlists</a> first.</div>';
+    /* ＋ NEW PLAYLIST, INSIDE THE CHOOSER (2026-08-09). The empty state used to read "create one
+       in My Playlists first", which sent you to another page to do the obvious next thing — and
+       offline that made playlist creation feel half-built even though auth.js supports it.
+       Deliberately a ROW here rather than a third button on the page: the topic page already
+       carries "＋ Add to a playlist" and "🎵 My playlists" side by side, and a third would be
+       clutter (a "Playlists" dropdown holding all three was considered and rejected as
+       over-engineering for two controls). It is also the SHORTER flow — tap, name it, and you land
+       straight in select mode on the new list, whereas a top-level button would create an empty
+       playlist and leave you on a topic page having to tap Add anyway.
+       Present online and offline alike; a mode-dependent entry point would be worse than either. */
+    var newRow = '<button type="button" class="dyn-pl-row dyn-pl-new" data-new="1">' +
+      '<span class="dyn-pl-name">＋ New playlist</span></button>';
+    var rows = newRow + lists.map(function (p, i) {
+      return '<button type="button" class="dyn-pl-row" data-i="' + i + '">' +
+        '<span class="dyn-pl-name">' + escapeHtml(p.name) + '</span>' +
+        '<span class="dyn-pl-count">' + ((p.items && p.items.length) || 0) + '</span></button>';
+    }).join('');
     wrap.innerHTML = '<div class="dyn-pl-card"><div class="dyn-pl-head">' +
         (lists.length ? 'Add sentences to…' : 'Playlists') + '</div>' +
+      (lists.length ? '' : '<div class="dyn-pl-empty">No playlists yet — make your first one.</div>') +
       '<div class="dyn-pl-body">' + rows + '</div>' +
-      '<div class="dyn-pl-foot"><button type="button" class="dyn-pl-done">' + (lists.length ? 'Cancel' : 'OK') + '</button></div></div>';
+      '<div class="dyn-pl-foot"><button type="button" class="dyn-pl-done">Cancel</button></div></div>';
     document.body.appendChild(wrap);
     wrap.addEventListener('click', function (e) { if (e.target === wrap) wrap.remove(); });
     wrap.querySelector('.dyn-pl-done').addEventListener('click', function () { wrap.remove(); });
+    wrap.querySelector('.dyn-pl-new').addEventListener('click', function () {
+      wrap.remove();
+      dynPrompt('New playlist', 'Playlist name', 'Create', function (name) {
+        var a2 = window.ThaiEarAuth, PL2 = a2 && a2.playlists;
+        if (!PL2) { dynMsg('Playlists unavailable', 'Try again in a moment.'); return; }
+        /* create() resolves optimistically with a client-minted id since the offline outbox
+           landed (auth.js), so this works with or without a connection. */
+        PL2.create(name.slice(0, 60)).then(function (p) {
+          if (p) dynEnterSelect(p);
+        }).catch(function (e) {
+          dynMsg('Couldn’t create the playlist', String((e && (e.message || e.code)) || 'unknown error'));
+        });
+      });
+    });
     wrap.querySelectorAll('.dyn-pl-row').forEach(function (rowBtn) {
       rowBtn.addEventListener('click', function () {
         var p = lists[+rowBtn.getAttribute('data-i')];
@@ -5443,6 +5597,17 @@
     '.sentence-card.sent-locked .sent-preview{color:var(--text-secondary)}' +
     '.sentence-card.sent-locked .sent-lock-ico{display:inline-flex;align-items:center;color:#B29234;flex-shrink:0}' +
     'body.te-v2 .sentence-card.sent-locked .sent-lock-ico{order:3}' +
+    /* NOT DOWNLOADED (Part B, 2026-08-09) — greyed IN PLACE. Deliberately NOT the locked skin:
+       nothing is being withheld, so no padlock, no gold, and no "Premium content" heading (it
+       never enters dynApplyLockOrder, so the row keeps its position, exactly as the owner asked).
+       Dimmer than .sent-locked's .72 because a locked row is an offer and this is just absence.
+       The header stays tappable — that is how the "not downloaded" message is reached — but the
+       inner controls are visually muted so the card does not look playable. */
+    '.sentence-card.sent-nodl{opacity:.45;background:var(--surface)}' +
+    '.sentence-card.sent-nodl .sentence-header{cursor:pointer}' +
+    '.sentence-card.sent-nodl .sent-preview{color:var(--text-secondary)}' +
+    '.sentence-card.sent-nodl .sent-play-btn,.sentence-card.sent-nodl .speed-toggle,' +
+      '.sentence-card.sent-nodl .sent-flag-btn{opacity:.5}' +
     /* r16a: the ⓘ explainer labels + their dismissible box */
     '.dyn-info-lbl{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-align:left}' +
     '.dyn-info-lbl:hover{color:var(--accent)}' +
@@ -6417,6 +6582,7 @@
     e.preventDefault();
     if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no sentence audio
     if (gateSent(num)) return;                    // playlist: locked sentence → its own tier's gate
+    if (noDlSent(num)) return;                    // playlist: offline + clip not on the device
     if (sentLock) return;
     sentLock = true;
     setTimeout(function () { sentLock = false; }, 300);
@@ -6617,6 +6783,7 @@
   function cycle(num) {
     if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no reveal
     if (gateSent(num)) return;                    // playlist: locked sentence → its own tier's gate
+    if (noDlSent(num)) return;                    // not downloaded → say so, don't expand
     var mod = 4;
     if (PLMODE) {
       // Playlist items ship no gloss/cultural notes — skip the empty notes stage entirely.
@@ -6631,7 +6798,9 @@
     if (!entitledForPage()) { gate(); return; }
     // Reveal-all must not reveal LOCKED rows — they render as padlocks either way, but leaving
     // their state at 0 keeps "all open" honest and stops a later unlock showing them pre-opened.
-    var open = sentences.filter(function (s) { return !sentLocked(s); });
+    // …and not the greyed, not-downloaded rows either — same reasoning: they render as a state,
+    // not as content, so leaving them at 0 keeps "all open" honest.
+    var open = sentences.filter(function (s) { return !sentLocked(s) && !sentNoDl(s); });
     var allOpen = open.every(function (s) { return states[s.num] === 3; });
     open.forEach(function (s) { states[s.num] = allOpen ? 0 : 3; });
     render();
@@ -6828,7 +6997,12 @@
      cards kept the grouping they were rendered with while dynIncluded() — recomputed at build time
      — used the new answer, so the page showed premium padlocked under "Premium content" while the
      constructed mp3 happily played it. Same rule, two moments, no re-render in between.
-     `offline` also clears auth.js's subFresh, which is what makes the flip immediate. */
+     `offline` also clears auth.js's subFresh, which is what makes the flip immediate.
+     ⚠ THIS ALSO DRIVES THE NOT-DOWNLOADED GREYING (Part B, 2026-08-09). sentNoDl() reads
+     navigator.onLine at RENDER time, so this listener is what makes cards grey on going offline
+     and un-grey on reconnect. Removing it would strand them in whichever state they were built in.
+     No extra work needed: sentNoDl() must stay out of dynApplyLockOrder(), which is already true —
+     it only sinks sentLocked() rows, so a not-downloaded card keeps its position. */
   ['online', 'offline'].forEach(function (ev) {
     window.addEventListener(ev, function () {
       if (!PLMODE) return;
