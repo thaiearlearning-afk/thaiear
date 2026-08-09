@@ -2622,7 +2622,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r154';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r155';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5279,7 +5279,11 @@
       dynStatus('“' + name + '” updated — ' + addsN + ' selected, ' + remsN + ' removed' +
         (savedLocally ? ' · saved on this device, syncs when you’re back online' : ''), false);
       var seq = dynStatusSeq;
-      setTimeout(function () { if (seq === dynStatusSeq) dynStatus(null); }, 2500);
+      /* The offline line is longer AND carries information the user needs to trust the save
+         ("syncs when you're back online"). Owner, 2026-08-09: at 2.5s it "flashes up for too
+         short - i can hardly have time to read it." The plain online confirmation keeps 2.5s;
+         only the one worth reading gets the longer dwell. */
+      setTimeout(function () { if (seq === dynStatusSeq) dynStatus(null); }, savedLocally ? 7000 : 2500);
     }).catch(function (e) {
       btns.forEach(function (b) { b.disabled = false; });   // stay in select mode so nothing chosen is lost
       dynSelCountPaint();

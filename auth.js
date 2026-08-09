@@ -1185,7 +1185,20 @@
       if (plCache && !force) { plLoadAuth = false; return Promise.resolve(plCache); }
       if (!client || !currentUser) { plCache = plLocal() || []; plLoadAuth = false; return Promise.resolve(plCache); }
       var seq = plSeq;   // r76: anything that mutates locally while this is in flight wins
-      return client.from('playlists').select('id,name,position').order('position').order('created_at')
+      /* ⚠ RACED AGAINST THE LOCAL COPY (2026-08-09). Owner: opening the playlist chooser on a
+         topic page in airplane mode took 7-8 SECONDS before the menu appeared.
+         This is a cross-origin PostgREST call to auth.thaiear.com, so sw.js never sees it and its
+         NET_TIMEOUT_MS fast-path cannot help — and an offline fetch in this WebView hangs for many
+         seconds before it finally rejects (the same fact NET_TIMEOUT_MS exists for). Nothing
+         bounded the wait, so the UI just sat there.
+         raceLocal() is the pattern progress and flags already use; playlists were the one reader
+         that never got it. If the server has not answered within OFFLINE_FALLBACK_MS we resolve
+         with the cached copy — which is exactly what the catch below would have produced anyway,
+         only 6 seconds sooner. The query is NOT cancelled: if it lands later it still refreshes
+         plCache and plLoadAuth for the next read.
+         ⚠ The fallback must leave plLoadAuth FALSE — a timed-out read is not authoritative, and
+         dlReconcileRefs() may only ever run against one that is. */
+      var query = client.from('playlists').select('id,name,position').order('position').order('created_at')
         .then(function (r) {
           if (r.error) throw r.error;
           var lists = r.data || [];
@@ -1205,6 +1218,11 @@
             });
         })
         .catch(function () { plCache = plLocal() || []; plLoadAuth = false; return plCache; });
+      return raceLocal(query, function () {
+        if (!plCache) plCache = plLocal() || [];   // never clobber a copy we already hold
+        plLoadAuth = false;
+        return plCache;
+      });
     },
     /* True only if the last resolved load() was a real server read that was not superseded by a
        local mutation. Check this before any destructive action derived from the list.
@@ -1423,6 +1441,12 @@
       refreshProfile();      // marketing-consent flag
       refreshDesktopDl();    // desktop MP3 download entitlement (server-derived, not cached to disk)
       dpFlush();             // push any dyn settings changed while offline
+      /* ⚠ AND THE PLAYLIST OUTBOX — on AUTH RESOLUTION, not just the 'online' event. That event
+         only fires on a TRANSITION, so an app queued-offline, closed, and later reopened while
+         already connected would never have replayed: the queue would sit there until the user
+         happened to open a playlist surface (load() also flushes). Sync must not depend on the
+         user visiting the right screen. */
+      plFlush();
       // keep in sync on login / logout / token refresh
       client.auth.onAuthStateChange(function (_event, session) {
         var user = userFromSession(session);
