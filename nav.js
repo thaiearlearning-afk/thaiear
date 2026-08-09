@@ -435,6 +435,26 @@
     document.body.appendChild(s);
   }
 
+  /* ---- owner entitlement simulator (ownersim.js) -----------------------
+     Armed once by visiting any page with ?ownersim=1, then remembered in localStorage. Loaded
+     from here for the same reason auth.js is: nav.js is on every page, so one hook makes the
+     simulation follow the owner into playlists and topic pages without editing 90+ files.
+     Nothing is fetched, and the file does not exist as far as any other visitor is concerned,
+     unless that flag is set. Deliberately NOT in sw.js's PRECACHE — it must not ship into every
+     visitor's cache; arming it while online leaves it in the ordinary runtime cache for offline
+     testing afterwards. */
+  function ensureOwnerSim() {
+    try {
+      if (/[?&]ownersim=1/.test(location.search)) localStorage.setItem('te_ownersim', '1');
+      if (localStorage.getItem('te_ownersim') !== '1') return;
+    } catch (_) { return; }
+    if (document.getElementById('thaiear-ownersim-js')) return;
+    const s = document.createElement('script');
+    s.id = 'thaiear-ownersim-js';
+    s.src = 'ownersim.js';
+    document.body.appendChild(s);
+  }
+
   /* ---- load the site-wide copyright footer once ------------------------
      footer.js owns the © line and injects it at the bottom of the page.
      Loading it from here means no page needs its own <script> — the nav,
@@ -460,8 +480,9 @@
        ⚠ ensureAuth() must STILL run: read.html and playlists.html carry no auth.js tag of their
        own — the nav loader is what brings auth in, and the embedded panels (member-gated read
        tests, the playlists list) need a signed-in ThaiEarAuth exactly as much as the full pages. */
-    if (document.documentElement.className.indexOf('te-embed') >= 0) { ensureAuth(); return; }
+    if (document.documentElement.className.indexOf('te-embed') >= 0) { ensureAuth(); ensureOwnerSim(); return; }
     ensureAuth();
+    ensureOwnerSim();
     ensureFooter();
     if (!document.getElementById('site-nav-styles')) {
       const style = document.createElement('style');

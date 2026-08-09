@@ -303,7 +303,16 @@
         var d = res.data;
         var subbed = d && (d.status === 'active' || d.status === 'trialing');
         try {
-          if (d && d.lifetime && subbed) localStorage.setItem('thaiear_lifetime', '1');
+          /* ⚠ THE OWNER SIMULATOR OWNS THIS FLAG WHILE ARMED (ownersim.js, 2026-08-09).
+             canUseOffline() short-circuits on thaiear_lifetime BEFORE any other check, so on a
+             lifetime account — the owner's is one — re-writing it here would make every simulated
+             state pass vacuously: the toggle flips, nothing errors, and nothing changes. That is
+             the failure the ⚠⚠ note above canUseOffline warns about, and it looks exactly like
+             success. This overrides the SERVER's lifetime answer only; the expiry decision itself
+             still runs for real. Clearing (the else) stays unconditional — a simulation should
+             never be able to GRANT access that the server did not. */
+          var simOn = !!(window.ThaiEarOwnerSim && window.ThaiEarOwnerSim.state());
+          if (d && d.lifetime && subbed && !simOn) localStorage.setItem('thaiear_lifetime', '1');
           else localStorage.removeItem('thaiear_lifetime');   // not lifetime (or not active) → clear
         } catch (_) {}
       })
