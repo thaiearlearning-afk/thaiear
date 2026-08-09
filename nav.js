@@ -47,6 +47,80 @@
     });
   })();
 
+  /* ---- OS TEXT-SCALING GUARD → the --te-ui multiplier ----------------------
+     ANDROID ONLY, in practice. Android's system font-size setting drives the WebView's
+     `WebSettings.textZoom`, which multiplies TEXT ONLY — padding, gaps, icon boxes and
+     container widths do not move. So text outgrows the boxes drawn for it. There is no CSS
+     opt-out: `-webkit-text-size-adjust` governs Android's *font boosting*, not textZoom.
+     (iOS is NOT affected: Dynamic Type never applies to px web text, and iOS Page Zoom
+     scales the whole layout proportionally, which is safe. The probe returns 1 there, and
+     on every desktop browser, so this whole mechanism is a no-op outside Android.)
+
+     WHAT THIS DOES: measure the zoom factor, then hand the CSS a counter-multiplier in
+     `--te-ui` so SITE CHROME can cancel most of it out:
+         font-size: calc(13px * var(--te-ui, 1))
+     textZoom multiplies the *used* font size, so the two cancel: 13 × (1.15/1.4) × 1.4 = 15.
+     Body/sentence text deliberately does NOT use the var and scales in full.
+
+     ⚠ IT CAPS, IT DOES NOT FREEZE. Chrome text still grows, up to CAP (15%), then holds.
+     A hard freeze would make the accessibility setting do nothing at all to the nav, fails
+     WCAG 1.4.4 (text resizable to 200%), and gets flagged by Play Store pre-launch
+     accessibility reports. Raise/lower CAP here — it is the one knob.
+
+     ⚠ THE STRUCTURAL FIXES ARE THE REAL FIX; this is the polish on top. Every layout that
+     uses --te-ui must ALSO survive var(--te-ui) resolving to 1 (min-width:0, wrapping,
+     ellipsis, min-height not height). If the probe ever misreads, the layout still holds.
+
+     Runs at defer-script time (body is parsed, first paint has not happened), so scaled
+     users do not see a full-size flash. Re-measured on resize and on returning to the app,
+     because the user can change the setting while we are backgrounded. */
+  (function uiScale() {
+    var CAP = 1.15;                    // chrome may grow 15%, then stops
+    var root = document.documentElement;
+    var last = null;
+
+    /* A 100px/1 block renders 100px tall — unless textZoom is on, when it renders 130px at
+       "Large". getComputedStyle is no good here: it reports the SPECIFIED size, not the
+       zoomed one, so the ratio has to be read off a real rendered box. */
+    function measure() {
+      var host = document.body || root;
+      if (!host) return 1;
+      var p = document.createElement('div');
+      p.setAttribute('aria-hidden', 'true');
+      p.style.cssText = 'position:absolute;top:-9999px;left:-9999px;width:auto;height:auto;' +
+        'padding:0;margin:0;border:0;visibility:hidden;white-space:nowrap;font:400 100px/1 monospace';
+      p.textContent = 'M';
+      host.appendChild(p);
+      var h = p.offsetHeight;
+      if (p.parentNode) p.parentNode.removeChild(p);
+      return h > 0 ? h / 100 : 1;      // 0 = not laid out (hidden tab) → assume unscaled
+    }
+
+    function apply() {
+      var r = measure();
+      // 1.02 dead-band: sub-pixel rounding must not trigger a pointless counter-scale.
+      var s = (r > 1.02) ? Math.min(1, CAP / r) : 1;
+      s = Math.round(s * 1000) / 1000;
+      if (s === last) return;
+      last = s;
+      root.style.setProperty('--te-ui', String(s));
+      root.style.setProperty('--te-ui-raw', String(Math.round(r * 100) / 100));
+    }
+
+    apply();
+    var t = null;
+    function requeue() { if (t) clearTimeout(t); t = setTimeout(apply, 250); }
+    window.addEventListener('resize', requeue);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) requeue(); });
+    // Exposed so the measured factor can be read on a device with no address bar
+    // (ThaiEarUIScale.raw() — see the debug-by-measurement rule).
+    window.ThaiEarUIScale = {
+      apply: apply,
+      raw: measure,
+      get: function () { return last; }
+    };
+  })();
+
   /* ---- offline: register the service worker (caches the app shell + pages) ----
      Runs on every page since nav.js loads everywhere. Enables offline browse/play
      in the app (and PWA offline on the web). Audio is handled separately. */
@@ -109,17 +183,31 @@
 
   /* ---- styles (own the nav's CSS here too, so it's truly single-source).
      Uses the page's design tokens — they must be defined in :root. -------- */
+  /* ⚠ TEXT-SCALING RULES FOR THIS BAR (Android textZoom — see the uiScale() note above).
+     The nav is the tightest strip on the site: a fixed-height flex row with an unbreakable
+     wordmark at one end and an unbreakable username at the other. Three things keep it intact
+     when the OS inflates text, and all three matter:
+       1. `min-height`, never `height` — a 54px box clipped the username the moment it took a
+          second line (measured: 58px tall inside 54px, owner-reported "username on two lines").
+       2. The username TRUNCATES (nowrap + max-width + ellipsis). It comes from the Google
+          profile name, so it can be arbitrarily long and has no shrink point of its own —
+          it was what pushed the bar apart. The person icon next to it carries the meaning,
+          and Account lives in its dropdown, so an ellipsis costs nothing.
+       3. `min-width: 0` on the flex row, so the truncation is actually reachable — a flex
+          item's automatic minimum size is its min-content width, which otherwise pins it.
+     The `calc(… * var(--te-ui, 1))` sizes then cap the growth at 15%. The var is polish:
+     with it absent (resolving to 1) the three rules above still hold the layout. */
   const STYLES = `
     .site-nav { background: var(--surface); border-bottom: 0.5px solid var(--border);
-      padding: 0 2rem; height: 54px; display: flex; align-items: center;
+      padding: 0 2rem; min-height: 54px; display: flex; align-items: center; gap: 10px;
       justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-    .nav-logo { display: flex; align-items: center; gap: 4px; text-decoration: none; }   /* tight to the swirl — one brand mark, not strangers (owner, 2026-08-02) */
+    .nav-logo { display: flex; align-items: center; gap: 4px; text-decoration: none; flex-shrink: 0; }   /* tight to the swirl — one brand mark, not strangers (owner, 2026-08-02) */
     .nav-logo img { height: 26px; width: auto; display: block; }   /* swirl at 85% of the 31px size, gap unchanged at 4px so it stays tight to the wordmark (owner, 2026-08-02) */
-    .nav-wordmark { font-family: var(--font-thai); font-size: 20px; font-weight: 600;
-      color: #1C124E; letter-spacing: 0.02em; }
+    .nav-wordmark { font-family: var(--font-thai); font-size: calc(20px * var(--te-ui, 1)); font-weight: 600;
+      color: #1C124E; letter-spacing: 0.02em; white-space: nowrap; }
     .nav-wordmark span { color: #1C124E; font-weight: 600; }
-    .nav-links { display: flex; gap: 1.75rem; align-items: center; }
-    .nav-links a { font-size: 13px; font-weight: 500; color: var(--text-secondary);
+    .nav-links { display: flex; gap: 1.75rem; align-items: center; min-width: 0; }
+    .nav-links a { font-size: calc(13px * var(--te-ui, 1)); font-weight: 500; color: var(--text-secondary);
       text-decoration: none; }
     .nav-links a:hover { color: var(--text-primary); }
     .nav-links a.active { color: var(--text-primary); }
@@ -134,24 +222,26 @@
     .nav-person.nav-menu-btn { gap: 0; }
     .nav-person.nav-menu-btn:hover { color: var(--accent); }
     .nav-person svg { width: 18px; height: 18px; }
-    .nav-auth { font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
+    .nav-auth { font-size: calc(13px * var(--te-ui, 1)); font-weight: 500; color: var(--accent);
+      text-decoration: none; white-space: nowrap; flex-shrink: 0; }
     .nav-auth:hover { color: var(--accent-mid); }
-    .nav-username { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .nav-username { font-size: calc(13px * var(--te-ui, 1)); font-weight: 500; color: var(--text-primary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 12ch; }
 
     /* "Menu" dropdown — member features (Progress, My sentences). Visible to everyone;
        logged-out clicks route to the login page (handled by the item hrefs). */
     .nav-menu { position: relative; display: inline-flex; }
     .nav-menu-btn { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-ui);
-      font-size: 13px; font-weight: 500; color: var(--text-secondary); background: none; border: none;
-      cursor: pointer; padding: 0; }
+      font-size: calc(13px * var(--te-ui, 1)); font-weight: 500; color: var(--text-secondary);
+      background: none; border: none; cursor: pointer; padding: 0; white-space: nowrap; flex-shrink: 0; }
     .nav-menu-btn:hover { color: var(--text-primary); }
     .nav-menu-caret { width: 10px; height: 10px; transition: transform 0.18s; }
     .nav-menu-btn[aria-expanded="true"] .nav-menu-caret { transform: rotate(180deg); }
     .nav-menu-drop { position: absolute; top: calc(100% + 12px); right: 0; min-width: 168px;
       background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: var(--radius-md);
       box-shadow: 0 8px 28px rgba(0,0,0,0.13); padding: 5px; z-index: 200; display: flex; flex-direction: column; }
-    .nav-menu-drop a { font-size: 13px; font-weight: 500; color: var(--text-secondary); text-decoration: none;
-      padding: 8px 12px; border-radius: var(--radius-sm); white-space: nowrap; }
+    .nav-menu-drop a { font-size: calc(13px * var(--te-ui, 1)); font-weight: 500; color: var(--text-secondary);
+      text-decoration: none; padding: 8px 12px; border-radius: var(--radius-sm); white-space: nowrap; }
     .nav-menu-drop a:hover { background: var(--accent-light); color: var(--accent); }
     .nav-menu-drop a.active { color: var(--accent); }
     .nav-menu-drop[hidden] { display: none; }
@@ -159,10 +249,15 @@
     @media (max-width: 600px) {
       .site-nav { padding: 0 1rem; }
       .nav-links { gap: 1rem; }
-      .nav-links a { font-size: 12px; }
+      .nav-links a { font-size: calc(12px * var(--te-ui, 1)); }
+      /* Android "display size" shrinks the CSS viewport as well as inflating text, so the
+         phone case is the narrow one AND the big-text one at the same time. Give the name
+         less rope here — the person icon beside it is what actually identifies the account. */
+      .nav-username { max-width: 9ch; }
     }
     @media (max-width: 380px) {
-      .nav-wordmark { font-size: 18px; }
+      .nav-wordmark { font-size: calc(18px * var(--te-ui, 1)); }
+      .nav-username { max-width: 7ch; }
     }
   `;
 
@@ -437,7 +532,7 @@
       s.textContent =
         '.te-np-bar{position:sticky;top:54px;z-index:40;display:none;align-items:center;gap:9px;' +
         'background:var(--accent-light,#EEEDFE);color:var(--accent,#4B41AD);text-decoration:none;' +
-        'padding:9px 14px;font-family:var(--font-ui,system-ui,sans-serif);font-size:13px;font-weight:500;' +
+        'padding:9px 14px;font-family:var(--font-ui,system-ui,sans-serif);font-size:calc(13px * var(--te-ui, 1));font-weight:500;' +
         'border-bottom:0.5px solid var(--border,rgba(0,0,0,0.1))}' +
         '.te-np-bar.show{display:flex}' +
         // Premium playing topic → gold bar (eq bars use currentColor, so they follow). Keyed on the

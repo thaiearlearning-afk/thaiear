@@ -190,8 +190,12 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     max-width: 620px;
     margin: 0 auto;
   }
+  /* Decorative stats band, so it takes the --te-ui cap (see nav.js uiScale): at full Android
+     text inflation the three stats broke onto two rows and the band grew to 415px tall
+     (owner-reported, 2026-08-09). Capping the type is only half of it — the fixed 2rem mobile
+     gap ate 64px of a 345px viewport on its own, so the gap flexes with the viewport too. */
   .hero-stat-num {
-    font-size: 24px;
+    font-size: calc(24px * var(--te-ui, 1));
     font-weight: 500;
     color: #F0CC5C;
     display: block;
@@ -199,7 +203,7 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     text-shadow: 0 0 1px rgba(29,19,77,1), 0 0 3px rgba(29,19,77,0.8);
   }
   .hero-stat-label {
-    font-size: 11px;
+    font-size: calc(11px * var(--te-ui, 1));
     color: rgba(255,255,255,0.44);
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -219,15 +223,35 @@ if(pend||bf)d.className+=' te-warp';})();</script>
   .switcher-wrap { max-width: 900px; margin: 0 auto; padding: 0.7rem 1.5rem 0; }
   .mode-switch { display: flex; gap: 3px; background: var(--surface); border: 0.5px solid var(--border-strong);
     border-radius: 14px; padding: 3px; margin-bottom: 0.85rem; }
-  .ms-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    font-family: var(--font-ui); font-size: 14px; font-weight: 500; color: #B29234; background: #FBF5DC;
-    border: none; border-radius: 11px; padding: 12px 6px; cursor: pointer;
-    transition: background 0.15s, color 0.15s; white-space: nowrap; }
+  /* ⚠ `min-width: 0` + wrapping are LOAD-BEARING here — do not restore `white-space: nowrap`.
+     `flex: 1` sets flex-basis to 0, so these three buttons look like they should always be
+     equal width. They are not: a flex item's automatic minimum size is its MIN-CONTENT width,
+     and with nowrap that is the entire label. "Topic Sentences" therefore had a floor the other
+     two did not, and spent it squeezing them — measured 173px vs 112/100 at 1.4× text, with
+     "Playlists" pushed 71px off the edge of the page (owner-reported on Android, 2026-08-09).
+     Letting the label wrap drops the floor to the longest single WORD, which fits at every
+     size we can reach. Nothing wraps at default size, so the bar is visually unchanged.
+     The `var(--te-ui, 1)` sizes (see nav.js uiScale) cap Android's text inflation at 15% on
+     top of that; the min-width fix stands on its own if the var is ever absent. */
+  .ms-btn { flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: var(--font-ui); font-size: calc(14px * var(--te-ui, 1)); font-weight: 500; color: #B29234;
+    background: #FBF5DC; border: none; border-radius: 11px; padding: 12px 6px; cursor: pointer;
+    transition: background 0.15s, color 0.15s; white-space: normal; text-align: center; line-height: 1.25;
+    overflow-wrap: break-word; }
   .ms-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
-  .ms-ico { font-family: var(--font-thai); font-size: 17px; font-weight: 600; line-height: 1; }
+  .ms-ico { font-family: var(--font-thai); font-size: calc(17px * var(--te-ui, 1)); font-weight: 600; line-height: 1; flex-shrink: 0; }
   .ms-btn:hover { color: #8F7526; }
   .ms-btn.active { background: var(--accent); color: #fff; }
-  @media (max-width: 480px) { .ms-btn { font-size: 13px; padding: 11px 3px; gap: 5px; } }
+  /* ⚠ PHONES GET `flex-basis: auto`, DESKTOP KEEPS `0`. Three EQUAL thirds are only 100px wide
+     at 360px, and "Topic Sentences" needs ~125px for one line — so forcing equal widths here
+     wrapped the label and grew the bar 39px → 55px at DEFAULT text size, on every phone. That
+     is a visible change to an owner-approved design, and it is not what this pass is for.
+     Basis `auto` keeps each button at its natural width (exactly today's look), while
+     `min-width: 0` + wrapping still let them give ground once the OS inflates the text.
+     Desktop has room for equal thirds, so it keeps them. */
+  @media (max-width: 480px) {
+    .ms-btn { flex: 1 1 auto; font-size: calc(13px * var(--te-ui, 1)); padding: 11px 3px; gap: 5px; }
+  }
 
   /* Same-origin embedded panels (Read Thai / Playlists) — lazy-loaded iframes, auto-sized to
      their content by the switcher script so they scroll as part of this page. */
@@ -278,8 +302,10 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     margin-bottom: 1.75rem;
     flex-wrap: wrap;
   }
+  /* Pills are chrome, not reading matter — they take the --te-ui cap too (owner asked, and
+     the `.filter-tabs` row already wraps, so this only stops them eating the whole toolbar). */
   .filter-tab {
-    font-size: 13px;
+    font-size: calc(13px * var(--te-ui, 1));
     font-family: var(--font-ui);
     padding: 6px 16px;
     border-radius: 20px;
@@ -306,7 +332,7 @@ if(pend||bf)d.className+=' te-warp';})();</script>
   .grid-toolbar { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
     padding: 9px 11px 11px; margin-bottom: 0.9rem; }
   .grid-toolbar .filter-tabs { margin: 0 0 9px; gap: 6px; }
-  .grid-toolbar .filter-tab { font-size: 12px; padding: 4px 12px; }
+  .grid-toolbar .filter-tab { font-size: calc(12px * var(--te-ui, 1)); padding: 4px 12px; }
   .grid-toolbar .topic-search-wrap { margin: 0; }
   .grid-toolbar .topic-search { background: var(--bg); border-color: transparent; }
   .grid-toolbar .topic-search:focus { border-color: var(--accent); background: var(--surface); }
@@ -460,7 +486,7 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     gap: 8px;
   }
   .level-badge {
-    font-size: 10px;
+    font-size: calc(10px * var(--te-ui, 1));
     font-weight: 500;
     letter-spacing: 0.05em;
     padding: 2px 8px;
@@ -680,16 +706,24 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     gap: 1rem;
   }
   .footer-thai { justify-self: end; }
+  /* ⚠ THIS FOOTER WAS THE SIDE-SCROLL. Six links in a `display: flex` row with no wrap, and
+     on mobile the grid switches to one centred column, where `justify-items: center` sizes
+     each item to MAX-CONTENT — so both the link row and the copyright line could exceed the
+     column and take the whole document with them (measured: 190px of overflow at 1.4× text,
+     page scrollWidth 535 against a 345px viewport). `max-width: 100%` keeps every child inside
+     the column and `flex-wrap` lets the links reflow. Keep both. */
+  .site-footer > * { max-width: 100%; min-width: 0; }
   .footer-note {
-    font-size: 12px;
+    font-size: calc(12px * var(--te-ui, 1));
     color: var(--text-tertiary);
   }
   .footer-links {
     display: flex;
     gap: 1.1rem;
+    flex-wrap: wrap;
   }
   .footer-links a {
-    font-size: 12px;
+    font-size: calc(12px * var(--te-ui, 1));
     color: var(--text-secondary);
     text-decoration: none;
     font-weight: 500;
@@ -697,7 +731,7 @@ if(pend||bf)d.className+=' te-warp';})();</script>
   .footer-links a:hover { color: var(--accent); }
   .footer-thai {
     font-family: var(--font-thai);
-    font-size: 13px;
+    font-size: calc(13px * var(--te-ui, 1));
     color: var(--gold-dark);
     opacity: 0.7;
   }
@@ -725,8 +759,11 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     .hero-logo { width: 91px; margin-bottom: 1.25rem; }
     .hero-thai { font-size: 30px; }
     .hero-tagline { font-size: 11px; letter-spacing: 0.16em; }
-    .hero-stats { gap: 2rem; padding: 1.25rem 1.25rem; flex-wrap: wrap; }
-    .hero-stat-num { font-size: 20px; }
+    /* ⚠ px + vw, NOT rem. Android's textZoom scales the ROOT font size, so every `rem` length
+       inflates with the text — a 2rem gap became 33.6px and ate 67px of a 345px viewport,
+       which is what pushed the third stat onto its own row. px and vw are immune. */
+    .hero-stats { gap: clamp(10px, 4vw, 32px); padding: 1.25rem 1rem; flex-wrap: wrap; }
+    .hero-stat-num { font-size: calc(20px * var(--te-ui, 1)); }
     .switcher-wrap {
       padding: 0.7rem 1rem 0;
     }
@@ -737,7 +774,7 @@ if(pend||bf)d.className+=' te-warp';})();</script>
       gap: 5px;
     }
     .filter-tab {
-      font-size: 12px;
+      font-size: calc(12px * var(--te-ui, 1));
       padding: 5px 12px;
     }
     .topic-search-wrap { max-width: none; margin-top: -1rem; }
@@ -746,7 +783,7 @@ if(pend||bf)d.className+=' te-warp';})();</script>
       padding: 0.9rem 1rem 0.85rem;
     }
     .level-badge {
-      font-size: 9px;
+      font-size: calc(9px * var(--te-ui, 1));
     }
     .site-footer {
       grid-template-columns: 1fr;
@@ -760,13 +797,13 @@ if(pend||bf)d.className+=' te-warp';})();</script>
   @media (max-width: 380px) {
     .hero-thai { font-size: 26px; }
     .hero-logo { width: 77px; }
-    .hero-stats { gap: 1.5rem; }
+    .hero-stats { gap: clamp(8px, 3.5vw, 24px); }   /* px/vw, not rem — see the ≤600px rule */
     
     .filter-tabs {
       flex-wrap: wrap;
     }
     .filter-tab {
-      font-size: 11px;
+      font-size: calc(11px * var(--te-ui, 1));
       padding: 4px 10px;
     }
   }

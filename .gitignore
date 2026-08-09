@@ -90,3 +90,10 @@ occupations2-review.html
 occupations2-clips/
 occ2-card15-review.html
 occ2-card15-clips/
+panakngan-check.html
+panakngan-clips/
+topups-review.html
+topups-clips/
+
+# local dev harness for the Android textZoom pass (not deployed)
+_ui-harness.html
