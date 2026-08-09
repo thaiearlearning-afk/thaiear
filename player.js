@@ -2704,7 +2704,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r157';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r158';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5092,10 +5092,16 @@
     document.body.appendChild(wrap);
     var input = wrap.querySelector('.dyn-pl-input');
     function shut() { wrap.remove(); }
-    function go() {
+    /* Hand control back on a LATER task, not inside this gesture. Whatever onOk() puts on screen
+       must not be able to receive the tail of the tap that dismissed this dialog — see the
+       click-through note in dynSelBarBuild(). The bar's own dead time is the real guard; this
+       simply keeps the two events in different tasks so they cannot interleave. */
+    function go(e) {
       var v = (input.value || '').trim();
       if (!v) { input.focus(); return; }   // never create an unnamed playlist
-      shut(); onOk(v);
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      shut();
+      setTimeout(function () { onOk(v); }, 0);
     }
     wrap.addEventListener('click', function (e) { if (e.target === wrap) shut(); });
     wrap.querySelector('.dyn-pl-alt').addEventListener('click', shut);
@@ -5218,8 +5224,27 @@
         '<button type="button" class="dyn-sel-cancel">Cancel</button>' +
         '<button type="button" class="dyn-sel-done">Done</button>' +
       '</span>';
-    bar.querySelector('.dyn-sel-cancel').addEventListener('click', plsel ? dynPlselCancel : dynExitSelect);
-    bar.querySelector('.dyn-sel-done').addEventListener('click', dynSelDone);
+    /* ⚠ CLICK-THROUGH GUARD (2026-08-09, owner-reported: "a few sentences flash up as selected …
+       then the selection ticks are gone a moment later. after this i cannot select anything").
+       The bar is appended at the moment select mode opens. Reached via "＋ New playlist", that
+       moment is the same gesture in which the user tapped CREATE at the bottom-right of the name
+       dialog — and Done lands in almost exactly that spot. A WebView synthesises `click` after
+       `touchend`, so the click for the button that just disappeared hits the button that just
+       appeared: Done fires with nothing selected, its op chain is already resolved, and
+       dynExitSelect() runs instantly. Hence ticks flashing on and vanishing, and no way back
+       without reloading the page.
+       Choosing an EXISTING playlist never hit this — those rows are mid-screen, far from the bar.
+       A short dead time is the fix rather than a swallowed event, because the stray click may
+       arrive on either button and either one destroys the selection. */
+    var readyAt = Date.now() + 450;
+    function guarded(fn) {
+      return function (e) {
+        if (Date.now() < readyAt) { if (e) { e.preventDefault(); e.stopPropagation(); } return; }
+        fn();
+      };
+    }
+    bar.querySelector('.dyn-sel-cancel').addEventListener('click', guarded(plsel ? dynPlselCancel : dynExitSelect));
+    bar.querySelector('.dyn-sel-done').addEventListener('click', guarded(dynSelDone));
     return bar;
   }
   function dynSelCountPaint() {
