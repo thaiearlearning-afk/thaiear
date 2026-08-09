@@ -96,7 +96,66 @@
       return h > 0 ? h / 100 : 1;      // 0 = not laid out (hidden tab) → assume unscaled
     }
 
+    /* ---- iOS: ASK for the inflation Android forces on us -------------------------------
+       Android shouts the user's font-size setting at the WebView. iOS does not — so an iPhone
+       user who sets Larger Text got nothing from this site, and inside the installed PWA they
+       had no route at all (lockZoom above turns off pinch and page zoom). Measured on the
+       owner's iPhone, 2026-08-09, in BOTH Safari and the installed PWA:
+         • `font: -apple-system-body` DOES track Dynamic Type — 19px normal, 53px at max.
+           It is the only door; every other font declaration ignores the setting entirely.
+         • `-webkit-text-size-adjust: <percentage>` DOES scale text and only text.
+       So we read the setting and request the inflation ourselves. Text-only, so it REFLOWS —
+       the point is more words at a bigger size in the same width, not a magnifying glass.
+
+       ⚠ MEASURE THE PROBE AT text-size-adjust:100%, OR IT COMPOUNDS. Our own adjust would
+       otherwise scale the -apple-system-body probe too, so each re-measure would read a bigger
+       "setting" and inflate again — a runaway on every visibilitychange. The probe pins itself
+       to 100% so it always reports the OS setting, never our answer to it.
+
+       ⚠ CAP 2.0, and that number is evidence, not taste. The layout is measured to hold at 2x
+       across every page; 3.1x (what the max setting actually asks for) is untested, and
+       shipping untested scaling is how you get the four broken layouts this work started with.
+       2.0 is also exactly WCAG 1.4.4's requirement. Raise it by TESTING, not by editing.
+
+       NO DEAD-BAND, deliberately (owner, 2026-08-09). A user sitting one notch above default
+       asked for slightly bigger text; honouring it is more correct than deciding they did not
+       mean it. The cost is a bigger first-paint shift, which is handled by the reserve scaling
+       off --te-ui-raw rather than by ignoring the user.
+
+       iOS-ONLY BY CONSTRUCTION: Android/desktop reject `-apple-system-body`, so `supported` is
+       false there and this is a no-op. Android must never get ours ON TOP of its own textZoom. */
+    var IOS_BASE = 17;                 // iOS default Dynamic Type body size, in px
+    var IOS_CAP = 2.0;                 // never request more inflation than the layout is tested for
+    function iosDynamicType() {
+      var host = document.body || root;
+      if (!host) return 0;
+      var p = document.createElement('div');
+      p.setAttribute('aria-hidden', 'true');
+      p.style.cssText = 'position:absolute;top:-9999px;left:-9999px;visibility:hidden;' +
+        'margin:0;padding:0;border:0;white-space:nowrap;' +
+        '-webkit-text-size-adjust:100%;text-size-adjust:100%';   // ⚠ isolate from our own adjust
+      p.style.font = '-apple-system-body';
+      if (!p.style.font) return 0;     // CSSOM refused it → not WebKit/iOS → not our platform
+      p.textContent = 'M';
+      host.appendChild(p);
+      var px = parseFloat(getComputedStyle(p).fontSize) || 0;
+      if (p.parentNode) p.parentNode.removeChild(p);
+      return px;
+    }
+    function applyIosTextScale() {
+      var px = iosDynamicType();
+      if (!px) return;                                    // not iOS
+      var want = Math.min(IOS_CAP, Math.max(1, px / IOS_BASE));
+      want = Math.round(want * 1000) / 1000;
+      // Inline style, so it beats lockZoom's `html{-webkit-text-size-adjust:100%}` stylesheet rule.
+      var pct = (want <= 1.02) ? '100%' : (Math.round(want * 1000) / 10) + '%';
+      root.style.setProperty('-webkit-text-size-adjust', pct);
+      root.style.setProperty('text-size-adjust', pct);
+      root.style.setProperty('--te-ios-body', String(px));
+    }
+
     function apply() {
+      applyIosTextScale();             // ⚠ BEFORE measure() — the probe must see the result
       var r = measure();
       // 1.02 dead-band: sub-pixel rounding must not trigger a pointless counter-scale.
       var s = (r > 1.02) ? Math.min(1, CAP / r) : 1;

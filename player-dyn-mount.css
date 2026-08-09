@@ -100,22 +100,22 @@
     .orientation-text { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
     .orientation-text strong { color: var(--text-primary); font-weight: 500; }
     .orientation-text a { color: var(--accent); font-weight: 500; text-decoration: none; }
-    .controls-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
-    .reveal-all-btn { font-size: 12px; font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
+    .controls-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 6px; }
+    .reveal-all-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
     .reveal-all-btn:hover { background: var(--surface); }
     /* ---- transliteration toggle (topics shipping per-sentence translit, currently 01–03) ----
        Default ON (new visitors should see it exists); .translit-off on #sentence-list hides both
        the under-Thai line and the chips' translit. Choice remembered per device via localStorage. */
     .controls-left { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .translit-btn { font-size: 12px; font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    .translit-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
     .translit-btn:hover { background: var(--surface); }
     .translit-btn.on { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 500; }
-    .translit-btn .tl-ico { font-size: 11px; }
+    .translit-btn .tl-ico { font-size: calc(11px * var(--te-ui, 1)); }
     .translit-btn .tl-ico .th { font-family: var(--font-thai); }
     .thai-translit { font-family: var(--font-ui); font-size: 13px; color: var(--text-tertiary); line-height: 1.55; margin-top: 1px; }
     .g-tl { color: var(--text-secondary); margin-left: 4px; }
     #sentence-list.translit-off .thai-translit, #sentence-list.translit-off .g-tl { display: none; }
-    .sent-count-label { font-size: 12px; color: var(--text-tertiary); }
+    .sent-count-label { font-size: calc(12px * var(--te-ui, 1)); color: var(--text-tertiary); min-width: 0; }
     .sentence-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 7px; overflow: hidden; transition: border-color 0.15s; }
     .sentence-card:hover { border-color: var(--border-strong); }
     .sentence-header { display: flex; align-items: center; gap: 10px; padding: 0.7rem 1rem; cursor: pointer; user-select: none; -webkit-user-select: none; }
@@ -177,8 +177,8 @@
       .player-card { padding: 0.85rem 0.9rem 0.8rem; margin-bottom: 1.25rem; }
       .play-btn { width: 34px; height: 34px; }
       .controls-row { margin-bottom: 0.5rem; }
-      .reveal-all-btn { font-size: 11px; padding: 4px 10px; }
-      .translit-btn { font-size: 11px; padding: 4px 10px; }
+      .reveal-all-btn { font-size: calc(11px * var(--te-ui, 1)); padding: 4px 10px; }
+      .translit-btn { font-size: calc(11px * var(--te-ui, 1)); padding: 4px 10px; }
       .sentence-header { padding: 0.6rem 0.85rem; }
       .sent-preview { font-size: 15px; }
       .row-thai { font-size: 17px; }
