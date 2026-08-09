@@ -721,7 +721,7 @@
         var msg = dlErrText(err);   // NEVER String(err): a bare {code:402} renders as "[object Object]"
         console.warn('player.js: web offline download failed', err);
         downloadingNow = false;
-        setOfflineState('error', msg);
+        offlineBarFlash('error', msg, 6000);   // transient — restore the real state after (2026-08-09)
       });
   }
 
@@ -850,7 +850,8 @@
     }).catch(function () {});
   }
   function dynUpdateAudio() {
-    if (!navigator.onLine) { setOfflineState('error', 'you’re offline — reconnect to update'); return; }
+    // Transient too — same reasoning as downloadTopic's offline guard: keep Update/Delete reachable.
+    if (!navigator.onLine) { offlineBarFlash('error', 'you’re offline — reconnect to update'); return; }
     // The stored mp3 was built from the OLD clips, and its key encodes settings, not clip
     // content — so it would NOT rebuild by itself and would keep playing superseded audio.
     dynDropSessions();
@@ -1141,7 +1142,10 @@
     return attempt(1);
   }
   function dynDownloadHere() {
-    if (!navigator.onLine) { setOfflineState('offline'); return; }   // don't grind through retries
+    /* Transient (2026-08-09): this used to replace the bar PERMANENTLY, so on an already-downloaded
+       unit one tap on Download hid Update and Delete behind a dead "You're offline" line with no
+       way back short of a reload. Flash it, then restore the real state. */
+    if (!navigator.onLine) { offlineBarFlash('offline'); return; }   // don't grind through retries
     var by = dynDlGroups(), prefixes = Object.keys(by), total = 0, done = 0;
     prefixes.forEach(function (k) { total += by[k].files.length; });
     if (!total) return;
@@ -1291,10 +1295,13 @@
       // network-shaped failure as offline too — "Download failed: load failed" is not an
       // explanation, and this matches the wording the real index already uses.
       var msg = dlErrText(err);   // NEVER String(err): a bare {code:402} renders as "[object Object]"
+      /* Flashed, not left up (2026-08-09). A failed download is worth reading, but it is not the
+         unit's STATE — leaving it there hid Update and Delete on a unit that still had a perfectly
+         good partial download. 6s, then the bar re-derives what is actually on the device. */
       if (!navigator.onLine || /failed to fetch|load failed|network|timed out|networkerror/i.test(msg)) {
-        setOfflineState('offline');
+        offlineBarFlash('offline', null, 6000);
       } else {
-        setOfflineState('error', msg);
+        offlineBarFlash('error', msg, 6000);
       }
     });
   }
@@ -1428,7 +1435,7 @@
         var msg = dlErrText(err);   // NEVER String(err): a bare {code:402} renders as "[object Object]"
         console.warn('player.js: offline download failed', err);
         downloadingNow = false;
-        setOfflineState('error', msg);
+        offlineBarFlash('error', msg, 6000);   // transient — restore the real state after (2026-08-09)
       });
   }
   // Confirm before deleting a download (parity with the grid's Clear-downloads warning).
@@ -1438,7 +1445,13 @@
       '<button class="offline-btn offline-del" onclick="deleteTopic()">Delete</button>' +
       '<button class="offline-btn" onclick="cancelDelete()">Keep</button>';
   }
-  function cancelDelete() { setOfflineState('downloaded'); }
+  /* ⚠ RE-DERIVE, do not assume 'downloaded' (2026-08-09, owner-reported: "if i click delete, then
+     keep, it shows me a tick and 'downloaded' which is wrong"). Backing out of the delete prompt
+     hard-coded the downloaded state, so a unit that actually had an audio UPDATE pending — or was
+     stale, or only partly downloaded — came back showing a tick and "Downloaded". The update offer
+     was silently lost and the bar was lying about what is on the device. renderOfflineBar() works
+     the state out from the manifest instead of guessing. */
+  function cancelDelete() { renderOfflineBar(); }
   // Re-download after the content was regenerated online: wipe the stale folder (so files for any
   // removed sentences don't linger) then re-run the normal download, which re-stamps the new hash.
   function refreshTopic() {
@@ -1492,7 +1505,23 @@
       .then(function () { removeDownloaded(PREFIX); setOfflineState('idle'); });
   }
   var DL_ICON_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  /* ── TRANSIENT BAR MESSAGES MUST PUT THE REAL STATE BACK (2026-08-09, owner-reported) ────────
+     The bar is a STATE display, but several call sites used it as a notification: "You're offline
+     — reconnect to download" replaced the whole bar and stayed there forever, taking the Update
+     and Delete buttons with it. On a downloaded playlist with an update available, one tap on
+     Download left the user with a dead message and no way back to either action short of a reload.
+     offlineBarFlash() shows the message, then re-DERIVES the true state via renderOfflineBar().
+     The sequence guard is what makes it safe: setOfflineState() bumps offBarSeq on every paint, so
+     any newer state (a download starting, a delete finishing) cancels a pending revert instead of
+     being stomped by it a few seconds later. */
+  var offBarSeq = 0;
+  function offlineBarFlash(state, arg, ms) {
+    setOfflineState(state, arg);
+    var seq = offBarSeq;
+    setTimeout(function () { if (seq === offBarSeq) renderOfflineBar(); }, ms || 4000);
+  }
   function setOfflineState(state, done, total) {
+    offBarSeq++;                 // invalidates any pending flash revert — see offlineBarFlash
     var bar = $('offline-bar'); if (!bar) return;
     if (state === 'downloading') {
       bar.innerHTML = '<span class="offline-status"><span class="prog-spin"></span> Downloading ' + (done || 0) + '/' + (total || '?') + ' — keep this page open</span>';
@@ -2328,12 +2357,20 @@
      Presence is the MANIFEST test (hasLocalFile), which is synchronous and therefore usable during
      render. The manifest can lie about a corrupt file (see the r123 self-heal note in
      dynFetchClip), which is exactly why the BUILD still trusts the actual fetch instead of this. */
+  /* Clips layer 2 PROVED unavailable by actually trying to fetch them. Keyed like the build's own
+     `denied` map. This is what lets the greying be right in the two cases the manifest cannot
+     answer: navigator.onLine lied, or the file is present-but-corrupt (a corrupt clip offline is
+     functionally identical to an absent one — unplayable and unfixable until reconnection).
+     Cleared on `online`, so a reconnect re-tests rather than inheriting old verdicts. */
+  var dynNoDlSeen = {};
+  function dynNoDlKey(ref) { return ref.prefix + '|' + ref.file.replace(/_(TH|EN)\.mp3$/, ''); }
   function sentNoDl(s) {
     if (!PLMODE || !s) return false;
-    if (navigator.onLine) return false;        // only FALSE is trustworthy — see above
     if (sentLocked(s)) return false;           // premium lock wins; never both
-    if (!(OFFLINE || WEB_DL || DYN_WEB_DL)) return false;   // no offline store on this platform
     var ref = dynClipRef(s, 'TH');
+    if (dynNoDlSeen[dynNoDlKey(ref)]) return true;   // measured, so it outranks what onLine claims
+    if (navigator.onLine) return false;        // only FALSE is trustworthy — see above
+    if (!(OFFLINE || WEB_DL || DYN_WEB_DL)) return false;   // no offline store on this platform
     return !(isDownloaded(ref.prefix) && hasLocalFile(ref.prefix, ref.file));
   }
   function sentNoDlCount() {
@@ -2667,7 +2704,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r156';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r157';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3689,7 +3726,12 @@
           var gated = isGateCode(e && e.code);
           if (!gated && !isMissingOffline(e)) throw e;
           denied[f.prefix + '|' + f.file.replace(/_(TH|EN)\.mp3$/, '')] = true;
-          if (gated) lastGate = e; else missedOffline++;
+          /* Remember the MEASURED absence so the cards can grey too. Without this the row looked
+             perfectly playable (the manifest still claims the file) while being silently absent
+             from the mix — the exact mismatch layer 2 exists to catch. Covers both the lying
+             navigator.onLine and a present-but-corrupt clip that r123's self-heal cannot repair
+             offline. */
+          if (gated) lastGate = e; else { missedOffline++; dynNoDlSeen[dynNoDlKey(f)] = true; }
           done++; if (onProg) onProg(done, files.length);
           return null;
         });
@@ -3908,6 +3950,7 @@
       });
     }
     if (mainSrcReady && dynSession && dynSessionIsLocal && !dynSession.display && (lenient || dynSession.key === dynKey())) return Promise.resolve();
+    var noDlBefore = Object.keys(dynNoDlSeen).length;
     return dynEnsureSession(function (done, total) {
       var c = $('dyn-status-count'); if (c) c.textContent = done + '/' + total;
     }, lenient).then(function (sess) {
@@ -3920,6 +3963,9 @@
          sentences reads as a bug — the session is shorter than the list and nothing explains why.
          Only when some are actually missing; a fully-downloaded playlist clears the line as before.
          Held for 7s like the other line worth reading, not the 2.5s throwaway. */
+      /* Layer 2 found absences the manifest did not predict → repaint so those cards grey. Only
+         when the set actually grew, so a normal build never triggers a spurious re-render. */
+      if (Object.keys(dynNoDlSeen).length !== noDlBefore) render();
       var nodl = sentNoDlCount();
       if (nodl) {
         var playing = dynIncluded().length;
@@ -7006,6 +7052,9 @@
   ['online', 'offline'].forEach(function (ev) {
     window.addEventListener(ev, function () {
       if (!PLMODE) return;
+      // Reconnecting retires every MEASURED absence — the clips are fetchable again (and r123's
+      // self-heal can now repair a corrupt one), so re-test rather than inherit old verdicts.
+      if (ev === 'online') dynNoDlSeen = {};
       dynApplyLockOrder();
       render();
     });
