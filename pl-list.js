@@ -188,8 +188,12 @@
     // §D.1: the AUTH()/lockedFor plumbing lives in dl-core.js — ThaiEarDL.AUTH is the same
     // sim-aware accessor AUTHV() was.
     function AUTHV() { return ThaiEarDL.AUTH(); }
-    /* One lock rule, defined in auth.js and shared with player.js's sentLocked(). */
-    function plLocked(it) { return ThaiEarDL.locked(it, DL_OK); }
+    /* One lock rule, defined in auth.js. ⚠ This is the DOWNLOAD gate, not the access one — every
+       plOpenItems() consumer below is a download decision (download state, the download
+       affordance, which clips to fetch). Playback locking in playlists is player.js's
+       sentLocked(), which keeps using the access predicate. Since the 2026-08 tier retirement the
+       two differ: a Free unit streams for anyone, but downloading it needs an account. */
+    function plLocked(it) { return ThaiEarDL.dlLocked(it, DL_OK); }
     // The items this visitor may actually download and play. Locked ones are simply not our business:
     // they are already shown sunk under "Premium content" and padlocked in the ?pl= view.
     function plOpenItems(p) {

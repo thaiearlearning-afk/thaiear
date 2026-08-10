@@ -670,6 +670,25 @@
       if (!this.isReady) return false;          // auth still resolving → never lock a paying user
       return !(this.getUser && this.getUser());
     },
+    /* DOWNLOAD-only gate — ACCESS and DOWNLOAD became different questions with the 2026-08 tier
+       retirement. A Free unit STREAMS for anyone signed in or not, but only a signed-in user may
+       DOWNLOAD it: downloads (with playlists, progress and flagging) are what an account is for.
+
+       ⚠ Do NOT fold this into lockedFor(). That predicate answers "may this visitor HEAR this",
+       and it also drives player.js's sentLocked() and dynUnitLocked() — teaching it that free
+       needs an account would silently mute free sentences for logged-out visitors, which is the
+       exact opposite of the tier retirement's purpose.
+
+       Layered deliberately: the tier rules run FIRST (via lockedFor), so premium still needs a
+       live subscription and this only ever adds the account requirement on top. */
+    downloadLockedFor: function (item, opts) {
+      if (this.lockedFor(item, opts)) return true;
+      // Already on disk → stays usable, same principle as the member rule in lockedFor().
+      var pfx = item && item.prefix;
+      if (opts && opts.canStoreOffline && pfx && hasOfflineEntry(pfx)) return false;
+      if (!this.isReady) return false;          // auth still resolving → never lock a paying user
+      return !(this.getUser && this.getUser());
+    },
     // True inside the Capacitor app. Pages use this to HIDE any upgrade-to-premium / checkout CTA
     // (Google Play reader-app rule: no in-app purchase or steering to web payment). Web is unaffected.
     isNative: function () { return isNative(); },

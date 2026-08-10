@@ -322,7 +322,9 @@ function renderMembershipBox(s) {
             : '<button class="btn btn-primary" onclick="openPortal()">Update payment method</button>' +
               '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>');
       } else {
-        box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free member</strong></p>' +
+        // "Free", not "Free member" — the member tier was retired 2026-08-10 and the word would
+        // now name a tier that doesn't exist. Two tiers: Free and Premium.
+        box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free</strong></p>' +
           (native ? '' : '<a class="btn btn-gold" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>');
       }
   }

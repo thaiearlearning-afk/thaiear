@@ -52,18 +52,23 @@ export async function onRequestGet(context) {
   // ── TIER LISTS — source of truth (edit here in git; no dashboard needed) ──
   // Keep in sync with topics.js `access` flags + each page's `tier`. The env vars are
   // just optional overrides; normally these code defaults decide the tier.
-  // Model: only the first 3 topics are free. Every other single topic is premium; each
-  // split topic's FIRST part is member (login-only taster) and its remaining parts premium.
-  // MEMBER must be listed explicitly (else it wrongly demands a subscription); premium is the
-  // default for any private file not in memberList, so premiumList is documentation/defensive.
-  // Member (live, first split parts): ColoursAndDescriptions_BEG, ShoppingAndMoney_BEG,
-  // Food_BEG, Feelings_BEG, Occupations_BEG, Temple_LI1, Romance_LI1, ThaiCulture_LI1, Tech_LI1.
-  // Free topics never reach here. (HomeAndDailyRoutine_BEG, Transport_BEG, Health_BEG, Cooking_BEG
-  // demoted member → premium 2026-06-23; Places_BEG, Clothing_BEG, Plans_BEG, Schooling_LI1,
-  // GeoRegions_LI1, Community_LI1, Sport_LI1, Nature_LI1, FoodSocial_LI1, Job_LI1 promoted
-  // member → premium 2026-07-01.)
+  // ⚠ THE MEMBER TIER WAS RETIRED 2026-08-10. Two tiers now: FREE and PREMIUM.
+  // Model: the 3 standalone free topics PLUS the 9 former-member first-parts are free — their
+  // MP3s live in the PUBLIC bucket and never reach this endpoint at all. Everything else is
+  // premium. `memberList` is therefore EMPTY, and any private file defaults to premium, which
+  // is the stricter and correct answer.
+  //   Retired from memberList → now FREE (moved to the public bucket by r2_demote_to_public.py):
+  //   ColoursAndDescriptions_BEG, ShoppingAndMoney_BEG, Food_BEG, Feelings_BEG, Occupations_BEG,
+  //   Temple_LI1, Romance_LI1, ThaiCulture_LI1, Tech_LI1.
+  // Keep in sync with topics.js `access` (absent = free) and each page's `tier` (absent = free).
+  // The member CODE PATH below is deliberately left intact rather than ripped out: it costs
+  // nothing, and it is what makes re-introducing a login-only tier a one-line list edit.
+  // (History: HomeAndDailyRoutine_BEG, Transport_BEG, Health_BEG, Cooking_BEG demoted member →
+  // premium 2026-06-23; Places_BEG, Clothing_BEG, Plans_BEG, Schooling_LI1, GeoRegions_LI1,
+  // Community_LI1, Sport_LI1, Nature_LI1, FoodSocial_LI1, Job_LI1 promoted member → premium
+  // 2026-07-01; the 9 above retired member → free 2026-08-10.)
   const premiumList = listEnv(env.PREMIUM_PREFIXES, ['ColoursAndDescriptions2_BEG', 'ShoppingAndMoney2_BEG', 'HomeAndDailyRoutine_BEG', 'HomeAndDailyRoutine2_BEG', 'Weather_BEG', 'Time_BEG', 'Dates_BEG', 'Family_BEG', 'Food_LI1', 'Transport_BEG', 'Transport_LI1', 'Emergency_BEG', 'BodyHealth_BEG', 'Health_BEG', 'Health_LI1', 'Feelings_LI1', 'Hobbies_BEG', 'SocialLife_BEG', 'Idiom_BEG', 'Plans_LI1', 'Appearance_LI1', 'Cooking_BEG', 'Recipes_LI1', 'Workplace_LI1', 'Career_LI2', 'Study_LI1', 'System_LI2', 'School_LI1', 'Campus_LI1', 'FoodCulture_LI2', 'ToneTwister_LI1', 'Animals_BEG', 'Groceries_BEG', 'Places2_BEG', 'Occupations_LI1', 'Dhamma_LI2', 'Monastic_LI2', 'Sport_LI2', 'Nature_LI2', 'Travel_LI1', 'Travel2_LI1', 'Travel_LI2', 'HolyDays_LI1', 'Meditation_LI2', 'Romance2_LI1', 'Romance3_LI1', 'Romance4_LI1', 'ThaiCulture_LI2', 'Tech2_LI1', 'Tech3_LI1', 'GeoRegions_LI2', 'Community_LI2', 'Compliments_LI1', 'Opinions_LI1', 'Places_BEG', 'Clothing_BEG', 'Plans_BEG', 'Schooling_LI1', 'GeoRegions_LI1', 'Community_LI1', 'Sport_LI1', 'Nature_LI1', 'FoodSocial_LI1', 'Job_LI1']);
-  const memberList = listEnv(env.MEMBER_PREFIXES, ['ColoursAndDescriptions_BEG', 'ShoppingAndMoney_BEG', 'Food_BEG', 'Feelings_BEG', 'Occupations_BEG', 'Temple_LI1', 'Romance_LI1', 'ThaiCulture_LI1', 'Tech_LI1']);
+  const memberList = listEnv(env.MEMBER_PREFIXES, []);   // member tier retired 2026-08-10 — see above
   // Member only if explicitly listed (and not premium); unknown private files default to premium.
   const tier = (memberList.includes(prefix) && !premiumList.includes(prefix)) ? 'member' : 'premium';
 

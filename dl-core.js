@@ -346,6 +346,17 @@
     return a.lockedFor({ tier: (item && item.tier) || 'free', prefix: item && item.prefix },
                        { canStoreOffline: !!canStoreOffline });
   }
+  /* Same plumbing, DOWNLOAD question. Since the 2026-08 tier retirement a Free unit streams for
+     anyone but only a signed-in user may download it — see auth.js downloadLockedFor(). Every
+     download-side caller uses THIS; locked() above stays the access predicate.
+     Falls back to locked() against an auth.js too old to have the new predicate, which fails
+     OPEN for free units exactly as it does today — never lock a payer out on a stale cache. */
+  function dlLocked(item, canStoreOffline) {
+    var a = AUTH();
+    if (!a || typeof a.downloadLockedFor !== 'function') return locked(item, canStoreOffline);
+    return a.downloadLockedFor({ tier: (item && item.tier) || 'free', prefix: item && item.prefix },
+                               { canStoreOffline: !!canStoreOffline });
+  }
 
   window.ThaiEarDL = {
     getManifest: getManifest,
@@ -365,6 +376,7 @@
     removeAllDownloads: removeAllDownloads,
     removeAllModal: removeAllModal,
     AUTH: AUTH,
-    locked: locked
+    locked: locked,
+    dlLocked: dlLocked
   };
 })();

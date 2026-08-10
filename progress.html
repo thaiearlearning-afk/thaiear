@@ -237,7 +237,7 @@ function showModal(opts) {
   ov.querySelector('#modal-ok').addEventListener('click', function () { close(); opts.onConfirm(); });
 }
 
-// Filter pills (All / Premium / Member / Non-member / Playlists) — a pure DOM show/hide over the
+// Filter pills (All / Free / Premium / Playlists; member retired 2026-08-10) — a pure DOM show/hide over the
 // already-rendered rows, never a re-render, so real per-row progress state (built from `data` at
 // render time, not held in the DOM) is never at risk. progFilter persists across re-renders (goal
 // change, reset, auth refresh) and is reapplied at the end of render() so the chosen pill sticks.
@@ -415,10 +415,12 @@ function render() {
   var tabs =
     '<div class="prog-tabs-box">' +
       '<div class="filter-tabs" id="prog-tabs">' +
+        /* Two tiers since the 2026-08-10 member retirement: All / Free / Premium, cheapest
+           first, matching index.html's row exactly. Playlists stays on the end (owner). The
+           'member' tab is gone; the data-f="member" filter path is harmless if it returns. */
         '<button class="filter-tab active" data-f="all" type="button">All</button>' +
+        '<button class="filter-tab tab-free" data-f="free" type="button">Free</button>' +
         '<button class="filter-tab tab-premium" data-f="premium" type="button">Premium</button>' +
-        '<button class="filter-tab" data-f="member" type="button">Member</button>' +
-        '<button class="filter-tab tab-free" data-f="free" type="button">Non-member</button>' +
         '<button class="filter-tab" data-f="playlist" type="button">Playlists</button>' +
       '</div>' +
     '</div>';
