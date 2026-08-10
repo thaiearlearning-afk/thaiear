@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v278';   // v278 / r163: premium gating on playlists/progress/downloads
+const VERSION = 'v279';   // v279 / r164: progress bar stays visible on premium, tap gates
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —

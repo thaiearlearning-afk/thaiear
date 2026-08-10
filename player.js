@@ -2757,7 +2757,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r163';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r164';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -6998,22 +6998,25 @@
     if (!a || !a.isReady) { box.innerHTML = ''; return; } // hold until auth resolves
     var user = a.getUser && a.getUser();
     var thing = PLMODE ? 'playlist' : 'topic';
-    /* PREMIUM TOPIC, NOT ENTITLED → the premium message, not "sign in, it's free" (owner,
-       2026-08-10). Previously this branch keyed on !user alone, so a signed-out visitor on a
-       premium topic was told to sign in — which would not have unlocked anything, and pointed at
-       a page whose whole promise is that it's free. The TOPIC is the blocker here, not the account.
-       Covers the signed-IN free account too: they used to get working-looking +/- buttons that
-       progStep() then refused.
-       The CTA routes through gate(TIER) so the platform-correct copy already in premiumInfoSheet()
-       does the talking — deliberately NOT new payment wording, which Google Play restricts in-app.
-       Label is neutral in the app for the same reason. */
-    if (!entitledForPage()) {
+    /* PREMIUM TOPIC, NOT ENTITLED → still render the REAL progress bar, and let the TAP gate
+       (owner, 2026-08-10). Same principle as the download button: show the feature so people know
+       it exists, refuse the interaction — don't replace the control with an advert.
+       ⚠ An earlier attempt swapped this whole card for a "this is Premium" notice. That was wrong:
+       it hid a feature instead of gating it. Do not reinstate that.
+       Falls through to the normal render below (count reads 0 for a signed-out visitor); progStep()
+       does the gating, and checks entitlement BEFORE the signed-in test so a logged-out tap on a
+       premium topic gets the premium message rather than silently doing nothing. */
+    if (!user && !entitledForPage()) {
       box.innerHTML =
         '<div class="prog-ctl-card">' +
-          '<span class="prog-ctl-label">This ' + thing + ' is part of ThaiEar Premium.</span>' +
-          '<button class="prog-ctl-join" onclick="progGate()">' +
-            (NATIVE ? 'Learn more →' : 'See Premium →') +
-          '</button>' +
+          '<div class="prog-ctl-left">' +
+            '<span class="prog-ctl-count" id="prog-count">0</span>' +
+            '<span class="prog-ctl-label">complete listens</span>' +
+          '</div>' +
+          '<div class="prog-ctl-btns">' +
+            '<button class="prog-ctl-btn prog-ctl-minus" id="prog-remove" onclick="progRemove()" aria-label="Remove one listen" title="Remove one listen">−</button>' +
+            '<button class="prog-ctl-btn prog-ctl-add" id="prog-add" onclick="progAdd()" aria-label="Add one listen">+ Add progress</button>' +
+          '</div>' +
         '</div>';
       return;
     }
@@ -7045,10 +7048,14 @@
   // mirrors the subscribe button's deliberate, lag-then-confirm feel.
   function progStep(kind) {
     var a = window.ThaiEarAuth;
-    if (!a || !(a.getUser && a.getUser())) return;
-    // No audio access to this topic (e.g. a free member on a premium topic) → same preview-only gate
-    // as play/reveal/flag (premium → "preview only" toast in-app; member → sign-in). Don't touch progress.
-    if (!entitledForPage()) { gate(); return; }
+    /* ⚠ ENTITLEMENT BEFORE SIGNED-IN — the order matters and was the other way round until
+       2026-08-10. On a premium topic the TIER is the real blocker, so checking sign-in first meant
+       a logged-out tap returned silently (doing nothing at all) and a "please sign in" route would
+       only have pointed at a page that couldn't unlock it. Now a non-entitled tap gets the premium
+       message on both: app → neutral sheet, web → paywall. */
+    if (!entitledForPage()) { gate(TIER); return; }
+    // Entitled but signed out (a free topic) → progress genuinely needs an account.
+    if (!a || !(a.getUser && a.getUser())) { gateSignIn(); return; }
     if (progLock) return;
     progLock = true;
     var addBtn = $('prog-add'), remBtn = $('prog-remove'), countEl = $('prog-count');
