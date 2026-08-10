@@ -852,6 +852,17 @@
   function dynUpdateAudio() {
     // Transient too — same reasoning as downloadTopic's offline guard: keep Update/Delete reachable.
     if (!navigator.onLine) { offlineBarFlash('error', 'you’re offline — reconnect to update'); return; }
+    /* Update FETCHES NEW BYTES, so it needs the same account requirement as a fresh download —
+       it reaches dynDownloadHere() directly and would otherwise slip past downloadTopic()'s guard.
+       Only reachable on an already-downloaded topic, so this bites only if someone downloaded and
+       then signed out; their EXISTING download keeps working (Delete stays available), they just
+       can't pull new audio without signing back in. */
+    if (!entitledForPage()) { gate(TIER); return; }
+    if (downloadNeedsSignIn()) {
+      window.location.href = 'join.html?feature=1&next=' +
+        encodeURIComponent(PAGE_FILE + location.search);
+      return;
+    }
     // The stored mp3 was built from the OLD clips, and its key encodes settings, not clip
     // content — so it would NOT rebuild by itself and would keep playing superseded audio.
     dynDropSessions();
@@ -1397,13 +1408,31 @@
     return chain.then(function () { renderOfflineBar(); });
   }
 
+  /* Downloads need an ACCOUNT on every tier, including free (member tier retired 2026-08-10).
+     ⚠ entitledForPage() CANNOT carry this: it answers the ACCESS question and returns true for a
+     free topic, which is correct — a free topic streams for anyone, signed in or not. Access and
+     download are different questions now, exactly as auth.js's lockedFor() vs downloadLockedFor().
+     This is the topic-page twin of that split; index.html and pl-list.js go via ThaiEarDL.dlLocked.
+     (Shipped in r161 without this check, so free topics were briefly downloadable signed out.) */
+  function downloadNeedsSignIn() {
+    var a = window.ThaiEarAuth;
+    if (!a || !a.isReady) return false;                 // auth resolving → never block a payer
+    return !(a.getUser && a.getUser());
+  }
   function downloadTopic() {
     // P2a (§1f): app + installed PWA only — WEB_DL now carries the standalone test, and the old
     // `DYN && DYN_WEB_DL` escape (any cache-capable browser) is gone with the beta flag.
     if (!OFFLINE && !WEB_DL) return;
-    // Gated topic + not entitled → same preview-only gate as play/reveal/flag (premium → "preview
-    // only" toast in-app; member → sign-in), instead of attempting the download and erroring on /api/audio.
+    // Gated topic + not entitled → same preview-only gate as play/reveal/flag (premium → the
+    // neutral sheet in-app, the paywall on web), instead of attempting the download and erroring
+    // on /api/audio. Tier FIRST: on a premium topic the tier is the real blocker, so the visitor
+    // gets the premium message rather than a sign-in prompt that wouldn't actually unlock it.
     if (!entitledForPage()) { gate(TIER); return; }
+    if (downloadNeedsSignIn()) {
+      window.location.href = 'join.html?feature=1&next=' +
+        encodeURIComponent(PAGE_FILE + location.search);
+      return;
+    }
     if (DYN) { dynDownloadHere(); return; }   // clips, not the prefab pair
     var files = topicFiles();
     var done = 0;
@@ -2704,7 +2733,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r161';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r162';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
