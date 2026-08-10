@@ -1620,7 +1620,13 @@
        too late is indistinguishable from no fix at all.) */
     if (typeof e === 'string') return e;
     var c = e.code;
-    if (c === 401 || c === 403 || c === 'noauth') return 'sign in to download this';
+    /* On a PREMIUM topic a 401/403 is not really "you're logged out" — it's "you aren't entitled",
+       and telling someone to sign in points them at a page promising it's free. The gates upstream
+       should stop a non-entitled tap reaching here at all, so this is the backstop for the case
+       they don't (owner-reported 2026-08-10). */
+    if (c === 401 || c === 403 || c === 'noauth') {
+      return TIER === 'premium' ? 'premium membership needed' : 'sign in to download this';
+    }
     if (c === 402 || c === 'licence') return 'premium membership needed';
     if (e.message) return String(e.message);
     if (c != null) return 'error ' + c;
@@ -1682,9 +1688,18 @@
          looked downloaded, the guard's escape hatch opened, and the bar appeared (owner: T-5).
          The topic's own claim is the `'topic'` ref (§B2d). A classic download writes NO refs field
          and is read as an implicit topic claim — matching what dynDeleteHere/deleteTopic assume. */
-      if (!PLMODE && TIER === 'premium' && !canUseOffline('premium') && !hasTopicClaim(PREFIX)) {
-        bar.style.display = 'none'; return;
-      }
+      /* ⚠⚠ r60 REVERSED BY THE OWNER, 2026-08-10 — THIS GUARD IS DELIBERATELY GONE.
+         r60 hid the bar entirely on a gated premium topic ("a topic page the visitor cannot play
+         must not offer a download"). The owner has since decided the opposite, and the reasoning
+         changed with it: offline download is a headline PREMIUM FEATURE, and hiding it from
+         exactly the people who haven't bought yet means they never learn it exists. A visible,
+         gated control advertises the feature; an absent one sells nothing.
+         Tapping it is safe — downloadTopic() checks entitledForPage() first and routes to
+         gate(TIER), so a non-entitled tap gets the premium message (app → neutral sheet, web →
+         paywall), never a failed download.
+         Do NOT "restore" this guard as a bug fix. Both states were owner-specified; this is the
+         current one. The PLMODE empty-set guard above is a DIFFERENT rule and still stands — a
+         playlist with nothing playable would download zero clips and report success. */
       // No stale/refresh states here: a dyn session is keyed on its own content and settings,
       // so changed text or a changed setting rebuilds by itself. Downloaded means "the clips
       // are all here", which is the only claim worth making.
@@ -2320,12 +2335,21 @@
     if (TIER === 'member') return !!(a.getUser && a.getUser()); // member = any signed-in user
     return !!(a.isSubscribed && a.isSubscribed());              // premium = active subscription
   }
-  // gate(): what a non-entitled tap does. Member → the free sign-in page (web AND app — login is not
-  // payment steering). Premium → the paywall on the WEBSITE, but in the APP an informational sheet
-  // instead (Google Play forbids steering to outside payment).
+  /* gateSignIn(): "this needs an ACCOUNT" — the free sign-in page, on web AND in the app (login is
+     not payment steering, so Google Play is fine with it). Used by playlists, downloads, progress
+     and flagging: features, not content.
+     ⚠ This used to be spelled gate('member'), which since the 2026-08-10 tier retirement named a
+     tier that no longer exists. Same behaviour, honest name — nothing here was ever about the
+     member TIER, only about needing a login. */
+  function gateSignIn() {
+    window.location.href = 'join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE);
+  }
+  // gate(): what a non-entitled tap does. Premium → the paywall on the WEBSITE, but in the APP an
+  // informational sheet instead (Google Play forbids steering to outside payment). A tier that only
+  // needs a login routes to gateSignIn() above.
   function gate(tier) {
     if (tier == null) tier = TIER;
-    if (tier === 'member') { window.location.href = 'join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE); return; }
+    if (tier === 'member') { gateSignIn(); return; }   // legacy value; no unit declares it any more
     /* Two very different reasons a premium tap can be refused, and they must not share a message:
          · the server told us the subscription is LAPSED  → the paywall is honest
          · we simply could not REACH the server for >50 days → they may well be paid up; telling
@@ -2733,7 +2757,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r162';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r163';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5056,10 +5080,18 @@
   function dynPendClear() { try { sessionStorage.removeItem('te_plsel'); } catch (_) {} }
   function dynAddPlClick() {
     var a = window.ThaiEarAuth;
-    // Playlists are a signed-in feature (they live in the account dropdown alongside My Progress
-    // and My Sentences). Signed out → the standard member sign-in route, not a raw alert().
-    // gate('member') goes to join.html on web AND in the app — login is not payment steering.
-    if (!a || !(a.getUser && a.getUser())) { gate('member'); return; }
+    /* TIER FIRST (owner, 2026-08-10): you may not put PREMIUM sentences in a playlist unless you
+       are entitled to them. Previously this checked sign-in only, so a signed-in free account
+       could select premium sentences and save them — they were padlocked at playback by
+       sentLocked(), so no audio leaked, but the affordance implied an entitlement that wasn't
+       there. On a premium topic the tier is the real blocker, so gate(TIER) gives the premium
+       message (app → neutral sheet, web → paywall) rather than a sign-in prompt that would not
+       unlock it. ⚠ No-op inside PLMODE: playlists.html declares itself tier:'free' and gates
+       per-SENTENCE instead, which is the correct behaviour for a page that mixes topics. */
+    if (!entitledForPage()) { gate(TIER); return; }
+    // Then the account: playlists are a signed-in FEATURE (they live in the account dropdown
+    // alongside My Progress and My Sentences). Signed out → the free sign-in page, not a raw alert.
+    if (!a || !(a.getUser && a.getUser())) { gateSignIn(); return; }
     /* 2026-08-09 — THE OFFLINE BLOCK IS GONE. It used to bail here with "adding or removing
        sentences needs a connection", because auth.js's create/addItem/remove all POSTed and
        rejected with no connection, so the old flow let you pick sentences and THEN failed with a
@@ -6033,11 +6065,12 @@
       // The build tag already shows in the corner of the settings block, so the link does not
       // need to carry it once these are proper side-by-side buttons.
       pll.textContent = STYLE2 ? '🎵 My playlists' : ('🎵 My Playlists · build ' + DYN_BUILD);
-      // Same gate as Add-to-playlist: a signed-out visitor gets the sign-in page, not a
-      // playlists page that can only tell them it's empty.
+      /* "Go to my playlists" is sign-in gated ONLY — deliberately NOT tier gated (owner,
+         2026-08-10). It navigates to the visitor's own playlists page; nothing premium is being
+         added or played, so a free account on a premium topic may still use it. */
       pll.addEventListener('click', function (e) {
         var au = window.ThaiEarAuth;
-        if (!au || !(au.getUser && au.getUser())) { e.preventDefault(); gate('member'); }
+        if (!au || !(au.getUser && au.getUser())) { e.preventDefault(); gateSignIn(); }
       });
       apl.parentNode.insertBefore(pll, apl.nextSibling);
       if (STYLE2) {
@@ -6965,6 +6998,25 @@
     if (!a || !a.isReady) { box.innerHTML = ''; return; } // hold until auth resolves
     var user = a.getUser && a.getUser();
     var thing = PLMODE ? 'playlist' : 'topic';
+    /* PREMIUM TOPIC, NOT ENTITLED → the premium message, not "sign in, it's free" (owner,
+       2026-08-10). Previously this branch keyed on !user alone, so a signed-out visitor on a
+       premium topic was told to sign in — which would not have unlocked anything, and pointed at
+       a page whose whole promise is that it's free. The TOPIC is the blocker here, not the account.
+       Covers the signed-IN free account too: they used to get working-looking +/- buttons that
+       progStep() then refused.
+       The CTA routes through gate(TIER) so the platform-correct copy already in premiumInfoSheet()
+       does the talking — deliberately NOT new payment wording, which Google Play restricts in-app.
+       Label is neutral in the app for the same reason. */
+    if (!entitledForPage()) {
+      box.innerHTML =
+        '<div class="prog-ctl-card">' +
+          '<span class="prog-ctl-label">This ' + thing + ' is part of ThaiEar Premium.</span>' +
+          '<button class="prog-ctl-join" onclick="progGate()">' +
+            (NATIVE ? 'Learn more →' : 'See Premium →') +
+          '</button>' +
+        '</div>';
+      return;
+    }
     if (!user) {
       box.innerHTML =
         '<div class="prog-ctl-card">' +
@@ -7025,6 +7077,7 @@
       }, 600);
     });
   }
+  function progGate() { gate(TIER); }   // premium card CTA — platform-correct copy lives in gate()
   function progAdd() { progStep('add'); }
   function progRemove() { progStep('remove'); }
 
@@ -7169,7 +7222,7 @@
   // inline onclick in the injected markup call these by name
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow, toggleTranslit: toggleTranslit,
-    progAdd: progAdd, progRemove: progRemove, flagSent: flagSent, flagSignIn: flagSignIn,
+    progAdd: progAdd, progRemove: progRemove, progGate: progGate, flagSent: flagSent, flagSignIn: flagSignIn,
     advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat,
     downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete, refreshTopic: refreshTopic,
     dynUpdateAudio: dynUpdateAudio, gateSentence: gateSent });

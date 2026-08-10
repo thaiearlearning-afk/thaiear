@@ -164,7 +164,12 @@
      picker itself is only on the homepage, as asked.
      Changing state RELOADS rather than re-rendering: entitlement is read during mount by several
      surfaces, and a reload is the only way to be certain every one of them re-derives. */
-  var LABEL = { premium: 'PREMIUM (entitled)', expired: 'EXPIRED (premium, non-lifetime)', signedout: 'SIGNED OUT' };
+  /* ⚠ 'expired' IS ALSO THE SIGNED-IN-FREE SIMULATION. Nothing in the codebase branches on
+     “used to be subscribed” — gate(), premiumInfoSheet() and canUseOffline() all ask only “are you
+     subscribed RIGHT NOW” — so a never-subscribed free account and a lapsed one are byte-identical
+     here (signedIn + !subbed + fresh). Labelled for both so nobody adds a duplicate mode that
+     silently does the same thing and gives false confidence in test coverage. */
+  var LABEL = { premium: 'PREMIUM (entitled)', expired: 'SIGNED IN, NO SUBSCRIPTION (free or expired)', signedout: 'SIGNED OUT' };
   function setState(v) { set(K_STATE, v || null); applyLifetime(); location.reload(); }
 
   function banner() {
@@ -191,7 +196,7 @@
     d.style.cssText = 'max-width:640px;margin:2rem auto 5rem;padding:14px 16px;border:1px dashed #7A1F1F;' +
       'border-radius:10px;font:13px/1.6 system-ui,-apple-system,sans-serif;color:#5A5A5A';
     var opts = [['', 'Off (real account)'], ['premium', 'Premium — entitled'],
-                ['expired', 'Expired — premium, non-lifetime'], ['signedout', 'Signed out']];
+                ['expired', 'Signed in, no subscription (free account or expired)'], ['signedout', 'Signed out']];
     var cur = state();
     d.innerHTML = '<strong style="color:#7A1F1F">Owner: simulate account</strong><br>' +
       '<span style="font-size:12px">Overrides only the auth answer — every entitlement decision downstream runs for real. ' +
