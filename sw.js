@@ -11,14 +11,22 @@
    download feature owns offline audio. /api/ is never cached (auth,
    audio-signing, checkout must always be live).
 
-   Strategy: same-origin GETs are NETWORK-FIRST (online always gets fresh
-   content — the tandem-update model is preserved — and the cache is only
-   used as the offline fallback). Fonts are now self-hosted (same-origin
-   /fonts/*.woff2), so they ride the same network-first path and are also
-   precached; the esm.sh Supabase bundle is cached cross-origin.
-   Bump VERSION to invalidate old caches on deploy.
+   Strategy, TWO paths (split 2026-08-11 — see the big note in the fetch handler):
+     • NAVIGATIONS and anything not precached: NETWORK-FIRST, capped by
+       NET_TIMEOUT_MS. Online always gets fresh content, so the tandem-update
+       model is preserved and the cache is the offline fallback.
+     • PRECACHED SUB-RESOURCES (player.js, auth.js, topics.js, nav.js, the CSS,
+       the self-hosted fonts, the icons): CACHE-FIRST. Bumping VERSION is what
+       invalidates them, so revalidating per request only cost a round-trip —
+       ~350 KB of it on every single page load, which is what made topic pages
+       take seconds to open in the iPhone PWA and the Android app.
+   The esm.sh Supabase bundle is cached cross-origin in VENDOR_CACHE.
+
+   ⚠ Bump VERSION to invalidate old caches on deploy. With the cache-first path
+   this is LOAD-BEARING, not just tidy: change a precached file without bumping
+   and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v291';   // v291: read audio prefetch moved past load (was competing with first paint)
+const VERSION = 'v292';   // v292: precached sub-resources are CACHE-FIRST (was re-fetching 350KB per page)
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -185,6 +193,9 @@ const PRECACHE = [
   '/fonts/sarabun-latin-500.woff2', '/fonts/sarabun-latin-600.woff2'
 ];
 
+/* Fast lookup for the cache-first path in the fetch handler below. */
+const PRECACHE_PATHS = new Set(PRECACHE);
+
 /* Add a list of URLs a few at a time. ~150 simultaneous fetches on a phone is exactly how the
    install below used to end up half-finished: the burst is throttled or the radio drops, entries
    fail, and .catch() swallows it. Small batches are far more likely to complete. */
@@ -315,6 +326,45 @@ self.addEventListener('fetch', function (e) {
 
   if (url.pathname.indexOf('/api/') === 0) return;  // never cache API calls
   if (/\.apk$/i.test(url.pathname)) return;         // don't intercept/cache the APK download
+
+  /* ⚠ PRECACHED SUB-RESOURCES ARE CACHE-FIRST (2026-08-11). Do not "restore" them to network-first.
+     These are the version-keyed shell files — player.js, auth.js, topics.js, nav.js, the CSS, the
+     fonts, the icons. Bumping VERSION is what invalidates them: activate() re-seeds the new cache
+     from the network, which is the entire point of a version-keyed precache. Revalidating them on
+     every request bought nothing and cost a network round-trip each.
+
+     What it cost, measured on a topic page in a real browser: player.js reported transferSize 0 —
+     a worker response — yet a duration of 3534 ms, because the worker was fetching all 457 KB from
+     the network before answering. Roughly 350 KB of precached JS behaved that way on EVERY
+     navigation, serialised behind the HTML, so scripts did not begin until ~3 s and load landed at
+     8.2 s on DESKTOP. The owner reported topic pages taking "a few seconds" to open specifically in
+     the iPhone PWA and the Android app, and fine in desktop Edge — the same work on a phone CPU and
+     a WebView fetch.
+
+     NAVIGATIONS ARE DELIBERATELY EXCLUDED. Pages stay network-first so the tandem-update model
+     holds and an online visitor always gets fresh content. This only changes sub-resources whose
+     freshness is already governed by VERSION.
+
+     THE DEPENDENCY THIS CREATES: if you change a precached file you MUST bump VERSION, or clients
+     keep the old copy. That was already the standing rule (see the PRECACHE note above); this makes
+     it load-bearing rather than merely tidy. */
+  if (req.mode !== 'navigate' && PRECACHE_PATHS.has(url.pathname)) {
+    e.respondWith(
+      caches.match(req).then(function (hit) {
+        if (hit) return hit;
+        // Not seeded yet (install still running, or a partial install): fetch and store it.
+        return fetch(req).then(function (res) {
+          if (res && res.ok && res.type === 'basic') {
+            var copy = res.clone();
+            caches.open(CACHE).then(function (c) { c.put(req, copy); });
+          }
+          noteNetUp();
+          return res;
+        }).catch(function () { noteNetDown(); return cacheFallback(req, url); });
+      })
+    );
+    return;
+  }
 
   // Same-origin pages + assets: network-first for freshness (preserves the tandem-update model),
   // but capped by NET_TIMEOUT_MS. Offline, the WebView's fetch can hang for many seconds before it
