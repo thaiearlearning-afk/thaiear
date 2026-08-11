@@ -2616,7 +2616,9 @@
   }
   function setMiniFill(pct) {
     pct = Math.max(0, Math.min(100, pct || 0));
-    setMiniFill(pct);
+    // NB: write the fill element directly here — a bulk edit once rewrote this very line into a
+    // call to setMiniFill itself, which recursed until "Maximum call stack size exceeded".
+    var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';
     var sc = $('te-mini-scrub'); if (sc) sc.setAttribute('aria-valuenow', Math.round(pct));
   }
   function syncMini() {
@@ -2790,7 +2792,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r166';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r167';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
