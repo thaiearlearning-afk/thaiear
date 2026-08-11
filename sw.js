@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v288';   // v288 / r167: HOTFIX — setMiniFill recursed (RangeError in r166)
+const VERSION = 'v289';   // v289: right-sized hero + nav logos (homepage LCP image was 4x too big)
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -172,7 +172,7 @@ const PRECACHE = [
   // PWA install vehicle: manifest + its icons, so "Add to Home Screen" works and the
   // installed app has its launch icon available offline.
   '/manifest.json', '/icon-512.png', '/icon-512-maskable.png',
-  '/logo.png', '/nav-swirl.png', '/favicon.png', '/favicon.ico',
+  '/logo-hero.png', '/nav-swirl-2x.png', '/favicon.png', '/favicon.ico',
   '/favicon-16.png', '/favicon-32.png', '/favicon-192.png', '/apple-touch-icon.png',
   '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png', '/hornbill.png', '/yak.png',
   // Self-hosted fonts (replaced Google Fonts 2026-06-24): precache the full used set so a
