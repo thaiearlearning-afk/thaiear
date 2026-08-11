@@ -1652,7 +1652,23 @@
   }
   function renderOfflineBar() {
     var bar = $('offline-bar'); if (!bar) return;
-    if (!OFFLINE && !WEB_DL) { bar.style.display = 'none'; return; }  // §1f: plain browser tab (not app, not installed PWA): never shown, no reserved space
+    /* §1f: plain browser tab (not app, not installed PWA). No download is possible here, so the
+       bar used to be display:none and normal flow closed over it. It now carries the app card
+       instead (app-cta.js) — the visitors who cannot download are precisely the ones who have not
+       installed anything, and hiding the feature from them meant they never learned it existed.
+       Falls back to the original hide when app-cta.js is absent (stale cache / script blocked),
+       so the worst case is today's behaviour, never a broken bar. */
+    if (!OFFLINE && !WEB_DL) {
+      if (window.ThaiEarAppCTA) {
+        bar.className = 'offline-bar te-appcta-host';
+        bar.style.display = 'block';
+        bar.innerHTML = window.ThaiEarAppCTA.html(PLMODE ? 'playlist' : 'topic');
+      } else {
+        bar.style.display = 'none';
+      }
+      return;
+    }
+    bar.className = 'offline-bar';   // drop te-appcta-host if a previous paint took the branch above
     bar.style.display = 'flex';
     if (DYN) {
       dynStampNeed();   // r137: keep the index honest about downloads made before `need` existed
@@ -2757,7 +2773,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r164';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r165';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

@@ -97,3 +97,8 @@ topups-clips/
 
 # local dev harness for the Android textZoom pass (not deployed)
 _ui-harness.html
+topups2-review.html
+topups2-clips/
+
+# Mockup: "Study offline with our app" box (app-offline-mock)
+app-offline-mock.html

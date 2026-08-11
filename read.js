@@ -240,7 +240,16 @@
     return cachesOk() && (native || standalone || dev);
   }
   function mountDlCard(root) {
-    if (!dlCardVisible()) return;
+    /* No offline storage on this device (plain browser tab, desktop or phone) → the app card
+       takes the slot the download card would have had, in front of the same anchor. app-cta.js
+       is loaded by read.html and by index.html (whose Read panel mounts this hub natively); if
+       it is missing we fall through to the old silent return. */
+    if (!dlCardVisible()) {
+      if (window.ThaiEarAppCTA) {
+        window.ThaiEarAppCTA.insertBefore(root.querySelector('.section-header') || root.firstChild, 'read');
+      }
+      return;
+    }
     var card = document.createElement('div');
     card.className = 'read-dl';
     card.innerHTML =

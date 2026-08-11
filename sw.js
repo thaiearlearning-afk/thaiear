@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v280';   // v280: Read Thai lessons are SSR — precached html must be re-seeded
+const VERSION = 'v281';   // v281: app-cta.js — the "Study ThaiEar offline" card on browser tabs
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -141,6 +141,11 @@ const PRECACHE = [
   '/nav.js', '/topics.js', '/player.js', '/auth.js', '/footer.js',
   '/pl-list.js',   // r130: shared playlist-list module (index panel + playlists.html legacy embed)
   '/dl-core.js',   // r121: shared download engine (§D.1) — real product code, consumed by playlists.html (and the index from P2b)
+  /* The "Study ThaiEar offline" app card. It never RENDERS in the app or an installed PWA — it is
+     the plain-browser-tab counterpart to the download controls — but every topic page, read.html
+     and index.html now carry its <script> tag, so an un-precached copy would mean a failed request
+     on every offline page open in the very contexts that never use it. Cheap to seed, so seed it. */
+  '/app-cta.js',
   // Playlists + the owner entitlement simulator. PRECACHED because the offline behaviour is
   // exactly what they exist to test, and runtime caching couldn't guarantee it: bumping VERSION
   // creates a NEW cache and drops the old one, so anything only ever runtime-cached vanishes on

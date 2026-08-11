@@ -292,13 +292,28 @@
       var docEl = document.documentElement, bodyEl = document.body;
       var already = (docEl && docEl.className.indexOf('te-no-dl') !== -1) ||
                     (bodyEl && bodyEl.className.indexOf('te-no-dl') !== -1);
-      if (already) return;
-      var standalone = false;
-      try {
-        standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
-                     window.navigator.standalone === true;
-      } catch (_) {}
-      if (!(DL_NATIVE || standalone)) docEl.className += ' te-no-dl';
+      var noDl = already;
+      if (!already) {
+        var standalone = false;
+        try {
+          standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
+                       window.navigator.standalone === true;
+        } catch (_) {}
+        noDl = !(DL_NATIVE || standalone);
+        if (noDl) docEl.className += ' te-no-dl';
+      }
+      /* …and where the batch bar is withheld, offer the app instead (app-cta.js). Keyed off the
+         SAME `noDl` the class is — including the `already` case, where the host page decided for
+         us — so the bar and the card can never both be visible, or both be missing.
+         ⚠ rootEl.querySelector, NEVER document.getElementById: index.html's Topics panel has a
+         #dl-batch-bar of its OWN, and since the rollout both panels live in the same document
+         (native mount, no iframe). A document-wide lookup finds the TOPICS one — which is
+         display:none while the Playlists panel is showing — so the card was inserted, reported
+         present, and rendered 0×0 in the wrong panel. Duplicate ids across panels are a fact of
+         the native-mount architecture; scope every lookup to the mounted root. */
+      if (noDl && window.ThaiEarAppCTA) {
+        window.ThaiEarAppCTA.insertBefore(rootEl.querySelector('#dl-batch-bar'), 'playlist');
+      }
     })();
     /* r85 — ONE SELECTION SET. A row is simply SELECTED, and the BUTTON supplies the verb. Rows
        that cannot perform the chosen verb are skipped silently. */

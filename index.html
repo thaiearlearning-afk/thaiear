@@ -1151,6 +1151,12 @@ if(pend||bf)d.className+=' te-warp';})();</script>
      modal. Same module dyn-index.html and playlists.html use. Must load before the inline
      script below (it calls window.ThaiEarDL at top level). -->
 <script src="dl-core.js"></script>
+<!-- "Study ThaiEar offline" app card — what a plain browser tab gets in place of the download
+     controls, on this page's BOTH panels (topics here, playlists via pl-list.js) and on the read
+     hub mounted into the read panel. NOT deferred: the inline script below inserts it at parse
+     time, so it is in the document before first paint and shifts nothing (this page is at
+     Lighthouse CLS ~0 and must stay there). -->
+<script src="app-cta.js"></script>
 <script>
 /* Index grid render. The topic list, level badges and filter logic all come from
    topics.js (window.ThaiEarTopics), so the index and the topic pages never drift —
@@ -1266,7 +1272,13 @@ const NATIVE = CAP.native, FS = CAP.fs, WEB_DL = CAP.webOk;
 const STANDALONE = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
   window.navigator.standalone === true;
 const OFFLINE_UI = NATIVE || STANDALONE;
-if (!OFFLINE_UI) document.body.classList.add('te-no-dl');
+if (!OFFLINE_UI) {
+  document.body.classList.add('te-no-dl');
+  /* …and put the app card in the space the batch bar leaves behind. Done HERE, during parse,
+     rather than on DOMContentLoaded: #dl-batch-bar is static markup above this script, so the
+     card lands in the document before the topic grid is painted and costs no layout shift. */
+  if (window.ThaiEarAppCTA) ThaiEarAppCTA.insertBefore(document.getElementById('dl-batch-bar'), 'index');
+}
 const AUDIO_DL_CACHE = 'thaiear-audio-dl';     // must match player.js
 function webCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; } // must match player.js
 const DL_AUDIO_BASE = 'https://audio.thaiear.com';
