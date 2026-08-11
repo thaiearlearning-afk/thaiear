@@ -59,8 +59,15 @@
   h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.6rem; line-height: 1.2; color: #1C124E; }
   .lede { color: var(--text-secondary); margin-bottom: 1.75rem; }
 
-  /* store cards — same visual language as the socials cards (icon + label). Google Play is a
-     live link (<a>); App Store stays a plain card until it ships. */
+  /* store cards — same visual language as the socials cards (icon + label). Google Play is the
+     only one: a live link (<a>).
+     ⚠ THERE IS DELIBERATELY NO APP STORE CARD (owner, 2026-08-11). A greyed "App Store · Coming
+     later…" row sat here, and the iOS tip below closed with "Our full App Store app … is on the
+     way." Both are gone: an App Store build is not close, so the card was clutter that promised
+     something with no date behind it. Do not reinstate either until a build actually ships — and
+     see the standing wording rule, which is the same instinct: the iPhone route is Add to Home
+     Screen, and copy must not imply otherwise. The .store-icon.appstore / .store-status.soon
+     rules went with the markup rather than being left as dead CSS inviting its return. */
   .store-list { display: flex; flex-direction: column; gap: 0.75rem; }
   .store-card {
     display: flex; align-items: center; gap: 14px;
@@ -74,11 +81,9 @@
     display: inline-flex; align-items: center; justify-content: center; color: #fff; }
   .store-icon svg { width: 22px; height: 22px; }
   .store-icon.googleplay { background: linear-gradient(135deg, #00C3FF, #1EBE5D 45%, #FFCE00 72%, #FF3B30); }
-  .store-icon.appstore { background: #111; }
   .store-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
   .store-platform { font-size: 14px; font-weight: 600; color: var(--text-primary); }
   .store-status { font-size: 13px; color: var(--text-tertiary); }
-  .store-status.soon { color: var(--accent); font-weight: 500; }
 
   .note { font-size: 13px; color: var(--text-tertiary); margin-top: 1.75rem; text-align: center; }
 
@@ -194,16 +199,6 @@
           <span class="store-status live">Available now — get the app</span>
         </span>
       </a>
-
-      <div class="store-card">
-        <span class="store-icon appstore" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.1-2.02-3.77-2.05-1.6-.16-3.13.94-3.94.94-.81 0-2.07-.92-3.4-.9-1.75.03-3.36 1.02-4.26 2.58-1.82 3.15-.47 7.81 1.3 10.37.86 1.25 1.89 2.66 3.24 2.61 1.3-.05 1.79-.84 3.36-.84 1.57 0 2.01.84 3.39.81 1.4-.02 2.29-1.27 3.15-2.53.99-1.45 1.4-2.86 1.42-2.93-.03-.01-2.72-1.04-2.75-4.15zM14.6 4.7c.72-.87 1.2-2.08 1.07-3.28-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.08 3.18 1.15.09 2.32-.59 3.03-1.46z"/></svg>
-        </span>
-        <span class="store-text">
-          <span class="store-platform">App Store</span>
-          <span class="store-status">Coming later…</span>
-        </span>
-      </div>
     </div>
 
     <p class="dl-note-inline">Prefer to install directly, without the Play Store? There’s a <a href="#direct-download">direct download</a> at the bottom of this page.</p>
@@ -233,7 +228,7 @@
       <li>Open any topic and tap <strong>Download for offline</strong> — or, on the home page, tap the circle on each topic you want and hit <strong>Download</strong>.</li>
     </ol>
     <div class="ios-tip">
-      Downloaded topics play with <strong>no internet</strong> — even in airplane mode. On iPhone these are kept in the app’s own storage; if your phone runs very low on space, iOS may clear them, and you can simply reconnect and tap Download again. Our full <strong>App Store</strong> app, with permanent offline storage, is on the way.
+      Downloaded topics play with <strong>no internet</strong> — even in airplane mode. On iPhone these are kept in the app’s own storage; if your phone runs very low on space, iOS may clear them, and you can simply reconnect and tap Download again.
     </div>
   </div>
 
