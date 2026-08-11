@@ -18,7 +18,7 @@
    precached; the esm.sh Supabase bundle is cached cross-origin.
    Bump VERSION to invalidate old caches on deploy.
    ============================================================ */
-const VERSION = 'v290';   // v290: read-data.js was render-blocking on all 14 read pages
+const VERSION = 'v291';   // v291: read audio prefetch moved past load (was competing with first paint)
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —

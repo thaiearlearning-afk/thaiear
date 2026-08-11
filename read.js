@@ -69,6 +69,18 @@
     }
     pump();
   }
+  /* Prefetch is a nice-to-have that was competing with the page's own load: a lesson fires
+     ~18 clip fetches during boot, costing bandwidth and main-thread time that first paint
+     needs. Pushed past load. Nothing breaks if a clip has not arrived when the user taps —
+     play() already falls back to clipUrl(id) for anything missing from blobUrls. */
+  function prefetchWhenIdle(ids) {
+    var run = function () {
+      if (window.requestIdleCallback) window.requestIdleCallback(function () { prefetch(ids); }, { timeout: 3000 });
+      else setTimeout(function () { prefetch(ids); }, 300);
+    };
+    if (document.readyState === 'complete') run();
+    else window.addEventListener('load', run, { once: true });
+  }
   function sectionAudioIds(key) {
     var ids = [];
     if (key === 'hub') {
@@ -1656,7 +1668,7 @@
     if (jumpBtn) jumpBtn.addEventListener('click', scrollToLessons);
     markTerms(rootEl);   // scoped to rootEl, not document.body — the index page has plenty of
                           // other text on it that must never pick up a glossary marker.
-    prefetch(sectionAudioIds('hub'));
+    prefetchWhenIdle(sectionAudioIds('hub'));
   }
   window.ThaiEarRead.mountHub = mountHub;
 
@@ -1693,7 +1705,7 @@
       if (toLessons && 'scrollRestoration' in history) history.scrollRestoration = 'manual';
       renderHub(root);
       markTerms(document.body);
-      prefetch(sectionAudioIds('hub'));
+      prefetchWhenIdle(sectionAudioIds('hub'));
       if (toLessons) scrollToLessons();
       return;
     }
@@ -1712,7 +1724,7 @@
        reader who meets a technical word mid-lesson; the results page is a score summary, not a
        teaching surface, so "Aspirated" there should read as a plain test name. */
     if (sec.kind !== 'results') markTerms(document.body);
-    prefetch(sectionAudioIds(key));
+    prefetchWhenIdle(sectionAudioIds(key));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
