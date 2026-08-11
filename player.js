@@ -2605,10 +2605,23 @@
   var miniActivated = false;   // has the main TE/ET been started this page-load? (latches on)
   var miniDismissed = false;   // did the user ✕ the bar this visit?
   var mainInView = true;       // is #player-root currently on screen? (IntersectionObserver)
+  /* The ONE place the mini progress bar moves. Every caller goes through here so the painted
+     fill and the slider's aria-valuenow can never disagree — the accessibility audit found the
+     bar advancing visually while screen readers were told nothing. */
+  /* Strip markup and quotes so a preview can be dropped into an aria-label attribute.
+     Previews are plain Thai today, but they come from authored JSON and must not be able
+     to break out of the attribute. */
+  function ariaText(t) {
+    return String(t == null ? '' : t).replace(/<[^>]*>/g, '').replace(/"/g, '&quot;').trim();
+  }
+  function setMiniFill(pct) {
+    pct = Math.max(0, Math.min(100, pct || 0));
+    setMiniFill(pct);
+    var sc = $('te-mini-scrub'); if (sc) sc.setAttribute('aria-valuenow', Math.round(pct));
+  }
   function syncMini() {
     var mi = $('te-mini-icon'); if (mi) mi.innerHTML = mainAudio.paused ? PLAY_TRI : PLAY_BARS;
-    var mf = $('te-mini-fill');
-    if (mf) mf.style.width = (mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0) + '%';
+    setMiniFill(mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0);
   }
   function updateMiniVisibility() {
     var bar = $('te-mini'); if (!bar) return;
@@ -2629,7 +2642,7 @@
       var pct = r.width ? (clientX - r.left) / r.width : 0;
       pct = Math.max(0, Math.min(1, pct));
       try { mainAudio.currentTime = pct * mainAudio.duration; } catch (_) {}
-      var mf = $('te-mini-fill'); if (mf) mf.style.width = (pct * 100) + '%';
+      setMiniFill(pct * 100);
     }
     scrub.addEventListener('pointerdown', function (e) {
       dragging = true;
@@ -2644,7 +2657,7 @@
         var t2 = dynSnapTime(mainAudio.currentTime);
         try { mainAudio.currentTime = t2; } catch (_) {}
         dynLastPos = t2;
-        var mf2 = $('te-mini-fill'); if (mf2) mf2.style.width = (t2 / mainAudio.duration * 100) + '%';
+        setMiniFill(t2 / mainAudio.duration * 100);
       }
     }
     scrub.addEventListener('pointerup', end);
@@ -2670,7 +2683,11 @@
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>' +
           '<span class="skip-num">10</span>' +
         '</button>' +
-        '<div class="te-mini-scrub" id="te-mini-scrub" role="slider" aria-label="Seek">' +
+        // role="slider" MUST carry aria-valuenow (2026-08-11 audit): without it a screen reader
+        // announces "Seek, slider" and no position at all. min/max are the percentage the fill
+        // paints, and setMiniFill() keeps the two in step.
+        '<div class="te-mini-scrub" id="te-mini-scrub" role="slider" aria-label="Seek"' +
+          ' aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">' +
           '<div class="te-mini-bar"><div class="te-mini-fill" id="te-mini-fill"></div></div>' +
         '</div>' +
         '<button class="te-mini-x" id="te-mini-x" aria-label="Hide mini player" title="Hide">&times;</button>' +
@@ -2773,7 +2790,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r165';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r166';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4721,7 +4738,7 @@
     var pct = (mainAudio.duration && isFinite(mainAudio.duration)) ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
     var f = $('scrubber-fill'); if (f) f.style.width = pct + '%';
     var c = $('time-cur'); if (c) c.textContent = formatTime(mainAudio.currentTime);
-    var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';
+    setMiniFill(pct);
     if (dynSession && dynSessionIsLocal) dynHighlight(mainAudio.currentTime);
   }
   // Round-15 item 2: the ① buttons (audio-row + mini) grey out whenever NO map governs the
@@ -6250,7 +6267,7 @@
       var tot = formatTime(mainAudio.duration);
       if (tt.textContent !== tot) tt.textContent = tot;
     }
-    var mf = $('te-mini-fill'); if (mf) mf.style.width = pct + '%';   // mirror onto the floating mini bar
+    setMiniFill(pct);   // mirror onto the floating mini bar
     if (DYN && !dynPosStale && (mainAudio.currentTime || 0) > 0) dynLastPos = mainAudio.currentTime;   // remember position (resume guard)
     /* The guard has to be tight. While a new source loads, iOS can report a transient or tiny
        duration — so a loose "near the end" test fires the instant after a MANUAL hop and skids
@@ -6845,7 +6862,7 @@
     var d = dispNum(s);
     return '<div class="sentence-card' + sentCardClasses(s) + '" id="sc-' + s.num + '">' +
       '<div class="sentence-header" onclick="gateSentence(' + s.num + ')" role="button" tabindex="0" ' +
-        'aria-label="Sentence ' + d + ' — Premium content">' +
+        'aria-label="Sentence ' + d + ': ' + ariaText(s.preview) + ' — Premium content">' +
         '<span class="sent-num">' + d + '</span>' +
         '<span class="sent-lock-ico">' + LOCK_SVG + '</span>' +
         '<span class="sent-preview">' + s.preview + '<span class="ell">…</span></span>' +
@@ -6871,7 +6888,7 @@
       : '<button class="sent-flag-btn" onclick="flagSignIn(event)" ' +
           'aria-label="Sign in to flag sentence ' + d + '" title="Sign in to flag sentences">' + FLAG_SVG + '</button>');
     return '<div class="sentence-card' + sentCardClasses(s) + '" id="sc-' + s.num + '">' +
-      '<div class="sentence-header" onclick="cycle(' + s.num + ')" role="button" tabindex="0" aria-label="Sentence ' + d + '">' +
+      '<div class="sentence-header" onclick="cycle(' + s.num + ')" role="button" tabindex="0" aria-label="Sentence ' + d + ': ' + ariaText(s.preview) + '">' +
         '<span class="sent-num">' + d + '</span>' +
         '<button class="sent-play-btn' + (playing ? ' playing' : '') + '" onclick="toggleSentPlay(event,' + s.num + ')" aria-label="Play sentence ' + d + '">' +
           '<svg viewBox="0 0 16 16">' + (playing
