@@ -26,7 +26,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v292';   // v292: precached sub-resources are CACHE-FIRST (was re-fetching 350KB per page)
+const VERSION = 'v293';   // v293: Navigation Preload — SW boot no longer serialised before the request
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -288,6 +288,24 @@ self.addEventListener('activate', function (e) {
             });
         });
       })
+      /* NAVIGATION PRELOAD (2026-08-11) — the fix for "a topic I have NOT opened before takes a
+         few seconds in the app/PWA, but is instant in the phone browser".
+         With a controlling worker, a navigation cannot start until the worker is RUNNING, and in a
+         standalone PWA / Capacitor WebView the worker is usually terminated between visits. So the
+         cost was serialised: boot sw.js, THEN begin the network request. A browser tab with no
+         controlling worker just issues the request, which is exactly why it felt fast there.
+         Preload tells the browser to start the navigation request IN PARALLEL with booting the
+         worker, so the cost becomes max(boot, network) instead of boot + network. Nothing else
+         changes — the fetch handler simply uses e.preloadResponse when it is there.
+         Local registration setting, NOT a network call, so it cannot violate the
+         "nothing in activate may await the network" rule above. Guarded because iOS Safari only
+         gained support in 17; where it is absent, preloadResponse is undefined and the handler
+         falls back to its own fetch(). */
+      .then(function () {
+        if (self.registration && self.registration.navigationPreload) {
+          return self.registration.navigationPreload.enable().catch(function () {});
+        }
+      })
       .then(function () { return self.clients.claim(); })
   );
 });
@@ -379,7 +397,15 @@ self.addEventListener('fetch', function (e) {
        The next request that goes through the normal path caches as usual, so nothing goes stale;
        this only removes a write that was racing a read for no benefit. */
     function fromNetwork(probeOnly) {
-      return fetch(req).then(function (res) {
+      /* Use the navigation-preload response when the browser has one in flight (see the note in
+         activate). It was started in parallel with booting this worker, so it is already ahead of
+         anything fetch() could begin now. Resolves to undefined when preload is unsupported or
+         this is not a navigation — then we issue the request ourselves exactly as before.
+         ⚠ It must be consumed or the browser warns about an unused preload response. */
+      var started = (req.mode === 'navigate' && e.preloadResponse)
+        ? e.preloadResponse.then(function (pre) { return pre || fetch(req); }, function () { return fetch(req); })
+        : fetch(req);
+      return started.then(function (res) {
         noteNetUp();
         if (!probeOnly && res && res.ok && res.type === 'basic') {
           var copy = res.clone();
