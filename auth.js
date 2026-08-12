@@ -64,6 +64,46 @@
   var currentFlags = null;       // map "topicKey:num" -> {topic_key,num,sentence} — lazy from `sentence_flags`
   var flagsLoaded = false;       // has the flag set been read yet?
 
+  /* ══ IN-FLIGHT DE-DUPLICATION (2026-08-12) ═══════════════════════════════════════════════════
+     Several independent surfaces ask for the same row at the same moment — the player, the
+     progress strip, the flags list, the dyn prefs, and every re-render triggered by notify(),
+     which fires two or three times while auth resolves. Each used to issue its OWN request,
+     because the "loaded" flag only flips when the FIRST answer lands, so every caller racing
+     inside that window missed the cache and queried again.
+
+     Measured on ONE signed-in topic page: 24 Supabase requests, 18 of them byte-identical
+     duplicates fired 1-3 ms apart (dyn_prefs 6x, progress 6x, sentence_flags 6x). Slowest single
+     request 4874 ms.
+
+     ⚠ THIS CHANGES NOTHING ABOUT ENTITLEMENT, and that is deliberate. It does not alter what is
+     fetched, when the first fetch starts, what any caller receives, or any cache/expiry/offline
+     rule. The second caller simply awaits the first request instead of starting an identical one.
+     Every existing guard (progressDirty, raceLocal's OFFLINE_FALLBACK_MS, the "only a CLEAN read
+     may overwrite" rule, the ownersim guard) runs exactly as before, once instead of N times.
+
+     ⚠ THE TIMEOUT IS LOAD-BEARING, NOT TIDINESS. Offline this WebView's fetch HANGS rather than
+     failing (the reason NET_TIMEOUT_MS and raceLocal exist at all). Without a cap, one hung
+     request would pin its slot forever and every later caller would join a promise that never
+     settles — which would silently disable the 'online' event's refreshSubscription(), i.e. the
+     user never regains a live verdict after reconnecting. Releasing the slot early is harmless:
+     the worst case is one extra request, which is exactly what happened before this existed. */
+  var IN_FLIGHT_MAX_MS = 10000;
+  var inFlight = {};
+  // `force` = "I specifically want a fresh read" (dynPrefs.load(true)); it starts a new request and
+  // publishes it as the in-flight one, so ordinary concurrent callers join the FRESHER read rather
+  // than adding yet another. Without this, force would be silently downgraded to a cache hit.
+  function once(key, make, force) {
+    if (inFlight[key] && !force) return inFlight[key];
+    var p = make();
+    inFlight[key] = p;
+    var t = setTimeout(function () { if (inFlight[key] === p) inFlight[key] = null; }, IN_FLIGHT_MAX_MS);
+    var clear = function () { clearTimeout(t); if (inFlight[key] === p) inFlight[key] = null; };
+    p.then(clear, clear);        // identity check above: a slot already reclaimed must not be clobbered
+    return p;
+  }
+  // A different user (or a sign-out) invalidates anything still in flight for the previous one.
+  function clearInFlight() { inFlight = {}; }
+
   // Goal steps the loading bars snap to. The goal auto-advances to the smallest
   // step that still contains the highest count, so a bar can never overflow.
   var GOAL_STEPS = [5, 10, 20, 50, 100];
@@ -257,6 +297,17 @@
       }
     } catch (_) {}
     notify(); // reflect the cached status immediately (cards/nav) before the live read returns
+    /* ⚠ STARTED HERE, IN PARALLEL — it used to be chained off the query below, so two reads of the
+       SAME subscriptions row ran back to back and the second waited a full round trip for the
+       first (measured 1004 ms apart). refreshLifetime() reads nothing this function produces: it
+       re-queries the row itself and only touches the thaiear_lifetime flag, so there was never a
+       data dependency to honour — only an accident of where the call sat.
+       ⚠ AND THEY ARE STILL TWO SEPARATE QUERIES, ON PURPOSE. Folding `lifetime` into the select
+       below would save one request and would undo the isolation the comment on refreshLifetime()
+       spells out: if the `lifetime` column is ever missing, a combined select fails as a WHOLE and
+       takes normal subscription detection down with it. One extra request is the price of that
+       guarantee, and it is worth paying — this pair is 2 of 24 requests, not the problem. */
+    refreshLifetime();
     client.from('subscriptions').select('status,cancel_at_period_end,current_period_end').maybeSingle()
       .then(function (res) {
         /* Only a CLEAN read may overwrite the cached seed. postgrest-js converts a failed fetch
@@ -278,7 +329,7 @@
         if (res && !res.error && currentSubscribed) stampOfflineLicence();
       })
       .catch(function () { /* offline / failed → KEEP the cached seed above; don't blank to not-subscribed */ })
-      .then(function () { notify(); refreshLifetime(); });
+      .then(function () { notify(); });   // refreshLifetime() now starts in parallel, above
   }
 
   // Maintain the OFFLINE lifetime flag (thaiear_lifetime) used by player.js/nav.js to let true
@@ -297,12 +348,14 @@
        second after every page load — which is why "Expired" and the 31/41/51-day buttons appeared
        to do nothing. Overrides the SERVER's answer only; the expiry decision still runs for real. */
     if (!client || !currentUser || !navigator.onLine) return; // offline → keep whatever's cached
-    client.from('subscriptions').select('lifetime,status').maybeSingle()
-      .then(function (res) {
-        if (!res || res.error) return;                        // column missing / query error → don't touch flag
-        var d = res.data;
-        var subbed = d && (d.status === 'active' || d.status === 'trialing');
-        try {
+    // Deduped: init and the onAuthStateChange right behind it both reach here.
+    once('lifetime', function () {
+      return client.from('subscriptions').select('lifetime,status').maybeSingle()
+        .then(function (res) {
+          if (!res || res.error) return;                      // column missing / query error → don't touch flag
+          var d = res.data;
+          var subbed = d && (d.status === 'active' || d.status === 'trialing');
+          try {
           /* ⚠ THE OWNER SIMULATOR OWNS THIS FLAG WHILE ARMED (ownersim.js, 2026-08-09).
              canUseOffline() short-circuits on thaiear_lifetime BEFORE any other check, so on a
              lifetime account — the owner's is one — re-writing it here would make every simulated
@@ -311,12 +364,13 @@
              success. This overrides the SERVER's lifetime answer only; the expiry decision itself
              still runs for real. Clearing (the else) stays unconditional — a simulation should
              never be able to GRANT access that the server did not. */
-          var simOn = !!(window.ThaiEarOwnerSim && window.ThaiEarOwnerSim.state());
-          if (d && d.lifetime && subbed && !simOn) localStorage.setItem('thaiear_lifetime', '1');
-          else localStorage.removeItem('thaiear_lifetime');   // not lifetime (or not active) → clear
-        } catch (_) {}
-      })
-      .catch(function () {});                                  // network/error → leave cached flag intact
+            var simOn = !!(window.ThaiEarOwnerSim && window.ThaiEarOwnerSim.state());
+            if (d && d.lifetime && subbed && !simOn) localStorage.setItem('thaiear_lifetime', '1');
+            else localStorage.removeItem('thaiear_lifetime'); // not lifetime (or not active) → clear
+          } catch (_) {}
+        })
+        .catch(function () {});                                // network/error → leave cached flag intact
+    });
   }
 
   /* ══ DESKTOP MP3 DOWNLOAD ENTITLEMENT (2026-08-07) ═══════════════════════════════════════════
@@ -350,10 +404,13 @@
   // Read the user's marketing-consent flag (profiles row), cache it, re-notify.
   function refreshProfile() {
     if (!client || !currentUser) { currentConsent = false; consentLoaded = false; return; }
-    client.from('profiles').select('marketing_opt_in').maybeSingle()
-      .then(function (res) { currentConsent = !!(res && res.data && res.data.marketing_opt_in); })
-      .catch(function () { currentConsent = false; })
-      .then(function () { consentLoaded = true; notify(); });
+    // Deduped: init and the onAuthStateChange that follows it both call this, ~6 ms apart.
+    once('profile', function () {
+      return client.from('profiles').select('marketing_opt_in').maybeSingle()
+        .then(function (res) { currentConsent = !!(res && res.data && res.data.marketing_opt_in); })
+        .catch(function () { currentConsent = false; })
+        .then(function () { consentLoaded = true; notify(); });
+    });
   }
 
   // ---- offline-first sync for progress + flags ---------------------------
@@ -430,7 +487,11 @@
     });
   }
 
-  function fetchProgress() {
+  // De-duplicated wrapper — see IN-FLIGHT DE-DUPLICATION above. Deliberately wrapped HERE rather
+  // than at loadProgress(), so mutateProgress() and every other internal caller dedupes too
+  // without each site having to remember to.
+  function fetchProgress() { return once('progress', fetchProgressUncached); }
+  function fetchProgressUncached() {
     if (!client || !currentUser) { currentProgress = { goal: 5, topics: {} }; progressLoaded = true; return Promise.resolve(currentProgress); }
     if (progressDirty()) {                       // unsynced local edits win — don't let the server clobber them
       var ld = loadPersistedProgress();
@@ -486,7 +547,9 @@
   // One row per flagged sentence; the sentence nugget is stored so the My-sentences
   // page is self-contained. Cached as a map keyed by "topicKey:num".
   function flagKey(tk, num) { return tk + ':' + num; }
-  function fetchFlags() {
+  // De-duplicated wrapper — see IN-FLIGHT DE-DUPLICATION above.
+  function fetchFlags() { return once('flags', fetchFlagsUncached); }
+  function fetchFlagsUncached() {
     if (!client || !currentUser) { currentFlags = {}; flagsLoaded = true; return Promise.resolve(currentFlags); }
     var localFlags = function () {                  // offline / slow → last-known local set
       currentFlags = loadPersistedFlags() || {};
@@ -1456,15 +1519,22 @@
     load: function (force) {
       if (dpCache && !force) return Promise.resolve(dpCache);
       if (!client || !currentUser) { dpCache = dpLocal() || {}; return Promise.resolve(dpCache); }
-      return client.from('dyn_prefs').select('scope,data')
-        .then(function (r) {
-          if (r.error) throw r.error;
-          var map = {};
-          (r.data || []).forEach(function (row) { if (row && row.scope) map[row.scope] = row.data || {}; });
-          dpCache = map; dpStore();
-          return dpCache;
-        })
-        .catch(function () { dpCache = dpLocal() || {}; return dpCache; });
+      /* Deduped — this was the worst offender, 6 identical queries per page (four of them within
+         5 ms). dpCache only fills when the FIRST answer lands, so every caller racing that window
+         queried again. `force` deliberately still starts a fresh request (its whole purpose is to
+         bypass the cache); it just publishes it as the new in-flight one, so concurrent ordinary
+         callers join the fresher read instead of adding yet another. */
+      return once('dynPrefs', function () {
+        return client.from('dyn_prefs').select('scope,data')
+          .then(function (r) {
+            if (r.error) throw r.error;
+            var map = {};
+            (r.data || []).forEach(function (row) { if (row && row.scope) map[row.scope] = row.data || {}; });
+            dpCache = map; dpStore();
+            return dpCache;
+          })
+          .catch(function () { dpCache = dpLocal() || {}; return dpCache; });
+      }, force);
     },
     get: function (scope) { return dpCache ? dpCache[scope] : null; },
     // Read-only localStorage view — safe before the client/auth resolve; never touches dpCache.
@@ -1548,6 +1618,13 @@
         if (session && session.access_token) { writeIdentity(session); }
         currentProgress = null; progressLoaded = false; // re-fetch for the new (or no) user
         currentFlags = null; flagsLoaded = false;
+        /* ⚠ AND ANYTHING STILL IN FLIGHT FOR THE PREVIOUS USER. Without this, a request issued a
+           moment before the account changed would still be the published in-flight promise, so the
+           next caller would join it and receive the OLD user's rows. Dropping the slots (rather
+           than cancelling — fetch has no cancel here) means the next caller starts a fresh request;
+           the orphaned promise's own cleanup is identity-checked, so it cannot reclaim a slot that
+           has since been reassigned. */
+        clearInFlight();
         notify();
         refreshSubscription();
         refreshProfile();
