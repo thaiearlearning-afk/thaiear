@@ -398,11 +398,23 @@
   // version-wipes, so the page still opens offline after an SW update. Self-heals whenever we're
   // online on a downloaded topic's page. (The SW's activate step preserves the 'thaiear-dl' cache.)
   var DL_PAGE_CACHE = 'thaiear-dl';
+  /* ⚠ PAGES ONLY — DO NOT PUT THE SHARED SCRIPTS BACK IN HERE (2026-08-12).
+     This used to also add /player.js, /topics.js, /nav.js, /auth.js and /footer.js. Because
+     `thaiear-dl` is never version-wiped AND the service worker's precache lookup used
+     `caches.match()` (which searches every cache in CREATION order), those copies SHADOWED the
+     version-keyed ones on any device that had ever downloaded a topic — frozen at whenever this
+     last ran, immune to every VERSION bump. It could not self-heal either: `c.add('/topics.js')`
+     fetches through the worker, which handed the stale copy straight back.
+     It showed up as retired "coming soon" topics reappearing on the index and grossly oversized
+     padlocks — a stale topics.js rendering against fresh CSS.
+     They were never needed here: all five are PRECACHE entries, so the version cache already holds
+     them and activate() repairs any gap. The page and audio-versions.json are NOT precached (there
+     are ~93 topic pages), which is exactly why those two belong in this durable cache. */
   function cachePage() {
     if (!window.caches || !navigator.onLine) return;
     try {
       caches.open(DL_PAGE_CACHE).then(function (c) {
-        [location.href, '/player.js', '/topics.js', '/nav.js', '/auth.js', '/footer.js', '/audio-versions.json'].forEach(function (u) {
+        [location.href, '/audio-versions.json'].forEach(function (u) {
           c.add(u).catch(function () {});
         });
       }).catch(function () {});

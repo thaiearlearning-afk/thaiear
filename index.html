@@ -1165,7 +1165,16 @@ if(pend||bf)d.className+=' te-warp';})();</script>
    add/remove/reorder topics in topics.js only. See the level + numbering notes there
    and the "TOPIC NUMBERING" note at the end of this file. */
 const { topics, liveTopics, levelBadge, matchesFilter, canAccess, accessFor, levelBounds, LEVEL_FULL,
-        isLive, liveTopicCount, searchUnits, hrefFor } = window.ThaiEarTopics;
+        isLive, liveTopicCount, searchUnits } = window.ThaiEarTopics;
+/* ⚠ NEVER destructure a NEWLY-ADDED topics.js export straight into a call site here.
+   index.html is a NAVIGATION (network-first, always fresh) while topics.js is PRECACHED
+   (cache-first, fresh only after the visitor's service worker reaches the new VERSION). So on
+   every returning visitor there is a window where a brand-new index.html runs against the
+   PREVIOUS topics.js — and a bare `hrefFor(...)` on an undefined binding throws inside
+   renderCard(), which takes the whole grid down. Keep a local fallback for anything added
+   recently; it costs one line and removes the skew hazard entirely. */
+const hrefFor = window.ThaiEarTopics.hrefFor ||
+  function (p) { return String(p || '').replace(/\.html$/i, ''); };
 
 /* ---- index display toggles -------------------------------------------------
    Current design: live topics are grouped under difficulty HEADINGS, and the
