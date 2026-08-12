@@ -27,6 +27,7 @@
   const SOCIALS = [
     { label: 'Instagram', href: 'https://www.instagram.com/thaiear.co' },
     { label: 'TikTok',    href: 'https://www.tiktok.com/@thaiear' },
+    { label: 'YouTube',   href: 'https://www.youtube.com/@ThaiEar' },
     { label: 'Socials',   href: 'socials.html' },
   ];
 
