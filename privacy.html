@@ -67,6 +67,10 @@
   h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.2; }
   .legal-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 2rem; }
   h2 { font-size: 18px; font-weight: 600; margin: 1.9rem 0 0.6rem; }
+  h3 { font-size: 15px; font-weight: 600; margin: 1.3rem 0 0.4rem; color: var(--text-primary); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; background: var(--accent-light); border-radius: 4px; padding: 0.1em 0.35em; }
+  .legal-btn { font: inherit; font-weight: 600; color: var(--text-primary); background: transparent; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.6rem 1rem; min-height: 44px; cursor: pointer; }
+  .legal-btn:hover { background: var(--accent-light); }
   p, li { color: var(--text-secondary); margin-bottom: 0.7rem; }
   ul { padding-left: 1.25rem; margin-bottom: 0.7rem; }
   li { margin-bottom: 0.35rem; }
@@ -86,7 +90,7 @@
 <div class="legal-wrap">
   <div class="legal-eyebrow">ThaiEar</div>
   <h1>Privacy Policy</h1>
-  <p class="legal-meta">Last updated: 17 June 2026</p>
+  <p class="legal-meta">Last updated: 12 August 2026</p>
 
   <p>This policy explains how <strong>ThaiEar</strong> ("we", "us") — a trading name of Toby Ralph, a sole trader with a business address at 4th Floor, Silverstream House, 45 Fitzroy Street, Fitzrovia, London W1T 6EB — collects and uses
     your personal data when you use <a href="https://thaiear.com">thaiear.com</a>. We are the data
@@ -103,6 +107,10 @@
     <li><strong>Marketing preference</strong> — whether you have opted in to update emails.</li>
     <li><strong>Technical data</strong> — standard server/security logs (e.g. IP address, browser
       type) handled by our hosting/CDN provider.</li>
+    <li><strong>Advertising measurement</strong> — if you arrive from one of our adverts and consent
+      to advertising cookies, we record the identifier of that advert click. If you then create an
+      account, we store it against your account so we can tell which advert produced it. See
+      section 6.</li>
   </ul>
 
   <h2>2. Why we use it, and our legal basis</h2>
@@ -110,6 +118,8 @@
     <li><strong>To provide the service</strong> (sign-in, access to content) — performance of a contract.</li>
     <li><strong>To take payment and manage your subscription</strong> — performance of a contract.</li>
     <li><strong>To send update/offer emails</strong> — only with your consent (you can withdraw it any time).</li>
+    <li><strong>To measure whether our advertising works</strong> — only with your consent, which you
+      can withdraw at any time from section 6.</li>
     <li><strong>To keep the service secure and meet legal obligations</strong> — legitimate interests / legal obligation.</li>
   </ul>
 
@@ -121,9 +131,12 @@
     <li><strong>Google</strong> — "Sign in with Google" authentication.</li>
     <li><strong>Cloudflare</strong> — website hosting, content delivery and security.</li>
     <li><strong>MailerLite</strong> — sending update emails (only if you opt in).</li>
+    <li><strong>Google Ads</strong> — measuring whether our adverts work (only if you consent to
+      advertising cookies; see section 6).</li>
   </ul>
-  <p>We do not sell your personal data. Some providers may process data outside the UK/EU; where they
-    do, appropriate safeguards (such as Standard Contractual Clauses) are in place.</p>
+  <p>We do not sell your personal data. Some providers may process data outside the UK/EU — including
+    Google and Stripe in the United States; where they do, appropriate safeguards (such as the UK
+    International Data Transfer Addendum and Standard Contractual Clauses) are in place.</p>
 
   <h2>4. How long we keep it</h2>
   <p>We keep account and subscription data for as long as you have an account, and as required for
@@ -137,8 +150,42 @@
     Commissioner's Office (ICO) at <a href="https://ico.org.uk">ico.org.uk</a>.</p>
 
   <h2>6. Cookies &amp; local storage</h2>
-  <p>We store a sign-in session in your browser so you stay logged in. This is strictly necessary for
-    the service to work. We do not use advertising or tracking cookies.</p>
+  <p>We use two kinds of storage on your device. You are asked about the second kind the first time
+    you visit, and nothing in that category is set unless you agree to it.</p>
+
+  <h3>Strictly necessary — always on</h3>
+  <p>These make the site work. They are exempt from the consent requirement and cannot be turned off.</p>
+  <ul>
+    <li><strong>Sign-in session</strong> (<code>sb-…-auth-token</code>) — keeps you logged in.</li>
+    <li><strong>Your settings and saved work</strong> — playlists, progress, playback preferences and
+      any topics you have downloaded for offline listening. These stay on your device.</li>
+    <li><strong>Your cookie choice</strong> (<code>te_consent</code>) — so we do not ask you again.
+      Kept for 6 months.</li>
+  </ul>
+
+  <h3>Advertising — only with your consent</h3>
+  <p>If you agree, we use these to measure whether an advert you clicked led to anything. They are
+    not used to build a profile of you, and refusing them changes nothing about what you can read,
+    use or listen to.</p>
+  <ul>
+    <li><strong>Google Ads measurement</strong> (<code>_gcl_au</code>, <code>_gcl_aw</code>) — set by
+      Google so an advert click can be matched to what happened afterwards. Kept for up to 90 days.</li>
+    <li><strong>Our own advert record</strong> (<code>te_attrib</code>) — the identifier of the advert
+      click that brought you here, held on your device for up to 30 days. If you create an account we
+      store it against that account so we know which advert produced it.</li>
+  </ul>
+  <p>We apply Google Consent Mode, so if you refuse, Google's tags are told not to store anything or
+    use your data for personalisation.</p>
+
+  <h3>Changing your mind</h3>
+  <p>You can change or withdraw your choice at any time, with no effect on anything you have already
+    done here.</p>
+  <p><button type="button" id="te-cookie-settings" class="legal-btn">Change your cookie choices</button></p>
+
+  <h3>What we do not do</h3>
+  <p>We do not use advertising cookies to build advertising profiles, we do not sell or share your
+    data with data brokers, and we do not use third-party analytics that track you across other
+    websites.</p>
 
   <h2>7. Changes</h2>
   <p>We may update this policy; the "last updated" date above reflects the latest version.</p>
@@ -150,6 +197,34 @@
   </div>
 </div>
 
+<script src="consent.js" defer></script>
+<script src="attrib.js" defer></script>
+<script src="gtag.js" defer></script>
 <script src="nav.js" defer></script>
+<script>
+  /* Wire §6's "Change your cookie choices" button to consent.js. Guarded because
+     consent.js is loaded site-wide but the app/PWA has no advertising tags at all,
+     so there is nothing to change there — hide the button rather than offer a
+     control that does nothing. */
+  /* Must wait for DOMContentLoaded: this script is inline so it runs at parse
+     time, whereas consent.js is deferred and has not executed yet. Deferred
+     scripts all run BEFORE DOMContentLoaded fires, so this is the earliest
+     point at which ThaiEarConsent is guaranteed to exist. */
+  (function () {
+    function wire() {
+      var b = document.getElementById('te-cookie-settings');
+      if (!b) return;
+      var C = window.ThaiEarConsent;
+      if (!C || (C.isApp && C.isApp())) {
+        var row = b.parentNode;
+        if (row) row.style.display = 'none';
+        return;
+      }
+      b.addEventListener('click', function () { C.show(); });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+    else wire();
+  })();
+</script>
 </body>
 </html>

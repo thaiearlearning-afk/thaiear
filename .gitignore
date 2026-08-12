@@ -102,3 +102,6 @@ topups2-clips/
 
 # Mockup: "Study offline with our app" box (app-offline-mock)
 app-offline-mock.html
+
+# Owner-only tracking/consent harness (localhost) — never deploy
+consent-preview.html

@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v298';   // v298: the 29 precached shell pages (Home, read, about…) join the instant nav path
+const VERSION = 'v299';   // v299: consent.js / attrib.js / gtag.js precached (advertising measurement, r166)
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -197,6 +197,13 @@ const PRECACHE = [
      and index.html now carry its <script> tag, so an un-precached copy would mean a failed request
      on every offline page open in the very contexts that never use it. Cheap to seed, so seed it. */
   '/app-cta.js',
+  /* Advertising measurement, r166. All three are on all 122 landable pages, so an un-precached
+     copy means three failed requests on every offline page open. They are also the wrong thing to
+     let a network fetch decide: consent.js carries the visitor's stored cookie choice and MUST be
+     available to run before any tag can, offline included.
+     NOTE gtag.js does not fetch googletagmanager unless consent was granted — and in the app and
+     installed PWA it never does at all — so seeding these costs three small files and no requests. */
+  '/consent.js', '/attrib.js', '/gtag.js',
   // Playlists + the owner entitlement simulator. PRECACHED because the offline behaviour is
   // exactly what they exist to test, and runtime caching couldn't guarantee it: bumping VERSION
   // creates a NEW cache and drops the old one, so anything only ever runtime-cached vanishes on
