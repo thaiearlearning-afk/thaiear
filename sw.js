@@ -11,10 +11,17 @@
    download feature owns offline audio. /api/ is never cached (auth,
    audio-signing, checkout must always be live).
 
-   Strategy, TWO paths (split 2026-08-11 — see the big note in the fetch handler):
+   Strategy, THREE paths (see the big notes in the fetch handler):
      • NAVIGATIONS and anything not precached: NETWORK-FIRST, capped by
        NET_TIMEOUT_MS. Online always gets fresh content, so the tandem-update
        model is preserved and the cache is the offline fallback.
+     • TOPIC-PAGE NAVIGATIONS (2026-08-12): STALE-WHILE-REVALIDATE out of the
+       version-keyed cache ONLY. They were network-first like everything else, so
+       the cached copy was never used online and every topic open paid a live,
+       never-edge-cached origin round trip whose latency swung from ~0.2 s to
+       ~2.4 s — which is why opening a topic felt "sometimes fast, sometimes
+       slow". Safe because a VERSION bump empties the topic pages out of the
+       cache, so this path can never serve pre-deploy content.
      • PRECACHED SUB-RESOURCES (player.js, auth.js, topics.js, nav.js, the CSS,
        the self-hosted fonts, the icons): CACHE-FIRST. Bumping VERSION is what
        invalidates them, so revalidating per request only cost a round-trip —
@@ -26,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v293';   // v293: Navigation Preload — SW boot no longer serialised before the request
+const VERSION = 'v294';   // v294: topic pages stale-while-revalidate (they were network-first, so the cache was never used online)
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -55,6 +62,19 @@ const NET_TIMEOUT_MS = 2000;
    background revalidate refreshes it, which is what the timeout path already did anyway. The state
    is in memory, so a terminated worker simply re-learns it — nothing to invalidate. */
 const NET_DOWN_MS = 10000;
+/* How long to wait before writing a revalidated TOPIC page back into the cache. We have already
+   handed the page the cached Response, and overwriting a cache entry whose body is still streaming
+   can abort that read in WebKit (see the probeOnly note in the fetch handler). 3 s is comfortably
+   past the point a 75 KB HTML body has been parsed, and the write happens inside waitUntil so the
+   worker stays alive for it. */
+const REVALIDATE_WRITE_DELAY_MS = 3000;
+/* A topic-page NAVIGATION — the only thing the stale-while-revalidate path in the fetch handler
+   applies to. Matches both the clean URL Cloudflare Pages serves (/topic-04a) and the .html form
+   (older bookmarks and inbound links still 308 through it). Split parts carry a single letter
+   suffix: topic-04a, topic-25d, topic-32b. */
+function isTopicNav(req, url) {
+  return req.mode === 'navigate' && /^\/topic-\d{1,3}[a-z]?(\.html)?$/i.test(url.pathname);
+}
 var netDownUntil = 0;
 function netLooksDown() { return Date.now() < netDownUntil; }
 function noteNetDown() { netDownUntil = Date.now() + NET_DOWN_MS; }
@@ -430,23 +450,77 @@ self.addEventListener('fetch', function (e) {
         return cleanRedirect(hit);
       });
     }
-    var network = fromNetwork();
-    return new Promise(function (resolve) {
-      var settled = false;
-      var timer = setTimeout(function () {
-        /* Did not answer in time — remember that, so the NEXT request skips the wait entirely.
-           Deliberately also on a TIMEOUT, not just a rejection: offline in this WebView a fetch
-           usually hangs rather than failing, so waiting for the rejection would never teach us
-           anything in the case that matters most. */
-        noteNetDown();
-        positiveCacheMatch(req, url).then(function (hit) {
-          if (hit && !settled) { settled = true; resolve(cleanRedirect(hit)); }
+
+    /* ⚠⚠ TOPIC PAGES: STALE-WHILE-REVALIDATE (2026-08-12) — why opening a topic was
+       "intermittently slow, sometimes fast".
+       Navigations were network-first with no exception, so the SW's own cached copy was NEVER used
+       while online. Measured on the live site with the page sitting in thaiear-v293 and the worker
+       already warm (workerStart 6 ms): TTFB 1569 ms, load 2950 ms. The cache was right there and
+       was skipped. Every topic open therefore paid a live origin round trip — and Cloudflare
+       returns `cf-cache-status: DYNAMIC` for HTML, so it is never edge-cached and its latency
+       swings (219 ms → 2409 ms measured on one machine in one minute). Above NET_TIMEOUT_MS the
+       worker gave up and served the cache INSTANTLY, so the same page alternated between instant
+       and ~2 s purely on network jitter. That oscillation was the reported symptom.
+
+       ⚠ THE SAFETY PROPERTY IS THAT WE LOOK IN `CACHE` ONLY — the version-keyed cache — and NOT
+       via caches.match(), which would also search `thaiear-dl`. Topic pages are deliberately not
+       precached, and activate() deletes every non-current cache, so a VERSION bump leaves CACHE
+       with NO topic pages in it: the first visit to each topic after a deploy is always a network
+       fetch. That makes it impossible for this path to serve pre-deploy content, which is what
+       keeps the tandem text/audio model intact. `thaiear-dl` survives deploys BY DESIGN, so it
+       must stay out of the instant path — it keeps its existing role as the offline fallback
+       reached through cacheFallback(). */
+    if (isTopicNav(req, url)) {
+      return caches.open(CACHE)
+        .then(function (c) { return c.match(req, { ignoreSearch: true }); })
+        .then(function (hit) {
+          if (!hit) return networkFirstWithTimeout();   // first visit this VERSION → normal path
+          /* ⚠ THE REVALIDATE WRITE IS DELAYED, AND THAT IS NOT COSMETIC. We have just handed the
+             page this cached Response; overwriting the same cache entry while its body is still
+             streaming can abort that read in WebKit — the exact bug the probeOnly flag above was
+             added for (it surfaced as a blob error page on navigation). fromNetwork(true) fetches
+             WITHOUT writing (and consumes e.preloadResponse, so no "unused preload response"
+             warning), then we write once the body has certainly been consumed. */
+          try {
+            e.waitUntil(fromNetwork(true).then(function (res) {
+              if (!res || !res.ok || res.type !== 'basic') return;
+              return cleanRedirect(res.clone()).then(function (clean) {
+                return new Promise(function (done) {
+                  setTimeout(function () {
+                    caches.open(CACHE)
+                      .then(function (c) { return c.put(req, clean); })
+                      .catch(function () {})
+                      .then(done, done);
+                  }, REVALIDATE_WRITE_DELAY_MS);
+                });
+              });
+            }).catch(function () {}));
+          } catch (_) {}
+          return cleanRedirect(hit);
         });
-      }, NET_TIMEOUT_MS);
-      network.then(
-        function (res) { if (!settled) { settled = true; clearTimeout(timer); resolve(res); } },
-        function () { if (!settled) { settled = true; clearTimeout(timer); resolve(cacheFallback(req, url)); } }
-      );
-    });
+    }
+
+    return networkFirstWithTimeout();
+
+    function networkFirstWithTimeout() {
+      var network = fromNetwork();
+      return new Promise(function (resolve) {
+        var settled = false;
+        var timer = setTimeout(function () {
+          /* Did not answer in time — remember that, so the NEXT request skips the wait entirely.
+             Deliberately also on a TIMEOUT, not just a rejection: offline in this WebView a fetch
+             usually hangs rather than failing, so waiting for the rejection would never teach us
+             anything in the case that matters most. */
+          noteNetDown();
+          positiveCacheMatch(req, url).then(function (hit) {
+            if (hit && !settled) { settled = true; resolve(cleanRedirect(hit)); }
+          });
+        }, NET_TIMEOUT_MS);
+        network.then(
+          function (res) { if (!settled) { settled = true; clearTimeout(timer); resolve(res); } },
+          function () { if (!settled) { settled = true; clearTimeout(timer); resolve(cacheFallback(req, url)); } }
+        );
+      });
+    }
   })());
 });
