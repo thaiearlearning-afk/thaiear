@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v294';   // v294: topic pages stale-while-revalidate (they were network-first, so the cache was never used online)
+const VERSION = 'v295';   // v295: precache lookup is version-cache-ONLY — thaiear-dl was shadowing topics.js/player.js forever
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -308,6 +308,29 @@ self.addEventListener('activate', function (e) {
             });
         });
       })
+      /* ⚠ REPAIR THE POISONED `thaiear-dl` (2026-08-12). See the long note in the fetch handler:
+         cachePage() used to copy the shared SCRIPTS into this never-version-wiped cache, where
+         they then shadowed every fresh copy forever. Fixing the lookup stops the bleeding for new
+         installs; this evicts the copies already sitting on people's devices, which is what
+         actually repairs the owner's broken index.
+         ⚠ ONLY evicts an entry once the CURRENT version cache is confirmed to hold that file, so
+         this can never take away an offline fallback — worst case it does nothing. Pages (the
+         reason this cache exists) and audio-versions.json are untouched: only the shared scripts,
+         which are all PRECACHE entries and therefore guaranteed present in CACHE. Deliberately not
+         returned into waitUntil's chain would be wrong here — it is cache-only work with no
+         network, so it is safe to await and we want it done before clients.claim(). */
+      .then(function () {
+        var POISONED = ['/topics.js', '/player.js', '/nav.js', '/auth.js', '/footer.js'];
+        return caches.open('thaiear-dl').then(function (dl) {
+          return caches.open(CACHE).then(function (c) {
+            return Promise.all(POISONED.map(function (u) {
+              return c.match(u).then(function (fresh) {
+                return fresh ? dl.delete(u) : null;   // never evict what CACHE cannot replace
+              }).catch(function () {});
+            }));
+          });
+        }).catch(function () {});
+      })
       /* NAVIGATION PRELOAD (2026-08-11) — the fix for "a topic I have NOT opened before takes a
          few seconds in the app/PWA, but is instant in the phone browser".
          With a controlling worker, a navigation cannot start until the worker is RUNNING, and in a
@@ -386,9 +409,26 @@ self.addEventListener('fetch', function (e) {
      THE DEPENDENCY THIS CREATES: if you change a precached file you MUST bump VERSION, or clients
      keep the old copy. That was already the standing rule (see the PRECACHE note above); this makes
      it load-bearing rather than merely tidy. */
+  /* ⚠⚠ LOOK IN `CACHE` ONLY — NEVER `caches.match()` (fixed 2026-08-12, and this was a REAL BUG
+     that shipped with v292, not a theoretical one).
+     `caches.match(req)` with no cacheName searches EVERY cache in CREATION ORDER, and
+     `thaiear-dl` is never version-wiped by design. player.js's cachePage() used to copy
+     `/topics.js`, `/player.js`, `/nav.js`, `/auth.js` and `/footer.js` into it, so on any device
+     that had ever downloaded a topic, `thaiear-dl` was created BEFORE the current version cache
+     and therefore WON every lookup. Those five files were frozen at whenever cachePage() last
+     ran, and no VERSION bump could ever dislodge them — the entire point of a version-keyed
+     precache, silently defeated for exactly the users who use the app most.
+     It could not even self-heal: cachePage()'s `c.add('/topics.js')` fetches THROUGH this handler,
+     which served the stale thaiear-dl copy straight back into thaiear-dl.
+     Symptom it produced (owner, 2026-08-12): a stale topics.js against fresh CSS on the index —
+     retired "coming soon" topics reappearing at the bottom of the grid and comically oversized
+     padlock SVGs. Anything that depends on a shared script matching the page it ships with can
+     surface this way, so treat "impossible" staleness on ONE device as this first.
+     `thaiear-dl`'s correct role is OFFLINE FALLBACK — it is still searched by cacheFallback() and
+     positiveCacheMatch() when the network actually fails. It must never shadow a live lookup. */
   if (req.mode !== 'navigate' && PRECACHE_PATHS.has(url.pathname)) {
     e.respondWith(
-      caches.match(req).then(function (hit) {
+      caches.open(CACHE).then(function (c) { return c.match(req); }).then(function (hit) {
         if (hit) return hit;
         // Not seeded yet (install still running, or a partial install): fetch and store it.
         return fetch(req).then(function (res) {
