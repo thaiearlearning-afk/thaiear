@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v296';   // v296: auth.js in-flight de-duplication (24 Supabase requests/page -> ~7)
+const VERSION = 'v297';   // v297: YouTube added to the footer + socials page (both precached)
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
