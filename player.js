@@ -382,6 +382,18 @@
   // so the stored entry is stable even though a premium file's signed source URL changes each mint.
   function webCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; }
 
+  /* A unit's `page` ("topic-NN.html") is the IDENTITY key — cache keys, dynKey, pageUnit() lookups
+     all use it, so it must not change. But an emitted HREF must be the CLEAN url: Cloudflare Pages
+     308-redirects /topic-NN.html → /topic-NN, the redirect is `cf-cache-status: DYNAMIC` (an
+     uncached origin round trip, 127–1315 ms measured), and it happens BEFORE the service worker
+     starts, so Navigation Preload cannot cover it. Mirrors hrefFor() in topics.js; kept local so
+     player.js never depends on topics.js having loaded first. */
+  var LOCAL_HOST = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
+  function pageLinkHref(p) {
+    var s = String(p || '').replace(/\.html$/i, '');
+    return (LOCAL_HOST && s) ? s + '.html' : s;   // localhost has no clean-URL resolution
+  }
+
   // Persist a downloaded topic's PAGE (+ shared scripts) in a cache the service worker never
   // version-wipes, so the page still opens offline after an SW update. Self-heals whenever we're
   // online on a downloaded topic's page. (The SW's activate step preserves the 'thaiear-dl' cache.)
@@ -4943,7 +4955,7 @@
          Pinning matters here: this link sits inside #player-root, where a premium PAGE remaps
          --accent to gold, so a free/member destination would otherwise inherit the wrong colour. */
       var npTier = (t.tier === 'premium') ? ' np-premium' : (t.tier === 'member' ? ' np-member' : '');
-      txt.innerHTML = '<a class="dyn-np-link' + npTier + '" href="' + escapeHtml(t.page) + '">Now playing: <strong>' + escapeHtml(t.name) + '</strong></a>' +
+      txt.innerHTML = '<a class="dyn-np-link' + npTier + '" href="' + escapeHtml(pageLinkHref(t.page)) + '">Now playing: <strong>' + escapeHtml(t.name) + '</strong></a>' +
         (std ? ' — standard audio' : '') +
         ' <a href="#" class="np-return" id="dyn-np-return" title="Bring the player back to this page">↩ Return</a>';
       var rb = $('dyn-np-return');
@@ -6589,7 +6601,7 @@
     var moved = bareKey(unit.page) !== TOPIC_KEY;
     if (box) box.classList.toggle('show', !!moved);
     if (txt) {
-      var href = escapeHtml(unit.page || '');
+      var href = escapeHtml(pageLinkHref(unit.page));
       var npCls = ' class="' + (unit.access === 'premium' ? 'np-premium' : 'np-member') + '"';
       txt.innerHTML = 'Now playing <a href="' + href + '"' + npCls + '><strong>' + escapeHtml(unit.name) + '</strong></a>' + (lvl ? ' · ' + escapeHtml(lvl) : '')
         + (moved ? ' <a href="#" class="np-return" id="np-return" title="Bring the player back to this topic">↩ Return</a>' : '');
@@ -6600,7 +6612,7 @@
     var mnp = $('te-mini-np');
     if (mnp) {
       if (moved) {
-        mnp.setAttribute('href', unit.page || '#');
+        mnp.setAttribute('href', pageLinkHref(unit.page) || '#');
         mnp.innerHTML = 'Now playing <strong>' + escapeHtml(unit.name) + '</strong>';
         mnp.classList.add('show');
       } else {

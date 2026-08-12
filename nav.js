@@ -321,8 +321,26 @@
   `;
 
   /* ---- render helpers --------------------------------------------------- */
+  /* ⚠ LINK TO CLEAN URLS, NEVER `foo.html` (2026-08-12).
+     Cloudflare Pages 308-redirects /foo.html → /foo, and that redirect is `cf-cache-status:
+     DYNAMIC` — a full, uncached origin round trip (127–1315 ms measured on live topic links,
+     median ~0.6 s by curl). It also happens BEFORE the service worker starts, so Navigation
+     Preload (sw v293) cannot cover it. Every menu entry keeps its `.html` `page` value as the
+     identity key; only the emitted href is stripped.
+     bareName() also fixes a pre-existing cosmetic bug: currentPage() returns the CLEAN name
+     ("about") because Pages serves clean URLs, so `it.page === here` ("about.html" === "about")
+     never matched and the "active" menu highlight was dead. */
+  function bareName(p) { return String(p || '').toLowerCase().replace(/\.html$/, ''); }
+  /* ⚠ LOCALHOST KEEPS THE .html — `python -m http.server` (the local review server, see the
+     SW-unregister rule below) has no clean-URL resolution, so /about would 404 during a review
+     session. Mirrors hrefFor() in topics.js; kept local so nav.js never depends on load order. */
+  const LOCAL_HOST = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
+  function pageHref(p) {
+    const s = String(p || '').replace(/\.html$/i, '');
+    return (LOCAL_HOST && s) ? s + '.html' : s;
+  }
   function currentPage() {
-    return (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    return bareName(location.pathname.split('/').pop() || 'index.html');
   }
 
   // True when running inside the Capacitor native app (vs the website in a browser).
@@ -333,13 +351,13 @@
 
   function linksHtml() {
     const here = currentPage();
-    const onHome = here === 'index.html';
+    const onHome = here === 'index';
     return LINKS
       // No "Home" link while you're on the home page (you only need it elsewhere).
-      .filter(l => !(onHome && l.href.toLowerCase() === 'index.html'))
+      .filter(l => !(onHome && bareName(l.href) === 'index'))
       .map(l => {
-        const classes = [l.cls || '', l.href.toLowerCase() === here ? 'active' : ''].filter(Boolean).join(' ');
-        return `<a href="${l.href}"${classes ? ` class="${classes}"` : ''}>${l.label}</a>`;
+        const classes = [l.cls || '', bareName(l.href) === here ? 'active' : ''].filter(Boolean).join(' ');
+        return `<a href="${bareName(l.href) === 'index' && !LOCAL_HOST ? '/' : pageHref(l.href)}"${classes ? ` class="${classes}"` : ''}>${l.label}</a>`;
       }).join('');
   }
 
@@ -378,8 +396,9 @@
     const here = currentPage();
     const native = isNativeApp();
     const items = MENU_ITEMS.filter(it => !(it.hideInApp && native)).map(it => {
-      const href = (it.public || loggedIn) ? it.page : ('join.html?feature=1&next=' + encodeURIComponent(it.page));
-      const classes = [it.cls || '', it.page.toLowerCase() === here ? 'active' : ''].filter(Boolean).join(' ');
+      const clean = pageHref(it.page);
+      const href = (it.public || loggedIn) ? clean : (pageHref('join.html') + '?feature=1&next=' + encodeURIComponent(clean));
+      const classes = [it.cls || '', bareName(it.page) === here ? 'active' : ''].filter(Boolean).join(' ');
       return `<a href="${href}"${classes ? ` class="${classes}"` : ''}>${it.label}</a>`;
     }).join('');
     return (
@@ -398,8 +417,8 @@
   function personMenuHtml() {
     const here = currentPage();
     const links = PERSON_ITEMS.map(it => {
-      const active = it.page.toLowerCase() === here ? ' class="active"' : '';
-      return `<a href="${it.page}"${active}>${it.label}</a>`;
+      const active = bareName(it.page) === here ? ' class="active"' : '';
+      return `<a href="${pageHref(it.page)}"${active}>${it.label}</a>`;
     }).join('');
     return (
       `<div class="nav-menu" id="nav-person-menu">` +
@@ -643,7 +662,10 @@
     function update() {
       let np; try { np = JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { np = null; }
       if (!np || !np.page || !np.name) { bar.classList.remove('show'); return; }
-      bar.setAttribute('href', np.page);
+      // Clean URL, never topic-NN.html — the 308 is an uncached origin round trip that runs before
+      // the SW starts (see hrefFor() in topics.js). Local strip: nav.js must not depend on
+      // topics.js's load order.
+      bar.setAttribute('href', pageHref(np.page));
       bar.querySelector('.te-np-text').innerHTML = 'Now playing: <strong>' + esc(np.name) + '</strong>';
       bar.classList.toggle('te-np-premium', np.access === 'premium');
       bar.classList.add('show');

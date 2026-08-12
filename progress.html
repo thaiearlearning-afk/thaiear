@@ -474,14 +474,17 @@ function render() {
     // is gold for premium even when the visitor can open it. The lock span is still locked-only.
     var btnCls = 'prog-goto' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '');
     var rowCls = 'prog-row' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '');
+    // Clean URL, never topic-NN.html — the 308 is an uncached origin round trip that runs before
+    // the service worker starts (see hrefFor() in topics.js).
+    var topicHref = (T && T.hrefFor) ? T.hrefFor(r.page) : String(r.page || '');
     var href, lock = '';
     if (canOpen) {
-      href = r.page;
+      href = topicHref;
     } else if (access === 'premium') {
-      href = native ? r.page : 'subscribe.html';
+      href = native ? topicHref : 'subscribe.html';
       lock = '<span class="lock">' + LOCK_SVG + '</span>';
     } else {
-      href = 'join.html?next=' + encodeURIComponent(r.page);
+      href = 'join.html?next=' + encodeURIComponent(topicHref);
       lock = '<span class="lock">' + LOCK_SVG + '</span>';
     }
 

@@ -336,6 +336,31 @@
   // Returns { pos, topic, unit, part } — `topic`/`part` kept for back-compat with
   // callers written against the old nested shape.
   function bare(f) { return String(f || '').toLowerCase().replace(/\.html$/, ''); }
+
+  /* ⚠ EVERY LINK TO A TOPIC PAGE MUST GO THROUGH hrefFor() (2026-08-12).
+     `page` stays "topic-NN.html" — it is the identity key (findByPage/pageUnit/bareP all normalise
+     through bare(), and index.html keys the `thaiear-dl` download cache off it). But the HREF must
+     be the CLEAN url, because Cloudflare Pages 308-redirects /topic-NN.html → /topic-NN and that
+     redirect is `cf-cache-status: DYNAMIC` — a full, uncached origin round trip.
+     Measured live: 127–1315 ms per topic open (median ~0.6 s by curl), roughly DOUBLING TTFB. And
+     `workerStart` lands AFTER `redirectEnd`, so it runs before the service worker even starts —
+     Navigation Preload (sw v293) cannot cover it. It was dead time in front of every optimisation
+     already made, and its variance is a large part of why opening a topic felt "sometimes fast,
+     sometimes slow".
+     The .html URLs keep working (Pages still 308s them), so old bookmarks and inbound links are
+     unaffected — this only stops US paying the hop on every internal click. */
+  /* ⚠ LOCALHOST KEEPS THE .html. `python -m http.server` (the local review server — see the
+     SW-unregister-on-localhost rule in nav.js) has no clean-URL resolution, so /topic-01 would 404
+     on every card click during a review session. Normalise to bare first, then re-add on a local
+     host, so this one function always returns "the href that works on THIS host" — which is why
+     the generated static links can be bare and callers can pass either form. */
+  const LOCAL_HOST = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/
+    .test(location.hostname);
+  function hrefFor(p) {
+    const s = String(p || '').replace(/\.html$/i, '');
+    return (LOCAL_HOST && s) ? s + '.html' : s;
+  }
+
   function findByPage(file) {
     file = bare(file);
     for (let i = 0; i < topics.length; i++) {
@@ -492,7 +517,8 @@
     levelBounds, levelText, levelBadge, matchesFilter, findByPage,
     canAccess, accessFor, authState, ENFORCE_SUBSCRIPTION,
     liveSequence, pageUnit, nextAccessible,
-    searchUnits, tokenize
+    searchUnits, tokenize,
+    hrefFor   // ⚠ every emitted topic link goes through this — see the note above hrefFor()
   };
 
   // ---- topic-page eyebrow: the difficulty (e.g. "BEGINNER"), derived from the list ----
@@ -549,14 +575,14 @@
     // Offline, a downloaded destination is reachable (its page is cached + audio is local).
     const downloadedOffline = !navigator.onLine && offlineHas(navAudioFor(target));
     if (access === 'free' || canAccess(access) || downloadedOffline) { // open / entitled / offline-download → unlocked
-      a.setAttribute('href', target);
+      a.setAttribute('href', hrefFor(target));
       a.removeAttribute('data-locked-href');
       return;
     }
     // Navigable-preview model: gated topics are still reachable by anyone — point prev/next at the
     // REAL page (never the paywall). The padlock icon still signals the tier; the on-page gating
     // (reveal/flag/play) enforces the actual restriction.
-    a.setAttribute('href', target);
+    a.setAttribute('href', hrefFor(target));
     a.removeAttribute('data-locked-href');
     // r98: no padlock icon on prev/next — any user can open any page; gating is object-level
     // (audio/reveal/flag on the page itself), so the buttons carry no tier signal (owner, 2026-08-01).
@@ -578,9 +604,11 @@
     const target = a.getAttribute('data-target');
     const access = navAccessFor(target);
     const entitled = access !== null && (access === 'free' || canAccess(access));
-    if (entitled && a.getAttribute('href') !== target) { // stale gate href → correct it
+    // Compare against the host-correct href, not the raw data-target, or this "correction" would
+    // fire on every click and re-introduce the .html → clean 308 it exists to avoid.
+    if (entitled && a.getAttribute('href') !== hrefFor(target)) { // stale gate href → correct it
       e.preventDefault();
-      window.location.href = target;
+      window.location.href = hrefFor(target);
     }
   });
 

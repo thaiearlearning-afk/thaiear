@@ -13,6 +13,18 @@
 (function () {
   'use strict';
 
+  /* ⚠ LINK TO THE CLEAN URL, NEVER `read-foo.html` (2026-08-12).
+     Cloudflare Pages 308-redirects /read-foo.html → /read-foo, and that redirect is
+     `cf-cache-status: DYNAMIC` — a full, uncached origin round trip (127–1315 ms measured on the
+     equivalent topic links, median ~0.6 s by curl). It also runs BEFORE the service worker starts,
+     so Navigation Preload (sw v293) cannot cover it. read-data.js keeps `page: "read-foo.html"` as
+     the section's identity key; only the emitted href is stripped. */
+  var LOCAL_HOST = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
+  function pageHref(p) {
+    var s = String(p || '').replace(/\.html$/i, '');
+    return (LOCAL_HOST && s) ? s + '.html' : s;   // localhost has no clean-URL resolution
+  }
+
   var D = window.ThaiEarRead;
   if (!D) {
     // read-data.js (which sets window.ThaiEarRead to the data object) hasn't loaded — e.g. a host
@@ -539,7 +551,7 @@
     var refSec = g.ref ? sectionByKey(g.ref) : null;
     if (refSec && refSec.key !== currentSecKey) {
       refA.textContent = 'Explained in Step ' + (D.sections.indexOf(refSec) + 1) + ' — ' + refSec.title;
-      refA.setAttribute('href', refSec.page);
+      refA.setAttribute('href', pageHref(refSec.page));
       refA.style.display = 'block';
     } else if (refSec) {
       refA.textContent = 'Explained in full further down this page.';
@@ -592,7 +604,7 @@
           '<span class="read-nav-label">' + (side === 'r' ? 'Next' : 'Previous') + '</span>' +
           '<span class="read-nav-name">—</span></span>';
       }
-      return '<a class="read-nav-btn ' + (side === 'r' ? 'read-nav-right' : '') + '" href="' + s.page + '">' +
+      return '<a class="read-nav-btn ' + (side === 'r' ? 'read-nav-right' : '') + '" href="' + pageHref(s.page) + '">' +
         '<span class="read-nav-label">' + (side === 'r' ? 'Next' : 'Previous') + '</span>' +
         '<span class="read-nav-name">' + esc(s.short) + '</span></a>';
     }
@@ -1528,7 +1540,7 @@
           '<td>' + (r ? r.bestCorrect + ' / ' + r.bestTotal : '—') + '</td>' +
           '<td>' + avg + '</td></tr>';
       }).join('');
-      return '<div class="read-panel results-panel"><h2><a href="' + s.page + '">' + esc(s.title) + '</a></h2>' +
+      return '<div class="read-panel results-panel"><h2><a href="' + pageHref(s.page) + '">' + esc(s.title) + '</a></h2>' +
         '<table class="results-table"><thead><tr><th>Test</th><th>Times done</th><th>Best</th><th>Average</th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table></div>';
     }).join('');
@@ -1583,7 +1595,7 @@
           : '<div class="path-progress">Not tested yet</div>';
         if (s.kind === 'tones') progress = '<div class="path-progress">Reading quiz section</div>';
         if (s.kind === 'results') progress = '<div class="path-progress">All your scores in one place</div>';
-        return '<a class="path-card" href="' + s.page + '">' +
+        return '<a class="path-card" href="' + pageHref(s.page) + '">' +
           '<span class="path-step">' + (s.kind === 'results' ? 'Overview' : 'Step ' + (i + 1)) + '</span>' +
           '<span class="path-name">' + esc(s.title) + '</span>' +
           '<span class="path-blurb">' + s.blurb + '</span>' + progress + '</a>';

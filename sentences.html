@@ -405,10 +405,13 @@ function render() {
   var intro = '<p class="intro">Sentences you’ve flagged, grouped by topic. Tap one to reveal the Thai, English and notes, ' +
     'or play its audio. Remove a sentence by clicking its flag.</p>';
 
+  var TT = window.ThaiEarTopics;
   var groups = rows.map(function (row) {
     var items = byTopic[row.key] || [];
     var headRow = '<div class="topic-group-head">' +
-        '<span class="topic-group-name"><a href="' + esc(row.page) + '">' + esc(row.name) + '</a></span>' +
+        // Clean URL, never topic-NN.html — the 308 is an uncached origin round trip that runs
+        // before the service worker starts (see hrefFor() in topics.js).
+        '<span class="topic-group-name"><a href="' + esc(TT && TT.hrefFor ? TT.hrefFor(row.page) : String(row.page || '')) + '">' + esc(row.name) + '</a></span>' +
         (items.length ? '<span class="topic-group-count">' + items.length + '</span>' : '') +
       '</div>';
     var bodyRows = items.length
