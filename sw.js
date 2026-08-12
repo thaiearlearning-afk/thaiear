@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v299';   // v299: consent.js / attrib.js / gtag.js precached (advertising measurement, r166)
+const VERSION = 'v300';   // v300: homepage SEO description — stale "1,500+ sentences" -> synced "2,000+"
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
