@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v297';   // v297: YouTube added to the footer + socials page (both precached)
+const VERSION = 'v298';   // v298: the 29 precached shell pages (Home, read, about…) join the instant nav path
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —
@@ -68,13 +68,36 @@ const NET_DOWN_MS = 10000;
    past the point a 75 KB HTML body has been parsed, and the write happens inside waitUntil so the
    worker stays alive for it. */
 const REVALIDATE_WRITE_DELAY_MS = 3000;
-/* A topic-page NAVIGATION — the only thing the stale-while-revalidate path in the fetch handler
-   applies to. Matches both the clean URL Cloudflare Pages serves (/topic-04a) and the .html form
-   (older bookmarks and inbound links still 308 through it). Split parts carry a single letter
-   suffix: topic-04a, topic-25d, topic-32b. */
+/* Which NAVIGATIONS take the stale-while-revalidate path in the fetch handler.
+   Two families, both answered instantly from the version-keyed cache:
+
+   1. TOPIC PAGES. Matches the clean URL Cloudflare Pages serves (/topic-04a) and the .html form
+      (older bookmarks and inbound links still 308 through it). Split parts carry a single letter
+      suffix: topic-04a, topic-25d, topic-32b.
+
+   2. PRECACHED SHELL PAGES (added 2026-08-12) — the homepage, the 13 read pages, about, guide,
+      account, progress, sentences and the rest. 29 navigable pages were sitting in the version
+      cache, seeded at install, and STILL paying a full network round trip on every open. Home is
+      the most-opened page on the site and the app's Home -> topic -> Home loop paid it twice.
+      ⚠ This family is SAFER than topic pages, not riskier: a precache entry is fetched from the
+      network during install, so the cached copy IS the deployed copy for this VERSION, and a
+      VERSION bump re-seeds the lot. Topic pages are only runtime-cached, and they were already
+      cleared for this treatment.
+      Auth-gated shells (account/progress/sentences) are fine — only their SHELL is precached and
+      per-user data is fetched by JS on load, which is exactly the existing design.
+      Query strings are ignored on lookup (?next=, ?feature=1, ?sub=success): they are read by the
+      page's own JS, never by the server, so one cached shell serves them all. */
 function isTopicNav(req, url) {
   return req.mode === 'navigate' && /^\/topic-\d{1,3}[a-z]?(\.html)?$/i.test(url.pathname);
 }
+function isPrecachedNav(req, url) {
+  if (req.mode !== 'navigate') return false;
+  var p = url.pathname;
+  // Try the path as-is, then the .html <-> clean variant, since Pages serves /about for /about.html.
+  return PRECACHE_PATHS.has(p) ||
+         PRECACHE_PATHS.has(p.slice(-5) === '.html' ? p.slice(0, -5) : p + '.html');
+}
+function isInstantNav(req, url) { return isTopicNav(req, url) || isPrecachedNav(req, url); }
 var netDownUntil = 0;
 function netLooksDown() { return Date.now() < netDownUntil; }
 function noteNetDown() { netDownUntil = Date.now() + NET_DOWN_MS; }
@@ -491,8 +514,8 @@ self.addEventListener('fetch', function (e) {
       });
     }
 
-    /* ⚠⚠ TOPIC PAGES: STALE-WHILE-REVALIDATE (2026-08-12) — why opening a topic was
-       "intermittently slow, sometimes fast".
+    /* ⚠⚠ STALE-WHILE-REVALIDATE FOR TOPIC PAGES + THE PRECACHED SHELL (2026-08-12) — why opening
+       a topic was "intermittently slow, sometimes fast", and why Home was never instant either.
        Navigations were network-first with no exception, so the SW's own cached copy was NEVER used
        while online. Measured on the live site with the page sitting in thaiear-v293 and the worker
        already warm (workerStart 6 ms): TTFB 1569 ms, load 2950 ms. The cache was right there and
@@ -509,10 +532,26 @@ self.addEventListener('fetch', function (e) {
        fetch. That makes it impossible for this path to serve pre-deploy content, which is what
        keeps the tandem text/audio model intact. `thaiear-dl` survives deploys BY DESIGN, so it
        must stay out of the instant path — it keeps its existing role as the offline fallback
-       reached through cacheFallback(). */
-    if (isTopicNav(req, url)) {
+       reached through cacheFallback().
+
+       The PRECACHED SHELL pages (Home, the 13 read pages, about/guide/account/…) join this path
+       for the same reason and with a stronger guarantee — see isInstantNav() above. 29 navigable
+       pages were sitting in this very cache and still paying a network round trip on every open. */
+    if (isInstantNav(req, url)) {
       return caches.open(CACHE)
-        .then(function (c) { return c.match(req, { ignoreSearch: true }); })
+        .then(function (c) {
+          /* ⚠ TRY THE .html <-> CLEAN VARIANT TOO, or this path silently does nothing for the
+             pages it was added for. Cloudflare Pages serves /about, but PRECACHE (and therefore
+             the cache KEY) is '/about.html' — so matching the request URL alone missed on every
+             real navigation, fell through to the network, and looked exactly like success.
+             Same reasoning as positiveCacheMatch(); this one is scoped to CACHE on purpose. */
+          return c.match(req, { ignoreSearch: true }).then(function (hit) {
+            if (hit) return hit;
+            var p = url.pathname;
+            var alt = p.slice(-5) === '.html' ? p.slice(0, -5) : p + '.html';
+            return c.match(alt, { ignoreSearch: true });
+          });
+        })
         .then(function (hit) {
           if (!hit) return networkFirstWithTimeout();   // first visit this VERSION → normal path
           /* ⚠ THE REVALIDATE WRITE IS DELAYED, AND THAT IS NOT COSMETIC. We have just handed the
