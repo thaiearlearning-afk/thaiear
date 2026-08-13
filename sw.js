@@ -33,7 +33,11 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v300';   // v300: homepage SEO description — stale "1,500+ sentences" -> synced "2,000+"
+const VERSION = 'v301';   // v301: read.js audio element attached to the DOM so the `activation`
+                          // conversion fires on the reading course. It was detached, so attrib.js's
+                          // capturing `play` listener never saw it and the whole read arm recorded
+                          // ZERO activations. read.js is PRECACHED and served cache-first, so this
+                          // bump is what actually delivers the fix — without it nobody gets the new copy.
 const CACHE = 'thaiear-' + VERSION;
 /* ⚠ VERSION-INDEPENDENT, NEVER SWEPT ON ACTIVATE (2026-08-09).
    The Supabase ESM bundle used to live in the version-keyed CACHE, so EVERY deploy destroyed it —

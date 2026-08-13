@@ -52,6 +52,25 @@
 
   /* ── audio ─────────────────────────────────────────────── */
   var player = new Audio();
+
+  /* ⚠ THIS ELEMENT MUST STAY IN THE DOM. Do not "tidy" the append away.
+     attrib.js detects the `activation` conversion with a CAPTURING listener on
+     `document` for `play`. Media events do not bubble, but they do capture —
+     and capture only reaches an element that is actually IN the document, because
+     a detached node has no ancestors and so `document` is not in its event path.
+     While this was detached, every reading clip played silently as far as Google
+     Ads and GA4 were concerned: the entire read arm recorded ZERO activations.
+     That is not merely a reporting gap — it would have made any paid traffic to
+     /read look worthless next to the topic pages, and taught Smart Bidding to
+     starve it. player.js has never had the bug because it ships a real
+     <audio id="sent-audio-el"> in its markup (player.js ~:2325).
+     `display:none` keeps it inert; a control-less <audio> renders nothing anyway. */
+  player.style.display = 'none';
+  if (document.body) document.body.appendChild(player);
+  else document.addEventListener('DOMContentLoaded', function () {
+    document.body.appendChild(player);
+  });
+
   var playingEl = null;
   function stopHighlight() {
     if (playingEl) { playingEl.classList.remove('playing'); playingEl = null; }
