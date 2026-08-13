@@ -193,7 +193,20 @@
        affordance, which clips to fetch). Playback locking in playlists is player.js's
        sentLocked(), which keeps using the access predicate. Since the 2026-08 tier retirement the
        two differ: a Free unit streams for anyone, but downloading it needs an account. */
-    function plLocked(it) { return ThaiEarDL.dlLocked(it, DL_OK); }
+    function plLocked(it) { return ThaiEarDL.dlLocked({ tier: plTier(it), prefix: it && it.prefix }, DL_OK); }
+    /* ⚠ THE LIVE TIER, NEVER THE SAVED ONE (2026-08-13). `it.tier` is a snapshot written when the
+       sentence was added to the playlist, so it cannot see a tier change — and the tier decides
+       WHICH BUCKET the clip is fetched from. The 2026-08-10 demotion of the 9 former-member
+       first-parts moved their MP3s to the PUBLIC bucket, leaving saved rows still saying 'member';
+       dlFileUrl() then asked /api/audio to sign a private-bucket URL for a file that had moved, so
+       every download of a playlist containing one 404'd on that clip and no retry could ever help
+       (owner: ShoppingAndMoney_BEG_S323). topics.js ships with the deploy and is therefore the only
+       thing that is current. Falls back to the snapshot for a prefix topics.js doesn't know. */
+    function plTier(it) {
+      var live = (window.ThaiEarTopics && window.ThaiEarTopics.tierForPrefix)
+        ? window.ThaiEarTopics.tierForPrefix(it && it.prefix) : null;
+      return live || (it && it.tier) || 'free';
+    }
     // The items this visitor may actually download and play. Locked ones are simply not our business:
     // they are already shown sunk under "Premium content" and padlocked in the ?pl= view.
     function plOpenItems(p) {
@@ -596,7 +609,8 @@
       plOpenItems(p).forEach(function (it) {
         var pfx = it.prefix; if (!pfx) return;
         var n = String(it.num).padStart(2, '0');
-        by[pfx] = by[pfx] || { tier: it.tier || 'free', files: [] };
+        // plTier(), not it.tier — the saved tier is a snapshot and routes to the wrong bucket.
+        by[pfx] = by[pfx] || { tier: plTier(it), files: [] };
         by[pfx].files.push(pfx + '_S' + n + '_TH.mp3');
         by[pfx].files.push(pfx + '_S' + n + '_EN.mp3');
       });

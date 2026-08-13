@@ -390,6 +390,26 @@
   function accessFor(unit, _part) {
     return (unit && unit.access) || 'free';
   }
+  /* ⚠ THE LIVE TIER FOR AN AUDIO PREFIX — the ONE answer to "which bucket is this clip in".
+     A playlist item stores its own `tier` alongside the sentence text (playlist_items.tier), and
+     that snapshot is taken when the sentence is SAVED. A tier change is therefore invisible to it
+     forever — but the tier is not decoration, it is a ROUTING decision: 'member'/'premium' fetches
+     a signed URL against the PRIVATE bucket, 'free' hits the public CDN. When the 9 former-member
+     first-parts were demoted to free on 2026-08-10 their MP3s MOVED to the public bucket, so every
+     saved playlist row still claiming 'member' asked the gate to sign a URL for an object that is
+     no longer there: a hard 404 on every download attempt and every session build, unfixable by
+     retrying (owner hit it on ShoppingAndMoney_BEG_S323, 2026-08-13). The topic page never saw it
+     because it reads its own page-level `tier`, which ships with the deploy.
+     So: routing reads THIS, never the snapshot. Returns null for a prefix this list doesn't know
+     (a retired or renamed unit) so the caller can fall back to the stored value rather than
+     silently downgrading an unknown clip to free. */
+  function tierForPrefix(prefix) {
+    if (!prefix) return null;
+    for (let i = 0; i < topics.length; i++) {
+      if (topics[i].audio === prefix) return accessFor(topics[i]);
+    }
+    return null;
+  }
 
   // Can the current visitor open this unit? (drives card links + prev/next unlock)
   function canAccess(access) {
@@ -519,7 +539,7 @@
     isLive, liveTopicCount,
     LEVEL_ORDER, LEVEL_CLASS, LEVEL_FULL, LEVEL_SHORT,
     levelBounds, levelText, levelBadge, matchesFilter, findByPage,
-    canAccess, accessFor, authState, ENFORCE_SUBSCRIPTION,
+    canAccess, accessFor, tierForPrefix, authState, ENFORCE_SUBSCRIPTION,
     liveSequence, pageUnit, nextAccessible,
     searchUnits, tokenize,
     hrefFor   // ⚠ every emitted topic link goes through this — see the note above hrefFor()

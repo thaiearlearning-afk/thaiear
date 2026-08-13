@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v302';   // v302: "Tone twisters" -> "Tongue twisters" (DISPLAY ONLY — audio handle
+const VERSION = 'v303';   // v303: playlist clips route off the LIVE tier (topics.js tierForPrefix),
+                          // not the tier snapshotted into playlist_items when the sentence was
+                          // saved. The 2026-08-10 free/premium reorganisation moved 9 first-parts'
+                          // MP3s to the public bucket, so saved rows still saying 'member' asked
+                          // /api/audio to sign a PRIVATE-bucket URL for a file that had moved —
+                          // a hard 404 that aborted the whole playlist download, retry-proof.
+                          // topics.js, player.js and pl-list.js are all precached (cache-first).
+                          // v302: "Tone twisters" -> "Tongue twisters" (DISPLAY ONLY — audio handle
                           // ToneTwister_LI1 and page topic-39.html unchanged) + Facebook link on
                           // socials.html. index.html, topics.js and socials.html are all precached.
                           // v301: read.js audio element attached to the DOM so the `activation`

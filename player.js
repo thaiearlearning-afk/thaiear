@@ -2419,7 +2419,24 @@
     for (var i = 0; i < sentences.length; i++) if (sentences[i].num === num) return sentences[i];
     return null;
   }
-  function sentTierOf(s) { return (s && s.tier != null) ? s.tier : TIER; }
+  /* ⚠ THE LIVE TIER FOR AN AUDIO PREFIX, NOT THE SNAPSHOT (2026-08-13). A playlist sentence carries
+     the tier that was current when it was SAVED (playlist_items.tier), and a tier change is
+     invisible to it forever. That matters because the tier is a ROUTING decision, not a label:
+     member/premium mints a signed URL against the PRIVATE bucket, free hits the public CDN. The
+     2026-08-10 demotion of the 9 former-member first-parts MOVED their MP3s to the public bucket,
+     so a saved row still saying 'member' asked the gate to sign a URL for an object that was no
+     longer there — a hard 404 on every clip fetch and session build, which no retry could clear
+     (owner: ShoppingAndMoney_BEG_S323 in two playlists, both stuck). topics.js ships with the
+     deploy, so it is the only current source. Null for an unknown prefix → caller keeps the
+     snapshot rather than silently declaring an unrecognised clip free. */
+  function liveTierFor(prefix) {
+    var T = window.ThaiEarTopics;
+    return (T && T.tierForPrefix) ? T.tierForPrefix(prefix) : null;
+  }
+  function sentTierOf(s) {
+    if (!s || s.tier == null) return TIER;
+    return liveTierFor(s.prefix) || s.tier;
+  }
   /* Extra card classes a playlist row needs. On a topic page the whole page is one tier, so the
      gold skin is applied once to <body> (premium-topic); a playlist MIXES tiers, so the premium
      gold has to be per CARD — free/member rows stay brand purple, premium rows go gold, locked
@@ -2816,7 +2833,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r167';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r168';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3336,8 +3353,11 @@
   // there); topic pages keep the page-level PREFIX/GATED exactly as before.
   function dynClipRef(s, side) {
     var pfx = (s.prefix ? s.prefix : PREFIX);
-    var tier = (s.tier != null) ? s.tier : TIER;
-    var gated = (s.tier != null) ? (s.tier === 'member' || s.tier === 'premium') : GATED;
+    /* ⚠ A PLAYLIST SENTENCE'S TIER IS RESOLVED LIVE (2026-08-13) — see liveTierFor(). The saved
+       snapshot routes to the wrong BUCKET after a tier change and 404s on every clip. */
+    var sTier = (s.tier != null) ? (liveTierFor(s.prefix) || s.tier) : null;
+    var tier = (sTier != null) ? sTier : TIER;
+    var gated = (sTier != null) ? (sTier === 'member' || sTier === 'premium') : GATED;
     var n = (s.clipNum != null) ? s.clipNum : s.num;
     return { file: pfx + '_S' + String(n).padStart(2, '0') + '_' + side + '.mp3',
       gated: gated, prefix: pfx, tier: tier };
