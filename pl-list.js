@@ -428,10 +428,27 @@
       if (own.all) return dlAvStale(p) ? 'update' : 'downloaded';
       if (own.some) return 'update';                    // genuinely downloaded, then extended
       if (dlHasAll(p)) return 'available';              // owns none of it; the bytes are borrowed
-      /* D0 (§D.1, ThaiEarDL.looksLikeTopicClaim) — a legacy/topic claim that doesn't cover our
-         per-clip files reads as UPDATE, not NONE. Same predicate dyn-index's render() uses. */
-      var by = dlGroup(p), m = ThaiEarDL.getManifest(), pfx;
-      for (pfx in by) if (ThaiEarDL.looksLikeTopicClaim(pfx, m[pfx])) return 'update';
+      /* ⚠ NO D0 / looksLikeTopicClaim FALLBACK HERE — REMOVED 2026-08-13, DO NOT REINSTATE.
+         It used to read: "a legacy/topic claim that doesn't cover our per-clip files reads as
+         UPDATE, not NONE. Same predicate dyn-index's render() uses." The predicate is right for a
+         TOPIC card and wrong for a PLAYLIST row, because looksLikeTopicClaim() answers true on an
+         explicit 'topic' ref — which means "the user has THAT TOPIC downloaded", and says exactly
+         nothing about whether THIS PLAYLIST was ever downloaded. A playlist's clips belong to the
+         topics its sentences came from, so any playlist sharing a prefix with a downloaded topic
+         inherited that topic's claim as its own verdict.
+         Symptom (owner, 2026-08-13, iPhone): download a playlist, remove it, and the row goes on
+         saying "update available" for ever, because dlClearOne() drops our 'pl-<id>' ref but keeps
+         the entry alive on its surviving 'topic' ref. The `?pl=` player on the very same playlist
+         correctly offered "Download for offline" — the two surfaces disagreeing again.
+         THE RULE, from player.js's PLMODE branch (r79/r81/r97): a playlist's verdict is decided
+         ENTIRELY BY OWNERSHIP — own.all / own.some, and nothing else. The player has no D0 branch
+         for PLMODE at all, which is precisely why it was right. Both surfaces now answer the same
+         question from the same evidence, by construction rather than by two predicates happening
+         to agree — §B8's lesson 3, which the r79 comment records as having bitten three times
+         before this one.
+         Nothing is lost by dropping it: an interrupted playlist download records each clip as it
+         lands (dlNoteClip), so any real progress shows up as own.some → 'update'. Reaching here
+         means we own not one clip, and 'none' — a plain download circle — is the honest answer. */
       return 'none';
     }
     function dlStatus(msg, err) {

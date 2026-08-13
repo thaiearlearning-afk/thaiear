@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v303';   // v303: playlist clips route off the LIVE tier (topics.js tierForPrefix),
+const VERSION = 'v304';   // v304: a REMOVED playlist row no longer says "update available" for
+                          // ever. dlState()'s D0 looksLikeTopicClaim() fallback is right for a
+                          // topic card and wrong for a playlist row — it answers true on a 'topic'
+                          // ref, i.e. "that TOPIC is downloaded", so any playlist sharing a prefix
+                          // with a downloaded topic inherited its verdict. A playlist's state is
+                          // ownership-only now, matching player.js's PLMODE branch. pl-list.js is
+                          // precached (cache-first).
+                          // v303: playlist clips route off the LIVE tier (topics.js tierForPrefix),
                           // not the tier snapshotted into playlist_items when the sentence was
                           // saved. The 2026-08-10 free/premium reorganisation moved 9 first-parts'
                           // MP3s to the public bucket, so saved rows still saying 'member' asked
