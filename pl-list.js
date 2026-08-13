@@ -415,11 +415,26 @@
          none       — clips missing and it was never downloaded. */
     function dlState(p) {
       if (!p.items.length) return 'none';
-      var rec = !!dlPlMap()[p.id];
       /* NOTHING THIS VISITOR MAY PLAY. dlHasAll() over an EMPTY group is vacuously TRUE, so
          without this an all-premium playlist would read "downloaded" to someone who cannot hear a
-         single sentence of it. Note dlHasAll() is deliberately NOT called on this branch. */
-      if (!plOpenItems(p).length) return rec ? 'downloaded' : 'none';
+         single sentence of it. Note dlHasAll() is deliberately NOT called on this branch.
+         ⚠ ASK WHAT WE HOLD, NOT WHAT A RECORD CLAIMS (2026-08-13). This used to read
+         `!!dlPlMap()[p.id]` — "is there a download record?" — while player.js's twin of this branch
+         asks dynOwnedPrefixes(), i.e. "do we actually hold any files?". The two drift apart in one
+         direction only: the record is a few bytes of localStorage and the clips are what a browser
+         evicts under storage pressure (an iOS PWA will clear Cache Storage and leave localStorage
+         standing). Record without files then rendered a green TICK over a playlist with nothing on
+         the device, while the player, on the same playlist, hid its offline bar entirely — a
+         claim trusted over the bytes, which is exactly the stale-record defect r79 fixed on the
+         ownership path and r97 left standing here.
+         dlRefPrefixes() is r75's own helper and is documented as "lock-independent ground truth" —
+         it reads the manifest, so it answers the same question in the same units as the player,
+         and it stays correct precisely BECAUSE it does not consult dlGroup() (which drops locked
+         items and is what makes the normal ownership path unusable on this branch).
+         Reachable only when every sentence is locked AND the files are gone but the record is not,
+         so it is rare — but it is the same disagreement, and the two surfaces now answer it from
+         the same evidence by construction rather than by happening to agree. */
+      if (!plOpenItems(p).length) return dlRefPrefixes('pl-' + p.id).length ? 'downloaded' : 'none';
       var own = dlOwnedNeeded(p);                       // {all, some} — our ref + files, per prefix
       /* r137 — SUPERSEDED COUNTS AS 'update', exactly as it does on a topic card. Placed on the
          own.all branch only: a playlist that doesn't own everything already reads 'update', and one

@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v304';   // v304: a REMOVED playlist row no longer says "update available" for
+const VERSION = 'v305';   // v305: dlState()'s ALL-LOCKED branch asks the manifest what it holds
+                          // (dlRefPrefixes, r75's "lock-independent ground truth") instead of
+                          // trusting the thaiear_offline_pl RECORD, matching player.js's
+                          // dynOwnedPrefixes(). A record outlives evicted clips — an iOS PWA
+                          // clears Cache Storage and leaves localStorage — so record-without-files
+                          // rendered a tick over a playlist with nothing on the device.
+                          // v304: a REMOVED playlist row no longer says "update available" for
                           // ever. dlState()'s D0 looksLikeTopicClaim() fallback is right for a
                           // topic card and wrong for a playlist row — it answers true on a 'topic'
                           // ref, i.e. "that TOPIC is downloaded", so any playlist sharing a prefix
