@@ -418,22 +418,29 @@
       /* NOTHING THIS VISITOR MAY PLAY. dlHasAll() over an EMPTY group is vacuously TRUE, so
          without this an all-premium playlist would read "downloaded" to someone who cannot hear a
          single sentence of it. Note dlHasAll() is deliberately NOT called on this branch.
-         ⚠ ASK WHAT WE HOLD, NOT WHAT A RECORD CLAIMS (2026-08-13). This used to read
-         `!!dlPlMap()[p.id]` — "is there a download record?" — while player.js's twin of this branch
-         asks dynOwnedPrefixes(), i.e. "do we actually hold any files?". The two drift apart in one
-         direction only: the record is a few bytes of localStorage and the clips are what a browser
-         evicts under storage pressure (an iOS PWA will clear Cache Storage and leave localStorage
-         standing). Record without files then rendered a green TICK over a playlist with nothing on
-         the device, while the player, on the same playlist, hid its offline bar entirely — a
-         claim trusted over the bytes, which is exactly the stale-record defect r79 fixed on the
-         ownership path and r97 left standing here.
+         ⚠ ASK THE MANIFEST, NOT THE RECORD (2026-08-13). This used to read `!!dlPlMap()[p.id]` —
+         "is there a download record?" — while player.js's twin of this branch asks
+         dynOwnedPrefixes(). Both of those live in localStorage, so this is NOT a
+         bytes-versus-bookkeeping distinction (an earlier version of this comment claimed Cache
+         Storage eviction could split them; it cannot — evicting the mp3s leaves both keys intact
+         and the two spellings would behave identically). The real difference is what each one
+         TRACKS. `thaiear_offline_pl[id]` is a coarse per-playlist flag written once at
+         download-finalize; the manifest is per-prefix REF bookkeeping that every clear, prune and
+         reconcile path maintains. So the record is the one that can be left behind — a swallowed
+         setManifest() (it catches QuotaExceededError and does nothing), or any interrupted write
+         that lands one key and not the other — and it then rendered a green TICK over a playlist
+         the manifest no longer claimed, while the player, on the same playlist, hid its offline
+         bar. A claim outvoting the bookkeeping: the stale-record defect r79 fixed on the ownership
+         path and r97 left standing here.
          dlRefPrefixes() is r75's own helper and is documented as "lock-independent ground truth" —
-         it reads the manifest, so it answers the same question in the same units as the player,
-         and it stays correct precisely BECAUSE it does not consult dlGroup() (which drops locked
-         items and is what makes the normal ownership path unusable on this branch).
-         Reachable only when every sentence is locked AND the files are gone but the record is not,
-         so it is rare — but it is the same disagreement, and the two surfaces now answer it from
-         the same evidence by construction rather than by happening to agree. */
+         same store and same units as dynOwnedPrefixes(), and it stays correct precisely BECAUSE it
+         does not consult dlGroup() (which drops locked items and is what makes the normal
+         ownership path unusable on this branch).
+         ⚠ NO ORDINARY UI FLOW PRODUCES THE DIVERGENCE — dlClearOne(), dlReconcileRefs() and
+         removeAllDownloads() all write both keys — so this is a DEFENSIVE ALIGNMENT, not a fix for
+         something a user stumbles into. Do not go looking for the repro; test_pl_dlstate.js seeds
+         the state directly. The point is that both surfaces now answer from the same evidence by
+         construction rather than by happening to agree. */
       if (!plOpenItems(p).length) return dlRefPrefixes('pl-' + p.id).length ? 'downloaded' : 'none';
       var own = dlOwnedNeeded(p);                       // {all, some} — our ref + files, per prefix
       /* r137 — SUPERSEDED COUNTS AS 'update', exactly as it does on a topic card. Placed on the
