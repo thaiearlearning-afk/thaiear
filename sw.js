@@ -33,7 +33,10 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v301';   // v301: read.js audio element attached to the DOM so the `activation`
+const VERSION = 'v302';   // v302: "Tone twisters" -> "Tongue twisters" (DISPLAY ONLY — audio handle
+                          // ToneTwister_LI1 and page topic-39.html unchanged) + Facebook link on
+                          // socials.html. index.html, topics.js and socials.html are all precached.
+                          // v301: read.js audio element attached to the DOM so the `activation`
                           // conversion fires on the reading course. It was detached, so attrib.js's
                           // capturing `play` listener never saw it and the whole read arm recorded
                           // ZERO activations. read.js is PRECACHED and served cache-first, so this

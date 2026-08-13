@@ -22,7 +22,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Weather & seasons in Thai](https://thaiear.com/topic-05): Beginner, 32 sentences
 - [Days & months in Thai](https://thaiear.com/topic-07): Beginner, 37 sentences
 - [Idioms in Thai](https://thaiear.com/topic-38): Beginner, 27 sentences
-- [Tone twisters in Thai](https://thaiear.com/topic-39): Beginner, 19 sentences
+- [Tongue twisters in Thai](https://thaiear.com/topic-39): Beginner, 19 sentences
 - [Food & drink 2 in Thai](https://thaiear.com/topic-09b): Beginner → Lower intermediate, 27 sentences
 - [Cooking & recipes 1 in Thai](https://thaiear.com/topic-19a): Beginner → Lower intermediate, 34 sentences
 - [Getting around & transport 1 in Thai](https://thaiear.com/topic-12a): Beginner → Lower intermediate, 27 sentences

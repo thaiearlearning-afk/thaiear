@@ -101,12 +101,16 @@
     // Idioms first (they were one topic, ID 38, before the 38/39 split).
     // BOTH were also re-badged to ['beg'] (from beg/li1 and li1/li2) so they group into this band —
     // that makes 10 re-badges in total, not the 8 you get by counting the inline markers below.
-    // ⚠ Tone twisters' AUDIO stays `ToneTwister_LI1` and its JSON stays `level: LI1`. That is CORRECT
+    // ⚠ Tongue twisters' AUDIO stays `ToneTwister_LI1` and its JSON stays `level: LI1`. That is CORRECT
     // and must not be "fixed" to match this badge: the level in an audio handle is a frozen filename
     // component, not a difficulty claim. Renaming it 404s every R2 URL. Same for Idioms (`Idiom_BEG`).
+    // ⚠⚠ RENAMED FOR DISPLAY 2026-08-13: "Tone twisters" -> "Tongue twisters" (owner). DISPLAY ONLY.
+    // The audio handle `ToneTwister_LI1`, the page filename `topic-39.html` and the id 39 are ALL
+    // unchanged and must stay that way — the handle is what every R2 URL and every offline download
+    // is keyed off. `tone twister` is deliberately KEPT in the keywords so search still finds it.
     { id: 38, name: "Idioms", levels: ['beg'], sentences: 27, page: "topic-38.html", audio: "Idiom_BEG", access: "premium",
       keywords: ['idiom','สำนวน','saying','expression','proverb','figure of speech','phrase','metaphor','สุภาษิต','colloquial'] },
-    { id: 39, name: "Tone twisters", levels: ['beg'], sentences: 19, page: "topic-39.html", audio: "ToneTwister_LI1", access: "premium",
+    { id: 39, name: "Tongue twisters", levels: ['beg'], sentences: 19, page: "topic-39.html", audio: "ToneTwister_LI1", access: "premium",
       keywords: ['tone','tone twister','tongue twister','pronunciation','drill','practice','เสียง','vowel','minimal pair','ear training','accent'] },
 
     // ── BEGINNER → LOWER INTERMEDIATE ───────────────
