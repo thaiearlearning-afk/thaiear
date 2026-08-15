@@ -2061,8 +2061,16 @@
     .orientation-text strong { color: var(--text-primary); font-weight: 500; }
     .orientation-text a { color: var(--accent); font-weight: 500; text-decoration: none; }
     .controls-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 6px; }
-    .reveal-all-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
-    .reveal-all-btn:hover { background: var(--surface); }
+    /* ⚠ DELIBERATELY LOUD (owner, 2026-08-15). As a grey outline it read as chrome and got
+       skipped, so people never discovered that every sentence carries a word-by-word breakdown —
+       the single most under-used thing on the page. It now wears the tone the "Remove all
+       downloads" button only shows on HOVER (pl-list.js .dl-removeall-btn:hover), permanently.
+       ⚠ Literal hex, not var(--accent): that keeps it identical on premium topics, where --accent
+       becomes the bright gold and this would otherwise disappear into it.
+       ⚠ #B00020 is the site's ERROR/danger tone (Remove, Delete playlist, payment failure). Used
+       here for prominence, not to warn — do not infer from this that red now means "safe". */
+    .reveal-all-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: #B00020; background: #FDF1F2; border: 0.5px solid #E8C4C8; border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
+    .reveal-all-btn:hover { background: #FBE4E7; }
     /* ---- transliteration toggle (topics shipping per-sentence translit, currently 01–03) ----
        Default ON (new visitors should see it exists); .translit-off on #sentence-list hides both
        the under-Thai line and the chips' translit. Choice remembered per device via localStorage. */
@@ -2896,7 +2904,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r181';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r182';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
