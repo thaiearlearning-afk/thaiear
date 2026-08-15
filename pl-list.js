@@ -277,10 +277,29 @@
       return lists || null;
     }
     var paintedJson = null;   // JSON of the playlist data currently painted as boxes (null = message/loading shown)
+    /* ⚠ SKIP THE DOM WRITE WHEN THE MARKUP IS IDENTICAL (2026-08-15).
+       render() rebuilds every row with root.innerHTML, and the thaiear:auth listener calls it
+       UNCONDITIONALLY — auth.js legitimately notifies ~5 times during startup — plus
+       dlAvLoad().then(render) lands asynchronously. A tap arriving during a rebuild has its target
+       node destroyed before the click completes, so nothing happens and a second tap is needed.
+       That was the ~20% "click twice" the owner hit on the topic GRID (index.html setGrid); this
+       is the same failure in the same shape, found by asking which other surfaces rebuild.
+       ⚠ paintedJson is NOT this. It tracks the playlist DATA to decide whether to re-render at
+       all; this compares the rendered MARKUP, which also covers download state, open row, and
+       selection — things paintedJson does not see. Keep both.
+       ⚠ Compare the string rather than enumerate inputs: byte-identical markup cannot need a DOM
+       update, so this can never skip a real change, and it cannot rot when an input is added. */
+    var lastListHtml = null;
+    function setList(html) {
+      if (html === lastListHtml) return false;
+      lastListHtml = html;
+      root.innerHTML = html;
+      return true;
+    }
     function authReady() { return !!(window.ThaiEarAuth && window.ThaiEarAuth.isReady); }
     function showLoading() {
       paintedJson = null;
-      root.innerHTML = '<p class="pl-note">Loading playlists<span class="dyn-dots"></span></p>';
+      setList('<p class="pl-note">Loading playlists<span class="dyn-dots"></span></p>');
     }
 
     /* == DOWNLOADS (r18d) =================================================================
@@ -1044,17 +1063,17 @@
            says the same thing while also giving the visitor something to act on — the note was
            the second, weaker copy of one message on a single screen, and it pointed at a menu
            rather than at a link. Left empty on purpose; the card IS the signed-out state. */
-        root.innerHTML = '';
+        setList('');
         return;
       }
       var lists = currentLists();
       if (!lists) { showLoading(); return; }   // no cache on this device yet → indicator until load resolves
       paintedJson = JSON.stringify(lists);
       if (!lists.length) {
-        root.innerHTML = '<p class="pl-note">No playlists yet. Tap <strong>＋ Add playlist</strong>, then add sentences from any topic page (the “＋ Add sentences…” button under its player).</p>';
+        setList('<p class="pl-note">No playlists yet. Tap <strong>＋ Add playlist</strong>, then add sentences from any topic page (the “＋ Add sentences…” button under its player).</p>');
         return;
       }
-      root.innerHTML = lists.map(function (p) {
+      setList(lists.map(function (p) {
         var st = dlState(p);
         return '<div class="pl-box' + (p.id === openId ? ' open' : '') + '" data-id="' + p.id + '">' +
           '<button class="pl-box-head" type="button">' +
@@ -1074,7 +1093,7 @@
             '<button class="pl-rename" type="button">Rename playlist</button>' +
             '<button class="pl-del" type="button">Delete playlist</button>' +
           '</div></div>';
-      }).join('');
+      }).join(''));
       root.querySelectorAll('.pl-box').forEach(function (box) {
         var id = box.getAttribute('data-id');
         var p = lists.filter(function (x) { return x.id === id; })[0];
