@@ -2239,7 +2239,18 @@
     body.premium-topic .xtra-toggle.active,
     body.premium-topic .prog-ctl-add,
     body.premium-topic .prog-ctl-add:hover:not([disabled]),
+    /* Added 2026-08-15 — every newly-FILLED control needs the same treatment. The signup CTA and
+       the two playlist buttons are accent-filled, so on a premium topic they sit on bright gold
+       and white text was reported as hard to read. Same #3D2E00 as the Thai-first/English-first
+       toggle beside them. (.te-endcta-cta is deliberately absent: the end-of-topic ask renders on
+       FREE topics only, so it never meets the gold palette.) */
+    body.premium-topic .te-signup-cta,
+    body.premium-topic .te-signup-cta:hover,
     body.premium-topic .repeat-badge { color: #3D2E00; }
+    /* ⚠ The two .te-pl-row buttons are NOT overridden here. Their base rule lives in DYN_STYLES,
+       which player.js injects AFTER this block, and both selectors have identical specificity —
+       so a rule written here loses the tie and the buttons stayed white on gold. The override
+       sits next to its base rule in DYN_STYLES instead. Keep them together. */
     /* The eyebrow, subheading and the small player TEXT (progress count + links) use the canonical
        gold-TEXT tone #B29234 (the "Premium" index-pill colour) — readable on the pale page, distinct
        from the brighter #F0CC5C used for FILLS/graphics. The eyebrow/subtitle sit OUTSIDE the player,
@@ -2878,7 +2889,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r173';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r174';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5841,8 +5852,16 @@
     'body.te-v2 .dyn-set-wrap .dyn-slider{margin-top:9px}' +
     /* playlist row */
     'body.te-v2 .te-pl-row{display:flex;gap:9px;margin:14px 0 16px}' +
-    'body.te-v2 .te-pl-row .dyn-addpl,body.te-v2 .te-pl-row .dyn-pl-link{flex:1;margin:0;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-ui);font-size:13.5px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:11px 10px;text-decoration:none;text-align:center;cursor:pointer}' +
-    'body.te-v2 .te-pl-row .dyn-addpl:hover,body.te-v2 .te-pl-row .dyn-pl-link:hover{background:var(--accent-light);color:var(--accent)}' +
+    /* FILLED, not outlined (owner, 2026-08-15): as white cards beside a white player they read as
+       secondary and were easy to miss. Same treatment as the signup CTA.
+       ⚠ On a premium topic --accent is the BRIGHT gold, where white text washes out — the
+       body.premium-topic rule near the palette block flips these to #3D2E00. */
+    'body.te-v2 .te-pl-row .dyn-addpl,body.te-v2 .te-pl-row .dyn-pl-link{flex:1;margin:0;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-ui);font-size:13.5px;font-weight:500;color:#fff;background:var(--accent);border:.5px solid var(--accent);border-radius:var(--radius-md);padding:11px 10px;text-decoration:none;text-align:center;cursor:pointer}' +
+    'body.te-v2 .te-pl-row .dyn-addpl:hover,body.te-v2 .te-pl-row .dyn-pl-link:hover{background:var(--accent-mid);color:#fff}' +
+    /* Premium topics: --accent is the bright gold, on which white washes out. Same #3D2E00 as
+       the toggle beside them. Written HERE, not in STYLES, so it wins the cascade — see the
+       note in the premium palette block. */
+    'body.te-v2.premium-topic .te-pl-row .dyn-addpl,body.te-v2.premium-topic .te-pl-row .dyn-pl-link,body.te-v2.premium-topic .te-pl-row .dyn-addpl:hover,body.te-v2.premium-topic .te-pl-row .dyn-pl-link:hover{color:#3D2E00}' +
     /* per-sentence: tools to the right, reveal ornament gone */
     'body.te-v2 .sentence-header{display:flex;align-items:center;gap:8px}' +
     'body.te-v2 .prog-wrap{display:none}' +
@@ -7181,8 +7200,18 @@
     var key = progressKey();
     if (!key) { box.innerHTML = ''; return; }   // playlist without a resolvable id → as before
     var a = window.ThaiEarAuth;
-    if (!a || !a.isReady) { box.innerHTML = ''; return; } // hold until auth resolves
-    var user = a.getUser && a.getUser();
+    /* ⚠ DO NOT HOLD FOR isReady HERE — that is what makes the progress bar flash.
+       This used to render nothing until auth settled, then paint. In the APP that produced a
+       visible progress bar for an instant before the signup card replaced it (owner-reported,
+       2026-08-15): auth.js resolves its DURABLE identity first, so getUser() is briefly non-null
+       on a device that has been signed in before, and the signed-in counter painted before the
+       real answer arrived. Deciding from authGuess() — which reads the signed-out marker
+       synchronously — makes the FIRST paint the right one, so there is nothing to replace.
+       Falls back to the old hold only if app-cta.js is missing (stale cache / blocked script). */
+    var G = window.ThaiEarAppCTA;
+    if (!a || (!a.isReady && !(G && G.authGuess))) { box.innerHTML = ''; return; }
+    var user = (a.isReady) ? (a.getUser && a.getUser())
+                           : (G.authGuess() === 'in' ? (a.getUser && a.getUser()) : null);
     var thing = PLMODE ? 'playlist' : 'topic';
     /* SIGNED OUT → the signup card, on free and premium topics alike (owner, 2026-08-15).
        This replaces BOTH of the old signed-out branches: the "Sign in to track progress →" prompt
