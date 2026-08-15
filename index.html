@@ -1311,7 +1311,6 @@ if (!OFFLINE_UI) {
   }
   teMountCta();                                            // in case auth already settled
   window.addEventListener('thaiear:auth', teMountCta);
-  window.addEventListener('thaiear:authsettled', teMountCta);
 }
 const AUDIO_DL_CACHE = 'thaiear-audio-dl';     // must match player.js
 function webCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; } // must match player.js

@@ -640,19 +640,6 @@
   window.ThaiEarAuth = {
     isReady: false,
     getUser: function () { return currentUser; },
-    /* TRUE while we are running on OUR OWN stored record rather than a verified supabase session
-       (2026-08-15). isReady goes true for the PROVISIONAL restore as well — the 1200ms race above
-       resolves with readIdentity() when getSession() is slow — so "isReady && getUser()" is not
-       the same question as "is this person definitely signed in".
-       WHY IT IS EXPOSED: a device holding a stale identity answers "signed in" on every single
-       page load, so any UI painted from it is painted wrong and then corrected a moment later.
-       That was the in-app flash where a signed-out visitor saw the working progress bar before
-       the signup card, on EVERY topic open (owner, 2026-08-15).
-       ⚠ Callers must NOT treat this as "signed out" — it is "not yet verified". It clears to false
-       the moment reseedSession() gets a real session back, and the user really may be signed in.
-       Anything gating on it needs its own timeout, or an offline visitor (where verification can
-       never arrive, and navigator.onLine lies in this WebView) waits forever. */
-    isProvisional: function () { return restoredFromIdentity; },
     // The Supabase session JWT, for authorising premium-audio requests to /api/audio.
     // Synchronous + cached; null until the session resolves or when logged out.
     getAccessToken: function () { return currentSession ? currentSession.access_token : null; },
