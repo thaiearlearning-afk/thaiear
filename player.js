@@ -1687,6 +1687,23 @@
   function setOfflineState(state, done, total) {
     offBarSeq++;                 // invalidates any pending flash revert — see offlineBarFlash
     var bar = $('offline-bar'); if (!bar) return;
+    /* ⚠ IDEMPOTENCE GUARD — this branch owns the DOWNLOAD BUTTON, and renderOfflineBar() runs on
+       every thaiear:auth (auth.js legitimately notifies ~5 times during startup). Rebuilding it
+       destroys the button, so a tap landing in that window is silently lost and the user has to
+       tap again — the same "click twice" the topic grid and playlists panel had (2026-08-15).
+       ⚠ A SEPARATE ATTRIBUTE from the card branches' data-sig, on the same element: the two must
+       not be able to satisfy each other's guard. Each clears the other's on the way in, so
+       switching between the signup card and the download UI always repaints.
+       ⚠ offBarSeq++ stays ABOVE the guard — it invalidates a pending flash revert, and that must
+       happen whether or not the markup changes.
+       ⚠ The signature carries everything the branches below read: progress counts, connectivity
+       and the label. A real state change therefore always renders; only a repeat is skipped. */
+    var dlSig = [state, done, total, navigator.onLine ? 1 : 0,
+                 state === 'downloaded' ? dynOkLabel() : '',
+                 state === 'error' ? String(done) : ''].join('|');
+    if (bar.getAttribute('data-dlsig') === dlSig) return;
+    bar.setAttribute('data-dlsig', dlSig);
+    bar.removeAttribute('data-sig');   // the card branches no longer own this element
     if (state === 'downloading') {
       bar.innerHTML = '<span class="offline-status"><span class="prog-spin"></span> Downloading ' + (done || 0) + '/' + (total || '?') + ' — keep this page open</span>';
     } else if (state === 'downloaded') {
@@ -1822,6 +1839,7 @@
       var barSig = 'card|' + st + '|' + (PLMODE ? 'pl' : 'topic');
       if (bar.getAttribute('data-sig') === barSig) return;
       bar.setAttribute('data-sig', barSig);
+      bar.removeAttribute('data-dlsig');   // the download UI no longer owns this element
       if (st === 'out') {
         bar.className = 'offline-bar te-signup-host';
         bar.style.display = 'block';
@@ -3049,7 +3067,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r188';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r189';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
