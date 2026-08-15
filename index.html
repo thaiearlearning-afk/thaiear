@@ -1880,6 +1880,26 @@ function filterAccess(filter, btn) {
 // A topic is "live" once it has a page to link to (split topics: any built part counts).
 // isLive(u) === !!u.page — imported from topics.js (a unit is live iff it has a page).
 
+/* ⚠ SKIP THE DOM WRITE WHEN THE MARKUP IS IDENTICAL (2026-08-15).
+   renderGrid() rebuilds every card with grid.innerHTML, and it runs on load, on EVERY
+   thaiear:auth (auth.js legitimately notifies ~5 times during startup), on online/offline, and
+   again when loadAv() resolves. If a tap landed during one of those rebuilds the pressed card was
+   destroyed before the click completed, so nothing happened and a second tap was needed — the
+   ~20% "have to click twice" on the PWA (owner, 2026-08-15). Same failure the player's slots had.
+
+   Comparing the STRING rather than enumerating inputs is deliberate: the grid depends on filters,
+   search, auth, entitlement, connectivity, the download manifest and the audio-version map, and
+   any signature listing those would rot the moment one is added. If the markup is byte-identical
+   the DOM cannot need updating, so this can never skip a real change.
+   ⚠ Returns whether it actually wrote, so callers can skip post-render work too. */
+let _lastGridHtml = null;
+function setGrid(grid, html) {
+  if (html === _lastGridHtml) return false;
+  _lastGridHtml = html;
+  grid.innerHTML = html;
+  return true;
+}
+
 function renderGrid() {
   // The filter pills are the OUTER gate: search can only ever return units the pills
   // already allow, so a "Premium"-filtered search can never surface a free topic.
@@ -1895,18 +1915,18 @@ function renderGrid() {
   if (hits) {
     setSearchCount(hits.length);
     if (!hits.length) {
-      grid.innerHTML = '<p class="grid-msg">' + noResultsMsg() + '</p>';
+      setGrid(grid, '<p class="grid-msg">' + noResultsMsg() + '</p>');
       return;
     }
-    grid.innerHTML = '<h2 class="level-heading">Search results</h2>' +
-      hits.map(h => cardForUnit(h.unit)).join('');
+    setGrid(grid, '<h2 class="level-heading">Search results</h2>' +
+      hits.map(h => cardForUnit(h.unit)).join(''));
     if (typeof applyPlayingCard === 'function') applyPlayingCard();
     return;
   }
   setSearchCount(null);
 
   if (!visible.length) {
-    grid.innerHTML = '<p class="grid-msg">No topics match these filters.</p>';
+    setGrid(grid, '<p class="grid-msg">No topics match these filters.</p>');
     return;
   }
   // Live units first; everything not yet built drops below a "Coming soon" divider.
@@ -1932,7 +1952,7 @@ function renderGrid() {
   }
 
   const soonCards = soon.length ? soonList(soon) : '';
-  grid.innerHTML = liveCards + soonCards;
+  setGrid(grid, liveCards + soonCards);
   if (typeof applyPlayingCard === 'function') applyPlayingCard(); // re-light the playing card after rebuild
 }
 
