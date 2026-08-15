@@ -105,3 +105,4 @@ app-offline-mock.html
 
 # Owner-only tracking/consent harness (localhost) — never deploy
 consent-preview.html
+cls-measure.html

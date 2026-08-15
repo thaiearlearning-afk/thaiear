@@ -100,7 +100,19 @@
   .btn { font-family: var(--font-ui); font-size: 15px; font-weight: 500; border-radius: var(--radius-sm); padding: 11px 20px; cursor: pointer; border: 0.5px solid var(--border-strong); transition: background 0.15s, border-color 0.15s, color 0.15s; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
   .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn-primary:hover:not([disabled]) { background: var(--accent-mid); }
+  .btn-ghost { background: var(--surface); color: var(--text-primary); }
+  .btn-ghost:hover:not([disabled]) { border-color: var(--accent); color: var(--accent); }
+  .btn[disabled] { opacity: 0.6; cursor: default; }
   .btn svg { width: 18px; height: 18px; }
+  /* Email sign-in, mirroring account.html's login box (2026-08-15). The magic link already
+     existed in auth.js and on account.html, but this page — the one every "Create a free
+     account" link points at — offered Google only. */
+  .login-sep { display: flex; align-items: center; gap: 12px; margin: 1.1rem 0; color: var(--text-tertiary); font-size: 12px; }
+  .login-sep::before, .login-sep::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .login-input { width: 100%; text-align: left; font-family: var(--font-ui); font-size: 14px; padding: 10px 12px;
+    border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 0.7rem;
+    background: var(--surface); color: var(--text-primary); }
+  .login-input:focus { outline: none; border-color: var(--accent); }
   .sub-status { font-size: 13px; color: var(--text-secondary); text-align: center; margin-top: 0.9rem; min-height: 1.2em; }
   .sub-note { font-size: 13px; color: var(--text-tertiary); text-align: center; margin-top: 1rem; }
   .sub-note a { color: var(--accent); text-decoration: none; font-weight: 500; }
@@ -127,8 +139,8 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>
     Free membership
   </span>
-  <h1 class="sub-title">Sign in to unlock — it’s free</h1>
-  <p class="sub-lede" id="join-lede">Sign in with your Google account to unlock member topics, playlists and all
+  <h1 class="sub-title">Create an account or sign in to unlock — it’s free</h1>
+  <p class="sub-lede" id="join-lede">Create a free account or sign in to unlock member topics, playlists and all
     reading course material straight away. No payment or card required.</p>
 
   <div class="sub-card">
@@ -151,6 +163,11 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>
       Sign in with Google
     </button>
+    <div class="login-sep">or</div>
+    <input id="login-email-input" class="login-input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+    <button class="btn btn-ghost" id="login-link-btn" onclick="sendLoginLink()">Email me a sign-in link</button>
+    <p class="sub-note" style="margin-top:8px;text-align:left;line-height:1.5">New here? No separate sign-up needed — enter your email and we’ll create your account automatically. No password to remember.</p>
+    <p id="login-email-status" class="sub-status" style="min-height:1em;margin-top:8px"></p>
     <p class="sub-status" id="join-status"></p>
     <p class="sub-note" style="margin-top:0.6rem">By continuing you agree to our <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
     <p class="sub-note" id="premium-note">Want everything? <a href="subscribe.html">See premium membership →</a></p>
@@ -173,10 +190,56 @@ if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.is
 // (The old ?feature= lede variant is gone — one owner-approved lede serves both arrival
 // paths since 2026-08-01. The ?feature param itself remains harmless in links.)
 
+/* Magic-link sign-in (2026-08-15). Mirrors account.html's sendLoginLink() — same auth.js call,
+   same copy, same failure handling. It lived only on account.html, so THIS page, the destination
+   of every "Create a free account" link on the site, offered Google alone. Supabase's
+   signInWithOtp creates the account if the address is new, which is why one control serves both
+   "create an account" and "sign in". */
+function sendLoginLink() {
+  var a = window.ThaiEarAuth;
+  var input = document.getElementById('login-email-input');
+  var status = document.getElementById('login-email-status');
+  var btn = document.getElementById('login-link-btn');
+  var email = ((input && input.value) || '').trim();
+  function fail(msg) { if (status) { status.style.color = '#B00020'; status.textContent = msg; } }
+  if (!email || email.indexOf('@') < 1 || email.indexOf('.') < 0) { fail('Please enter a valid email address.'); return; }
+  if (!a || !a.sendMagicLink) { fail('Still loading — try again in a moment.'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  if (status) { status.style.color = 'var(--text-tertiary)'; status.textContent = ''; }
+  a.sendMagicLink(email).then(function (res) {
+    if (res && res.error) throw res.error;
+    if (status) { status.style.color = 'var(--accent)'; status.textContent = 'Check your inbox — we sent a sign-in link to ' + email + '.'; }
+    if (btn) { btn.textContent = 'Link sent'; }
+  }).catch(function (err) {
+    fail('Couldn’t send a link: ' + ((err && err.message) || 'please try again.'));
+    if (btn) { btn.disabled = false; btn.textContent = 'Email me a sign-in link'; }
+  });
+}
+
+/* ⚠ FIXED 2026-08-15 — this silently stopped working on 2026-08-12 and stranded every visitor.
+   The old test was /^[A-Za-z0-9_\-]+\.html$/, which requires a .html suffix. When internal links
+   moved to CLEAN URLs, `PAGE_FILE` (location.pathname's last segment) became "topic-01" with no
+   extension, so EVERY `next` was rejected and nobody was returned to the topic they came from —
+   they landed here, signed in, and had to navigate back by hand. Paid traffic failed twice over,
+   because player.js appends location.search and the UTM query broke the test as well.
+   Verified on the live site: "topic-01" DROPPED, "topic-01.html" PASS.
+
+   The regex exists to prevent an OPEN REDIRECT, and that job still has to be done — so validate
+   the path, do not just loosen the pattern:
+     • reject anything with a scheme ("https:", "javascript:")
+     • reject a leading "/" — which also covers protocol-relative "//evil.com"
+     • reject backslashes, which some browsers normalise to "/"
+     • validate the PATH only, after splitting off ?query and #hash
+   The query is deliberately NOT carried through to the redirect: the direction preference is
+   already persisted in localStorage, and re-appending the UTMs would stamp a second campaign
+   session in GA4 for what is really one visit. */
 function nextUrl() {
   var m = new URLSearchParams(location.search).get('next');
-  // only allow same-site relative topic pages
-  return (m && /^[A-Za-z0-9_\-]+\.html$/.test(m)) ? m : null;
+  if (!m) return null;
+  if (/^[a-zA-Z][a-zA-Z0-9+.\-]*:/.test(m)) return null;   // any scheme
+  if (m.charAt(0) === '/' || m.indexOf('\\') >= 0) return null;   // absolute / protocol-relative
+  var path = m.split(/[?#]/)[0];
+  return /^[A-Za-z0-9_\-]+(\.html)?$/.test(path) ? path : null;
 }
 function render() {
   var btn = document.getElementById('join-btn');

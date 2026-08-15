@@ -1683,6 +1683,25 @@
        Falls back to the original hide when app-cta.js is absent (stale cache / script blocked),
        so the worst case is today's behaviour, never a broken bar. */
     if (!OFFLINE && !WEB_DL) {
+      /* SIGNED OUT → no app card here (2026-08-15). The signed-out signup card in the progress
+         slot carries the app line in its second zone, and the two slots sit a few hundred pixels
+         apart on the same screen — showing both advertises the app twice in one view. Signed-in
+         visitors are unaffected and still get the card exactly as before, which is what keeps the
+         2026-08-11 decision (browser tabs must learn the app exists) intact.
+         ⚠ Auth resolves LATE, so this repaints on the thaiear:auth listener further down; without
+         that a signed-in visitor would keep the hidden state from first paint. */
+      /* SIGNED OUT → the merged signup card lands HERE, not in the progress slot, because this
+         slot is below .player-card and the progress slot is above it (measured — see the note in
+         renderProgress). Zone 2 of the card carries the app line, so the app is still conveyed
+         and is never advertised twice. Signed-IN visitors get the plain app card exactly as
+         before, which keeps the 2026-08-11 decision intact. */
+      var au = window.ThaiEarAuth;
+      if (au && au.isReady && !(au.getUser && au.getUser())) {
+        bar.className = 'offline-bar te-signup-host';
+        bar.style.display = 'block';
+        bar.innerHTML = signupCardHtml();
+        return;
+      }
       if (window.ThaiEarAppCTA) {
         bar.className = 'offline-bar te-appcta-host';
         bar.style.display = 'block';
@@ -1969,6 +1988,39 @@
     .prog-ctl-my:hover { color: var(--accent-mid); }
     .prog-ctl-join { font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
     .prog-ctl-join:hover { color: var(--accent-mid); }
+    /* --- signed-out signup card (2026-08-15): one card, two zones, split by a hairline ---
+       Overrides the parent .prog-ctl-card flex row back to a block so the zones stack; the
+       padding moves onto the zones so the divider can run the full width of the card. */
+    /* Signed out → renderProgress leaves this slot EMPTY (the card moved below the player), so the
+       measured reserve above must collapse or it becomes ~94px of blank gap over the player.
+       :empty rather than a body class so it tracks the actual render with no JS and no ordering
+       risk. The reserve still applies in full to the signed-in counter, which is what it was
+       measured for. */
+    .progress-controls:empty { min-height: 0; margin-bottom: 0; }
+    .prog-ctl-card.te-signup { display: block; padding: 0; overflow: hidden; }
+    .te-signup-main { padding: 0.7rem 0.9rem 0.65rem; }
+    .te-signup-title { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.005em;
+      color: var(--text-primary); margin-bottom: 3px; }
+    .te-signup-desc { display: block; font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin-bottom: 8px; }
+    .te-signup-cta { display: inline-block; font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
+    .te-signup-cta:hover { color: var(--accent-mid); }
+    .te-signup-app { display: flex; align-items: center; gap: 10px; padding: 0.6rem 0.9rem;
+      border-top: 0.5px solid var(--border); text-decoration: none; -webkit-tap-highlight-color: transparent; }
+    .te-signup-app:hover .te-signup-chev { color: var(--accent); }
+    .te-signup-app-txt { min-width: 0; flex: 1; }   /* min-width:0 so the desc wraps instead of pushing the chevron out */
+    .te-signup-app-t { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 1px; }
+    .te-signup-app-d { display: block; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+    .te-signup-chev { flex-shrink: 0; width: 16px; height: 16px; color: var(--text-tertiary); transition: color 0.15s; }
+    /* --- end-of-topic ask (2026-08-15). Sits between the last sentence and the prev/next nav.
+       No CLS reserve needed: it mounts far below the fold, so a late auth-gated insert there
+       shifts nothing the visitor is looking at. --- */
+    .te-endcta { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
+      padding: 0.9rem 1rem; margin: 1.5rem 0 0.5rem; }
+    .te-endcta-title { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.005em;
+      color: var(--text-primary); margin-bottom: 4px; }
+    .te-endcta-desc { display: block; font-size: 13px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 9px; }
+    .te-endcta-cta { display: inline-block; font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
+    .te-endcta-cta:hover { color: var(--accent-mid); }
     .prog-spin { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: prog-spin 0.6s linear infinite; }
     @keyframes prog-spin { to { transform: rotate(360deg); } }
     .prog-tick { display: inline-block; font-weight: 700; animation: prog-tick-pop 0.4s cubic-bezier(0.2,0.8,0.3,1.3) both; }
@@ -2833,7 +2885,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r168';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r169';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -6257,7 +6309,30 @@
      reloading the page — so playback continues with the screen locked. The sentence list
      below stays on the topic the page was opened with (it keeps using PREFIX/GATED/TIER). */
   // Direction: web always defaults to Thai-first; the native app remembers your last choice.
-  var currentMode = (NATIVE ? (function () { try { return localStorage.getItem('thaiear_dir') === 'et' ? 'et' : 'te'; } catch (_) { return 'te'; } })() : 'te');
+  /* DIRECTION IS REMEMBERED ON THE WEB TOO, and paid arrivals start English-first (2026-08-15).
+     Two separate fixes share this line — keep both in mind before simplifying it.
+     1. THE BUG. The web never persisted the choice (the write in switchAudio was NATIVE-only), so
+        a visitor who deliberately switched to English-first was reset to Thai-first on EVERY
+        topic, forever. The app has always remembered it; the web silently did not.
+     2. THE AD PROMISE. The ads sell "hear the English, say the Thai, then check yourself" — that
+        is English-first. A click that lands on Thai-first is a promise the page does not keep.
+     ⚠ (1) is what makes (2) work at all: `utm_medium=paid` exists ONLY on the landing URL, so
+     without persistence the mode would silently revert to Thai-first on the second page — the
+     same bug wearing a different hat. Do not "simplify" this to a bare UTM test.
+     ⚠ Organic visitors are deliberately untouched: no stored value and no paid UTM → 'te',
+     exactly as before. Flipping that is a pedagogy decision about the course, not a tracking one
+     (owner, 2026-08-15: scoped to ad clicks on purpose). */
+  var currentMode = (function () {
+    try {
+      var v = localStorage.getItem('thaiear_dir');
+      if (v === 'et' || v === 'te') return v;
+      if (/[?&]utm_medium=paid(?:&|$)/.test(location.search)) {
+        try { localStorage.setItem('thaiear_dir', 'et'); } catch (_) {}
+        return 'et';
+      }
+    } catch (_) {}
+    return 'te';
+  })();
   var mainPrefix = PREFIX;          // audio prefix the top player is currently on
   var mainGated = GATED;            // is that topic gated? → signed URL vs public CDN
   var mainTier = TIER;              // its tier → denial route, if it ever denies
@@ -6474,7 +6549,9 @@
   function switchAudio(mode) {
     if (currentMode === mode) return;
     currentMode = mode;
-    if (NATIVE) { try { localStorage.setItem('thaiear_dir', mode); } catch (_) {} }
+    /* Persist on WEB as well as native (2026-08-15). The NATIVE gate that used to be here is why a
+       web visitor's English-first choice died on every navigation — see the currentMode block. */
+    try { localStorage.setItem('thaiear_dir', mode); } catch (_) {}
     var wasPlaying = !mainAudio.paused;
     mainAudio.pause();
     setMainIcon(false);
@@ -7068,6 +7145,83 @@
     var k = String(DYN_KEY_NS || '');
     return k.indexOf('pl-') === 0 ? k : null;
   }
+  /* THE SIGNED-OUT SIGNUP CARD (2026-08-15) — one card, two zones.
+     Zone 1 asks for the account; zone 2 conveys that a real app exists, which is credibility the
+     ask itself benefits from. They are merged deliberately: as two separate cards a few hundred
+     pixels apart they read as nagging, and the app card used to be the LOUDEST thing a cold
+     visitor saw — a lateral move off the page that created no account either way.
+
+     ⚠ THE APP LINE IS BOUND BY THE STANDING COPY RULE. There is no App Store build, so it must
+     never promise "the app" where an iPhone visitor reads it. The wording below is the
+     owner-approved form from app-cta.js — benefit title, BOTH routes named, bare chevron. Do not
+     reword it to "get the app", "our app", or "free on Android and iPhone".
+
+     ⚠ Deliberately does NOT promise downloads. The download gate is TIER-keyed, not auth-keyed,
+     so a free account does not unlock them; saying otherwise would be a lie discovered within a
+     minute of signing up.
+
+     ⚠ This lands in the progress slot, which carries a MEASURED min-height reserve so the late,
+     auth-gated render does not shove the player's controls down (CLS). Change the copy, padding
+     or type size here and all four reserve numbers must be re-measured — see that block. */
+  /* END-OF-TOPIC ASK (2026-08-15) — signed out, FREE topic only.
+     Someone who has scrolled past every sentence is the warmest visitor this site gets, and until
+     now the only thing offered at that point was a link to the next topic.
+
+     ⚠ THE GATE IS DELIBERATELY NARROWER THAN THE SIGNUP CARD'S. On a premium topic a signed-out
+     visitor could not play anything, so "that's all N sentences" would be a claim about work they
+     never did — and the ask would sit beside a padlock, reading as "sign up to unlock", which a
+     free account does not do. Free topics only. (Owner, 2026-08-15.)
+
+     ⚠ Injected rather than baked into the SSR HTML on purpose: it is a call to action, not
+     content a crawler needs, so it keeps all 93 topic pages out of the diff and needs no
+     ssrify_topic.js run.
+
+     Re-entrant: called on mount AND on thaiear:auth, so it must remove its own node when the
+     visitor turns out to be signed in, and must not stack duplicates when called twice. */
+  function mountEndCta() {
+    if (PLMODE) return;
+    var nav = document.querySelector('.topic-nav');
+    if (!nav || !nav.parentNode) return;
+    var old = document.getElementById('te-end-cta');
+    var a = window.ThaiEarAuth;
+    if (!a || !a.isReady) return;                        // hold until auth resolves
+    var show = !(a.getUser && a.getUser()) && !TIER;     // signed out + free topic (TIER is null when free)
+    if (!show) { if (old && old.parentNode) old.parentNode.removeChild(old); return; }
+    if (old) return;                                     // already mounted — do not stack
+    var d = document.createElement('div');
+    d.id = 'te-end-cta';
+    d.className = 'te-endcta';
+    d.innerHTML =
+      '<span class="te-endcta-title">That’s all ' + sentences.length + ' sentences.</span>' +
+      '<span class="te-endcta-desc">Save what you’ve done — a free account keeps your progress ' +
+        'and lets you build playlists with any sentences on the site.</span>' +
+      '<a class="te-endcta-cta" href="join.html?feature=1&next=' +
+        encodeURIComponent(PAGE_FILE + location.search) + '">Create a free account →</a>';
+    nav.parentNode.insertBefore(d, nav);
+  }
+
+  function signupCardHtml() {
+    return '' +
+      '<div class="prog-ctl-card te-signup">' +
+        '<div class="te-signup-main">' +
+          '<span class="te-signup-title">Save your progress</span>' +
+          '<span class="te-signup-desc">A free account keeps track of what you’ve listened to ' +
+            'and lets you build playlists.</span>' +
+          '<a class="te-signup-cta" href="join.html?feature=1&next=' +
+            encodeURIComponent(PAGE_FILE + location.search) + '">Create a free account →</a>' +
+        '</div>' +
+        '<a class="te-signup-app" href="app.html">' +
+          '<span class="te-signup-app-txt">' +
+            '<span class="te-signup-app-t">Study offline</span>' +
+            '<span class="te-signup-app-d">Free on the Android app, or add ThaiEar to your ' +
+              'iPhone Home Screen</span>' +
+          '</span>' +
+          '<svg class="te-signup-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+            'stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>' +
+        '</a>' +
+      '</div>';
+  }
+
   function renderProgress() {
     var box = $('progress-controls');
     if (!box) return;
@@ -7077,34 +7231,32 @@
     if (!a || !a.isReady) { box.innerHTML = ''; return; } // hold until auth resolves
     var user = a.getUser && a.getUser();
     var thing = PLMODE ? 'playlist' : 'topic';
-    /* PREMIUM TOPIC, NOT ENTITLED → still render the REAL progress bar, and let the TAP gate
-       (owner, 2026-08-10). Same principle as the download button: show the feature so people know
-       it exists, refuse the interaction — don't replace the control with an advert.
-       ⚠ An earlier attempt swapped this whole card for a "this is Premium" notice. That was wrong:
-       it hid a feature instead of gating it. Do not reinstate that.
-       Falls through to the normal render below (count reads 0 for a signed-out visitor); progStep()
-       does the gating, and checks entitlement BEFORE the signed-in test so a logged-out tap on a
-       premium topic gets the premium message rather than silently doing nothing. */
-    if (!user && !entitledForPage()) {
-      box.innerHTML =
-        '<div class="prog-ctl-card">' +
-          '<div class="prog-ctl-left">' +
-            '<span class="prog-ctl-count" id="prog-count">0</span>' +
-            '<span class="prog-ctl-label">complete listens</span>' +
-          '</div>' +
-          '<div class="prog-ctl-btns">' +
-            '<button class="prog-ctl-btn prog-ctl-minus" id="prog-remove" onclick="progRemove()" aria-label="Remove one listen" title="Remove one listen">−</button>' +
-            '<button class="prog-ctl-btn prog-ctl-add" id="prog-add" onclick="progAdd()" aria-label="Add one listen">+ Add progress</button>' +
-          '</div>' +
-        '</div>';
-      return;
-    }
+    /* SIGNED OUT → the signup card, on free and premium topics alike (owner, 2026-08-15).
+       This replaces BOTH of the old signed-out branches: the "Sign in to track progress →" prompt
+       on free topics, and the dead-but-visible progress bar on premium ones.
+
+       ⚠ SUPERSEDES the 2026-08-10 rule that a non-entitled visitor must still see the REAL
+       progress bar with the tap gated. That rule existed to ADVERTISE progress as a feature
+       rather than hide it — and this card does exactly that, in words ("keeps track of what
+       you've listened to"), while also giving the visitor something to act on. Rendering a
+       zeroed progress bar NEXT to a card describing the same feature is redundant, not safer.
+       So the principle survives; only the mechanism changed. Do not "restore" the zeroed bar.
+
+       ⚠ Signed-IN rendering below is untouched, and so is progStep()'s gating — a logged-out tap
+       can no longer reach it from here, but the entitlement-before-signed-in ordering still
+       matters for every other caller.
+
+       Why the whole card and not just a link: a stranger arriving from an advert has no progress
+       and no reason to want progress tracked, so the old copy asked them to value a feature they
+       could not yet have. This leads with the benefit and names what a free account actually
+       gives — deliberately NOT downloads, which are tier-keyed, not auth-keyed. */
     if (!user) {
-      box.innerHTML =
-        '<div class="prog-ctl-card">' +
-          '<span class="prog-ctl-label">Track how many times you’ve listened to this ' + thing + '.</span>' +
-          '<a class="prog-ctl-join" href="join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE + location.search) + '">Sign in to track progress →</a>' +
-        '</div>';
+      /* ⚠ THE CARD IS NOT RENDERED HERE — it goes in the offline-bar slot BELOW .player-card.
+         Measured 2026-08-15 at 430px: rendered in THIS slot the card is 198px tall and pushes
+         .player-card from ~295 down to 493 on a ~660px fold, burying the play button and the
+         Thai/English toggle. That is the exact thing the ads promise, hidden in order to show an
+         advert for signing up. Ask AFTER the experience, not in front of it. See renderOfflineBar. */
+      box.innerHTML = '';
       return;
     }
     var count = a.getTopicProgress ? a.getTopicProgress(key) : 0;
@@ -7183,6 +7335,12 @@
     }
   }
   window.addEventListener('thaiear:auth', initProgress);
+  /* The offline bar's app-card branch is now auth-dependent (suppressed while signed out, since
+     the signup card carries the app line), and auth settles AFTER first paint — so it has to
+     repaint here or a signed-in visitor keeps the signed-out state for the whole session. */
+  window.addEventListener('thaiear:auth', renderOfflineBar);
+  mountEndCta();
+  window.addEventListener('thaiear:auth', mountEndCta);
 
   /* ---- sentence flagging ----
      Toggle this sentence's flag (saved to the user's account). Debounced + a pop so a

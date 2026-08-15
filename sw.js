@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v305';   // v305: dlState()'s ALL-LOCKED branch asks the manifest what it holds
+const VERSION = 'v306';   // v306: signed-out signup card + end-of-topic ask; English-first for paid arrivals; join.html magic link + nextUrl fix
                           // (dlRefPrefixes, r75's "lock-independent ground truth") instead of
                           // trusting the thaiear_offline_pl RECORD, matching player.js's
                           // dynOwnedPrefixes(). A record outlives evicted clips — an iOS PWA
