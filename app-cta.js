@@ -88,16 +88,22 @@
        border, which exists only in player.js's STYLES — so it rendered unstyled on index.html,
        which does not load player.js. Do not reintroduce that dependency.
        ⚠ Zone 2's wording is the app card's, verbatim, and is bound by the same copy rule above. */
-    '.te-signup{background:var(--surface);border:0.5px solid var(--border);' +
+    /* ⚠ ACCENT-LIGHT GROUND, not --surface (owner, 2026-08-15): on plain white the card read
+       as "a paragraph of words" and was easy to skip. Same ground as the app card it replaces,
+       so the two are visually interchangeable in the slot they share. */
+    '.te-signup{background:var(--accent-light);border:0.5px solid var(--border);' +
       'border-radius:var(--radius-lg);overflow:hidden}' +
     '.te-signup-main{padding:0.7rem 0.9rem 0.65rem}' +
     '.te-signup-title{display:block;font-size:14.5px;font-weight:600;letter-spacing:-0.005em;' +
       'color:var(--text-primary);margin-bottom:3px}' +
     '.te-signup-desc{display:block;font-size:13px;line-height:1.5;color:var(--text-secondary);margin-bottom:8px}' +
-    '.te-signup-cta{display:inline-block;font-size:13px;font-weight:500;color:var(--accent);text-decoration:none}' +
-    '.te-signup-cta:hover{color:var(--accent-mid)}' +
+    /* A FILLED BUTTON, not a text link — the other half of "easily ignored". */
+    '.te-signup-cta{display:inline-block;font-size:13px;font-weight:600;color:#fff;' +
+      'background:var(--accent);border-radius:var(--radius-sm);padding:8px 14px;text-decoration:none;' +
+      'transition:background .15s}' +
+    '.te-signup-cta:hover{background:var(--accent-mid);color:#fff}' +
     '.te-signup-app{display:flex;align-items:center;gap:10px;padding:0.6rem 0.9rem;' +
-      'border-top:0.5px solid var(--border);text-decoration:none;-webkit-tap-highlight-color:transparent}' +
+      'border-top:0.5px solid var(--border-strong);text-decoration:none;-webkit-tap-highlight-color:transparent}' +
     '.te-signup-app:hover .te-signup-chev{color:var(--accent)}' +
     '.te-signup-app-txt{min-width:0;flex:1}' +   /* min-width:0 → the desc wraps, never pushes the chevron out */
     '.te-signup-app-t{display:block;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:1px}' +

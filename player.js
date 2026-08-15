@@ -2004,13 +2004,16 @@
     /* --- end-of-topic ask (2026-08-15). Sits between the last sentence and the prev/next nav.
        No CLS reserve needed: it mounts far below the fold, so a late auth-gated insert there
        shifts nothing the visitor is looking at. --- */
-    .te-endcta { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
+    /* ⚠ ACCENT-LIGHT GROUND (owner, 2026-08-15) — on plain white this read as a block of text and
+       was easy to skip past on the way to the Next button. Matches the signup card above it. */
+    .te-endcta { background: var(--accent-light); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
       padding: 0.9rem 1rem; margin: 1.5rem 0 0.5rem; }
     .te-endcta-title { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.005em;
       color: var(--text-primary); margin-bottom: 4px; }
     .te-endcta-desc { display: block; font-size: 13px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 9px; }
-    .te-endcta-cta { display: inline-block; font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
-    .te-endcta-cta:hover { color: var(--accent-mid); }
+    .te-endcta-cta { display: inline-block; font-size: 13px; font-weight: 600; color: #fff; background: var(--accent);
+      border-radius: var(--radius-sm); padding: 8px 14px; text-decoration: none; transition: background 0.15s; }
+    .te-endcta-cta:hover { background: var(--accent-mid); color: #fff; }
     .prog-spin { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: prog-spin 0.6s linear infinite; }
     @keyframes prog-spin { to { transform: rotate(360deg); } }
     .prog-tick { display: inline-block; font-weight: 700; animation: prog-tick-pop 0.4s cubic-bezier(0.2,0.8,0.3,1.3) both; }
@@ -2875,7 +2878,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r171';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r172';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

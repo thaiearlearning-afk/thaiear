@@ -140,9 +140,37 @@
 
   var node = null;
 
+  /* ⚠ THE BAR IS position:fixed;bottom:0, SO IT SITS ON TOP OF THE END OF EVERY PAGE.
+     Nothing reserved space for it, so on a phone it covered the last ~177px of the viewport and
+     whatever lived there was unclickable — `elementFromPoint` over a topic page's prev/next button
+     at 390x700 returned the BAR, not the button (measured 2026-08-15).
+
+     Reported as "prev/next need two taps": on Android the first tap is swallowed by the bar, that
+     tap hides the browser URL bar, the viewport grows, the page shifts under the finger, and the
+     second tap lands on the button. So it presented as a flaky double-tap rather than as an
+     overlay — which is why it looked like a JS bug and is not one.
+
+     Pad the BODY by the bar's real height instead of guessing: the copy wraps differently at every
+     width and inflates with --te-ui (TEXT_SCALING.md), so a hardcoded value is wrong somewhere.
+     Re-measured on resize/rotate, and cleared the moment the bar goes. */
+  var padOn = false;
+  function syncPad() {
+    if (!node) return;
+    var h = node.getBoundingClientRect().height;
+    if (h > 0) { document.body.style.paddingBottom = Math.ceil(h) + 'px'; padOn = true; }
+  }
+  function clearPad() {
+    if (!padOn) return;
+    document.body.style.paddingBottom = '';
+    padOn = false;
+  }
+  window.addEventListener('resize', syncPad);
+  window.addEventListener('orientationchange', function () { setTimeout(syncPad, 200); });
+
   function close() {
     if (node && node.parentNode) node.parentNode.removeChild(node);
     node = null;
+    clearPad();
   }
 
   function render() {
@@ -184,6 +212,7 @@
     });
 
     document.body.appendChild(node);
+    syncPad();          // reserve its height so the end of the page is not underneath it
 
     /* ⚠ DO NOT AUTO-FOCUS A BUTTON HERE. It was doing first.focus(), which landed on Reject and
        drew a gold focus ring around it — a visible thumb on the scale that nobody chose, and the
@@ -214,6 +243,7 @@
       close();
     });
     node.querySelector('.te-consent-in').appendChild(box);
+    syncPad();          // the options panel makes the bar much taller — re-reserve
   }
 
   /* ---------- go --------------------------------------------------------- */
