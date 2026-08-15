@@ -159,22 +159,48 @@
      `next` is the page to return to after sign-in, and is optional — index.html has nowhere
      particular to send anyone back to. ⚠ join.html's nextUrl() accepts a bare clean-URL segment
      with an optional .html and strips any ?query, so pass the page name, not a full URL. */
-  function signupHtml(surface, next) {
+  /* Per-surface copy. Zone 1 names what an account actually saves HERE — the reading course keeps
+     quiz results, not listens or playlists, so the generic line was simply wrong there (owner,
+     2026-08-15). Zone 2's title names what there is to download on this surface. */
+  var SIGNUP_DESC = {
+    topic:    'A free account keeps track of what you’ve listened to and lets you build playlists.',
+    index:    'A free account keeps track of what you’ve listened to and lets you build playlists.',
+    playlist: 'A free account keeps track of what you’ve listened to and lets you build playlists.',
+    read:     'A free account keeps track of your reading course quiz results.'
+  };
+  var SIGNUP_APP_TITLE = {
+    topic:    'Study offline — download audio by topic',
+    index:    'Study offline — download audio by topic',
+    playlist: 'Study offline — download playlists',
+    read:     'Study offline — download the reading course'
+  };
+
+  /* ⚠ ZONE 2 IS OMITTED IN THE APP AND THE INSTALLED PWA (owner, 2026-08-15).
+     Telling someone already inside the app to go and get the app is noise, and the download
+     controls they would use are on the same screen. Everything else is identical, so a signed-out
+     app user sees the same ask as a signed-out web user, minus the part that does not apply.
+     noDownloadUi() is the same predicate every call site already uses to decide app vs browser —
+     do not introduce a second one. */
+  function signupHtml(surface, next, opts) {
     injectCss();
     var href = 'join.html?feature=1' + (next ? '&next=' + encodeURIComponent(next) : '');
-    return '<div class="te-signup te-signup--' + surface + '">' +
+    var withApp = (opts && typeof opts.app === 'boolean') ? opts.app : noDownloadUi();
+    var desc = SIGNUP_DESC[surface] || SIGNUP_DESC.topic;
+    var appT = SIGNUP_APP_TITLE[surface] || SIGNUP_APP_TITLE.topic;
+    return '<div class="te-signup te-signup--' + surface + (withApp ? '' : ' te-signup--noapp') + '">' +
       '<div class="te-signup-main">' +
         '<span class="te-signup-title">Save your progress</span>' +
-        '<span class="te-signup-desc">A free account keeps track of what you’ve listened to ' +
-          'and lets you build playlists.</span>' +
+        '<span class="te-signup-desc">' + desc + '</span>' +
         '<a class="te-signup-cta" href="' + href + '">Create a free account →</a>' +
       '</div>' +
-      '<a class="te-signup-app" href="' + HREF + '">' +
-        '<span class="te-signup-app-txt">' +
-          '<span class="te-signup-app-t">Study offline</span>' +
-          '<span class="te-signup-app-d">' + PLATFORMS.replace(/\.$/, '') + '</span>' +
-        '</span>' + CHEV.replace('te-appcta-chev', 'te-signup-chev') +
-      '</a>' +
+      (withApp
+        ? '<a class="te-signup-app" href="' + HREF + '">' +
+            '<span class="te-signup-app-txt">' +
+              '<span class="te-signup-app-t">' + appT + '</span>' +
+              '<span class="te-signup-app-d">' + PLATFORMS.replace(/\.$/, '') + '</span>' +
+            '</span>' + CHEV.replace('te-appcta-chev', 'te-signup-chev') +
+          '</a>'
+        : '') +
     '</div>';
   }
   function signupEl(surface, next) {

@@ -2878,7 +2878,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r172';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r173';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -7204,12 +7204,22 @@
        could not yet have. This leads with the benefit and names what a free account actually
        gives — deliberately NOT downloads, which are tier-keyed, not auth-keyed. */
     if (!user) {
-      /* ⚠ THE CARD IS NOT RENDERED HERE — it goes in the offline-bar slot BELOW .player-card.
-         Measured 2026-08-15 at 430px: rendered in THIS slot the card is 198px tall and pushes
-         .player-card from ~295 down to 493 on a ~660px fold, burying the play button and the
-         Thai/English toggle. That is the exact thing the ads promise, hidden in order to show an
-         advert for signing up. Ask AFTER the experience, not in front of it. See renderOfflineBar. */
-      box.innerHTML = '';
+      /* ⚠ TWO DIFFERENT PLACES, DECIDED BY app-vs-browser — do not collapse them.
+         BROWSER: the card is NOT rendered here, it goes in the offline-bar slot BELOW
+         .player-card. Measured 2026-08-15 at 430px: rendered in THIS slot it is 198px tall and
+         pushes .player-card from ~295 down to 493 on a ~660px fold, burying the play button and
+         the Thai/English toggle — the exact thing the ads promise, hidden to show a signup advert.
+         Ask AFTER the experience, not in front of it.
+         APP / INSTALLED PWA: the offline-bar slot is occupied by the REAL download controls, so
+         the card has nowhere to go down there and a signed-out app user saw nothing at all
+         (owner-reported, 2026-08-15). It renders here instead, without its app zone — telling
+         someone inside the app to go and get the app is noise. */
+      var A = window.ThaiEarAppCTA;
+      if (A && A.noDownloadUi && !A.noDownloadUi()) {
+        box.innerHTML = A.signupHtml(PLMODE ? 'playlist' : 'topic', PAGE_FILE, { app: false });
+      } else {
+        box.innerHTML = '';
+      }
       return;
     }
     var count = a.getTopicProgress ? a.getTopicProgress(key) : 0;

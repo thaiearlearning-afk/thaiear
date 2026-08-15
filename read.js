@@ -287,12 +287,19 @@
        takes the slot the download card would have had, in front of the same anchor. app-cta.js
        is loaded by read.html and by index.html (whose Read panel mounts this hub natively); if
        it is missing we fall through to the old silent return. */
-    if (!dlCardVisible()) {
-      /* insertAutoBefore, not insertBefore (2026-08-15): signed out gets the two-zone signup card
-         (which carries the app line in its second zone), signed in gets the plain app card. */
-      if (window.ThaiEarAppCTA) {
-        window.ThaiEarAppCTA.insertAutoBefore(root.querySelector('.section-header') || root.firstChild, 'read');
-      }
+    /* SIGNED OUT → the signup card, in BOTH environments (owner, 2026-08-15).
+       In a browser it stands in for the download card that is withheld. In the app the real
+       download card renders below it, so the signup card goes in FRONT of it rather than instead
+       of it — otherwise a signed-out app user gets no ask at all, which is what happened when this
+       branch only ran in the !dlCardVisible() case. signupHtml() drops its app zone by itself in
+       the app, so the same call is right in both. */
+    var A = window.ThaiEarAppCTA;
+    var anchor = root.querySelector('.section-header') || root.firstChild;
+    if (A && A.authGuess && A.authGuess() === 'out') {
+      A.insertSignupBefore(anchor, 'read');
+      if (!dlCardVisible()) return;         // browser: the card IS the slot, nothing more to draw
+    } else if (!dlCardVisible()) {
+      if (A) A.insertBefore(anchor, 'read');   // signed in, cannot download → the plain app card
       return;
     }
     var card = document.createElement('div');

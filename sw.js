@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v309';   // v309: consent bar no longer covers the end of every page (body padding) — it was eating taps on prev/next; signup + end-of-topic cards restyled
+const VERSION = 'v310';   // v309: consent bar no longer covers the end of every page (body padding) — it was eating taps on prev/next; signup + end-of-topic cards restyled
                           // (dlRefPrefixes, r75's "lock-independent ground truth") instead of
                           // trusting the thaiear_offline_pl RECORD, matching player.js's
                           // dynOwnedPrefixes(). A record outlives evicted clips — an iOS PWA

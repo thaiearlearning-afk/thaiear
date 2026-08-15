@@ -324,10 +324,16 @@
          display:none while the Playlists panel is showing — so the card was inserted, reported
          present, and rendered 0×0 in the wrong panel. Duplicate ids across panels are a fact of
          the native-mount architecture; scope every lookup to the mounted root. */
-      /* insertAutoBefore, not insertBefore (2026-08-15): signed out gets the two-zone signup card
-         (which carries the app line in its second zone), signed in gets the plain app card. */
-      if (noDl && window.ThaiEarAppCTA) {
-        window.ThaiEarAppCTA.insertAutoBefore(rootEl.querySelector('#dl-batch-bar'), 'playlist');
+      /* SIGNED OUT → the signup card, in BOTH environments (owner, 2026-08-15).
+         In a browser it stands in for the withheld batch bar. In the app the batch bar is real and
+         stays, so the card goes in FRONT of it rather than instead of it — gating this on `noDl`
+         alone meant a signed-out app user got no ask at all. signupHtml() drops its app zone by
+         itself in the app, so one call serves both. */
+      var A = window.ThaiEarAppCTA;
+      if (A) {
+        var anchor = rootEl.querySelector('#dl-batch-bar');
+        if (A.authGuess && A.authGuess() === 'out') A.insertSignupBefore(anchor, 'playlist');
+        else if (noDl) A.insertBefore(anchor, 'playlist');
       }
     })();
     /* r85 — ONE SELECTION SET. A row is simply SELECTED, and the BUTTON supplies the verb. Rows
