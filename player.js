@@ -2625,8 +2625,15 @@
       var signInBtn = signedIn ? '' :
         '<button id="te-ps-signin" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
         'padding:11px 14px;border-radius:8px;border:0;background:#4B41AD;color:#fff;cursor:pointer;">Sign in</button>';
+      /* The second sentence is a STATEMENT OF FACT, not a signpost (owner-approved, 2026-08-15):
+         no destination, no price, no "subscribe", no "upgrade". It exists because a signed-in free
+         user is the genuinely stuck one — they hunt for a control that is deliberately absent and
+         conclude the app is broken. Passive ("can't be managed in the app") rather than
+         second-person on purpose: it describes the app instead of instructing the user.
+         ⚠ Signed-OUT keeps its original line and gains nothing — that person already has an
+         actionable next step (Sign in), so the note would be noise. Do not add a destination. */
       var stateNote = signedIn
-        ? 'You’re signed in on a free account.'
+        ? 'You’re signed in on a free account. Membership can’t be managed in the app.'
         : 'Already a Premium member? Sign in to listen.';
       ov.innerHTML =
         '<div role="dialog" aria-modal="true" style="background:#fff;border-radius:14px;max-width:360px;width:100%;' +
@@ -2889,7 +2896,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r174';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r175';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

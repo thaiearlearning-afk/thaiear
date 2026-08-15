@@ -295,7 +295,21 @@ function renderMembershipBox(s) {
   // steering to web payment). Subscribers manage their membership (cancel / update card / resume) on
   // the WEBSITE; the app just shows a neutral pointer box. Web keeps the full controls.
   var native = !!(window.ThaiEarAuth && window.ThaiEarAuth.isNative && window.ThaiEarAuth.isNative());
-  var manageBox = '<div style="margin-top:1rem;padding:0.85rem 1rem;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:13.5px;color:var(--text-secondary);line-height:1.5">To manage your premium membership, visit <strong style="color:var(--text-primary);font-weight:500">thaiear.com</strong> in your web browser.</div>';
+  /* ⚠ NO DESTINATION IS NAMED (2026-08-15). These used to read "visit thaiear.com in your web
+     browser". Saying where the thing CAN be done turns a statement of fact into a signpost, which
+     is the shape Google Play's anti-steering rule is about; "use a web browser" gives the user
+     exactly the same practical help without pointing anywhere. Do not put the domain back.
+     ⚠ Still shown ONLY to people who have already paid — the Free branch below deliberately
+     renders nothing in the app. That is the branch that would be steering; keep it empty. */
+  function noteBox(text) {
+    return '<div style="margin-top:1rem;padding:0.85rem 1rem;background:var(--surface);' +
+      'border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:13.5px;' +
+      'color:var(--text-secondary);line-height:1.5">' + text + '</div>';
+  }
+  var manageBox = noteBox('To manage your premium membership, use a web browser.');
+  // Lapsed/failed payment: same rule, but "manage your membership" is not what this person needs
+  // to hear — they are trying to fix a card.
+  var payBox = noteBox('To update your payment details, use a web browser.');
   {
       if (s && s.subscribed) {
         var endStr = '';
@@ -319,7 +333,7 @@ function renderMembershipBox(s) {
         box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong style="color:#B00020">Payment problem</strong> — your last payment didn’t go through.</p>' +
           '<p class="acct-muted" style="font-size:13px;margin-bottom:0.6rem">Update your card to keep your membership — access resumes automatically once it clears. No need to sign up again.</p>' +
           (native
-            ? manageBox
+            ? payBox
             : '<button class="btn btn-primary" onclick="openPortal()">Update payment method</button>' +
               '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>');
       } else {
