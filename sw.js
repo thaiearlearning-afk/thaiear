@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v307';   // v307: no app-card flash (hold until auth resolves); signup card shared via app-cta.js and now on the index too
+const VERSION = 'v308';   // v308: signup card renders at first paint from the durable-identity guess (no late insert, no shift); card now on all four surfaces
                           // (dlRefPrefixes, r75's "lock-independent ground truth") instead of
                           // trusting the thaiear_offline_pl RECORD, matching player.js's
                           // dynOwnedPrefixes(). A record outlives evicted clips — an iOS PWA

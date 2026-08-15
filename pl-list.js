@@ -324,8 +324,10 @@
          display:none while the Playlists panel is showing — so the card was inserted, reported
          present, and rendered 0×0 in the wrong panel. Duplicate ids across panels are a fact of
          the native-mount architecture; scope every lookup to the mounted root. */
+      /* insertAutoBefore, not insertBefore (2026-08-15): signed out gets the two-zone signup card
+         (which carries the app line in its second zone), signed in gets the plain app card. */
       if (noDl && window.ThaiEarAppCTA) {
-        window.ThaiEarAppCTA.insertBefore(rootEl.querySelector('#dl-batch-bar'), 'playlist');
+        window.ThaiEarAppCTA.insertAutoBefore(rootEl.querySelector('#dl-batch-bar'), 'playlist');
       }
     })();
     /* r85 — ONE SELECTION SET. A row is simply SELECTED, and the BUTTON supplies the verb. Rows
@@ -1031,7 +1033,12 @@
       if (rb) rb.parentNode.removeChild(rb);
       if (authReady() && !user()) {
         paintedJson = null;
-        root.innerHTML = '<p class="pl-note">Sign in (via the Menu) to create and play playlists. Playlists are free for every account.</p>';
+        /* The old "Sign in (via the Menu) to create and play playlists…" note is GONE
+           (owner, 2026-08-15). The signed-out signup card now sits directly above this list and
+           says the same thing while also giving the visitor something to act on — the note was
+           the second, weaker copy of one message on a single screen, and it pointed at a menu
+           rather than at a link. Left empty on purpose; the card IS the signed-out state. */
+        root.innerHTML = '';
         return;
       }
       var lists = currentLists();

@@ -1701,9 +1701,8 @@
          exactly the blue flash the owner reported on mobile (2026-08-15). Rendering nothing until
          we know is the only version with no repaint. auth.js sets isReady on both its success and
          its durable-identity failure path, so this is never a permanent hold. */
-      var st = window.ThaiEarAppCTA && window.ThaiEarAppCTA.authState
-             ? window.ThaiEarAppCTA.authState() : 'in';
-      if (st === 'pending') { bar.style.display = 'none'; return; }
+      var st = window.ThaiEarAppCTA && window.ThaiEarAppCTA.authGuess
+             ? window.ThaiEarAppCTA.authGuess() : 'in';
       if (st === 'out') {
         bar.className = 'offline-bar te-signup-host';
         bar.style.display = 'block';
@@ -2876,7 +2875,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r170';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r171';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });

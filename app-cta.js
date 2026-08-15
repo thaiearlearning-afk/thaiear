@@ -106,6 +106,7 @@
     /* per-slot spacing, mirroring the app card's */
     '.te-signup--index{margin:0 0 0.9rem}' +
     '.te-signup--playlist{margin:0 0 1rem}' +
+    '.te-signup--read{margin:1.5rem 0 0.25rem}' +
     '.offline-bar.te-signup-host{display:block;margin:0 0 1.25rem}';
 
   function injectCss() {
@@ -182,6 +183,15 @@
     return node;
   }
 
+  /* THE ONE ENTRY POINT ALL FOUR SURFACES SHOULD USE. Signed out gets the signup card (which
+     carries the app line in its second zone), signed in gets the plain app card. Keeping the
+     choice here rather than at each call site is the same reasoning as the header comment: a rule
+     shared by four surfaces drifts the moment each one holds its own copy of it. */
+  function insertAutoBefore(anchor, surface, next) {
+    return authGuess() === 'out' ? insertSignupBefore(anchor, surface, next)
+                                 : insertBefore(anchor, surface);
+  }
+
   /* ⚠ HOLD UNTIL AUTH RESOLVES — do NOT paint the app card while `isReady` is false.
      The two cards are chosen by sign-in state, so rendering either one early means repainting it
      a moment later. That is exactly the blue flash the owner saw on mobile (2026-08-15): the app
@@ -192,6 +202,33 @@
     var a = window.ThaiEarAuth;
     if (!a || !a.isReady) return 'pending';
     return (a.getUser && a.getUser()) ? 'in' : 'out';
+  }
+
+  /* ---- SYNCHRONOUS auth GUESS, so the right card can render at first paint ----
+     Holding until auth resolved removed the flash but left the slot empty meanwhile, so the card
+     landed late and shoved the playlist row down — owner-reported 2026-08-15, and the reason a
+     plain "hold" is not enough.
+
+     Reserving a height instead does not work either: the signup card and the app card differ by
+     60–80px at every width (measured: 198 vs 118.6 at 430px), so any single reserve is wrong for
+     one of them and shows as a gap.
+
+     So: read the SAME durable evidence auth.js itself falls back to when supabase is unavailable
+     — our own identity record, minus the explicit signed-out marker. It is written at sign-in and
+     cleared at sign-out, so it is right for every returning visitor and every fresh one; the only
+     way to be wrong is a session that expired server-side since the last visit, which then costs
+     exactly one swap when auth settles.
+
+     ⚠ Read localStorage DIRECTLY rather than calling into auth.js: this has to answer before
+     auth.js has finished loading, which is the entire point. The two key names must stay in step
+     with ID_KEY / SIGNED_OUT_KEY in auth.js. */
+  function authGuess() {
+    var st = authState();
+    if (st !== 'pending') return st;                 // real answer beats the guess
+    try {
+      if (localStorage.getItem('thaiear_signed_out') === '1') return 'out';
+      return localStorage.getItem('thaiear_identity') ? 'in' : 'out';
+    } catch (_) { return 'out'; }
   }
   // Put the card where the withheld control would have been. No-op on a missing anchor, so a
   // call site whose markup changed shape fails quiet rather than throwing mid-render.
@@ -211,6 +248,8 @@
     signupHtml: signupHtml,
     signupEl: signupEl,
     insertSignupBefore: insertSignupBefore,
-    authState: authState
+    insertAutoBefore: insertAutoBefore,
+    authState: authState,
+    authGuess: authGuess
   };
 })();

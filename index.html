@@ -1299,9 +1299,9 @@ if (!OFFLINE_UI) {
   var _teCtaState = null;
   function teMountCta() {
     var A = window.ThaiEarAppCTA;
-    if (!A || !A.authState) return;
-    var st = A.authState();
-    if (st === 'pending' || st === _teCtaState) return;   // unknown yet, or already correct
+    if (!A || !A.authGuess) return;
+    var st = A.authGuess();                               // synchronous guess, so this can run at parse time
+    if (st === _teCtaState) return;                       // already showing the right one
     var anchor = document.getElementById('dl-batch-bar');
     if (!anchor) return;
     if (_teCta && _teCta.parentNode) _teCta.parentNode.removeChild(_teCta);

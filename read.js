@@ -288,8 +288,10 @@
        is loaded by read.html and by index.html (whose Read panel mounts this hub natively); if
        it is missing we fall through to the old silent return. */
     if (!dlCardVisible()) {
+      /* insertAutoBefore, not insertBefore (2026-08-15): signed out gets the two-zone signup card
+         (which carries the app line in its second zone), signed in gets the plain app card. */
       if (window.ThaiEarAppCTA) {
-        window.ThaiEarAppCTA.insertBefore(root.querySelector('.section-header') || root.firstChild, 'read');
+        window.ThaiEarAppCTA.insertAutoBefore(root.querySelector('.section-header') || root.firstChild, 'read');
       }
       return;
     }
