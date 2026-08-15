@@ -42,7 +42,11 @@
   'use strict';
   try {
     if (localStorage.getItem('te_layoutdbg') === 'off') return;
-    if (localStorage.getItem('te_layoutdbg_ok') !== '1' &&
+    /* ⚠ 'on' counts too. nav.js writes te_layoutdbg='on' when it sees ?layoutdbg=1, but this gate
+       only accepted te_layoutdbg_ok / an identity / the param itself — so arming by URL on one
+       page left the RECORDER silent on the next, and the overlay then had nothing to show. */
+    if (localStorage.getItem('te_layoutdbg') !== 'on' &&
+        localStorage.getItem('te_layoutdbg_ok') !== '1' &&
         !localStorage.getItem('thaiear_identity') &&
         !/[?&]layoutdbg=1/.test(location.search)) return;
   } catch (_) { return; }
@@ -124,6 +128,11 @@
   }
 
   snap('player.js');
+  /* ⚠ ATTACH THE OBSERVER NOW, not on the first interval tick. #player-root is static markup so it
+     already exists here, and on a fast (warm/local) load the whole mount-and-render completes
+     inside 20ms — so waiting for the first tick meant the observer missed every mutation and the
+     log came back empty. Same late-start mistake as loading the recorder from nav.js. */
+  watch();
   var iv = setInterval(function () { watch(); snap(''); }, 20);
   setTimeout(function () { clearInterval(iv); snap('stop'); }, 15000);
   window.addEventListener('thaiear:auth', function () { snap('auth'); deep('auth'); });
@@ -1805,6 +1814,14 @@
          its durable-identity failure path, so this is never a permanent hold. */
       var st = window.ThaiEarAppCTA && window.ThaiEarAppCTA.authGuess
              ? window.ThaiEarAppCTA.authGuess() : 'in';
+      /* ⚠ IDEMPOTENCE GUARD, same reason as renderProgress: auth.js legitimately notifies ~5
+         times during startup, so this branch rebuilt the card FIVE times in ~140ms (measured
+         2026-08-15). Both card branches are pure functions of `st`, so a signature is enough.
+         ⚠ ONLY the card branches. The download-UI branch below must keep re-rendering — it
+         reflects live download progress, and freezing it would be a real regression. */
+      var barSig = 'card|' + st + '|' + (PLMODE ? 'pl' : 'topic');
+      if (bar.getAttribute('data-sig') === barSig) return;
+      bar.setAttribute('data-sig', barSig);
       if (st === 'out') {
         bar.className = 'offline-bar te-signup-host';
         bar.style.display = 'block';
@@ -1820,6 +1837,7 @@
       }
       return;
     }
+    bar.removeAttribute('data-sig');  // leaving the card branches — the download UI owns the bar now
     bar.className = 'offline-bar';   // drop te-appcta-host if a previous paint took the branch above
     bar.style.display = 'flex';
     if (DYN) {
@@ -3031,7 +3049,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r187';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r188';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -7368,7 +7386,9 @@
     box.classList.toggle('te-anon', guessOut && !inApp);
     box.classList.toggle('te-rsv-card', guessOut && inApp);
     var key = progressKey();
-    if (!key) { box.innerHTML = ''; return; }   // playlist without a resolvable id → as before
+    /* ⚠ Every blanking path clears data-sig too — otherwise a later render whose signature
+       happens to match the last PAINTED one is skipped and the slot stays empty permanently. */
+    if (!key) { box.innerHTML = ''; box.removeAttribute('data-sig'); return; }   // playlist without a resolvable id → as before
     var a = window.ThaiEarAuth;
     /* ⚠ DO NOT HOLD FOR isReady HERE — that is what makes the progress bar flash.
        This used to render nothing until auth settled, then paint. In the APP that produced a
@@ -7380,7 +7400,7 @@
        Falls back to the old hold only if app-cta.js is missing (stale cache / blocked script). */
     var G = G0;
     var guess = (G && G.authGuess) ? G.authGuess() : null;
-    if (!a || (!a.isReady && !guess)) { box.innerHTML = ''; return; }
+    if (!a || (!a.isReady && !guess)) { box.innerHTML = ''; box.removeAttribute('data-sig'); return; }
     var user = a.getUser && a.getUser();
     /* ⚠ "SIGNED IN, BUT THE USER OBJECT HAS NOT ARRIVED YET" IS ITS OWN STATE — treat it as
        signed IN, not signed out. getUser() returns null for the first few hundred ms even on a
@@ -7427,14 +7447,30 @@
          (owner-reported, 2026-08-15). It renders here instead, without its app zone — telling
          someone inside the app to go and get the app is noise. */
       var A = window.ThaiEarAppCTA;
+      /* Same guard for the signed-OUT shape. It must be a DIFFERENT signature from the signed-in
+         one above, or signing in/out would be skipped as "no change". */
+      var outSig = ['out', A && A.noDownloadUi && !A.noDownloadUi() ? 'app' : 'web'].join('|');
+      if (box.getAttribute('data-sig') === outSig) return;
+      box.setAttribute('data-sig', outSig);
       if (A && A.noDownloadUi && !A.noDownloadUi()) {
         box.innerHTML = A.signupHtml(PLMODE ? 'playlist' : 'topic', PAGE_FILE, { app: false });
       } else {
-        box.innerHTML = '';
+        box.innerHTML = '';   // browser: the card lives in the offline bar; sig already set above
       }
       return;
     }
     var count = (user && a.getTopicProgress) ? a.getTopicProgress(key) : 0;
+    /* ⚠ IDEMPOTENCE GUARD — NOT a change to auth.js, which is correct. auth.js legitimately calls
+       notify() ~5 times during startup (main resolution, cached subscription, lifetime,
+       desktop-DL, profile), so this ran FOUR times in ~2ms and tore down and rebuilt the card each
+       time (measured on device, 2026-08-15). The events are right; re-rendering identical markup
+       is not, and every rebuild throws away focus and restarts the count animation.
+       Compare everything that decides the output and bail when nothing moved.
+       ⚠ ADD TO THIS SIGNATURE IF YOU ADD AN INPUT to the markup below, or the new input will
+       render once and then never update. */
+    var sigNow = ['in', key, user.id, count, PLMODE ? 1 : 0].join('|');
+    if (box.getAttribute('data-sig') === sigNow) return;
+    box.setAttribute('data-sig', sigNow);
     box.innerHTML =
       '<div class="prog-ctl-card">' +
         '<div class="prog-ctl-left">' +
