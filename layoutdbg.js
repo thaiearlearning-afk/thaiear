@@ -11,6 +11,8 @@
           Anywhere with an address bar you can also force it with ?layoutdbg=1.
    OFF  : tap ✕ on the overlay. That persists — it stays off on that device until re-armed.
    BACK : visit any page with ?layoutdbg=1 (web / desktop), or clear the key.
+   ⚠ Once the owner hash has matched once on a device, it is remembered in te_layoutdbg_ok, so
+     the tool KEEPS WORKING AFTER LOGOUT — the signed-out state is exactly what it is for.
    ⚠ The app and the installed PWA have NO ADDRESS BAR, so ?layoutdbg=1 does not exist there.
    That is why ON is the default rather than something you arm — on the two devices where these
    bugs actually appear, an arm-by-URL switch would make the tool unreachable.
@@ -142,5 +144,21 @@
       return localStorage.getItem('te_layoutdbg') !== 'off';
     } catch (_) { return true; }
   }
-  if (armed()) checkOwner().then(function (ok) { if (ok) mount(); });
+  /* ⚠ REMEMBER THAT THE OWNER WAS VERIFIED — thaiear_identity does NOT survive an explicit
+     logout. auth.js's clearIdentity() removes it and raises the signed-out marker, so a gate
+     reading only that record vanished the moment the owner signed out (reported 2026-08-15) —
+     which is precisely when several of these bugs appear. It survives a session EXPIRY, not a
+     deliberate sign-out; those are different things and this depended on the wrong one.
+     So once the hash has matched on this device, keep our own key. It is ours, so nothing in the
+     auth flow clears it, and ?layoutdbg=0 / the ✕ still turn the tool off.
+     Privacy, not security — same reasoning as ownersim.js: a stranger who set this by hand would
+     see a readout of their OWN auth state and nothing else. */
+  var OK_KEY = 'te_layoutdbg_ok';
+  function remember() { try { localStorage.setItem(OK_KEY, '1'); } catch (_) {} }
+  function wasOwner() { try { return localStorage.getItem(OK_KEY) === '1'; } catch (_) { return false; } }
+
+  if (armed()) {
+    if (wasOwner()) mount();
+    else checkOwner().then(function (ok) { if (ok) { remember(); mount(); } });
+  }
 })();

@@ -552,7 +552,10 @@
     try {
       if (/[?&]layoutdbg=1/.test(location.search)) localStorage.setItem('te_layoutdbg', 'on');
       if (localStorage.getItem('te_layoutdbg') === 'off') return;
-      if (!localStorage.getItem('te_layoutdbg') && !localStorage.getItem('thaiear_identity')) return;
+      /* ⚠ te_layoutdbg_ok too: thaiear_identity is wiped by an explicit logout, and signed-out
+         is the state this tool most needs to see. */
+      if (!localStorage.getItem('te_layoutdbg') && localStorage.getItem('te_layoutdbg_ok') !== '1' &&
+          !localStorage.getItem('thaiear_identity')) return;
     } catch (_) { return; }
     if (document.getElementById('thaiear-layoutdbg-js')) return;
     const s = document.createElement('script');
