@@ -62,42 +62,16 @@
     }).catch(function () { return false; });
   }
 
-  var t0 = Date.now();
-  var lines = [];
-  var last = '';
+  /* ⚠ THE RECORDER LIVES IN player.js, NOT HERE — see the block at the top of that file.
+     This file is injected by nav.js, which runs LAST on a topic page, so by the time it exists
+     auth has already resolved and any flash is over. It renders window.__teLayoutLog, which was
+     being filled from before the player mounted. Do not move recording back into this file. */
+  function lines() { return window.__teLayoutLog || []; }
   var box = null;
-
-  function has(k) { try { return localStorage.getItem(k) ? 'Y' : '-'; } catch (_) { return '?'; } }
-
-  /* One line per DISTINCT state, not per poll — the point is the sequence of changes. */
-  function snap(tag) {
-    var a = window.ThaiEarAuth;
-    var prog = document.getElementById('progress-controls');
-    var bar = document.getElementById('offline-bar');
-    var slot = !prog ? '-'
-      : prog.querySelector('.te-signup') ? 'CARD'
-      : prog.querySelector('.prog-ctl-card') ? 'BAR'
-      : (prog.innerHTML.trim() === '' ? 'empty' : '?');
-    var obar = !bar ? '-'
-      : bar.querySelector('.te-signup') ? 'CARD'
-      : bar.querySelector('.te-appcta') ? 'APP'
-      : (bar.style.display === 'none' ? 'hidden' : '?');
-    var rec =
-      'rdy=' + (a && a.isReady ? 'Y' : 'N') +
-      ' usr=' + (a && a.getUser && a.getUser() ? 'Y' : 'N') +
-      ' prov=' + (a && a.isProvisional ? (a.isProvisional() ? 'Y' : 'N') : '?') +
-      ' id=' + has('thaiear_identity') +
-      ' out=' + has('thaiear_signed_out') +
-      ' | slot=' + slot + ' bar=' + obar;
-    if (rec === last) return;
-    last = rec;
-    lines.push('+' + String(Date.now() - t0).padStart(5) + 'ms ' + rec + (tag ? '  <' + tag + '>' : ''));
-    paint();
-  }
 
   function paint() {
     if (!box) return;
-    box.textContent = lines.join('\n');
+    box.textContent = lines().join('\n');
   }
 
   function mount() {
@@ -121,7 +95,7 @@
     close.style.cssText = 'position:fixed;right:8px;bottom:calc(45vh + 6px);z-index:2147483647;' +
       'font:12px system-ui;padding:6px 12px;border-radius:6px;border:0;background:#4B41AD;color:#fff';
     close.onclick = function () {
-      try { navigator.clipboard.writeText(lines.join('\n')); close.textContent = 'copied'; }
+      try { navigator.clipboard.writeText(lines().join('\n')); close.textContent = 'copied'; }
       catch (_) { close.textContent = 'select manually'; }
     };
     (document.body || document.documentElement).appendChild(box);
@@ -132,10 +106,9 @@
     /* Poll rather than rely on events: the whole question is what happens BETWEEN them, and a
        missed transition is the one that matters. 40ms for 12s is plenty to catch a 1200ms race
        and a swap, and it stops on its own so it cannot sit burning battery. */
-    snap('mount');
-    var iv = setInterval(function () { snap(''); }, 40);
-    setTimeout(function () { clearInterval(iv); snap('stop'); }, 12000);
-    window.addEventListener('thaiear:auth', function () { snap('auth-event'); });
+    /* Repaint while the recorder is still collecting. The recorder stops itself at 15s. */
+    var iv = setInterval(paint, 150);
+    setTimeout(function () { clearInterval(iv); paint(); }, 16000);
   }
 
   function armed() {

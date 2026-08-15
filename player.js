@@ -28,6 +28,53 @@
    "main-pause coordination" marks below.
    ============================================================ */
 
+/* ── layoutdbg RECORDER (owner-only; renderer is layoutdbg.js) ────────────────────────────────
+   ⚠ RECORDING AND RENDERING ARE SPLIT ON PURPOSE, and this is why. layoutdbg.js is injected by
+   nav.js, which runs LAST on a topic page — after app-cta.js, player.js, topics.js, consent.js.
+   By the time it loaded, auth had already resolved and the flash was over, so its first sample
+   read `rdy=Y` at its own "0ms" and it recorded nothing at all while the owner could plainly see
+   a flash (2026-08-15). A probe that starts after the event cannot see the event.
+   This runs at the TOP of player.js instead — before the player mounts, before anything is
+   painted into the slots — and timestamps against performance.now(), i.e. PAGE start, not script
+   start. layoutdbg.js later just renders what this collected.
+   Same two-stage gate as everything else: cheap flag check here, owner hash in the renderer. */
+(function () {
+  'use strict';
+  try {
+    if (localStorage.getItem('te_layoutdbg') === 'off') return;
+    if (localStorage.getItem('te_layoutdbg_ok') !== '1' &&
+        !localStorage.getItem('thaiear_identity') &&
+        !/[?&]layoutdbg=1/.test(location.search)) return;
+  } catch (_) { return; }
+  var log = window.__teLayoutLog = (window.__teLayoutLog || []);
+  var last = '';
+  function has(k) { try { return localStorage.getItem(k) ? 'Y' : '-'; } catch (_) { return '?'; } }
+  function snap(tag) {
+    var a = window.ThaiEarAuth;
+    var prog = document.getElementById('progress-controls');
+    var bar = document.getElementById('offline-bar');
+    var root = document.getElementById('player-root');
+    var slot = !prog ? '-' : prog.querySelector('.te-signup') ? 'CARD'
+      : prog.querySelector('.prog-ctl-card') ? 'BAR' : (prog.innerHTML.trim() === '' ? 'empty' : '?');
+    var obar = !bar ? '-' : bar.querySelector('.te-signup') ? 'CARD'
+      : bar.querySelector('.te-appcta') ? 'APP'
+      : (bar.style.display === 'none' ? 'hidden' : (bar.innerHTML.trim() === '' ? 'empty' : 'DL'));
+    var rec = 'rdy=' + (a && a.isReady ? 'Y' : a ? 'N' : '-') +
+      ' usr=' + (a && a.getUser && a.getUser() ? 'Y' : 'N') +
+      ' id=' + has('thaiear_identity') + ' out=' + has('thaiear_signed_out') +
+      ' | slot=' + slot + ' bar=' + obar +
+      ' rootH=' + (root ? Math.round(root.getBoundingClientRect().height) : '-');
+    if (rec === last) return;
+    last = rec;
+    log.push('+' + String(Math.round(performance.now())).padStart(5) + 'ms ' + rec + (tag ? '  <' + tag + '>' : ''));
+  }
+  snap('player.js');
+  var iv = setInterval(function () { snap(''); }, 20);
+  setTimeout(function () { clearInterval(iv); snap('stop'); }, 15000);
+  window.addEventListener('thaiear:auth', function () { snap('auth'); });
+  window.__teLayoutSnap = snap;
+})();
+
 (function () {
   'use strict';
 
@@ -2914,7 +2961,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r183';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r184';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
