@@ -2931,7 +2931,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r179';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r180';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -7398,12 +7398,15 @@
     }
   }
   window.addEventListener('thaiear:auth', initProgress);
+  window.addEventListener('thaiear:authsettled', initProgress);
   /* The offline bar's app-card branch is now auth-dependent (suppressed while signed out, since
      the signup card carries the app line), and auth settles AFTER first paint — so it has to
      repaint here or a signed-in visitor keeps the signed-out state for the whole session. */
   window.addEventListener('thaiear:auth', renderOfflineBar);
+  window.addEventListener('thaiear:authsettled', renderOfflineBar);   // grace period elapsed — see app-cta authSettled()
   mountEndCta();
   window.addEventListener('thaiear:auth', mountEndCta);
+  window.addEventListener('thaiear:authsettled', mountEndCta);
 
   /* ---- sentence flagging ----
      Toggle this sentence's flag (saved to the user's account). Debounced + a pop so a

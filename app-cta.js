@@ -285,11 +285,16 @@
      never not at all. */
   var GRACE_MS = 2500;
   var firstSeen = Date.now();
-  /* Nothing fires an event when the grace period simply elapses, so schedule one. Re-dispatching
-     thaiear:auth means every surface that already listens re-renders with no call-site changes. */
+  /* Nothing fires an event when the grace period simply elapses, so schedule one.
+     ⚠ A DEDICATED EVENT, NOT thaiear:auth. Re-dispatching the real one looked convenient — every
+     surface already listens — but it wakes all 18 listeners site-wide for what is only a repaint
+     of two slots, and auth has NOT actually changed. player.js's subscription listener calls
+     stampVerified() on it, which writes thaiear_lastVerified and EXTENDS the offline licence
+     window; attrib.js is spared only because it reads ev.detail, which a synthetic Event lacks.
+     Only the surfaces that gate on authSettled() need to hear this. */
   try {
     setTimeout(function () {
-      try { window.dispatchEvent(new Event('thaiear:auth')); } catch (_) {}
+      try { window.dispatchEvent(new Event('thaiear:authsettled')); } catch (_) {}
     }, GRACE_MS + 50);
   } catch (_) {}
   function authSettled() {
