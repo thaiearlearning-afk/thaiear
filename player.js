@@ -1701,8 +1701,15 @@
          exactly the blue flash the owner reported on mobile (2026-08-15). Rendering nothing until
          we know is the only version with no repaint. auth.js sets isReady on both its success and
          its durable-identity failure path, so this is never a permanent hold. */
-      var st = window.ThaiEarAppCTA && window.ThaiEarAppCTA.authGuess
-             ? window.ThaiEarAppCTA.authGuess() : 'in';
+      /* ⚠ WAIT FOR A VERIFIED ANSWER — do not guess (2026-08-15). authGuess() reads localStorage,
+         and a device holding a stale `thaiear_identity` answers "signed in" on EVERY load for
+         ever, so the guess painted the app card and then swapped it for the signup card each time.
+         authSettled() additionally requires that auth is not still running on that unverified
+         record; it self-releases after a grace period so offline is never left blank. */
+      var A0 = window.ThaiEarAppCTA;
+      if (A0 && A0.authSettled && !A0.authSettled()) { bar.style.display = 'none'; return; }
+      var st = (A0 && A0.authState) ? A0.authState() : 'in';
+      if (st === 'pending') { bar.style.display = 'none'; return; }
       if (st === 'out') {
         bar.className = 'offline-bar te-signup-host';
         bar.style.display = 'block';
@@ -2924,7 +2931,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r178';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r179';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -7263,22 +7270,19 @@
        synchronously — makes the FIRST paint the right one, so there is nothing to replace.
        Falls back to the old hold only if app-cta.js is missing (stale cache / blocked script). */
     var G = G0;
-    var guess = (G && G.authGuess) ? G.authGuess() : null;
-    if (!a || (!a.isReady && !guess)) { box.innerHTML = ''; return; }
+    /* ⚠ ONE PAINT, AND ONLY WHEN THE ANSWER IS VERIFIED (2026-08-15). The previous version
+       painted optimistically from authGuess(), which is permanently wrong on a device carrying a
+       stale identity — that is the working progress bar flashing before the signup card on every
+       topic open. Rendering nothing until authSettled() costs a brief blank inside the reserve;
+       painting the wrong thing costs a visible swap every single time. */
+    if (G && G.authSettled && !G.authSettled()) { box.innerHTML = ''; return; }
+    if (!a || !a.isReady) { box.innerHTML = ''; return; }
     var user = a.getUser && a.getUser();
-    /* ⚠ "SIGNED IN, BUT THE USER OBJECT HAS NOT ARRIVED YET" IS ITS OWN STATE — treat it as
-       signed IN, not signed out. getUser() returns null for the first few hundred ms even on a
-       device that is definitely signed in, so an earlier version fell through to the signed-out
-       branch, painted the signup card, and then repainted the real progress bar: the flash AND
-       the downward shove the owner reported (2026-08-15), because the two are different heights.
-       Painting the signed-in card straight away makes the box the right size and shape from the
-       first paint; only the COUNT changes when auth settles, which is a text swap inside a
-       fixed-height row and moves nothing.
-       ⚠ The controls are inert while pending (pointer-events, not [disabled] — [disabled] dims
-       them to 0.55 opacity, which would just trade a layout flash for a colour one). A tap in
-       that window would otherwise reach progStep() with a null user and route a signed-IN person
-       to join.html. */
-    var pending = !a.isReady && !user && guess === 'in';
+    /* By here the answer is READY and VERIFIED, so getUser() is trustworthy and this is the only
+       paint. An earlier attempt rendered optimistically for "signed in but the user object has
+       not arrived yet" and made its controls inert with pointer-events; both are gone, because
+       authSettled() means that window no longer reaches this code. Do not reintroduce a
+       speculative paint here — the swap it causes is the bug, not the blank it avoids. */
     var thing = PLMODE ? 'playlist' : 'topic';
     /* SIGNED OUT → the signup card, on free and premium topics alike (owner, 2026-08-15).
        This replaces BOTH of the old signed-out branches: the "Sign in to track progress →" prompt
@@ -7299,7 +7303,7 @@
        and no reason to want progress tracked, so the old copy asked them to value a feature they
        could not yet have. This leads with the benefit and names what a free account actually
        gives — deliberately NOT downloads, which are tier-keyed, not auth-keyed. */
-    if (!user && !pending) {
+    if (!user) {
       /* ⚠ TWO DIFFERENT PLACES, DECIDED BY app-vs-browser — do not collapse them.
          BROWSER: the card is NOT rendered here, it goes in the offline-bar slot BELOW
          .player-card. Measured 2026-08-15 at 430px: rendered in THIS slot it is 198px tall and
@@ -7318,14 +7322,14 @@
       }
       return;
     }
-    var count = (user && a.getTopicProgress) ? a.getTopicProgress(key) : 0;
+    var count = a.getTopicProgress ? a.getTopicProgress(key) : 0;
     box.innerHTML =
       '<div class="prog-ctl-card">' +
         '<div class="prog-ctl-left">' +
           '<span class="prog-ctl-count" id="prog-count">' + count + '</span>' +
           '<span class="prog-ctl-label">complete listen' + (count === 1 ? '' : 's') + '</span>' +
         '</div>' +
-        '<div class="prog-ctl-btns"' + (pending ? ' style="pointer-events:none"' : '') + '>' +
+        '<div class="prog-ctl-btns">' +
           '<button class="prog-ctl-btn prog-ctl-minus" id="prog-remove" onclick="progRemove()" aria-label="Remove one listen" title="Remove one listen">−</button>' +
           '<button class="prog-ctl-btn prog-ctl-add" id="prog-add" onclick="progAdd()" aria-label="Add one listen">+ Add progress</button>' +
           '<a class="prog-ctl-my" href="progress.html">My progress</a>' +

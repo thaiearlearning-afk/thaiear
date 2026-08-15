@@ -262,6 +262,43 @@
      auth.js's own anySignedIn() reads exactly these three things in this order; keep them in step.
      The key is discovered by PATTERN rather than rebuilt from the project ref, so this file does
      not have to know it — supabase stores under `sb-<ref>-auth-token`. */
+  /* ═══ authSettled() — "is the auth answer worth PAINTING yet?" ═══════════════════════════════
+     THE PROBLEM IT REPLACES. authGuess() reads localStorage synchronously so a card could paint
+     at first mount. But a device carrying a stale `thaiear_identity` answers "signed in" on EVERY
+     page load, for ever — auth.js only clears that record on an explicit sign-out. So the guess
+     was not an occasional miss, it was permanently wrong for those users, and every surface
+     painted the signed-in UI and then corrected to the signed-out one. Reported as the working
+     progress bar flashing before the signup card on every topic open (owner, 2026-08-15).
+
+     THE RULE NOW: paint nothing until the answer is BOTH ready and verified. One paint, correct.
+     The slots hold their space via CSS reserves, so "nothing yet" costs a brief blank, not a jump.
+
+     ⚠ isReady IS NOT ENOUGH. auth.js races getSession() against a 1200ms timer that resolves with
+     the stored identity, and sets isReady on whichever wins — so isReady goes true for the
+     PROVISIONAL restore too. isProvisional() is the extra bit that distinguishes them.
+
+     ⚠ THE TIMEOUT IS NOT OPTIONAL. Offline, verification never arrives, and `navigator.onLine`
+     cannot be used to detect that — it reports ONLINE in airplane mode in this WebView (see
+     sw.js). Without a bound, an offline signed-in user would wait for ever and simply never get
+     their progress bar. After GRACE_MS we accept the provisional answer, which is exactly what
+     auth.js's own durable-identity design intends offline. Worst case is the bar arriving late,
+     never not at all. */
+  var GRACE_MS = 2500;
+  var firstSeen = Date.now();
+  /* Nothing fires an event when the grace period simply elapses, so schedule one. Re-dispatching
+     thaiear:auth means every surface that already listens re-renders with no call-site changes. */
+  try {
+    setTimeout(function () {
+      try { window.dispatchEvent(new Event('thaiear:auth')); } catch (_) {}
+    }, GRACE_MS + 50);
+  } catch (_) {}
+  function authSettled() {
+    var a = window.ThaiEarAuth;
+    if (!a || !a.isReady) return false;
+    if (a.isProvisional && a.isProvisional()) return (Date.now() - firstSeen) >= GRACE_MS;
+    return true;
+  }
+
   function authGuess() {
     var st = authState();
     if (st !== 'pending') return st;                 // real answer beats the guess
@@ -306,6 +343,7 @@
     insertSignupBefore: insertSignupBefore,
     insertAutoBefore: insertAutoBefore,
     authState: authState,
-    authGuess: authGuess
+    authGuess: authGuess,
+    authSettled: authSettled
   };
 })();
