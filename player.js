@@ -90,12 +90,33 @@
     var root = document.getElementById('player-root');
     if (!root || !window.MutationObserver) return;
     watched = true;
+    /* ⚠ LOG addedNodes FROM THE RECORD, NOT THE SLOT'S CURRENT CONTENTS. The callback is a
+       MICROTASK: several mutations batch into one call, so reading innerHTML there reports only
+       the LAST state and silently swallows anything that was inserted and replaced in between —
+       which is exactly the "it flashed then was replaced" case this tool exists to catch. The
+       MutationRecord keeps what was really added, so a superseded render still appears. */
     new MutationObserver(function (muts) {
       for (var i = 0; i < muts.length; i++) {
-        var t = muts[i].target;
-        var inSlot = t && t.id === 'progress-controls';
-        if (!inSlot && t && t.closest) inSlot = !!t.closest('#progress-controls');
-        if (inSlot) { deep('mutation'); break; }
+        var m = muts[i], t = m.target;
+        /* Both slots, tagged — the owner's other hypothesis is the APP CARD appearing in the
+           offline bar and then being replaced once the app realises it can download. That would
+           look identical and sit in the same region, so watch it too rather than assume. */
+        var where = !t ? null
+          : (t.id === 'progress-controls' || (t.closest && t.closest('#progress-controls'))) ? 'SLOT'
+          : (t.id === 'offline-bar' || (t.closest && t.closest('#offline-bar'))) ? 'OBAR' : null;
+        if (!where) continue;
+        var added = m.addedNodes || [];
+        for (var j = 0; j < added.length; j++) {
+          var n = added[j];
+          if (!n || n.nodeType !== 1) continue;
+          log.push('    ' + String(Math.round(performance.now())).padStart(5) + 'ms  ' + where + ' ADDED ' +
+            (n.className || n.tagName) + ' :: ' +
+            String(n.outerHTML || '').replace(/\s+/g, ' ').slice(0, 90));
+        }
+        if (!added.length && m.removedNodes && m.removedNodes.length) {
+          log.push('    ' + String(Math.round(performance.now())).padStart(5) + 'ms  ' + where + ' REMOVED ' +
+            ((m.removedNodes[0] && (m.removedNodes[0].className || m.removedNodes[0].tagName)) || '?'));
+        }
       }
       snap('');
     }).observe(root, { childList: true, subtree: true, attributes: true });
@@ -2995,7 +3016,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r185';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r186';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
