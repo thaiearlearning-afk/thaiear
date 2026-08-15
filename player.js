@@ -2103,6 +2103,21 @@
        with no JS and no ordering risk; the reserve still applies in full to the signed-in counter,
        which is what it was measured for. */
     .progress-controls.te-anon:empty { min-height: 0; margin-bottom: 0; }
+    /* ---- APP / INSTALLED PWA, SIGNED OUT: the signup card lands in THIS slot ----
+       ⚠ THIS SLOT IS THE FIRST CHILD OF #player-root, so when it grows the ENTIRE PLAYER moves
+       down. Collapsing it to 0 and then filling it with a 133px card shoved the play button and
+       the transport row off the screen — which reads as the player "flashing", because the
+       scrubber appears and is then displaced. Confirmed frame-by-frame from an iPhone PWA
+       recording, 2026-08-15: player paints, then the card is inserted above it and pushes it out
+       of view. In a BROWSER the card goes to the offline bar instead, so this slot really does
+       stay empty there and te-anon's collapse above is correct — do not merge the two cases.
+       ⚠ Measured, not rounded: swept width by width IN THE REAL PAGE, not a synthetic
+       container — 153 up to 337, 133 to 573, 114 above. A first pass measured the card in a
+       stand-alone box and got 559 as the upper breakpoint, which left a 19px shift at 560. Re-measure if its copy or padding changes. Higher specificity than the plain
+       .progress-controls rules, so it beats them inside their media queries too. */
+    .progress-controls.te-rsv-card { min-height: 133px; }
+    @media (max-width: 337.98px) { .progress-controls.te-rsv-card { min-height: 153px; } }
+    @media (min-width: 574px)    { .progress-controls.te-rsv-card { min-height: 114px; } }
     /* --- end-of-topic ask (2026-08-15). Sits between the last sentence and the prev/next nav.
        No CLS reserve needed: it mounts far below the fold, so a late auth-gated insert there
        shifts nothing the visitor is looking at. --- */
@@ -3016,7 +3031,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r186';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r187';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -7342,7 +7357,16 @@
        Guessing wrong costs a gap, never a shift; a missing app-cta.js leaves the class off, which
        keeps the full reserve — the safe direction. */
     var G0 = window.ThaiEarAppCTA;
-    box.classList.toggle('te-anon', !!(G0 && G0.authGuess && G0.authGuess() === 'out'));
+    /* Which reserve this slot needs depends on WHERE the signed-out card renders:
+         app / installed PWA -> here, so hold its height (te-rsv-card)
+         browser             -> the offline bar, so this stays empty and collapses (te-anon)
+       Both predicates are synchronous, so the right reserve is in place before anything paints.
+       A wrong guess costs at most the difference between the card and the bar (~52px), never the
+       133px the collapse was costing. */
+    var guessOut = !!(G0 && G0.authGuess && G0.authGuess() === 'out');
+    var inApp = !!(G0 && G0.noDownloadUi && !G0.noDownloadUi());
+    box.classList.toggle('te-anon', guessOut && !inApp);
+    box.classList.toggle('te-rsv-card', guessOut && inApp);
     var key = progressKey();
     if (!key) { box.innerHTML = ''; return; }   // playlist without a resolvable id → as before
     var a = window.ThaiEarAuth;
