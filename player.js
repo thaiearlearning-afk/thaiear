@@ -68,10 +68,44 @@
     last = rec;
     log.push('+' + String(Math.round(performance.now())).padStart(5) + 'ms ' + rec + (tag ? '  <' + tag + '>' : ''));
   }
+  /* ⚠ POLLING ALONE IS NOT ENOUGH, and that is why the first traces disagreed with what the
+     owner could see. A 20ms poll misses anything shorter than 20ms, and bucketing the slot into
+     CARD/BAR/empty hides a render this file has mislabelled. A MutationObserver fires on EVERY
+     DOM change synchronously, so nothing can slip between samples, and recording the actual
+     markup means the trace shows what really rendered rather than my classification of it. */
+  function sig(el) {
+    if (!el) return '-';
+    var h = el.innerHTML.trim();
+    if (!h) return 'EMPTY';
+    var first = el.firstElementChild;
+    return (first ? first.className || first.tagName : '?') + ' :: ' + h.replace(/\s+/g, ' ').slice(0, 70);
+  }
+  function deep(tag) {
+    var prog = document.getElementById('progress-controls');
+    log.push('    ' + String(Math.round(performance.now())).padStart(5) + 'ms  SLOT<' + tag + '> ' + sig(prog));
+  }
+  var watched = false;
+  function watch() {
+    if (watched) return;
+    var root = document.getElementById('player-root');
+    if (!root || !window.MutationObserver) return;
+    watched = true;
+    new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var t = muts[i].target;
+        var inSlot = t && t.id === 'progress-controls';
+        if (!inSlot && t && t.closest) inSlot = !!t.closest('#progress-controls');
+        if (inSlot) { deep('mutation'); break; }
+      }
+      snap('');
+    }).observe(root, { childList: true, subtree: true, attributes: true });
+    deep('watch-start');
+  }
+
   snap('player.js');
-  var iv = setInterval(function () { snap(''); }, 20);
+  var iv = setInterval(function () { watch(); snap(''); }, 20);
   setTimeout(function () { clearInterval(iv); snap('stop'); }, 15000);
-  window.addEventListener('thaiear:auth', function () { snap('auth'); });
+  window.addEventListener('thaiear:auth', function () { snap('auth'); deep('auth'); });
   window.__teLayoutSnap = snap;
 })();
 
@@ -2961,7 +2995,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r184';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r185';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
