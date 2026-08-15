@@ -2037,6 +2037,34 @@
     /* ≤374px — the logged-out label wraps to a third line and takes over as the tallest (93.4);
        the wrap point is between 374 and 375, measured. */
     @media (max-width: 374.98px) { .progress-controls { min-height: 94px; } }
+    /* ---- #player-root RESERVE (2026-08-15). The whole player chrome is injected by player.js
+       AFTER first paint, so this min-height is the ONLY thing holding the page still until then.
+       Each page's inline <style> still carries the original 350/379 — those are now DEAD: this
+       selector is (1,2,1) against their (1,0,0) AND arrives in a later stylesheet, so it wins on
+       both counts, including inside their own max-width:600px block. Kept here rather than edited
+       into 93 pages so there is one source.
+
+       ⚠ THE SCOPE IS LOAD-BEARING, NOT DECORATION.
+         • body.te-v2 — static in every topic page's HTML, so this applies at FIRST PAINT.
+           playlists.html ships a bare <body> and only gains te-v2 at mount, so it is excluded
+           exactly when the reserve would otherwise bite. It has never had a reserve; a bare
+           #player-root rule here would hand it a ~517px dead gap.
+         • :not(.dyn-plmode) — player.js sets that on playlists at mount, keeping it excluded
+           permanently once te-v2 does arrive.
+         • guide.html has te-v2 and a #player-root but does NOT link this generated file (it
+           hand-copies STYLES, which gen_dyncss deliberately does not sync), so it is untouched.
+
+       ⚠ MEASURED, NOT ROUND — signed-out topic-01, verified against fresh loads at 8 widths, and
+       the height is NON-MONOTONIC (516.9 at 373-511 but 549.6 at 361-372, a real wrap). Each band
+       therefore holds the MAXIMUM within it, so the page can never shift DOWN; the cost is a gap
+       of at most ~46px at the least common widths, against a 265px shift before. Re-measure if the
+       player's chrome, the signup card or the intro changes.
+       ⚠ The .98 offsets exist for the fractional-devicePixelRatio reason documented on the
+       .progress-controls bands above. Do not round them. */
+    body.te-v2:not(.dyn-plmode) #player-root { min-height: calc(501px * var(--te-ui-raw, 1)); }
+    @media (max-width: 600px)    { body.te-v2:not(.dyn-plmode) #player-root { min-height: calc(517px * var(--te-ui-raw, 1)); } }
+    @media (max-width: 372.98px) { body.te-v2:not(.dyn-plmode) #player-root { min-height: calc(562px * var(--te-ui-raw, 1)); } }
+    @media (max-width: 337.98px) { body.te-v2:not(.dyn-plmode) #player-root { min-height: calc(644px * var(--te-ui-raw, 1)); } }
     .player-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1rem; margin-bottom: 1.75rem; }
     .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
     .audio-toggle { display: flex; flex-wrap: wrap; max-width: 100%; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
@@ -2896,7 +2924,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r177';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r178';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
