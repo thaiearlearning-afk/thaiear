@@ -59,7 +59,7 @@
        over the player on a phone. :empty rather than a body class so it tracks the actual render
        with no JS and no ordering risk; the reserve still applies in full to the signed-in counter,
        which is what it was measured for. */
-    .progress-controls:empty { min-height: 0; margin-bottom: 0; }
+    .progress-controls.te-anon:empty { min-height: 0; margin-bottom: 0; }
     /* --- end-of-topic ask (2026-08-15). Sits between the last sentence and the prev/next nav.
        No CLS reserve needed: it mounts far below the fold, so a late auth-gated insert there
        shifts nothing the visitor is looking at. --- */
