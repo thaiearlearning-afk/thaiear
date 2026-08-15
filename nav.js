@@ -540,6 +540,25 @@
     document.body.appendChild(s);
   }
 
+  /* ---- TEMPORARY: owner-only auth-state probe (authdbg.js) --------------
+     ⚠ DELETE THIS BLOCK AND THE FILE once the signed-out progress-bar flash is fixed. It is a
+     diagnostic, not a feature.
+     Loaded on exactly the same terms as ownersim above — a URL flag is unusable in the app and
+     PWA, so it loads for anyone holding an identity record and authdbg.js does the real gate
+     against two SHA-256 hashes. The record survives sign-out, which is the whole point: the bug
+     only shows in the signed-OUT state, so a gate needing a live session could not see it. */
+  function ensureAuthDbg() {
+    try {
+      if (/[?&]authdbg=1/.test(location.search)) localStorage.setItem('te_authdbg', '1');
+      if (localStorage.getItem('te_authdbg') !== '1' && !localStorage.getItem('thaiear_identity')) return;
+    } catch (_) { return; }
+    if (document.getElementById('thaiear-authdbg-js')) return;
+    const s = document.createElement('script');
+    s.id = 'thaiear-authdbg-js';
+    s.src = 'authdbg.js';
+    document.body.appendChild(s);
+  }
+
   /* ---- load the site-wide copyright footer once ------------------------
      footer.js owns the © line and injects it at the bottom of the page.
      Loading it from here means no page needs its own <script> — the nav,
@@ -565,9 +584,10 @@
        ⚠ ensureAuth() must STILL run: read.html and playlists.html carry no auth.js tag of their
        own — the nav loader is what brings auth in, and the embedded panels (member-gated read
        tests, the playlists list) need a signed-in ThaiEarAuth exactly as much as the full pages. */
-    if (document.documentElement.className.indexOf('te-embed') >= 0) { ensureAuth(); ensureOwnerSim(); return; }
+    if (document.documentElement.className.indexOf('te-embed') >= 0) { ensureAuth(); ensureOwnerSim(); ensureAuthDbg(); return; }
     ensureAuth();
     ensureOwnerSim();
+    ensureAuthDbg();
     ensureFooter();
     if (!document.getElementById('site-nav-styles')) {
       const style = document.createElement('style');
