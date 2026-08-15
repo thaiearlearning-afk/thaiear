@@ -268,9 +268,20 @@
     try {
       if (localStorage.getItem('thaiear_signed_out') === '1') return 'out';
       if (localStorage.getItem('thaiear_identity')) return 'in';
+      /* ⚠ PARSE IT — the KEY SURVIVES SIGN-OUT. supabase leaves `sb-<ref>-auth-token` in place
+         with a null/empty session inside, so testing that the key merely EXISTS answered "signed
+         in" for someone who had signed out. That made renderProgress paint the working progress
+         bar and then replace it with the signup card — the signed-OUT flash reported 2026-08-15.
+         auth.js's readStoredSession() unwraps `currentSession` and requires `.user`; do the same
+         thing here or the two disagree about who is signed in. */
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
-        if (k && /^sb-.+-auth-token$/.test(k) && localStorage.getItem(k)) return 'in';
+        if (!k || !/^sb-.+-auth-token$/.test(k)) continue;
+        try {
+          var o = JSON.parse(localStorage.getItem(k) || 'null');
+          var sess = (o && o.currentSession) ? o.currentSession : o;
+          if (sess && sess.user) return 'in';
+        } catch (_) {}
       }
     } catch (_) {}
     return 'out';
