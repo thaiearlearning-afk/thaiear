@@ -2896,7 +2896,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r175';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r176';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5863,7 +5863,7 @@
        secondary and were easy to miss. Same treatment as the signup CTA.
        ⚠ On a premium topic --accent is the BRIGHT gold, where white text washes out — the
        body.premium-topic rule near the palette block flips these to #3D2E00. */
-    'body.te-v2 .te-pl-row .dyn-addpl,body.te-v2 .te-pl-row .dyn-pl-link{flex:1;margin:0;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-ui);font-size:13.5px;font-weight:500;color:#fff;background:var(--accent);border:.5px solid var(--accent);border-radius:var(--radius-md);padding:11px 10px;text-decoration:none;text-align:center;cursor:pointer}' +
+    'body.te-v2 .te-pl-row .dyn-addpl,body.te-v2 .te-pl-row .dyn-pl-link{flex:1;margin:0;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#fff;background:var(--accent);border:.5px solid var(--accent);border-radius:var(--radius-md);padding:7.35px 10px;text-decoration:none;text-align:center;cursor:pointer}' +
     'body.te-v2 .te-pl-row .dyn-addpl:hover,body.te-v2 .te-pl-row .dyn-pl-link:hover{background:var(--accent-mid);color:#fff}' +
     /* Premium topics: --accent is the bright gold, on which white washes out. Same #3D2E00 as
        the toggle beside them. Written HERE, not in STYLES, so it wins the cascade — see the
@@ -6214,7 +6214,16 @@
       pll.className = 'dyn-pl-link'; pll.href = 'index.html#playlists';   // r127: bare playlists.html now redirects — link the panel directly
       // The build tag already shows in the corner of the settings block, so the link does not
       // need to carry it once these are proper side-by-side buttons.
-      pll.textContent = STYLE2 ? '🎵 My playlists' : ('🎵 My Playlists · build ' + DYN_BUILD);
+      /* ⚠ AN SVG, NOT THE 🎵 EMOJI (owner, 2026-08-15). Once the button became accent-FILLED the
+         emoji stayed its own fixed colours and disappeared into the dark ground — an emoji cannot be
+         recoloured by CSS. This inherits currentColor, so it is white on the purple free-topic fill
+         and #3D2E00 on the premium gold, with no extra rules. */
+      var NOTE_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" ' +
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ' +
+        'style="flex-shrink:0"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/>' +
+        '<circle cx="18" cy="16" r="3"/></svg>';
+      if (STYLE2) pll.innerHTML = NOTE_SVG + '<span>My playlists</span>';
+      else pll.textContent = '🎵 My Playlists · build ' + DYN_BUILD;
       /* "Go to my playlists" is sign-in gated ONLY — deliberately NOT tier gated (owner,
          2026-08-10). It navigates to the visitor's own playlists page; nothing premium is being
          added or played, so a free account on a premium topic may still use it. */

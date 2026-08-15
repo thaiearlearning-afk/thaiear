@@ -254,13 +254,26 @@
      ⚠ Read localStorage DIRECTLY rather than calling into auth.js: this has to answer before
      auth.js has finished loading, which is the entire point. The two key names must stay in step
      with ID_KEY / SIGNED_OUT_KEY in auth.js. */
+  /* ⚠ IT MUST CHECK SUPABASE'S OWN SESSION TOO, NOT JUST OUR IDENTITY RECORD.
+     Checking only `thaiear_identity` guessed "signed out" for anyone whose account predates that
+     record (or whose copy has been cleared while supabase's survived), so a SIGNED-IN app user got
+     the signup card for an instant before the real progress bar replaced it — the mirror image of
+     the flash this function exists to prevent, reported 2026-08-15.
+     auth.js's own anySignedIn() reads exactly these three things in this order; keep them in step.
+     The key is discovered by PATTERN rather than rebuilt from the project ref, so this file does
+     not have to know it — supabase stores under `sb-<ref>-auth-token`. */
   function authGuess() {
     var st = authState();
     if (st !== 'pending') return st;                 // real answer beats the guess
     try {
       if (localStorage.getItem('thaiear_signed_out') === '1') return 'out';
-      return localStorage.getItem('thaiear_identity') ? 'in' : 'out';
-    } catch (_) { return 'out'; }
+      if (localStorage.getItem('thaiear_identity')) return 'in';
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && /^sb-.+-auth-token$/.test(k) && localStorage.getItem(k)) return 'in';
+      }
+    } catch (_) {}
+    return 'out';
   }
   // Put the card where the withheld control would have been. No-op on a missing anchor, so a
   // call site whose markup changed shape fails quiet rather than throwing mid-render.
