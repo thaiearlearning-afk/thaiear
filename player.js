@@ -1695,11 +1695,19 @@
          renderProgress). Zone 2 of the card carries the app line, so the app is still conveyed
          and is never advertised twice. Signed-IN visitors get the plain app card exactly as
          before, which keeps the 2026-08-11 decision intact. */
-      var au = window.ThaiEarAuth;
-      if (au && au.isReady && !(au.getUser && au.getUser())) {
+      /* ⚠ HOLD WHILE AUTH IS PENDING — do not fall through and paint the app card.
+         Which card belongs here depends on sign-in state, and auth resolves AFTER first paint.
+         Painting the app card meanwhile and swapping it for the signup card on thaiear:auth is
+         exactly the blue flash the owner reported on mobile (2026-08-15). Rendering nothing until
+         we know is the only version with no repaint. auth.js sets isReady on both its success and
+         its durable-identity failure path, so this is never a permanent hold. */
+      var st = window.ThaiEarAppCTA && window.ThaiEarAppCTA.authState
+             ? window.ThaiEarAppCTA.authState() : 'in';
+      if (st === 'pending') { bar.style.display = 'none'; return; }
+      if (st === 'out') {
         bar.className = 'offline-bar te-signup-host';
         bar.style.display = 'block';
-        bar.innerHTML = signupCardHtml();
+        bar.innerHTML = window.ThaiEarAppCTA.signupHtml('topic', PAGE_FILE);
         return;
       }
       if (window.ThaiEarAppCTA) {
@@ -1988,29 +1996,12 @@
     .prog-ctl-my:hover { color: var(--accent-mid); }
     .prog-ctl-join { font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
     .prog-ctl-join:hover { color: var(--accent-mid); }
-    /* --- signed-out signup card (2026-08-15): one card, two zones, split by a hairline ---
-       Overrides the parent .prog-ctl-card flex row back to a block so the zones stack; the
-       padding moves onto the zones so the divider can run the full width of the card. */
-    /* Signed out → renderProgress leaves this slot EMPTY (the card moved below the player), so the
-       measured reserve above must collapse or it becomes ~94px of blank gap over the player.
-       :empty rather than a body class so it tracks the actual render with no JS and no ordering
-       risk. The reserve still applies in full to the signed-in counter, which is what it was
-       measured for. */
+    /* Signed out → renderProgress leaves this slot EMPTY (the signup card lives below the player,
+       in the offline-bar slot). Without this the measured reserve above becomes ~94px of blank gap
+       over the player on a phone. :empty rather than a body class so it tracks the actual render
+       with no JS and no ordering risk; the reserve still applies in full to the signed-in counter,
+       which is what it was measured for. */
     .progress-controls:empty { min-height: 0; margin-bottom: 0; }
-    .prog-ctl-card.te-signup { display: block; padding: 0; overflow: hidden; }
-    .te-signup-main { padding: 0.7rem 0.9rem 0.65rem; }
-    .te-signup-title { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.005em;
-      color: var(--text-primary); margin-bottom: 3px; }
-    .te-signup-desc { display: block; font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin-bottom: 8px; }
-    .te-signup-cta { display: inline-block; font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
-    .te-signup-cta:hover { color: var(--accent-mid); }
-    .te-signup-app { display: flex; align-items: center; gap: 10px; padding: 0.6rem 0.9rem;
-      border-top: 0.5px solid var(--border); text-decoration: none; -webkit-tap-highlight-color: transparent; }
-    .te-signup-app:hover .te-signup-chev { color: var(--accent); }
-    .te-signup-app-txt { min-width: 0; flex: 1; }   /* min-width:0 so the desc wraps instead of pushing the chevron out */
-    .te-signup-app-t { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 1px; }
-    .te-signup-app-d { display: block; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
-    .te-signup-chev { flex-shrink: 0; width: 16px; height: 16px; color: var(--text-tertiary); transition: color 0.15s; }
     /* --- end-of-topic ask (2026-08-15). Sits between the last sentence and the prev/next nav.
        No CLS reserve needed: it mounts far below the fold, so a late auth-gated insert there
        shifts nothing the visitor is looking at. --- */
@@ -2885,7 +2876,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r169';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r170';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -7145,24 +7136,6 @@
     var k = String(DYN_KEY_NS || '');
     return k.indexOf('pl-') === 0 ? k : null;
   }
-  /* THE SIGNED-OUT SIGNUP CARD (2026-08-15) — one card, two zones.
-     Zone 1 asks for the account; zone 2 conveys that a real app exists, which is credibility the
-     ask itself benefits from. They are merged deliberately: as two separate cards a few hundred
-     pixels apart they read as nagging, and the app card used to be the LOUDEST thing a cold
-     visitor saw — a lateral move off the page that created no account either way.
-
-     ⚠ THE APP LINE IS BOUND BY THE STANDING COPY RULE. There is no App Store build, so it must
-     never promise "the app" where an iPhone visitor reads it. The wording below is the
-     owner-approved form from app-cta.js — benefit title, BOTH routes named, bare chevron. Do not
-     reword it to "get the app", "our app", or "free on Android and iPhone".
-
-     ⚠ Deliberately does NOT promise downloads. The download gate is TIER-keyed, not auth-keyed,
-     so a free account does not unlock them; saying otherwise would be a lie discovered within a
-     minute of signing up.
-
-     ⚠ This lands in the progress slot, which carries a MEASURED min-height reserve so the late,
-     auth-gated render does not shove the player's controls down (CLS). Change the copy, padding
-     or type size here and all four reserve numbers must be re-measured — see that block. */
   /* END-OF-TOPIC ASK (2026-08-15) — signed out, FREE topic only.
      Someone who has scrolled past every sentence is the warmest visitor this site gets, and until
      now the only thing offered at that point was a link to the next topic.
@@ -7196,30 +7169,8 @@
       '<span class="te-endcta-desc">Save what you’ve done — a free account keeps your progress ' +
         'and lets you build playlists with any sentences on the site.</span>' +
       '<a class="te-endcta-cta" href="join.html?feature=1&next=' +
-        encodeURIComponent(PAGE_FILE + location.search) + '">Create a free account →</a>';
+        encodeURIComponent(PAGE_FILE) + '">Create a free account →</a>';
     nav.parentNode.insertBefore(d, nav);
-  }
-
-  function signupCardHtml() {
-    return '' +
-      '<div class="prog-ctl-card te-signup">' +
-        '<div class="te-signup-main">' +
-          '<span class="te-signup-title">Save your progress</span>' +
-          '<span class="te-signup-desc">A free account keeps track of what you’ve listened to ' +
-            'and lets you build playlists.</span>' +
-          '<a class="te-signup-cta" href="join.html?feature=1&next=' +
-            encodeURIComponent(PAGE_FILE + location.search) + '">Create a free account →</a>' +
-        '</div>' +
-        '<a class="te-signup-app" href="app.html">' +
-          '<span class="te-signup-app-txt">' +
-            '<span class="te-signup-app-t">Study offline</span>' +
-            '<span class="te-signup-app-d">Free on the Android app, or add ThaiEar to your ' +
-              'iPhone Home Screen</span>' +
-          '</span>' +
-          '<svg class="te-signup-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-            'stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>' +
-        '</a>' +
-      '</div>';
   }
 
   function renderProgress() {

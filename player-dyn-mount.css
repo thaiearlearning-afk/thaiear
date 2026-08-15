@@ -54,29 +54,12 @@
     .prog-ctl-my:hover { color: var(--accent-mid); }
     .prog-ctl-join { font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
     .prog-ctl-join:hover { color: var(--accent-mid); }
-    /* --- signed-out signup card (2026-08-15): one card, two zones, split by a hairline ---
-       Overrides the parent .prog-ctl-card flex row back to a block so the zones stack; the
-       padding moves onto the zones so the divider can run the full width of the card. */
-    /* Signed out → renderProgress leaves this slot EMPTY (the card moved below the player), so the
-       measured reserve above must collapse or it becomes ~94px of blank gap over the player.
-       :empty rather than a body class so it tracks the actual render with no JS and no ordering
-       risk. The reserve still applies in full to the signed-in counter, which is what it was
-       measured for. */
+    /* Signed out → renderProgress leaves this slot EMPTY (the signup card lives below the player,
+       in the offline-bar slot). Without this the measured reserve above becomes ~94px of blank gap
+       over the player on a phone. :empty rather than a body class so it tracks the actual render
+       with no JS and no ordering risk; the reserve still applies in full to the signed-in counter,
+       which is what it was measured for. */
     .progress-controls:empty { min-height: 0; margin-bottom: 0; }
-    .prog-ctl-card.te-signup { display: block; padding: 0; overflow: hidden; }
-    .te-signup-main { padding: 0.7rem 0.9rem 0.65rem; }
-    .te-signup-title { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.005em;
-      color: var(--text-primary); margin-bottom: 3px; }
-    .te-signup-desc { display: block; font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin-bottom: 8px; }
-    .te-signup-cta { display: inline-block; font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
-    .te-signup-cta:hover { color: var(--accent-mid); }
-    .te-signup-app { display: flex; align-items: center; gap: 10px; padding: 0.6rem 0.9rem;
-      border-top: 0.5px solid var(--border); text-decoration: none; -webkit-tap-highlight-color: transparent; }
-    .te-signup-app:hover .te-signup-chev { color: var(--accent); }
-    .te-signup-app-txt { min-width: 0; flex: 1; }   /* min-width:0 so the desc wraps instead of pushing the chevron out */
-    .te-signup-app-t { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 1px; }
-    .te-signup-app-d { display: block; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
-    .te-signup-chev { flex-shrink: 0; width: 16px; height: 16px; color: var(--text-tertiary); transition: color 0.15s; }
     /* --- end-of-topic ask (2026-08-15). Sits between the last sentence and the prev/next nav.
        No CLS reserve needed: it mounts far below the fold, so a late auth-gated insert there
        shifts nothing the visitor is looking at. --- */

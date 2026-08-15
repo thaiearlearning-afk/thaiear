@@ -1285,10 +1285,32 @@ const STANDALONE = (window.matchMedia && matchMedia('(display-mode: standalone)'
 const OFFLINE_UI = NATIVE || STANDALONE;
 if (!OFFLINE_UI) {
   document.body.classList.add('te-no-dl');
-  /* …and put the app card in the space the batch bar leaves behind. Done HERE, during parse,
-     rather than on DOMContentLoaded: #dl-batch-bar is static markup above this script, so the
-     card lands in the document before the topic grid is painted and costs no layout shift. */
-  if (window.ThaiEarAppCTA) ThaiEarAppCTA.insertBefore(document.getElementById('dl-batch-bar'), 'index');
+  /* …and put a card in the space the batch bar leaves behind — WHICH card depends on sign-in
+     state (2026-08-15): signed out gets the two-zone signup card (ask + the app line), signed in
+     gets the plain app card, exactly as before.
+
+     ⚠ THIS CAN NO LONGER RUN AT PARSE TIME. It used to insert the app card synchronously here so
+     it landed before first paint and cost no layout shift. But auth resolves later, so painting
+     either card now means repainting it a moment later — the blue flash the owner reported on
+     mobile. We hold until thaiear:auth, accepting a late insert over a visible swap.
+     ⚠ Idempotent by construction: the previous node is removed before a new one is inserted, so
+     the repeated thaiear:auth events (sign-in, sign-out, token refresh) cannot stack cards. */
+  var _teCta = null;
+  var _teCtaState = null;
+  function teMountCta() {
+    var A = window.ThaiEarAppCTA;
+    if (!A || !A.authState) return;
+    var st = A.authState();
+    if (st === 'pending' || st === _teCtaState) return;   // unknown yet, or already correct
+    var anchor = document.getElementById('dl-batch-bar');
+    if (!anchor) return;
+    if (_teCta && _teCta.parentNode) _teCta.parentNode.removeChild(_teCta);
+    _teCta = (st === 'out') ? A.insertSignupBefore(anchor, 'index')
+                            : A.insertBefore(anchor, 'index');
+    _teCtaState = st;
+  }
+  teMountCta();                                            // in case auth already settled
+  window.addEventListener('thaiear:auth', teMountCta);
 }
 const AUDIO_DL_CACHE = 'thaiear-audio-dl';     // must match player.js
 function webCacheKey(prefix, file) { return '/__offline-audio/' + prefix + '/' + file; } // must match player.js

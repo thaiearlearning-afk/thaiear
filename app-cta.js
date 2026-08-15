@@ -79,7 +79,34 @@
     '.te-appcta--read{margin:1.5rem 0 0.25rem}' +
     /* topic page: #offline-bar is a flex ROW built for small buttons — the card needs the whole
        width, and the row's -0.75rem lift would tuck it under the player. */
-    '.offline-bar.te-appcta-host{display:block;margin:0 0 1.25rem}';
+    '.offline-bar.te-appcta-host{display:block;margin:0 0 1.25rem}' +
+    /* ---- SIGNED-OUT SIGNUP CARD (2026-08-15) — one card, two zones ----
+       Same slot as the app card, and mutually exclusive with it: signed out gets this, signed in
+       gets the plain app card. Zone 1 asks for the account, zone 2 keeps conveying that a real
+       app exists (credibility the ask benefits from) WITHOUT advertising it twice on one screen.
+       ⚠ Self-contained on purpose. The first version leaned on .prog-ctl-card for its ground and
+       border, which exists only in player.js's STYLES — so it rendered unstyled on index.html,
+       which does not load player.js. Do not reintroduce that dependency.
+       ⚠ Zone 2's wording is the app card's, verbatim, and is bound by the same copy rule above. */
+    '.te-signup{background:var(--surface);border:0.5px solid var(--border);' +
+      'border-radius:var(--radius-lg);overflow:hidden}' +
+    '.te-signup-main{padding:0.7rem 0.9rem 0.65rem}' +
+    '.te-signup-title{display:block;font-size:14.5px;font-weight:600;letter-spacing:-0.005em;' +
+      'color:var(--text-primary);margin-bottom:3px}' +
+    '.te-signup-desc{display:block;font-size:13px;line-height:1.5;color:var(--text-secondary);margin-bottom:8px}' +
+    '.te-signup-cta{display:inline-block;font-size:13px;font-weight:500;color:var(--accent);text-decoration:none}' +
+    '.te-signup-cta:hover{color:var(--accent-mid)}' +
+    '.te-signup-app{display:flex;align-items:center;gap:10px;padding:0.6rem 0.9rem;' +
+      'border-top:0.5px solid var(--border);text-decoration:none;-webkit-tap-highlight-color:transparent}' +
+    '.te-signup-app:hover .te-signup-chev{color:var(--accent)}' +
+    '.te-signup-app-txt{min-width:0;flex:1}' +   /* min-width:0 → the desc wraps, never pushes the chevron out */
+    '.te-signup-app-t{display:block;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:1px}' +
+    '.te-signup-app-d{display:block;font-size:12.5px;line-height:1.45;color:var(--text-secondary)}' +
+    '.te-signup-chev{flex-shrink:0;width:16px;height:16px;color:var(--text-tertiary);transition:color .15s}' +
+    /* per-slot spacing, mirroring the app card's */
+    '.te-signup--index{margin:0 0 0.9rem}' +
+    '.te-signup--playlist{margin:0 0 1rem}' +
+    '.offline-bar.te-signup-host{display:block;margin:0 0 1.25rem}';
 
   function injectCss() {
     if (document.getElementById(STYLE_ID)) return;
@@ -120,6 +147,52 @@
     d.innerHTML = html(surface);
     return d.firstChild;
   }
+
+  /* ---- the signed-out variant: signup ask + the app line, in one card ----
+     `next` is the page to return to after sign-in, and is optional — index.html has nowhere
+     particular to send anyone back to. ⚠ join.html's nextUrl() accepts a bare clean-URL segment
+     with an optional .html and strips any ?query, so pass the page name, not a full URL. */
+  function signupHtml(surface, next) {
+    injectCss();
+    var href = 'join.html?feature=1' + (next ? '&next=' + encodeURIComponent(next) : '');
+    return '<div class="te-signup te-signup--' + surface + '">' +
+      '<div class="te-signup-main">' +
+        '<span class="te-signup-title">Save your progress</span>' +
+        '<span class="te-signup-desc">A free account keeps track of what you’ve listened to ' +
+          'and lets you build playlists.</span>' +
+        '<a class="te-signup-cta" href="' + href + '">Create a free account →</a>' +
+      '</div>' +
+      '<a class="te-signup-app" href="' + HREF + '">' +
+        '<span class="te-signup-app-txt">' +
+          '<span class="te-signup-app-t">Study offline</span>' +
+          '<span class="te-signup-app-d">' + PLATFORMS.replace(/\.$/, '') + '</span>' +
+        '</span>' + CHEV.replace('te-appcta-chev', 'te-signup-chev') +
+      '</a>' +
+    '</div>';
+  }
+  function signupEl(surface, next) {
+    var d = document.createElement('div');
+    d.innerHTML = signupHtml(surface, next);
+    return d.firstChild;
+  }
+  function insertSignupBefore(anchor, surface, next) {
+    if (!anchor || !anchor.parentNode) return null;
+    var node = signupEl(surface, next);
+    anchor.parentNode.insertBefore(node, anchor);
+    return node;
+  }
+
+  /* ⚠ HOLD UNTIL AUTH RESOLVES — do NOT paint the app card while `isReady` is false.
+     The two cards are chosen by sign-in state, so rendering either one early means repainting it
+     a moment later. That is exactly the blue flash the owner saw on mobile (2026-08-15): the app
+     card painted first, then `thaiear:auth` fired and swapped in the signup card.
+     Safe to wait: auth.js sets isReady on BOTH its success path and its durable-identity failure
+     path, so this always resolves — it is never a permanent hold. */
+  function authState() {
+    var a = window.ThaiEarAuth;
+    if (!a || !a.isReady) return 'pending';
+    return (a.getUser && a.getUser()) ? 'in' : 'out';
+  }
   // Put the card where the withheld control would have been. No-op on a missing anchor, so a
   // call site whose markup changed shape fails quiet rather than throwing mid-render.
   function insertBefore(anchor, surface) {
@@ -134,6 +207,10 @@
     el: el,
     insertBefore: insertBefore,
     injectCss: injectCss,
-    noDownloadUi: noDownloadUi
+    noDownloadUi: noDownloadUi,
+    signupHtml: signupHtml,
+    signupEl: signupEl,
+    insertSignupBefore: insertSignupBefore,
+    authState: authState
   };
 })();
