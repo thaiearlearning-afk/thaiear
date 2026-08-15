@@ -2071,6 +2071,16 @@
        here for prominence, not to warn — do not infer from this that red now means "safe". */
     .reveal-all-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: #B00020; background: #FDF1F2; border: 0.5px solid #E8C4C8; border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
     .reveal-all-btn:hover { background: #FBE4E7; }
+    /* PREMIUM TOPICS GET GREEN, NOT RED (owner, 2026-08-15). The red sits badly beside the gold
+       palette; green and gold is the classic warm/cool pairing and keeps the button just as loud.
+       Deliberately NOT the free-topic purple either — a premium page should not borrow the free
+       accent, and --accent is the bright gold here so it could not be used anyway.
+       ⚠ Literal hex like its base rule, for the same reason: --accent is gold inside
+       #player-root / #sentence-list, so any var() here would make the button disappear into it.
+       Contrast measured, not eyeballed: #1F5D3A on #EEF6F0 is 7.10:1, comfortably past WCAG AA's
+       4.5:1 for normal text (the red it replaces is 6.64:1). Re-measure if either tone changes. */
+    body.premium-topic .reveal-all-btn { color: #1F5D3A; background: #EEF6F0; border-color: #C6DFD0; }
+    body.premium-topic .reveal-all-btn:hover { background: #E3F0E7; }
     /* ---- transliteration toggle (topics shipping per-sentence translit, currently 01–03) ----
        Default ON (new visitors should see it exists); .translit-off on #sentence-list hides both
        the under-Thai line and the chips' translit. Choice remembered per device via localStorage. */
@@ -2904,7 +2914,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r182';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r183';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
