@@ -689,9 +689,9 @@ if(pend||bf)d.className+=' te-warp';})();</script>
      a quiet Remove All beneath. display:flex is the BASE state now (was JS-toggled); visibility
      is governed entirely by body.te-no-dl (§1f, below) so a plain browser tab reflows into the
      space instead of reserving it. */
-  .dl-batch-bar { display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+  .dl-batch-bar { display: flex; flex-direction: column; align-items: stretch; gap: 6px;
     background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md);
-    padding: 0.7rem 0.9rem; margin-bottom: 0.9rem; }
+    padding: 0.65rem 0.9rem 0.55rem; margin-bottom: 0.9rem; }
   .dl-batch-btns { display: flex; gap: 8px; }
   .dl-batch-btn { flex: 1; font-family: var(--font-ui); font-size: 13px; font-weight: 500; color: #fff;
     background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; }
@@ -706,10 +706,21 @@ if(pend||bf)d.className+=' te-warp';})();</script>
   /* #dl-batch-status = the RUNNING JOB's progress; #dl-batch-note = transient tap feedback.
      Deliberately separate elements (dl-core §D.1) so a selection tap mid-download can never
      evict the only evidence that work is still happening. */
-  .dl-batch-status { font-size: 13px; color: var(--text-secondary); min-height: 1.1em; }
+  /* ⚠ THE EMPTY STATUS LINE NO LONGER RESERVES A BLANK ROW (2026-08-16). It used to sit between the
+     buttons and the hint as ~22px of dead white (min-height 1.1em + the 8px flex gap), which is what
+     made this card read as too thick. :empty collapses it — and because a flex item with display:none
+     takes no gap either, the whole row goes, not just its box.
+     It was never an honest anti-shift reserve anyway: min-height was 1.1em (14.3px) while the text's
+     own line box is line-height 1.6 (20.8px), so a status message ALREADY grew the card by ~6px. The
+     line-height/min-height pair below now match exactly, so the only movement is the row appearing.
+     That is input-driven and near-neutral in the normal flow: updateBatchBar() hides the hint the
+     moment anything is selected, so the status row replaces a row of almost the same height (15 vs
+     17px). Don't "restore" a standing reserve — it buys ~2px of stability for 22px of white. */
+  .dl-batch-status { font-size: 13px; color: var(--text-secondary); line-height: 1.2; min-height: 1.2em; }
+  .dl-batch-status:empty { display: none; }
   .dl-batch-status.err { color: #B00020; }
-  .dl-batch-note { font-size: 12.5px; color: var(--text-tertiary); min-height: 1.1em; }
-  .dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); }
+  .dl-batch-note { font-size: 12.5px; color: var(--text-tertiary); line-height: 1.2; min-height: 1.2em; }
+  .dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); line-height: 1.35; }
   /* Confirm dialog (clear downloads). */
   .dl-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,40,0.55); display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
   .dl-modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 360px; width: 100%; padding: 1.8rem 1.5rem; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }

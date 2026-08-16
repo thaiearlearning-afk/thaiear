@@ -87,7 +87,7 @@
     /* r76 — while "Remove sentences" select mode is open, the row's OTHER actions are hidden. */
     '.pl-box.rm-mode .pl-remsent, .pl-box.rm-mode .pl-rename, .pl-box.rm-mode .pl-del, .pl-box.rm-mode .pl-open { display: none; }' +
     /* Download area — mirrors index.html / dyn-index.html exactly. */
-    '.dl-batch-bar { display: flex; flex-direction: column; gap: 8px; background: var(--surface); border: .5px solid var(--border); border-radius: var(--radius-md); padding: 12px; margin: 0 0 1rem; }' +
+    '.dl-batch-bar { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: .5px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px 9px; margin: 0 0 1rem; }' +
     '.dl-batch-btns { display: flex; gap: 8px; }' +
     '.dl-batch-btn { flex: 1; font-family: var(--font-ui); font-size: 13.5px; font-weight: 500; color: #fff; background: var(--accent); border: 0; border-radius: 8px; padding: 8px 10px; cursor: pointer; }' +
     '.dl-batch-btn:hover:not([disabled]) { background: var(--accent-mid); }' +
@@ -97,9 +97,16 @@
     /* r85: Remove All is deliberately the quietest control — a reset, not a verb, no undo. */
     '.dl-removeall-btn { background: transparent; color: var(--text-tertiary); border: .5px solid var(--border); font-size: 12.5px; padding: 6px 10px; }' +
     '.dl-removeall-btn:hover:not([disabled]) { background: #FDF1F2; color: #B00020; border-color: #E8C4C8; }' +
-    '.dl-batch-status { font-size: 13px; color: var(--text-secondary); min-height: 1.15em; }' +
+    /* ⚠ An EMPTY status line collapses instead of reserving a blank row — see the long note on the
+       same rule in index.html. The reserve was ~22px of dead white (min-height + the flex gap) and
+       was never exact anyway (1.15em against a 1.6 line-height), so it never prevented the shift it
+       was there for. line-height and min-height now match, so the row's height is honest when it
+       does appear. Here the hint STAYS visible while busy (dlKeepOpen), so the status row genuinely
+       adds a line at download start — input-driven, once, and the price of losing the dead space. */
+    '.dl-batch-status { font-size: 13px; color: var(--text-secondary); line-height: 1.2; min-height: 1.2em; }' +
+    '.dl-batch-status:empty { display: none; }' +
     '.dl-batch-status.err { color: #B00020; }' +
-    '.dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); }' +
+    '.dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); line-height: 1.35; }' +
     '.dl-share-note .more-body { display: none; }' +
     '.dl-share-note.open .more-body { display: inline; }' +
     '.dl-share-more { background: none; border: 0; padding: 0 0 0 5px; font: inherit; font-weight: 500; color: var(--accent); cursor: pointer; }' +

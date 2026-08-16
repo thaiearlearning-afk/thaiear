@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v332';   // v309: consent bar no longer covers the end of every page (body padding) — it was eating taps on prev/next; signup + end-of-topic cards restyled
+const VERSION = 'v333';   // v333: download batch bar slimmed on BOTH surfaces (index Topics + index
+                          // Playlists) — an empty #dl-batch-status no longer reserves a blank row
+                          // above the "Tap a topic's circle…" hint (:empty collapses it, so its flex
+                          // gap goes too), gaps/padding tightened, hint line-height 1.35. The hint
+                          // region drops ~48%, the card 133px -> 101px. index.html and pl-list.js are
+                          // both precached (cache-first).
+                          // v309: consent bar no longer covers the end of every page (body padding) — it was eating taps on prev/next; signup + end-of-topic cards restyled
                           // (dlRefPrefixes, r75's "lock-independent ground truth") instead of
                           // trusting the thaiear_offline_pl RECORD, matching player.js's
                           // dynOwnedPrefixes(). A record outlives evicted clips — an iOS PWA
