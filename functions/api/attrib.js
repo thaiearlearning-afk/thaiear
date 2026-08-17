@@ -43,22 +43,33 @@ export async function onRequestPost({ request, env }) {
   // Whitelist + clamp. Nothing here is displayed anywhere, but an
   // unbounded string from a URL is still not something to store.
   const row = { user_id: user.id };
-  let any = false;
   for (const f of FIELDS) {
     const v = body[f];
-    if (typeof v === 'string' && v.trim()) {
-      row[f] = v.trim().slice(0, 512);
-      any = true;
-    }
+    if (typeof v === 'string' && v.trim()) row[f] = v.trim().slice(0, 512);
   }
   if (body.first_seen && typeof body.first_seen === 'string') {
     const t = Date.parse(body.first_seen);
     if (!isNaN(t)) row.first_seen = new Date(t).toISOString();
   }
 
-  // An organic signup has nothing to attribute. Don't write an empty row —
-  // absence of a row IS the "came from nowhere we paid for" signal.
-  if (!any) return json({ ok: true, skipped: 'no_attribution' }, 200);
+  /* ⭐ SIGNUP GEOGRAPHY (2026-08-17). Cloudflare resolves this at the edge for free, so it costs
+     nothing and needs no extra credential. Deliberately COARSE: country, city and network name —
+     never the IP itself. The raw IP does exist, in the Supabase auth log, but that expires after
+     7 days and needs an account-scoped Personal Access Token to read; this is permanent, lives in
+     our own table, and is the lighter-touch thing to store.
+     ⚠ `request.cf` is undefined under local wrangler, hence the guard. */
+  const cf = request.cf || {};
+  if (cf.country) row.geo_country = String(cf.country).slice(0, 8);
+  if (cf.city) row.geo_city = String(cf.city).slice(0, 128);
+  if (cf.asOrganization) row.geo_asn_org = String(cf.asOrganization).slice(0, 128);
+
+  /* ⚠ THE `if (!any) return` EARLY EXIT WAS REMOVED HERE (2026-08-17). It used to skip organic
+     signups entirely, which is why "no row" meant "not from paid". Every signup now writes a row
+     so the geography above is captured for organic users too.
+     ⚠ ORGANIC IS NOW `gclid is null and utm_campaign is null`, not the absence of a row. That is
+     an improvement — organic signups become countable rather than inferred from a gap — but it
+     is written down in attrib.js and supabase_ad_attribution.sql as well, and all three must
+     agree. */
 
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ ok: true, skipped: 'no_key' }, 200);
 

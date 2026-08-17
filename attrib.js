@@ -20,15 +20,16 @@
        which fires no DOM event. That is fine and deliberate: ad clicks
        land in a browser, never inside the installed app.
 
-   ⚠ NOT WIRED UP YET. Nothing loads this file. Adding the <script> tag
-   and the sw.js PRECACHE entry + VERSION bump is the last step, held back
-   to avoid colliding with the parallel session in player.js / sw.js.
+   ⚠ The two warnings that used to sit here — "NOT WIRED UP YET" and "THE
+   GOOGLE TAG IS NOT INSTALLED" — were both STALE and actively misleading
+   (corrected 2026-08-17). This file is loaded site-wide, is in sw.js
+   PRECACHE, and the tag shipped 2026-08-12 (SESSION_2026-08-12_TRACKING.md).
 
-   ⚠ THE GOOGLE TAG IS NOT INSTALLED. `track()` queues events and does
-   nothing else until a consent layer exists and grants permission. The
-   first-party POST below is NOT gated on consent — it is first-party data
-   about an account the user is deliberately creating, not an advertising
-   cookie. See MARKETING_VIDEO_AD_STRATEGY.md for the whole argument.
+   ⚠ `track()` still routes through gtag.js, which is consent-gated. The
+   first-party POST below is NOT — it is first-party data about an account
+   the user is deliberately creating, not an advertising cookie. That
+   asymmetry is the whole point: it is the only signup signal that survives
+   a declined consent prompt. See MARKETING_VIDEO_AD_STRATEGY.md.
 
    Table: supabase_ad_attribution.sql · Endpoint: functions/api/attrib.js
    ============================================================ */
@@ -114,8 +115,14 @@
 
     track('signup');
 
-    var hit = stored();
-    if (!hit) return;                               // organic — nothing to attribute
+    /* ⚠ 2026-08-17 — POST EVEN WITH NO STORED CLICK. This used to `return` on an organic
+       signup, so "no row" meant "came from nowhere we paid for". The endpoint now stamps
+       signup GEOGRAPHY (country / city / network, off the Cloudflare edge) onto every row,
+       and that is worth having for organic signups too — it is the only durable record of
+       where a user came from. The Supabase auth log carries the IP but expires after 7 days.
+       ⚠ The organic test therefore MOVED: it is now `gclid is null and utm_campaign is null`,
+       NOT the absence of a row. supabase_ad_attribution.sql says the same. */
+    var hit = stored() || {};
 
     var tok = accessToken();
     if (!tok) return;
