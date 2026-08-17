@@ -33,7 +33,10 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v336';   // v336: consent banner copy — leads with the benefit instead of arguing
+const VERSION = 'v337';   // v337: consent buttons are now EQUAL WIDTH by construction (min-width
+                          // in em, so it tracks --te-ui) and Accept reads "Yes okay" — prominence
+                          // parity no longer depends on picking labels of matching length.
+                          // v336: consent banner copy — leads with the benefit instead of arguing
                           // against itself, Accept-first ("Okay" / "No thanks"). Order is not
                           // regulated; PROMINENCE is, and both buttons stay computed-identical.
                           // v335: attrib.js now POSTs on EVERY signup (not only ad-attributed ones)

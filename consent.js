@@ -121,9 +121,14 @@
     '.te-consent-t a{color:#B29234;text-decoration:underline}' +
     '.te-consent-b{display:flex;gap:8px;flex-wrap:wrap}' +
     /* Equal weight on both actions is a compliance requirement, not a style choice. */
+    /* ⚠ min-width makes the two buttons EQUAL IN SIZE regardless of label, so prominence parity
+       stops depending on somebody choosing labels of matching length. In `em`, not px, so it
+       tracks the font-size above (which is already --te-ui-scaled) and cannot clip inflated text
+       — a px min-width would. 8em clears the longest label with room to spare; two of them plus
+       the gap still fit a 320px viewport. */
     '.te-consent-b button{font:inherit;font-size:calc(.875rem * var(--te-ui, 1));font-weight:600;' +
     'padding:10px 18px;border-radius:8px;border:1px solid #222;background:#fff;color:#222;' +
-    'cursor:pointer;min-height:44px}' +
+    'cursor:pointer;min-height:44px;min-width:8em}' +
     '.te-consent-b button:hover{background:#f5f5f5}' +
     /* Focus ring is currentColor, NOT the brand gold. Gold is the site's accent, so a gold ring
        around Reject read as "this is the recommended one" — a thumb on the scale nobody chose.
@@ -213,7 +218,11 @@
            ⚠ So: you may reorder these, or you may restyle them. Never both. Ideally never the
            second at all. */
         '<div class="te-consent-b">' +
-          '<button type="button" data-te="accept">Okay</button>' +
+          /* ⚠ "Yes okay" not "Okay", to match "No thanks" in LENGTH and shape (two words, no
+             punctuation). A bare "Okay" rendered ~6px narrower, and a smaller Accept beside a
+             wider Reject is prominence asymmetry — the one thing that genuinely is regulated
+             here. Keep any future labels balanced the same way. */
+          '<button type="button" data-te="accept">Yes okay</button>' +
           '<button type="button" data-te="reject">No thanks</button>' +
         '</div>' +
         '<button type="button" class="te-consent-more" data-te="more">Choose what to allow</button>' +
