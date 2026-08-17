@@ -1556,6 +1556,147 @@
     flush: function () { return dpFlush(); }
   };
 
+  /* ══ OAUTH / MAGIC-LINK FAILURE SURFACING (2026-08-17) ══════════════════════════════════════
+     Until today a FAILED sign-in was completely silent. startGoogleSignIn() hands off to Google
+     and the return trip is handled by supabase-js's detectSessionInUrl — which only ever looks
+     for a SUCCESSFUL callback. When GoTrue redirects back with `error` / `error_description`
+     instead, nothing read it, so the user landed on an ordinary LOGGED-OUT page with no message
+     and no hint that anything had gone wrong.
+
+     Measured, not theorised. On 2026-08-16 a real visitor (Chaiyaphum, arrived on a Shorts ad)
+     spent 6m37s on Google's screens, came back to `400: OAuth state has expired`, saw nothing,
+     and only got in because he happened to click sign-in again 10 seconds later. The owner
+     reproduced it on 2026-08-17: waited ~12 min, completed sign-in, landed on the logged-out
+     homepage. A less determined visitor simply leaves, and we would never know — the auth logs
+     are the ONLY place this is visible, and they expire after 7 days.
+
+     ⚠ Read the URL SYNCHRONOUSLY, here, before the supabase-js module import below resolves and
+     createClient runs — detectSessionInUrl rewrites location on the success path and we must not
+     race it.
+     ⚠⚠ AND DO NOT WRITE THE MODULE-IMPORT EXPRESSION LITERALLY ANYWHERE ABOVE THAT LINE, not even
+     in a comment. test_auth_dedupe.js stubs it with a STRING .replace(), which hits the FIRST
+     occurrence only — an earlier copy in a comment silently redirects the stub and leaves the real
+     dynamic import in place, so the whole file dies in the VM. Cost: 17 phantom failures, 2026-08-17.
+
+     ⚠ NOT an auto-retry. Redirecting to Google on page load can loop, and someone who
+     deliberately cancelled would be trapped in it. Show the message, offer the button.
+
+     ⚠ The banner lives HERE rather than on each page ON PURPOSE: `redirectTo` is
+     `window.location.href`, so the error can land on ANY of the ~93 topic pages or the statics.
+     Per-page wiring would leave every page anyone forgot silently broken — which is this bug.
+     A page wanting nicer treatment can listen for `thaiear:autherror` and call preventDefault().
+     ─────────────────────────────────────────────────────────────────────────────────────────── */
+
+  var authErr = (function readAuthError() {
+    var found = null;
+    function scan(s) {
+      if (!s || found) return;
+      try {
+        var p = new URLSearchParams(String(s).replace(/^[?#]/, ''));
+        var code = p.get('error_code') || p.get('error');
+        if (code) found = { code: String(code), desc: p.get('error_description') || '' };
+      } catch (_) {}
+    }
+    // PKCE puts it in the query string, the implicit flow in the fragment. Check both.
+    scan(typeof location !== 'undefined' && location.search);
+    scan(typeof location !== 'undefined' && location.hash);
+    if (found) {
+      /* Strip it so a refresh (or a shared URL) does not replay the error. Rebuilt through URL /
+         URLSearchParams rather than a regex: a regex over location.search silently leaves a
+         fragment-borne error in place, so the implicit flow would replay it on every reload. Only
+         the three error keys are removed — any other query the page relies on survives. */
+      try {
+        var u = new URL(location.href);
+        var KEYS = ['error', 'error_code', 'error_description'];
+        KEYS.forEach(function (k) { u.searchParams.delete(k); });
+        var hp = new URLSearchParams(u.hash.replace(/^#/, ''));
+        var touchedHash = false;
+        KEYS.forEach(function (k) { if (hp.has(k)) { hp.delete(k); touchedHash = true; } });
+        if (touchedHash) { var hs = hp.toString(); u.hash = hs ? '#' + hs : ''; }
+        history.replaceState(null, '', u.pathname + u.search + u.hash);
+      } catch (_) {}
+    }
+    return found;
+  })();
+
+  function showAuthError(err) {
+    if (!err || !document.body || document.getElementById('te-autherr')) return;
+
+    var blob = ((err.code || '') + ' ' + (err.desc || '')).toLowerCase();
+    var msg, action, label;
+    if (blob.indexOf('otp') !== -1 || blob.indexOf('link') !== -1) {
+      msg = 'That sign-in link has already been used or has expired.';
+      label = 'Get a new link';
+      action = function () { location.href = '/join.html'; };
+    } else if (blob.indexOf('access_denied') !== -1 || blob.indexOf('cancel') !== -1) {
+      msg = 'Sign-in was cancelled.';
+      label = 'Try again';
+      action = function () { startGoogleSignIn(); };
+    } else {
+      // The common one: `bad_oauth_state` / "OAuth state has expired" — they took too long.
+      msg = 'That sign-in attempt timed out before it finished.';
+      label = 'Try again';
+      action = function () { startGoogleSignIn(); };
+    }
+
+    if (!document.getElementById('te-autherr-css')) {
+      var st = document.createElement('style');
+      st.id = 'te-autherr-css';
+      /* Conventions copied from consent.js, deliberately — it is the site's other injected bar:
+         a PLAIN prefers-color-scheme block (this site has no data-theme attribute), and every
+         font-size through calc(… * var(--te-ui, 1)) so OS text scaling caps rather than breaks
+         it (TEXT_SCALING.md). ⚠ Padding/gap stay in px on purpose: rem lengths inflate under
+         Android's font-size setting and would balloon the bar.
+         ⚠ No gold here — #B29234/#F0CC5C are the PREMIUM tier signal (premium-gold-palette);
+         a generic auth error must not borrow them. */
+      st.textContent =
+        '#te-autherr{display:flex;align-items:center;gap:12px;flex-wrap:wrap;' +
+        'padding:12px 16px;background:#FDF3D6;color:#4A3A0E;border-bottom:1px solid #E8D08A;' +
+        'font-family:Inter,system-ui,sans-serif;font-weight:500;line-height:1.4;' +
+        'font-size:calc(.9375rem * var(--te-ui, 1))}' +
+        '#te-autherr p{margin:0;flex:1 1 240px;min-width:0}' +
+        '#te-autherr button{font:inherit;cursor:pointer;border-radius:8px;padding:7px 14px;' +
+        'border:1px solid transparent}' +
+        '#te-autherr .te-ae-go{background:#1c1c1e;color:#f2f2f7}' +
+        '#te-autherr .te-ae-x{background:transparent;color:inherit;opacity:.65;' +
+        'font-size:calc(1.25rem * var(--te-ui, 1));line-height:1;padding:4px 8px}' +
+        '@media (prefers-color-scheme:dark){' +
+        '#te-autherr{background:#3A2F12;color:#F2E7C4;border-bottom-color:#5A4510}' +
+        '#te-autherr .te-ae-go{background:#f2f2f7;color:#1c1c1e}}';
+      document.head.appendChild(st);
+    }
+
+    var bar = document.createElement('div');
+    bar.id = 'te-autherr';
+    bar.setAttribute('role', 'alert');
+    var p = document.createElement('p');
+    p.textContent = msg + ' Nothing was saved — you are still signed out.';
+    var go = document.createElement('button');
+    go.className = 'te-ae-go'; go.type = 'button'; go.textContent = label;
+    go.addEventListener('click', action);
+    var x = document.createElement('button');
+    x.className = 'te-ae-x'; x.type = 'button'; x.textContent = '✕';
+    x.setAttribute('aria-label', 'Dismiss');
+    x.addEventListener('click', function () { bar.remove(); });
+    bar.appendChild(p); bar.appendChild(go); bar.appendChild(x);
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+
+  if (authErr) {
+    console.warn('[auth] sign-in returned an error:', authErr.code, authErr.desc);
+    var announce = function () {
+      // Let a page opt out and render its own (none do today — see the note above).
+      var ev;
+      try {
+        ev = new CustomEvent('thaiear:autherror', { detail: authErr, cancelable: true });
+      } catch (_) { ev = null; }
+      if (ev && !window.dispatchEvent(ev)) return;      // a listener called preventDefault()
+      showAuthError(authErr);
+    };
+    if (document.body) announce();
+    else document.addEventListener('DOMContentLoaded', announce);
+  }
+
   import(SUPABASE_ESM)
     .then(function (mod) {
       client = mod.createClient(SUPABASE_URL, SUPABASE_KEY);

@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v333';   // v333: download batch bar slimmed on BOTH surfaces (index Topics + index
+const VERSION = 'v334';   // v334: auth.js surfaces a FAILED sign-in instead of silently landing the
+                          // user on a logged-out page (reproduced 2026-08-17; a real visitor hit
+                          // `OAuth state has expired` on 08-16 and nearly bounced).
+                          // ⚠ auth.js IS PRECACHED, i.e. served cache-first since v292 — without
+                          // this bump the fix would not reach a single returning visitor.
+                          // (The attrib.js signup-geography change is deliberately NOT in this
+                          // release: it needs the ad_attribution geo_* columns to exist first.)
+                          // v333: download batch bar slimmed on BOTH surfaces (index Topics + index
                           // Playlists) — an empty #dl-batch-status no longer reserves a blank row
                           // above the "Tap a topic's circle…" hint (:empty collapses it, so its flex
                           // gap goes too), gaps/padding tightened, hint line-height 1.35. The hint
