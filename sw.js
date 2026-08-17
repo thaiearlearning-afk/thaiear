@@ -33,7 +33,10 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v335';   // v335: attrib.js now POSTs on EVERY signup (not only ad-attributed ones)
+const VERSION = 'v336';   // v336: consent banner copy — leads with the benefit instead of arguing
+                          // against itself, Accept-first ("Okay" / "No thanks"). Order is not
+                          // regulated; PROMINENCE is, and both buttons stay computed-identical.
+                          // v335: attrib.js now POSTs on EVERY signup (not only ad-attributed ones)
                           // so /api/attrib can stamp signup geography from request.cf. Shipped as
                           // its own release AFTER the ad_attribution geo_* migration — the reverse
                           // order would have PostgREST 400 on unknown columns and write NO row at

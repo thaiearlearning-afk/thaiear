@@ -31,9 +31,10 @@
    it: no choice means no storage, so the banner has nothing to remember
    and would simply return. Choosing Reject is the one-click way out.
 
-   ⚠ NOT WIRED UP YET. Nothing loads this file. The <script> tag and the
-   sw.js PRECACHE entry + VERSION bump are held back to avoid colliding
-   with the parallel session in player.js / sw.js.
+   ⚠ The "NOT WIRED UP YET" warning that used to sit here was STALE and
+   dangerously so in a legally-sensitive file — the tag shipped 2026-08-12
+   (SESSION_2026-08-12_TRACKING.md). This file IS loaded site-wide and IS
+   in sw.js PRECACHE. Corrected 2026-08-17.
 
    API: window.ThaiEarConsent
      .granted('advertising'|'analytics') -> bool
@@ -192,12 +193,28 @@
     node.setAttribute('aria-label', 'Cookie choices');
     node.innerHTML =
       '<div class="te-consent-in">' +
-        '<p class="te-consent-t">ThaiEar uses cookies to measure how well our adverts work. ' +
-          'They are not needed for the site to run, and saying no changes nothing about what ' +
-          'you can use or listen to. <a href="/privacy">How we use them</a>.</p>' +
+        /* ⚠ COPY IS A COMPLIANCE SURFACE, NOT MARKETING SPACE — but it is allowed to make the
+           honest case. The previous wording ("measure how well our adverts work … saying no
+           changes nothing about what you can use or listen to") led with the least sympathetic
+           reason and then argued AGAINST itself twice. You must say what the cookies do and how
+           to withdraw; you are not required to talk the visitor out of it. Rewritten 2026-08-17.
+           Every claim here is true of what actually fires: GA4 records which pages are used and
+           where visitors arrive from, the Ads tag records whether an ad click led anywhere.
+           ⚠ Keep the "it's optional" clause. It is true, it is the honest part of the trade, and
+           dropping it entirely would be the point where persuasion turns into a dark pattern. */
+        '<p class="te-consent-t"><strong>Help us improve ThaiEar.</strong> Cookies show us which ' +
+          'lessons people actually use and how visitors find the site. Optional — nothing about ' +
+          'your learning changes either way. <a href="/privacy">How we use them</a>.</p>' +
+        /* ⚠ ORDER IS NOT REGULATED; PROMINENCE IS. No UK/EU rule sets left-vs-right, and the
+           EDPB cookie-banner taskforce's violation list does not mention order. Accept-first is
+           a legitimate nudge. What is NOT legitimate — and what the CSS above deliberately
+           prevents — is pairing it with visual asymmetry: same size, weight, border, background
+           and contrast on both, or this becomes the dark pattern regulators actually fine.
+           ⚠ So: you may reorder these, or you may restyle them. Never both. Ideally never the
+           second at all. */
         '<div class="te-consent-b">' +
-          '<button type="button" data-te="reject">Reject</button>' +
-          '<button type="button" data-te="accept">Accept</button>' +
+          '<button type="button" data-te="accept">Okay</button>' +
+          '<button type="button" data-te="reject">No thanks</button>' +
         '</div>' +
         '<button type="button" class="te-consent-more" data-te="more">Choose what to allow</button>' +
       '</div>';
