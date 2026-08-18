@@ -2270,6 +2270,28 @@
     @keyframes sent-flag-pop { 0% { transform: scale(1); } 45% { transform: scale(1.4); } 100% { transform: scale(1); } }
     .sent-preview { font-family: var(--font-thai); font-size: 16px; color: var(--text-primary); flex: 1; line-height: 1.4; }
     .sent-preview .ell { color: var(--text-tertiary); }
+    /* ---- direction-aware PILL HINT (2026-08-18) ----
+       The collapsed pill's hint follows the chosen direction, like the reveal order above it:
+       Thai-first shows the Thai hint, English-first the authored English one. BOTH ship in the
+       markup and only their visibility swaps, so the static SSR card is never rebuilt and the
+       crawler still reads the same node the learner reveals.
+       Default (no dir class yet, e.g. before player.js runs) = Thai, which is what every page
+       shipped before this existed. A sentence with no English hint gets .pv-only on its Thai
+       span and no .pv-en at all, so it keeps showing Thai in BOTH directions rather than
+       rendering a blank pill — that is the fallback for any page not yet carrying previewEn.
+       NB: NO BACKTICKS in this comment. STYLES is a template literal, so one ends the string and
+       breaks the entire file — node --check player.js catches it, and so does gen_dyncss.js.
+       The html.te-dir-et half of each pair is the PRE-PAINT path: player.js is deferred, so
+       without it an English-first visitor would see every Thai hint for a beat and then watch them
+       all flip. A 3-line inline script in <head> (ssrify_topic.js) stamps that class from
+       localStorage before first paint, and applyDirClass() keeps it in sync afterwards — both
+       classes always agree, so switching back to Thai-first doesn't leave the html rule stuck on.
+       These rules reach the head via gen_dyncss.js, which extracts STYLES into a linked
+       stylesheet — so RE-RUN IT after touching them or the flash comes back for these rules. */
+    .sent-preview .pv-en { font-family: var(--font-ui); display: none; }
+    #sentence-list.dir-et .pv-th,          html.te-dir-et #sentence-list .pv-th { display: none; }
+    #sentence-list.dir-et .pv-th.pv-only,  html.te-dir-et #sentence-list .pv-th.pv-only { display: inline; }
+    #sentence-list.dir-et .pv-en,          html.te-dir-et #sentence-list .pv-en { display: inline; }
     .prog-wrap { display: flex; align-items: center; gap: 2.5px; flex-shrink: 0; padding: 2px 0; }
     .prog-seg { width: 5px; height: 16px; border-radius: 3px; background: var(--border); transition: background 0.2s ease; }
     .prog-seg.on { background: var(--accent); }
@@ -3067,7 +3089,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r189';   // P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r190';   // r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -6723,6 +6745,11 @@
   // is reordered above Thai. Driven by a class on #sentence-list that the injected reveal CSS keys off
   // — the static cards and st-0..3 stages are unchanged, so it stays SSR/crawlable.
   function applyDirClass() {
+    /* The <html> class is the pre-paint twin of dir-et (it is stamped by an inline head script
+       before player.js loads, so the pill hint paints in the right language first time). Sync it
+       here too — leaving it set after a switch back to Thai-first would keep the pre-paint rules
+       hiding the Thai hint. Set outside the #sentence-list guard so it holds on every page. */
+    try { document.documentElement.classList.toggle('te-dir-et', currentMode === 'et'); } catch (_) {}
     var list = $('sentence-list');
     if (!list) return;
     list.classList.toggle('dir-et', currentMode === 'et');
@@ -7180,14 +7207,32 @@
   var LOCK_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  /* The collapsed pill's hint, in both languages (2026-08-18). CSS on #sentence-list.dir-et
+     decides which one shows; see the .pv-th/.pv-en rules in STYLES. Kept as one helper because
+     ssrify_topic.js generates the identical markup statically — two copies of this that can drift
+     is exactly how the SSR and JS paths diverge. */
+  function previewHtml(s) {
+    var en = s.previewEn ? String(s.previewEn) : '';
+    return '<span class="sent-preview">' +
+      '<span class="pv-th' + (en ? '' : ' pv-only') + '">' + s.preview + '</span>' +
+      (en ? '<span class="pv-en">' + en + '</span>' : '') +
+      '<span class="ell">…</span></span>';
+  }
+  /* Accessible name carries BOTH hints, so it still contains the visible text whichever direction
+     is on. A name that switches with the direction would need re-writing on every mode change;
+     this way the static SSR label stays correct and label-content-name-mismatch stays fixed. */
+  function previewAria(s) {
+    return ariaText(s.preview) + (s.previewEn ? ' / ' + ariaText(s.previewEn) : '');
+  }
+
   function lockedCardHtml(s) {
     var d = dispNum(s);
     return '<div class="sentence-card' + sentCardClasses(s) + '" id="sc-' + s.num + '">' +
       '<div class="sentence-header" onclick="gateSentence(' + s.num + ')" role="button" tabindex="0" ' +
-        'aria-label="Sentence ' + d + ': ' + ariaText(s.preview) + ' — Premium content">' +
+        'aria-label="Sentence ' + d + ': ' + previewAria(s) + ' — Premium content">' +
         '<span class="sent-num">' + d + '</span>' +
         '<span class="sent-lock-ico">' + LOCK_SVG + '</span>' +
-        '<span class="sent-preview">' + s.preview + '<span class="ell">…</span></span>' +
+        previewHtml(s) +
       '</div>' +
     '</div>';
   }
@@ -7210,7 +7255,7 @@
       : '<button class="sent-flag-btn" onclick="flagSignIn(event)" ' +
           'aria-label="Sign in to flag sentence ' + d + '" title="Sign in to flag sentences">' + FLAG_SVG + '</button>');
     return '<div class="sentence-card' + sentCardClasses(s) + '" id="sc-' + s.num + '">' +
-      '<div class="sentence-header" onclick="cycle(' + s.num + ')" role="button" tabindex="0" aria-label="Sentence ' + d + ': ' + ariaText(s.preview) + '">' +
+      '<div class="sentence-header" onclick="cycle(' + s.num + ')" role="button" tabindex="0" aria-label="Sentence ' + d + ': ' + previewAria(s) + '">' +
         '<span class="sent-num">' + d + '</span>' +
         '<button class="sent-play-btn' + (playing ? ' playing' : '') + '" onclick="toggleSentPlay(event,' + s.num + ')" aria-label="Play sentence ' + d + '">' +
           '<svg viewBox="0 0 16 16">' + (playing
@@ -7219,7 +7264,7 @@
         '</button>' +
         '<button class="speed-toggle' + (slowMode ? ' active' : '') + '" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>' +
         flagBtn +
-        '<span class="sent-preview">' + s.preview + '<span class="ell">…</span></span>' +
+        previewHtml(s) +
         /* r145 — NO reveal-stage segment bar on a PLAYLIST card (owner, 2026-08-08: "the old pill
            expander thing … is defunct"). All 93 topic pages ship style2, and body.te-v2 hides
            .prog-wrap outright; the playlist player is deliberately NOT a te-v2 page (it takes

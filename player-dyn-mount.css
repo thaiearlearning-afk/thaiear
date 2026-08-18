@@ -191,6 +191,28 @@
     @keyframes sent-flag-pop { 0% { transform: scale(1); } 45% { transform: scale(1.4); } 100% { transform: scale(1); } }
     .sent-preview { font-family: var(--font-thai); font-size: 16px; color: var(--text-primary); flex: 1; line-height: 1.4; }
     .sent-preview .ell { color: var(--text-tertiary); }
+    /* ---- direction-aware PILL HINT (2026-08-18) ----
+       The collapsed pill's hint follows the chosen direction, like the reveal order above it:
+       Thai-first shows the Thai hint, English-first the authored English one. BOTH ship in the
+       markup and only their visibility swaps, so the static SSR card is never rebuilt and the
+       crawler still reads the same node the learner reveals.
+       Default (no dir class yet, e.g. before player.js runs) = Thai, which is what every page
+       shipped before this existed. A sentence with no English hint gets .pv-only on its Thai
+       span and no .pv-en at all, so it keeps showing Thai in BOTH directions rather than
+       rendering a blank pill — that is the fallback for any page not yet carrying previewEn.
+       NB: NO BACKTICKS in this comment. STYLES is a template literal, so one ends the string and
+       breaks the entire file — node --check player.js catches it, and so does gen_dyncss.js.
+       The html.te-dir-et half of each pair is the PRE-PAINT path: player.js is deferred, so
+       without it an English-first visitor would see every Thai hint for a beat and then watch them
+       all flip. A 3-line inline script in <head> (ssrify_topic.js) stamps that class from
+       localStorage before first paint, and applyDirClass() keeps it in sync afterwards — both
+       classes always agree, so switching back to Thai-first doesn't leave the html rule stuck on.
+       These rules reach the head via gen_dyncss.js, which extracts STYLES into a linked
+       stylesheet — so RE-RUN IT after touching them or the flash comes back for these rules. */
+    .sent-preview .pv-en { font-family: var(--font-ui); display: none; }
+    #sentence-list.dir-et .pv-th,          html.te-dir-et #sentence-list .pv-th { display: none; }
+    #sentence-list.dir-et .pv-th.pv-only,  html.te-dir-et #sentence-list .pv-th.pv-only { display: inline; }
+    #sentence-list.dir-et .pv-en,          html.te-dir-et #sentence-list .pv-en { display: inline; }
     .prog-wrap { display: flex; align-items: center; gap: 2.5px; flex-shrink: 0; padding: 2px 0; }
     .prog-seg { width: 5px; height: 16px; border-radius: 3px; background: var(--border); transition: background 0.2s ease; }
     .prog-seg.on { background: var(--accent); }

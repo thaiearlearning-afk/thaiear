@@ -106,3 +106,7 @@ app-offline-mock.html
 # Owner-only tracking/consent harness (localhost) — never deploy
 consent-preview.html
 cls-measure.html
+
+# English pill-hint review (2026-08-18) — local review only, never deploy
+hints-review.html
+hints-review-data.json
