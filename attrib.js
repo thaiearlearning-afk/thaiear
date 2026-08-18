@@ -40,7 +40,12 @@
   var STORE      = 'te_attrib';                     // the captured click
   var DONE       = 'te_attrib_sent:';               // + user id, once-guard
   var MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;        // 30 days
-  var NEW_USER_MS = 5 * 60 * 1000;                  // "created just now" window
+  /* "created just now" window. ⚠ 60 min, not 5 — on the MAGIC-LINK path Supabase stamps
+     created_at when the link is REQUESTED, not when it is clicked, so a user who checks
+     their email a quarter of an hour later would otherwise never be attributed. 60 min
+     matches Supabase's own link expiry. It cannot create false positives: a returning
+     user's created_at is days old under either figure. */
+  var NEW_USER_MS = 60 * 60 * 1000;
   var PARAMS = ['gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
 
   function ls(fn, dflt) { try { return fn(); } catch (_) { return dflt; } }
@@ -83,10 +88,25 @@
 
   /* ---------- 2. the access token -------------------------------------
      attrib.js cannot reach auth.js's private supabase client, so it reads
-     the session supabase-js persists. Key shape is `sb-<ref>-auth-token`;
-     matched by pattern rather than hardcoded so a project ref change or a
-     supabase-js storage tweak degrades to "no attribution" rather than to
-     a thrown error. ------------------------------------------------- */
+     a persisted session out of localStorage. Two sources, in order:
+
+       1. supabase-js's own key, shape `sb-<ref>-auth-token`. Matched by
+          PATTERN rather than hardcoded so a project ref change or a
+          supabase-js storage tweak degrades to "no attribution" rather
+          than to a thrown error.
+
+       2. ⭐ auth.js's DURABLE IDENTITY (`thaiear_identity`) — added
+          2026-08-18. Source 1 alone is not enough: supabase-js DELETES its
+          key when a refresh fails on an already-expired token, which is the
+          whole reason the durable identity exists (see auth.js "DURABLE
+          OFFLINE IDENTITY"). On any path where that has happened we would
+          silently record nothing — a second, quieter route to the zero-rows
+          bug fixed the same day. Its token can be STALE, in which case
+          /api/attrib returns 403 and no row is written; that is no worse
+          than the nothing we would otherwise have sent, and the once-guard
+          below now lets it be retried. ------------------------------- */
+
+  var ID_KEY = 'thaiear_identity';                  // auth.js:179 — keep in step
 
   function accessToken() {
     return ls(function () {
@@ -97,11 +117,14 @@
         var tok = s && (s.access_token || (s.currentSession && s.currentSession.access_token));
         if (tok) return tok;
       }
-      return null;
+      var id = JSON.parse(localStorage.getItem(ID_KEY) || 'null');
+      return (id && id.access_token) || null;
     }, null);
   }
 
   /* ---------- 3. signup ------------------------------------------------ */
+
+  var inFlight = {};                                // user id -> a POST is already going out
 
   function onAuth(ev) {
     var user = ev && ev.detail;
@@ -127,15 +150,32 @@
     var tok = accessToken();
     if (!tok) return;
 
-    ls(function () { localStorage.setItem(DONE + user.id, '1'); });
+    /* ⚠ THE DURABLE ONCE-GUARD IS SET ON SUCCESS, NOT BEFORE THE REQUEST (changed 2026-08-18).
+       It used to be written first, so a POST that failed — a stale token from the durable
+       identity above, or simply being offline at the moment of signup — marked the user
+       done FOREVER and the row could never be recovered. The endpoint is keyed on user_id
+       and treats a 409 as success, so a retry is free. A page closed mid-flight now just
+       tries again on the next auth event, which is the behaviour we want.
 
-    // Fire and forget. Attribution must never delay or break a signup.
+       ⚠⚠ WHICH IS EXACTLY WHY `inFlight` HAS TO EXIST. auth.js calls notify() SEVERAL times
+       on a single load — once when the session resolves (auth.js:1738) and again as
+       refreshSubscription / refreshLifetime / refreshProfile each settle — so every one of
+       those fires `thaiear:auth`. The old synchronous write happened to suppress the repeats.
+       Without this in-memory guard the same signup POSTs three or four times per page load.
+       Harmless at the endpoint (idempotent), but it is still three wasted requests during
+       signup, which is the one moment we promised not to slow down. */
+    if (inFlight[user.id]) return;
+    inFlight[user.id] = true;
+
     ls(function () {
       fetch('/api/attrib', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
         body: JSON.stringify(hit),
-      }).catch(function () {});
+      }).then(function (r) {
+        if (r && r.ok) ls(function () { localStorage.setItem(DONE + user.id, '1'); });
+        else inFlight[user.id] = false;              // failed → let a later auth event retry
+      }).catch(function () { inFlight[user.id] = false; });
     });
   }
 

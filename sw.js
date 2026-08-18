@@ -33,7 +33,17 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v337';   // v337: consent buttons are now EQUAL WIDTH by construction (min-width
+const VERSION = 'v338';   // v338: AD ATTRIBUTION WAS DEAD. auth.js userFromSession() omitted
+                          // created_at, so attrib.js:108 returned on its first line for EVERY user
+                          // on EVERY path — ad_attribution held 0 rows since it shipped, and the
+                          // Google Ads `signup` conversion never fired either (track('signup') sits
+                          // below that return). Also: NEW_USER_MS 5min->60min for the magic-link
+                          // path, accessToken() falls back to thaiear_identity, the once-guard is
+                          // set on SUCCESS (was: before the request, so one failure lost the row
+                          // forever), + an inFlight guard because auth.js notify()s 3-4x per load.
+                          // ⚠ BOTH FILES ARE PRECACHED (cache-first since v292) — without this bump
+                          // the fix reaches nobody. ADS_OPERATIONS.md §4.1, test_attrib_signup.js.
+                          // v337: consent buttons are now EQUAL WIDTH by construction (min-width
                           // in em, so it tracks --te-ui) and Accept reads "Yes okay" — prominence
                           // parity no longer depends on picking labels of matching length.
                           // v336: consent banner copy — leads with the benefit instead of arguing

@@ -122,6 +122,12 @@
     return {
       id: u.id,
       email: u.email || '',
+      /* ⚠ LOAD-BEARING FOR ATTRIBUTION, not decoration. attrib.js:108 bails on the whole
+         signup handler when this is absent, so omitting it silently kills BOTH the
+         first-party ad_attribution row AND the Google Ads `signup` conversion — which is
+         exactly what happened between the file shipping and 2026-08-18 (zero rows, ever).
+         Do not slim this object back down. */
+      created_at: u.created_at || '',
       username: meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member'),
       avatar: meta.avatar_url || ''
     };
