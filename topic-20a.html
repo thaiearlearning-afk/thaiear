@@ -53,6 +53,12 @@
   /* Topic intro: visible, crawlable lead paragraph under the h1 (SEO + orientation).
      'Inter' for English, 'Sarabun' fallback for the Thai words. */
   .topic-intro { font-family: 'Inter', 'Sarabun', system-ui, sans-serif; font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin: 0.6rem 0 1.25rem; }
+  /* pill:start — direction-aware hint (see player.js STYLES; kept here so it cannot arrive late) */
+  .sent-preview .pv-en { font-family: var(--font-ui); display: none; }
+  #sentence-list.dir-et .pv-th,         html.te-dir-et #sentence-list .pv-th { display: none; }
+  #sentence-list.dir-et .pv-th.pv-only, html.te-dir-et #sentence-list .pv-th.pv-only { display: inline; }
+  #sentence-list.dir-et .pv-en,         html.te-dir-et #sentence-list .pv-en { display: inline; }
+  /* pill:end */
 </style>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

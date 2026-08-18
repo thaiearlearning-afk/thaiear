@@ -59,6 +59,12 @@
   .thai-translit { font-family: var(--font-ui); font-size: 13px; color: var(--text-tertiary); line-height: 1.55; margin-top: 1px; }
   .g-tl { color: var(--text-secondary); margin-left: 4px; }
   #sentence-list.translit-off .thai-translit, #sentence-list.translit-off .g-tl { display: none; }
+  /* pill:start — direction-aware hint (see player.js STYLES; kept here so it cannot arrive late) */
+  .sent-preview .pv-en { font-family: var(--font-ui); display: none; }
+  #sentence-list.dir-et .pv-th,         html.te-dir-et #sentence-list .pv-th { display: none; }
+  #sentence-list.dir-et .pv-th.pv-only, html.te-dir-et #sentence-list .pv-th.pv-only { display: inline; }
+  #sentence-list.dir-et .pv-en,         html.te-dir-et #sentence-list .pv-en { display: inline; }
+  /* pill:end */
 </style>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
