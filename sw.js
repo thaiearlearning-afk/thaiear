@@ -33,7 +33,18 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v345';   // v345: /confirm stops sending people down a dead end. An EXPIRED or
+const VERSION = 'v346';   // v346: PRIVACY — the policy and the code disagreed, and the code was
+                          // the one at fault. attrib.js wrote gclid/utm/landing/referrer to
+                          // localStorage with NO consent check, while privacy.html told users that
+                          // half was consent-gated. localStorage is PECR reg 6 "access to terminal
+                          // equipment", and a legitimate-interests basis does NOT substitute for
+                          // consent there. Decline advertising cookies now and NOTHING of ours is
+                          // stored on your device; granting later still captures; withdrawing
+                          // ERASES what we hold. The server-derived geography (country/city/network,
+                          // never the IP) touches no device storage, so it stays unconditional under
+                          // legitimate interests — and privacy.html now says all of this, plus
+                          // MailerSend as a processor, which was never disclosed at all.
+                          // v345: /confirm stops sending people down a dead end. An EXPIRED or
                           // already-spent token used to reveal the code box — but the code is the
                           // SAME OTP record, so that was a guaranteed second failure. It now says
                           // the link has expired, turns the button into "Get a new sign-in link",
