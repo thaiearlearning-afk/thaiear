@@ -136,18 +136,33 @@
          A mail-security scanner issues a GET; a GET must verify nothing. -->
     <button class="btn btn-primary" id="cf-btn" onclick="cfVerify()">Sign me in</button>
 
+    <!-- ⚠ ALWAYS VISIBLE, and it must stay that way (fixed 2026-08-19 after the first live
+         test). The code box used to be revealed ONLY when a link verify had already failed,
+         which meant a user who wanted to use the code INSTEAD of the link — the exact case
+         it exists for — had no way to reach it. "It's there on failure" is not the same as
+         "reachable": the whole point is a route that does not depend on the link working. -->
+    <p style="margin-top:14px;text-align:center">
+      <button type="button" id="cf-code-toggle" onclick="cfShowCode()"
+              style="background:none;border:0;padding:4px;font-family:var(--font-ui);font-size:13px;color:var(--accent);text-decoration:underline;cursor:pointer">
+        Link not working? Use the code from your email
+      </button>
+    </p>
+
     <p id="cf-status" style="margin-top:12px;min-height:1.2em;font-size:13px;color:var(--text-tertiary)"></p>
 
     <!-- Fallback for scanners that DO press buttons, and for a link mangled in transit.
          {{ .Token }} and {{ .ConfirmationURL }} are two renderings of the SAME OTP record,
          so this is a second way in, never a second credential. -->
     <div id="cf-code-wrap" style="display:none;margin-top:1.4rem;padding-top:1.4rem;border-top:0.5px solid var(--border)">
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:0.7rem">Link not working? Enter the 6-digit code from the same email.</p>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:0.7rem">Enter the code printed in the same email.</p>
       <label for="cf-email" style="display:block;font-size:12px;color:var(--text-tertiary);margin-bottom:4px">Your email address</label>
       <input type="email" id="cf-email" autocomplete="email" inputmode="email" placeholder="you@example.com"
              style="width:100%;font-family:var(--font-ui);font-size:15px;padding:10px 12px;border:0.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--bg);color:var(--text-primary);margin-bottom:10px">
-      <label for="cf-code" style="display:block;font-size:12px;color:var(--text-tertiary);margin-bottom:4px">6-digit code</label>
-      <input type="text" id="cf-code" autocomplete="one-time-code" inputmode="numeric" maxlength="6" placeholder="123456"
+      <label for="cf-code" style="display:block;font-size:12px;color:var(--text-tertiary);margin-bottom:4px">Code from your email</label>
+      <!-- ⚠ maxlength 10, NOT 6. Supabase's OTP length is a project setting (`mailer_otp_length`)
+           and this project issues EIGHT digits — a 6-cap silently truncated what the user typed
+           and made a correct code unusable. Do not "tidy" it back to the documented default. -->
+      <input type="text" id="cf-code" autocomplete="one-time-code" inputmode="numeric" maxlength="10" placeholder="12345678"
              style="width:100%;font-family:var(--font-ui);font-size:18px;letter-spacing:0.25em;padding:10px 12px;border:0.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--bg);color:var(--text-primary);margin-bottom:12px">
       <button class="btn btn-ghost" id="cf-code-btn" onclick="cfVerifyCode()">Sign in with the code</button>
       <p id="cf-code-status" style="margin-top:10px;min-height:1.2em;font-size:13px;color:var(--text-tertiary)"></p>
@@ -200,13 +215,26 @@
   var status = document.getElementById('cf-status');
   var codeWrap = document.getElementById('cf-code-wrap');
 
+  /* Reveal the code route. ⚠ DEFINED HERE, ABOVE ITS FIRST USE, ON PURPOSE — this is an
+     ASSIGNMENT, not a hoisted declaration, so the no-token branch a few lines below
+     cannot call it if it sits further down. Every reveal goes through this one function
+     so the box and the "use the code" toggle can never both be showing. Idempotent. */
+  window.cfShowCode = function () {
+    if (codeWrap) codeWrap.style.display = 'block';
+    var toggle = document.getElementById('cf-code-toggle');
+    if (toggle) toggle.style.display = 'none';
+    var emailEl = document.getElementById('cf-email');
+    if (emailEl && typeof emailEl.focus === 'function') { try { emailEl.focus(); } catch (_) {} }
+  };
+
+
   /* No token_hash in the URL = someone reached this page directly, or the link was
      mangled in transit. Don't dead-end them: offer the code route straight away. */
   if (!tokenHash) {
     document.getElementById('cf-title').textContent = 'Finish signing in';
     document.getElementById('cf-lede').textContent = 'This page needs the link from your sign-in email. If the link is not working, use the code from that email instead.';
     if (btn) { btn.disabled = true; btn.textContent = 'No sign-in link found'; }
-    if (codeWrap) codeWrap.style.display = 'block';
+    window.cfShowCode();
   }
 
   function say(el, msg, kind) {
@@ -266,7 +294,7 @@
           var e = firstErr || new Error('please try again.');
           say(status, 'That link did not work: ' + (e.message || 'please try again.'), 'err');
           if (btn) { btn.disabled = false; btn.textContent = 'Try again'; }
-          if (codeWrap) codeWrap.style.display = 'block';
+          window.cfShowCode();
           return;
         }
         a.verifyOtpHash(tokenHash, queue[i]).then(function (res) {
@@ -289,7 +317,7 @@
     var email = ((emailEl && emailEl.value) || '').trim();
     var code = ((codeEl && codeEl.value) || '').trim().replace(/\s+/g, '');
     if (!email || email.indexOf('@') < 1 || email.indexOf('.') < 0) { say(cstatus, 'Please enter the email address the code was sent to.', 'err'); return; }
-    if (!/^\d{4,8}$/.test(code)) { say(cstatus, 'Please enter the 6-digit code from the email.', 'err'); return; }
+    if (!/^\d{4,10}$/.test(code)) { say(cstatus, 'Please enter the code printed in the email (digits only).', 'err'); return; }
     if (cbtn) { cbtn.disabled = true; cbtn.textContent = 'Signing you in...'; }
     say(cstatus, '');
     whenAuth(function (a) {

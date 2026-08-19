@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v340';   // v340: THE SIGN-IN EMAIL NO LONGER DIES TO A MAIL SCANNER. Both Supabase
+const VERSION = 'v341';   // v341: confirm.html — the 6-digit code route was UNREACHABLE. The box was
+                          // revealed only after a link verify had already FAILED, so a user wanting
+                          // to use the code INSTEAD of the link (its entire purpose) had nowhere to
+                          // type it. Now a permanent "Link not working? Use the code" toggle opens
+                          // it. Also maxlength 6 -> 10: this project's mailer_otp_length issues
+                          // EIGHT digits, and the 6-cap silently truncated a correct code.
+                          // ⚠ confirm.html is PRECACHED and cache-first, so editing it without
+                          // this bump would have reached nobody.
+                          // v340: THE SIGN-IN EMAIL NO LONGER DIES TO A MAIL SCANNER. Both Supabase
                           // templates now point at our own /confirm page, which verifies the OTP on
                           // a CLICK instead of on the GET. Microsoft Defender "Safe Links" was
                           // pre-fetching the single-use link and spending it in its own sandbox
