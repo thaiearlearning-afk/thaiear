@@ -59,6 +59,12 @@
   #sentence-list.dir-et .pv-th.pv-only, html.te-dir-et #sentence-list .pv-th.pv-only { display: inline; }
   #sentence-list.dir-et .pv-en,         html.te-dir-et #sentence-list .pv-en { display: inline; }
   /* pill:end */
+  /* Transliteration (topics shipping per-sentence 'translit', currently 01–03): the line lives
+     INSIDE row-thai so it reveals/collapses with the Thai script in both TE and ET directions.
+     Default ON; player.js's pill adds .translit-off on #sentence-list to hide it. */
+  .thai-translit { font-family: var(--font-ui); font-size: 13px; color: var(--text-tertiary); line-height: 1.55; margin-top: 1px; }
+  .g-tl { color: var(--text-secondary); margin-left: 4px; }
+  #sentence-list.translit-off .thai-translit, #sentence-list.translit-off .g-tl { display: none; }
 </style>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -144,9 +150,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ตอนนี้กี่โมงแล้วคะ</div>
+          <div class="reveal-row row-thai">ตอนนี้กี่โมงแล้วคะ<div class="thai-translit">dtawn-níi gìi moong láaeo khá</div></div>
           <div class="reveal-row row-english">What time is it now?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ตอนนี้</span><span class="g-eq">=</span><span class="g-eng">now</span></span><span class="gloss-chip"><span class="g-thai">กี่โมง</span><span class="g-eq">=</span><span class="g-eng">what time</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ตอนนี้</span><span class="g-tl">/ dtawn-níi</span><span class="g-eq">=</span><span class="g-eng">now</span></span><span class="gloss-chip"><span class="g-thai">กี่โมง</span><span class="g-tl">/ gìi moong</span><span class="g-eq">=</span><span class="g-eng">what time</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-tl">/ láaeo</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-369">
@@ -159,9 +165,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ร้านเปิดกี่โมงคะ</div>
+          <div class="reveal-row row-thai">ร้านเปิดกี่โมงคะ<div class="thai-translit">ráan bpèrt gìi moong khá</div></div>
           <div class="reveal-row row-english">What time does the shop open?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ร้าน</span><span class="g-eq">=</span><span class="g-eng">shop</span></span><span class="gloss-chip"><span class="g-thai">เปิด</span><span class="g-eq">=</span><span class="g-eng">open</span></span><span class="gloss-chip"><span class="g-thai">กี่โมง</span><span class="g-eq">=</span><span class="g-eng">what time</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ร้าน</span><span class="g-tl">/ ráan</span><span class="g-eq">=</span><span class="g-eng">shop</span></span><span class="gloss-chip"><span class="g-thai">เปิด</span><span class="g-tl">/ bpèrt</span><span class="g-eq">=</span><span class="g-eng">open</span></span><span class="gloss-chip"><span class="g-thai">กี่โมง</span><span class="g-tl">/ gìi moong</span><span class="g-eq">=</span><span class="g-eng">what time</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-362">
@@ -174,9 +180,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เครื่องบินออกตีห้าครับ</div>
+          <div class="reveal-row row-thai">เครื่องบินออกตีห้าครับ<div class="thai-translit">khrûeang-bin àwk dtii hâa khráp</div></div>
           <div class="reveal-row row-english">The plane leaves at 5 a.m.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เครื่องบิน</span><span class="g-eq">=</span><span class="g-eng">plane</span></span><span class="gloss-chip"><span class="g-thai">ออก</span><span class="g-eq">=</span><span class="g-eng">leave / depart</span></span><span class="gloss-chip"><span class="g-thai">ตีห้า</span><span class="g-eq">=</span><span class="g-eng">5 a.m.</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ตี + a number tells the small hours, about 1–5 a.m.: ตีหนึ่ง (1 a.m.) … ตีห้า (5 a.m.). ตี means 'to strike' — from the gong struck to mark each hour.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เครื่องบิน</span><span class="g-tl">/ khrûeang-bin</span><span class="g-eq">=</span><span class="g-eng">plane</span></span><span class="gloss-chip"><span class="g-thai">ออก</span><span class="g-tl">/ àwk</span><span class="g-eq">=</span><span class="g-eng">leave / depart</span></span><span class="gloss-chip"><span class="g-thai">ตีห้า</span><span class="g-tl">/ dtii hâa</span><span class="g-eq">=</span><span class="g-eng">5 a.m.</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ตี + a number tells the small hours, about 1–5 a.m.: ตีหนึ่ง (1 a.m.) … ตีห้า (5 a.m.). ตี means 'to strike' — from the gong struck to mark each hour.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-363">
@@ -189,9 +195,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ผมเข้างานแปดโมงเช้าครับ</div>
+          <div class="reveal-row row-thai">ผมเข้างานแปดโมงเช้าครับ<div class="thai-translit">phǒm khâo ngaan bpàaet moong cháo khráp</div></div>
           <div class="reveal-row row-english">I start work at 8 in the morning.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">เข้างาน</span><span class="g-eq">=</span><span class="g-eng">start work</span></span><span class="gloss-chip"><span class="g-thai">แปดโมงเช้า</span><span class="g-eq">=</span><span class="g-eng">8 a.m.</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">For 6–11 a.m., say the clock number + โมงเช้า: หกโมงเช้า (6), แปดโมงเช้า (8), สิบเอ็ดโมงเช้า (11). เช้า ('morning') is often dropped once the time of day is clear.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-tl">/ phǒm</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">เข้างาน</span><span class="g-tl">/ khâo ngaan</span><span class="g-eq">=</span><span class="g-eng">start work</span></span><span class="gloss-chip"><span class="g-thai">แปดโมงเช้า</span><span class="g-tl">/ bpàaet moong cháo</span><span class="g-eq">=</span><span class="g-eng">8 a.m.</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">For 6–11 a.m., say the clock number + โมงเช้า: หกโมงเช้า (6), แปดโมงเช้า (8), สิบเอ็ดโมงเช้า (11). เช้า ('morning') is often dropped once the time of day is clear.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-146">
@@ -204,9 +210,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เที่ยงแล้ว ไปกินข้าวกันไหมคะ</div>
+          <div class="reveal-row row-thai">เที่ยงแล้ว ไปกินข้าวกันไหมคะ<div class="thai-translit">thîang láaeo bpai gin khâao gan mǎi khá</div></div>
           <div class="reveal-row row-english">It's noon — shall we go and eat?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เที่ยง</span><span class="g-eq">=</span><span class="g-eng">noon</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-eq">=</span><span class="g-eng">go</span></span><span class="gloss-chip"><span class="g-thai">กินข้าว</span><span class="g-eq">=</span><span class="g-eng">eat (a meal)</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-eq">=</span><span class="g-eng">together</span></span><span class="gloss-chip"><span class="g-thai">ไหม</span><span class="g-eq">=</span><span class="g-eng">question particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เที่ยง</span><span class="g-tl">/ thîang</span><span class="g-eq">=</span><span class="g-eng">noon</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-tl">/ láaeo</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-tl">/ bpai</span><span class="g-eq">=</span><span class="g-eng">go</span></span><span class="gloss-chip"><span class="g-thai">กินข้าว</span><span class="g-tl">/ gin khâao</span><span class="g-eq">=</span><span class="g-eng">eat (a meal)</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-tl">/ gan</span><span class="g-eq">=</span><span class="g-eng">together</span></span><span class="gloss-chip"><span class="g-thai">ไหม</span><span class="g-tl">/ mǎi</span><span class="g-eq">=</span><span class="g-eng">question particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-145">
@@ -219,9 +225,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">บ่ายสามโมงครึ่งครับ</div>
+          <div class="reveal-row row-thai">บ่ายสามโมงครึ่งครับ<div class="thai-translit">bàai sǎam moong khrûeng khráp</div></div>
           <div class="reveal-row row-english">Half past three in the afternoon.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">บ่าย</span><span class="g-eq">=</span><span class="g-eng">afternoon</span></span><span class="gloss-chip"><span class="g-thai">สามโมง</span><span class="g-eq">=</span><span class="g-eng">three o'clock</span></span><span class="gloss-chip"><span class="g-thai">ครึ่ง</span><span class="g-eq">=</span><span class="g-eng">half (past)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Early-afternoon hours (1–4pm) are told as บ่าย + โมง.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">บ่าย</span><span class="g-tl">/ bàai</span><span class="g-eq">=</span><span class="g-eng">afternoon</span></span><span class="gloss-chip"><span class="g-thai">สามโมง</span><span class="g-tl">/ sǎam moong</span><span class="g-eq">=</span><span class="g-eng">three o'clock</span></span><span class="gloss-chip"><span class="g-thai">ครึ่ง</span><span class="g-tl">/ khrûeng</span><span class="g-eq">=</span><span class="g-eng">half (past)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Early-afternoon hours (1–4pm) are told as บ่าย + โมง.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-364">
@@ -234,9 +240,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เลิกงานห้าโมงเย็นค่ะ</div>
+          <div class="reveal-row row-thai">เลิกงานห้าโมงเย็นค่ะ<div class="thai-translit">lêrk ngaan hâa moong yen khâ</div></div>
           <div class="reveal-row row-english">I finish work at 5 p.m.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เลิกงาน</span><span class="g-eq">=</span><span class="g-eng">finish work</span></span><span class="gloss-chip"><span class="g-thai">ห้าโมงเย็น</span><span class="g-eq">=</span><span class="g-eng">5 p.m.</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">From 4–6 p.m. the count is number + โมงเย็น: สี่โมงเย็น (4), ห้าโมงเย็น (5), หกโมงเย็น (6). เย็น is the cool of the early evening.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เลิกงาน</span><span class="g-tl">/ lêrk ngaan</span><span class="g-eq">=</span><span class="g-eng">finish work</span></span><span class="gloss-chip"><span class="g-thai">ห้าโมงเย็น</span><span class="g-tl">/ hâa moong yen</span><span class="g-eq">=</span><span class="g-eng">5 p.m.</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">From 4–6 p.m. the count is number + โมงเย็น: สี่โมงเย็น (4), ห้าโมงเย็น (5), หกโมงเย็น (6). เย็น is the cool of the early evening.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-147">
@@ -249,9 +255,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">หนังเริ่มสองทุ่มนะครับ</div>
+          <div class="reveal-row row-thai">หนังเริ่มสองทุ่มนะครับ<div class="thai-translit">nǎng rêrm sǎwng thûm ná khráp</div></div>
           <div class="reveal-row row-english">The film starts at 8pm.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">หนัง</span><span class="g-eq">=</span><span class="g-eng">film / movie (also "skin / leather")</span></span><span class="gloss-chip"><span class="g-thai">เริ่ม</span><span class="g-eq">=</span><span class="g-eng">start</span></span><span class="gloss-chip"><span class="g-thai">สองทุ่ม</span><span class="g-eq">=</span><span class="g-eng">8pm</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ทุ่ม counts evening hours: หนึ่งทุ่ม = 7pm, สองทุ่ม = 8pm, up to ห้าทุ่ม = 11pm.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">หนัง</span><span class="g-tl">/ nǎng</span><span class="g-eq">=</span><span class="g-eng">film / movie (also "skin / leather")</span></span><span class="gloss-chip"><span class="g-thai">เริ่ม</span><span class="g-tl">/ rêrm</span><span class="g-eq">=</span><span class="g-eng">start</span></span><span class="gloss-chip"><span class="g-thai">สองทุ่ม</span><span class="g-tl">/ sǎwng thûm</span><span class="g-eq">=</span><span class="g-eng">8pm</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ทุ่ม counts evening hours: หนึ่งทุ่ม = 7pm, สองทุ่ม = 8pm, up to ห้าทุ่ม = 11pm.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-367">
@@ -264,9 +270,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ตอนนี้สามทุ่มยี่สิบสามนาทีแล้วครับ</div>
+          <div class="reveal-row row-thai">ตอนนี้สามทุ่มยี่สิบสามนาทีแล้วครับ<div class="thai-translit">dtawn-níi sǎam thûm yîi-sìp-sǎam naa-thii láaeo khráp</div></div>
           <div class="reveal-row row-english">It's 9:23 PM now.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ตอนนี้</span><span class="g-eq">=</span><span class="g-eng">now</span></span><span class="gloss-chip"><span class="g-thai">สามทุ่ม</span><span class="g-eq">=</span><span class="g-eng">9 PM</span></span><span class="gloss-chip"><span class="g-thai">ยี่สิบสาม</span><span class="g-eq">=</span><span class="g-eng">twenty-three</span></span><span class="gloss-chip"><span class="g-thai">นาที</span><span class="g-eq">=</span><span class="g-eng">minute</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Minutes follow the hour: [time] + [number] + นาที — so สามทุ่มยี่สิบสามนาที = 9:23 PM. Half past uses ครึ่ง (บ่ายสามโมงครึ่ง = 3:30).</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ตอนนี้</span><span class="g-tl">/ dtawn-níi</span><span class="g-eq">=</span><span class="g-eng">now</span></span><span class="gloss-chip"><span class="g-thai">สามทุ่ม</span><span class="g-tl">/ sǎam thûm</span><span class="g-eq">=</span><span class="g-eng">9 PM</span></span><span class="gloss-chip"><span class="g-thai">ยี่สิบสาม</span><span class="g-tl">/ yîi-sìp-sǎam</span><span class="g-eq">=</span><span class="g-eng">twenty-three</span></span><span class="gloss-chip"><span class="g-thai">นาที</span><span class="g-tl">/ naa-thii</span><span class="g-eq">=</span><span class="g-eng">minute</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-tl">/ láaeo</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Minutes follow the hour: [time] + [number] + นาที — so สามทุ่มยี่สิบสามนาที = 9:23 PM. Half past uses ครึ่ง (บ่ายสามโมงครึ่ง = 3:30).</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-365">
@@ -279,9 +285,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ร้านปิดสี่ทุ่มครับ</div>
+          <div class="reveal-row row-thai">ร้านปิดสี่ทุ่มครับ<div class="thai-translit">ráan bpìt sìi thûm khráp</div></div>
           <div class="reveal-row row-english">The shop closes at 10 p.m.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ร้าน</span><span class="g-eq">=</span><span class="g-eng">shop</span></span><span class="gloss-chip"><span class="g-thai">ปิด</span><span class="g-eq">=</span><span class="g-eng">close</span></span><span class="gloss-chip"><span class="g-thai">สี่ทุ่ม</span><span class="g-eq">=</span><span class="g-eng">10 p.m.</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">At 7 p.m. the count restarts: number + ทุ่ม, with หนึ่งทุ่ม = 7 p.m. — so สองทุ่ม (8), สามทุ่ม (9), สี่ทุ่ม (10), ห้าทุ่ม (11). ทุ่ม is the muffled beat of the night drum.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ร้าน</span><span class="g-tl">/ ráan</span><span class="g-eq">=</span><span class="g-eng">shop</span></span><span class="gloss-chip"><span class="g-thai">ปิด</span><span class="g-tl">/ bpìt</span><span class="g-eq">=</span><span class="g-eng">close</span></span><span class="gloss-chip"><span class="g-thai">สี่ทุ่ม</span><span class="g-tl">/ sìi thûm</span><span class="g-eq">=</span><span class="g-eng">10 p.m.</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">At 7 p.m. the count restarts: number + ทุ่ม, with หนึ่งทุ่ม = 7 p.m. — so สองทุ่ม (8), สามทุ่ม (9), สี่ทุ่ม (10), ห้าทุ่ม (11). ทุ่ม is the muffled beat of the night drum.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-366">
@@ -294,9 +300,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">รถไฟถึงเที่ยงคืนพอดีครับ</div>
+          <div class="reveal-row row-thai">รถไฟถึงเที่ยงคืนพอดีครับ<div class="thai-translit">rót-fai thǔeng thîang-khuuen phaw-dii khráp</div></div>
           <div class="reveal-row row-english">The train gets in at exactly midnight.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">รถไฟ</span><span class="g-eq">=</span><span class="g-eng">train</span></span><span class="gloss-chip"><span class="g-thai">ถึง</span><span class="g-eq">=</span><span class="g-eng">arrive</span></span><span class="gloss-chip"><span class="g-thai">เที่ยงคืน</span><span class="g-eq">=</span><span class="g-eng">midnight</span></span><span class="gloss-chip"><span class="g-thai">พอดี</span><span class="g-eq">=</span><span class="g-eng">exactly</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">เที่ยงคืน is midnight (12 a.m.) and เที่ยง / เที่ยงวัน is noon (12 p.m.) — the two hinge points of the system. พอดี after a time means 'exactly, on the dot'.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">รถไฟ</span><span class="g-tl">/ rót-fai</span><span class="g-eq">=</span><span class="g-eng">train</span></span><span class="gloss-chip"><span class="g-thai">ถึง</span><span class="g-tl">/ thǔeng</span><span class="g-eq">=</span><span class="g-eng">arrive</span></span><span class="gloss-chip"><span class="g-thai">เที่ยงคืน</span><span class="g-tl">/ thîang-khuuen</span><span class="g-eq">=</span><span class="g-eng">midnight</span></span><span class="gloss-chip"><span class="g-thai">พอดี</span><span class="g-tl">/ phaw-dii</span><span class="g-eq">=</span><span class="g-eng">exactly</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">เที่ยงคืน is midnight (12 a.m.) and เที่ยง / เที่ยงวัน is noon (12 p.m.) — the two hinge points of the system. พอดี after a time means 'exactly, on the dot'.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-149">
@@ -309,9 +315,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ธนาคารเปิดแปดโมงครึ่งถึงสามโมงครึ่งค่ะ</div>
+          <div class="reveal-row row-thai">ธนาคารเปิดแปดโมงครึ่งถึงสามโมงครึ่งค่ะ<div class="thai-translit">thá-naa-khaan bpèrt bpàaet moong khrûeng thǔeng sǎam moong khrûeng khâ</div></div>
           <div class="reveal-row row-english">The bank is open from 8:30 to 3:30.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ธนาคาร</span><span class="g-eq">=</span><span class="g-eng">bank</span></span><span class="gloss-chip"><span class="g-thai">เปิด</span><span class="g-eq">=</span><span class="g-eng">open</span></span><span class="gloss-chip"><span class="g-thai">แปดโมงครึ่ง</span><span class="g-eq">=</span><span class="g-eng">8:30am</span></span><span class="gloss-chip"><span class="g-thai">ถึง</span><span class="g-eq">=</span><span class="g-eng">to / until</span></span><span class="gloss-chip"><span class="g-thai">สามโมงครึ่ง</span><span class="g-eq">=</span><span class="g-eng">3:30pm</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Morning hours use โมง after the number (แปดโมง = 8am); ครึ่ง adds the half-hour.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ธนาคาร</span><span class="g-tl">/ thá-naa-khaan</span><span class="g-eq">=</span><span class="g-eng">bank</span></span><span class="gloss-chip"><span class="g-thai">เปิด</span><span class="g-tl">/ bpèrt</span><span class="g-eq">=</span><span class="g-eng">open</span></span><span class="gloss-chip"><span class="g-thai">แปดโมงครึ่ง</span><span class="g-tl">/ bpàaet moong khrûeng</span><span class="g-eq">=</span><span class="g-eng">8:30am</span></span><span class="gloss-chip"><span class="g-thai">ถึง</span><span class="g-tl">/ thǔeng</span><span class="g-eq">=</span><span class="g-eng">to / until</span></span><span class="gloss-chip"><span class="g-thai">สามโมงครึ่ง</span><span class="g-tl">/ sǎam moong khrûeng</span><span class="g-eq">=</span><span class="g-eng">3:30pm</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Morning hours use โมง after the number (แปดโมง = 8am); ครึ่ง adds the half-hour.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-155">
@@ -324,9 +330,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ผมรอรถไฟมาครึ่งชั่วโมงแล้วครับ</div>
+          <div class="reveal-row row-thai">ผมรอรถไฟมาครึ่งชั่วโมงแล้วครับ<div class="thai-translit">phǒm raw rót-fai maa khrûeng chûa-moong láaeo khráp</div></div>
           <div class="reveal-row row-english">I've been waiting for the train for half an hour.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">รอ</span><span class="g-eq">=</span><span class="g-eng">wait</span></span><span class="gloss-chip"><span class="g-thai">รถไฟ</span><span class="g-eq">=</span><span class="g-eng">train</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-eq">=</span><span class="g-eng">come</span></span><span class="gloss-chip"><span class="g-thai">ครึ่งชั่วโมง</span><span class="g-eq">=</span><span class="g-eng">half an hour</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-tl">/ phǒm</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">รอ</span><span class="g-tl">/ raw</span><span class="g-eq">=</span><span class="g-eng">wait</span></span><span class="gloss-chip"><span class="g-thai">รถไฟ</span><span class="g-tl">/ rót-fai</span><span class="g-eq">=</span><span class="g-eng">train</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-tl">/ maa</span><span class="g-eq">=</span><span class="g-eng">come</span></span><span class="gloss-chip"><span class="g-thai">ครึ่งชั่วโมง</span><span class="g-tl">/ khrûeng chûa-moong</span><span class="g-eq">=</span><span class="g-eng">half an hour</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-tl">/ láaeo</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-368">
@@ -339,9 +345,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วิ่งเร็วๆ สามสิบวินาทีนะครับ</div>
+          <div class="reveal-row row-thai">วิ่งเร็วๆ สามสิบวินาทีนะครับ<div class="thai-translit">wîng reo-reo sǎam-sìp wí-naa-thii ná khráp</div></div>
           <div class="reveal-row row-english">Sprint hard for thirty seconds.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วิ่ง</span><span class="g-eq">=</span><span class="g-eng">run</span></span><span class="gloss-chip"><span class="g-thai">เร็วๆ</span><span class="g-eq">=</span><span class="g-eng">quickly</span></span><span class="gloss-chip"><span class="g-thai">สามสิบ</span><span class="g-eq">=</span><span class="g-eng">thirty</span></span><span class="gloss-chip"><span class="g-thai">วินาที</span><span class="g-eq">=</span><span class="g-eng">second</span></span><span class="gloss-chip"><span class="g-thai">นะครับ</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">The three duration units: วินาที (seconds) · นาที (minutes) · ชั่วโมง (hours). Doubling เร็ว → เร็วๆ intensifies it ('really fast').</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วิ่ง</span><span class="g-tl">/ wîng</span><span class="g-eq">=</span><span class="g-eng">run</span></span><span class="gloss-chip"><span class="g-thai">เร็วๆ</span><span class="g-tl">/ reo-reo</span><span class="g-eq">=</span><span class="g-eng">quickly</span></span><span class="gloss-chip"><span class="g-thai">สามสิบ</span><span class="g-tl">/ sǎam-sìp</span><span class="g-eq">=</span><span class="g-eng">thirty</span></span><span class="gloss-chip"><span class="g-thai">วินาที</span><span class="g-tl">/ wí-naa-thii</span><span class="g-eq">=</span><span class="g-eng">second</span></span><span class="gloss-chip"><span class="g-thai">นะครับ</span><span class="g-tl">/ ná khráp</span><span class="g-eq">=</span><span class="g-eng">polite(m)</span></span></div><div class="cultural-note">The three duration units: วินาที (seconds) · นาที (minutes) · ชั่วโมง (hours). Doubling เร็ว → เร็วๆ intensifies it ('really fast').</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-370">
@@ -354,9 +360,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">นาฬิกาเรือนนี้เดินเร็วไปห้านาทีค่ะ</div>
+          <div class="reveal-row row-thai">นาฬิกาเรือนนี้เดินเร็วไปห้านาทีค่ะ<div class="thai-translit">naa-lí-gaa ruean níi dern reo bpai hâa naa-thii khâ</div></div>
           <div class="reveal-row row-english">This watch is five minutes fast.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">นาฬิกา</span><span class="g-eq">=</span><span class="g-eng">watch</span></span><span class="gloss-chip"><span class="g-thai">เรือน</span><span class="g-eq">=</span><span class="g-eng">clock classifier</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">เดิน</span><span class="g-eq">=</span><span class="g-eng">to run (of a clock)</span></span><span class="gloss-chip"><span class="g-thai">เร็วไป</span><span class="g-eq">=</span><span class="g-eng">too fast</span></span><span class="gloss-chip"><span class="g-thai">ห้านาที</span><span class="g-eq">=</span><span class="g-eng">five minutes</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">A clock 'walks' in Thai — นาฬิกาเดิน — and เรือน is its classifier. เดินเร็ว / เดินช้า = runs fast / slow.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">นาฬิกา</span><span class="g-tl">/ naa-lí-gaa</span><span class="g-eq">=</span><span class="g-eng">watch</span></span><span class="gloss-chip"><span class="g-thai">เรือน</span><span class="g-tl">/ ruean</span><span class="g-eq">=</span><span class="g-eng">clock classifier</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-tl">/ níi</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">เดิน</span><span class="g-tl">/ dern</span><span class="g-eq">=</span><span class="g-eng">to run (of a clock)</span></span><span class="gloss-chip"><span class="g-thai">เร็วไป</span><span class="g-tl">/ reo bpai</span><span class="g-eq">=</span><span class="g-eng">too fast</span></span><span class="gloss-chip"><span class="g-thai">ห้านาที</span><span class="g-tl">/ hâa naa-thii</span><span class="g-eq">=</span><span class="g-eng">five minutes</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">A clock 'walks' in Thai — นาฬิกาเดิน — and เรือน is its classifier. เดินเร็ว / เดินช้า = runs fast / slow.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-172">
@@ -369,9 +375,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">โต๊ะนี้นั่งได้กี่คนคะ</div>
+          <div class="reveal-row row-thai">โต๊ะนี้นั่งได้กี่คนคะ<div class="thai-translit">dtó níi nâng dâi gìi khon khá</div></div>
           <div class="reveal-row row-english">How many people can sit at this table?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">โต๊ะ</span><span class="g-eq">=</span><span class="g-eng">table</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">นั่ง</span><span class="g-eq">=</span><span class="g-eng">sit</span></span><span class="gloss-chip"><span class="g-thai">ได้</span><span class="g-eq">=</span><span class="g-eng">can</span></span><span class="gloss-chip"><span class="g-thai">กี่คน</span><span class="g-eq">=</span><span class="g-eng">how many people</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">คน is the classifier for people.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">โต๊ะ</span><span class="g-tl">/ dtó</span><span class="g-eq">=</span><span class="g-eng">table</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-tl">/ níi</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">นั่ง</span><span class="g-tl">/ nâng</span><span class="g-eq">=</span><span class="g-eng">sit</span></span><span class="gloss-chip"><span class="g-thai">ได้</span><span class="g-tl">/ dâi</span><span class="g-eq">=</span><span class="g-eng">can</span></span><span class="gloss-chip"><span class="g-thai">กี่คน</span><span class="g-tl">/ gìi khon</span><span class="g-eq">=</span><span class="g-eng">how many people</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">คน is the classifier for people.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-173">
@@ -384,9 +390,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ขอตั๋วไปกลับสองใบครับ</div>
+          <div class="reveal-row row-thai">ขอตั๋วไปกลับสองใบครับ<div class="thai-translit">khǎw dtǔa bpai-glàp sǎwng bai khráp</div></div>
           <div class="reveal-row row-english">Two return tickets, please.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขอ</span><span class="g-eq">=</span><span class="g-eng">may I have / request</span></span><span class="gloss-chip"><span class="g-thai">ตั๋ว</span><span class="g-eq">=</span><span class="g-eng">ticket</span></span><span class="gloss-chip"><span class="g-thai">ไปกลับ</span><span class="g-eq">=</span><span class="g-eng">return / round trip</span></span><span class="gloss-chip"><span class="g-thai">สองใบ</span><span class="g-eq">=</span><span class="g-eng">two (tickets)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ใบ is the classifier for tickets and flat sheet-like items. ไปกลับ is literally 'go-return'.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขอ</span><span class="g-tl">/ khǎw</span><span class="g-eq">=</span><span class="g-eng">may I have / request</span></span><span class="gloss-chip"><span class="g-thai">ตั๋ว</span><span class="g-tl">/ dtǔa</span><span class="g-eq">=</span><span class="g-eng">ticket</span></span><span class="gloss-chip"><span class="g-thai">ไปกลับ</span><span class="g-tl">/ bpai-glàp</span><span class="g-eq">=</span><span class="g-eng">return / round trip</span></span><span class="gloss-chip"><span class="g-thai">สองใบ</span><span class="g-tl">/ sǎwng bai</span><span class="g-eq">=</span><span class="g-eng">two (tickets)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ใบ is the classifier for tickets and flat sheet-like items. ไปกลับ is literally 'go-return'.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-174">
@@ -399,9 +405,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ขอน้ำสามขวดค่ะ</div>
+          <div class="reveal-row row-thai">ขอน้ำสามขวดค่ะ<div class="thai-translit">khǎw nám sǎam khùat khâ</div></div>
           <div class="reveal-row row-english">Three bottles of water, please.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขอ</span><span class="g-eq">=</span><span class="g-eng">may I have</span></span><span class="gloss-chip"><span class="g-thai">น้ำ</span><span class="g-eq">=</span><span class="g-eng">water</span></span><span class="gloss-chip"><span class="g-thai">สามขวด</span><span class="g-eq">=</span><span class="g-eng">three bottles</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">ขวด (bottle) is both the container and its classifier.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขอ</span><span class="g-tl">/ khǎw</span><span class="g-eq">=</span><span class="g-eng">may I have</span></span><span class="gloss-chip"><span class="g-thai">น้ำ</span><span class="g-tl">/ nám</span><span class="g-eq">=</span><span class="g-eng">water</span></span><span class="gloss-chip"><span class="g-thai">สามขวด</span><span class="g-tl">/ sǎam khùat</span><span class="g-eq">=</span><span class="g-eng">three bottles</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">ขวด (bottle) is both the container and its classifier.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-175">
@@ -414,9 +420,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ขอไข่หนึ่งโหลค่ะ</div>
+          <div class="reveal-row row-thai">ขอไข่หนึ่งโหลค่ะ<div class="thai-translit">khǎw khài nùeng lǒo khâ</div></div>
           <div class="reveal-row row-english">A dozen eggs, please.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขอ</span><span class="g-eq">=</span><span class="g-eng">may I have</span></span><span class="gloss-chip"><span class="g-thai">ไข่</span><span class="g-eq">=</span><span class="g-eng">egg</span></span><span class="gloss-chip"><span class="g-thai">หนึ่งโหล</span><span class="g-eq">=</span><span class="g-eng">one dozen</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">โหล (a dozen) is borrowed from English 'dozen'.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขอ</span><span class="g-tl">/ khǎw</span><span class="g-eq">=</span><span class="g-eng">may I have</span></span><span class="gloss-chip"><span class="g-thai">ไข่</span><span class="g-tl">/ khài</span><span class="g-eq">=</span><span class="g-eng">egg</span></span><span class="gloss-chip"><span class="g-thai">หนึ่งโหล</span><span class="g-tl">/ nùeng lǒo</span><span class="g-eq">=</span><span class="g-eng">one dozen</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">โหล (a dozen) is borrowed from English 'dozen'.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-187">
@@ -429,9 +435,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ห้องเรียนนี้มีนักเรียนสี่สิบคนค่ะ</div>
+          <div class="reveal-row row-thai">ห้องเรียนนี้มีนักเรียนสี่สิบคนค่ะ<div class="thai-translit">hâwng-rian níi mii nák-rian sìi-sìp khon khâ</div></div>
           <div class="reveal-row row-english">This classroom has forty students.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ห้องเรียน</span><span class="g-eq">=</span><span class="g-eng">classroom</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">นักเรียน</span><span class="g-eq">=</span><span class="g-eng">students</span></span><span class="gloss-chip"><span class="g-thai">สี่สิบ</span><span class="g-eq">=</span><span class="g-eng">forty</span></span><span class="gloss-chip"><span class="g-thai">คน</span><span class="g-eq">=</span><span class="g-eng">(classifier: people)</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ห้องเรียน</span><span class="g-tl">/ hâwng-rian</span><span class="g-eq">=</span><span class="g-eng">classroom</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-tl">/ níi</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-tl">/ mii</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">นักเรียน</span><span class="g-tl">/ nák-rian</span><span class="g-eq">=</span><span class="g-eng">students</span></span><span class="gloss-chip"><span class="g-thai">สี่สิบ</span><span class="g-tl">/ sìi-sìp</span><span class="g-eq">=</span><span class="g-eng">forty</span></span><span class="gloss-chip"><span class="g-thai">คน</span><span class="g-tl">/ khon</span><span class="g-eq">=</span><span class="g-eng">(classifier: people)</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-188">
@@ -444,9 +450,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ตึกนี้สูงกี่ชั้นครับ</div>
+          <div class="reveal-row row-thai">ตึกนี้สูงกี่ชั้นครับ<div class="thai-translit">dtùek níi sǔung gìi chán khráp</div></div>
           <div class="reveal-row row-english">How many floors is this building?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ตึก</span><span class="g-eq">=</span><span class="g-eng">building</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">สูง</span><span class="g-eq">=</span><span class="g-eng">tall</span></span><span class="gloss-chip"><span class="g-thai">กี่ชั้น</span><span class="g-eq">=</span><span class="g-eng">how many floors</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ชั้น = floor / storey (also the classifier for layers and levels).</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ตึก</span><span class="g-tl">/ dtùek</span><span class="g-eq">=</span><span class="g-eng">building</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-tl">/ níi</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">สูง</span><span class="g-tl">/ sǔung</span><span class="g-eq">=</span><span class="g-eng">tall</span></span><span class="gloss-chip"><span class="g-thai">กี่ชั้น</span><span class="g-tl">/ gìi chán</span><span class="g-eq">=</span><span class="g-eng">how many floors</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ชั้น = floor / storey (also the classifier for layers and levels).</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-178">
@@ -459,9 +465,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">จากนี่ไปเชียงใหม่เจ็ดร้อยกว่ากิโลครับ</div>
+          <div class="reveal-row row-thai">จากนี่ไปเชียงใหม่เจ็ดร้อยกว่ากิโลครับ<div class="thai-translit">jàak nîi bpai chiang-mài jèt-rói gwàa gì-loo khráp</div></div>
           <div class="reveal-row row-english">It's over 700 km from here to Chiang Mai.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">จาก</span><span class="g-eq">=</span><span class="g-eng">from</span></span><span class="gloss-chip"><span class="g-thai">นี่</span><span class="g-eq">=</span><span class="g-eng">here</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-eq">=</span><span class="g-eng">to</span></span><span class="gloss-chip"><span class="g-thai">เชียงใหม่</span><span class="g-eq">=</span><span class="g-eng">Chiang Mai</span></span><span class="gloss-chip"><span class="g-thai">เจ็ดร้อย</span><span class="g-eq">=</span><span class="g-eng">seven hundred</span></span><span class="gloss-chip"><span class="g-thai">กว่า</span><span class="g-eq">=</span><span class="g-eng">over / more than</span></span><span class="gloss-chip"><span class="g-thai">กิโล</span><span class="g-eq">=</span><span class="g-eng">kilo — here kilometres (also "kilograms")</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">กว่า after a number means 'over / more than' that amount.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">จาก</span><span class="g-tl">/ jàak</span><span class="g-eq">=</span><span class="g-eng">from</span></span><span class="gloss-chip"><span class="g-thai">นี่</span><span class="g-tl">/ nîi</span><span class="g-eq">=</span><span class="g-eng">here</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-tl">/ bpai</span><span class="g-eq">=</span><span class="g-eng">to</span></span><span class="gloss-chip"><span class="g-thai">เชียงใหม่</span><span class="g-tl">/ chiang-mài</span><span class="g-eq">=</span><span class="g-eng">Chiang Mai</span></span><span class="gloss-chip"><span class="g-thai">เจ็ดร้อย</span><span class="g-tl">/ jèt-rói</span><span class="g-eq">=</span><span class="g-eng">seven hundred</span></span><span class="gloss-chip"><span class="g-thai">กว่า</span><span class="g-tl">/ gwàa</span><span class="g-eq">=</span><span class="g-eng">over / more than</span></span><span class="gloss-chip"><span class="g-thai">กิโล</span><span class="g-tl">/ gì-loo</span><span class="g-eq">=</span><span class="g-eng">kilo — here kilometres (also "kilograms")</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">กว่า after a number means 'over / more than' that amount.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-177">
@@ -474,9 +480,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">สนามนี้จุคนได้สามหมื่นค่ะ</div>
+          <div class="reveal-row row-thai">สนามนี้จุคนได้สามหมื่นค่ะ<div class="thai-translit">sà-nǎam níi jù khon dâi sǎam-mùuen khâ</div></div>
           <div class="reveal-row row-english">This stadium holds thirty thousand people.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สนาม</span><span class="g-eq">=</span><span class="g-eng">stadium / ground</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">จุ</span><span class="g-eq">=</span><span class="g-eng">hold / seat</span></span><span class="gloss-chip"><span class="g-thai">คน</span><span class="g-eq">=</span><span class="g-eng">people</span></span><span class="gloss-chip"><span class="g-thai">ได้</span><span class="g-eq">=</span><span class="g-eng">can</span></span><span class="gloss-chip"><span class="g-thai">สามหมื่น</span><span class="g-eq">=</span><span class="g-eng">thirty thousand</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">หมื่น = ten thousand; สามหมื่น = 30,000.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สนาม</span><span class="g-tl">/ sà-nǎam</span><span class="g-eq">=</span><span class="g-eng">stadium / ground</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-tl">/ níi</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">จุ</span><span class="g-tl">/ jù</span><span class="g-eq">=</span><span class="g-eng">hold / seat</span></span><span class="gloss-chip"><span class="g-thai">คน</span><span class="g-tl">/ khon</span><span class="g-eq">=</span><span class="g-eng">people</span></span><span class="gloss-chip"><span class="g-thai">ได้</span><span class="g-tl">/ dâi</span><span class="g-eq">=</span><span class="g-eng">can</span></span><span class="gloss-chip"><span class="g-thai">สามหมื่น</span><span class="g-tl">/ sǎam-mùuen</span><span class="g-eq">=</span><span class="g-eng">thirty thousand</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">หมื่น = ten thousand; สามหมื่น = 30,000.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-179">
@@ -489,9 +495,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">งานวิ่งนี้มีคนเป็นพันเลยค่ะ</div>
+          <div class="reveal-row row-thai">งานวิ่งนี้มีคนเป็นพันเลยค่ะ<div class="thai-translit">ngaan wîng níi mii khon bpen phan luhry khâ</div></div>
           <div class="reveal-row row-english">There are thousands of people at this run.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">งานวิ่ง</span><span class="g-eq">=</span><span class="g-eng">running event</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">มีคน</span><span class="g-eq">=</span><span class="g-eng">there are people</span></span><span class="gloss-chip"><span class="g-thai">เป็นพัน</span><span class="g-eq">=</span><span class="g-eng">in the thousands</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-eq">=</span><span class="g-eng">emphasis particle</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">เป็น + a number means 'in the (thousands/hundreds)' — an approximate large amount.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">งานวิ่ง</span><span class="g-tl">/ ngaan wîng</span><span class="g-eq">=</span><span class="g-eng">running event</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-tl">/ níi</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">มีคน</span><span class="g-tl">/ mii khon</span><span class="g-eq">=</span><span class="g-eng">there are people</span></span><span class="gloss-chip"><span class="g-thai">เป็นพัน</span><span class="g-tl">/ bpen phan</span><span class="g-eq">=</span><span class="g-eng">in the thousands</span></span><span class="gloss-chip"><span class="g-thai">เลย</span><span class="g-tl">/ luhry</span><span class="g-eq">=</span><span class="g-eng">emphasis particle</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">เป็น + a number means 'in the (thousands/hundreds)' — an approximate large amount.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-180">
@@ -504,9 +510,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ดาราคนนี้มีคนติดตามเป็นแสนครับ</div>
+          <div class="reveal-row row-thai">ดาราคนนี้มีคนติดตามเป็นแสนครับ<div class="thai-translit">daa-raa khon níi mii khon dtìt-dtaam bpen sǎaen khráp</div></div>
           <div class="reveal-row row-english">This celebrity has a hundred thousand followers.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ดารา</span><span class="g-eq">=</span><span class="g-eng">celebrity / star</span></span><span class="gloss-chip"><span class="g-thai">คนนี้</span><span class="g-eq">=</span><span class="g-eng">this one</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">คนติดตาม</span><span class="g-eq">=</span><span class="g-eng">followers</span></span><span class="gloss-chip"><span class="g-thai">เป็นแสน</span><span class="g-eq">=</span><span class="g-eng">in the hundred-thousands</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">แสน = a hundred thousand.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ดารา</span><span class="g-tl">/ daa-raa</span><span class="g-eq">=</span><span class="g-eng">celebrity / star</span></span><span class="gloss-chip"><span class="g-thai">คนนี้</span><span class="g-tl">/ khon níi</span><span class="g-eq">=</span><span class="g-eng">this one</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-tl">/ mii</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">คนติดตาม</span><span class="g-tl">/ khon dtìt-dtaam</span><span class="g-eq">=</span><span class="g-eng">followers</span></span><span class="gloss-chip"><span class="g-thai">เป็นแสน</span><span class="g-tl">/ bpen sǎaen</span><span class="g-eq">=</span><span class="g-eng">in the hundred-thousands</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">แสน = a hundred thousand.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-176">
@@ -519,9 +525,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">กรุงเทพมีประชากรสิบล้านคนครับ</div>
+          <div class="reveal-row row-thai">กรุงเทพมีประชากรสิบล้านคนครับ<div class="thai-translit">grung-thêep mii bprà-chaa-gawn sìp-láan khon khráp</div></div>
           <div class="reveal-row row-english">Bangkok has a population of ten million.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กรุงเทพ</span><span class="g-eq">=</span><span class="g-eng">Bangkok</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">ประชากร</span><span class="g-eq">=</span><span class="g-eng">population</span></span><span class="gloss-chip"><span class="g-thai">สิบล้าน</span><span class="g-eq">=</span><span class="g-eng">ten million</span></span><span class="gloss-chip"><span class="g-thai">คน</span><span class="g-eq">=</span><span class="g-eng">people</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ล้าน = million; สิบล้าน = ten million.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กรุงเทพ</span><span class="g-tl">/ grung-thêep</span><span class="g-eq">=</span><span class="g-eng">Bangkok</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-tl">/ mii</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">ประชากร</span><span class="g-tl">/ bprà-chaa-gawn</span><span class="g-eq">=</span><span class="g-eng">population</span></span><span class="gloss-chip"><span class="g-thai">สิบล้าน</span><span class="g-tl">/ sìp-láan</span><span class="g-eq">=</span><span class="g-eng">ten million</span></span><span class="gloss-chip"><span class="g-thai">คน</span><span class="g-tl">/ khon</span><span class="g-eq">=</span><span class="g-eng">people</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ล้าน = million; สิบล้าน = ten million.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-1059">
@@ -534,9 +540,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">จำปีสองพันได้ไหมครับ</div>
+          <div class="reveal-row row-thai">จำปีสองพันได้ไหมครับ<div class="thai-translit">jam bpii sǎwng-phan dâi mǎi khráp</div></div>
           <div class="reveal-row row-english">Do you remember the year 2000?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">จำ</span><span class="g-eq">=</span><span class="g-eng">remember</span></span><span class="gloss-chip"><span class="g-thai">ปี</span><span class="g-eq">=</span><span class="g-eng">year</span></span><span class="gloss-chip"><span class="g-thai">สองพัน</span><span class="g-eq">=</span><span class="g-eng">two thousand (2000)</span></span><span class="gloss-chip"><span class="g-thai">ได้ไหม</span><span class="g-eq">=</span><span class="g-eng">can you? (asks if able)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Thais normally count years in the Buddhist Era (พ.ศ.), 543 years ahead — so 2000 CE is พ.ศ. 2543. ค.ศ. (CE) is the Western/international count; ปีสองพัน here is the round CE year.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">จำ</span><span class="g-tl">/ jam</span><span class="g-eq">=</span><span class="g-eng">remember</span></span><span class="gloss-chip"><span class="g-thai">ปี</span><span class="g-tl">/ bpii</span><span class="g-eq">=</span><span class="g-eng">year</span></span><span class="gloss-chip"><span class="g-thai">สองพัน</span><span class="g-tl">/ sǎwng-phan</span><span class="g-eq">=</span><span class="g-eng">two thousand (2000)</span></span><span class="gloss-chip"><span class="g-thai">ได้ไหม</span><span class="g-tl">/ dâi mǎi</span><span class="g-eq">=</span><span class="g-eng">can you? (asks if able)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Thais normally count years in the Buddhist Era (พ.ศ.), 543 years ahead — so 2000 CE is พ.ศ. 2543. ค.ศ. (CE) is the Western/international count; ปีสองพัน here is the round CE year.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-1060">
@@ -549,9 +555,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">นับถอยหลังจากสิบถึงศูนย์กันค่ะ</div>
+          <div class="reveal-row row-thai">นับถอยหลังจากสิบถึงศูนย์กันค่ะ<div class="thai-translit">náp thǒi-lǎng jàak sìp thǔeng sǔun gan khâ</div></div>
           <div class="reveal-row row-english">Let's count down from ten to zero.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">นับ</span><span class="g-eq">=</span><span class="g-eng">count</span></span><span class="gloss-chip"><span class="g-thai">ถอยหลัง</span><span class="g-eq">=</span><span class="g-eng">backwards</span></span><span class="gloss-chip"><span class="g-thai">จาก</span><span class="g-eq">=</span><span class="g-eng">from</span></span><span class="gloss-chip"><span class="g-thai">สิบ</span><span class="g-eq">=</span><span class="g-eng">ten</span></span><span class="gloss-chip"><span class="g-thai">ถึง</span><span class="g-eq">=</span><span class="g-eng">to</span></span><span class="gloss-chip"><span class="g-thai">ศูนย์</span><span class="g-eq">=</span><span class="g-eng">zero</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-eq">=</span><span class="g-eng">together</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">นับ</span><span class="g-tl">/ náp</span><span class="g-eq">=</span><span class="g-eng">count</span></span><span class="gloss-chip"><span class="g-thai">ถอยหลัง</span><span class="g-tl">/ thǒi-lǎng</span><span class="g-eq">=</span><span class="g-eng">backwards</span></span><span class="gloss-chip"><span class="g-thai">จาก</span><span class="g-tl">/ jàak</span><span class="g-eq">=</span><span class="g-eng">from</span></span><span class="gloss-chip"><span class="g-thai">สิบ</span><span class="g-tl">/ sìp</span><span class="g-eq">=</span><span class="g-eng">ten</span></span><span class="gloss-chip"><span class="g-thai">ถึง</span><span class="g-tl">/ thǔeng</span><span class="g-eq">=</span><span class="g-eng">to</span></span><span class="gloss-chip"><span class="g-thai">ศูนย์</span><span class="g-tl">/ sǔun</span><span class="g-eq">=</span><span class="g-eng">zero</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-tl">/ gan</span><span class="g-eq">=</span><span class="g-eng">together</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-1061">
@@ -564,9 +570,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ผมกินไข่แค่ฟองครึ่งเองครับ</div>
+          <div class="reveal-row row-thai">ผมกินไข่แค่ฟองครึ่งเองครับ<div class="thai-translit">phǒm gin khài khâae fawng khrûeng eeng khráp</div></div>
           <div class="reveal-row row-english">I only ate one and a half eggs.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">ไข่</span><span class="g-eq">=</span><span class="g-eng">egg</span></span><span class="gloss-chip"><span class="g-thai">แค่...เอง</span><span class="g-eq">=</span><span class="g-eng">only / just</span></span><span class="gloss-chip"><span class="g-thai">ฟองครึ่ง</span><span class="g-eq">=</span><span class="g-eng">one and a half (eggs)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">The full form keeps หนึ่ง — หนึ่งฟองครึ่ง ('one egg and a half') — but in everyday speech the หนึ่ง is usually dropped, leaving just ฟองครึ่ง. ฟอง is the classifier for eggs and round things.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-tl">/ phǒm</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-tl">/ gin</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">ไข่</span><span class="g-tl">/ khài</span><span class="g-eq">=</span><span class="g-eng">egg</span></span><span class="gloss-chip"><span class="g-thai">แค่...เอง</span><span class="g-tl">/ khâae … eeng</span><span class="g-eq">=</span><span class="g-eng">only / just</span></span><span class="gloss-chip"><span class="g-thai">ฟองครึ่ง</span><span class="g-tl">/ fawng khrûeng</span><span class="g-eq">=</span><span class="g-eng">one and a half (eggs)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">The full form keeps หนึ่ง — หนึ่งฟองครึ่ง ('one egg and a half') — but in everyday speech the หนึ่ง is usually dropped, leaving just ฟองครึ่ง. ฟอง is the classifier for eggs and round things.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-1062">
@@ -579,9 +585,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">คำตอบคือสามจุดหนึ่งสี่หนึ่งค่ะ</div>
+          <div class="reveal-row row-thai">คำตอบคือสามจุดหนึ่งสี่หนึ่งค่ะ<div class="thai-translit">kham-dtàwp khuue sǎam jùt nùeng sìi nùeng khâ</div></div>
           <div class="reveal-row row-english">The answer is 3.141.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คำตอบ</span><span class="g-eq">=</span><span class="g-eng">answer</span></span><span class="gloss-chip"><span class="g-thai">คือ</span><span class="g-eq">=</span><span class="g-eng">is</span></span><span class="gloss-chip"><span class="g-thai">สาม</span><span class="g-eq">=</span><span class="g-eng">three</span></span><span class="gloss-chip"><span class="g-thai">จุด</span><span class="g-eq">=</span><span class="g-eng">point (decimal)</span></span><span class="gloss-chip"><span class="g-thai">หนึ่งสี่หนึ่ง</span><span class="g-eq">=</span><span class="g-eng">one four one</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Decimals: the whole part before จุด is read normally, then each digit after the point is read singly — สามจุดหนึ่งสี่หนึ่ง (3.141), not 'three point one-hundred-forty-one'.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คำตอบ</span><span class="g-tl">/ kham-dtàwp</span><span class="g-eq">=</span><span class="g-eng">answer</span></span><span class="gloss-chip"><span class="g-thai">คือ</span><span class="g-tl">/ khuue</span><span class="g-eq">=</span><span class="g-eng">is</span></span><span class="gloss-chip"><span class="g-thai">สาม</span><span class="g-tl">/ sǎam</span><span class="g-eq">=</span><span class="g-eng">three</span></span><span class="gloss-chip"><span class="g-thai">จุด</span><span class="g-tl">/ jùt</span><span class="g-eq">=</span><span class="g-eng">point (decimal)</span></span><span class="gloss-chip"><span class="g-thai">หนึ่งสี่หนึ่ง</span><span class="g-tl">/ nùeng sìi nùeng</span><span class="g-eq">=</span><span class="g-eng">one four one</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Decimals: the whole part before จุด is read normally, then each digit after the point is read singly — สามจุดหนึ่งสี่หนึ่ง (3.141), not 'three point one-hundred-forty-one'.</div></div>
         </div>
       </div>
   </div>
@@ -611,679 +617,37 @@ window.ThaiEarTopic = {
   tier: "premium",
   audioPrefix: "Time_BEG",
   sentences: [
-  {
-    "num": 144,
-    "display": 1,
-    "preview": "กี่โมง",
-    "previewEn": "What time",
-    "thai": "ตอนนี้กี่โมงแล้วคะ",
-    "english": "What time is it now?",
-    "gloss": [
-      [
-        "ตอนนี้",
-        "now"
-      ],
-      [
-        "กี่โมง",
-        "what time"
-      ],
-      [
-        "แล้ว",
-        "already"
-      ],
-      [
-        "คะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 369,
-    "display": 2,
-    "preview": "กี่โมง",
-    "previewEn": "What time",
-    "thai": "ร้านเปิดกี่โมงคะ",
-    "english": "What time does the shop open?",
-    "gloss": [["ร้าน", "shop"], ["เปิด", "open"], ["กี่โมง", "what time"], ["คะ", "polite particle (female)"]],
-    "cultural": ""
-  },
-  {
-    "num": 362,
-    "display": 3,
-    "preview": "ตีห้า",
-    "previewEn": "The plane",
-    "thai": "เครื่องบินออกตีห้าครับ",
-    "english": "The plane leaves at 5 a.m.",
-    "gloss": [["เครื่องบิน", "plane"], ["ออก", "leave / depart"], ["ตีห้า", "5 a.m."], ["ครับ", "polite particle (male)"]],
-    "cultural": "ตี + a number tells the small hours, about 1–5 a.m.: ตีหนึ่ง (1 a.m.) … ตีห้า (5 a.m.). ตี means 'to strike' — from the gong struck to mark each hour."
-  },
-  {
-    "num": 363,
-    "display": 4,
-    "preview": "แปดโมงเช้า",
-    "previewEn": "morning",
-    "thai": "ผมเข้างานแปดโมงเช้าครับ",
-    "english": "I start work at 8 in the morning.",
-    "gloss": [["ผม", "I (male)"], ["เข้างาน", "start work"], ["แปดโมงเช้า", "8 a.m."], ["ครับ", "polite particle (male)"]],
-    "cultural": "For 6–11 a.m., say the clock number + โมงเช้า: หกโมงเช้า (6), แปดโมงเช้า (8), สิบเอ็ดโมงเช้า (11). เช้า ('morning') is often dropped once the time of day is clear."
-  },
-  {
-    "num": 146,
-    "display": 5,
-    "preview": "เที่ยง",
-    "previewEn": "noon",
-    "thai": "เที่ยงแล้ว ไปกินข้าวกันไหมคะ",
-    "english": "It's noon — shall we go and eat?",
-    "gloss": [
-      [
-        "เที่ยง",
-        "noon"
-      ],
-      [
-        "แล้ว",
-        "already"
-      ],
-      [
-        "ไป",
-        "go"
-      ],
-      [
-        "กินข้าว",
-        "eat (a meal)"
-      ],
-      [
-        "กัน",
-        "together"
-      ],
-      [
-        "ไหม",
-        "question particle"
-      ],
-      [
-        "คะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 145,
-    "display": 6,
-    "preview": "บ่าย",
-    "previewEn": "afternoon",
-    "thai": "บ่ายสามโมงครึ่งครับ",
-    "english": "Half past three in the afternoon.",
-    "gloss": [
-      [
-        "บ่าย",
-        "afternoon"
-      ],
-      [
-        "สามโมง",
-        "three o'clock"
-      ],
-      [
-        "ครึ่ง",
-        "half (past)"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "Early-afternoon hours (1–4pm) are told as บ่าย + โมง."
-  },
-  {
-    "num": 364,
-    "display": 7,
-    "preview": "ห้าโมงเย็น",
-    "previewEn": "finish work",
-    "thai": "เลิกงานห้าโมงเย็นค่ะ",
-    "english": "I finish work at 5 p.m.",
-    "gloss": [["เลิกงาน", "finish work"], ["ห้าโมงเย็น", "5 p.m."], ["ค่ะ", "polite particle (female)"]],
-    "cultural": "From 4–6 p.m. the count is number + โมงเย็น: สี่โมงเย็น (4), ห้าโมงเย็น (5), หกโมงเย็น (6). เย็น is the cool of the early evening."
-  },
-  {
-    "num": 147,
-    "display": 8,
-    "preview": "หนัง",
-    "previewEn": "film",
-    "thai": "หนังเริ่มสองทุ่มนะครับ",
-    "english": "The film starts at 8pm.",
-    "gloss": [
-      [
-        "หนัง",
-        "film / movie (also \"skin / leather\")"
-      ],
-      [
-        "เริ่ม",
-        "start"
-      ],
-      [
-        "สองทุ่ม",
-        "8pm"
-      ],
-      [
-        "นะ",
-        "softening particle"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "ทุ่ม counts evening hours: หนึ่งทุ่ม = 7pm, สองทุ่ม = 8pm, up to ห้าทุ่ม = 11pm."
-  },
-  {
-    "num": 367,
-    "display": 9,
-    "preview": "นาที",
-    "previewEn": "(the time)",
-    "thai": "ตอนนี้สามทุ่มยี่สิบสามนาทีแล้วครับ",
-    "english": "It's 9:23 PM now.",
-    "gloss": [["ตอนนี้", "now"], ["สามทุ่ม", "9 PM"], ["ยี่สิบสาม", "twenty-three"], ["นาที", "minute"], ["แล้ว", "already"], ["ครับ", "polite particle (male)"]],
-    "cultural": "Minutes follow the hour: [time] + [number] + นาที — so สามทุ่มยี่สิบสามนาที = 9:23 PM. Half past uses ครึ่ง (บ่ายสามโมงครึ่ง = 3:30)."
-  },
-  {
-    "num": 365,
-    "display": 10,
-    "preview": "สี่ทุ่ม",
-    "previewEn": "shop closes",
-    "thai": "ร้านปิดสี่ทุ่มครับ",
-    "english": "The shop closes at 10 p.m.",
-    "gloss": [["ร้าน", "shop"], ["ปิด", "close"], ["สี่ทุ่ม", "10 p.m."], ["ครับ", "polite particle (male)"]],
-    "cultural": "At 7 p.m. the count restarts: number + ทุ่ม, with หนึ่งทุ่ม = 7 p.m. — so สองทุ่ม (8), สามทุ่ม (9), สี่ทุ่ม (10), ห้าทุ่ม (11). ทุ่ม is the muffled beat of the night drum."
-  },
-  {
-    "num": 366,
-    "display": 11,
-    "preview": "เที่ยงคืน",
-    "previewEn": "midnight",
-    "thai": "รถไฟถึงเที่ยงคืนพอดีครับ",
-    "english": "The train gets in at exactly midnight.",
-    "gloss": [["รถไฟ", "train"], ["ถึง", "arrive"], ["เที่ยงคืน", "midnight"], ["พอดี", "exactly"], ["ครับ", "polite particle (male)"]],
-    "cultural": "เที่ยงคืน is midnight (12 a.m.) and เที่ยง / เที่ยงวัน is noon (12 p.m.) — the two hinge points of the system. พอดี after a time means 'exactly, on the dot'."
-  },
-  {
-    "num": 149,
-    "display": 12,
-    "preview": "ธนาคาร",
-    "previewEn": "bank",
-    "thai": "ธนาคารเปิดแปดโมงครึ่งถึงสามโมงครึ่งค่ะ",
-    "english": "The bank is open from 8:30 to 3:30.",
-    "gloss": [
-      [
-        "ธนาคาร",
-        "bank"
-      ],
-      [
-        "เปิด",
-        "open"
-      ],
-      [
-        "แปดโมงครึ่ง",
-        "8:30am"
-      ],
-      [
-        "ถึง",
-        "to / until"
-      ],
-      [
-        "สามโมงครึ่ง",
-        "3:30pm"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "Morning hours use โมง after the number (แปดโมง = 8am); ครึ่ง adds the half-hour."
-  },
-  {
-    "num": 155,
-    "display": 13,
-    "preview": "รถไฟ",
-    "previewEn": "train",
-    "thai": "ผมรอรถไฟมาครึ่งชั่วโมงแล้วครับ",
-    "english": "I've been waiting for the train for half an hour.",
-    "gloss": [["ผม", "I (male)"], ["รอ", "wait"], ["รถไฟ", "train"], ["มา", "come"], ["ครึ่งชั่วโมง", "half an hour"], ["แล้ว", "already"], ["ครับ", "polite particle (male)"]],
-    "cultural": ""
-  },
-  {
-    "num": 368,
-    "display": 14,
-    "preview": "วินาที",
-    "previewEn": "seconds",
-    "thai": "วิ่งเร็วๆ สามสิบวินาทีนะครับ",
-    "english": "Sprint hard for thirty seconds.",
-    "gloss": [["วิ่ง", "run"], ["เร็วๆ", "quickly"], ["สามสิบ", "thirty"], ["วินาที", "second"], ["นะครับ", "polite(m)"]],
-    "cultural": "The three duration units: วินาที (seconds) · นาที (minutes) · ชั่วโมง (hours). Doubling เร็ว → เร็วๆ intensifies it ('really fast')."
-  },
-  {
-    "num": 370,
-    "display": 15,
-    "preview": "นาฬิกา",
-    "previewEn": "watch",
-    "thai": "นาฬิกาเรือนนี้เดินเร็วไปห้านาทีค่ะ",
-    "english": "This watch is five minutes fast.",
-    "gloss": [["นาฬิกา", "watch"], ["เรือน", "clock classifier"], ["นี้", "this"], ["เดิน", "to run (of a clock)"], ["เร็วไป", "too fast"], ["ห้านาที", "five minutes"], ["ค่ะ", "polite particle (female)"]],
-    "cultural": "A clock 'walks' in Thai — นาฬิกาเดิน — and เรือน is its classifier. เดินเร็ว / เดินช้า = runs fast / slow."
-  },
-  {
-    "num": 172,
-    "display": 16,
-    "preview": "โต๊ะ",
-    "previewEn": "table",
-    "thai": "โต๊ะนี้นั่งได้กี่คนคะ",
-    "english": "How many people can sit at this table?",
-    "gloss": [
-      [
-        "โต๊ะ",
-        "table"
-      ],
-      [
-        "นี้",
-        "this"
-      ],
-      [
-        "นั่ง",
-        "sit"
-      ],
-      [
-        "ได้",
-        "can"
-      ],
-      [
-        "กี่คน",
-        "how many people"
-      ],
-      [
-        "คะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "คน is the classifier for people."
-  },
-  {
-    "num": 173,
-    "display": 17,
-    "preview": "ตั๋ว",
-    "previewEn": "tickets",
-    "thai": "ขอตั๋วไปกลับสองใบครับ",
-    "english": "Two return tickets, please.",
-    "gloss": [
-      [
-        "ขอ",
-        "may I have / request"
-      ],
-      [
-        "ตั๋ว",
-        "ticket"
-      ],
-      [
-        "ไปกลับ",
-        "return / round trip"
-      ],
-      [
-        "สองใบ",
-        "two (tickets)"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "ใบ is the classifier for tickets and flat sheet-like items. ไปกลับ is literally 'go-return'."
-  },
-  {
-    "num": 174,
-    "display": 18,
-    "preview": "น้ำ",
-    "previewEn": "water",
-    "thai": "ขอน้ำสามขวดค่ะ",
-    "english": "Three bottles of water, please.",
-    "gloss": [
-      [
-        "ขอ",
-        "may I have"
-      ],
-      [
-        "น้ำ",
-        "water"
-      ],
-      [
-        "สามขวด",
-        "three bottles"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "ขวด (bottle) is both the container and its classifier."
-  },
-  {
-    "num": 175,
-    "display": 19,
-    "preview": "ไข่",
-    "previewEn": "eggs",
-    "thai": "ขอไข่หนึ่งโหลค่ะ",
-    "english": "A dozen eggs, please.",
-    "gloss": [
-      [
-        "ขอ",
-        "may I have"
-      ],
-      [
-        "ไข่",
-        "egg"
-      ],
-      [
-        "หนึ่งโหล",
-        "one dozen"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "โหล (a dozen) is borrowed from English 'dozen'."
-  },
-  {
-    "num": 187,
-    "display": 20,
-    "preview": "ห้องเรียน",
-    "previewEn": "classroom",
-    "thai": "ห้องเรียนนี้มีนักเรียนสี่สิบคนค่ะ",
-    "english": "This classroom has forty students.",
-    "gloss": [["ห้องเรียน", "classroom"], ["นี้", "this"], ["มี", "has"], ["นักเรียน", "students"], ["สี่สิบ", "forty"], ["คน", "(classifier: people)"], ["ค่ะ", "polite particle (female)"]],
-    "cultural": ""
-  },
-  {
-    "num": 188,
-    "display": 21,
-    "preview": "ตึก",
-    "previewEn": "building",
-    "thai": "ตึกนี้สูงกี่ชั้นครับ",
-    "english": "How many floors is this building?",
-    "gloss": [
-      [
-        "ตึก",
-        "building"
-      ],
-      [
-        "นี้",
-        "this"
-      ],
-      [
-        "สูง",
-        "tall"
-      ],
-      [
-        "กี่ชั้น",
-        "how many floors"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "ชั้น = floor / storey (also the classifier for layers and levels)."
-  },
-  {
-    "num": 178,
-    "display": 22,
-    "preview": "กิโล",
-    "previewEn": "km",
-    "thai": "จากนี่ไปเชียงใหม่เจ็ดร้อยกว่ากิโลครับ",
-    "english": "It's over 700 km from here to Chiang Mai.",
-    "gloss": [
-      [
-        "จาก",
-        "from"
-      ],
-      [
-        "นี่",
-        "here"
-      ],
-      [
-        "ไป",
-        "to"
-      ],
-      [
-        "เชียงใหม่",
-        "Chiang Mai"
-      ],
-      [
-        "เจ็ดร้อย",
-        "seven hundred"
-      ],
-      [
-        "กว่า",
-        "over / more than"
-      ],
-      [
-        "กิโล",
-        "kilo — here kilometres (also \"kilograms\")"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "กว่า after a number means 'over / more than' that amount."
-  },
-  {
-    "num": 177,
-    "display": 23,
-    "preview": "สนาม",
-    "previewEn": "stadium",
-    "thai": "สนามนี้จุคนได้สามหมื่นค่ะ",
-    "english": "This stadium holds thirty thousand people.",
-    "gloss": [["สนาม", "stadium / ground"], ["นี้", "this"], ["จุ", "hold / seat"], ["คน", "people"], ["ได้", "can"], ["สามหมื่น", "thirty thousand"], ["ค่ะ", "polite particle (female)"]],
-    "cultural": "หมื่น = ten thousand; สามหมื่น = 30,000."
-  },
-  {
-    "num": 179,
-    "display": 24,
-    "preview": "งานวิ่ง",
-    "previewEn": "run",
-    "thai": "งานวิ่งนี้มีคนเป็นพันเลยค่ะ",
-    "english": "There are thousands of people at this run.",
-    "gloss": [["งานวิ่ง", "running event"], ["นี้", "this"], ["มีคน", "there are people"], ["เป็นพัน", "in the thousands"], ["เลย", "emphasis particle"], ["ค่ะ", "polite particle (female)"]],
-    "cultural": "เป็น + a number means 'in the (thousands/hundreds)' — an approximate large amount."
-  },
-  {
-    "num": 180,
-    "display": 25,
-    "preview": "ดารา",
-    "previewEn": "celebrity",
-    "thai": "ดาราคนนี้มีคนติดตามเป็นแสนครับ",
-    "english": "This celebrity has a hundred thousand followers.",
-    "gloss": [["ดารา", "celebrity / star"], ["คนนี้", "this one"], ["มี", "has"], ["คนติดตาม", "followers"], ["เป็นแสน", "in the hundred-thousands"], ["ครับ", "polite particle (male)"]],
-    "cultural": "แสน = a hundred thousand."
-  },
-  {
-    "num": 176,
-    "display": 26,
-    "preview": "กรุงเทพ",
-    "previewEn": "Bangkok",
-    "thai": "กรุงเทพมีประชากรสิบล้านคนครับ",
-    "english": "Bangkok has a population of ten million.",
-    "gloss": [
-      [
-        "กรุงเทพ",
-        "Bangkok"
-      ],
-      [
-        "มี",
-        "has"
-      ],
-      [
-        "ประชากร",
-        "population"
-      ],
-      [
-        "สิบล้าน",
-        "ten million"
-      ],
-      [
-        "คน",
-        "people"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "ล้าน = million; สิบล้าน = ten million."
-  },
-  {
-    "num": 1059,
-    "display": 27,
-    "preview": "ปีสองพัน",
-    "previewEn": "year 2000",
-    "thai": "จำปีสองพันได้ไหมครับ",
-    "english": "Do you remember the year 2000?",
-    "gloss": [
-      [
-        "จำ",
-        "remember"
-      ],
-      [
-        "ปี",
-        "year"
-      ],
-      [
-        "สองพัน",
-        "two thousand (2000)"
-      ],
-      [
-        "ได้ไหม",
-        "can you? (asks if able)"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "Thais normally count years in the Buddhist Era (พ.ศ.), 543 years ahead — so 2000 CE is พ.ศ. 2543. ค.ศ. (CE) is the Western/international count; ปีสองพัน here is the round CE year."
-  },
-  {
-    "num": 1060,
-    "display": 28,
-    "preview": "นับถอยหลัง",
-    "previewEn": "count down",
-    "thai": "นับถอยหลังจากสิบถึงศูนย์กันค่ะ",
-    "english": "Let's count down from ten to zero.",
-    "gloss": [
-      [
-        "นับ",
-        "count"
-      ],
-      [
-        "ถอยหลัง",
-        "backwards"
-      ],
-      [
-        "จาก",
-        "from"
-      ],
-      [
-        "สิบ",
-        "ten"
-      ],
-      [
-        "ถึง",
-        "to"
-      ],
-      [
-        "ศูนย์",
-        "zero"
-      ],
-      [
-        "กัน",
-        "together"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 1061,
-    "display": 29,
-    "preview": "ฟองครึ่ง",
-    "previewEn": "half",
-    "thai": "ผมกินไข่แค่ฟองครึ่งเองครับ",
-    "english": "I only ate one and a half eggs.",
-    "gloss": [
-      [
-        "ผม",
-        "I (male)"
-      ],
-      [
-        "กิน",
-        "eat"
-      ],
-      [
-        "ไข่",
-        "egg"
-      ],
-      [
-        "แค่...เอง",
-        "only / just"
-      ],
-      [
-        "ฟองครึ่ง",
-        "one and a half (eggs)"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "The full form keeps หนึ่ง — หนึ่งฟองครึ่ง ('one egg and a half') — but in everyday speech the หนึ่ง is usually dropped, leaving just ฟองครึ่ง. ฟอง is the classifier for eggs and round things."
-  },
-  {
-    "num": 1062,
-    "display": 30,
-    "preview": "คำตอบ",
-    "previewEn": "answer",
-    "thai": "คำตอบคือสามจุดหนึ่งสี่หนึ่งค่ะ",
-    "english": "The answer is 3.141.",
-    "gloss": [
-      [
-        "คำตอบ",
-        "answer"
-      ],
-      [
-        "คือ",
-        "is"
-      ],
-      [
-        "สาม",
-        "three"
-      ],
-      [
-        "จุด",
-        "point (decimal)"
-      ],
-      [
-        "หนึ่งสี่หนึ่ง",
-        "one four one"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "Decimals: the whole part before จุด is read normally, then each digit after the point is read singly — สามจุดหนึ่งสี่หนึ่ง (3.141), not 'three point one-hundred-forty-one'."
-  }
-]
+  {"num":144,"display":1,"preview":"กี่โมง","previewEn":"What time","thai":"ตอนนี้กี่โมงแล้วคะ","translit":"dtawn-níi gìi moong láaeo khá","english":"What time is it now?","gloss":[["ตอนนี้","now","dtawn-níi"],["กี่โมง","what time","gìi moong"],["แล้ว","already","láaeo"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":369,"display":2,"preview":"กี่โมง","previewEn":"What time","thai":"ร้านเปิดกี่โมงคะ","translit":"ráan bpèrt gìi moong khá","english":"What time does the shop open?","gloss":[["ร้าน","shop","ráan"],["เปิด","open","bpèrt"],["กี่โมง","what time","gìi moong"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":362,"display":3,"preview":"ตีห้า","previewEn":"The plane","thai":"เครื่องบินออกตีห้าครับ","translit":"khrûeang-bin àwk dtii hâa khráp","english":"The plane leaves at 5 a.m.","gloss":[["เครื่องบิน","plane","khrûeang-bin"],["ออก","leave / depart","àwk"],["ตีห้า","5 a.m.","dtii hâa"],["ครับ","polite particle (male)","khráp"]],"cultural":"ตี + a number tells the small hours, about 1–5 a.m.: ตีหนึ่ง (1 a.m.) … ตีห้า (5 a.m.). ตี means 'to strike' — from the gong struck to mark each hour."},
+  {"num":363,"display":4,"preview":"แปดโมงเช้า","previewEn":"morning","thai":"ผมเข้างานแปดโมงเช้าครับ","translit":"phǒm khâo ngaan bpàaet moong cháo khráp","english":"I start work at 8 in the morning.","gloss":[["ผม","I (male)","phǒm"],["เข้างาน","start work","khâo ngaan"],["แปดโมงเช้า","8 a.m.","bpàaet moong cháo"],["ครับ","polite particle (male)","khráp"]],"cultural":"For 6–11 a.m., say the clock number + โมงเช้า: หกโมงเช้า (6), แปดโมงเช้า (8), สิบเอ็ดโมงเช้า (11). เช้า ('morning') is often dropped once the time of day is clear."},
+  {"num":146,"display":5,"preview":"เที่ยง","previewEn":"noon","thai":"เที่ยงแล้ว ไปกินข้าวกันไหมคะ","translit":"thîang láaeo bpai gin khâao gan mǎi khá","english":"It's noon — shall we go and eat?","gloss":[["เที่ยง","noon","thîang"],["แล้ว","already","láaeo"],["ไป","go","bpai"],["กินข้าว","eat (a meal)","gin khâao"],["กัน","together","gan"],["ไหม","question particle","mǎi"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":145,"display":6,"preview":"บ่าย","previewEn":"afternoon","thai":"บ่ายสามโมงครึ่งครับ","translit":"bàai sǎam moong khrûeng khráp","english":"Half past three in the afternoon.","gloss":[["บ่าย","afternoon","bàai"],["สามโมง","three o'clock","sǎam moong"],["ครึ่ง","half (past)","khrûeng"],["ครับ","polite particle (male)","khráp"]],"cultural":"Early-afternoon hours (1–4pm) are told as บ่าย + โมง."},
+  {"num":364,"display":7,"preview":"ห้าโมงเย็น","previewEn":"finish work","thai":"เลิกงานห้าโมงเย็นค่ะ","translit":"lêrk ngaan hâa moong yen khâ","english":"I finish work at 5 p.m.","gloss":[["เลิกงาน","finish work","lêrk ngaan"],["ห้าโมงเย็น","5 p.m.","hâa moong yen"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"From 4–6 p.m. the count is number + โมงเย็น: สี่โมงเย็น (4), ห้าโมงเย็น (5), หกโมงเย็น (6). เย็น is the cool of the early evening."},
+  {"num":147,"display":8,"preview":"หนัง","previewEn":"film","thai":"หนังเริ่มสองทุ่มนะครับ","translit":"nǎng rêrm sǎwng thûm ná khráp","english":"The film starts at 8pm.","gloss":[["หนัง","film / movie (also \"skin / leather\")","nǎng"],["เริ่ม","start","rêrm"],["สองทุ่ม","8pm","sǎwng thûm"],["นะ","softening particle","ná"],["ครับ","polite particle (male)","khráp"]],"cultural":"ทุ่ม counts evening hours: หนึ่งทุ่ม = 7pm, สองทุ่ม = 8pm, up to ห้าทุ่ม = 11pm."},
+  {"num":367,"display":9,"preview":"นาที","previewEn":"(the time)","thai":"ตอนนี้สามทุ่มยี่สิบสามนาทีแล้วครับ","translit":"dtawn-níi sǎam thûm yîi-sìp-sǎam naa-thii láaeo khráp","english":"It's 9:23 PM now.","gloss":[["ตอนนี้","now","dtawn-níi"],["สามทุ่ม","9 PM","sǎam thûm"],["ยี่สิบสาม","twenty-three","yîi-sìp-sǎam"],["นาที","minute","naa-thii"],["แล้ว","already","láaeo"],["ครับ","polite particle (male)","khráp"]],"cultural":"Minutes follow the hour: [time] + [number] + นาที — so สามทุ่มยี่สิบสามนาที = 9:23 PM. Half past uses ครึ่ง (บ่ายสามโมงครึ่ง = 3:30)."},
+  {"num":365,"display":10,"preview":"สี่ทุ่ม","previewEn":"shop closes","thai":"ร้านปิดสี่ทุ่มครับ","translit":"ráan bpìt sìi thûm khráp","english":"The shop closes at 10 p.m.","gloss":[["ร้าน","shop","ráan"],["ปิด","close","bpìt"],["สี่ทุ่ม","10 p.m.","sìi thûm"],["ครับ","polite particle (male)","khráp"]],"cultural":"At 7 p.m. the count restarts: number + ทุ่ม, with หนึ่งทุ่ม = 7 p.m. — so สองทุ่ม (8), สามทุ่ม (9), สี่ทุ่ม (10), ห้าทุ่ม (11). ทุ่ม is the muffled beat of the night drum."},
+  {"num":366,"display":11,"preview":"เที่ยงคืน","previewEn":"midnight","thai":"รถไฟถึงเที่ยงคืนพอดีครับ","translit":"rót-fai thǔeng thîang-khuuen phaw-dii khráp","english":"The train gets in at exactly midnight.","gloss":[["รถไฟ","train","rót-fai"],["ถึง","arrive","thǔeng"],["เที่ยงคืน","midnight","thîang-khuuen"],["พอดี","exactly","phaw-dii"],["ครับ","polite particle (male)","khráp"]],"cultural":"เที่ยงคืน is midnight (12 a.m.) and เที่ยง / เที่ยงวัน is noon (12 p.m.) — the two hinge points of the system. พอดี after a time means 'exactly, on the dot'."},
+  {"num":149,"display":12,"preview":"ธนาคาร","previewEn":"bank","thai":"ธนาคารเปิดแปดโมงครึ่งถึงสามโมงครึ่งค่ะ","translit":"thá-naa-khaan bpèrt bpàaet moong khrûeng thǔeng sǎam moong khrûeng khâ","english":"The bank is open from 8:30 to 3:30.","gloss":[["ธนาคาร","bank","thá-naa-khaan"],["เปิด","open","bpèrt"],["แปดโมงครึ่ง","8:30am","bpàaet moong khrûeng"],["ถึง","to / until","thǔeng"],["สามโมงครึ่ง","3:30pm","sǎam moong khrûeng"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"Morning hours use โมง after the number (แปดโมง = 8am); ครึ่ง adds the half-hour."},
+  {"num":155,"display":13,"preview":"รถไฟ","previewEn":"train","thai":"ผมรอรถไฟมาครึ่งชั่วโมงแล้วครับ","translit":"phǒm raw rót-fai maa khrûeng chûa-moong láaeo khráp","english":"I've been waiting for the train for half an hour.","gloss":[["ผม","I (male)","phǒm"],["รอ","wait","raw"],["รถไฟ","train","rót-fai"],["มา","come","maa"],["ครึ่งชั่วโมง","half an hour","khrûeng chûa-moong"],["แล้ว","already","láaeo"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":368,"display":14,"preview":"วินาที","previewEn":"seconds","thai":"วิ่งเร็วๆ สามสิบวินาทีนะครับ","translit":"wîng reo-reo sǎam-sìp wí-naa-thii ná khráp","english":"Sprint hard for thirty seconds.","gloss":[["วิ่ง","run","wîng"],["เร็วๆ","quickly","reo-reo"],["สามสิบ","thirty","sǎam-sìp"],["วินาที","second","wí-naa-thii"],["นะครับ","polite(m)","ná khráp"]],"cultural":"The three duration units: วินาที (seconds) · นาที (minutes) · ชั่วโมง (hours). Doubling เร็ว → เร็วๆ intensifies it ('really fast')."},
+  {"num":370,"display":15,"preview":"นาฬิกา","previewEn":"watch","thai":"นาฬิกาเรือนนี้เดินเร็วไปห้านาทีค่ะ","translit":"naa-lí-gaa ruean níi dern reo bpai hâa naa-thii khâ","english":"This watch is five minutes fast.","gloss":[["นาฬิกา","watch","naa-lí-gaa"],["เรือน","clock classifier","ruean"],["นี้","this","níi"],["เดิน","to run (of a clock)","dern"],["เร็วไป","too fast","reo bpai"],["ห้านาที","five minutes","hâa naa-thii"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"A clock 'walks' in Thai — นาฬิกาเดิน — and เรือน is its classifier. เดินเร็ว / เดินช้า = runs fast / slow."},
+  {"num":172,"display":16,"preview":"โต๊ะ","previewEn":"table","thai":"โต๊ะนี้นั่งได้กี่คนคะ","translit":"dtó níi nâng dâi gìi khon khá","english":"How many people can sit at this table?","gloss":[["โต๊ะ","table","dtó"],["นี้","this","níi"],["นั่ง","sit","nâng"],["ได้","can","dâi"],["กี่คน","how many people","gìi khon"],["คะ","polite particle (female)","khá"]],"cultural":"คน is the classifier for people."},
+  {"num":173,"display":17,"preview":"ตั๋ว","previewEn":"tickets","thai":"ขอตั๋วไปกลับสองใบครับ","translit":"khǎw dtǔa bpai-glàp sǎwng bai khráp","english":"Two return tickets, please.","gloss":[["ขอ","may I have / request","khǎw"],["ตั๋ว","ticket","dtǔa"],["ไปกลับ","return / round trip","bpai-glàp"],["สองใบ","two (tickets)","sǎwng bai"],["ครับ","polite particle (male)","khráp"]],"cultural":"ใบ is the classifier for tickets and flat sheet-like items. ไปกลับ is literally 'go-return'."},
+  {"num":174,"display":18,"preview":"น้ำ","previewEn":"water","thai":"ขอน้ำสามขวดค่ะ","translit":"khǎw nám sǎam khùat khâ","english":"Three bottles of water, please.","gloss":[["ขอ","may I have","khǎw"],["น้ำ","water","nám"],["สามขวด","three bottles","sǎam khùat"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"ขวด (bottle) is both the container and its classifier."},
+  {"num":175,"display":19,"preview":"ไข่","previewEn":"eggs","thai":"ขอไข่หนึ่งโหลค่ะ","translit":"khǎw khài nùeng lǒo khâ","english":"A dozen eggs, please.","gloss":[["ขอ","may I have","khǎw"],["ไข่","egg","khài"],["หนึ่งโหล","one dozen","nùeng lǒo"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"โหล (a dozen) is borrowed from English 'dozen'."},
+  {"num":187,"display":20,"preview":"ห้องเรียน","previewEn":"classroom","thai":"ห้องเรียนนี้มีนักเรียนสี่สิบคนค่ะ","translit":"hâwng-rian níi mii nák-rian sìi-sìp khon khâ","english":"This classroom has forty students.","gloss":[["ห้องเรียน","classroom","hâwng-rian"],["นี้","this","níi"],["มี","has","mii"],["นักเรียน","students","nák-rian"],["สี่สิบ","forty","sìi-sìp"],["คน","(classifier: people)","khon"],["ค่ะ","polite particle (female)","khâ"]],"cultural":""},
+  {"num":188,"display":21,"preview":"ตึก","previewEn":"building","thai":"ตึกนี้สูงกี่ชั้นครับ","translit":"dtùek níi sǔung gìi chán khráp","english":"How many floors is this building?","gloss":[["ตึก","building","dtùek"],["นี้","this","níi"],["สูง","tall","sǔung"],["กี่ชั้น","how many floors","gìi chán"],["ครับ","polite particle (male)","khráp"]],"cultural":"ชั้น = floor / storey (also the classifier for layers and levels)."},
+  {"num":178,"display":22,"preview":"กิโล","previewEn":"km","thai":"จากนี่ไปเชียงใหม่เจ็ดร้อยกว่ากิโลครับ","translit":"jàak nîi bpai chiang-mài jèt-rói gwàa gì-loo khráp","english":"It's over 700 km from here to Chiang Mai.","gloss":[["จาก","from","jàak"],["นี่","here","nîi"],["ไป","to","bpai"],["เชียงใหม่","Chiang Mai","chiang-mài"],["เจ็ดร้อย","seven hundred","jèt-rói"],["กว่า","over / more than","gwàa"],["กิโล","kilo — here kilometres (also \"kilograms\")","gì-loo"],["ครับ","polite particle (male)","khráp"]],"cultural":"กว่า after a number means 'over / more than' that amount."},
+  {"num":177,"display":23,"preview":"สนาม","previewEn":"stadium","thai":"สนามนี้จุคนได้สามหมื่นค่ะ","translit":"sà-nǎam níi jù khon dâi sǎam-mùuen khâ","english":"This stadium holds thirty thousand people.","gloss":[["สนาม","stadium / ground","sà-nǎam"],["นี้","this","níi"],["จุ","hold / seat","jù"],["คน","people","khon"],["ได้","can","dâi"],["สามหมื่น","thirty thousand","sǎam-mùuen"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"หมื่น = ten thousand; สามหมื่น = 30,000."},
+  {"num":179,"display":24,"preview":"งานวิ่ง","previewEn":"run","thai":"งานวิ่งนี้มีคนเป็นพันเลยค่ะ","translit":"ngaan wîng níi mii khon bpen phan luhry khâ","english":"There are thousands of people at this run.","gloss":[["งานวิ่ง","running event","ngaan wîng"],["นี้","this","níi"],["มีคน","there are people","mii khon"],["เป็นพัน","in the thousands","bpen phan"],["เลย","emphasis particle","luhry"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"เป็น + a number means 'in the (thousands/hundreds)' — an approximate large amount."},
+  {"num":180,"display":25,"preview":"ดารา","previewEn":"celebrity","thai":"ดาราคนนี้มีคนติดตามเป็นแสนครับ","translit":"daa-raa khon níi mii khon dtìt-dtaam bpen sǎaen khráp","english":"This celebrity has a hundred thousand followers.","gloss":[["ดารา","celebrity / star","daa-raa"],["คนนี้","this one","khon níi"],["มี","has","mii"],["คนติดตาม","followers","khon dtìt-dtaam"],["เป็นแสน","in the hundred-thousands","bpen sǎaen"],["ครับ","polite particle (male)","khráp"]],"cultural":"แสน = a hundred thousand."},
+  {"num":176,"display":26,"preview":"กรุงเทพ","previewEn":"Bangkok","thai":"กรุงเทพมีประชากรสิบล้านคนครับ","translit":"grung-thêep mii bprà-chaa-gawn sìp-láan khon khráp","english":"Bangkok has a population of ten million.","gloss":[["กรุงเทพ","Bangkok","grung-thêep"],["มี","has","mii"],["ประชากร","population","bprà-chaa-gawn"],["สิบล้าน","ten million","sìp-láan"],["คน","people","khon"],["ครับ","polite particle (male)","khráp"]],"cultural":"ล้าน = million; สิบล้าน = ten million."},
+  {"num":1059,"display":27,"preview":"ปีสองพัน","previewEn":"year 2000","thai":"จำปีสองพันได้ไหมครับ","translit":"jam bpii sǎwng-phan dâi mǎi khráp","english":"Do you remember the year 2000?","gloss":[["จำ","remember","jam"],["ปี","year","bpii"],["สองพัน","two thousand (2000)","sǎwng-phan"],["ได้ไหม","can you? (asks if able)","dâi mǎi"],["ครับ","polite particle (male)","khráp"]],"cultural":"Thais normally count years in the Buddhist Era (พ.ศ.), 543 years ahead — so 2000 CE is พ.ศ. 2543. ค.ศ. (CE) is the Western/international count; ปีสองพัน here is the round CE year."},
+  {"num":1060,"display":28,"preview":"นับถอยหลัง","previewEn":"count down","thai":"นับถอยหลังจากสิบถึงศูนย์กันค่ะ","translit":"náp thǒi-lǎng jàak sìp thǔeng sǔun gan khâ","english":"Let's count down from ten to zero.","gloss":[["นับ","count","náp"],["ถอยหลัง","backwards","thǒi-lǎng"],["จาก","from","jàak"],["สิบ","ten","sìp"],["ถึง","to","thǔeng"],["ศูนย์","zero","sǔun"],["กัน","together","gan"],["ค่ะ","polite particle (female)","khâ"]],"cultural":""},
+  {"num":1061,"display":29,"preview":"ฟองครึ่ง","previewEn":"half","thai":"ผมกินไข่แค่ฟองครึ่งเองครับ","translit":"phǒm gin khài khâae fawng khrûeng eeng khráp","english":"I only ate one and a half eggs.","gloss":[["ผม","I (male)","phǒm"],["กิน","eat","gin"],["ไข่","egg","khài"],["แค่...เอง","only / just","khâae … eeng"],["ฟองครึ่ง","one and a half (eggs)","fawng khrûeng"],["ครับ","polite particle (male)","khráp"]],"cultural":"The full form keeps หนึ่ง — หนึ่งฟองครึ่ง ('one egg and a half') — but in everyday speech the หนึ่ง is usually dropped, leaving just ฟองครึ่ง. ฟอง is the classifier for eggs and round things."},
+  {"num":1062,"display":30,"preview":"คำตอบ","previewEn":"answer","thai":"คำตอบคือสามจุดหนึ่งสี่หนึ่งค่ะ","translit":"kham-dtàwp khuue sǎam jùt nùeng sìi nùeng khâ","english":"The answer is 3.141.","gloss":[["คำตอบ","answer","kham-dtàwp"],["คือ","is","khuue"],["สาม","three","sǎam"],["จุด","point (decimal)","jùt"],["หนึ่งสี่หนึ่ง","one four one","nùeng sìi nùeng"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"Decimals: the whole part before จุด is read normally, then each digit after the point is read singly — สามจุดหนึ่งสี่หนึ่ง (3.141), not 'three point one-hundred-forty-one'."}
+  ]
 };
 </script>
 <script src="app-cta.js" defer></script>

@@ -59,6 +59,12 @@
   #sentence-list.dir-et .pv-th.pv-only, html.te-dir-et #sentence-list .pv-th.pv-only { display: inline; }
   #sentence-list.dir-et .pv-en,         html.te-dir-et #sentence-list .pv-en { display: inline; }
   /* pill:end */
+  /* Transliteration (topics shipping per-sentence 'translit', currently 01–03): the line lives
+     INSIDE row-thai so it reveals/collapses with the Thai script in both TE and ET directions.
+     Default ON; player.js's pill adds .translit-off on #sentence-list to hide it. */
+  .thai-translit { font-family: var(--font-ui); font-size: 13px; color: var(--text-tertiary); line-height: 1.55; margin-top: 1px; }
+  .g-tl { color: var(--text-secondary); margin-left: 4px; }
+  #sentence-list.translit-off .thai-translit, #sentence-list.translit-off .g-tl { display: none; }
 </style>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -144,9 +150,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">กรรมตามสนอง</div>
+          <div class="reveal-row row-thai">กรรมตามสนอง<div class="thai-translit">gam dtaam sà-nǎwng</div></div>
           <div class="reveal-row row-english">Karma follows and repays</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กรรม</span><span class="g-eq">=</span><span class="g-eng">karma</span></span><span class="gloss-chip"><span class="g-thai">ตาม</span><span class="g-eq">=</span><span class="g-eng">follows</span></span><span class="gloss-chip"><span class="g-thai">สนอง</span><span class="g-eq">=</span><span class="g-eng">repays</span></span></div><div class="cultural-note">You reap what you sow; what goes around comes around</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กรรม</span><span class="g-tl">/ gam</span><span class="g-eq">=</span><span class="g-eng">karma</span></span><span class="gloss-chip"><span class="g-thai">ตาม</span><span class="g-tl">/ dtaam</span><span class="g-eq">=</span><span class="g-eng">follows</span></span><span class="gloss-chip"><span class="g-thai">สนอง</span><span class="g-tl">/ sà-nǎwng</span><span class="g-eq">=</span><span class="g-eng">repays</span></span></div><div class="cultural-note">You reap what you sow; what goes around comes around</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-560">
@@ -159,9 +165,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">สมน้ำหน้า</div>
+          <div class="reveal-row row-thai">สมน้ำหน้า<div class="thai-translit">sǒm nám-nâa</div></div>
           <div class="reveal-row row-english">You get what you deserve</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สม</span><span class="g-eq">=</span><span class="g-eng">serves</span></span><span class="gloss-chip"><span class="g-thai">น้ำหน้า</span><span class="g-eq">=</span><span class="g-eng">your face</span></span></div><div class="cultural-note">Serves you right; said when someone suffers the consequences of their own actions</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สม</span><span class="g-tl">/ sǒm</span><span class="g-eq">=</span><span class="g-eng">serves</span></span><span class="gloss-chip"><span class="g-thai">น้ำหน้า</span><span class="g-tl">/ nám-nâa</span><span class="g-eq">=</span><span class="g-eng">your face</span></span></div><div class="cultural-note">Serves you right; said when someone suffers the consequences of their own actions</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-561">
@@ -174,9 +180,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เข้าหูซ้าย ทะลุหูขวา</div>
+          <div class="reveal-row row-thai">เข้าหูซ้าย ทะลุหูขวา<div class="thai-translit">khâo hǔu sáai thá-lú hǔu khwǎa</div></div>
           <div class="reveal-row row-english">In the left ear, out the right</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เข้า</span><span class="g-eq">=</span><span class="g-eng">enters</span></span><span class="gloss-chip"><span class="g-thai">หู</span><span class="g-eq">=</span><span class="g-eng">ear</span></span><span class="gloss-chip"><span class="g-thai">ซ้าย</span><span class="g-eq">=</span><span class="g-eng">left</span></span><span class="gloss-chip"><span class="g-thai">ทะลุ</span><span class="g-eq">=</span><span class="g-eng">out through</span></span><span class="gloss-chip"><span class="g-thai">หู</span><span class="g-eq">=</span><span class="g-eng">ear</span></span><span class="gloss-chip"><span class="g-thai">ขวา</span><span class="g-eq">=</span><span class="g-eng">right</span></span></div><div class="cultural-note">Not taking in what you're told; advice going in one ear and out the other</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เข้า</span><span class="g-tl">/ khâo</span><span class="g-eq">=</span><span class="g-eng">enters</span></span><span class="gloss-chip"><span class="g-thai">หู</span><span class="g-tl">/ hǔu</span><span class="g-eq">=</span><span class="g-eng">ear</span></span><span class="gloss-chip"><span class="g-thai">ซ้าย</span><span class="g-tl">/ sáai</span><span class="g-eq">=</span><span class="g-eng">left</span></span><span class="gloss-chip"><span class="g-thai">ทะลุ</span><span class="g-tl">/ thá-lú</span><span class="g-eq">=</span><span class="g-eng">out through</span></span><span class="gloss-chip"><span class="g-thai">หู</span><span class="g-tl">/ hǔu</span><span class="g-eq">=</span><span class="g-eng">ear</span></span><span class="gloss-chip"><span class="g-thai">ขวา</span><span class="g-tl">/ khwǎa</span><span class="g-eq">=</span><span class="g-eng">right</span></span></div><div class="cultural-note">Not taking in what you're told; advice going in one ear and out the other</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-562">
@@ -189,9 +195,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">กำแพงมีหู ประตูมีตา</div>
+          <div class="reveal-row row-thai">กำแพงมีหู ประตูมีตา<div class="thai-translit">gam-phaaeng mii hǔu bprà-dtuu mii dtaa</div></div>
           <div class="reveal-row row-english">Walls have ears, doors have eyes</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กำแพง</span><span class="g-eq">=</span><span class="g-eng">wall</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">หู</span><span class="g-eq">=</span><span class="g-eng">ears</span></span><span class="gloss-chip"><span class="g-thai">ประตู</span><span class="g-eq">=</span><span class="g-eng">door</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">ตา</span><span class="g-eq">=</span><span class="g-eng">eyes</span></span></div><div class="cultural-note">Be careful what you say; secrets get out</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กำแพง</span><span class="g-tl">/ gam-phaaeng</span><span class="g-eq">=</span><span class="g-eng">wall</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-tl">/ mii</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">หู</span><span class="g-tl">/ hǔu</span><span class="g-eq">=</span><span class="g-eng">ears</span></span><span class="gloss-chip"><span class="g-thai">ประตู</span><span class="g-tl">/ bprà-dtuu</span><span class="g-eq">=</span><span class="g-eng">door</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-tl">/ mii</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">ตา</span><span class="g-tl">/ dtaa</span><span class="g-eq">=</span><span class="g-eng">eyes</span></span></div><div class="cultural-note">Be careful what you say; secrets get out</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-563">
@@ -204,9 +210,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ขนหัวลุก</div>
+          <div class="reveal-row row-thai">ขนหัวลุก<div class="thai-translit">khǒn hǔa lúk</div></div>
           <div class="reveal-row row-english">Hair standing up on the head</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขน</span><span class="g-eq">=</span><span class="g-eng">hair</span></span><span class="gloss-chip"><span class="g-thai">หัว</span><span class="g-eq">=</span><span class="g-eng">head</span></span><span class="gloss-chip"><span class="g-thai">ลุก</span><span class="g-eq">=</span><span class="g-eng">stands up</span></span></div><div class="cultural-note">To get goosebumps; to be terrified</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขน</span><span class="g-tl">/ khǒn</span><span class="g-eq">=</span><span class="g-eng">hair</span></span><span class="gloss-chip"><span class="g-thai">หัว</span><span class="g-tl">/ hǔa</span><span class="g-eq">=</span><span class="g-eng">head</span></span><span class="gloss-chip"><span class="g-thai">ลุก</span><span class="g-tl">/ lúk</span><span class="g-eq">=</span><span class="g-eng">stands up</span></span></div><div class="cultural-note">To get goosebumps; to be terrified</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-564">
@@ -219,9 +225,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">กบในกะลาครอบ</div>
+          <div class="reveal-row row-thai">กบในกะลาครอบ<div class="thai-translit">gòp nai gà-laa khrâwp</div></div>
           <div class="reveal-row row-english">Frog under a coconut shell</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กบ</span><span class="g-eq">=</span><span class="g-eng">frog</span></span><span class="gloss-chip"><span class="g-thai">ใน</span><span class="g-eq">=</span><span class="g-eng">under</span></span><span class="gloss-chip"><span class="g-thai">กะลา</span><span class="g-eq">=</span><span class="g-eng">coconut shell</span></span><span class="gloss-chip"><span class="g-thai">ครอบ</span><span class="g-eq">=</span><span class="g-eng">covering</span></span></div><div class="cultural-note">Someone with limited experience who thinks they know everything</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กบ</span><span class="g-tl">/ gòp</span><span class="g-eq">=</span><span class="g-eng">frog</span></span><span class="gloss-chip"><span class="g-thai">ใน</span><span class="g-tl">/ nai</span><span class="g-eq">=</span><span class="g-eng">under</span></span><span class="gloss-chip"><span class="g-thai">กะลา</span><span class="g-tl">/ gà-laa</span><span class="g-eq">=</span><span class="g-eng">coconut shell</span></span><span class="gloss-chip"><span class="g-thai">ครอบ</span><span class="g-tl">/ khrâwp</span><span class="g-eq">=</span><span class="g-eng">covering</span></span></div><div class="cultural-note">Someone with limited experience who thinks they know everything</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-565">
@@ -234,9 +240,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">กระต่ายตื่นตูม</div>
+          <div class="reveal-row row-thai">กระต่ายตื่นตูม<div class="thai-translit">grà-dtàai dtùuen dtuum</div></div>
           <div class="reveal-row row-english">The panicking hare</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กระต่าย</span><span class="g-eq">=</span><span class="g-eng">hare</span></span><span class="gloss-chip"><span class="g-thai">ตื่น</span><span class="g-eq">=</span><span class="g-eng">startled</span></span><span class="gloss-chip"><span class="g-thai">ตูม</span><span class="g-eq">=</span><span class="g-eng">(a bang)</span></span></div><div class="cultural-note">Someone who overreacts or panics without thinking first</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กระต่าย</span><span class="g-tl">/ grà-dtàai</span><span class="g-eq">=</span><span class="g-eng">hare</span></span><span class="gloss-chip"><span class="g-thai">ตื่น</span><span class="g-tl">/ dtùuen</span><span class="g-eq">=</span><span class="g-eng">startled</span></span><span class="gloss-chip"><span class="g-thai">ตูม</span><span class="g-tl">/ dtuum</span><span class="g-eq">=</span><span class="g-eng">(a bang)</span></span></div><div class="cultural-note">Someone who overreacts or panics without thinking first</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-566">
@@ -249,9 +255,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ปากหวาน</div>
+          <div class="reveal-row row-thai">ปากหวาน<div class="thai-translit">bpàak wǎan</div></div>
           <div class="reveal-row row-english">Sweet mouth</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ปาก</span><span class="g-eq">=</span><span class="g-eng">mouth</span></span><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-eq">=</span><span class="g-eng">sweet</span></span></div><div class="cultural-note">A sweet-talker; someone who flatters people to get what they want</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ปาก</span><span class="g-tl">/ bpàak</span><span class="g-eq">=</span><span class="g-eng">mouth</span></span><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-tl">/ wǎan</span><span class="g-eq">=</span><span class="g-eng">sweet</span></span></div><div class="cultural-note">A sweet-talker; someone who flatters people to get what they want</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-567">
@@ -264,9 +270,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ปากหวาน ก้นเปรี้ยว</div>
+          <div class="reveal-row row-thai">ปากหวาน ก้นเปรี้ยว<div class="thai-translit">bpàak wǎan gôn bprîao</div></div>
           <div class="reveal-row row-english">Sweet mouth, sour bottom</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ปาก</span><span class="g-eq">=</span><span class="g-eng">mouth</span></span><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-eq">=</span><span class="g-eng">sweet</span></span><span class="gloss-chip"><span class="g-thai">ก้น</span><span class="g-eq">=</span><span class="g-eng">bottom</span></span><span class="gloss-chip"><span class="g-thai">เปรี้ยว</span><span class="g-eq">=</span><span class="g-eng">sour</span></span></div><div class="cultural-note">Someone who says nice things but is insincere or two-faced</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ปาก</span><span class="g-tl">/ bpàak</span><span class="g-eq">=</span><span class="g-eng">mouth</span></span><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-tl">/ wǎan</span><span class="g-eq">=</span><span class="g-eng">sweet</span></span><span class="gloss-chip"><span class="g-thai">ก้น</span><span class="g-tl">/ gôn</span><span class="g-eq">=</span><span class="g-eng">bottom</span></span><span class="gloss-chip"><span class="g-thai">เปรี้ยว</span><span class="g-tl">/ bprîao</span><span class="g-eq">=</span><span class="g-eng">sour</span></span></div><div class="cultural-note">Someone who says nice things but is insincere or two-faced</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-568">
@@ -279,9 +285,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">กงเกวียน กำเกวียน</div>
+          <div class="reveal-row row-thai">กงเกวียน กำเกวียน<div class="thai-translit">gong gwian gam gwian</div></div>
           <div class="reveal-row row-english">The cart wheel, the cart spokes</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กง</span><span class="g-eq">=</span><span class="g-eng">wheel rim</span></span><span class="gloss-chip"><span class="g-thai">เกวียน</span><span class="g-eq">=</span><span class="g-eng">cart</span></span><span class="gloss-chip"><span class="g-thai">กำ</span><span class="g-eq">=</span><span class="g-eng">spoke</span></span><span class="gloss-chip"><span class="g-thai">เกวียน</span><span class="g-eq">=</span><span class="g-eng">cart</span></span></div><div class="cultural-note">What goes around comes around; karma repays in kind</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กง</span><span class="g-tl">/ gong</span><span class="g-eq">=</span><span class="g-eng">wheel rim</span></span><span class="gloss-chip"><span class="g-thai">เกวียน</span><span class="g-tl">/ gwian</span><span class="g-eq">=</span><span class="g-eng">cart</span></span><span class="gloss-chip"><span class="g-thai">กำ</span><span class="g-tl">/ gam</span><span class="g-eq">=</span><span class="g-eng">spoke</span></span><span class="gloss-chip"><span class="g-thai">เกวียน</span><span class="g-tl">/ gwian</span><span class="g-eq">=</span><span class="g-eng">cart</span></span></div><div class="cultural-note">What goes around comes around; karma repays in kind</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-569">
@@ -294,9 +300,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ใกล้เกลือ กินด่าง</div>
+          <div class="reveal-row row-thai">ใกล้เกลือ กินด่าง<div class="thai-translit">glâi gluea gin dàang</div></div>
           <div class="reveal-row row-english">Near salt but eating lye</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ใกล้</span><span class="g-eq">=</span><span class="g-eng">near</span></span><span class="gloss-chip"><span class="g-thai">เกลือ</span><span class="g-eq">=</span><span class="g-eng">salt</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">ด่าง</span><span class="g-eq">=</span><span class="g-eng">lye</span></span></div><div class="cultural-note">Not appreciating what you have right in front of you; overlooking the obvious and valuable</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ใกล้</span><span class="g-tl">/ glâi</span><span class="g-eq">=</span><span class="g-eng">near</span></span><span class="gloss-chip"><span class="g-thai">เกลือ</span><span class="g-tl">/ gluea</span><span class="g-eq">=</span><span class="g-eng">salt</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-tl">/ gin</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">ด่าง</span><span class="g-tl">/ dàang</span><span class="g-eq">=</span><span class="g-eng">lye</span></span></div><div class="cultural-note">Not appreciating what you have right in front of you; overlooking the obvious and valuable</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-570">
@@ -309,9 +315,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ขี่ช้าง จับตั๊กแตน</div>
+          <div class="reveal-row row-thai">ขี่ช้าง จับตั๊กแตน<div class="thai-translit">khìi cháang jàp dták-gà-dtaaen</div></div>
           <div class="reveal-row row-english">Ride an elephant to catch a grasshopper</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขี่</span><span class="g-eq">=</span><span class="g-eng">ride</span></span><span class="gloss-chip"><span class="g-thai">ช้าง</span><span class="g-eq">=</span><span class="g-eng">elephant</span></span><span class="gloss-chip"><span class="g-thai">จับ</span><span class="g-eq">=</span><span class="g-eng">catch</span></span><span class="gloss-chip"><span class="g-thai">ตั๊กแตน</span><span class="g-eq">=</span><span class="g-eng">grasshopper</span></span></div><div class="cultural-note">Investing far too much effort or money on something trivial</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขี่</span><span class="g-tl">/ khìi</span><span class="g-eq">=</span><span class="g-eng">ride</span></span><span class="gloss-chip"><span class="g-thai">ช้าง</span><span class="g-tl">/ cháang</span><span class="g-eq">=</span><span class="g-eng">elephant</span></span><span class="gloss-chip"><span class="g-thai">จับ</span><span class="g-tl">/ jàp</span><span class="g-eq">=</span><span class="g-eng">catch</span></span><span class="gloss-chip"><span class="g-thai">ตั๊กแตน</span><span class="g-tl">/ dták-gà-dtaaen</span><span class="g-eq">=</span><span class="g-eng">grasshopper</span></span></div><div class="cultural-note">Investing far too much effort or money on something trivial</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-571">
@@ -324,9 +330,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">อดเปรี้ยวไว้ กินหวาน</div>
+          <div class="reveal-row row-thai">อดเปรี้ยวไว้ กินหวาน<div class="thai-translit">òt bprîao wái gin wǎan</div></div>
           <div class="reveal-row row-english">Forego the sour to eat the sweet</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">อด</span><span class="g-eq">=</span><span class="g-eng">forgo</span></span><span class="gloss-chip"><span class="g-thai">เปรี้ยว</span><span class="g-eq">=</span><span class="g-eng">the sour</span></span><span class="gloss-chip"><span class="g-thai">ไว้</span><span class="g-eq">=</span><span class="g-eng">for later</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-eq">=</span><span class="g-eng">the sweet</span></span></div><div class="cultural-note">Be patient now for better things later; good things come to those who wait</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">อด</span><span class="g-tl">/ òt</span><span class="g-eq">=</span><span class="g-eng">forgo</span></span><span class="gloss-chip"><span class="g-thai">เปรี้ยว</span><span class="g-tl">/ bprîao</span><span class="g-eq">=</span><span class="g-eng">the sour</span></span><span class="gloss-chip"><span class="g-thai">ไว้</span><span class="g-tl">/ wái</span><span class="g-eq">=</span><span class="g-eng">for later</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-tl">/ gin</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-tl">/ wǎan</span><span class="g-eq">=</span><span class="g-eng">the sweet</span></span></div><div class="cultural-note">Be patient now for better things later; good things come to those who wait</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-572">
@@ -339,9 +345,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">หวานเป็นลม ขมเป็นยา</div>
+          <div class="reveal-row row-thai">หวานเป็นลม ขมเป็นยา<div class="thai-translit">wǎan bpen lom khǒm bpen yaa</div></div>
           <div class="reveal-row row-english">Sweet words are wind, bitter words are medicine</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-eq">=</span><span class="g-eng">sweet</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-eq">=</span><span class="g-eng">is</span></span><span class="gloss-chip"><span class="g-thai">ลม</span><span class="g-eq">=</span><span class="g-eng">wind</span></span><span class="gloss-chip"><span class="g-thai">ขม</span><span class="g-eq">=</span><span class="g-eng">bitter</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-eq">=</span><span class="g-eng">is</span></span><span class="gloss-chip"><span class="g-thai">ยา</span><span class="g-eq">=</span><span class="g-eng">medicine</span></span></div><div class="cultural-note">Honest criticism is more valuable than empty flattery</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-tl">/ wǎan</span><span class="g-eq">=</span><span class="g-eng">sweet</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-tl">/ bpen</span><span class="g-eq">=</span><span class="g-eng">is</span></span><span class="gloss-chip"><span class="g-thai">ลม</span><span class="g-tl">/ lom</span><span class="g-eq">=</span><span class="g-eng">wind</span></span><span class="gloss-chip"><span class="g-thai">ขม</span><span class="g-tl">/ khǒm</span><span class="g-eq">=</span><span class="g-eng">bitter</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-tl">/ bpen</span><span class="g-eq">=</span><span class="g-eng">is</span></span><span class="gloss-chip"><span class="g-thai">ยา</span><span class="g-tl">/ yaa</span><span class="g-eq">=</span><span class="g-eng">medicine</span></span></div><div class="cultural-note">Honest criticism is more valuable than empty flattery</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-573">
@@ -354,9 +360,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ขายผ้า เอาหน้ารอด</div>
+          <div class="reveal-row row-thai">ขายผ้า เอาหน้ารอด<div class="thai-translit">khǎai phâa ao nâa râwt</div></div>
           <div class="reveal-row row-english">Sell your clothes to save face</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขาย</span><span class="g-eq">=</span><span class="g-eng">sell</span></span><span class="gloss-chip"><span class="g-thai">ผ้า</span><span class="g-eq">=</span><span class="g-eng">clothes</span></span><span class="gloss-chip"><span class="g-thai">เอา</span><span class="g-eq">=</span><span class="g-eng">take</span></span><span class="gloss-chip"><span class="g-thai">หน้า</span><span class="g-eq">=</span><span class="g-eng">face</span></span><span class="gloss-chip"><span class="g-thai">รอด</span><span class="g-eq">=</span><span class="g-eng">survive</span></span></div><div class="cultural-note">To sacrifice something real just to preserve appearances</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขาย</span><span class="g-tl">/ khǎai</span><span class="g-eq">=</span><span class="g-eng">sell</span></span><span class="gloss-chip"><span class="g-thai">ผ้า</span><span class="g-tl">/ phâa</span><span class="g-eq">=</span><span class="g-eng">clothes</span></span><span class="gloss-chip"><span class="g-thai">เอา</span><span class="g-tl">/ ao</span><span class="g-eq">=</span><span class="g-eng">take</span></span><span class="gloss-chip"><span class="g-thai">หน้า</span><span class="g-tl">/ nâa</span><span class="g-eq">=</span><span class="g-eng">face</span></span><span class="gloss-chip"><span class="g-thai">รอด</span><span class="g-tl">/ râwt</span><span class="g-eq">=</span><span class="g-eng">survive</span></span></div><div class="cultural-note">To sacrifice something real just to preserve appearances</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-574">
@@ -369,9 +375,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">น้ำท่วมทุ่ง ผักบุ้งโหรงเหรง</div>
+          <div class="reveal-row row-thai">น้ำท่วมทุ่ง ผักบุ้งโหรงเหรง<div class="thai-translit">nám-thûam thûng phàk-bûng rǒong-rěeng</div></div>
           <div class="reveal-row row-english">The field floods but the morning glory is sparse</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">น้ำท่วม</span><span class="g-eq">=</span><span class="g-eng">floods</span></span><span class="gloss-chip"><span class="g-thai">ทุ่ง</span><span class="g-eq">=</span><span class="g-eng">field</span></span><span class="gloss-chip"><span class="g-thai">ผักบุ้ง</span><span class="g-eq">=</span><span class="g-eng">morning glory</span></span><span class="gloss-chip"><span class="g-thai">โหรงเหรง</span><span class="g-eq">=</span><span class="g-eng">sparse</span></span></div><div class="cultural-note">Talking a lot but saying very little; all talk, no content</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">น้ำท่วม</span><span class="g-tl">/ nám-thûam</span><span class="g-eq">=</span><span class="g-eng">floods</span></span><span class="gloss-chip"><span class="g-thai">ทุ่ง</span><span class="g-tl">/ thûng</span><span class="g-eq">=</span><span class="g-eng">field</span></span><span class="gloss-chip"><span class="g-thai">ผักบุ้ง</span><span class="g-tl">/ phàk-bûng</span><span class="g-eq">=</span><span class="g-eng">morning glory</span></span><span class="gloss-chip"><span class="g-thai">โหรงเหรง</span><span class="g-tl">/ rǒong-rěeng</span><span class="g-eq">=</span><span class="g-eng">sparse</span></span></div><div class="cultural-note">Talking a lot but saying very little; all talk, no content</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-575">
@@ -384,9 +390,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ข้าวใหม่ ปลามัน</div>
+          <div class="reveal-row row-thai">ข้าวใหม่ ปลามัน<div class="thai-translit">khâao mài bplaa man</div></div>
           <div class="reveal-row row-english">New rice, tasty fish</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ข้าว</span><span class="g-eq">=</span><span class="g-eng">rice</span></span><span class="gloss-chip"><span class="g-thai">ใหม่</span><span class="g-eq">=</span><span class="g-eng">new</span></span><span class="gloss-chip"><span class="g-thai">ปลา</span><span class="g-eq">=</span><span class="g-eng">fish</span></span><span class="gloss-chip"><span class="g-thai">มัน</span><span class="g-eq">=</span><span class="g-eng">rich</span></span></div><div class="cultural-note">The honeymoon phase; something new always seems best</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ข้าว</span><span class="g-tl">/ khâao</span><span class="g-eq">=</span><span class="g-eng">rice</span></span><span class="gloss-chip"><span class="g-thai">ใหม่</span><span class="g-tl">/ mài</span><span class="g-eq">=</span><span class="g-eng">new</span></span><span class="gloss-chip"><span class="g-thai">ปลา</span><span class="g-tl">/ bplaa</span><span class="g-eq">=</span><span class="g-eng">fish</span></span><span class="gloss-chip"><span class="g-thai">มัน</span><span class="g-tl">/ man</span><span class="g-eq">=</span><span class="g-eng">rich</span></span></div><div class="cultural-note">The honeymoon phase; something new always seems best</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-576">
@@ -399,9 +405,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ไก่อ่อน</div>
+          <div class="reveal-row row-thai">ไก่อ่อน<div class="thai-translit">gài àwn</div></div>
           <div class="reveal-row row-english">Young chick</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ไก่</span><span class="g-eq">=</span><span class="g-eng">chicken</span></span><span class="gloss-chip"><span class="g-thai">อ่อน</span><span class="g-eq">=</span><span class="g-eng">young</span></span></div><div class="cultural-note">Naive, inexperienced, easily fooled</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ไก่</span><span class="g-tl">/ gài</span><span class="g-eq">=</span><span class="g-eng">chicken</span></span><span class="gloss-chip"><span class="g-thai">อ่อน</span><span class="g-tl">/ àwn</span><span class="g-eq">=</span><span class="g-eng">young</span></span></div><div class="cultural-note">Naive, inexperienced, easily fooled</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-577">
@@ -414,9 +420,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">กินคาวไม่กินหวาน สันดานไพร่</div>
+          <div class="reveal-row row-thai">กินคาวไม่กินหวาน สันดานไพร่<div class="thai-translit">gin khaao mâi gin wǎan sǎn-daan phrâi</div></div>
           <div class="reveal-row row-english">Not eating dessert is the character of a commoner</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">คาว</span><span class="g-eq">=</span><span class="g-eng">savoury</span></span><span class="gloss-chip"><span class="g-thai">ไม่</span><span class="g-eq">=</span><span class="g-eng">not</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-eq">=</span><span class="g-eng">sweet</span></span><span class="gloss-chip"><span class="g-thai">สันดาน</span><span class="g-eq">=</span><span class="g-eng">nature</span></span><span class="gloss-chip"><span class="g-thai">ไพร่</span><span class="g-eq">=</span><span class="g-eng">commoner</span></span></div><div class="cultural-note">Jokingly used as an excuse to eat dessert; there is always room for dessert</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-tl">/ gin</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">คาว</span><span class="g-tl">/ khaao</span><span class="g-eq">=</span><span class="g-eng">savoury</span></span><span class="gloss-chip"><span class="g-thai">ไม่</span><span class="g-tl">/ mâi</span><span class="g-eq">=</span><span class="g-eng">not</span></span><span class="gloss-chip"><span class="g-thai">กิน</span><span class="g-tl">/ gin</span><span class="g-eq">=</span><span class="g-eng">eat</span></span><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-tl">/ wǎan</span><span class="g-eq">=</span><span class="g-eng">sweet</span></span><span class="gloss-chip"><span class="g-thai">สันดาน</span><span class="g-tl">/ sǎn-daan</span><span class="g-eq">=</span><span class="g-eng">nature</span></span><span class="gloss-chip"><span class="g-thai">ไพร่</span><span class="g-tl">/ phrâi</span><span class="g-eq">=</span><span class="g-eng">commoner</span></span></div><div class="cultural-note">Jokingly used as an excuse to eat dessert; there is always room for dessert</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-578">
@@ -429,9 +435,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ยามรัก น้ำต้มผักก็ว่าหวาน ยามชัง น้ำตาลก็ว่าขม</div>
+          <div class="reveal-row row-thai">ยามรัก น้ำต้มผักก็ว่าหวาน ยามชัง น้ำตาลก็ว่าขม<div class="thai-translit">yaam rák nám-dtôm phàk gâw wâa wǎan yaam chang nám-dtaan gâw wâa khǒm</div></div>
           <div class="reveal-row row-english">When in love, vegetable broth tastes sweet; when you hate, sugar tastes bitter</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ยาม</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">รัก</span><span class="g-eq">=</span><span class="g-eng">in love</span></span><span class="gloss-chip"><span class="g-thai">น้ำต้ม</span><span class="g-eq">=</span><span class="g-eng">broth</span></span><span class="gloss-chip"><span class="g-thai">ผัก</span><span class="g-eq">=</span><span class="g-eng">vegetable</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-eq">=</span><span class="g-eng">even</span></span><span class="gloss-chip"><span class="g-thai">ว่า</span><span class="g-eq">=</span><span class="g-eng">seems</span></span><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-eq">=</span><span class="g-eng">sweet</span></span><span class="gloss-chip"><span class="g-thai">ยาม</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">ชัง</span><span class="g-eq">=</span><span class="g-eng">hating</span></span><span class="gloss-chip"><span class="g-thai">น้ำตาล</span><span class="g-eq">=</span><span class="g-eng">sugar</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-eq">=</span><span class="g-eng">even</span></span><span class="gloss-chip"><span class="g-thai">ว่า</span><span class="g-eq">=</span><span class="g-eng">seems</span></span><span class="gloss-chip"><span class="g-thai">ขม</span><span class="g-eq">=</span><span class="g-eng">bitter</span></span></div><div class="cultural-note">Love and hate colour everything; love is blind</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ยาม</span><span class="g-tl">/ yaam</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">รัก</span><span class="g-tl">/ rák</span><span class="g-eq">=</span><span class="g-eng">in love</span></span><span class="gloss-chip"><span class="g-thai">น้ำต้ม</span><span class="g-tl">/ nám-dtôm</span><span class="g-eq">=</span><span class="g-eng">broth</span></span><span class="gloss-chip"><span class="g-thai">ผัก</span><span class="g-tl">/ phàk</span><span class="g-eq">=</span><span class="g-eng">vegetable</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-tl">/ gâw</span><span class="g-eq">=</span><span class="g-eng">even</span></span><span class="gloss-chip"><span class="g-thai">ว่า</span><span class="g-tl">/ wâa</span><span class="g-eq">=</span><span class="g-eng">seems</span></span><span class="gloss-chip"><span class="g-thai">หวาน</span><span class="g-tl">/ wǎan</span><span class="g-eq">=</span><span class="g-eng">sweet</span></span><span class="gloss-chip"><span class="g-thai">ยาม</span><span class="g-tl">/ yaam</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">ชัง</span><span class="g-tl">/ chang</span><span class="g-eq">=</span><span class="g-eng">hating</span></span><span class="gloss-chip"><span class="g-thai">น้ำตาล</span><span class="g-tl">/ nám-dtaan</span><span class="g-eq">=</span><span class="g-eng">sugar</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-tl">/ gâw</span><span class="g-eq">=</span><span class="g-eng">even</span></span><span class="gloss-chip"><span class="g-thai">ว่า</span><span class="g-tl">/ wâa</span><span class="g-eq">=</span><span class="g-eng">seems</span></span><span class="gloss-chip"><span class="g-thai">ขม</span><span class="g-tl">/ khǒm</span><span class="g-eq">=</span><span class="g-eng">bitter</span></span></div><div class="cultural-note">Love and hate colour everything; love is blind</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-579">
@@ -444,9 +450,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">กัดหางตัวเอง</div>
+          <div class="reveal-row row-thai">กัดหางตัวเอง<div class="thai-translit">gàt hǎang dtua-eeng</div></div>
           <div class="reveal-row row-english">Biting one's own tail</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กัด</span><span class="g-eq">=</span><span class="g-eng">bite</span></span><span class="gloss-chip"><span class="g-thai">หาง</span><span class="g-eq">=</span><span class="g-eng">tail</span></span><span class="gloss-chip"><span class="g-thai">ตัวเอง</span><span class="g-eq">=</span><span class="g-eng">one's own</span></span></div><div class="cultural-note">Talking in circles; contradicting yourself; an argument that defeats itself</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กัด</span><span class="g-tl">/ gàt</span><span class="g-eq">=</span><span class="g-eng">bite</span></span><span class="gloss-chip"><span class="g-thai">หาง</span><span class="g-tl">/ hǎang</span><span class="g-eq">=</span><span class="g-eng">tail</span></span><span class="gloss-chip"><span class="g-thai">ตัวเอง</span><span class="g-tl">/ dtua-eeng</span><span class="g-eq">=</span><span class="g-eng">one's own</span></span></div><div class="cultural-note">Talking in circles; contradicting yourself; an argument that defeats itself</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-580">
@@ -459,9 +465,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เกลือเป็นหนอน</div>
+          <div class="reveal-row row-thai">เกลือเป็นหนอน<div class="thai-translit">gluea bpen nǎwn</div></div>
           <div class="reveal-row row-english">Salt turning into maggots</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เกลือ</span><span class="g-eq">=</span><span class="g-eng">salt</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-eq">=</span><span class="g-eng">turns to</span></span><span class="gloss-chip"><span class="g-thai">หนอน</span><span class="g-eq">=</span><span class="g-eng">maggots</span></span></div><div class="cultural-note">Betrayal by someone close, especially family</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เกลือ</span><span class="g-tl">/ gluea</span><span class="g-eq">=</span><span class="g-eng">salt</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-tl">/ bpen</span><span class="g-eq">=</span><span class="g-eng">turns to</span></span><span class="gloss-chip"><span class="g-thai">หนอน</span><span class="g-tl">/ nǎwn</span><span class="g-eq">=</span><span class="g-eng">maggots</span></span></div><div class="cultural-note">Betrayal by someone close, especially family</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-581">
@@ -474,9 +480,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">แกะดำ</div>
+          <div class="reveal-row row-thai">แกะดำ<div class="thai-translit">gàe dam</div></div>
           <div class="reveal-row row-english">Black sheep</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แกะ</span><span class="g-eq">=</span><span class="g-eng">sheep</span></span><span class="gloss-chip"><span class="g-thai">ดำ</span><span class="g-eq">=</span><span class="g-eng">black</span></span></div><div class="cultural-note">The odd one out; someone who acts differently from the group</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แกะ</span><span class="g-tl">/ gàe</span><span class="g-eq">=</span><span class="g-eng">sheep</span></span><span class="gloss-chip"><span class="g-thai">ดำ</span><span class="g-tl">/ dam</span><span class="g-eq">=</span><span class="g-eng">black</span></span></div><div class="cultural-note">The odd one out; someone who acts differently from the group</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-582">
@@ -489,9 +495,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">แขวนนวม</div>
+          <div class="reveal-row row-thai">แขวนนวม<div class="thai-translit">khwǎaen nuam</div></div>
           <div class="reveal-row row-english">Hang up the boxing gloves</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แขวน</span><span class="g-eq">=</span><span class="g-eng">hang up</span></span><span class="gloss-chip"><span class="g-thai">นวม</span><span class="g-eq">=</span><span class="g-eng">boxing gloves</span></span></div><div class="cultural-note">To retire or quit something</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แขวน</span><span class="g-tl">/ khwǎaen</span><span class="g-eq">=</span><span class="g-eng">hang up</span></span><span class="gloss-chip"><span class="g-thai">นวม</span><span class="g-tl">/ nuam</span><span class="g-eq">=</span><span class="g-eng">boxing gloves</span></span></div><div class="cultural-note">To retire or quit something</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-583">
@@ -504,9 +510,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">กว่าถั่วจะสุก งาก็ไหม้</div>
+          <div class="reveal-row row-thai">กว่าถั่วจะสุก งาก็ไหม้<div class="thai-translit">gwàa thùa jà sùk ngaa gâw mâi</div></div>
           <div class="reveal-row row-english">By the time the beans cook, the sesame burns</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กว่า</span><span class="g-eq">=</span><span class="g-eng">by the time</span></span><span class="gloss-chip"><span class="g-thai">ถั่ว</span><span class="g-eq">=</span><span class="g-eng">beans</span></span><span class="gloss-chip"><span class="g-thai">จะ</span><span class="g-eq">=</span><span class="g-eng">will</span></span><span class="gloss-chip"><span class="g-thai">สุก</span><span class="g-eq">=</span><span class="g-eng">cook</span></span><span class="gloss-chip"><span class="g-thai">งา</span><span class="g-eq">=</span><span class="g-eng">sesame</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">ไหม้</span><span class="g-eq">=</span><span class="g-eng">burns</span></span></div><div class="cultural-note">Being so indecisive that you lose on both fronts</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">กว่า</span><span class="g-tl">/ gwàa</span><span class="g-eq">=</span><span class="g-eng">by the time</span></span><span class="gloss-chip"><span class="g-thai">ถั่ว</span><span class="g-tl">/ thùa</span><span class="g-eq">=</span><span class="g-eng">beans</span></span><span class="gloss-chip"><span class="g-thai">จะ</span><span class="g-tl">/ jà</span><span class="g-eq">=</span><span class="g-eng">will</span></span><span class="gloss-chip"><span class="g-thai">สุก</span><span class="g-tl">/ sùk</span><span class="g-eq">=</span><span class="g-eng">cook</span></span><span class="gloss-chip"><span class="g-thai">งา</span><span class="g-tl">/ ngaa</span><span class="g-eq">=</span><span class="g-eng">sesame</span></span><span class="gloss-chip"><span class="g-thai">ก็</span><span class="g-tl">/ gâw</span><span class="g-eq">=</span><span class="g-eng">already</span></span><span class="gloss-chip"><span class="g-thai">ไหม้</span><span class="g-tl">/ mâi</span><span class="g-eq">=</span><span class="g-eng">burns</span></span></div><div class="cultural-note">Being so indecisive that you lose on both fronts</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-584">
@@ -519,9 +525,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ก่อแล้ว ต้องสาน</div>
+          <div class="reveal-row row-thai">ก่อแล้ว ต้องสาน<div class="thai-translit">gàw láaeo dtâwng sǎan</div></div>
           <div class="reveal-row row-english">Start it, must finish it</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ก่อ</span><span class="g-eq">=</span><span class="g-eng">start</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">then</span></span><span class="gloss-chip"><span class="g-thai">ต้อง</span><span class="g-eq">=</span><span class="g-eng">must</span></span><span class="gloss-chip"><span class="g-thai">สาน</span><span class="g-eq">=</span><span class="g-eng">weave on</span></span></div><div class="cultural-note">Once you've started something, you have to see it through</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ก่อ</span><span class="g-tl">/ gàw</span><span class="g-eq">=</span><span class="g-eng">start</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-tl">/ láaeo</span><span class="g-eq">=</span><span class="g-eng">then</span></span><span class="gloss-chip"><span class="g-thai">ต้อง</span><span class="g-tl">/ dtâwng</span><span class="g-eq">=</span><span class="g-eng">must</span></span><span class="gloss-chip"><span class="g-thai">สาน</span><span class="g-tl">/ sǎan</span><span class="g-eq">=</span><span class="g-eng">weave on</span></span></div><div class="cultural-note">Once you've started something, you have to see it through</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-585">
@@ -534,9 +540,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เข็นครกขึ้นเขา</div>
+          <div class="reveal-row row-thai">เข็นครกขึ้นเขา<div class="thai-translit">khěn khrók khûen kháo</div></div>
           <div class="reveal-row row-english">Pushing a mortar up a hill</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เข็น</span><span class="g-eq">=</span><span class="g-eng">push</span></span><span class="gloss-chip"><span class="g-thai">ครก</span><span class="g-eq">=</span><span class="g-eng">mortar</span></span><span class="gloss-chip"><span class="g-thai">ขึ้น</span><span class="g-eq">=</span><span class="g-eng">up</span></span><span class="gloss-chip"><span class="g-thai">เขา</span><span class="g-eq">=</span><span class="g-eng">hill</span></span></div><div class="cultural-note">Doing something extremely difficult; a Sisyphean task</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เข็น</span><span class="g-tl">/ khěn</span><span class="g-eq">=</span><span class="g-eng">push</span></span><span class="gloss-chip"><span class="g-thai">ครก</span><span class="g-tl">/ khrók</span><span class="g-eq">=</span><span class="g-eng">mortar</span></span><span class="gloss-chip"><span class="g-thai">ขึ้น</span><span class="g-tl">/ khûen</span><span class="g-eq">=</span><span class="g-eng">up</span></span><span class="gloss-chip"><span class="g-thai">เขา</span><span class="g-tl">/ kháo</span><span class="g-eq">=</span><span class="g-eng">hill</span></span></div><div class="cultural-note">Doing something extremely difficult; a Sisyphean task</div></div>
         </div>
       </div>
   </div>
@@ -566,34 +572,34 @@ window.ThaiEarTopic = {
   tier: "premium",
   audioPrefix: "Idiom_BEG",
   sentences: [
-  { num: 559, display: 1, preview: "กรรม", previewEn: "Karma",thai: "กรรมตามสนอง", english: "Karma follows and repays", gloss: [["กรรม", "karma"], ["ตาม", "follows"], ["สนอง", "repays"]], cultural: "You reap what you sow; what goes around comes around" },
-  { num: 560, display: 2, preview: "สมน้ำหน้า", previewEn: "deserve",thai: "สมน้ำหน้า", english: "You get what you deserve", gloss: [["สม", "serves"], ["น้ำหน้า", "your face"]], cultural: "Serves you right; said when someone suffers the consequences of their own actions" },
-  { num: 561, display: 3, preview: "หู", previewEn: "ear",thai: "เข้าหูซ้าย | ทะลุหูขวา", english: "In the left ear, out the right", gloss: [["เข้า", "enters"], ["หู", "ear"], ["ซ้าย", "left"], ["ทะลุ", "out through"], ["หู", "ear"], ["ขวา", "right"]], cultural: "Not taking in what you're told; advice going in one ear and out the other" },
-  { num: 562, display: 4, preview: "กำแพง", previewEn: "Walls",thai: "กำแพงมีหู | ประตูมีตา", english: "Walls have ears, doors have eyes", gloss: [["กำแพง", "wall"], ["มี", "has"], ["หู", "ears"], ["ประตู", "door"], ["มี", "has"], ["ตา", "eyes"]], cultural: "Be careful what you say; secrets get out" },
-  { num: 563, display: 5, preview: "ขนหัวลุก", previewEn: "Hair",thai: "ขนหัวลุก", english: "Hair standing up on the head", gloss: [["ขน", "hair"], ["หัว", "head"], ["ลุก", "stands up"]], cultural: "To get goosebumps; to be terrified" },
-  { num: 564, display: 6, preview: "กบ", previewEn: "Frog",thai: "กบในกะลาครอบ", english: "Frog under a coconut shell", gloss: [["กบ", "frog"], ["ใน", "under"], ["กะลา", "coconut shell"], ["ครอบ", "covering"]], cultural: "Someone with limited experience who thinks they know everything" },
-  { num: 565, display: 7, preview: "กระต่าย", previewEn: "hare",thai: "กระต่ายตื่นตูม", english: "The panicking hare", gloss: [["กระต่าย", "hare"], ["ตื่น", "startled"], ["ตูม", "(a bang)"]], cultural: "Someone who overreacts or panics without thinking first" },
-  { num: 566, display: 8, preview: "ปากหวาน", previewEn: "mouth",thai: "ปากหวาน", english: "Sweet mouth", gloss: [["ปาก", "mouth"], ["หวาน", "sweet"]], cultural: "A sweet-talker; someone who flatters people to get what they want" },
-  { num: 567, display: 9, preview: "ก้นเปรี้ยว", previewEn: "bottom",thai: "ปากหวาน | ก้นเปรี้ยว", english: "Sweet mouth, sour bottom", gloss: [["ปาก", "mouth"], ["หวาน", "sweet"], ["ก้น", "bottom"], ["เปรี้ยว", "sour"]], cultural: "Someone who says nice things but is insincere or two-faced" },
-  { num: 568, display: 10, preview: "กงเกวียน", previewEn: "cart wheel",thai: "กงเกวียน | กำเกวียน", english: "The cart wheel, the cart spokes", gloss: [["กง", "wheel rim"], ["เกวียน", "cart"], ["กำ", "spoke"], ["เกวียน", "cart"]], cultural: "What goes around comes around; karma repays in kind" },
-  { num: 569, display: 11, preview: "ใกล้เกลือ", previewEn: "Near salt",thai: "ใกล้เกลือ | กินด่าง", english: "Near salt but eating lye", gloss: [["ใกล้", "near"], ["เกลือ", "salt"], ["กิน", "eat"], ["ด่าง", "lye"]], cultural: "Not appreciating what you have right in front of you; overlooking the obvious and valuable" },
-  { num: 570, display: 12, preview: "ขี่ช้าง", previewEn: "Ride",thai: "ขี่ช้าง | จับตั๊กแตน", english: "Ride an elephant to catch a grasshopper", gloss: [["ขี่", "ride"], ["ช้าง", "elephant"], ["จับ", "catch"], ["ตั๊กแตน", "grasshopper"]], cultural: "Investing far too much effort or money on something trivial" },
-  { num: 571, display: 13, preview: "อดเปรี้ยว", previewEn: "Forego",thai: "อดเปรี้ยวไว้ | กินหวาน", english: "Forego the sour to eat the sweet", gloss: [["อด", "forgo"], ["เปรี้ยว", "the sour"], ["ไว้", "for later"], ["กิน", "eat"], ["หวาน", "the sweet"]], cultural: "Be patient now for better things later; good things come to those who wait" },
-  { num: 572, display: 14, preview: "หวาน", previewEn: "Sweet",thai: "หวานเป็นลม | ขมเป็นยา", english: "Sweet words are wind, bitter words are medicine", gloss: [["หวาน", "sweet"], ["เป็น", "is"], ["ลม", "wind"], ["ขม", "bitter"], ["เป็น", "is"], ["ยา", "medicine"]], cultural: "Honest criticism is more valuable than empty flattery" },
-  { num: 573, display: 15, preview: "ขายผ้า", previewEn: "Sell",thai: "ขายผ้า | เอาหน้ารอด", english: "Sell your clothes to save face", gloss: [["ขาย", "sell"], ["ผ้า", "clothes"], ["เอา", "take"], ["หน้า", "face"], ["รอด", "survive"]], cultural: "To sacrifice something real just to preserve appearances" },
-  { num: 574, display: 16, preview: "น้ำท่วม", previewEn: "floods",thai: "น้ำท่วมทุ่ง | ผักบุ้งโหรงเหรง", english: "The field floods but the morning glory is sparse", gloss: [["น้ำท่วม", "floods"], ["ทุ่ง", "field"], ["ผักบุ้ง", "morning glory"], ["โหรงเหรง", "sparse"]], cultural: "Talking a lot but saying very little; all talk, no content" },
-  { num: 575, display: 17, preview: "ข้าวใหม่", previewEn: "rice",thai: "ข้าวใหม่ | ปลามัน", english: "New rice, tasty fish", gloss: [["ข้าว", "rice"], ["ใหม่", "new"], ["ปลา", "fish"], ["มัน", "rich"]], cultural: "The honeymoon phase; something new always seems best" },
-  { num: 576, display: 18, preview: "ไก่อ่อน", previewEn: "chick",thai: "ไก่อ่อน", english: "Young chick", gloss: [["ไก่", "chicken"], ["อ่อน", "young"]], cultural: "Naive, inexperienced, easily fooled" },
-  { num: 577, display: 19, preview: "คาว", previewEn: "Not eating",thai: "กินคาวไม่กินหวาน | สันดานไพร่", english: "Not eating dessert is the character of a commoner", gloss: [["กิน", "eat"], ["คาว", "savoury"], ["ไม่", "not"], ["กิน", "eat"], ["หวาน", "sweet"], ["สันดาน", "nature"], ["ไพร่", "commoner"]], cultural: "Jokingly used as an excuse to eat dessert; there is always room for dessert" },
-  { num: 578, display: 20, preview: "ยามรัก", previewEn: "When in love",thai: "ยามรัก|น้ำต้มผักก็ว่าหวาน | ยามชัง|น้ำตาลก็ว่าขม", english: "When in love, vegetable broth tastes sweet; when you hate, sugar tastes bitter", gloss: [["ยาม", "when"], ["รัก", "in love"], ["น้ำต้ม", "broth"], ["ผัก", "vegetable"], ["ก็", "even"], ["ว่า", "seems"], ["หวาน", "sweet"], ["ยาม", "when"], ["ชัง", "hating"], ["น้ำตาล", "sugar"], ["ก็", "even"], ["ว่า", "seems"], ["ขม", "bitter"]], cultural: "Love and hate colour everything; love is blind" },
-  { num: 579, display: 21, preview: "กัด", previewEn: "Biting",thai: "กัดหางตัวเอง", english: "Biting one's own tail", gloss: [["กัด", "bite"], ["หาง", "tail"], ["ตัวเอง", "one's own"]], cultural: "Talking in circles; contradicting yourself; an argument that defeats itself" },
-  { num: 580, display: 22, preview: "เกลือ", previewEn: "Salt",thai: "เกลือเป็นหนอน", english: "Salt turning into maggots", gloss: [["เกลือ", "salt"], ["เป็น", "turns to"], ["หนอน", "maggots"]], cultural: "Betrayal by someone close, especially family" },
-  { num: 581, display: 23, preview: "แกะดำ", previewEn: "sheep",thai: "แกะดำ", english: "Black sheep", gloss: [["แกะ", "sheep"], ["ดำ", "black"]], cultural: "The odd one out; someone who acts differently from the group" },
-  { num: 582, display: 24, preview: "แขวนนวม", previewEn: "Hang up",thai: "แขวนนวม", english: "Hang up the boxing gloves", gloss: [["แขวน", "hang up"], ["นวม", "boxing gloves"]], cultural: "To retire or quit something" },
-  { num: 583, display: 25, preview: "ถั่ว", previewEn: "beans",thai: "กว่าถั่วจะสุก | งาก็ไหม้", english: "By the time the beans cook, the sesame burns", gloss: [["กว่า", "by the time"], ["ถั่ว", "beans"], ["จะ", "will"], ["สุก", "cook"], ["งา", "sesame"], ["ก็", "already"], ["ไหม้", "burns"]], cultural: "Being so indecisive that you lose on both fronts" },
-  { num: 584, display: 26, preview: "ก่อ", previewEn: "Start",thai: "ก่อแล้ว | ต้องสาน", english: "Start it, must finish it", gloss: [["ก่อ", "start"], ["แล้ว", "then"], ["ต้อง", "must"], ["สาน", "weave on"]], cultural: "Once you've started something, you have to see it through" },
-  { num: 585, display: 27, preview: "เข็น", previewEn: "Pushing",thai: "เข็นครกขึ้นเขา", english: "Pushing a mortar up a hill", gloss: [["เข็น", "push"], ["ครก", "mortar"], ["ขึ้น", "up"], ["เขา", "hill"]], cultural: "Doing something extremely difficult; a Sisyphean task" },
-]
+  {"num":559,"display":1,"preview":"กรรม","previewEn":"Karma","thai":"กรรมตามสนอง","translit":"gam dtaam sà-nǎwng","english":"Karma follows and repays","gloss":[["กรรม","karma","gam"],["ตาม","follows","dtaam"],["สนอง","repays","sà-nǎwng"]],"cultural":"You reap what you sow; what goes around comes around"},
+  {"num":560,"display":2,"preview":"สมน้ำหน้า","previewEn":"deserve","thai":"สมน้ำหน้า","translit":"sǒm nám-nâa","english":"You get what you deserve","gloss":[["สม","serves","sǒm"],["น้ำหน้า","your face","nám-nâa"]],"cultural":"Serves you right; said when someone suffers the consequences of their own actions"},
+  {"num":561,"display":3,"preview":"หู","previewEn":"ear","thai":"เข้าหูซ้าย | ทะลุหูขวา","translit":"khâo hǔu sáai | thá-lú hǔu khwǎa","english":"In the left ear, out the right","gloss":[["เข้า","enters","khâo"],["หู","ear","hǔu"],["ซ้าย","left","sáai"],["ทะลุ","out through","thá-lú"],["หู","ear","hǔu"],["ขวา","right","khwǎa"]],"cultural":"Not taking in what you're told; advice going in one ear and out the other"},
+  {"num":562,"display":4,"preview":"กำแพง","previewEn":"Walls","thai":"กำแพงมีหู | ประตูมีตา","translit":"gam-phaaeng mii hǔu | bprà-dtuu mii dtaa","english":"Walls have ears, doors have eyes","gloss":[["กำแพง","wall","gam-phaaeng"],["มี","has","mii"],["หู","ears","hǔu"],["ประตู","door","bprà-dtuu"],["มี","has","mii"],["ตา","eyes","dtaa"]],"cultural":"Be careful what you say; secrets get out"},
+  {"num":563,"display":5,"preview":"ขนหัวลุก","previewEn":"Hair","thai":"ขนหัวลุก","translit":"khǒn hǔa lúk","english":"Hair standing up on the head","gloss":[["ขน","hair","khǒn"],["หัว","head","hǔa"],["ลุก","stands up","lúk"]],"cultural":"To get goosebumps; to be terrified"},
+  {"num":564,"display":6,"preview":"กบ","previewEn":"Frog","thai":"กบในกะลาครอบ","translit":"gòp nai gà-laa khrâwp","english":"Frog under a coconut shell","gloss":[["กบ","frog","gòp"],["ใน","under","nai"],["กะลา","coconut shell","gà-laa"],["ครอบ","covering","khrâwp"]],"cultural":"Someone with limited experience who thinks they know everything"},
+  {"num":565,"display":7,"preview":"กระต่าย","previewEn":"hare","thai":"กระต่ายตื่นตูม","translit":"grà-dtàai dtùuen dtuum","english":"The panicking hare","gloss":[["กระต่าย","hare","grà-dtàai"],["ตื่น","startled","dtùuen"],["ตูม","(a bang)","dtuum"]],"cultural":"Someone who overreacts or panics without thinking first"},
+  {"num":566,"display":8,"preview":"ปากหวาน","previewEn":"mouth","thai":"ปากหวาน","translit":"bpàak wǎan","english":"Sweet mouth","gloss":[["ปาก","mouth","bpàak"],["หวาน","sweet","wǎan"]],"cultural":"A sweet-talker; someone who flatters people to get what they want"},
+  {"num":567,"display":9,"preview":"ก้นเปรี้ยว","previewEn":"bottom","thai":"ปากหวาน | ก้นเปรี้ยว","translit":"bpàak wǎan | gôn bprîao","english":"Sweet mouth, sour bottom","gloss":[["ปาก","mouth","bpàak"],["หวาน","sweet","wǎan"],["ก้น","bottom","gôn"],["เปรี้ยว","sour","bprîao"]],"cultural":"Someone who says nice things but is insincere or two-faced"},
+  {"num":568,"display":10,"preview":"กงเกวียน","previewEn":"cart wheel","thai":"กงเกวียน | กำเกวียน","translit":"gong gwian | gam gwian","english":"The cart wheel, the cart spokes","gloss":[["กง","wheel rim","gong"],["เกวียน","cart","gwian"],["กำ","spoke","gam"],["เกวียน","cart","gwian"]],"cultural":"What goes around comes around; karma repays in kind"},
+  {"num":569,"display":11,"preview":"ใกล้เกลือ","previewEn":"Near salt","thai":"ใกล้เกลือ | กินด่าง","translit":"glâi gluea | gin dàang","english":"Near salt but eating lye","gloss":[["ใกล้","near","glâi"],["เกลือ","salt","gluea"],["กิน","eat","gin"],["ด่าง","lye","dàang"]],"cultural":"Not appreciating what you have right in front of you; overlooking the obvious and valuable"},
+  {"num":570,"display":12,"preview":"ขี่ช้าง","previewEn":"Ride","thai":"ขี่ช้าง | จับตั๊กแตน","translit":"khìi cháang | jàp dták-gà-dtaaen","english":"Ride an elephant to catch a grasshopper","gloss":[["ขี่","ride","khìi"],["ช้าง","elephant","cháang"],["จับ","catch","jàp"],["ตั๊กแตน","grasshopper","dták-gà-dtaaen"]],"cultural":"Investing far too much effort or money on something trivial"},
+  {"num":571,"display":13,"preview":"อดเปรี้ยว","previewEn":"Forego","thai":"อดเปรี้ยวไว้ | กินหวาน","translit":"òt bprîao wái | gin wǎan","english":"Forego the sour to eat the sweet","gloss":[["อด","forgo","òt"],["เปรี้ยว","the sour","bprîao"],["ไว้","for later","wái"],["กิน","eat","gin"],["หวาน","the sweet","wǎan"]],"cultural":"Be patient now for better things later; good things come to those who wait"},
+  {"num":572,"display":14,"preview":"หวาน","previewEn":"Sweet","thai":"หวานเป็นลม | ขมเป็นยา","translit":"wǎan bpen lom | khǒm bpen yaa","english":"Sweet words are wind, bitter words are medicine","gloss":[["หวาน","sweet","wǎan"],["เป็น","is","bpen"],["ลม","wind","lom"],["ขม","bitter","khǒm"],["เป็น","is","bpen"],["ยา","medicine","yaa"]],"cultural":"Honest criticism is more valuable than empty flattery"},
+  {"num":573,"display":15,"preview":"ขายผ้า","previewEn":"Sell","thai":"ขายผ้า | เอาหน้ารอด","translit":"khǎai phâa | ao nâa râwt","english":"Sell your clothes to save face","gloss":[["ขาย","sell","khǎai"],["ผ้า","clothes","phâa"],["เอา","take","ao"],["หน้า","face","nâa"],["รอด","survive","râwt"]],"cultural":"To sacrifice something real just to preserve appearances"},
+  {"num":574,"display":16,"preview":"น้ำท่วม","previewEn":"floods","thai":"น้ำท่วมทุ่ง | ผักบุ้งโหรงเหรง","translit":"nám-thûam thûng | phàk-bûng rǒong-rěeng","english":"The field floods but the morning glory is sparse","gloss":[["น้ำท่วม","floods","nám-thûam"],["ทุ่ง","field","thûng"],["ผักบุ้ง","morning glory","phàk-bûng"],["โหรงเหรง","sparse","rǒong-rěeng"]],"cultural":"Talking a lot but saying very little; all talk, no content"},
+  {"num":575,"display":17,"preview":"ข้าวใหม่","previewEn":"rice","thai":"ข้าวใหม่ | ปลามัน","translit":"khâao mài | bplaa man","english":"New rice, tasty fish","gloss":[["ข้าว","rice","khâao"],["ใหม่","new","mài"],["ปลา","fish","bplaa"],["มัน","rich","man"]],"cultural":"The honeymoon phase; something new always seems best"},
+  {"num":576,"display":18,"preview":"ไก่อ่อน","previewEn":"chick","thai":"ไก่อ่อน","translit":"gài àwn","english":"Young chick","gloss":[["ไก่","chicken","gài"],["อ่อน","young","àwn"]],"cultural":"Naive, inexperienced, easily fooled"},
+  {"num":577,"display":19,"preview":"คาว","previewEn":"Not eating","thai":"กินคาวไม่กินหวาน | สันดานไพร่","translit":"gin khaao mâi gin wǎan | sǎn-daan phrâi","english":"Not eating dessert is the character of a commoner","gloss":[["กิน","eat","gin"],["คาว","savoury","khaao"],["ไม่","not","mâi"],["กิน","eat","gin"],["หวาน","sweet","wǎan"],["สันดาน","nature","sǎn-daan"],["ไพร่","commoner","phrâi"]],"cultural":"Jokingly used as an excuse to eat dessert; there is always room for dessert"},
+  {"num":578,"display":20,"preview":"ยามรัก","previewEn":"When in love","thai":"ยามรัก|น้ำต้มผักก็ว่าหวาน | ยามชัง|น้ำตาลก็ว่าขม","translit":"yaam rák | nám-dtôm phàk gâw wâa wǎan | yaam chang | nám-dtaan gâw wâa khǒm","english":"When in love, vegetable broth tastes sweet; when you hate, sugar tastes bitter","gloss":[["ยาม","when","yaam"],["รัก","in love","rák"],["น้ำต้ม","broth","nám-dtôm"],["ผัก","vegetable","phàk"],["ก็","even","gâw"],["ว่า","seems","wâa"],["หวาน","sweet","wǎan"],["ยาม","when","yaam"],["ชัง","hating","chang"],["น้ำตาล","sugar","nám-dtaan"],["ก็","even","gâw"],["ว่า","seems","wâa"],["ขม","bitter","khǒm"]],"cultural":"Love and hate colour everything; love is blind"},
+  {"num":579,"display":21,"preview":"กัด","previewEn":"Biting","thai":"กัดหางตัวเอง","translit":"gàt hǎang dtua-eeng","english":"Biting one's own tail","gloss":[["กัด","bite","gàt"],["หาง","tail","hǎang"],["ตัวเอง","one's own","dtua-eeng"]],"cultural":"Talking in circles; contradicting yourself; an argument that defeats itself"},
+  {"num":580,"display":22,"preview":"เกลือ","previewEn":"Salt","thai":"เกลือเป็นหนอน","translit":"gluea bpen nǎwn","english":"Salt turning into maggots","gloss":[["เกลือ","salt","gluea"],["เป็น","turns to","bpen"],["หนอน","maggots","nǎwn"]],"cultural":"Betrayal by someone close, especially family"},
+  {"num":581,"display":23,"preview":"แกะดำ","previewEn":"sheep","thai":"แกะดำ","translit":"gàe dam","english":"Black sheep","gloss":[["แกะ","sheep","gàe"],["ดำ","black","dam"]],"cultural":"The odd one out; someone who acts differently from the group"},
+  {"num":582,"display":24,"preview":"แขวนนวม","previewEn":"Hang up","thai":"แขวนนวม","translit":"khwǎaen nuam","english":"Hang up the boxing gloves","gloss":[["แขวน","hang up","khwǎaen"],["นวม","boxing gloves","nuam"]],"cultural":"To retire or quit something"},
+  {"num":583,"display":25,"preview":"ถั่ว","previewEn":"beans","thai":"กว่าถั่วจะสุก | งาก็ไหม้","translit":"gwàa thùa jà sùk | ngaa gâw mâi","english":"By the time the beans cook, the sesame burns","gloss":[["กว่า","by the time","gwàa"],["ถั่ว","beans","thùa"],["จะ","will","jà"],["สุก","cook","sùk"],["งา","sesame","ngaa"],["ก็","already","gâw"],["ไหม้","burns","mâi"]],"cultural":"Being so indecisive that you lose on both fronts"},
+  {"num":584,"display":26,"preview":"ก่อ","previewEn":"Start","thai":"ก่อแล้ว | ต้องสาน","translit":"gàw láaeo | dtâwng sǎan","english":"Start it, must finish it","gloss":[["ก่อ","start","gàw"],["แล้ว","then","láaeo"],["ต้อง","must","dtâwng"],["สาน","weave on","sǎan"]],"cultural":"Once you've started something, you have to see it through"},
+  {"num":585,"display":27,"preview":"เข็น","previewEn":"Pushing","thai":"เข็นครกขึ้นเขา","translit":"khěn khrók khûen kháo","english":"Pushing a mortar up a hill","gloss":[["เข็น","push","khěn"],["ครก","mortar","khrók"],["ขึ้น","up","khûen"],["เขา","hill","kháo"]],"cultural":"Doing something extremely difficult; a Sisyphean task"}
+  ]
 };
 </script>
 <script src="app-cta.js" defer></script>

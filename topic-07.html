@@ -59,6 +59,12 @@
   #sentence-list.dir-et .pv-th.pv-only, html.te-dir-et #sentence-list .pv-th.pv-only { display: inline; }
   #sentence-list.dir-et .pv-en,         html.te-dir-et #sentence-list .pv-en { display: inline; }
   /* pill:end */
+  /* Transliteration (topics shipping per-sentence 'translit', currently 01–03): the line lives
+     INSIDE row-thai so it reveals/collapses with the Thai script in both TE and ET directions.
+     Default ON; player.js's pill adds .translit-off on #sentence-list to hide it. */
+  .thai-translit { font-family: var(--font-ui); font-size: 13px; color: var(--text-tertiary); line-height: 1.55; margin-top: 1px; }
+  .g-tl { color: var(--text-secondary); margin-left: 4px; }
+  #sentence-list.translit-off .thai-translit, #sentence-list.translit-off .g-tl { display: none; }
 </style>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -144,9 +150,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันนี้วันอะไรคะ</div>
+          <div class="reveal-row row-thai">วันนี้วันอะไรคะ<div class="thai-translit">wan-níi wan à-rai khá</div></div>
           <div class="reveal-row row-english">What day is it today?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันนี้</span><span class="g-eq">=</span><span class="g-eng">today</span></span><span class="gloss-chip"><span class="g-thai">วันอะไร</span><span class="g-eq">=</span><span class="g-eng">what day</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันนี้</span><span class="g-tl">/ wan-níi</span><span class="g-eq">=</span><span class="g-eng">today</span></span><span class="gloss-chip"><span class="g-thai">วันอะไร</span><span class="g-tl">/ wan à-rai</span><span class="g-eq">=</span><span class="g-eng">what day</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-137">
@@ -159,9 +165,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ประชุมวันจันทร์นี้นะคะ</div>
+          <div class="reveal-row row-thai">ประชุมวันจันทร์นี้นะคะ<div class="thai-translit">bprà-chum wan jan níi ná khá</div></div>
           <div class="reveal-row row-english">The meeting is this Monday.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ประชุม</span><span class="g-eq">=</span><span class="g-eng">meeting</span></span><span class="gloss-chip"><span class="g-thai">วันจันทร์</span><span class="g-eq">=</span><span class="g-eng">Monday</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Thai weekday names all begin with วัน (day): วันจันทร์ (Mon), วันอังคาร (Tue), and so on.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ประชุม</span><span class="g-tl">/ bprà-chum</span><span class="g-eq">=</span><span class="g-eng">meeting</span></span><span class="gloss-chip"><span class="g-thai">วันจันทร์</span><span class="g-tl">/ wan jan</span><span class="g-eq">=</span><span class="g-eng">Monday</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-tl">/ níi</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Thai weekday names all begin with วัน (day): วันจันทร์ (Mon), วันอังคาร (Tue), and so on.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-138">
@@ -174,9 +180,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ร้านนี้เปิดทุกวัน ยกเว้นวันอังคารค่ะ</div>
+          <div class="reveal-row row-thai">ร้านนี้เปิดทุกวัน ยกเว้นวันอังคารค่ะ<div class="thai-translit">ráan níi bpèrt thúk wan yók-wén wan ang-khaan khâ</div></div>
           <div class="reveal-row row-english">This shop is open every day except Tuesday.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ร้าน</span><span class="g-eq">=</span><span class="g-eng">shop</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">เปิด</span><span class="g-eq">=</span><span class="g-eng">open</span></span><span class="gloss-chip"><span class="g-thai">ทุกวัน</span><span class="g-eq">=</span><span class="g-eng">every day</span></span><span class="gloss-chip"><span class="g-thai">ยกเว้น</span><span class="g-eq">=</span><span class="g-eng">except</span></span><span class="gloss-chip"><span class="g-thai">วันอังคาร</span><span class="g-eq">=</span><span class="g-eng">Tuesday</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ร้าน</span><span class="g-tl">/ ráan</span><span class="g-eq">=</span><span class="g-eng">shop</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-tl">/ níi</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">เปิด</span><span class="g-tl">/ bpèrt</span><span class="g-eq">=</span><span class="g-eng">open</span></span><span class="gloss-chip"><span class="g-thai">ทุกวัน</span><span class="g-tl">/ thúk wan</span><span class="g-eq">=</span><span class="g-eng">every day</span></span><span class="gloss-chip"><span class="g-thai">ยกเว้น</span><span class="g-tl">/ yók-wén</span><span class="g-eq">=</span><span class="g-eng">except</span></span><span class="gloss-chip"><span class="g-thai">วันอังคาร</span><span class="g-tl">/ wan ang-khaan</span><span class="g-eq">=</span><span class="g-eng">Tuesday</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-139">
@@ -189,9 +195,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันพุธรถตู้ออกตีห้าครับ</div>
+          <div class="reveal-row row-thai">วันพุธรถตู้ออกตีห้าครับ<div class="thai-translit">wan phút rót-dtûu àwk dtii hâa khráp</div></div>
           <div class="reveal-row row-english">On Wednesday the van leaves at 5am.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันพุธ</span><span class="g-eq">=</span><span class="g-eng">Wednesday</span></span><span class="gloss-chip"><span class="g-thai">รถตู้</span><span class="g-eq">=</span><span class="g-eng">minivan</span></span><span class="gloss-chip"><span class="g-thai">ออก</span><span class="g-eq">=</span><span class="g-eng">leave / depart</span></span><span class="gloss-chip"><span class="g-thai">ตีห้า</span><span class="g-eq">=</span><span class="g-eng">5am</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ตี + a number gives the small hours: ตีหนึ่ง = 1am up to ตีห้า = 5am.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันพุธ</span><span class="g-tl">/ wan phút</span><span class="g-eq">=</span><span class="g-eng">Wednesday</span></span><span class="gloss-chip"><span class="g-thai">รถตู้</span><span class="g-tl">/ rót-dtûu</span><span class="g-eq">=</span><span class="g-eng">minivan</span></span><span class="gloss-chip"><span class="g-thai">ออก</span><span class="g-tl">/ àwk</span><span class="g-eq">=</span><span class="g-eng">leave / depart</span></span><span class="gloss-chip"><span class="g-thai">ตีห้า</span><span class="g-tl">/ dtii hâa</span><span class="g-eq">=</span><span class="g-eng">5am</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">ตี + a number gives the small hours: ตีหนึ่ง = 1am up to ตีห้า = 5am.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-140">
@@ -204,9 +210,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันพฤหัสนี้วันหยุดหรือเปล่าคะ</div>
+          <div class="reveal-row row-thai">วันพฤหัสนี้วันหยุดหรือเปล่าคะ<div class="thai-translit">wan phá-rúe-hàt níi wan yùt rǔue bplào khá</div></div>
           <div class="reveal-row row-english">Is this Thursday a day off?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันพฤหัส</span><span class="g-eq">=</span><span class="g-eng">Thursday</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">วันหยุด</span><span class="g-eq">=</span><span class="g-eng">day off / holiday</span></span><span class="gloss-chip"><span class="g-thai">หรือเปล่า</span><span class="g-eq">=</span><span class="g-eng">yes-no question marker</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Full form is วันพฤหัสบดี; วันพฤหัส is the everyday short form.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันพฤหัส</span><span class="g-tl">/ wan phá-rúe-hàt</span><span class="g-eq">=</span><span class="g-eng">Thursday</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-tl">/ níi</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">วันหยุด</span><span class="g-tl">/ wan yùt</span><span class="g-eq">=</span><span class="g-eng">day off / holiday</span></span><span class="gloss-chip"><span class="g-thai">หรือเปล่า</span><span class="g-tl">/ rǔue bplào</span><span class="g-eq">=</span><span class="g-eng">yes-no question marker</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Full form is วันพฤหัสบดี; วันพฤหัส is the everyday short form.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-141">
@@ -219,9 +225,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">หนังสือต้องคืนภายในวันศุกร์นะคะ</div>
+          <div class="reveal-row row-thai">หนังสือต้องคืนภายในวันศุกร์นะคะ<div class="thai-translit">nǎng-sǔue dtâwng khuuen phaai-nai wan sùk ná khá</div></div>
           <div class="reveal-row row-english">The book has to be returned by Friday.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">หนังสือ</span><span class="g-eq">=</span><span class="g-eng">book</span></span><span class="gloss-chip"><span class="g-thai">ต้อง</span><span class="g-eq">=</span><span class="g-eng">must</span></span><span class="gloss-chip"><span class="g-thai">คืน</span><span class="g-eq">=</span><span class="g-eng">return (something) — not คืน "night"</span></span><span class="gloss-chip"><span class="g-thai">ภายใน</span><span class="g-eq">=</span><span class="g-eng">within / by</span></span><span class="gloss-chip"><span class="g-thai">วันศุกร์</span><span class="g-eq">=</span><span class="g-eng">Friday</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">หนังสือ</span><span class="g-tl">/ nǎng-sǔue</span><span class="g-eq">=</span><span class="g-eng">book</span></span><span class="gloss-chip"><span class="g-thai">ต้อง</span><span class="g-tl">/ dtâwng</span><span class="g-eq">=</span><span class="g-eng">must</span></span><span class="gloss-chip"><span class="g-thai">คืน</span><span class="g-tl">/ khuuen</span><span class="g-eq">=</span><span class="g-eng">return (something) — not คืน "night"</span></span><span class="gloss-chip"><span class="g-thai">ภายใน</span><span class="g-tl">/ phaai-nai</span><span class="g-eq">=</span><span class="g-eng">within / by</span></span><span class="gloss-chip"><span class="g-thai">วันศุกร์</span><span class="g-tl">/ wan sùk</span><span class="g-eq">=</span><span class="g-eng">Friday</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-142">
@@ -234,9 +240,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">งานวันเสาร์เริ่มกี่โมง แล้วก็เลิกกี่โมงคะ</div>
+          <div class="reveal-row row-thai">งานวันเสาร์เริ่มกี่โมง แล้วก็เลิกกี่โมงคะ<div class="thai-translit">ngaan wan sǎo rêrm gìi moong láaeo gâw lêrk gìi moong khá</div></div>
           <div class="reveal-row row-english">What time does Saturday's event start and finish?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">งาน</span><span class="g-eq">=</span><span class="g-eng">event</span></span><span class="gloss-chip"><span class="g-thai">วันเสาร์</span><span class="g-eq">=</span><span class="g-eng">Saturday</span></span><span class="gloss-chip"><span class="g-thai">เริ่ม</span><span class="g-eq">=</span><span class="g-eng">start</span></span><span class="gloss-chip"><span class="g-thai">กี่โมง</span><span class="g-eq">=</span><span class="g-eng">what time</span></span><span class="gloss-chip"><span class="g-thai">แล้วก็</span><span class="g-eq">=</span><span class="g-eng">and then</span></span><span class="gloss-chip"><span class="g-thai">เลิก</span><span class="g-eq">=</span><span class="g-eng">finish / end</span></span><span class="gloss-chip"><span class="g-thai">กี่โมง</span><span class="g-eq">=</span><span class="g-eng">what time</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">งาน</span><span class="g-tl">/ ngaan</span><span class="g-eq">=</span><span class="g-eng">event</span></span><span class="gloss-chip"><span class="g-thai">วันเสาร์</span><span class="g-tl">/ wan sǎo</span><span class="g-eq">=</span><span class="g-eng">Saturday</span></span><span class="gloss-chip"><span class="g-thai">เริ่ม</span><span class="g-tl">/ rêrm</span><span class="g-eq">=</span><span class="g-eng">start</span></span><span class="gloss-chip"><span class="g-thai">กี่โมง</span><span class="g-tl">/ gìi moong</span><span class="g-eq">=</span><span class="g-eng">what time</span></span><span class="gloss-chip"><span class="g-thai">แล้วก็</span><span class="g-tl">/ láaeo gâw</span><span class="g-eq">=</span><span class="g-eng">and then</span></span><span class="gloss-chip"><span class="g-thai">เลิก</span><span class="g-tl">/ lêrk</span><span class="g-eq">=</span><span class="g-eng">finish / end</span></span><span class="gloss-chip"><span class="g-thai">กี่โมง</span><span class="g-tl">/ gìi moong</span><span class="g-eq">=</span><span class="g-eng">what time</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-143">
@@ -249,9 +255,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันนี้วันอาทิตย์ ไปวัดกันเถอะครับ</div>
+          <div class="reveal-row row-thai">วันนี้วันอาทิตย์ ไปวัดกันเถอะครับ<div class="thai-translit">wan-níi wan aa-thít bpai wát gan thùh khráp</div></div>
           <div class="reveal-row row-english">Today is Sunday — let's go to the temple.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันนี้</span><span class="g-eq">=</span><span class="g-eng">today</span></span><span class="gloss-chip"><span class="g-thai">วันอาทิตย์</span><span class="g-eq">=</span><span class="g-eng">Sunday</span></span><span class="gloss-chip"><span class="g-thai">ไปวัด</span><span class="g-eq">=</span><span class="g-eng">go to the temple</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-eq">=</span><span class="g-eng">together</span></span><span class="gloss-chip"><span class="g-thai">เถอะ</span><span class="g-eq">=</span><span class="g-eng">let's</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Many Thais make merit at the temple (วัด) at weekends and on Buddhist holy days.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันนี้</span><span class="g-tl">/ wan-níi</span><span class="g-eq">=</span><span class="g-eng">today</span></span><span class="gloss-chip"><span class="g-thai">วันอาทิตย์</span><span class="g-tl">/ wan aa-thít</span><span class="g-eq">=</span><span class="g-eng">Sunday</span></span><span class="gloss-chip"><span class="g-thai">ไปวัด</span><span class="g-tl">/ bpai wát</span><span class="g-eq">=</span><span class="g-eng">go to the temple</span></span><span class="gloss-chip"><span class="g-thai">กัน</span><span class="g-tl">/ gan</span><span class="g-eq">=</span><span class="g-eng">together</span></span><span class="gloss-chip"><span class="g-thai">เถอะ</span><span class="g-tl">/ thùh</span><span class="g-eq">=</span><span class="g-eng">let's</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Many Thais make merit at the temple (วัด) at weekends and on Buddhist holy days.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-148">
@@ -264,9 +270,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เสาร์อาทิตย์ไปรษณีย์ปิดครับ</div>
+          <div class="reveal-row row-thai">เสาร์อาทิตย์ไปรษณีย์ปิดครับ<div class="thai-translit">sǎo aa-thít bprai-sà-nii bpìt khráp</div></div>
           <div class="reveal-row row-english">The post office is closed at weekends.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เสาร์อาทิตย์</span><span class="g-eq">=</span><span class="g-eng">weekend (Sat–Sun)</span></span><span class="gloss-chip"><span class="g-thai">ไปรษณีย์</span><span class="g-eq">=</span><span class="g-eng">post office</span></span><span class="gloss-chip"><span class="g-thai">ปิด</span><span class="g-eq">=</span><span class="g-eng">closed</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เสาร์อาทิตย์</span><span class="g-tl">/ sǎo aa-thít</span><span class="g-eq">=</span><span class="g-eng">weekend (Sat–Sun)</span></span><span class="gloss-chip"><span class="g-thai">ไปรษณีย์</span><span class="g-tl">/ bprai-sà-nii</span><span class="g-eq">=</span><span class="g-eng">post office</span></span><span class="gloss-chip"><span class="g-thai">ปิด</span><span class="g-tl">/ bpìt</span><span class="g-eq">=</span><span class="g-eng">closed</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-150">
@@ -279,9 +285,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เมื่อวานไปหาแฟนมาค่ะ</div>
+          <div class="reveal-row row-thai">เมื่อวานไปหาแฟนมาค่ะ<div class="thai-translit">mûea-waan bpai hǎa faaen maa khâ</div></div>
           <div class="reveal-row row-english">I went to see my boyfriend yesterday.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เมื่อวาน</span><span class="g-eq">=</span><span class="g-eng">yesterday</span></span><span class="gloss-chip"><span class="g-thai">ไปหา</span><span class="g-eq">=</span><span class="g-eng">go to see / visit</span></span><span class="gloss-chip"><span class="g-thai">แฟน</span><span class="g-eq">=</span><span class="g-eng">boyfriend / partner</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-eq">=</span><span class="g-eng">(and came back)</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">แฟน covers boyfriend, girlfriend, or partner — gender comes from context.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เมื่อวาน</span><span class="g-tl">/ mûea-waan</span><span class="g-eq">=</span><span class="g-eng">yesterday</span></span><span class="gloss-chip"><span class="g-thai">ไปหา</span><span class="g-tl">/ bpai hǎa</span><span class="g-eq">=</span><span class="g-eng">go to see / visit</span></span><span class="gloss-chip"><span class="g-thai">แฟน</span><span class="g-tl">/ faaen</span><span class="g-eq">=</span><span class="g-eng">boyfriend / partner</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-tl">/ maa</span><span class="g-eq">=</span><span class="g-eng">(and came back)</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">แฟน covers boyfriend, girlfriend, or partner — gender comes from context.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-156">
@@ -294,9 +300,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">พรุ่งนี้ผมมีนัดหมอตอนบ่ายโมงครับ</div>
+          <div class="reveal-row row-thai">พรุ่งนี้ผมมีนัดหมอตอนบ่ายโมงครับ<div class="thai-translit">phrûng-níi phǒm mii nát mǎw dtawn bàai moong khráp</div></div>
           <div class="reveal-row row-english">I have a doctor's appointment at 1pm tomorrow.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">พรุ่งนี้</span><span class="g-eq">=</span><span class="g-eng">tomorrow</span></span><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">มีนัด</span><span class="g-eq">=</span><span class="g-eng">have an appointment</span></span><span class="gloss-chip"><span class="g-thai">หมอ</span><span class="g-eq">=</span><span class="g-eng">doctor</span></span><span class="gloss-chip"><span class="g-thai">ตอน</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">บ่ายโมง</span><span class="g-eq">=</span><span class="g-eng">1pm</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">บ่ายโมง = 1pm — the one บ่าย hour with no number before โมง.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">พรุ่งนี้</span><span class="g-tl">/ phrûng-níi</span><span class="g-eq">=</span><span class="g-eng">tomorrow</span></span><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-tl">/ phǒm</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">มีนัด</span><span class="g-tl">/ mii nát</span><span class="g-eq">=</span><span class="g-eng">have an appointment</span></span><span class="gloss-chip"><span class="g-thai">หมอ</span><span class="g-tl">/ mǎw</span><span class="g-eq">=</span><span class="g-eng">doctor</span></span><span class="gloss-chip"><span class="g-thai">ตอน</span><span class="g-tl">/ dtawn</span><span class="g-eq">=</span><span class="g-eng">when</span></span><span class="gloss-chip"><span class="g-thai">บ่ายโมง</span><span class="g-tl">/ bàai moong</span><span class="g-eq">=</span><span class="g-eng">1pm</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">บ่ายโมง = 1pm — the one บ่าย hour with no number before โมง.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-157">
@@ -309,9 +315,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ขอเลื่อนนัดเป็นอาทิตย์หน้าได้ไหมคะ</div>
+          <div class="reveal-row row-thai">ขอเลื่อนนัดเป็นอาทิตย์หน้าได้ไหมคะ<div class="thai-translit">khǎw lûean nát bpen aa-thít nâa dâi mǎi khá</div></div>
           <div class="reveal-row row-english">Could I move the appointment to next week?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขอ</span><span class="g-eq">=</span><span class="g-eng">may I / request</span></span><span class="gloss-chip"><span class="g-thai">เลื่อน</span><span class="g-eq">=</span><span class="g-eng">postpone / move</span></span><span class="gloss-chip"><span class="g-thai">นัด</span><span class="g-eq">=</span><span class="g-eng">appointment</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-eq">=</span><span class="g-eng">is</span></span><span class="gloss-chip"><span class="g-thai">อาทิตย์หน้า</span><span class="g-eq">=</span><span class="g-eng">next week</span></span><span class="gloss-chip"><span class="g-thai">ได้ไหม</span><span class="g-eq">=</span><span class="g-eng">can I / is it possible</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ขอ</span><span class="g-tl">/ khǎw</span><span class="g-eq">=</span><span class="g-eng">may I / request</span></span><span class="gloss-chip"><span class="g-thai">เลื่อน</span><span class="g-tl">/ lûean</span><span class="g-eq">=</span><span class="g-eng">postpone / move</span></span><span class="gloss-chip"><span class="g-thai">นัด</span><span class="g-tl">/ nát</span><span class="g-eq">=</span><span class="g-eng">appointment</span></span><span class="gloss-chip"><span class="g-thai">เป็น</span><span class="g-tl">/ bpen</span><span class="g-eq">=</span><span class="g-eng">is</span></span><span class="gloss-chip"><span class="g-thai">อาทิตย์หน้า</span><span class="g-tl">/ aa-thít nâa</span><span class="g-eq">=</span><span class="g-eng">next week</span></span><span class="gloss-chip"><span class="g-thai">ได้ไหม</span><span class="g-tl">/ dâi mǎi</span><span class="g-eq">=</span><span class="g-eng">can I / is it possible</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-151">
@@ -324,9 +330,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">แล้วเจอกันเดือนหน้านะคะ</div>
+          <div class="reveal-row row-thai">แล้วเจอกันเดือนหน้านะคะ<div class="thai-translit">láaeo juhr gan duean nâa ná khá</div></div>
           <div class="reveal-row row-english">See you next month.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">then</span></span><span class="gloss-chip"><span class="g-thai">เจอกัน</span><span class="g-eq">=</span><span class="g-eng">see each other</span></span><span class="gloss-chip"><span class="g-thai">เดือนหน้า</span><span class="g-eq">=</span><span class="g-eng">next month</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-tl">/ láaeo</span><span class="g-eq">=</span><span class="g-eng">then</span></span><span class="gloss-chip"><span class="g-thai">เจอกัน</span><span class="g-tl">/ juhr gan</span><span class="g-eq">=</span><span class="g-eng">see each other</span></span><span class="gloss-chip"><span class="g-thai">เดือนหน้า</span><span class="g-tl">/ duean nâa</span><span class="g-eq">=</span><span class="g-eng">next month</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-152">
@@ -339,9 +345,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เดือนที่แล้วไปงานแต่งเพื่อนมาครับ</div>
+          <div class="reveal-row row-thai">เดือนที่แล้วไปงานแต่งเพื่อนมาครับ<div class="thai-translit">duean thîi láaeo bpai ngaan dtàaeng phûean maa khráp</div></div>
           <div class="reveal-row row-english">Last month I went to a friend's wedding.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนที่แล้ว</span><span class="g-eq">=</span><span class="g-eng">last month</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-eq">=</span><span class="g-eng">go</span></span><span class="gloss-chip"><span class="g-thai">งานแต่ง</span><span class="g-eq">=</span><span class="g-eng">wedding</span></span><span class="gloss-chip"><span class="g-thai">เพื่อน</span><span class="g-eq">=</span><span class="g-eng">friend</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-eq">=</span><span class="g-eng">(and came back)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">งานแต่ง is the everyday short form of งานแต่งงาน (wedding).</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนที่แล้ว</span><span class="g-tl">/ duean thîi láaeo</span><span class="g-eq">=</span><span class="g-eng">last month</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-tl">/ bpai</span><span class="g-eq">=</span><span class="g-eng">go</span></span><span class="gloss-chip"><span class="g-thai">งานแต่ง</span><span class="g-tl">/ ngaan dtàaeng</span><span class="g-eq">=</span><span class="g-eng">wedding</span></span><span class="gloss-chip"><span class="g-thai">เพื่อน</span><span class="g-tl">/ phûean</span><span class="g-eq">=</span><span class="g-eng">friend</span></span><span class="gloss-chip"><span class="g-thai">มา</span><span class="g-tl">/ maa</span><span class="g-eq">=</span><span class="g-eng">(and came back)</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">งานแต่ง is the everyday short form of งานแต่งงาน (wedding).</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-158">
@@ -354,9 +360,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ผมไปฟิตเนสสัปดาห์ละสามครั้งครับ</div>
+          <div class="reveal-row row-thai">ผมไปฟิตเนสสัปดาห์ละสามครั้งครับ<div class="thai-translit">phǒm bpai fít-nét sàp-daa lá sǎam khráng khráp</div></div>
           <div class="reveal-row row-english">I go to the gym three times a week.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-eq">=</span><span class="g-eng">go</span></span><span class="gloss-chip"><span class="g-thai">ฟิตเนส</span><span class="g-eq">=</span><span class="g-eng">gym / fitness</span></span><span class="gloss-chip"><span class="g-thai">สัปดาห์ละ</span><span class="g-eq">=</span><span class="g-eng">per week</span></span><span class="gloss-chip"><span class="g-thai">สามครั้ง</span><span class="g-eq">=</span><span class="g-eng">three times</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">X ละ Y means Y per X (สัปดาห์ละสามครั้ง = three times a week).</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-tl">/ phǒm</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">ไป</span><span class="g-tl">/ bpai</span><span class="g-eq">=</span><span class="g-eng">go</span></span><span class="gloss-chip"><span class="g-thai">ฟิตเนส</span><span class="g-tl">/ fít-nét</span><span class="g-eq">=</span><span class="g-eng">gym / fitness</span></span><span class="gloss-chip"><span class="g-thai">สัปดาห์ละ</span><span class="g-tl">/ sàp-daa lá</span><span class="g-eq">=</span><span class="g-eng">per week</span></span><span class="gloss-chip"><span class="g-thai">สามครั้ง</span><span class="g-tl">/ sǎam khráng</span><span class="g-eq">=</span><span class="g-eng">three times</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">X ละ Y means Y per X (สัปดาห์ละสามครั้ง = three times a week).</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-159">
@@ -369,9 +375,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">พี่สาวทำผมสองครั้งต่อเดือนค่ะ</div>
+          <div class="reveal-row row-thai">พี่สาวทำผมสองครั้งต่อเดือนค่ะ<div class="thai-translit">phîi-sǎao tham phǒm sǎwng khráng dtàw duean khâ</div></div>
           <div class="reveal-row row-english">My older sister gets her hair done twice a month.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">พี่สาว</span><span class="g-eq">=</span><span class="g-eng">older sister</span></span><span class="gloss-chip"><span class="g-thai">ทำผม</span><span class="g-eq">=</span><span class="g-eng">get one's hair done</span></span><span class="gloss-chip"><span class="g-thai">สองครั้ง</span><span class="g-eq">=</span><span class="g-eng">twice</span></span><span class="gloss-chip"><span class="g-thai">ต่อเดือน</span><span class="g-eq">=</span><span class="g-eng">per month</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Here ผม means 'hair', not the male pronoun 'I' (ทำผม = do/style hair). ต่อ works like ละ for 'per'.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">พี่สาว</span><span class="g-tl">/ phîi-sǎao</span><span class="g-eq">=</span><span class="g-eng">older sister</span></span><span class="gloss-chip"><span class="g-thai">ทำผม</span><span class="g-tl">/ tham phǒm</span><span class="g-eq">=</span><span class="g-eng">get one's hair done</span></span><span class="gloss-chip"><span class="g-thai">สองครั้ง</span><span class="g-tl">/ sǎwng khráng</span><span class="g-eq">=</span><span class="g-eng">twice</span></span><span class="gloss-chip"><span class="g-thai">ต่อเดือน</span><span class="g-tl">/ dtàw duean</span><span class="g-eq">=</span><span class="g-eng">per month</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Here ผม means 'hair', not the male pronoun 'I' (ทำผม = do/style hair). ต่อ works like ละ for 'per'.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-153">
@@ -384,9 +390,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ทำงานที่บริษัทนี้มาได้ห้าปีแล้วครับ</div>
+          <div class="reveal-row row-thai">ทำงานที่บริษัทนี้มาได้ห้าปีแล้วครับ<div class="thai-translit">tham-ngaan thîi baw-rí-sàt níi maa dâi hâa bpii láaeo khráp</div></div>
           <div class="reveal-row row-english">I've worked at this company for five years now.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ทำงาน</span><span class="g-eq">=</span><span class="g-eng">work</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">บริษัท</span><span class="g-eq">=</span><span class="g-eng">company</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">มาได้</span><span class="g-eq">=</span><span class="g-eng">for (duration up to now)</span></span><span class="gloss-chip"><span class="g-thai">ห้าปี</span><span class="g-eq">=</span><span class="g-eng">five years</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-eq">=</span><span class="g-eng">already / now</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">...มาได้...แล้ว frames a duration that continues up to the present.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ทำงาน</span><span class="g-tl">/ tham-ngaan</span><span class="g-eq">=</span><span class="g-eng">work</span></span><span class="gloss-chip"><span class="g-thai">ที่</span><span class="g-tl">/ thîi</span><span class="g-eq">=</span><span class="g-eng">that</span></span><span class="gloss-chip"><span class="g-thai">บริษัท</span><span class="g-tl">/ baw-rí-sàt</span><span class="g-eq">=</span><span class="g-eng">company</span></span><span class="gloss-chip"><span class="g-thai">นี้</span><span class="g-tl">/ níi</span><span class="g-eq">=</span><span class="g-eng">this</span></span><span class="gloss-chip"><span class="g-thai">มาได้</span><span class="g-tl">/ maa dâi</span><span class="g-eq">=</span><span class="g-eng">for (duration up to now)</span></span><span class="gloss-chip"><span class="g-thai">ห้าปี</span><span class="g-tl">/ hâa bpii</span><span class="g-eq">=</span><span class="g-eng">five years</span></span><span class="gloss-chip"><span class="g-thai">แล้ว</span><span class="g-tl">/ láaeo</span><span class="g-eq">=</span><span class="g-eng">already / now</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">...มาได้...แล้ว frames a duration that continues up to the present.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-154">
@@ -399,9 +405,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ผมย้ายมาอยู่ที่นี่ เมื่อสองปีที่แล้วครับ</div>
+          <div class="reveal-row row-thai">ผมย้ายมาอยู่ที่นี่ เมื่อสองปีที่แล้วครับ<div class="thai-translit">phǒm yáai maa yùu thîi-nîi mûea sǎwng bpii thîi láaeo khráp</div></div>
           <div class="reveal-row row-english">I moved here two years ago.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">ย้าย</span><span class="g-eq">=</span><span class="g-eng">move (home)</span></span><span class="gloss-chip"><span class="g-thai">มาอยู่</span><span class="g-eq">=</span><span class="g-eng">come to live</span></span><span class="gloss-chip"><span class="g-thai">ที่นี่</span><span class="g-eq">=</span><span class="g-eng">here</span></span><span class="gloss-chip"><span class="g-thai">เมื่อ</span><span class="g-eq">=</span><span class="g-eng">when / ago</span></span><span class="gloss-chip"><span class="g-thai">สองปีที่แล้ว</span><span class="g-eq">=</span><span class="g-eng">two years ago</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-tl">/ phǒm</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">ย้าย</span><span class="g-tl">/ yáai</span><span class="g-eq">=</span><span class="g-eng">move (home)</span></span><span class="gloss-chip"><span class="g-thai">มาอยู่</span><span class="g-tl">/ maa yùu</span><span class="g-eq">=</span><span class="g-eng">come to live</span></span><span class="gloss-chip"><span class="g-thai">ที่นี่</span><span class="g-tl">/ thîi-nîi</span><span class="g-eq">=</span><span class="g-eng">here</span></span><span class="gloss-chip"><span class="g-thai">เมื่อ</span><span class="g-tl">/ mûea</span><span class="g-eq">=</span><span class="g-eng">when / ago</span></span><span class="gloss-chip"><span class="g-thai">สองปีที่แล้ว</span><span class="g-tl">/ sǎwng bpii thîi láaeo</span><span class="g-eq">=</span><span class="g-eng">two years ago</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-160">
@@ -414,9 +420,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันเด็กอยู่เดือนมกราคมครับ</div>
+          <div class="reveal-row row-thai">วันเด็กอยู่เดือนมกราคมครับ<div class="thai-translit">wan dèk yùu duean má-gà-raa-khom khráp</div></div>
           <div class="reveal-row row-english">Children's Day is in January.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันเด็ก</span><span class="g-eq">=</span><span class="g-eng">Children's Day</span></span><span class="gloss-chip"><span class="g-thai">อยู่</span><span class="g-eq">=</span><span class="g-eng">is in</span></span><span class="gloss-chip"><span class="g-thai">เดือนมกราคม</span><span class="g-eq">=</span><span class="g-eng">January</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Thai Children's Day falls on the second Saturday of January.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันเด็ก</span><span class="g-tl">/ wan dèk</span><span class="g-eq">=</span><span class="g-eng">Children's Day</span></span><span class="gloss-chip"><span class="g-thai">อยู่</span><span class="g-tl">/ yùu</span><span class="g-eq">=</span><span class="g-eng">is in</span></span><span class="gloss-chip"><span class="g-thai">เดือนมกราคม</span><span class="g-tl">/ duean má-gà-raa-khom</span><span class="g-eq">=</span><span class="g-eng">January</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Thai Children's Day falls on the second Saturday of January.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-161">
@@ -429,9 +435,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เดือนกุมภาพันธ์มีวันวาเลนไทน์ค่ะ</div>
+          <div class="reveal-row row-thai">เดือนกุมภาพันธ์มีวันวาเลนไทน์ค่ะ<div class="thai-translit">duean gum-phaa-phan mii wan waa-laaen-thai khâ</div></div>
           <div class="reveal-row row-english">February has Valentine's Day.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนกุมภาพันธ์</span><span class="g-eq">=</span><span class="g-eng">February</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">วันวาเลนไทน์</span><span class="g-eq">=</span><span class="g-eng">Valentine's Day</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนกุมภาพันธ์</span><span class="g-tl">/ duean gum-phaa-phan</span><span class="g-eq">=</span><span class="g-eng">February</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-tl">/ mii</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">วันวาเลนไทน์</span><span class="g-tl">/ wan waa-laaen-thai</span><span class="g-eq">=</span><span class="g-eng">Valentine's Day</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-162">
@@ -444,9 +450,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เดือนมีนาคมเริ่มเข้าหน้าร้อนครับ</div>
+          <div class="reveal-row row-thai">เดือนมีนาคมเริ่มเข้าหน้าร้อนครับ<div class="thai-translit">duean mii-naa-khom rêrm khâo nâa-ráwn khráp</div></div>
           <div class="reveal-row row-english">In March the hot season begins.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนมีนาคม</span><span class="g-eq">=</span><span class="g-eng">March</span></span><span class="gloss-chip"><span class="g-thai">เริ่ม</span><span class="g-eq">=</span><span class="g-eng">begin</span></span><span class="gloss-chip"><span class="g-thai">เข้า</span><span class="g-eq">=</span><span class="g-eng">enter</span></span><span class="gloss-chip"><span class="g-thai">หน้าร้อน</span><span class="g-eq">=</span><span class="g-eng">hot season</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนมีนาคม</span><span class="g-tl">/ duean mii-naa-khom</span><span class="g-eq">=</span><span class="g-eng">March</span></span><span class="gloss-chip"><span class="g-thai">เริ่ม</span><span class="g-tl">/ rêrm</span><span class="g-eq">=</span><span class="g-eng">begin</span></span><span class="gloss-chip"><span class="g-thai">เข้า</span><span class="g-tl">/ khâo</span><span class="g-eq">=</span><span class="g-eng">enter</span></span><span class="gloss-chip"><span class="g-thai">หน้าร้อน</span><span class="g-tl">/ nâa-ráwn</span><span class="g-eq">=</span><span class="g-eng">hot season</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-163">
@@ -459,9 +465,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">สงกรานต์ตรงกับเดือนเมษายนครับ</div>
+          <div class="reveal-row row-thai">สงกรานต์ตรงกับเดือนเมษายนครับ<div class="thai-translit">sǒng-graan dtrong gàp duean mee-sǎa-yon khráp</div></div>
           <div class="reveal-row row-english">Songkran falls in April.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สงกรานต์</span><span class="g-eq">=</span><span class="g-eng">Songkran</span></span><span class="gloss-chip"><span class="g-thai">ตรงกับ</span><span class="g-eq">=</span><span class="g-eng">falls on / coincides with</span></span><span class="gloss-chip"><span class="g-thai">เดือนเมษายน</span><span class="g-eq">=</span><span class="g-eng">April</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Songkran (13–15 April) is the Thai New Year water festival.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">สงกรานต์</span><span class="g-tl">/ sǒng-graan</span><span class="g-eq">=</span><span class="g-eng">Songkran</span></span><span class="gloss-chip"><span class="g-thai">ตรงกับ</span><span class="g-tl">/ dtrong gàp</span><span class="g-eq">=</span><span class="g-eng">falls on / coincides with</span></span><span class="gloss-chip"><span class="g-thai">เดือนเมษายน</span><span class="g-tl">/ duean mee-sǎa-yon</span><span class="g-eq">=</span><span class="g-eng">April</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Songkran (13–15 April) is the Thai New Year water festival.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-164">
@@ -474,9 +480,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">โรงเรียนเปิดเทอมเดือนพฤษภาคมค่ะ</div>
+          <div class="reveal-row row-thai">โรงเรียนเปิดเทอมเดือนพฤษภาคมค่ะ<div class="thai-translit">roong-rian bpèrt therm duean phrúet-sà-phaa-khom khâ</div></div>
           <div class="reveal-row row-english">The school term opens in May.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">โรงเรียน</span><span class="g-eq">=</span><span class="g-eng">school</span></span><span class="gloss-chip"><span class="g-thai">เปิดเทอม</span><span class="g-eq">=</span><span class="g-eng">start of term</span></span><span class="gloss-chip"><span class="g-thai">เดือนพฤษภาคม</span><span class="g-eq">=</span><span class="g-eng">May</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">The Thai school year traditionally opens in mid-May.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">โรงเรียน</span><span class="g-tl">/ roong-rian</span><span class="g-eq">=</span><span class="g-eng">school</span></span><span class="gloss-chip"><span class="g-thai">เปิดเทอม</span><span class="g-tl">/ bpèrt therm</span><span class="g-eq">=</span><span class="g-eng">start of term</span></span><span class="gloss-chip"><span class="g-thai">เดือนพฤษภาคม</span><span class="g-tl">/ duean phrúet-sà-phaa-khom</span><span class="g-eq">=</span><span class="g-eng">May</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">The Thai school year traditionally opens in mid-May.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-165">
@@ -489,9 +495,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เดือนมิถุนายนเพื่อนผมจะแต่งงานครับ</div>
+          <div class="reveal-row row-thai">เดือนมิถุนายนเพื่อนผมจะแต่งงานครับ<div class="thai-translit">duean mí-thù-naa-yon phûean phǒm jà dtàaeng-ngaan khráp</div></div>
           <div class="reveal-row row-english">In June my friend is getting married.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนมิถุนายน</span><span class="g-eq">=</span><span class="g-eng">June</span></span><span class="gloss-chip"><span class="g-thai">เพื่อน</span><span class="g-eq">=</span><span class="g-eng">friend</span></span><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-eq">=</span><span class="g-eng">my (male speaker)</span></span><span class="gloss-chip"><span class="g-thai">จะ</span><span class="g-eq">=</span><span class="g-eng">will</span></span><span class="gloss-chip"><span class="g-thai">แต่งงาน</span><span class="g-eq">=</span><span class="g-eng">get married</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนมิถุนายน</span><span class="g-tl">/ duean mí-thù-naa-yon</span><span class="g-eq">=</span><span class="g-eng">June</span></span><span class="gloss-chip"><span class="g-thai">เพื่อน</span><span class="g-tl">/ phûean</span><span class="g-eq">=</span><span class="g-eng">friend</span></span><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-tl">/ phǒm</span><span class="g-eq">=</span><span class="g-eng">my (male speaker)</span></span><span class="gloss-chip"><span class="g-thai">จะ</span><span class="g-tl">/ jà</span><span class="g-eq">=</span><span class="g-eng">will</span></span><span class="gloss-chip"><span class="g-thai">แต่งงาน</span><span class="g-tl">/ dtàaeng-ngaan</span><span class="g-eq">=</span><span class="g-eng">get married</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-166">
@@ -504,9 +510,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เดือนกรกฎาคมผมจะไปเที่ยวญี่ปุ่นครับ</div>
+          <div class="reveal-row row-thai">เดือนกรกฎาคมผมจะไปเที่ยวญี่ปุ่นครับ<div class="thai-translit">duean gà-rá-gà-daa-khom phǒm jà bpai thîao yîi-bpùn khráp</div></div>
           <div class="reveal-row row-english">In July I'm going to travel to Japan.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนกรกฎาคม</span><span class="g-eq">=</span><span class="g-eng">July</span></span><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">จะ</span><span class="g-eq">=</span><span class="g-eng">will</span></span><span class="gloss-chip"><span class="g-thai">ไปเที่ยว</span><span class="g-eq">=</span><span class="g-eng">go travelling</span></span><span class="gloss-chip"><span class="g-thai">ญี่ปุ่น</span><span class="g-eq">=</span><span class="g-eng">Japan</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนกรกฎาคม</span><span class="g-tl">/ duean gà-rá-gà-daa-khom</span><span class="g-eq">=</span><span class="g-eng">July</span></span><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-tl">/ phǒm</span><span class="g-eq">=</span><span class="g-eng">I (male)</span></span><span class="gloss-chip"><span class="g-thai">จะ</span><span class="g-tl">/ jà</span><span class="g-eq">=</span><span class="g-eng">will</span></span><span class="gloss-chip"><span class="g-thai">ไปเที่ยว</span><span class="g-tl">/ bpai thîao</span><span class="g-eq">=</span><span class="g-eng">go travelling</span></span><span class="gloss-chip"><span class="g-thai">ญี่ปุ่น</span><span class="g-tl">/ yîi-bpùn</span><span class="g-eq">=</span><span class="g-eng">Japan</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-167">
@@ -519,9 +525,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันแม่ตรงกับวันที่สิบสองสิงหาคมค่ะ</div>
+          <div class="reveal-row row-thai">วันแม่ตรงกับวันที่สิบสองสิงหาคมค่ะ<div class="thai-translit">wan mâae dtrong gàp wan-thîi sìp-sǎwng sǐng-hǎa-khom khâ</div></div>
           <div class="reveal-row row-english">Mother's Day falls on the 12th of August.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันแม่</span><span class="g-eq">=</span><span class="g-eng">Mother's Day</span></span><span class="gloss-chip"><span class="g-thai">ตรงกับ</span><span class="g-eq">=</span><span class="g-eng">falls on</span></span><span class="gloss-chip"><span class="g-thai">วันที่สิบสอง</span><span class="g-eq">=</span><span class="g-eng">the 12th</span></span><span class="gloss-chip"><span class="g-thai">สิงหาคม</span><span class="g-eq">=</span><span class="g-eng">August</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Thai Mother's Day is 12 August, the birthday of the late Queen Sirikit.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันแม่</span><span class="g-tl">/ wan mâae</span><span class="g-eq">=</span><span class="g-eng">Mother's Day</span></span><span class="gloss-chip"><span class="g-thai">ตรงกับ</span><span class="g-tl">/ dtrong gàp</span><span class="g-eq">=</span><span class="g-eng">falls on</span></span><span class="gloss-chip"><span class="g-thai">วันที่สิบสอง</span><span class="g-tl">/ wan-thîi sìp-sǎwng</span><span class="g-eq">=</span><span class="g-eng">the 12th</span></span><span class="gloss-chip"><span class="g-thai">สิงหาคม</span><span class="g-tl">/ sǐng-hǎa-khom</span><span class="g-eq">=</span><span class="g-eng">August</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">Thai Mother's Day is 12 August, the birthday of the late Queen Sirikit.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-168">
@@ -534,9 +540,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เดือนกันยายนน้ำท่วมบ่อยครับ</div>
+          <div class="reveal-row row-thai">เดือนกันยายนน้ำท่วมบ่อยครับ<div class="thai-translit">duean gan-yaa-yon nám-thûam bòi khráp</div></div>
           <div class="reveal-row row-english">In September it often floods.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนกันยายน</span><span class="g-eq">=</span><span class="g-eng">September</span></span><span class="gloss-chip"><span class="g-thai">น้ำท่วม</span><span class="g-eq">=</span><span class="g-eng">flood</span></span><span class="gloss-chip"><span class="g-thai">บ่อย</span><span class="g-eq">=</span><span class="g-eng">often</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนกันยายน</span><span class="g-tl">/ duean gan-yaa-yon</span><span class="g-eq">=</span><span class="g-eng">September</span></span><span class="gloss-chip"><span class="g-thai">น้ำท่วม</span><span class="g-tl">/ nám-thûam</span><span class="g-eq">=</span><span class="g-eng">flood</span></span><span class="gloss-chip"><span class="g-thai">บ่อย</span><span class="g-tl">/ bòi</span><span class="g-eq">=</span><span class="g-eng">often</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-169">
@@ -549,9 +555,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ตุลาคมยังอยู่ในหน้าฝนค่ะ</div>
+          <div class="reveal-row row-thai">ตุลาคมยังอยู่ในหน้าฝนค่ะ<div class="thai-translit">dtù-laa-khom yang yùu nai nâa-fǒn khâ</div></div>
           <div class="reveal-row row-english">October is still in the rainy season.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ตุลาคม</span><span class="g-eq">=</span><span class="g-eng">October</span></span><span class="gloss-chip"><span class="g-thai">ยัง</span><span class="g-eq">=</span><span class="g-eng">still</span></span><span class="gloss-chip"><span class="g-thai">อยู่ใน</span><span class="g-eq">=</span><span class="g-eng">is in</span></span><span class="gloss-chip"><span class="g-thai">หน้าฝน</span><span class="g-eq">=</span><span class="g-eng">rainy season</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ตุลาคม</span><span class="g-tl">/ dtù-laa-khom</span><span class="g-eq">=</span><span class="g-eng">October</span></span><span class="gloss-chip"><span class="g-thai">ยัง</span><span class="g-tl">/ yang</span><span class="g-eq">=</span><span class="g-eng">still</span></span><span class="gloss-chip"><span class="g-thai">อยู่ใน</span><span class="g-tl">/ yùu nai</span><span class="g-eq">=</span><span class="g-eng">is in</span></span><span class="gloss-chip"><span class="g-thai">หน้าฝน</span><span class="g-tl">/ nâa-fǒn</span><span class="g-eq">=</span><span class="g-eng">rainy season</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-170">
@@ -564,9 +570,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">เดือนพฤศจิกายนมีงานลอยกระทงครับ</div>
+          <div class="reveal-row row-thai">เดือนพฤศจิกายนมีงานลอยกระทงครับ<div class="thai-translit">duean phrúet-sà-jì-gaa-yon mii ngaan loi grà-thong khráp</div></div>
           <div class="reveal-row row-english">November has the Loi Krathong festival.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนพฤศจิกายน</span><span class="g-eq">=</span><span class="g-eng">November</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">งาน</span><span class="g-eq">=</span><span class="g-eng">festival / event</span></span><span class="gloss-chip"><span class="g-thai">ลอยกระทง</span><span class="g-eq">=</span><span class="g-eng">Loi Krathong</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Loi Krathong, when people float decorated baskets on the water, is held on the November full moon.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">เดือนพฤศจิกายน</span><span class="g-tl">/ duean phrúet-sà-jì-gaa-yon</span><span class="g-eq">=</span><span class="g-eng">November</span></span><span class="gloss-chip"><span class="g-thai">มี</span><span class="g-tl">/ mii</span><span class="g-eq">=</span><span class="g-eng">has</span></span><span class="gloss-chip"><span class="g-thai">งาน</span><span class="g-tl">/ ngaan</span><span class="g-eq">=</span><span class="g-eng">festival / event</span></span><span class="gloss-chip"><span class="g-thai">ลอยกระทง</span><span class="g-tl">/ loi grà-thong</span><span class="g-eq">=</span><span class="g-eng">Loi Krathong</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Loi Krathong, when people float decorated baskets on the water, is held on the November full moon.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-171">
@@ -579,9 +585,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันพ่ออยู่เดือนธันวาคมครับ</div>
+          <div class="reveal-row row-thai">วันพ่ออยู่เดือนธันวาคมครับ<div class="thai-translit">wan phâw yùu duean than-waa-khom khráp</div></div>
           <div class="reveal-row row-english">Father's Day is in December.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันพ่อ</span><span class="g-eq">=</span><span class="g-eng">Father's Day</span></span><span class="gloss-chip"><span class="g-thai">อยู่</span><span class="g-eq">=</span><span class="g-eng">is in</span></span><span class="gloss-chip"><span class="g-thai">เดือนธันวาคม</span><span class="g-eq">=</span><span class="g-eng">December</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Thai Father's Day is 5 December, the birthday of the late King Bhumibol.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันพ่อ</span><span class="g-tl">/ wan phâw</span><span class="g-eq">=</span><span class="g-eng">Father's Day</span></span><span class="gloss-chip"><span class="g-thai">อยู่</span><span class="g-tl">/ yùu</span><span class="g-eq">=</span><span class="g-eng">is in</span></span><span class="gloss-chip"><span class="g-thai">เดือนธันวาคม</span><span class="g-tl">/ duean than-waa-khom</span><span class="g-eq">=</span><span class="g-eng">December</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Thai Father's Day is 5 December, the birthday of the late King Bhumibol.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-181">
@@ -594,9 +600,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันนี้วันที่เท่าไหร่นะคะ</div>
+          <div class="reveal-row row-thai">วันนี้วันที่เท่าไหร่นะคะ<div class="thai-translit">wan-níi wan-thîi thâo-rài ná khá</div></div>
           <div class="reveal-row row-english">What's today's date?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันนี้</span><span class="g-eq">=</span><span class="g-eng">today</span></span><span class="gloss-chip"><span class="g-thai">วันที่</span><span class="g-eq">=</span><span class="g-eng">date (day of month)</span></span><span class="gloss-chip"><span class="g-thai">เท่าไหร่</span><span class="g-eq">=</span><span class="g-eng">what / how much</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">วันที่ + a number gives the calendar date (วันที่ห้า = the 5th).</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันนี้</span><span class="g-tl">/ wan-níi</span><span class="g-eq">=</span><span class="g-eng">today</span></span><span class="gloss-chip"><span class="g-thai">วันที่</span><span class="g-tl">/ wan-thîi</span><span class="g-eq">=</span><span class="g-eng">date (day of month)</span></span><span class="gloss-chip"><span class="g-thai">เท่าไหร่</span><span class="g-tl">/ thâo-rài</span><span class="g-eq">=</span><span class="g-eng">what / how much</span></span><span class="gloss-chip"><span class="g-thai">นะ</span><span class="g-tl">/ ná</span><span class="g-eq">=</span><span class="g-eng">softening particle</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">วันที่ + a number gives the calendar date (วันที่ห้า = the 5th).</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-361">
@@ -609,9 +615,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันนี้วันที่สิบหกมิถุนายนค่ะ</div>
+          <div class="reveal-row row-thai">วันนี้วันที่สิบหกมิถุนายนค่ะ<div class="thai-translit">wan-níi wan-thîi sìp-hòk mí-thù-naa-yon khâ</div></div>
           <div class="reveal-row row-english">Today's date is the 16th of June.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันนี้</span><span class="g-eq">=</span><span class="g-eng">today</span></span><span class="gloss-chip"><span class="g-thai">วันที่สิบหก</span><span class="g-eq">=</span><span class="g-eng">the 16th</span></span><span class="gloss-chip"><span class="g-thai">มิถุนายน</span><span class="g-eq">=</span><span class="g-eng">June</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันนี้</span><span class="g-tl">/ wan-níi</span><span class="g-eq">=</span><span class="g-eng">today</span></span><span class="gloss-chip"><span class="g-thai">วันที่สิบหก</span><span class="g-tl">/ wan-thîi sìp-hòk</span><span class="g-eq">=</span><span class="g-eng">the 16th</span></span><span class="gloss-chip"><span class="g-thai">มิถุนายน</span><span class="g-tl">/ mí-thù-naa-yon</span><span class="g-eq">=</span><span class="g-eng">June</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-182">
@@ -624,9 +630,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">คอนเสิร์ตจัดวันที่สิบห้าครับ</div>
+          <div class="reveal-row row-thai">คอนเสิร์ตจัดวันที่สิบห้าครับ<div class="thai-translit">khawn-sèrt jàt wan-thîi sìp-hâa khráp</div></div>
           <div class="reveal-row row-english">The concert is on the 15th.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คอนเสิร์ต</span><span class="g-eq">=</span><span class="g-eng">concert</span></span><span class="gloss-chip"><span class="g-thai">จัด</span><span class="g-eq">=</span><span class="g-eng">be held</span></span><span class="gloss-chip"><span class="g-thai">วันที่สิบห้า</span><span class="g-eq">=</span><span class="g-eng">the 15th</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คอนเสิร์ต</span><span class="g-tl">/ khawn-sèrt</span><span class="g-eq">=</span><span class="g-eng">concert</span></span><span class="gloss-chip"><span class="g-thai">จัด</span><span class="g-tl">/ jàt</span><span class="g-eq">=</span><span class="g-eng">be held</span></span><span class="gloss-chip"><span class="g-thai">วันที่สิบห้า</span><span class="g-tl">/ wan-thîi sìp-hâa</span><span class="g-eq">=</span><span class="g-eng">the 15th</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-183">
@@ -639,9 +645,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันเกิดผมวันที่สามเดือนธันวาคมครับ</div>
+          <div class="reveal-row row-thai">วันเกิดผมวันที่สามเดือนธันวาคมครับ<div class="thai-translit">wan-gèrt phǒm wan-thîi sǎam duean than-waa-khom khráp</div></div>
           <div class="reveal-row row-english">My birthday is the 3rd of December.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันเกิด</span><span class="g-eq">=</span><span class="g-eng">birthday</span></span><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-eq">=</span><span class="g-eng">my (male)</span></span><span class="gloss-chip"><span class="g-thai">วันที่สาม</span><span class="g-eq">=</span><span class="g-eng">the 3rd</span></span><span class="gloss-chip"><span class="g-thai">เดือนธันวาคม</span><span class="g-eq">=</span><span class="g-eng">December</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Thai dates run day → month: วันที่สาม(เดือน)ธันวาคม = the 3rd of December.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันเกิด</span><span class="g-tl">/ wan-gèrt</span><span class="g-eq">=</span><span class="g-eng">birthday</span></span><span class="gloss-chip"><span class="g-thai">ผม</span><span class="g-tl">/ phǒm</span><span class="g-eq">=</span><span class="g-eng">my (male)</span></span><span class="gloss-chip"><span class="g-thai">วันที่สาม</span><span class="g-tl">/ wan-thîi sǎam</span><span class="g-eq">=</span><span class="g-eng">the 3rd</span></span><span class="gloss-chip"><span class="g-thai">เดือนธันวาคม</span><span class="g-tl">/ duean than-waa-khom</span><span class="g-eq">=</span><span class="g-eng">December</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Thai dates run day → month: วันที่สาม(เดือน)ธันวาคม = the 3rd of December.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-184">
@@ -654,9 +660,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">วันเกิดคุณเดือนอะไรคะ</div>
+          <div class="reveal-row row-thai">วันเกิดคุณเดือนอะไรคะ<div class="thai-translit">wan-gèrt khun duean à-rai khá</div></div>
           <div class="reveal-row row-english">What month is your birthday?</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันเกิด</span><span class="g-eq">=</span><span class="g-eng">birthday</span></span><span class="gloss-chip"><span class="g-thai">คุณ</span><span class="g-eq">=</span><span class="g-eng">you</span></span><span class="gloss-chip"><span class="g-thai">เดือนอะไร</span><span class="g-eq">=</span><span class="g-eng">what month</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">วันเกิด</span><span class="g-tl">/ wan-gèrt</span><span class="g-eq">=</span><span class="g-eng">birthday</span></span><span class="gloss-chip"><span class="g-thai">คุณ</span><span class="g-tl">/ khun</span><span class="g-eq">=</span><span class="g-eng">you</span></span><span class="gloss-chip"><span class="g-thai">เดือนอะไร</span><span class="g-tl">/ duean à-rai</span><span class="g-eq">=</span><span class="g-eng">what month</span></span><span class="gloss-chip"><span class="g-thai">คะ</span><span class="g-tl">/ khá</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-185">
@@ -669,9 +675,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">ปีนี้ปีพ.ศ. สองพันห้าร้อยหกสิบเก้าครับ</div>
+          <div class="reveal-row row-thai">ปีนี้ปีพ.ศ. สองพันห้าร้อยหกสิบเก้าครับ<div class="thai-translit">bpii níi bpii phaw sǎw sǎwng-phan hâa-rói hòk-sìp-gâo khráp</div></div>
           <div class="reveal-row row-english">This year is B.E. 2569.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ปีนี้</span><span class="g-eq">=</span><span class="g-eng">this year</span></span><span class="gloss-chip"><span class="g-thai">ปี</span><span class="g-eq">=</span><span class="g-eng">year</span></span><span class="gloss-chip"><span class="g-thai">พ.ศ.</span><span class="g-eq">=</span><span class="g-eng">B.E. (Buddhist Era)</span></span><span class="gloss-chip"><span class="g-thai">สองพันห้าร้อยหกสิบเก้า</span><span class="g-eq">=</span><span class="g-eng">2569</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Thailand counts years in the Buddhist Era (พ.ศ.), 543 years ahead of the Western year.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">ปีนี้</span><span class="g-tl">/ bpii níi</span><span class="g-eq">=</span><span class="g-eng">this year</span></span><span class="gloss-chip"><span class="g-thai">ปี</span><span class="g-tl">/ bpii</span><span class="g-eq">=</span><span class="g-eng">year</span></span><span class="gloss-chip"><span class="g-thai">พ.ศ.</span><span class="g-tl">/ phaw sǎw</span><span class="g-eq">=</span><span class="g-eng">B.E. (Buddhist Era)</span></span><span class="gloss-chip"><span class="g-thai">สองพันห้าร้อยหกสิบเก้า</span><span class="g-tl">/ sǎwng-phan hâa-rói hòk-sìp-gâo</span><span class="g-eq">=</span><span class="g-eng">2569</span></span><span class="gloss-chip"><span class="g-thai">ครับ</span><span class="g-tl">/ khráp</span><span class="g-eq">=</span><span class="g-eng">polite particle (male)</span></span></div><div class="cultural-note">Thailand counts years in the Buddhist Era (พ.ศ.), 543 years ahead of the Western year.</div></div>
         </div>
       </div>
       <div class="sentence-card st-0" id="sc-186">
@@ -684,9 +690,9 @@
           <div class="prog-wrap" aria-hidden="true"><div class="prog-seg"></div><div class="prog-seg"></div><div class="prog-seg"></div></div>
         </div>
         <div class="sentence-body">
-          <div class="reveal-row row-thai">คนไทยใช้ปีพ.ศ. ไม่ใช่ปีค.ศ. ค่ะ</div>
+          <div class="reveal-row row-thai">คนไทยใช้ปีพ.ศ. ไม่ใช่ปีค.ศ. ค่ะ<div class="thai-translit">khon thai chái bpii phaw sǎw mâi châi bpii khaw sǎw khâ</div></div>
           <div class="reveal-row row-english">Thai people use B.E. years, not C.E.</div>
-          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คนไทย</span><span class="g-eq">=</span><span class="g-eng">Thai people</span></span><span class="gloss-chip"><span class="g-thai">ใช้</span><span class="g-eq">=</span><span class="g-eng">use</span></span><span class="gloss-chip"><span class="g-thai">ปีพ.ศ.</span><span class="g-eq">=</span><span class="g-eng">B.E. year</span></span><span class="gloss-chip"><span class="g-thai">ไม่ใช่</span><span class="g-eq">=</span><span class="g-eng">not</span></span><span class="gloss-chip"><span class="g-thai">ปีค.ศ.</span><span class="g-eq">=</span><span class="g-eng">C.E. year</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">ค.ศ. (Christian/Common Era) is the Western year; พ.ศ. = ค.ศ. + 543.</div></div>
+          <div class="reveal-row row-notes"><div class="gloss-row"><span class="gloss-chip"><span class="g-thai">คนไทย</span><span class="g-tl">/ khon thai</span><span class="g-eq">=</span><span class="g-eng">Thai people</span></span><span class="gloss-chip"><span class="g-thai">ใช้</span><span class="g-tl">/ chái</span><span class="g-eq">=</span><span class="g-eng">use</span></span><span class="gloss-chip"><span class="g-thai">ปีพ.ศ.</span><span class="g-tl">/ bpii phaw sǎw</span><span class="g-eq">=</span><span class="g-eng">B.E. year</span></span><span class="gloss-chip"><span class="g-thai">ไม่ใช่</span><span class="g-tl">/ mâi châi</span><span class="g-eq">=</span><span class="g-eng">not</span></span><span class="gloss-chip"><span class="g-thai">ปีค.ศ.</span><span class="g-tl">/ bpii khaw sǎw</span><span class="g-eq">=</span><span class="g-eng">C.E. year</span></span><span class="gloss-chip"><span class="g-thai">ค่ะ</span><span class="g-tl">/ khâ</span><span class="g-eq">=</span><span class="g-eng">polite particle (female)</span></span></div><div class="cultural-note">ค.ศ. (Christian/Common Era) is the Western year; พ.ศ. = ค.ศ. + 543.</div></div>
         </div>
       </div>
   </div>
@@ -716,986 +722,44 @@ window.ThaiEarTopic = {
   tier: "premium",
   audioPrefix: "Dates_BEG",
   sentences: [
-  {
-    "num": 360,
-    "display": 1,
-    "preview": "วันนี้",
-    "previewEn": "today",
-    "thai": "วันนี้วันอะไรคะ",
-    "english": "What day is it today?",
-    "gloss": [["วันนี้", "today"], ["วันอะไร", "what day"], ["คะ", "polite particle (female)"]],
-    "cultural": ""
-  },
-  {
-    "num": 137,
-    "display": 2,
-    "preview": "ประชุม",
-    "previewEn": "meeting",
-    "thai": "ประชุมวันจันทร์นี้นะคะ",
-    "english": "The meeting is this Monday.",
-    "gloss": [
-      [
-        "ประชุม",
-        "meeting"
-      ],
-      [
-        "วันจันทร์",
-        "Monday"
-      ],
-      [
-        "นี้",
-        "this"
-      ],
-      [
-        "นะ",
-        "softening particle"
-      ],
-      [
-        "คะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "Thai weekday names all begin with วัน (day): วันจันทร์ (Mon), วันอังคาร (Tue), and so on."
-  },
-  {
-    "num": 138,
-    "display": 3,
-    "preview": "ร้าน",
-    "previewEn": "shop",
-    "thai": "ร้านนี้เปิดทุกวัน ยกเว้นวันอังคารค่ะ",
-    "english": "This shop is open every day except Tuesday.",
-    "gloss": [["ร้าน", "shop"], ["นี้", "this"], ["เปิด", "open"], ["ทุกวัน", "every day"], ["ยกเว้น", "except"], ["วันอังคาร", "Tuesday"], ["ค่ะ", "polite particle (female)"]],
-    "cultural": ""
-  },
-  {
-    "num": 139,
-    "display": 4,
-    "preview": "วันพุธ",
-    "previewEn": "Wednesday",
-    "thai": "วันพุธรถตู้ออกตีห้าครับ",
-    "english": "On Wednesday the van leaves at 5am.",
-    "gloss": [
-      [
-        "วันพุธ",
-        "Wednesday"
-      ],
-      [
-        "รถตู้",
-        "minivan"
-      ],
-      [
-        "ออก",
-        "leave / depart"
-      ],
-      [
-        "ตีห้า",
-        "5am"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "ตี + a number gives the small hours: ตีหนึ่ง = 1am up to ตีห้า = 5am."
-  },
-  {
-    "num": 140,
-    "display": 5,
-    "preview": "วันพฤหัส",
-    "previewEn": "Thursday",
-    "thai": "วันพฤหัสนี้วันหยุดหรือเปล่าคะ",
-    "english": "Is this Thursday a day off?",
-    "gloss": [
-      [
-        "วันพฤหัส",
-        "Thursday"
-      ],
-      [
-        "นี้",
-        "this"
-      ],
-      [
-        "วันหยุด",
-        "day off / holiday"
-      ],
-      [
-        "หรือเปล่า",
-        "yes-no question marker"
-      ],
-      [
-        "คะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "Full form is วันพฤหัสบดี; วันพฤหัส is the everyday short form."
-  },
-  {
-    "num": 141,
-    "display": 6,
-    "preview": "หนังสือ",
-    "previewEn": "book",
-    "thai": "หนังสือต้องคืนภายในวันศุกร์นะคะ",
-    "english": "The book has to be returned by Friday.",
-    "gloss": [
-      [
-        "หนังสือ",
-        "book"
-      ],
-      [
-        "ต้อง",
-        "must"
-      ],
-      [
-        "คืน",
-        "return (something) — not คืน \"night\""
-      ],
-      [
-        "ภายใน",
-        "within / by"
-      ],
-      [
-        "วันศุกร์",
-        "Friday"
-      ],
-      [
-        "นะ",
-        "softening particle"
-      ],
-      [
-        "คะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 142,
-    "display": 7,
-    "preview": "งาน",
-    "previewEn": "event",
-    "thai": "งานวันเสาร์เริ่มกี่โมง แล้วก็เลิกกี่โมงคะ",
-    "english": "What time does Saturday's event start and finish?",
-    "gloss": [["งาน", "event"], ["วันเสาร์", "Saturday"], ["เริ่ม", "start"], ["กี่โมง", "what time"], ["แล้วก็", "and then"], ["เลิก", "finish / end"], ["กี่โมง", "what time"], ["คะ", "polite particle (female)"]],
-    "cultural": ""
-  },
-  {
-    "num": 143,
-    "display": 8,
-    "preview": "วันอาทิตย์",
-    "previewEn": "Sunday",
-    "thai": "วันนี้วันอาทิตย์ ไปวัดกันเถอะครับ",
-    "english": "Today is Sunday — let's go to the temple.",
-    "gloss": [["วันนี้", "today"], ["วันอาทิตย์", "Sunday"], ["ไปวัด", "go to the temple"], ["กัน", "together"], ["เถอะ", "let's"], ["ครับ", "polite particle (male)"]],
-    "cultural": "Many Thais make merit at the temple (วัด) at weekends and on Buddhist holy days."
-  },
-  {
-    "num": 148,
-    "display": 9,
-    "preview": "เสาร์อาทิตย์",
-    "previewEn": "weekends",
-    "thai": "เสาร์อาทิตย์ไปรษณีย์ปิดครับ",
-    "english": "The post office is closed at weekends.",
-    "gloss": [
-      [
-        "เสาร์อาทิตย์",
-        "weekend (Sat–Sun)"
-      ],
-      [
-        "ไปรษณีย์",
-        "post office"
-      ],
-      [
-        "ปิด",
-        "closed"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 150,
-    "display": 10,
-    "preview": "เมื่อวาน",
-    "previewEn": "yesterday",
-    "thai": "เมื่อวานไปหาแฟนมาค่ะ",
-    "english": "I went to see my boyfriend yesterday.",
-    "gloss": [
-      [
-        "เมื่อวาน",
-        "yesterday"
-      ],
-      [
-        "ไปหา",
-        "go to see / visit"
-      ],
-      [
-        "แฟน",
-        "boyfriend / partner"
-      ],
-      [
-        "มา",
-        "(and came back)"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "แฟน covers boyfriend, girlfriend, or partner — gender comes from context."
-  },
-  {
-    "num": 156,
-    "display": 11,
-    "preview": "พรุ่งนี้",
-    "previewEn": "tomorrow",
-    "thai": "พรุ่งนี้ผมมีนัดหมอตอนบ่ายโมงครับ",
-    "english": "I have a doctor's appointment at 1pm tomorrow.",
-    "gloss": [["พรุ่งนี้", "tomorrow"], ["ผม", "I (male)"], ["มีนัด", "have an appointment"], ["หมอ", "doctor"], ["ตอน", "when"], ["บ่ายโมง", "1pm"], ["ครับ", "polite particle (male)"]],
-    "cultural": "บ่ายโมง = 1pm — the one บ่าย hour with no number before โมง."
-  },
-  {
-    "num": 157,
-    "display": 12,
-    "preview": "เลื่อน",
-    "previewEn": "move",
-    "thai": "ขอเลื่อนนัดเป็นอาทิตย์หน้าได้ไหมคะ",
-    "english": "Could I move the appointment to next week?",
-    "gloss": [["ขอ", "may I / request"], ["เลื่อน", "postpone / move"], ["นัด", "appointment"], ["เป็น", "is"], ["อาทิตย์หน้า", "next week"], ["ได้ไหม", "can I / is it possible"], ["คะ", "polite particle (female)"]],
-    "cultural": ""
-  },
-  {
-    "num": 151,
-    "display": 13,
-    "preview": "เดือนหน้า",
-    "previewEn": "next month",
-    "thai": "แล้วเจอกันเดือนหน้านะคะ",
-    "english": "See you next month.",
-    "gloss": [
-      [
-        "แล้ว",
-        "then"
-      ],
-      [
-        "เจอกัน",
-        "see each other"
-      ],
-      [
-        "เดือนหน้า",
-        "next month"
-      ],
-      [
-        "นะ",
-        "softening particle"
-      ],
-      [
-        "คะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 152,
-    "display": 14,
-    "preview": "เดือนที่แล้ว",
-    "previewEn": "Last month",
-    "thai": "เดือนที่แล้วไปงานแต่งเพื่อนมาครับ",
-    "english": "Last month I went to a friend's wedding.",
-    "gloss": [
-      [
-        "เดือนที่แล้ว",
-        "last month"
-      ],
-      [
-        "ไป",
-        "go"
-      ],
-      [
-        "งานแต่ง",
-        "wedding"
-      ],
-      [
-        "เพื่อน",
-        "friend"
-      ],
-      [
-        "มา",
-        "(and came back)"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "งานแต่ง is the everyday short form of งานแต่งงาน (wedding)."
-  },
-  {
-    "num": 158,
-    "display": 15,
-    "preview": "ผม",
-    "previewEn": "gym",
-    "thai": "ผมไปฟิตเนสสัปดาห์ละสามครั้งครับ",
-    "english": "I go to the gym three times a week.",
-    "gloss": [
-      [
-        "ผม",
-        "I (male)"
-      ],
-      [
-        "ไป",
-        "go"
-      ],
-      [
-        "ฟิตเนส",
-        "gym / fitness"
-      ],
-      [
-        "สัปดาห์ละ",
-        "per week"
-      ],
-      [
-        "สามครั้ง",
-        "three times"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "X ละ Y means Y per X (สัปดาห์ละสามครั้ง = three times a week)."
-  },
-  {
-    "num": 159,
-    "display": 16,
-    "preview": "พี่สาว",
-    "previewEn": "older sister",
-    "thai": "พี่สาวทำผมสองครั้งต่อเดือนค่ะ",
-    "english": "My older sister gets her hair done twice a month.",
-    "gloss": [
-      [
-        "พี่สาว",
-        "older sister"
-      ],
-      [
-        "ทำผม",
-        "get one's hair done"
-      ],
-      [
-        "สองครั้ง",
-        "twice"
-      ],
-      [
-        "ต่อเดือน",
-        "per month"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "Here ผม means 'hair', not the male pronoun 'I' (ทำผม = do/style hair). ต่อ works like ละ for 'per'."
-  },
-  {
-    "num": 153,
-    "display": 17,
-    "preview": "ทำงาน",
-    "previewEn": "worked",
-    "thai": "ทำงานที่บริษัทนี้มาได้ห้าปีแล้วครับ",
-    "english": "I've worked at this company for five years now.",
-    "gloss": [["ทำงาน", "work"], ["ที่", "that"], ["บริษัท", "company"], ["นี้", "this"], ["มาได้", "for (duration up to now)"], ["ห้าปี", "five years"], ["แล้ว", "already / now"], ["ครับ", "polite particle (male)"]],
-    "cultural": "...มาได้...แล้ว frames a duration that continues up to the present."
-  },
-  {
-    "num": 154,
-    "display": 18,
-    "preview": "ผม",
-    "previewEn": "moved",
-    "thai": "ผมย้ายมาอยู่ที่นี่ เมื่อสองปีที่แล้วครับ",
-    "english": "I moved here two years ago.",
-    "gloss": [
-      [
-        "ผม",
-        "I (male)"
-      ],
-      [
-        "ย้าย",
-        "move (home)"
-      ],
-      [
-        "มาอยู่",
-        "come to live"
-      ],
-      [
-        "ที่นี่",
-        "here"
-      ],
-      [
-        "เมื่อ",
-        "when / ago"
-      ],
-      [
-        "สองปีที่แล้ว",
-        "two years ago"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 160,
-    "display": 19,
-    "preview": "วันเด็ก",
-    "previewEn": "Children's Day",
-    "thai": "วันเด็กอยู่เดือนมกราคมครับ",
-    "english": "Children's Day is in January.",
-    "gloss": [
-      [
-        "วันเด็ก",
-        "Children's Day"
-      ],
-      [
-        "อยู่",
-        "is in"
-      ],
-      [
-        "เดือนมกราคม",
-        "January"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "Thai Children's Day falls on the second Saturday of January."
-  },
-  {
-    "num": 161,
-    "display": 20,
-    "preview": "เดือนกุมภาพันธ์",
-    "previewEn": "February",
-    "thai": "เดือนกุมภาพันธ์มีวันวาเลนไทน์ค่ะ",
-    "english": "February has Valentine's Day.",
-    "gloss": [
-      [
-        "เดือนกุมภาพันธ์",
-        "February"
-      ],
-      [
-        "มี",
-        "has"
-      ],
-      [
-        "วันวาเลนไทน์",
-        "Valentine's Day"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 162,
-    "display": 21,
-    "preview": "เดือนมีนาคม",
-    "previewEn": "March",
-    "thai": "เดือนมีนาคมเริ่มเข้าหน้าร้อนครับ",
-    "english": "In March the hot season begins.",
-    "gloss": [
-      [
-        "เดือนมีนาคม",
-        "March"
-      ],
-      [
-        "เริ่ม",
-        "begin"
-      ],
-      [
-        "เข้า",
-        "enter"
-      ],
-      [
-        "หน้าร้อน",
-        "hot season"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 163,
-    "display": 22,
-    "preview": "สงกรานต์",
-    "previewEn": "Songkran",
-    "thai": "สงกรานต์ตรงกับเดือนเมษายนครับ",
-    "english": "Songkran falls in April.",
-    "gloss": [
-      [
-        "สงกรานต์",
-        "Songkran"
-      ],
-      [
-        "ตรงกับ",
-        "falls on / coincides with"
-      ],
-      [
-        "เดือนเมษายน",
-        "April"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "Songkran (13–15 April) is the Thai New Year water festival."
-  },
-  {
-    "num": 164,
-    "display": 23,
-    "preview": "โรงเรียน",
-    "previewEn": "school",
-    "thai": "โรงเรียนเปิดเทอมเดือนพฤษภาคมค่ะ",
-    "english": "The school term opens in May.",
-    "gloss": [
-      [
-        "โรงเรียน",
-        "school"
-      ],
-      [
-        "เปิดเทอม",
-        "start of term"
-      ],
-      [
-        "เดือนพฤษภาคม",
-        "May"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "The Thai school year traditionally opens in mid-May."
-  },
-  {
-    "num": 165,
-    "display": 24,
-    "preview": "เดือนมิถุนายน",
-    "previewEn": "June",
-    "thai": "เดือนมิถุนายนเพื่อนผมจะแต่งงานครับ",
-    "english": "In June my friend is getting married.",
-    "gloss": [
-      [
-        "เดือนมิถุนายน",
-        "June"
-      ],
-      [
-        "เพื่อน",
-        "friend"
-      ],
-      [
-        "ผม",
-        "my (male speaker)"
-      ],
-      [
-        "จะ",
-        "will"
-      ],
-      [
-        "แต่งงาน",
-        "get married"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 166,
-    "display": 25,
-    "preview": "เดือนกรกฎาคม",
-    "previewEn": "July",
-    "thai": "เดือนกรกฎาคมผมจะไปเที่ยวญี่ปุ่นครับ",
-    "english": "In July I'm going to travel to Japan.",
-    "gloss": [
-      [
-        "เดือนกรกฎาคม",
-        "July"
-      ],
-      [
-        "ผม",
-        "I (male)"
-      ],
-      [
-        "จะ",
-        "will"
-      ],
-      [
-        "ไปเที่ยว",
-        "go travelling"
-      ],
-      [
-        "ญี่ปุ่น",
-        "Japan"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 167,
-    "display": 26,
-    "preview": "วันแม่",
-    "previewEn": "Mother's Day",
-    "thai": "วันแม่ตรงกับวันที่สิบสองสิงหาคมค่ะ",
-    "english": "Mother's Day falls on the 12th of August.",
-    "gloss": [
-      [
-        "วันแม่",
-        "Mother's Day"
-      ],
-      [
-        "ตรงกับ",
-        "falls on"
-      ],
-      [
-        "วันที่สิบสอง",
-        "the 12th"
-      ],
-      [
-        "สิงหาคม",
-        "August"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "Thai Mother's Day is 12 August, the birthday of the late Queen Sirikit."
-  },
-  {
-    "num": 168,
-    "display": 27,
-    "preview": "เดือนกันยายน",
-    "previewEn": "September",
-    "thai": "เดือนกันยายนน้ำท่วมบ่อยครับ",
-    "english": "In September it often floods.",
-    "gloss": [
-      [
-        "เดือนกันยายน",
-        "September"
-      ],
-      [
-        "น้ำท่วม",
-        "flood"
-      ],
-      [
-        "บ่อย",
-        "often"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 169,
-    "display": 28,
-    "preview": "ตุลาคม",
-    "previewEn": "October",
-    "thai": "ตุลาคมยังอยู่ในหน้าฝนค่ะ",
-    "english": "October is still in the rainy season.",
-    "gloss": [
-      [
-        "ตุลาคม",
-        "October"
-      ],
-      [
-        "ยัง",
-        "still"
-      ],
-      [
-        "อยู่ใน",
-        "is in"
-      ],
-      [
-        "หน้าฝน",
-        "rainy season"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 170,
-    "display": 29,
-    "preview": "เดือนพฤศจิกายน",
-    "previewEn": "November",
-    "thai": "เดือนพฤศจิกายนมีงานลอยกระทงครับ",
-    "english": "November has the Loi Krathong festival.",
-    "gloss": [
-      [
-        "เดือนพฤศจิกายน",
-        "November"
-      ],
-      [
-        "มี",
-        "has"
-      ],
-      [
-        "งาน",
-        "festival / event"
-      ],
-      [
-        "ลอยกระทง",
-        "Loi Krathong"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "Loi Krathong, when people float decorated baskets on the water, is held on the November full moon."
-  },
-  {
-    "num": 171,
-    "display": 30,
-    "preview": "วันพ่อ",
-    "previewEn": "Father's Day",
-    "thai": "วันพ่ออยู่เดือนธันวาคมครับ",
-    "english": "Father's Day is in December.",
-    "gloss": [
-      [
-        "วันพ่อ",
-        "Father's Day"
-      ],
-      [
-        "อยู่",
-        "is in"
-      ],
-      [
-        "เดือนธันวาคม",
-        "December"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "Thai Father's Day is 5 December, the birthday of the late King Bhumibol."
-  },
-  {
-    "num": 181,
-    "display": 31,
-    "preview": "วันที่",
-    "previewEn": "date",
-    "thai": "วันนี้วันที่เท่าไหร่นะคะ",
-    "english": "What's today's date?",
-    "gloss": [
-      [
-        "วันนี้",
-        "today"
-      ],
-      [
-        "วันที่",
-        "date (day of month)"
-      ],
-      [
-        "เท่าไหร่",
-        "what / how much"
-      ],
-      [
-        "นะ",
-        "softening particle"
-      ],
-      [
-        "คะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "วันที่ + a number gives the calendar date (วันที่ห้า = the 5th)."
-  },
-  {
-    "num": 361,
-    "display": 32,
-    "preview": "มิถุนายน",
-    "previewEn": "June",
-    "thai": "วันนี้วันที่สิบหกมิถุนายนค่ะ",
-    "english": "Today's date is the 16th of June.",
-    "gloss": [["วันนี้", "today"], ["วันที่สิบหก", "the 16th"], ["มิถุนายน", "June"], ["ค่ะ", "polite particle (female)"]],
-    "cultural": ""
-  },
-  {
-    "num": 182,
-    "display": 33,
-    "preview": "คอนเสิร์ต",
-    "previewEn": "concert",
-    "thai": "คอนเสิร์ตจัดวันที่สิบห้าครับ",
-    "english": "The concert is on the 15th.",
-    "gloss": [
-      [
-        "คอนเสิร์ต",
-        "concert"
-      ],
-      [
-        "จัด",
-        "be held"
-      ],
-      [
-        "วันที่สิบห้า",
-        "the 15th"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 183,
-    "display": 34,
-    "preview": "วันเกิด",
-    "previewEn": "birthday",
-    "thai": "วันเกิดผมวันที่สามเดือนธันวาคมครับ",
-    "english": "My birthday is the 3rd of December.",
-    "gloss": [
-      [
-        "วันเกิด",
-        "birthday"
-      ],
-      [
-        "ผม",
-        "my (male)"
-      ],
-      [
-        "วันที่สาม",
-        "the 3rd"
-      ],
-      [
-        "เดือนธันวาคม",
-        "December"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "Thai dates run day → month: วันที่สาม(เดือน)ธันวาคม = the 3rd of December."
-  },
-  {
-    "num": 184,
-    "display": 35,
-    "preview": "วันเกิด",
-    "previewEn": "birthday",
-    "thai": "วันเกิดคุณเดือนอะไรคะ",
-    "english": "What month is your birthday?",
-    "gloss": [
-      [
-        "วันเกิด",
-        "birthday"
-      ],
-      [
-        "คุณ",
-        "you"
-      ],
-      [
-        "เดือนอะไร",
-        "what month"
-      ],
-      [
-        "คะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": ""
-  },
-  {
-    "num": 185,
-    "display": 36,
-    "preview": "ปีนี้",
-    "previewEn": "This year",
-    "thai": "ปีนี้ปีพ.ศ. สองพันห้าร้อยหกสิบเก้าครับ",
-    "english": "This year is B.E. 2569.",
-    "gloss": [
-      [
-        "ปีนี้",
-        "this year"
-      ],
-      [
-        "ปี",
-        "year"
-      ],
-      [
-        "พ.ศ.",
-        "B.E. (Buddhist Era)"
-      ],
-      [
-        "สองพันห้าร้อยหกสิบเก้า",
-        "2569"
-      ],
-      [
-        "ครับ",
-        "polite particle (male)"
-      ]
-    ],
-    "cultural": "Thailand counts years in the Buddhist Era (พ.ศ.), 543 years ahead of the Western year."
-  },
-  {
-    "num": 186,
-    "display": 37,
-    "preview": "คนไทย",
-    "previewEn": "Thai people",
-    "thai": "คนไทยใช้ปีพ.ศ. ไม่ใช่ปีค.ศ. ค่ะ",
-    "english": "Thai people use B.E. years, not C.E.",
-    "gloss": [
-      [
-        "คนไทย",
-        "Thai people"
-      ],
-      [
-        "ใช้",
-        "use"
-      ],
-      [
-        "ปีพ.ศ.",
-        "B.E. year"
-      ],
-      [
-        "ไม่ใช่",
-        "not"
-      ],
-      [
-        "ปีค.ศ.",
-        "C.E. year"
-      ],
-      [
-        "ค่ะ",
-        "polite particle (female)"
-      ]
-    ],
-    "cultural": "ค.ศ. (Christian/Common Era) is the Western year; พ.ศ. = ค.ศ. + 543."
-  }
-]
+  {"num":360,"display":1,"preview":"วันนี้","previewEn":"today","thai":"วันนี้วันอะไรคะ","translit":"wan-níi wan à-rai khá","english":"What day is it today?","gloss":[["วันนี้","today","wan-níi"],["วันอะไร","what day","wan à-rai"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":137,"display":2,"preview":"ประชุม","previewEn":"meeting","thai":"ประชุมวันจันทร์นี้นะคะ","translit":"bprà-chum wan jan níi ná khá","english":"The meeting is this Monday.","gloss":[["ประชุม","meeting","bprà-chum"],["วันจันทร์","Monday","wan jan"],["นี้","this","níi"],["นะ","softening particle","ná"],["คะ","polite particle (female)","khá"]],"cultural":"Thai weekday names all begin with วัน (day): วันจันทร์ (Mon), วันอังคาร (Tue), and so on."},
+  {"num":138,"display":3,"preview":"ร้าน","previewEn":"shop","thai":"ร้านนี้เปิดทุกวัน ยกเว้นวันอังคารค่ะ","translit":"ráan níi bpèrt thúk wan yók-wén wan ang-khaan khâ","english":"This shop is open every day except Tuesday.","gloss":[["ร้าน","shop","ráan"],["นี้","this","níi"],["เปิด","open","bpèrt"],["ทุกวัน","every day","thúk wan"],["ยกเว้น","except","yók-wén"],["วันอังคาร","Tuesday","wan ang-khaan"],["ค่ะ","polite particle (female)","khâ"]],"cultural":""},
+  {"num":139,"display":4,"preview":"วันพุธ","previewEn":"Wednesday","thai":"วันพุธรถตู้ออกตีห้าครับ","translit":"wan phút rót-dtûu àwk dtii hâa khráp","english":"On Wednesday the van leaves at 5am.","gloss":[["วันพุธ","Wednesday","wan phút"],["รถตู้","minivan","rót-dtûu"],["ออก","leave / depart","àwk"],["ตีห้า","5am","dtii hâa"],["ครับ","polite particle (male)","khráp"]],"cultural":"ตี + a number gives the small hours: ตีหนึ่ง = 1am up to ตีห้า = 5am."},
+  {"num":140,"display":5,"preview":"วันพฤหัส","previewEn":"Thursday","thai":"วันพฤหัสนี้วันหยุดหรือเปล่าคะ","translit":"wan phá-rúe-hàt níi wan yùt rǔue bplào khá","english":"Is this Thursday a day off?","gloss":[["วันพฤหัส","Thursday","wan phá-rúe-hàt"],["นี้","this","níi"],["วันหยุด","day off / holiday","wan yùt"],["หรือเปล่า","yes-no question marker","rǔue bplào"],["คะ","polite particle (female)","khá"]],"cultural":"Full form is วันพฤหัสบดี; วันพฤหัส is the everyday short form."},
+  {"num":141,"display":6,"preview":"หนังสือ","previewEn":"book","thai":"หนังสือต้องคืนภายในวันศุกร์นะคะ","translit":"nǎng-sǔue dtâwng khuuen phaai-nai wan sùk ná khá","english":"The book has to be returned by Friday.","gloss":[["หนังสือ","book","nǎng-sǔue"],["ต้อง","must","dtâwng"],["คืน","return (something) — not คืน \"night\"","khuuen"],["ภายใน","within / by","phaai-nai"],["วันศุกร์","Friday","wan sùk"],["นะ","softening particle","ná"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":142,"display":7,"preview":"งาน","previewEn":"event","thai":"งานวันเสาร์เริ่มกี่โมง แล้วก็เลิกกี่โมงคะ","translit":"ngaan wan sǎo rêrm gìi moong láaeo gâw lêrk gìi moong khá","english":"What time does Saturday's event start and finish?","gloss":[["งาน","event","ngaan"],["วันเสาร์","Saturday","wan sǎo"],["เริ่ม","start","rêrm"],["กี่โมง","what time","gìi moong"],["แล้วก็","and then","láaeo gâw"],["เลิก","finish / end","lêrk"],["กี่โมง","what time","gìi moong"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":143,"display":8,"preview":"วันอาทิตย์","previewEn":"Sunday","thai":"วันนี้วันอาทิตย์ ไปวัดกันเถอะครับ","translit":"wan-níi wan aa-thít bpai wát gan thùh khráp","english":"Today is Sunday — let's go to the temple.","gloss":[["วันนี้","today","wan-níi"],["วันอาทิตย์","Sunday","wan aa-thít"],["ไปวัด","go to the temple","bpai wát"],["กัน","together","gan"],["เถอะ","let's","thùh"],["ครับ","polite particle (male)","khráp"]],"cultural":"Many Thais make merit at the temple (วัด) at weekends and on Buddhist holy days."},
+  {"num":148,"display":9,"preview":"เสาร์อาทิตย์","previewEn":"weekends","thai":"เสาร์อาทิตย์ไปรษณีย์ปิดครับ","translit":"sǎo aa-thít bprai-sà-nii bpìt khráp","english":"The post office is closed at weekends.","gloss":[["เสาร์อาทิตย์","weekend (Sat–Sun)","sǎo aa-thít"],["ไปรษณีย์","post office","bprai-sà-nii"],["ปิด","closed","bpìt"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":150,"display":10,"preview":"เมื่อวาน","previewEn":"yesterday","thai":"เมื่อวานไปหาแฟนมาค่ะ","translit":"mûea-waan bpai hǎa faaen maa khâ","english":"I went to see my boyfriend yesterday.","gloss":[["เมื่อวาน","yesterday","mûea-waan"],["ไปหา","go to see / visit","bpai hǎa"],["แฟน","boyfriend / partner","faaen"],["มา","(and came back)","maa"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"แฟน covers boyfriend, girlfriend, or partner — gender comes from context."},
+  {"num":156,"display":11,"preview":"พรุ่งนี้","previewEn":"tomorrow","thai":"พรุ่งนี้ผมมีนัดหมอตอนบ่ายโมงครับ","translit":"phrûng-níi phǒm mii nát mǎw dtawn bàai moong khráp","english":"I have a doctor's appointment at 1pm tomorrow.","gloss":[["พรุ่งนี้","tomorrow","phrûng-níi"],["ผม","I (male)","phǒm"],["มีนัด","have an appointment","mii nát"],["หมอ","doctor","mǎw"],["ตอน","when","dtawn"],["บ่ายโมง","1pm","bàai moong"],["ครับ","polite particle (male)","khráp"]],"cultural":"บ่ายโมง = 1pm — the one บ่าย hour with no number before โมง."},
+  {"num":157,"display":12,"preview":"เลื่อน","previewEn":"move","thai":"ขอเลื่อนนัดเป็นอาทิตย์หน้าได้ไหมคะ","translit":"khǎw lûean nát bpen aa-thít nâa dâi mǎi khá","english":"Could I move the appointment to next week?","gloss":[["ขอ","may I / request","khǎw"],["เลื่อน","postpone / move","lûean"],["นัด","appointment","nát"],["เป็น","is","bpen"],["อาทิตย์หน้า","next week","aa-thít nâa"],["ได้ไหม","can I / is it possible","dâi mǎi"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":151,"display":13,"preview":"เดือนหน้า","previewEn":"next month","thai":"แล้วเจอกันเดือนหน้านะคะ","translit":"láaeo juhr gan duean nâa ná khá","english":"See you next month.","gloss":[["แล้ว","then","láaeo"],["เจอกัน","see each other","juhr gan"],["เดือนหน้า","next month","duean nâa"],["นะ","softening particle","ná"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":152,"display":14,"preview":"เดือนที่แล้ว","previewEn":"Last month","thai":"เดือนที่แล้วไปงานแต่งเพื่อนมาครับ","translit":"duean thîi láaeo bpai ngaan dtàaeng phûean maa khráp","english":"Last month I went to a friend's wedding.","gloss":[["เดือนที่แล้ว","last month","duean thîi láaeo"],["ไป","go","bpai"],["งานแต่ง","wedding","ngaan dtàaeng"],["เพื่อน","friend","phûean"],["มา","(and came back)","maa"],["ครับ","polite particle (male)","khráp"]],"cultural":"งานแต่ง is the everyday short form of งานแต่งงาน (wedding)."},
+  {"num":158,"display":15,"preview":"ผม","previewEn":"gym","thai":"ผมไปฟิตเนสสัปดาห์ละสามครั้งครับ","translit":"phǒm bpai fít-nét sàp-daa lá sǎam khráng khráp","english":"I go to the gym three times a week.","gloss":[["ผม","I (male)","phǒm"],["ไป","go","bpai"],["ฟิตเนส","gym / fitness","fít-nét"],["สัปดาห์ละ","per week","sàp-daa lá"],["สามครั้ง","three times","sǎam khráng"],["ครับ","polite particle (male)","khráp"]],"cultural":"X ละ Y means Y per X (สัปดาห์ละสามครั้ง = three times a week)."},
+  {"num":159,"display":16,"preview":"พี่สาว","previewEn":"older sister","thai":"พี่สาวทำผมสองครั้งต่อเดือนค่ะ","translit":"phîi-sǎao tham phǒm sǎwng khráng dtàw duean khâ","english":"My older sister gets her hair done twice a month.","gloss":[["พี่สาว","older sister","phîi-sǎao"],["ทำผม","get one's hair done","tham phǒm"],["สองครั้ง","twice","sǎwng khráng"],["ต่อเดือน","per month","dtàw duean"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"Here ผม means 'hair', not the male pronoun 'I' (ทำผม = do/style hair). ต่อ works like ละ for 'per'."},
+  {"num":153,"display":17,"preview":"ทำงาน","previewEn":"worked","thai":"ทำงานที่บริษัทนี้มาได้ห้าปีแล้วครับ","translit":"tham-ngaan thîi baw-rí-sàt níi maa dâi hâa bpii láaeo khráp","english":"I've worked at this company for five years now.","gloss":[["ทำงาน","work","tham-ngaan"],["ที่","that","thîi"],["บริษัท","company","baw-rí-sàt"],["นี้","this","níi"],["มาได้","for (duration up to now)","maa dâi"],["ห้าปี","five years","hâa bpii"],["แล้ว","already / now","láaeo"],["ครับ","polite particle (male)","khráp"]],"cultural":"...มาได้...แล้ว frames a duration that continues up to the present."},
+  {"num":154,"display":18,"preview":"ผม","previewEn":"moved","thai":"ผมย้ายมาอยู่ที่นี่ เมื่อสองปีที่แล้วครับ","translit":"phǒm yáai maa yùu thîi-nîi mûea sǎwng bpii thîi láaeo khráp","english":"I moved here two years ago.","gloss":[["ผม","I (male)","phǒm"],["ย้าย","move (home)","yáai"],["มาอยู่","come to live","maa yùu"],["ที่นี่","here","thîi-nîi"],["เมื่อ","when / ago","mûea"],["สองปีที่แล้ว","two years ago","sǎwng bpii thîi láaeo"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":160,"display":19,"preview":"วันเด็ก","previewEn":"Children's Day","thai":"วันเด็กอยู่เดือนมกราคมครับ","translit":"wan dèk yùu duean má-gà-raa-khom khráp","english":"Children's Day is in January.","gloss":[["วันเด็ก","Children's Day","wan dèk"],["อยู่","is in","yùu"],["เดือนมกราคม","January","duean má-gà-raa-khom"],["ครับ","polite particle (male)","khráp"]],"cultural":"Thai Children's Day falls on the second Saturday of January."},
+  {"num":161,"display":20,"preview":"เดือนกุมภาพันธ์","previewEn":"February","thai":"เดือนกุมภาพันธ์มีวันวาเลนไทน์ค่ะ","translit":"duean gum-phaa-phan mii wan waa-laaen-thai khâ","english":"February has Valentine's Day.","gloss":[["เดือนกุมภาพันธ์","February","duean gum-phaa-phan"],["มี","has","mii"],["วันวาเลนไทน์","Valentine's Day","wan waa-laaen-thai"],["ค่ะ","polite particle (female)","khâ"]],"cultural":""},
+  {"num":162,"display":21,"preview":"เดือนมีนาคม","previewEn":"March","thai":"เดือนมีนาคมเริ่มเข้าหน้าร้อนครับ","translit":"duean mii-naa-khom rêrm khâo nâa-ráwn khráp","english":"In March the hot season begins.","gloss":[["เดือนมีนาคม","March","duean mii-naa-khom"],["เริ่ม","begin","rêrm"],["เข้า","enter","khâo"],["หน้าร้อน","hot season","nâa-ráwn"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":163,"display":22,"preview":"สงกรานต์","previewEn":"Songkran","thai":"สงกรานต์ตรงกับเดือนเมษายนครับ","translit":"sǒng-graan dtrong gàp duean mee-sǎa-yon khráp","english":"Songkran falls in April.","gloss":[["สงกรานต์","Songkran","sǒng-graan"],["ตรงกับ","falls on / coincides with","dtrong gàp"],["เดือนเมษายน","April","duean mee-sǎa-yon"],["ครับ","polite particle (male)","khráp"]],"cultural":"Songkran (13–15 April) is the Thai New Year water festival."},
+  {"num":164,"display":23,"preview":"โรงเรียน","previewEn":"school","thai":"โรงเรียนเปิดเทอมเดือนพฤษภาคมค่ะ","translit":"roong-rian bpèrt therm duean phrúet-sà-phaa-khom khâ","english":"The school term opens in May.","gloss":[["โรงเรียน","school","roong-rian"],["เปิดเทอม","start of term","bpèrt therm"],["เดือนพฤษภาคม","May","duean phrúet-sà-phaa-khom"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"The Thai school year traditionally opens in mid-May."},
+  {"num":165,"display":24,"preview":"เดือนมิถุนายน","previewEn":"June","thai":"เดือนมิถุนายนเพื่อนผมจะแต่งงานครับ","translit":"duean mí-thù-naa-yon phûean phǒm jà dtàaeng-ngaan khráp","english":"In June my friend is getting married.","gloss":[["เดือนมิถุนายน","June","duean mí-thù-naa-yon"],["เพื่อน","friend","phûean"],["ผม","my (male speaker)","phǒm"],["จะ","will","jà"],["แต่งงาน","get married","dtàaeng-ngaan"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":166,"display":25,"preview":"เดือนกรกฎาคม","previewEn":"July","thai":"เดือนกรกฎาคมผมจะไปเที่ยวญี่ปุ่นครับ","translit":"duean gà-rá-gà-daa-khom phǒm jà bpai thîao yîi-bpùn khráp","english":"In July I'm going to travel to Japan.","gloss":[["เดือนกรกฎาคม","July","duean gà-rá-gà-daa-khom"],["ผม","I (male)","phǒm"],["จะ","will","jà"],["ไปเที่ยว","go travelling","bpai thîao"],["ญี่ปุ่น","Japan","yîi-bpùn"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":167,"display":26,"preview":"วันแม่","previewEn":"Mother's Day","thai":"วันแม่ตรงกับวันที่สิบสองสิงหาคมค่ะ","translit":"wan mâae dtrong gàp wan-thîi sìp-sǎwng sǐng-hǎa-khom khâ","english":"Mother's Day falls on the 12th of August.","gloss":[["วันแม่","Mother's Day","wan mâae"],["ตรงกับ","falls on","dtrong gàp"],["วันที่สิบสอง","the 12th","wan-thîi sìp-sǎwng"],["สิงหาคม","August","sǐng-hǎa-khom"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"Thai Mother's Day is 12 August, the birthday of the late Queen Sirikit."},
+  {"num":168,"display":27,"preview":"เดือนกันยายน","previewEn":"September","thai":"เดือนกันยายนน้ำท่วมบ่อยครับ","translit":"duean gan-yaa-yon nám-thûam bòi khráp","english":"In September it often floods.","gloss":[["เดือนกันยายน","September","duean gan-yaa-yon"],["น้ำท่วม","flood","nám-thûam"],["บ่อย","often","bòi"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":169,"display":28,"preview":"ตุลาคม","previewEn":"October","thai":"ตุลาคมยังอยู่ในหน้าฝนค่ะ","translit":"dtù-laa-khom yang yùu nai nâa-fǒn khâ","english":"October is still in the rainy season.","gloss":[["ตุลาคม","October","dtù-laa-khom"],["ยัง","still","yang"],["อยู่ใน","is in","yùu nai"],["หน้าฝน","rainy season","nâa-fǒn"],["ค่ะ","polite particle (female)","khâ"]],"cultural":""},
+  {"num":170,"display":29,"preview":"เดือนพฤศจิกายน","previewEn":"November","thai":"เดือนพฤศจิกายนมีงานลอยกระทงครับ","translit":"duean phrúet-sà-jì-gaa-yon mii ngaan loi grà-thong khráp","english":"November has the Loi Krathong festival.","gloss":[["เดือนพฤศจิกายน","November","duean phrúet-sà-jì-gaa-yon"],["มี","has","mii"],["งาน","festival / event","ngaan"],["ลอยกระทง","Loi Krathong","loi grà-thong"],["ครับ","polite particle (male)","khráp"]],"cultural":"Loi Krathong, when people float decorated baskets on the water, is held on the November full moon."},
+  {"num":171,"display":30,"preview":"วันพ่อ","previewEn":"Father's Day","thai":"วันพ่ออยู่เดือนธันวาคมครับ","translit":"wan phâw yùu duean than-waa-khom khráp","english":"Father's Day is in December.","gloss":[["วันพ่อ","Father's Day","wan phâw"],["อยู่","is in","yùu"],["เดือนธันวาคม","December","duean than-waa-khom"],["ครับ","polite particle (male)","khráp"]],"cultural":"Thai Father's Day is 5 December, the birthday of the late King Bhumibol."},
+  {"num":181,"display":31,"preview":"วันที่","previewEn":"date","thai":"วันนี้วันที่เท่าไหร่นะคะ","translit":"wan-níi wan-thîi thâo-rài ná khá","english":"What's today's date?","gloss":[["วันนี้","today","wan-níi"],["วันที่","date (day of month)","wan-thîi"],["เท่าไหร่","what / how much","thâo-rài"],["นะ","softening particle","ná"],["คะ","polite particle (female)","khá"]],"cultural":"วันที่ + a number gives the calendar date (วันที่ห้า = the 5th)."},
+  {"num":361,"display":32,"preview":"มิถุนายน","previewEn":"June","thai":"วันนี้วันที่สิบหกมิถุนายนค่ะ","translit":"wan-níi wan-thîi sìp-hòk mí-thù-naa-yon khâ","english":"Today's date is the 16th of June.","gloss":[["วันนี้","today","wan-níi"],["วันที่สิบหก","the 16th","wan-thîi sìp-hòk"],["มิถุนายน","June","mí-thù-naa-yon"],["ค่ะ","polite particle (female)","khâ"]],"cultural":""},
+  {"num":182,"display":33,"preview":"คอนเสิร์ต","previewEn":"concert","thai":"คอนเสิร์ตจัดวันที่สิบห้าครับ","translit":"khawn-sèrt jàt wan-thîi sìp-hâa khráp","english":"The concert is on the 15th.","gloss":[["คอนเสิร์ต","concert","khawn-sèrt"],["จัด","be held","jàt"],["วันที่สิบห้า","the 15th","wan-thîi sìp-hâa"],["ครับ","polite particle (male)","khráp"]],"cultural":""},
+  {"num":183,"display":34,"preview":"วันเกิด","previewEn":"birthday","thai":"วันเกิดผมวันที่สามเดือนธันวาคมครับ","translit":"wan-gèrt phǒm wan-thîi sǎam duean than-waa-khom khráp","english":"My birthday is the 3rd of December.","gloss":[["วันเกิด","birthday","wan-gèrt"],["ผม","my (male)","phǒm"],["วันที่สาม","the 3rd","wan-thîi sǎam"],["เดือนธันวาคม","December","duean than-waa-khom"],["ครับ","polite particle (male)","khráp"]],"cultural":"Thai dates run day → month: วันที่สาม(เดือน)ธันวาคม = the 3rd of December."},
+  {"num":184,"display":35,"preview":"วันเกิด","previewEn":"birthday","thai":"วันเกิดคุณเดือนอะไรคะ","translit":"wan-gèrt khun duean à-rai khá","english":"What month is your birthday?","gloss":[["วันเกิด","birthday","wan-gèrt"],["คุณ","you","khun"],["เดือนอะไร","what month","duean à-rai"],["คะ","polite particle (female)","khá"]],"cultural":""},
+  {"num":185,"display":36,"preview":"ปีนี้","previewEn":"This year","thai":"ปีนี้ปีพ.ศ. สองพันห้าร้อยหกสิบเก้าครับ","translit":"bpii níi bpii phaw sǎw sǎwng-phan hâa-rói hòk-sìp-gâo khráp","english":"This year is B.E. 2569.","gloss":[["ปีนี้","this year","bpii níi"],["ปี","year","bpii"],["พ.ศ.","B.E. (Buddhist Era)","phaw sǎw"],["สองพันห้าร้อยหกสิบเก้า","2569","sǎwng-phan hâa-rói hòk-sìp-gâo"],["ครับ","polite particle (male)","khráp"]],"cultural":"Thailand counts years in the Buddhist Era (พ.ศ.), 543 years ahead of the Western year."},
+  {"num":186,"display":37,"preview":"คนไทย","previewEn":"Thai people","thai":"คนไทยใช้ปีพ.ศ. ไม่ใช่ปีค.ศ. ค่ะ","translit":"khon thai chái bpii phaw sǎw mâi châi bpii khaw sǎw khâ","english":"Thai people use B.E. years, not C.E.","gloss":[["คนไทย","Thai people","khon thai"],["ใช้","use","chái"],["ปีพ.ศ.","B.E. year","bpii phaw sǎw"],["ไม่ใช่","not","mâi châi"],["ปีค.ศ.","C.E. year","bpii khaw sǎw"],["ค่ะ","polite particle (female)","khâ"]],"cultural":"ค.ศ. (Christian/Common Era) is the Western year; พ.ศ. = ค.ศ. + 543."}
+  ]
 };
 </script>
 <script src="app-cta.js" defer></script>

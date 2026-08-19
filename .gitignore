@@ -110,3 +110,9 @@ cls-measure.html
 # English pill-hint review (2026-08-18) — local review only, never deploy
 hints-review.html
 hints-review-data.json
+
+# Transliteration review, beginner band (2026-08-19) — local review only, never deploy.
+# The audio folder holds 422 MP3s pulled from R2 for the review page; audio is never in git.
+translit-review.html
+translit-review-data.js
+translit-review-audio/
