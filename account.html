@@ -535,7 +535,97 @@ function signInWithCode() {
   })(0);
 }
 
-function sendLoginLink() {
+/* ── Mistyped-domain guard (2026-08-19) ───────────────────────────────────────
+   2 of the first 57 accounts were created on an address that cannot exist
+   (`example.co.um`, `yahoo.comp`). It is the worst failure shape there is:
+   the person is told "check your inbox" and nothing ever comes, with no bounce
+   they can see and no way to find out why.
+
+   ⚠ A SUGGESTION, NEVER A BLOCK. Odd-but-real domains exist and refusing to send
+   would be a worse failure than sending to a typo. One tap accepts; ignoring it
+   sends anyway. Two checks, because the two real cases failed differently:
+     · whole domain a near-miss of a big provider  -> yahoo.comp
+     · TLD a near-miss of a common one             -> example.co.um  */
+var TE_PROVIDERS = ['gmail.com','googlemail.com','yahoo.com','yahoo.co.uk','hotmail.com',
+  'hotmail.co.uk','outlook.com','live.com','live.co.uk','icloud.com','me.com','aol.com',
+  'msn.com','proton.me','protonmail.com','sky.com','btinternet.com','virginmedia.com'];
+var TE_TLDS = ['com','net','org','edu','gov','uk','co.uk','ac.uk','org.uk','me','io','co',
+  'de','fr','es','it','nl','se','no','dk','ie','ca','au','com.au','nz','th','co.th','ac.th',
+  'jp','info','biz','eu','us','ch','at','be','pt','pl','cz','fi'];
+
+function teEditDistance(a, b) {
+  if (a === b) return 0;
+  var prev = [], i, j;
+  for (j = 0; j <= b.length; j++) prev[j] = j;
+  for (i = 1; i <= a.length; i++) {
+    var cur = [i];
+    for (j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1,
+                        prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+/* Returns a corrected address, or null when the domain looks fine. */
+function teSuggestEmail(email) {
+  var at = String(email || '').lastIndexOf('@');
+  if (at < 1) return null;
+  var local = email.slice(0, at), domain = email.slice(at + 1).toLowerCase();
+  if (!domain || domain.indexOf('.') < 1) return null;
+  if (TE_PROVIDERS.indexOf(domain) !== -1) return null;      // exact match, nothing to say
+
+  // 1. the whole domain is one or two characters off a major provider
+  var best = null, bestD = 99;
+  for (var i = 0; i < TE_PROVIDERS.length; i++) {
+    var d = teEditDistance(domain, TE_PROVIDERS[i]);
+    if (d < bestD) { bestD = d; best = TE_PROVIDERS[i]; }
+  }
+  if (best && bestD > 0 && bestD <= 2) return local + '@' + best;
+
+  // 2. the TLD is a near-miss. Check the two-part suffix first (co.uk, com.au)
+  //    so `.co.um` is compared against `.co.uk` rather than `um` against `uk`.
+  var parts = domain.split('.');
+  var suffixes = [parts.slice(-2).join('.'), parts[parts.length - 1]];
+  for (var s = 0; s < suffixes.length; s++) {
+    var suf = suffixes[s];
+    if (TE_TLDS.indexOf(suf) !== -1) return null;            // a real suffix — leave it alone
+  }
+  for (var t = 0; t < TE_TLDS.length; t++) {
+    for (var u = 0; u < suffixes.length; u++) {
+      if (suffixes[u].length !== TE_TLDS[t].length) continue; // same length only: a typo, not a different TLD
+      if (teEditDistance(suffixes[u], TE_TLDS[t]) === 1) {
+        var head = domain.slice(0, domain.length - suffixes[u].length);
+        return local + '@' + head + TE_TLDS[t];
+      }
+    }
+  }
+  return null;
+}
+
+/* Renders the suggestion under the email box. Returns true if one was shown. */
+function teShowEmailSuggestion(email) {
+  var host = document.getElementById('login-email-status');
+  var fixed = teSuggestEmail(email);
+  if (!host) return false;
+  if (!fixed) return false;
+  host.style.color = 'var(--text-secondary)';
+  host.innerHTML = 'Did you mean <strong>' + fixed.replace(/[<>&]/g, '') + '</strong>? ' +
+    '<button type="button" id="login-email-fix" style="background:none;border:0;padding:2px 4px;' +
+    'font-family:inherit;font-size:inherit;color:var(--accent);text-decoration:underline;cursor:pointer">' +
+    'Use this</button>';
+  var b = document.getElementById('login-email-fix');
+  if (b) b.addEventListener('click', function () {
+    var inp = document.getElementById('login-email-input');
+    if (inp) inp.value = fixed;
+    host.textContent = '';
+    sendLoginLink(true);        // accepted the fix — send without re-asking
+  });
+  return true;
+}
+
+function sendLoginLink(skipSuggestion) {
   var a = window.ThaiEarAuth;
   var input = document.getElementById('login-email-input');
   var status = document.getElementById('login-email-status');
@@ -544,6 +634,9 @@ function sendLoginLink() {
   function fail(msg) { if (status) { status.style.color = '#B00020'; status.textContent = msg; } }
   if (!email || email.indexOf('@') < 1 || email.indexOf('.') < 0) { fail('Please enter a valid email address.'); return; }
   if (!a || !a.sendMagicLink) { fail('Still loading — try again in a moment.'); return; }
+  /* Offer a correction ONCE. If they ignore it and press again, send what they typed —
+     the guard must never become a wall in front of an unusual but real address. */
+  if (!skipSuggestion && teShowEmailSuggestion(email)) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
   if (status) { status.style.color = 'var(--text-tertiary)'; status.textContent = ''; }
   a.sendMagicLink(email).then(function (res) {
