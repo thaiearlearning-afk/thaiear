@@ -33,7 +33,24 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v349';   // v349: the mistyped-email suggestion gained a DISMISS button.
+const VERSION = 'v350';   // v350: RETENTION MEASUREMENT. Nothing on the site could answer "does
+                          // anyone come back": `progress` needs a manual tap, `last_sign_in_at`
+                          // only moves on a fresh sign-in, and `updated_at` moves for reasons
+                          // unrelated to the user (ten rows share one timestamp from a bulk
+                          // event). New user_activity table + /api/seen, pinged once per page
+                          // load and, throttled to 5 min, on play — the play ping is what stops
+                          // a 40-minute uninterrupted listen looking like a 40-minute ABSENCE
+                          // and being counted as a second session. Plays are batched and sent
+                          // as a tally, so `listens` counts clips rather than 5-minute windows.
+                          // ⚠ NOTHING IS STORED ON THE DEVICE — both guards are in memory and
+                          // the server decides day/session boundaries. That is what keeps this
+                          // outside PECR reg 6 and consent-free, so it measures the users who
+                          // decline cookies too. Do NOT add a sessionStorage flag.
+                          // ⚠ The hook lives in attrib.js, NOT auth.js: attrib.js already had
+                          // the auth listener, the token helper and the play listener, so the
+                          // highest-risk file on the site stays untouched. attrib.js is
+                          // precached, so this bump is what delivers it. RETENTION_MEASUREMENT.md.
+                          // v349:   // v349: the mistyped-email suggestion gained a DISMISS button.
                           // Mechanically nothing changed — the next press already sent the address
                           // as typed — but with only a "Use this" button the prompt read as a
                           // demand, and since the version that briefly shipped genuinely DID block

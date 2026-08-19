@@ -136,13 +136,75 @@
     }, null);
   }
 
+  /* ---------- 2b. retention ping --------------------------------------
+     Answers the one question nothing else can: what share of accounts are seen
+     on a day AFTER they signed up. See RETENTION_MEASUREMENT.md.
+
+     ⚠ NOTHING IS STORED ON THE DEVICE. Both guards below are in memory, and the
+     server decides what counts as a new day or a new session from last_seen_at.
+     That is what keeps this outside PECR reg 6 and therefore consent-free --
+     unlike the click capture above, which needed a gate. Do NOT "improve" this
+     with a sessionStorage flag.
+
+     ⚠ It must never be awaited, never retried, and never surface an error. A
+     missed ping is worth nothing; a slowed page load is worth less than nothing. */
+  var SEEN_THROTTLE_MS = 5 * 60 * 1000;
+  var seenSent = false;          // the plain once-per-page-load ping
+  var lastSeenPing = 0;          // throttle for the listen pings
+  var pendingListens = 0;        // plays counted but not yet sent
+
+  function postSeen(isListen) {
+    var tok = accessToken();
+    if (!tok) return;                                 // signed out: nothing to record
+    var now = Date.now();
+
+    /* ⚠ COUNT FIRST, SEND LATER. A naive throttle made `listens` a count of
+       five-minute WINDOWS rather than of clips: three plays inside one window sent
+       one ping, and on a long listen that undercounts by about 3x. Tally them in
+       memory and hand the tally to whichever ping goes next, so the requests stay
+       bounded and the number stays true. */
+    if (isListen) pendingListens++;
+
+    if (isListen) {
+      /* A listen also refreshes last_seen_at, so that a LONG UNINTERRUPTED LISTEN is
+         not mistaken for a second session. /api/seen only hears from us on a page
+         load otherwise, so someone who opens one topic and listens for 40 minutes
+         would look like a 40-minute absence. One request per 5 minutes, not per clip. */
+      if (now - lastSeenPing < SEEN_THROTTLE_MS) return;
+    } else {
+      if (seenSent) return;                           // auth.js notifies 3-4x per load
+      seenSent = true;
+    }
+    lastSeenPing = now;
+
+    var body = {};
+    if (pendingListens > 0) { body.listen = true; body.count = pendingListens; pendingListens = 0; }
+
+    ls(function () {
+      fetch('/api/seen', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        keepalive: true,                              // survives the navigation that triggered it
+      }).catch(function () {});                       // offline or down: drop it, silently
+    });
+  }
+
   /* ---------- 3. signup ------------------------------------------------ */
 
   var inFlight = {};                                // user id -> a POST is already going out
 
   function onAuth(ev) {
     var user = ev && ev.detail;
-    if (!user || !user.id || !user.created_at) return;
+    if (!user || !user.id) return;
+
+    /* ⚠ THE RETENTION PING RUNS FIRST AND DEPENDS ON NOTHING ELSE. It fires for every
+       signed-in load, not only new accounts, and deliberately does NOT require
+       created_at -- a missing created_at is exactly what killed ad attribution for
+       weeks (v338), and this must not be able to die the same way. */
+    postSeen(false);
+
+    if (!user.created_at) return;
 
     // Only a genuinely NEW account counts. Every later sign-in fires the
     // same event, and the once-guard covers the case where a new user
@@ -220,6 +282,9 @@
 
   var activated = false;
   function onPlay() {
+    /* Throttled to one request per 5 minutes; see postSeen(). This is what stops a
+       long listen being counted as a second session. */
+    postSeen(true);
     if (activated) return;
     activated = true;                               // once per page view
     track('activation');
