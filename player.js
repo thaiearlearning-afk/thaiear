@@ -799,9 +799,24 @@
   var PREWARM_POOL = 3;
   var PREWARM_WAIT_MS = 6000;
   var PREWARM_WAIT_TRIES = 5;
+  var PREWARM_YIELD_MS = 10000;   // hard cap: a tap that never settles must not stall the prewarm for ever
+  var PREWARM_MAX_ATTEMPTS = 2;   // a clip dropped for a tap gets one more go, then it is left to the tap path
   var sentBlobs = {};       // file -> Blob of the raw mp3
   var sentBlobBytes = 0;
   var prewarmStarted = false;
+  var prewarmCtrls = [];    // AbortControllers for the fetches currently in flight
+  var sentBusyUntil = 0;    // while in the future, a tap owns the network and the prewarm waits
+
+  function sentBusy() { return Date.now() < sentBusyUntil; }
+  /* Called the moment a tap begins. Aborts the prewarm fetches in flight and holds the queue,
+     so the clip the user is actually waiting for is not queued behind three they are not. The
+     aborted clips go back on the queue; nothing is lost but a few kilobytes of progress. */
+  function prewarmYield() {
+    sentBusyUntil = Date.now() + PREWARM_YIELD_MS;
+    var live = prewarmCtrls;
+    prewarmCtrls = [];
+    for (var i = 0; i < live.length; i++) { try { live[i].abort(); } catch (_) {} }
+  }
 
   // The clip filename for a sentence. Topic pages fall back to the page prefix and the sentence's
   // own num; a playlist item carries its own prefix and the real spreadsheet num in clipNum.
@@ -838,10 +853,17 @@
     // /api/audio round trip instead of one per clip.
     var gatedFiles = refs.filter(function (r) { return r.gated; }).map(function (r) { return r.file; });
     (gatedFiles.length ? mintMany(gatedFiles) : Promise.resolve()).then(function () {
-      var i2 = 0;
+      var queue = refs.slice();
       function lane() {
-        if (i2 >= refs.length || sentBlobBytes > PREWARM_MAX_BYTES) return Promise.resolve();
-        return warmClip(refs[i2++]).then(lane);
+        if (!queue.length || sentBlobBytes > PREWARM_MAX_BYTES) return Promise.resolve();
+        // A tap is loading: wait rather than compete with it. Re-checked, not slept through.
+        if (sentBusy()) return new Promise(function (r) { setTimeout(r, 250); }).then(lane);
+        var ref = queue.shift();
+        return warmClip(ref).then(function (aborted) {
+          ref.tries = (ref.tries || 0) + 1;
+          if (aborted && ref.tries < PREWARM_MAX_ATTEMPTS) queue.push(ref);
+          return lane();
+        });
       }
       var lanes = [];
       for (var l = 0; l < Math.min(PREWARM_POOL, refs.length); l++) lanes.push(lane());
@@ -849,14 +871,32 @@
     }).catch(function () {});
   }
 
+  /* Resolves true when the fetch was ABORTED for a tap (so the caller can re-queue it) and false
+     for success or any ordinary failure. Never rejects: a clip that will not warm is simply left
+     to the normal tap path. */
   function warmClip(ref) {
-    if (sentBlobs[ref.file]) return Promise.resolve();
+    if (sentBlobs[ref.file]) return Promise.resolve(false);
+    if (sentBusy()) return Promise.resolve(true);
+    var ctrl = null;
+    try { ctrl = new AbortController(); } catch (_) { ctrl = null; }
+    if (ctrl) prewarmCtrls.push(ctrl);
+    function done(v) {
+      if (ctrl) { var i = prewarmCtrls.indexOf(ctrl); if (i > -1) prewarmCtrls.splice(i, 1); }
+      return v;
+    }
     return buildUrl(ref.file, ref.gated)
-      .then(function (u) { return fetch(u).then(function (r) { return r.ok ? r.blob() : null; }); })
+      .then(function (u) {
+        return fetch(u, ctrl ? { signal: ctrl.signal } : undefined)
+          .then(function (r) { return r.ok ? r.blob() : null; });
+      })
       .then(function (b) {
         if (b && b.size && !sentBlobs[ref.file]) { sentBlobs[ref.file] = b; sentBlobBytes += b.size; }
+        return done(false);
       })
-      .catch(function () {});
+      .catch(function (e) {
+        var aborted = !!(e && (e.name === 'AbortError' || e.code === 20));
+        return done(aborted);
+      });
   }
 
   // A native downloadFile has no built-in deadline, so a stalled connection (slow network, or
@@ -7289,6 +7329,8 @@
   }
 
   function resetSentBtn() {
+    clearSentStall();
+    sentBusyUntil = 0;   // release the network back to the prewarm
     if (sentPlaying !== null) { updateSentBtn(sentPlaying, false); sentPlaying = null; }
     maybeResumeMain();
   }
@@ -7296,6 +7338,49 @@
   var sentResetTimer = null;
   var sentCurFile = null;    // the clip the sentence element is currently on (for the retry above)
   var sentRetried = {};      // file -> already re-minted once this page
+
+  /* ---- the stall watchdog (2026-08-19) ----
+     ⚠ THE BUTTON HAD NO WAY BACK FROM A LOAD THAT NEITHER LOADS NOR FAILS. toggleSentPlay lights
+     the play button the instant it is tapped, and the only things that ever un-light it are
+     `ended`, `error`, a rejected play() and sentResetTimer — and that timer is armed INSIDE the
+     `loadedmetadata` handler. So a media load that simply hangs (the ordinary failure of a
+     mobile connection: no error, no metadata, no rejection) left the button lit for ever, silent,
+     with no recovery but another tap. The owner hit this ~3 times in 20 taps on a freshly opened
+     topic — see the network-priority note on prewarmSentences for WHY it clustered there.
+     This is the deadline the media element does not have. It shares one recovery path with the
+     `error` listener rather than adding a second: drop what we cached for the clip, retry once,
+     and if that fails too, tell the truth in the UI. */
+  var SENT_STALL_MS = 5000;   // a sentence clip is 7-10 KB; 5 s is already a very sick connection
+  var sentStallTimer = null;
+  function clearSentStall() {
+    if (sentStallTimer) { clearTimeout(sentStallTimer); sentStallTimer = null; }
+  }
+  function armSentStall(num, file) {
+    clearSentStall();
+    sentStallTimer = setTimeout(function () {
+      sentStallTimer = null;
+      failSentLoad(num, file, 'stalled');
+    }, SENT_STALL_MS);
+  }
+  /* Shared by the `error` event and the watchdog above. Both mean the same thing to a user (I
+     pressed play and nothing happened) and both want the same cure, so they must not drift. */
+  function failSentLoad(num, file, why) {
+    clearSentStall();
+    if (num == null || sentPlaying !== num) return;   // superseded by a later tap - leave it alone
+    if (file && !sentRetried[file]) {
+      sentRetried[file] = true;
+      mintDrop(file);
+      if (sentBlobs[file]) { sentBlobBytes -= (sentBlobs[file].size || 0); delete sentBlobs[file]; }
+      /* Detach the dead source before retrying. A hung element left with its old src can fire a
+         late error over the top of the retry and cancel it. */
+      try { var sa = getSentAudio(); sa.pause(); sa.removeAttribute('src'); sa.load(); } catch (_) {}
+      sentPlaying = null; sentLock = false; sentBusyUntil = 0;
+      toggleSentPlay({ stopPropagation: function () {}, preventDefault: function () {} }, num);
+      return;
+    }
+    try { var el2 = getSentAudio(); el2.pause(); } catch (_) {}
+    resetSentBtn();   // second failure: un-light the button, so the UI stops claiming it is playing
+  }
 
   function initSentAudio() {
     var el = $('sent-audio-el');
@@ -7307,19 +7392,14 @@
        we cached for that clip and try ONCE with a freshly minted URL; a second failure resets
        the button exactly as before. Without this, one stale mint would look like broken audio
        for the rest of the page's life. */
-    el.addEventListener('error', function () {
-      var num = sentPlaying, file = sentCurFile;
-      if (num != null && file && !sentRetried[file]) {
-        sentRetried[file] = true;
-        mintDrop(file);
-        if (sentBlobs[file]) { sentBlobBytes -= (sentBlobs[file].size || 0); delete sentBlobs[file]; }
-        sentPlaying = null; sentLock = false;
-        toggleSentPlay({ stopPropagation: function () {}, preventDefault: function () {} }, num);
-        return;
-      }
-      resetSentBtn();
+    el.addEventListener('error', function () { failSentLoad(sentPlaying, sentCurFile, 'error'); });
+    el.addEventListener('loadedmetadata', function () {
+      /* Proof the source was good: stand the watchdog down, release the network back to the
+         prewarm, and let this clip be retried again later if it ever goes bad. */
+      clearSentStall();
+      sentBusyUntil = 0;
+      if (sentCurFile) delete sentRetried[sentCurFile];
     });
-    el.addEventListener('loadedmetadata', function () { if (sentCurFile) delete sentRetried[sentCurFile]; });
     el.addEventListener('pause', function () { if (el.duration && el.currentTime >= el.duration - 0.3) resetSentBtn(); });
     el.addEventListener('timeupdate', function () { if (el.duration && el.currentTime > 0 && el.currentTime >= el.duration - 0.15) resetSentBtn(); });
   }
@@ -7334,10 +7414,18 @@
     sentLock = true;
     setTimeout(function () { sentLock = false; }, 300);
     var sa = getSentAudio();
+    clearSentStall();
+    /* Hand the network to the tap. The idle prewarm runs three fetches at a time and WebKit
+       throttles parallel bursts hard (the same behaviour that made iOS dyn builds take two
+       minutes before DYN_POOL existed), so a tap arriving mid-prewarm could queue behind them
+       and look like a dead button. This is why the owner's stalls clustered on a just-opened
+       topic: that is exactly when the prewarm is running. */
+    prewarmYield();
 
     // tapping the playing sentence again stops it
     if (sentPlaying === num) {
       sa.pause(); sa.src = ''; revokeSentBlob(); sentPlaying = null; updateSentBtn(num, false);
+      sentBusyUntil = 0;
       maybeResumeMain();
       return;
     }
@@ -7368,6 +7456,7 @@
       sa.src = u;
       if (u && u.indexOf('blob:') === 0) sentBlobUrl = u;  // track for revocation on next swap/stop
       sa.load();
+      armSentStall(num, file);   // nothing else un-lights the button if this load simply hangs
       sa.addEventListener('loadedmetadata', function onMeta() {
         sa.removeEventListener('loadedmetadata', onMeta);
         var duration = sa.duration || 5;

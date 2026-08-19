@@ -33,7 +33,18 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v342';   // v342: PER-SENTENCE AUDIO LATENCY. A gated clip is ~10 KB but cost
+const VERSION = 'v343';   // v343: a sentence tap can no longer strand its own button. The play
+                          // button lit on tap and was only ever un-lit by ended/error/a rejected
+                          // play()/a timer armed inside loadedmetadata - so a media load that
+                          // merely HANGS (no error, no metadata, no rejection: the ordinary
+                          // failure of a mobile connection) left it lit and silent for ever.
+                          // player.js now arms a 5 s deadline when it sets the src, sharing one
+                          // recovery path with the error listener. Also: a tap now ABORTS the
+                          // idle prewarm's in-flight fetches and holds its queue until the tap
+                          // has loaded - WebKit throttles parallel bursts, so a tap arriving
+                          // mid-prewarm could queue behind clips nobody is waiting for, which is
+                          // why the stalls clustered on a just-opened topic (~3 in 20 taps).
+                          // v342: PER-SENTENCE AUDIO LATENCY. A gated clip is ~10 KB but cost
                           // THREE serialised round trips before a byte moved (/api/audio, then TWO
                           // Supabase calls inside it since ENFORCE_SUBSCRIPTION is on, then R2's S3
                           // endpoint, which is never edge-cached) - and its presigned URL changed
