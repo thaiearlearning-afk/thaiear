@@ -3089,7 +3089,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r190';   // r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r191';   // r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -7225,6 +7225,55 @@
     return ariaText(s.preview) + (s.previewEn ? ' / ' + ariaText(s.previewEn) : '');
   }
 
+  /* ⚠ STALE-PAGE HINT REPAIR (2026-08-19) — do not remove, and read why before "simplifying" it.
+     The direction-aware pill needs the TWO hint spans in the card markup. A page whose HTML
+     predates 2026-08-18 has neither the spans nor `previewEn` in its data block, so switching to
+     English first flips the accordion order and the reveal CSS while the pill keeps showing Thai
+     — the toggle looks half-broken. That page is not hypothetical and it is not only the one bad
+     load after a deploy:
+       · `thaiear-dl` holds a DOWNLOADED topic's HTML forever (it survives every VERSION bump by
+         design), and sw.js's 2 s network timeout serves it while ONLINE — positiveCacheMatch()
+         searches every cache — so a slow cold start on the phone lands on pre-pill markup;
+       · offline, a downloaded topic ALWAYS renders from that copy until it is re-downloaded.
+     The deploy-transition case is deliberately NOT covered: that load runs the old `player.js`
+     too, and it is fresh on the next navigation regardless. In the two DOWNLOAD cases, though,
+     `player.js` is precached and therefore CURRENT while the HTML is not — and that asymmetry is
+     the whole point: the half of the pair that is guaranteed fresh repairs the half that isn't.
+     Nothing else will: contentHash() hashes num+thai+english only (on purpose — the hint pass must
+     not stale every download), so a saved page is never flagged for re-download over this.
+     Source is /sentence-hints.json — the same generated {globalNum: [thai, english]} lookup the
+     playlist rows read (gen_sentence_hints.js), precached so it resolves offline too.
+     One-shot and feature-detected: a current page carries .pv-th and this returns before it
+     fetches anything. Nothing awaits it — the pill is cosmetic and must never gate a mount. */
+  function repairStaleHints() {
+    if (!SSR) return;                                     // the JS-built list already renders previewHtml()
+    var list = $('sentence-list');
+    if (!list || list.querySelector('.pv-th')) return;    // markup is already direction-aware
+    fetch('sentence-hints.json')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (h) {
+        if (!h) return;
+        sentences.forEach(function (s) {
+          if (!s.previewEn) {
+            var row = h[s.num];                           // topic pages key cards by the GLOBAL num
+            if (row && row[1]) s.previewEn = row[1];
+          }
+          if (!s.previewEn) return;
+          var card = document.getElementById('sc-' + s.num);
+          if (!card) return;
+          var pv = card.querySelector('.sent-preview');
+          if (pv) pv.outerHTML = previewHtml(s);          // the same helper ssrify_topic.js mirrors
+          var head = card.querySelector('.sentence-header');
+          if (head) {                                     // keep the accessible name carrying both hints
+            var lbl = head.getAttribute('aria-label') || '';
+            var suffix = / — Premium content$/.test(lbl) ? ' — Premium content' : '';
+            head.setAttribute('aria-label', 'Sentence ' + dispNum(s) + ': ' + previewAria(s) + suffix);
+          }
+        });
+      })
+      .catch(function () {});
+  }
+
   function lockedCardHtml(s) {
     var d = dispNum(s);
     return '<div class="sentence-card' + sentCardClasses(s) + '" id="sc-' + s.num + '">' +
@@ -7725,6 +7774,7 @@
     // sync the transport bar if metadata already arrived before mount
     if (mainAudio.duration) { var t = $('time-total'); if (t) t.textContent = formatTime(mainAudio.duration); }
     render();
+    repairStaleHints();     // pre-2026-08-18 markup (a downloaded/stale page): fill in the English pill hint
     initSentAudio();
     initScrubber();
     initProgress();
