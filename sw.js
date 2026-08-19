@@ -33,7 +33,26 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v346';   // v346: PRIVACY — the policy and the code disagreed, and the code was
+const VERSION = 'v347';   // v347: HOTFIX — the mistyped-email guard shipped half-finished and was
+                          // BLOCKING SIGNUPS. It reached production inside another session's
+                          // `git add -A`, at an intermediate state with no once-only guard, so a
+                          // flagged address could never be sent: press send, get "did you mean",
+                          // press again, get it again, forever. And it flagged real domains —
+                          // measured against 43 of them, the shipped version wrongly corrected
+                          // b.com, bt.com, x.com, gmx.com, mac.com and hey.com.
+                          // ⚠ THE FUZZY MATCHER IS GONE ENTIRELY, not tuned. A length-scaled
+                          // threshold was tried and still mangled mail.com -> gmail.com,
+                          // uol.com -> aol.com, sony.com -> sky.com and mail.ru -> mail.au (.ru
+                          // simply was not in the TLD list). Edit distance cannot do this job:
+                          // real domains sit 1-2 characters from popular ones constantly. It is
+                          // now an explicit table of unambiguous typos, which cannot invent a
+                          // correction for a domain it has never seen, and it still catches both
+                          // addresses that actually happened (yahoo.comp, example.co.um).
+                          // Also: join.html no longer strands a visitor after Google sign-in —
+                          // startGoogleSignIn uses redirectTo: window.location.href, so Google
+                          // returns them to the join page as a FRESH LOAD, where they landed on
+                          // "Create an account", saw a tick, and had to find the ✕ to escape.
+                          // v346: PRIVACY — the policy and the code disagreed, and the code was
                           // the one at fault. attrib.js wrote gclid/utm/landing/referrer to
                           // localStorage with NO consent check, while privacy.html told users that
                           // half was consent-gated. localStorage is PECR reg 6 "access to terminal

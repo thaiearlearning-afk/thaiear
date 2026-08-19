@@ -284,83 +284,76 @@ function signInWithCode() {
   })(0);
 }
 
-/* ── Mistyped-domain guard (2026-08-19) ───────────────────────────────────────
-   2 of the first 57 accounts were created on an address that cannot exist
-   (`example.co.um`, `yahoo.comp`). It is the worst failure shape there is:
-   the person is told "check your inbox" and nothing ever comes, with no bounce
-   they can see and no way to find out why.
+/* ── Mistyped-domain guard (rewritten 2026-08-19) ─────────────────────────────
+   2 of the first 16 email-route signups were created on a domain that cannot
+   exist (`example.co.um`, `yahoo.comp`). Neither person ever confirmed or
+   signed in. It is the worst failure shape there is: "check your inbox", and
+   nothing ever comes, with no bounce they can see.
 
-   ⚠ A SUGGESTION, NEVER A BLOCK. Odd-but-real domains exist and refusing to send
-   would be a worse failure than sending to a typo. One tap accepts; ignoring it
-   sends anyway. Two checks, because the two real cases failed differently:
-     · whole domain a near-miss of a big provider  -> yahoo.comp
-     · TLD a near-miss of a common one             -> example.co.um  */
-var TE_PROVIDERS = ['gmail.com','googlemail.com','yahoo.com','yahoo.co.uk','hotmail.com',
-  'hotmail.co.uk','outlook.com','live.com','live.co.uk','icloud.com','me.com','aol.com',
-  'msn.com','proton.me','protonmail.com','sky.com','btinternet.com','virginmedia.com'];
-var TE_TLDS = ['com','net','org','edu','gov','uk','co.uk','ac.uk','org.uk','me','io','co',
-  'de','fr','es','it','nl','se','no','dk','ie','ca','au','com.au','nz','th','co.th','ac.th',
-  'jp','info','biz','eu','us','ch','at','be','pt','pl','cz','fi'];
+   ⚠⚠ NO FUZZY MATCHING. THIS IS DELIBERATE AND MUST STAY THAT WAY.
+   The first version scored edit distance against a list of big providers, and
+   it was measured wrong on real addresses: `mail.com`, `uol.com`, `sony.com`,
+   `nike.com`, `gmx.com`, `bt.com`, `hey.com` all drew a "did you mean...", and
+   `mail.ru` was offered `mail.au` purely because `.ru` was missing from the TLD
+   list. Real domains sit one or two characters from popular ones constantly.
+   An explicit table cannot invent a correction for a domain it has never seen.
 
-function teEditDistance(a, b) {
-  if (a === b) return 0;
-  var prev = [], i, j;
-  for (j = 0; j <= b.length; j++) prev[j] = j;
-  for (i = 1; i <= a.length; i++) {
-    var cur = [i];
-    for (j = 1; j <= b.length; j++) {
-      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1,
-                        prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
-    }
-    prev = cur;
-  }
-  return prev[b.length];
-}
+   ⚠ AND IT MUST NEVER BLOCK. Suggest once; press send again and it goes as
+   typed. The version that shipped briefly had no once-only guard, which turned
+   the prompt into a wall -- a flagged address could not be sent AT ALL. */
+var TE_TLD_TYPOS = {
+  'comp': 'com', 'con': 'com', 'cmo': 'com', 'comm': 'com', 'cim': 'com',
+  'cpm': 'com', 'clm': 'com', 'xom': 'com', 'vom': 'com', 'som': 'com',
+  'co.um': 'co.uk', 'co.uj': 'co.uk', 'co.ik': 'co.uk', 'co.yk': 'co.uk',
+  'orh.uk': 'org.uk', 'ac.uj': 'ac.uk'
+};
+var TE_DOMAIN_TYPOS = {
+  'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmaill.com': 'gmail.com',
+  'gamil.com': 'gmail.com', 'gnail.com': 'gmail.com', 'gmail.om': 'gmail.com',
+  'yaho.com': 'yahoo.com', 'yahooo.com': 'yahoo.com',
+  'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com', 'hotmall.com': 'hotmail.com',
+  'outlok.com': 'outlook.com', 'outllok.com': 'outlook.com', 'outlook.co': 'outlook.com',
+  'iclould.com': 'icloud.com', 'icoud.com': 'icloud.com',
+  'live.co': 'live.com', 'aol.co': 'aol.com'
+};
 
-/* Returns a corrected address, or null when the domain looks fine. */
+/* Returns a corrected address, or null when there is nothing certain to say. */
 function teSuggestEmail(email) {
   var at = String(email || '').lastIndexOf('@');
   if (at < 1) return null;
   var local = email.slice(0, at), domain = email.slice(at + 1).toLowerCase();
   if (!domain || domain.indexOf('.') < 1) return null;
-  if (TE_PROVIDERS.indexOf(domain) !== -1) return null;      // exact match, nothing to say
 
-  // 1. the whole domain is one or two characters off a major provider
-  var best = null, bestD = 99;
-  for (var i = 0; i < TE_PROVIDERS.length; i++) {
-    var d = teEditDistance(domain, TE_PROVIDERS[i]);
-    if (d < bestD) { bestD = d; best = TE_PROVIDERS[i]; }
-  }
-  if (best && bestD > 0 && bestD <= 2) return local + '@' + best;
+  if (TE_DOMAIN_TYPOS[domain]) return local + '@' + TE_DOMAIN_TYPOS[domain];
 
-  // 2. the TLD is a near-miss. Check the two-part suffix first (co.uk, com.au)
-  //    so `.co.um` is compared against `.co.uk` rather than `um` against `uk`.
+  /* Suffix typos. Check the TWO-part suffix first so `.co.um` is read as a broken
+     `.co.uk` rather than a bare `.um`. Only exact table hits count. */
   var parts = domain.split('.');
-  var suffixes = [parts.slice(-2).join('.'), parts[parts.length - 1]];
-  for (var s = 0; s < suffixes.length; s++) {
-    var suf = suffixes[s];
-    if (TE_TLDS.indexOf(suf) !== -1) return null;            // a real suffix — leave it alone
-  }
-  for (var t = 0; t < TE_TLDS.length; t++) {
-    for (var u = 0; u < suffixes.length; u++) {
-      if (suffixes[u].length !== TE_TLDS[t].length) continue; // same length only: a typo, not a different TLD
-      if (teEditDistance(suffixes[u], TE_TLDS[t]) === 1) {
-        var head = domain.slice(0, domain.length - suffixes[u].length);
-        return local + '@' + head + TE_TLDS[t];
-      }
+  if (parts.length >= 3) {
+    var two = parts.slice(-2).join('.');
+    if (TE_TLD_TYPOS[two]) {
+      return local + '@' + parts.slice(0, -2).join('.') + '.' + TE_TLD_TYPOS[two];
     }
+  }
+  var one = parts[parts.length - 1];
+  if (TE_TLD_TYPOS[one]) {
+    return local + '@' + parts.slice(0, -1).join('.') + '.' + TE_TLD_TYPOS[one];
   }
   return null;
 }
 
+var _teSuggestedFor = null;
 /* Renders the suggestion under the email box. Returns true if one was shown. */
 function teShowEmailSuggestion(email) {
   var host = document.getElementById('login-email-status');
   var fixed = teSuggestEmail(email);
-  if (!host) return false;
-  if (!fixed) return false;
+  if (!host || !fixed) return false;
+  /* ⚠ Offer a given address ONCE. Pressing send again with the same value means
+     "I meant it" and must go through. Without this the suggestion is a wall. */
+  if (_teSuggestedFor === email) return false;
+  _teSuggestedFor = email;
   host.style.color = 'var(--text-secondary)';
-  host.innerHTML = 'Did you mean <strong>' + fixed.replace(/[<>&]/g, '') + '</strong>? ' +
+  host.innerHTML = 'Did you mean <strong>' + fixed.replace(/[<>&"]/g, '') + '</strong>? ' +
     '<button type="button" id="login-email-fix" style="background:none;border:0;padding:2px 4px;' +
     'font-family:inherit;font-size:inherit;color:var(--accent);text-decoration:underline;cursor:pointer">' +
     'Use this</button>';
@@ -369,7 +362,7 @@ function teShowEmailSuggestion(email) {
     var inp = document.getElementById('login-email-input');
     if (inp) inp.value = fixed;
     host.textContent = '';
-    sendLoginLink(true);        // accepted the fix — send without re-asking
+    sendLoginLink(true);
   });
   return true;
 }
