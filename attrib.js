@@ -153,29 +153,12 @@
   var lastSeenPing = 0;          // throttle for the listen pings
   var pendingListens = 0;        // plays counted but not yet sent
 
-  function postSeen(isListen) {
+  /* The only thing that actually sends. Kept separate from the decision to send,
+     because a forced flush must not disturb the tally it is flushing. */
+  function sendSeen() {
     var tok = accessToken();
     if (!tok) return;                                 // signed out: nothing to record
-    var now = Date.now();
-
-    /* ⚠ COUNT FIRST, SEND LATER. A naive throttle made `listens` a count of
-       five-minute WINDOWS rather than of clips: three plays inside one window sent
-       one ping, and on a long listen that undercounts by about 3x. Tally them in
-       memory and hand the tally to whichever ping goes next, so the requests stay
-       bounded and the number stays true. */
-    if (isListen) pendingListens++;
-
-    if (isListen) {
-      /* A listen also refreshes last_seen_at, so that a LONG UNINTERRUPTED LISTEN is
-         not mistaken for a second session. /api/seen only hears from us on a page
-         load otherwise, so someone who opens one topic and listens for 40 minutes
-         would look like a 40-minute absence. One request per 5 minutes, not per clip. */
-      if (now - lastSeenPing < SEEN_THROTTLE_MS) return;
-    } else {
-      if (seenSent) return;                           // auth.js notifies 3-4x per load
-      seenSent = true;
-    }
-    lastSeenPing = now;
+    lastSeenPing = Date.now();
 
     var body = {};
     if (pendingListens > 0) { body.listen = true; body.count = pendingListens; pendingListens = 0; }
@@ -188,6 +171,43 @@
         keepalive: true,                              // survives the navigation that triggered it
       }).catch(function () {});                       // offline or down: drop it, silently
     });
+  }
+
+  function postSeen(isListen) {
+    if (!accessToken()) return;
+    var now = Date.now();
+
+    /* ⚠ COUNT FIRST, SEND LATER. A naive throttle made `listens` a count of
+       five-minute WINDOWS rather than of clips: three plays inside one window sent
+       one ping, and on a long listen that undercounts by about 3x. Tally them in
+       memory and hand the tally to whichever ping goes next, so the requests stay
+       bounded and the number stays true. */
+    if (isListen) {
+      pendingListens++;
+      /* A listen also refreshes last_seen_at, so that a LONG UNINTERRUPTED LISTEN is
+         not mistaken for a second session. /api/seen only hears from us on a page
+         load otherwise, so someone who opens one topic and listens for 40 minutes
+         would look like a 40-minute absence. One request per 5 minutes, not per clip. */
+      if (now - lastSeenPing < SEEN_THROTTLE_MS) return;
+    } else {
+      if (seenSent) return;                           // auth.js notifies 3-4x per load
+      seenSent = true;
+    }
+    sendSeen();
+  }
+
+  /* ⚠⚠ FLUSH BEFORE THE PAGE GOES, OR MOST LISTENING IS NEVER RECORDED.
+     Plays inside the throttle window live only in memory, and a navigation
+     re-executes this whole file with the tally reset. Walked through:
+       0:00 load -> ping.  0:30/1:00/1:30 play three clips -> all throttled.
+       2:00 navigate -> pendingListens resets. THREE CLIPS PLAYED, ZERO RECORDED.
+     Moving to the next topic inside five minutes is completely ordinary, so this
+     was not an edge case, it was the common one. `keepalive` on the fetch is what
+     lets the POST outlive the page; nothing was firing it.
+     ⚠ `pagehide` AND `visibilitychange`, because iOS Safari frequently gives no
+     pagehide when the user switches apps or locks the phone. */
+  function flushSeen() {
+    if (pendingListens > 0) sendSeen();
   }
 
   /* ---------- 3. signup ------------------------------------------------ */
@@ -311,6 +331,10 @@
   capture();
   window.addEventListener('thaiear:auth', onAuth);
   document.addEventListener('play', onPlay, true);  // capture: media events don't bubble
+  window.addEventListener('pagehide', flushSeen);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') flushSeen();
+  });
 
   window.ThaiEarAttrib = {
     click:  stored,                                 // what click is on file

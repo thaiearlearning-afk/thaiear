@@ -33,7 +33,17 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v350';   // v350: RETENTION MEASUREMENT. Nothing on the site could answer "does
+const VERSION = 'v351';   // v351: retention — pending plays now FLUSH when the page goes away.
+                          // v350 tallied plays in memory and sent them on the next throttled ping,
+                          // but a navigation re-executes attrib.js and reset the tally: load a
+                          // topic, play three clips, move to the next topic inside five minutes,
+                          // and ZERO of them were recorded. That is ordinary behaviour, not an
+                          // edge case, so `listens` was close to worthless. Now flushed on
+                          // pagehide AND visibilitychange (iOS often skips pagehide when the user
+                          // switches apps or locks the phone); `keepalive` was already set, which
+                          // is what lets the POST outlive the page. Counting and sending are now
+                          // separate so a flush cannot inflate the tally it is flushing.
+                          // v350:   // v350: RETENTION MEASUREMENT. Nothing on the site could answer "does
                           // anyone come back": `progress` needs a manual tap, `last_sign_in_at`
                           // only moves on a fresh sign-in, and `updated_at` moves for reasons
                           // unrelated to the user (ten rows share one timestamp from a bulk
