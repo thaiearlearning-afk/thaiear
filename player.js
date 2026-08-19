@@ -770,7 +770,93 @@
       }
       if (!navigator.onLine) return Promise.reject({ code: 'licence' });
     }
+    /* Prewarmed bytes (see prewarmSentences) — the clip is already in memory, so the tap costs
+       an object URL instead of two network round trips. The URL is revoked by the existing
+       revokeSentBlob() swap; the Blob itself stays cached for the life of the page. */
+    if (sentBlobs[file]) {
+      try { return Promise.resolve(URL.createObjectURL(sentBlobs[file])); } catch (_) {}
+    }
     return buildUrl(file, gated);
+  }
+
+  /* ---- prewarm the topic's own sentence clips, at idle (2026-08-19) ----
+     A sentence clip averages 7–10 KB and a whole topic's Thai clips are 170–500 KB — less than
+     player.js itself. Every millisecond of the "few seconds" a tap used to take was latency, not
+     bytes, so the fix is simply to have the bytes already. Fetching them at idle turns the FIRST
+     tap of every sentence into an object URL.
+     The guards matter more than the fetching:
+       · save-data / 2g → skip entirely; this is a convenience, not a requirement;
+       · already downloaded → skip, sentSrcFor serves those from the device;
+       · locked or not entitled → skip, there is nothing we may fetch;
+       · a dynamic build in flight → wait for it. The build is the thing the owner says already
+         works well, and it runs its own pool of 6; adding lanes underneath it would trade a fast
+         build for a fast tap, which is a bad trade.
+     Failures are silent by design: anything that does not warm just falls through to the ordinary
+     path. In particular a bucket without CORS makes every fetch here reject, and the site must
+     behave exactly as it did before. */
+  var PREWARM_MAX_FILES = 60;
+  var PREWARM_MAX_BYTES = 3 * 1024 * 1024;
+  var PREWARM_POOL = 3;
+  var PREWARM_WAIT_MS = 6000;
+  var PREWARM_WAIT_TRIES = 5;
+  var sentBlobs = {};       // file -> Blob of the raw mp3
+  var sentBlobBytes = 0;
+  var prewarmStarted = false;
+
+  // The clip filename for a sentence. Topic pages fall back to the page prefix and the sentence's
+  // own num; a playlist item carries its own prefix and the real spreadsheet num in clipNum.
+  function sentFileFor(s, num) {
+    var clipN = (s && s.clipNum != null) ? s.clipNum : num;
+    return ((s && s.prefix) ? s.prefix : PREFIX) + '_S' + String(clipN).padStart(2, '0') + '_TH.mp3';
+  }
+
+  function prewarmSentences(tries) {
+    if (prewarmStarted) return;
+    if (!sentences || !sentences.length) return;
+    if (!navigator.onLine || !entitledForPage()) return;
+    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (conn && (conn.saveData || /2g/.test(conn.effectiveType || ''))) return;
+    if (dynBuilding) {   // let the build have the network to itself
+      if ((tries || 0) >= PREWARM_WAIT_TRIES) return;
+      setTimeout(function () { prewarmSentences((tries || 0) + 1); }, PREWARM_WAIT_MS);
+      return;
+    }
+    prewarmStarted = true;
+
+    var refs = [];
+    for (var i = 0; i < sentences.length && refs.length < PREWARM_MAX_FILES; i++) {
+      var s = sentences[i];
+      if (sentLocked(s)) continue;
+      var pfx = s.prefix || PREFIX;
+      if (!pfx || isDownloaded(pfx)) continue;
+      var tr = s.tier || TIER;
+      refs.push({ file: sentFileFor(s, s.num), gated: tr === 'member' || tr === 'premium' });
+    }
+    if (!refs.length) return;
+
+    // One batch mint for every gated clip, then the fetches — so the whole topic costs ONE
+    // /api/audio round trip instead of one per clip.
+    var gatedFiles = refs.filter(function (r) { return r.gated; }).map(function (r) { return r.file; });
+    (gatedFiles.length ? mintMany(gatedFiles) : Promise.resolve()).then(function () {
+      var i2 = 0;
+      function lane() {
+        if (i2 >= refs.length || sentBlobBytes > PREWARM_MAX_BYTES) return Promise.resolve();
+        return warmClip(refs[i2++]).then(lane);
+      }
+      var lanes = [];
+      for (var l = 0; l < Math.min(PREWARM_POOL, refs.length); l++) lanes.push(lane());
+      return Promise.all(lanes);
+    }).catch(function () {});
+  }
+
+  function warmClip(ref) {
+    if (sentBlobs[ref.file]) return Promise.resolve();
+    return buildUrl(ref.file, ref.gated)
+      .then(function (u) { return fetch(u).then(function (r) { return r.ok ? r.blob() : null; }); })
+      .then(function (b) {
+        if (b && b.size && !sentBlobs[ref.file]) { sentBlobs[ref.file] = b; sentBlobBytes += b.size; }
+      })
+      .catch(function () {});
   }
 
   // A native downloadFile has no built-in deadline, so a stalled connection (slow network, or
@@ -2583,24 +2669,108 @@
      Premium topics ask /api/audio for a short-lived presigned R2 URL, sending the Supabase
      session token in an Authorization header (which an <audio> tag can't carry). The Function
      verifies the user and returns the URL; the bytes then load browser ↔ R2 directly. */
+  /* ---- signed-URL cache (2026-08-19) — read this before touching buildUrl ----
+     A gated clip used to cost TWO serialised round trips before a single byte of audio moved:
+     page → /api/audio → Supabase → back, and only THEN the fetch from R2. Worse, the presigned
+     URL carries a fresh X-Amz-Date and signature every time, so it is a different URL on every
+     tap and NO cache — browser, service worker or edge — can ever hit. Replaying one 10 KB
+     sentence therefore re-paid the whole cost, every time. (Measured 2026-08-19 from the owner's
+     connection: free clip off the CDN 0.44 s median with `cf-cache-status: HIT`; the same-sized
+     premium clip 0.80 s from the S3 endpoint, which returns NO cf-cache-status and NO
+     cache-control at all — an origin read, always.)
+     The server signs for URL_TTL (3600 s), so holding the URL for 45 minutes is safe with a wide
+     margin, and it makes the URL STABLE — which is what lets the browser's own HTTP cache serve
+     the replay. In-flight requests are shared, so the dynamic build's pool of 6 asking for the
+     same file mints once, not six times.
+     ⚠ Memory only, never localStorage: a signed URL is a bearer token for that object. It is
+     dropped wholesale on any auth change (see the listener at the bottom of this block) so a
+     sign-out cannot leave one usable. */
+  var MINT_TTL_MS = 45 * 60 * 1000;
+  var mintCache = {};        // file -> { url, exp }
+  var mintInflight = {};     // file -> Promise<url>, so concurrent asks share one mint
+  function mintGet(file) {
+    var e = mintCache[file];
+    if (e && e.exp > Date.now()) return e.url;
+    if (e) delete mintCache[file];
+    return null;
+  }
+  function mintPut(file, url, expiresIn) {
+    var serverMs = ((expiresIn || 3600) - 600) * 1000;   // stop trusting it 10 min before it dies
+    mintCache[file] = { url: url, exp: Date.now() + Math.max(Math.min(serverMs, MINT_TTL_MS), 60000) };
+  }
+  /* Drop a mint we have reason to distrust. Called with a filename when playback fails on a
+     cached URL (an R2 token rotation, or a clock skew wide enough to beat the 10-minute margin),
+     and with nothing on an auth change. */
+  function mintDrop(file) {
+    if (file) { delete mintCache[file]; delete mintInflight[file]; }
+    else { mintCache = {}; mintInflight = {}; }
+  }
+
+  /* A signed URL outlives a sign-out, so the caches are dropped whenever the identity CHANGES.
+     Deliberately keyed on the user id rather than on the event alone: `thaiear:auth` also fires
+     on the ordinary sign-in that resolves at load, and wiping a freshly warmed cache there would
+     undo the prewarm for the one visitor who is definitely entitled to it. */
+  var mintUser = null, mintUserSeen = false;
+  window.addEventListener('thaiear:auth', function (e) {
+    var id = (e && e.detail && e.detail.id) || null;
+    if (mintUserSeen && id !== mintUser) { mintDrop(); sentBlobs = {}; sentBlobBytes = 0; }
+    mintUser = id; mintUserSeen = true;
+  });
+
+  /* Mint MANY urls in one request (/api/audio?files=…). The auth check inside the Function is
+     per USER, not per file, so one call replaces N round trips — the dynamic build mints one per
+     clip. Never rejects: anything unexpected just leaves the cache unfilled and every caller
+     falls back to the single-file path, which is unchanged. */
+  function mintMany(files) {
+    var want = [];
+    for (var i = 0; i < files.length; i++) {
+      if (files[i] && !mintGet(files[i]) && want.indexOf(files[i]) < 0) want.push(files[i]);
+    }
+    if (!want.length) return Promise.resolve();
+    var token = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken)
+      ? window.ThaiEarAuth.getAccessToken() : null;
+    if (!token) return Promise.resolve();
+    var chunks = [];
+    for (var c = 0; c < want.length; c += 100) chunks.push(want.slice(c, c + 100));
+    return chunks.reduce(function (chain, chunk) {
+      return chain.then(function () {
+        return fetch(AUDIO_API + '?files=' + encodeURIComponent(chunk.join(',')), {
+          headers: { Authorization: 'Bearer ' + token }
+        }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+          if (!j || !j.urls) return;
+          Object.keys(j.urls).forEach(function (f) { if (j.urls[f]) mintPut(f, j.urls[f], j.expiresIn); });
+        }).catch(function () {});
+      });
+    }, Promise.resolve());
+  }
+
   function buildUrl(file, gated) {
     if (gated == null) gated = GATED;
     if (!gated) return Promise.resolve(AUDIO_BASE + '/' + file);
     // Owner test switch: pretend /api/audio refused. This is the ONE thing the entitlement
     // simulator can't fake on its own — the server sees the owner's real (valid) token — so it
     // is what exercises the "server disagrees with the client" fallback in dynBuildSessionFor.
+    var cached = mintGet(file);
+    if (cached) return Promise.resolve(cached);
+    if (mintInflight[file]) return mintInflight[file];
     var token = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken)
       ? window.ThaiEarAuth.getAccessToken() : null;
     if (!token) return Promise.reject({ code: 'noauth' });
-    return fetch(AUDIO_API + '?file=' + encodeURIComponent(file), {
+    var p = fetch(AUDIO_API + '?file=' + encodeURIComponent(file), {
       headers: { Authorization: 'Bearer ' + token }
     }).then(function (r) {
       if (!r.ok) return Promise.reject({ code: r.status });
       return r.json();
     }).then(function (j) {
       if (!j || !j.url) return Promise.reject({ code: 'nourl' });
+      mintPut(file, j.url, j.expiresIn);
       return j.url;
     });
+    mintInflight[file] = p;
+    /* Clear the in-flight slot either way — a rejected mint must not be handed to the next
+       caller, or one blip would stick to the file for as long as the page lives. */
+    p.then(function () { delete mintInflight[file]; }, function () { delete mintInflight[file]; });
+    return p;
   }
   // ── Access gating (the "navigable preview" model) ─────────────────────────────────────────────
   // Gated topics (member/premium) are reachable by ANYONE so they can read the description + preview
@@ -3089,7 +3259,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r191';   // r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r192';   // r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3670,11 +3840,28 @@
         if (!r.ok) return Promise.reject({ code: r.status });
         return r.arrayBuffer();
       }).then(function (ab) {
+        /* Keep the raw bytes for the sentence player (2026-08-19). The build has just paid for
+           this clip; without this the very next tap on that sentence fetched the same 10 KB again
+           over two round trips. Only _TH clips - those are the ones a tap plays.
+           TWO ordering rules, and they pull in opposite directions:
+             1. the COPY must be taken BEFORE decodeAudioData, which DETACHES the ArrayBuffer;
+             2. it may only be COMMITTED after the decode SUCCEEDS. r123/r124 exist because a
+                truncated clip decodes to an error and is then re-fetched; caching the bytes up
+                front would store the corrupt copy, and the `!sentBlobs[file]` guard would stop
+                the good retry from ever replacing it — every later tap on that sentence would
+                play the damaged clip, which is r123's bug wearing our own coat. */
+        var keep = null;
+        if (/_TH\.mp3$/.test(file) && !sentBlobs[file] && sentBlobBytes < PREWARM_MAX_BYTES) {
+          try { keep = new Blob([ab]); } catch (_) { keep = null; }
+        }
         if (temp) { try { URL.revokeObjectURL(temp); } catch (_) {} temp = null; }
         return new Promise(function (res, rej) {
           var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
           var ctx = new OAC(1, 1, DYN_SR);
           ctx.decodeAudioData(ab, res, rej);
+        }).then(function (buf) {
+          if (keep && !sentBlobs[file]) { sentBlobs[file] = keep; sentBlobBytes += keep.size; }
+          return buf;
         });
       });
     }
@@ -7107,12 +7294,32 @@
   }
 
   var sentResetTimer = null;
+  var sentCurFile = null;    // the clip the sentence element is currently on (for the retry above)
+  var sentRetried = {};      // file -> already re-minted once this page
 
   function initSentAudio() {
     var el = $('sent-audio-el');
     if (!el) return;
     el.addEventListener('ended', resetSentBtn);
-    el.addEventListener('error', resetSentBtn);
+    /* ⚠ A REUSED SIGNED URL FAILS HERE, NOT IN A REJECTED PROMISE. buildUrl() has already
+       resolved by the time the media element goes to R2, so an R2 token rotation — or a clock
+       skew wider than mintPut()'s 10-minute margin — arrives as a plain media error. Drop what
+       we cached for that clip and try ONCE with a freshly minted URL; a second failure resets
+       the button exactly as before. Without this, one stale mint would look like broken audio
+       for the rest of the page's life. */
+    el.addEventListener('error', function () {
+      var num = sentPlaying, file = sentCurFile;
+      if (num != null && file && !sentRetried[file]) {
+        sentRetried[file] = true;
+        mintDrop(file);
+        if (sentBlobs[file]) { sentBlobBytes -= (sentBlobs[file].size || 0); delete sentBlobs[file]; }
+        sentPlaying = null; sentLock = false;
+        toggleSentPlay({ stopPropagation: function () {}, preventDefault: function () {} }, num);
+        return;
+      }
+      resetSentBtn();
+    });
+    el.addEventListener('loadedmetadata', function () { if (sentCurFile) delete sentRetried[sentCurFile]; });
     el.addEventListener('pause', function () { if (el.duration && el.currentTime >= el.duration - 0.3) resetSentBtn(); });
     el.addEventListener('timeupdate', function () { if (el.duration && el.currentTime > 0 && el.currentTime >= el.duration - 0.15) resetSentBtn(); });
   }
@@ -7146,9 +7353,8 @@
     // topic pages resolve exactly as before (sObj fields absent → PREFIX/GATED defaults).
     var sObj = null;
     for (var si = 0; si < sentences.length; si++) { if (sentences[si].num === num) { sObj = sentences[si]; break; } }
-    var clipN = (sObj && sObj.clipNum != null) ? sObj.clipNum : num;
-    var sid = String(clipN).padStart(2, '0');
-    var file = ((sObj && sObj.prefix) ? sObj.prefix : PREFIX) + '_S' + sid + '_TH.mp3';
+    var file = sentFileFor(sObj, num);   // shared with prewarmSentences
+    sentCurFile = file;
     var sentGated = (sObj && sObj.tier != null) ? (sObj.tier === 'member' || sObj.tier === 'premium') : undefined;
     sentPlaying = num;
     updateSentBtn(num, true);
@@ -7759,6 +7965,15 @@
     });
   });
 
+  /* Idle, and never in front of anything the user is waiting for. requestIdleCallback is absent
+     on WebKit, so the timeout fallback is the iPhone path — which is the one that needed this
+     most. */
+  function schedulePrewarm() {
+    var go = function () { try { prewarmSentences(0); } catch (_) {} };
+    if (window.requestIdleCallback) window.requestIdleCallback(go, { timeout: 4000 });
+    else setTimeout(go, 2500);
+  }
+
   /* ---- mount ---- */
   function mount() {
     if (!document.getElementById('player-styles')) {
@@ -7776,6 +7991,7 @@
     render();
     repairStaleHints();     // pre-2026-08-18 markup (a downloaded/stale page): fill in the English pill hint
     initSentAudio();
+    schedulePrewarm();      // have the sentence clips in memory before the first tap asks for them
     initScrubber();
     initProgress();
     initFlags();

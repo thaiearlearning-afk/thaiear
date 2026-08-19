@@ -33,7 +33,17 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v341';   // v341: confirm.html — the 6-digit code route was UNREACHABLE. The box was
+const VERSION = 'v342';   // v342: PER-SENTENCE AUDIO LATENCY. A gated clip is ~10 KB but cost
+                          // THREE serialised round trips before a byte moved (/api/audio, then TWO
+                          // Supabase calls inside it since ENFORCE_SUBSCRIPTION is on, then R2's S3
+                          // endpoint, which is never edge-cached) - and its presigned URL changed
+                          // every request, so no cache anywhere could ever hit it and every replay
+                          // re-paid the lot. player.js now caches the signed URL for 45 min, mints a
+                          // whole topic in ONE /api/audio?files= call, and prewarms the clips at
+                          // idle; functions/api/audio.js gained the batch route. player.js is
+                          // PRECACHED, so this bump is what delivers it. See
+                          // SESSION_2026-08-19_SENTENCE_LATENCY.md.
+                          // v341: confirm.html — the 6-digit code route was UNREACHABLE. The box was
                           // revealed only after a link verify had already FAILED, so a user wanting
                           // to use the code INSTEAD of the link (its entire purpose) had nowhere to
                           // type it. Now a permanent "Link not working? Use the code" toggle opens
