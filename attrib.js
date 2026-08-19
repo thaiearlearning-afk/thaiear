@@ -37,6 +37,18 @@
   'use strict';
   if (window.ThaiEarAttrib) return;                 // load once
 
+  /* ⚠⚠ PECR GATE (2026-08-19). Everything this file puts on the DEVICE is behind
+     advertising consent. Reading or writing localStorage is "access to terminal
+     equipment" (PECR reg 6) and needs consent; a legitimate-interests basis in the
+     privacy policy does NOT substitute for it. The SERVER-side geography in
+     functions/api/attrib.js is a different matter and is deliberately not gated —
+     it touches no device storage. See ADS_OPERATIONS.md and privacy.html §1.
+     ⚠ FAILS CLOSED: if consent.js has not loaded, nothing is stored. */
+  function adConsent() {
+    var c = window.ThaiEarConsent;
+    return !!(c && typeof c.granted === 'function' && c.granted('advertising'));
+  }
+
   var STORE      = 'te_attrib';                     // the captured click
   var DONE       = 'te_attrib_sent:';               // + user id, once-guard
   var MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;        // 30 days
@@ -53,6 +65,7 @@
   /* ---------- 1. capture the click ------------------------------------ */
 
   function capture() {
+    if (!adConsent()) return;                       // PECR: no consent, no device write
     var q = ls(function () { return new URLSearchParams(location.search); }, null);
     if (!q) return;
 
@@ -75,6 +88,7 @@
   }
 
   function stored() {
+    if (!adConsent()) return null;                  // PECR: reading is access as well
     var raw = ls(function () { return localStorage.getItem(STORE); }, null);
     if (!raw) return null;
     var hit = ls(function () { return JSON.parse(raw); }, null);
@@ -134,7 +148,10 @@
     // same event, and the once-guard covers the case where a new user
     // reloads inside the five-minute window.
     if (Date.now() - Date.parse(user.created_at) > NEW_USER_MS) return;
-    if (ls(function () { return localStorage.getItem(DONE + user.id); }, null)) return;
+    /* The durable once-guard is itself device storage, so it is gated too. Without it
+       the endpoint's own primary-key dedup (409 = success) does the job, at the cost of
+       a few redundant POSTs inside NEW_USER_MS. Cheap, and it keeps the promise absolute. */
+    if (adConsent() && ls(function () { return localStorage.getItem(DONE + user.id); }, null)) return;
 
     track('signup');
 
@@ -173,11 +190,31 @@
         headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
         body: JSON.stringify(hit),
       }).then(function (r) {
-        if (r && r.ok) ls(function () { localStorage.setItem(DONE + user.id, '1'); });
+        if (r && r.ok) { if (adConsent()) ls(function () { localStorage.setItem(DONE + user.id, '1'); }); }
         else inFlight[user.id] = false;              // failed → let a later auth event retry
       }).catch(function () { inFlight[user.id] = false; });
     });
   }
+
+  /* ---------- 3b. consent changes -------------------------------------
+     The banner is answered AFTER the page has loaded, so the first capture()
+     ran while consent was still undecided and correctly stored nothing. If the
+     visitor then says yes we are usually still on the landing page with the
+     params in the URL, so capture again. If they later withdraw, erase what we
+     hold — a withdrawal that leaves the data in place is not a withdrawal. */
+  ls(function () {
+    if (!window.ThaiEarConsent || !window.ThaiEarConsent.onChange) return;
+    window.ThaiEarConsent.onChange(function () {
+      if (adConsent()) { capture(); return; }
+      ls(function () {
+        localStorage.removeItem(STORE);
+        for (var i = localStorage.length - 1; i >= 0; i--) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf(DONE) === 0) localStorage.removeItem(k);
+        }
+      });
+    });
+  });
 
   /* ---------- 4. activation ------------------------------------------- */
 
