@@ -16,35 +16,38 @@
 (function () {
   'use strict';
 
-  /* ---- app / installed-PWA only: lock out zoom ----
-     An accidental double-tap zoom breaks the illusion of an app, and there is nothing here
-     worth zooming into — the type is already sized for a phone. Applied ONLY in the native
-     app and an installed (standalone) PWA: on the website itself, pinch-zoom stays available,
-     because disabling it is an accessibility failure and would cost the Lighthouse
-     Best-Practices/a11y score the site currently holds at 100.
-     touch-action:manipulation is what actually kills double-tap in WebKit (which ignores
-     user-scalable=no); gesturestart covers Safari's pinch. Deliberately NOT pan-x/pan-y, which
-     would also intercept the scrubber drag. */
-  (function lockZoom() {
+  /* ---- app / installed-PWA only: kill DOUBLE-TAP zoom, KEEP PINCH ----
+     An accidental double-tap zoom breaks the illusion of an app. Pinch-zoom is a different
+     thing entirely and must stay: it is the only way an iPhone PWA user can enlarge anything
+     (px web text is immune to Dynamic Type), and gloss chips are the smallest type on the site.
+     Applied ONLY in the native app and an installed (standalone) PWA — on the website itself
+     this whole block is a no-op and every zoom gesture has always worked.
+
+     ⚠ 2026-08-19 — THIS USED TO BLOCK PINCH TOO, AND THAT WAS OVER-BROAD. `touch-action:
+     manipulation` is, per spec, exactly "allow panning and pinch zoom, disable double-tap to
+     zoom" — so it alone does the whole job the comment here used to claim needed three
+     mechanisms. The two that were also blocking pinch are now GONE and must not come back:
+       • appending `maximum-scale=1, user-scalable=no` to the viewport meta
+       • preventDefault on gesturestart/gesturechange/gestureend (this is the one that
+         actually killed pinch on WebKit; the viewport flags are advisory there)
+     Disabling pinch is a WCAG 1.4.4 failure and gets flagged by Play Store pre-launch
+     accessibility reports, so re-adding either is a regression, not a tightening.
+
+     Still deliberately NOT pan-x/pan-y, which would also intercept the scrubber drag.
+     NOTE the Android app ALSO needs `android.zoomEnabled: true` in capacitor.config.json
+     (Capacitor defaults it false → setBuiltInZoomControls(false)), which no web-side change
+     can substitute for. Android users can already enlarge via the system font-size setting in
+     the meantime — gloss chips are content, so they scale in full (they do not use --te-ui). */
+  (function noDoubleTapZoom() {
     var C = window.Capacitor;
     var native = !!(C && C.isNativePlatform && C.isNativePlatform());
     var standalone = window.navigator.standalone === true ||
       !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
     if (!native && !standalone) return;
-    var vp = document.querySelector('meta[name="viewport"]');
-    if (vp) {
-      var c = vp.getAttribute('content') || 'width=device-width, initial-scale=1.0';
-      if (!/maximum-scale/.test(c)) c += ', maximum-scale=1';
-      if (!/user-scalable/.test(c)) c += ', user-scalable=no';
-      vp.setAttribute('content', c);
-    }
     var st = document.createElement('style');
     st.id = 'te-nozoom';
     st.textContent = 'html{touch-action:manipulation;-webkit-text-size-adjust:100%}';
     (document.head || document.documentElement).appendChild(st);
-    ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) {
-      document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
-    });
   })();
 
   /* ---- OS TEXT-SCALING GUARD → the --te-ui multiplier ----------------------

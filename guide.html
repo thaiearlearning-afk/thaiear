@@ -223,7 +223,23 @@
     .row-english { font-size: 14px; color: var(--text-secondary); }
     .row-notes { background: var(--bg); }
     .gloss-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
-    .gloss-chip { background: var(--surface); border: 0.5px solid var(--border); border-radius: 20px; padding: 2px 9px; font-size: 12px; line-height: 1.5; }
+    .gloss-chip { background: var(--surface); border: 0.5px solid var(--border); border-radius: 20px;
+      padding: 2px 9px; font-size: 13px; line-height: 1.5;
+      /* SPILL GUARD (2026-08-19). Android's textZoom inflates the chip's TEXT but not its px
+         padding or .gloss-row's px gap, so at a large system font size a chip's content can
+         outgrow the row. min-width:0 lets the flex item shrink past its min-content width and
+         overflow-wrap lets the text break, so the chip wraps to a second line instead of
+         spilling. 'anywhere' (not just break-word) is what also corrects the intrinsic
+         min-content size; break-word is declared first as the fallback for older WebKit.
+         MEASURED, and not where you would expect: the risk is the ENGLISH gloss, NOT the
+         Thai. Chrome and the Android WebView apply ICU dictionary line-breaking inside
+         Thai script, so even a 25-character Thai head breaks fine on its own. The worst
+         token in all 16,797 chips is 'grandmother(pat.)' (topic-08 S198) — 17 characters
+         with no space or hyphen, so no break opportunity at all — which spilled 82px out
+         of its row at 2.0x on a 320px screen, and 50px at the old 11px size (so this was
+         a latent bug the size bump widened, not one it created).
+         .gloss-row already wraps, which handles the multi-chip case. */
+      min-width: 0; overflow-wrap: break-word; overflow-wrap: anywhere; }
     .g-thai { font-family: var(--font-thai); color: var(--text-primary); font-weight: 500; }
     .g-eq { color: var(--text-tertiary); margin: 0 2px; }
     .g-eng { color: var(--text-secondary); }
@@ -241,7 +257,7 @@
       .sent-preview { font-size: 15px; }
       .row-thai { font-size: 17px; }
       .reveal-row { padding: 0.5rem 0.85rem; }
-      .gloss-chip { font-size: 11px; padding: 2px 7px; }
+      .gloss-chip { font-size: 12.5px; padding: 2px 7px; }
       .cultural-note { font-size: 11px; }
       .orientation-text { font-size: 12px; }
       /* nudge the page eyebrow (the difficulty, e.g. "BEGINNER") up a hair on phones — applies to

@@ -33,7 +33,30 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v347';   // v347: HOTFIX — the mistyped-email guard shipped half-finished and was
+const VERSION = 'v348';   // v348: LEGIBILITY — gloss chips were the smallest type on the site
+                          // (11px on mobile) and some users could not enlarge them at all. Two
+                          // changes. (1) Bigger default: 12/11px -> 13/12.5px. The chip's Thai
+                          // carries stacked vowels and tone marks in the same nominal size its
+                          // English half only needs for x-height, so it was the harsher
+                          // constraint. (2) PINCH-ZOOM IS BACK in the app and installed PWA.
+                          // nav.js blocked it three ways when only one was ever needed:
+                          // touch-action:manipulation alone kills double-tap and leaves pinch
+                          // alive, per spec. The viewport user-scalable=no and the gesturestart
+                          // preventDefault (the one that actually killed it on WebKit) are gone.
+                          // Blocking pinch is a WCAG 1.4.4 failure, and an iPhone PWA user had NO
+                          // way to enlarge anything, px web text being immune to Dynamic Type.
+                          // Android additionally needs android.zoomEnabled:true in
+                          // capacitor.config.json (Capacitor defaults it false) — deferred to the
+                          // next app release; Android's system font-size setting already enlarges
+                          // chips meanwhile, they being content that does not use --te-ui.
+                          // Chips also gained a SPILL GUARD (min-width:0 + overflow-wrap:anywhere).
+                          // Measured in headless Chrome on the real topic-08 S198 chip
+                          // ("grandfather(pat.)" — 17 chars, no space or hyphen, so no break
+                          // opportunity): at 2.0x on a 320px screen it spilled 82px out of its
+                          // row. It already spilled 50px at the OLD 11px size, so that was a
+                          // latent bug this bump widened rather than created. Guarded by the new
+                          // test_gloss_chip.js (the rule is hand-carried in three files).
+                          // v347: HOTFIX — the mistyped-email guard shipped half-finished and was
                           // BLOCKING SIGNUPS. It reached production inside another session's
                           // `git add -A`, at an intermediate state with no once-only guard, so a
                           // flagged address could never be sent: press send, get "did you mean",
