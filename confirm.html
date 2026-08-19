@@ -144,7 +144,7 @@
     <p style="margin-top:14px;text-align:center">
       <button type="button" id="cf-code-toggle" onclick="cfShowCode()"
               style="background:none;border:0;padding:4px;font-family:var(--font-ui);font-size:13px;color:var(--accent);text-decoration:underline;cursor:pointer">
-        Link not working? Use the code from your email
+        Prefer to type the code from your email instead?
       </button>
     </p>
 
@@ -248,6 +248,12 @@
     el.textContent = msg;
   }
 
+  /* Where to send someone who needs a NEW link. Same localhost rule as done(). */
+  function accountHref() {
+    var local = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname || '');
+    return local ? '/account.html' : '/account';
+  }
+
   function done() {
     say(status, 'Signed in — taking you to your account...', 'ok');
     /* Clean URL in production; re-add .html on localhost/LAN, because
@@ -296,8 +302,39 @@
 
       (function attempt(i, firstErr) {
         if (i >= queue.length) {
-          var e = firstErr || new Error('please try again.');
-          say(status, 'That link did not work: ' + (e.message || 'please try again.'), 'err');
+          var e = firstErr || new Error('');
+          var msg = (e && e.message) || '';
+          /* ⚠⚠ DO NOT OFFER THE CODE FOR A SPENT OR EXPIRED TOKEN. The code is the SAME
+             OTP record as this link, so if the record is gone the code is gone with it —
+             pointing the user at it would be a guaranteed second failure, and they have
+             already had one. The honest answer is "ask for a new link".
+             The code IS worth offering for any other failure, because the most likely of
+             those is a token_hash mangled in transit by a mail rewriter — the record is
+             intact, only the URL carrying it is damaged, and the code sidesteps the URL.
+             (A type mismatch cannot reach here: the cascade above exhausts the types.) */
+          var dead = /expire|invalid|not found|already|used/i.test(msg);
+          if (dead) {
+            say(status, 'This sign-in link has expired or has already been used. '
+                      + 'Links work once only — ask for a new one and it takes a few seconds.', 'err');
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = 'Get a new sign-in link';
+              btn.onclick = function () { location.href = accountHref(); };
+            }
+            /* Say it plainly, so nobody burns a second attempt on the code. */
+            var toggle = document.getElementById('cf-code-toggle');
+            if (toggle) {
+              toggle.disabled = true;
+              toggle.style.color = 'var(--text-tertiary)';
+              toggle.style.textDecoration = 'none';
+              toggle.style.cursor = 'default';
+              toggle.textContent = 'The code in that email has expired too — it is the same one-time code.';
+            }
+            return;
+          }
+          say(status, 'That didn’t work' + (msg ? ' (' + msg + ')' : '')
+                    + '. Try the code from your email instead — it still works even if the '
+                    + 'link was damaged in transit.', 'err');
           if (btn) { btn.disabled = false; btn.textContent = 'Try again'; }
           window.cfShowCode();
           return;

@@ -33,7 +33,16 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v344';   // v344: the sign-in CODE is now offered on the page that sent the link,
+const VERSION = 'v345';   // v345: /confirm stops sending people down a dead end. An EXPIRED or
+                          // already-spent token used to reveal the code box — but the code is the
+                          // SAME OTP record, so that was a guaranteed second failure. It now says
+                          // the link has expired, turns the button into "Get a new sign-in link",
+                          // and states that the code is dead too. Any OTHER failure still offers
+                          // the code, because the likeliest of those is a token_hash mangled in
+                          // transit, where the record is fine and only the URL is damaged. The
+                          // toggle also stopped claiming "link not working?" — the user got to
+                          // that page BY the link, so it now reads "Prefer to type the code".
+                          // v344: the sign-in CODE is now offered on the page that sent the link,
                           // for returning users as well as new ones, instead of being reachable
                           // only by first clicking the email LINK — the one thing it exists to
                           // work without. The resend button is also visible from the moment a
