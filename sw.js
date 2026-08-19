@@ -33,7 +33,25 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v339';   // v339: ENGLISH-FIRST PILL HINTS. The collapsed pill's hint now follows
+const VERSION = 'v340';   // v340: THE SIGN-IN EMAIL NO LONGER DIES TO A MAIL SCANNER. Both Supabase
+                          // templates now point at our own /confirm page, which verifies the OTP on
+                          // a CLICK instead of on the GET. Microsoft Defender "Safe Links" was
+                          // pre-fetching the single-use link and spending it in its own sandbox
+                          // (proved: a confirmed signup from a "Microsoft Limited" IP in Cardiff,
+                          // 28s after send) — silently blocking every Office 365 / university /
+                          // corporate address. ⚠ THIS FIXES THE TOKEN, NOT DELIVERY: the owner's
+                          // report is that the email never reached the inbox AT ALL, which is a
+                          // separate MailerSend/Microsoft problem no page of ours can solve.
+                          // New precache entry /confirm.html, and auth.js gains
+                          // verifyOtpHash/verifyOtpCode, so BOTH need this bump to reach anyone.
+                          // Also: account.html + join.html re-arm the send button after 60s as
+                          // "Send another link" (there was no resend short of a page refresh;
+                          // 60s because gotrue's own resend floor is 1 minute).
+                          // ⚠ THIS BUMP ALSO CARRIES player.js r191 (commit b06a0e6, the stale-
+                          // markup pill-hint repair), which was committed WITHOUT a VERSION bump
+                          // by a parallel session. player.js is precached and cache-first, so
+                          // r191 could not have reached a single returning visitor on its own.
+                          // v339: ENGLISH-FIRST PILL HINTS. The collapsed pill's hint now follows
                           // the chosen direction (Thai-first -> Thai, English-first -> an authored
                           // English hint, `previewEn`). Both ship in the card and swap by CSS, so
                           // SSR is untouched. New precache entry /sentence-hints.json, which also
@@ -248,6 +266,11 @@ const PRECACHE = [
   // are intentionally NOT here (cached on visit / via the download feature).
   '/account.html', '/subscribe.html', '/join.html', '/about.html', '/guide.html', '/socials.html', '/app.html',
   '/progress.html', '/sentences.html', '/privacy.html', '/terms.html', '/refunds.html', '/deleted.html',
+  /* The sign-in interstitial the email links to (v340). It is where a user lands from their
+     inbox, i.e. often on a device that has never opened the site, so it must not depend on a
+     lucky network moment — and it is the ONLY route back in for anyone whose magic link was
+     detonated by a mail scanner. See ADS_OPERATIONS.md §4.2 / §5.6. */
+  '/confirm.html',
   // Read Thai section (learn-to-read on-ramp, 2026-07-22): hub + 13 sub-pages + its
   // shared assets. Audio is NOT precached (208 clips on the CDN — cached on play).
   '/read.html', '/read-mid.html', '/read-high.html', '/read-low1.html', '/read-low2.html',

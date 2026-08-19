@@ -208,11 +208,29 @@ function sendLoginLink() {
   if (status) { status.style.color = 'var(--text-tertiary)'; status.textContent = ''; }
   a.sendMagicLink(email).then(function (res) {
     if (res && res.error) throw res.error;
-    if (status) { status.style.color = 'var(--accent)'; status.textContent = 'Check your inbox — we sent a sign-in link to ' + email + '.'; }
-    if (btn) { btn.textContent = 'Link sent'; }
+    if (status) { status.style.color = 'var(--accent)'; status.textContent = 'Check your inbox — we sent a sign-in link to ' + email + '. It can take a minute to arrive.'; }
+    /* ⚠ The button used to stop here at 'Link sent' and never come back, so the only
+       route to a second link was to guess that refreshing the page works. It matters more
+       than it looks: a mail-security scanner can spend a single-use link before the human
+       ever clicks it (ADS_OPERATIONS.md §4.2), and then the FIRST thing the user needs
+       is another one. Re-arm after 60 s — matched to gotrue's own resend floor, so the
+       button is never live before a resend could actually succeed. */
+    if (btn) {
+      btn.textContent = 'Link sent';
+      setTimeout(function () {
+        var b = document.getElementById('login-link-btn');   // re-read: account.html re-renders this box
+        if (!b) return;
+        b.disabled = false;
+        b.textContent = 'Send another link';
+      }, 60000);   /* NOT 30 s: gotrue's SMTP_MAX_FREQUENCY floor is 1 minute, so an
+                      earlier re-arm buys the user a rate-limit error, not an email. */
+    }
   }).catch(function (err) {
+    /* The send failing used to be INVISIBLE on the button — fail() wrote to the status
+       line, but the button just went back to its resting label, which reads as "nothing
+       happened". Say so on the control the user is looking at. */
     fail('Couldn’t send a link: ' + ((err && err.message) || 'please try again.'));
-    if (btn) { btn.disabled = false; btn.textContent = 'Email me a sign-in link'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Try again'; }
   });
 }
 

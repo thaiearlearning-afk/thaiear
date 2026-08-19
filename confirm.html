@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in to ThaiEar</title>
+<meta name="description" content="Finish signing in to ThaiEar.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="canonical" href="https://thaiear.com/confirm">
+<!-- No og block: this page is noindex and is never shared. gen_static_seo.js does not list it. -->
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- pwa:start (gen_pwa.js) -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#4B41AD">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ThaiEar">
+<!-- pwa:end -->
+<link rel="preload" href="/fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/inter-latin-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/sarabun-thai-400.woff2" as="font" type="font/woff2" crossorigin>
+<style id="te-fonts">
+@font-face{font-family:'Inter';font-style:normal;font-weight:300;font-display:optional;src:url('/fonts/inter-latin-300.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/inter-latin-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/inter-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/inter-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:300;font-display:optional;src:url('/fonts/sarabun-thai-300.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:300;font-display:optional;src:url('/fonts/sarabun-latin-300.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/sarabun-thai-400.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/sarabun-latin-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/sarabun-thai-500.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/sarabun-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/sarabun-thai-600.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/sarabun-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --gold-light: #FBF5DC; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+  .page-wrap { position: relative; max-width: 620px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+
+  .gate-close {
+    position: absolute; top: 1.5rem; right: 1.25rem;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface); border: 0.5px solid var(--border-strong);
+    color: var(--text-secondary); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s; z-index: 5;
+  }
+  .gate-close:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+  .gate-close svg { width: 16px; height: 16px; }
+
+  .sub-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-light);
+    padding: 4px 11px 4px 9px; border-radius: 20px; margin-bottom: 14px;
+  }
+  .sub-eyebrow svg { width: 12px; height: 12px; }
+  .sub-title { font-size: 30px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.75rem; }
+  .sub-lede { color: var(--text-secondary); max-width: 48ch; margin-bottom: 2rem; }
+
+  .sub-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem 1.6rem; }
+
+  .benefits { list-style: none; display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.75rem; }
+  .benefit { display: flex; align-items: flex-start; gap: 11px; }
+  .benefit-check {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent-light); color: var(--accent);
+    display: inline-flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .benefit-check svg { width: 13px; height: 13px; }
+  .benefit-text strong { font-weight: 500; color: var(--text-primary); }
+  .benefit-text span { display: block; font-size: 13px; color: var(--text-secondary); }
+
+  .btn { font-family: var(--font-ui); font-size: 15px; font-weight: 500; border-radius: var(--radius-sm); padding: 11px 20px; cursor: pointer; border: 0.5px solid var(--border-strong); transition: background 0.15s, border-color 0.15s, color 0.15s; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover:not([disabled]) { background: var(--accent-mid); }
+  .btn-ghost { background: var(--surface); color: var(--text-primary); }
+  .btn-ghost:hover:not([disabled]) { border-color: var(--accent); color: var(--accent); }
+  .btn[disabled] { opacity: 0.6; cursor: default; }
+  .btn svg { width: 18px; height: 18px; }
+  /* Email sign-in, mirroring account.html's login box (2026-08-15). The magic link already
+     existed in auth.js and on account.html, but this page — the one every "Create a free
+     account" link points at — offered Google only. */
+  .login-sep { display: flex; align-items: center; gap: 12px; margin: 1.1rem 0; color: var(--text-tertiary); font-size: 12px; }
+  .login-sep::before, .login-sep::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .login-input { width: 100%; text-align: left; font-family: var(--font-ui); font-size: 14px; padding: 10px 12px;
+    border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 0.7rem;
+    background: var(--surface); color: var(--text-primary); }
+  .login-input:focus { outline: none; border-color: var(--accent); }
+  .sub-status { font-size: 13px; color: var(--text-secondary); text-align: center; margin-top: 0.9rem; min-height: 1.2em; }
+  .sub-note { font-size: 13px; color: var(--text-tertiary); text-align: center; margin-top: 1rem; }
+  .sub-note a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .sub-back { display: inline-block; margin-top: 1.75rem; font-size: 14px; font-weight: 500; color: var(--accent); text-decoration: none; }
+  .sub-back:hover { color: var(--accent-mid); }
+
+  @media (max-width: 600px) {
+    .page-wrap { padding: 2rem 1rem 3rem; }
+    .sub-title { font-size: 25px; }
+    .sub-card { padding: 1.4rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top nav comes from the shared nav.js (do NOT inline it). -->
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+
+  <span class="sub-eyebrow">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 6L2 7"></path></svg>
+    Email sign-in
+  </span>
+  <h1 class="sub-title" id="cf-title">Almost there</h1>
+  <p class="sub-lede" id="cf-lede">Tap the button below to finish signing in to ThaiEar.</p>
+
+  <div class="sub-card">
+
+    <!-- The whole point of this page: verification happens on CLICK, never on load.
+         A mail-security scanner issues a GET; a GET must verify nothing. -->
+    <button class="btn btn-primary" id="cf-btn" onclick="cfVerify()">Sign me in</button>
+
+    <p id="cf-status" style="margin-top:12px;min-height:1.2em;font-size:13px;color:var(--text-tertiary)"></p>
+
+    <!-- Fallback for scanners that DO press buttons, and for a link mangled in transit.
+         {{ .Token }} and {{ .ConfirmationURL }} are two renderings of the SAME OTP record,
+         so this is a second way in, never a second credential. -->
+    <div id="cf-code-wrap" style="display:none;margin-top:1.4rem;padding-top:1.4rem;border-top:0.5px solid var(--border)">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:0.7rem">Link not working? Enter the 6-digit code from the same email.</p>
+      <label for="cf-email" style="display:block;font-size:12px;color:var(--text-tertiary);margin-bottom:4px">Your email address</label>
+      <input type="email" id="cf-email" autocomplete="email" inputmode="email" placeholder="you@example.com"
+             style="width:100%;font-family:var(--font-ui);font-size:15px;padding:10px 12px;border:0.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--bg);color:var(--text-primary);margin-bottom:10px">
+      <label for="cf-code" style="display:block;font-size:12px;color:var(--text-tertiary);margin-bottom:4px">6-digit code</label>
+      <input type="text" id="cf-code" autocomplete="one-time-code" inputmode="numeric" maxlength="6" placeholder="123456"
+             style="width:100%;font-family:var(--font-ui);font-size:18px;letter-spacing:0.25em;padding:10px 12px;border:0.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--bg);color:var(--text-primary);margin-bottom:12px">
+      <button class="btn btn-ghost" id="cf-code-btn" onclick="cfVerifyCode()">Sign in with the code</button>
+      <p id="cf-code-status" style="margin-top:10px;min-height:1.2em;font-size:13px;color:var(--text-tertiary)"></p>
+    </div>
+
+  </div>
+
+  <p style="margin-top:1.5rem;font-size:13px;color:var(--text-tertiary)">
+    Not expecting this email? You can close this page &mdash; nothing happens until you tap the button.
+  </p>
+
+</div>
+
+<script>
+/* ============================================================
+   confirm.html — the sign-in interstitial (2026-08-19).
+
+   THE ONE RULE: THIS PAGE MUST DO NOTHING ON LOAD.
+
+   Supabase magic links are SINGLE-USE. Microsoft Defender "Safe Links"
+   (and Proofpoint, Mimecast, Barracuda ...) PRE-FETCH every URL in an
+   email to detonate it in a sandbox. Pointed at Supabase's own
+   /auth/v1/verify, the scanner's GET spent the token, created and signed
+   in the account inside the sandbox. ⚠ AND THE HUMAN NEVER GOT THE EMAIL
+   AT ALL — it did not arrive in the inbox (owner, 2026-08-19), so the
+   observed symptom is silence, not an error message. This page fixes the
+   token being spent; it does NOT fix delivery, which is tracked separately.
+   Evidence: ADS_OPERATIONS.md 4.2 / 5.6.
+
+   So the email now points HERE, and verifyOtp() is called only from a
+   click handler. A scanner's GET renders a button and verifies nothing.
+
+   Do NOT add: an auto-verify on DOMContentLoaded, a "redirect if it looks
+   valid" shortcut, a prefetch, or a <link rel="prerender">. Any of those
+   reintroduce the bug. test_confirm_page.js asserts their absence.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var params = new URLSearchParams(location.search);
+  var tokenHash = params.get('token_hash') || '';
+  var type = params.get('type') || 'email';
+  /* Where to land after a successful sign-in. Clean URL, not /account.html —
+     the .html form 308-redirects through the origin (see CLAUDE.md). Only
+     same-origin paths are honoured, so the email can never bounce a user off-site. */
+  var nextRaw = params.get('next') || '/account';
+  var next = (nextRaw.charAt(0) === '/' && nextRaw.charAt(1) !== '/') ? nextRaw : '/account';
+
+  var btn = document.getElementById('cf-btn');
+  var status = document.getElementById('cf-status');
+  var codeWrap = document.getElementById('cf-code-wrap');
+
+  /* No token_hash in the URL = someone reached this page directly, or the link was
+     mangled in transit. Don't dead-end them: offer the code route straight away. */
+  if (!tokenHash) {
+    document.getElementById('cf-title').textContent = 'Finish signing in';
+    document.getElementById('cf-lede').textContent = 'This page needs the link from your sign-in email. If the link is not working, use the code from that email instead.';
+    if (btn) { btn.disabled = true; btn.textContent = 'No sign-in link found'; }
+    if (codeWrap) codeWrap.style.display = 'block';
+  }
+
+  function say(el, msg, kind) {
+    if (!el) return;
+    el.style.color = kind === 'err' ? '#B00020' : (kind === 'ok' ? 'var(--accent)' : 'var(--text-tertiary)');
+    el.textContent = msg;
+  }
+
+  function done() {
+    say(status, 'Signed in — taking you to your account...', 'ok');
+    /* Clean URL in production; re-add .html on localhost/LAN, because
+       `python -m http.server` has no clean-URL resolution and the owner's own
+       local test of this page would end on a 404. Same rule as hrefFor() in
+       nav.js / topics.js / player.js / read.js — see CLAUDE.md. */
+    var local = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname || '');
+    var dest = (local && next.indexOf('.') === -1) ? next + '.html' : next;
+    setTimeout(function () { location.replace(dest); }, 600);
+  }
+
+  /* auth.js is injected by nav.js, so it may not be ready the instant the user taps.
+     Wait for it rather than failing — but bounded, so a broken load says so out loud
+     instead of hanging on a dead button. */
+  function whenAuth(cb, waited) {
+    var a = window.ThaiEarAuth;
+    if (a && typeof a.verifyOtpHash === 'function') { cb(a); return; }
+    waited = waited || 0;
+    if (waited > 8000) { cb(null); return; }
+    setTimeout(function () { whenAuth(cb, waited + 150); }, 150);
+  }
+
+  window.cfVerify = function () {
+    if (!tokenHash) return;
+    if (btn) { btn.disabled = true; btn.textContent = 'Signing you in...'; }
+    say(status, '');
+    whenAuth(function (a) {
+      if (!a) {
+        say(status, 'Sign-in is still loading — please try again in a moment.', 'err');
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign me in'; }
+        return;
+      }
+      /* ⚠ THE `type` CASCADE — this is a correctness guard, not belt-and-braces.
+         gotrue looks a token up by hash AND type, and the right string for a given email
+         template is genuinely ambiguous: Supabase's own docs use `type=email` for BOTH
+         "Confirm signup" and "Magic Link", while the client's EmailOtpType union also
+         accepts 'signup' and 'magiclink'. One wrong guess in a template = every sign-in of
+         that kind fails. So try the URL's type first, then the other plausible ones.
+         Safe because a type mismatch is a LOOKUP MISS, not a consumption — the token is
+         only spent on success. Bounded, and it stops early on an expiry, where retrying
+         a different type could only produce the same answer more slowly. */
+      var tried = [], queue = [type, 'email', 'magiclink', 'signup'].filter(function (t) {
+        if (!t || tried.indexOf(t) !== -1) return false;
+        tried.push(t); return true;
+      });
+
+      (function attempt(i, firstErr) {
+        if (i >= queue.length) {
+          var e = firstErr || new Error('please try again.');
+          say(status, 'That link did not work: ' + (e.message || 'please try again.'), 'err');
+          if (btn) { btn.disabled = false; btn.textContent = 'Try again'; }
+          if (codeWrap) codeWrap.style.display = 'block';
+          return;
+        }
+        a.verifyOtpHash(tokenHash, queue[i]).then(function (res) {
+          if (res && res.error) throw res.error;
+          done();
+        }).catch(function (err) {
+          // An expired token is expired for every type — don't grind through the rest.
+          if (/expired/i.test((err && err.message) || '')) { attempt(queue.length, err); return; }
+          attempt(i + 1, firstErr || err);
+        });
+      })(0);
+    });
+  };
+
+  window.cfVerifyCode = function () {
+    var emailEl = document.getElementById('cf-email');
+    var codeEl = document.getElementById('cf-code');
+    var cbtn = document.getElementById('cf-code-btn');
+    var cstatus = document.getElementById('cf-code-status');
+    var email = ((emailEl && emailEl.value) || '').trim();
+    var code = ((codeEl && codeEl.value) || '').trim().replace(/\s+/g, '');
+    if (!email || email.indexOf('@') < 1 || email.indexOf('.') < 0) { say(cstatus, 'Please enter the email address the code was sent to.', 'err'); return; }
+    if (!/^\d{4,8}$/.test(code)) { say(cstatus, 'Please enter the 6-digit code from the email.', 'err'); return; }
+    if (cbtn) { cbtn.disabled = true; cbtn.textContent = 'Signing you in...'; }
+    say(cstatus, '');
+    whenAuth(function (a) {
+      if (!a || typeof a.verifyOtpCode !== 'function') {
+        say(cstatus, 'Sign-in is still loading — please try again in a moment.', 'err');
+        if (cbtn) { cbtn.disabled = false; cbtn.textContent = 'Sign in with the code'; }
+        return;
+      }
+      a.verifyOtpCode(email, code, type).then(function (res) {
+        if (res && res.error) throw res.error;
+        done();
+      }).catch(function (err) {
+        say(cstatus, 'That code did not work: ' + ((err && err.message) || 'please try again.'), 'err');
+        if (cbtn) { cbtn.disabled = false; cbtn.textContent = 'Sign in with the code'; }
+      });
+    });
+  };
+})();
+</script>
+<script src="consent.js" defer></script>
+<script src="attrib.js" defer></script>
+<script src="gtag.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

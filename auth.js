@@ -4,7 +4,7 @@
    Loaded automatically by nav.js when the members UI is on, so
    no page needs its own <script>. Responsibilities:
      • create the Supabase client
-     • expose window.ThaiEarAuth.{ getUser, signInWithGoogle, sendMagicLink, signOut, isReady }
+     • expose window.ThaiEarAuth.{ getUser, signInWithGoogle, sendMagicLink, verifyOtpHash, signOut, isReady }
      • keep the cached current user in sync and tell the nav to re-render
 
    getUser() is SYNCHRONOUS (the nav calls it during render) and returns
@@ -899,9 +899,27 @@
       startGoogleSignIn();
     },
     // Passwordless "magic link": Supabase emails a one-click sign-in link. Creating an
-    // account and signing in are the same action (shouldCreateUser defaults true). The
-    // returned session is picked up automatically when the link lands back on the site
-    // (detectSessionInUrl), so onAuthStateChange logs them in — no extra handling here.
+    // account and signing in are the same action (shouldCreateUser defaults true).
+    //
+    // ⚠ SINCE 2026-08-19 THE EMAIL DOES NOT LINK TO SUPABASE'S /auth/v1/verify ANY MORE.
+    // Both email templates ("Confirm signup" for a new address, "Magic Link" for a
+    // returning one) point at our own /confirm page carrying {{ .TokenHash }}, which
+    // verifies on a CLICK via verifyOtpHash below. Reason: a magic link is single-use and
+    // Microsoft Defender "Safe Links" pre-fetches URLs in email to detonate them — it was
+    // spending the token before the human ever clicked, silently blocking signup for every
+    // Office 365 / university / corporate address. Evidence: ADS_OPERATIONS.md §4.2.
+    //
+    // So detectSessionInUrl no longer does the work for this flow; confirm.html does.
+    //
+    // ⚠⚠ DO NOT "TIDY" emailRedirectTo TO THE CLEAN /account. It was changed to /account on
+    // 2026-08-19 and REVERTED the same hour, deliberately. `/account.html` is the value proven
+    // to be in Supabase's Redirect-URLs allow-list (it is what production sends today and
+    // sign-ins work); `/account` may not be, and an allow-list miss fails the send itself —
+    // i.e. it would break sign-in for EVERYONE to save a redirect that, since the TokenHash
+    // switch, is never even followed. We build our own URL from {{ .TokenHash }}, so this
+    // value is not navigated to at all in the new flow. Zero benefit, total downside.
+    // (If you ever do want the clean URL: add it to Auth → URL Configuration → Redirect URLs
+    // FIRST, verify a real send, and only then change it here.)
     // Returns the Supabase promise ({ data, error }) so the caller can show feedback.
     sendMagicLink: function (email) {
       if (!client) return Promise.reject(new Error('auth still loading'));
@@ -909,6 +927,29 @@
         email: email,
         options: { emailRedirectTo: window.location.origin + '/account.html' }
       });
+    },
+    /* The click-side half of the interstitial. confirm.html calls this from its button
+       handler and NOWHERE ELSE — calling it on page load would hand the token straight
+       back to the scanner and undo the whole fix.
+
+       ⚠ `type` must match how gotrue ISSUED the token, and the correct string is not
+       obvious: Supabase's own docs use `type=email` for BOTH the "Confirm signup" and
+       "Magic Link" templates, while the client's EmailOtpType union also accepts 'signup'
+       and 'magiclink'. Getting it wrong fails every sign-in, so confirm.html does NOT rely
+       on one guess — it cascades through the candidates. That is safe because a rejected
+       verifyOtp does not spend the token: gotrue looks the token up by hash AND type and a
+       mismatch is a lookup miss, not a consumption.
+       Returns Supabase's { data, error } shape. */
+    verifyOtpHash: function (tokenHash, type) {
+      if (!client) return Promise.reject(new Error('auth still loading'));
+      return client.auth.verifyOtp({ token_hash: tokenHash, type: type || 'email' });
+    },
+    /* Belt and braces: the same OTP rendered as {{ .Token }}, for a scanner that presses
+       buttons or a link mangled in transit. ⚠ It is the SAME record as the link — not a
+       second credential — so whichever is used first spends both. */
+    verifyOtpCode: function (email, token, type) {
+      if (!client) return Promise.reject(new Error('auth still loading'));
+      return client.auth.verifyOtp({ email: email, token: token, type: type || 'email' });
     },
     signOut: function () {
       if (!client) return Promise.resolve();
