@@ -352,17 +352,36 @@ function teShowEmailSuggestion(email) {
      "I meant it" and must go through. Without this the suggestion is a wall. */
   if (_teSuggestedFor === email) return false;
   _teSuggestedFor = email;
+  var LINKY = 'background:none;border:0;padding:2px 4px;font-family:inherit;' +
+              'font-size:inherit;text-decoration:underline;cursor:pointer;';
+  var safeFix = fixed.replace(/[<>&"]/g, '');
+  var safeTyped = String(email).replace(/[<>&"]/g, '');
   host.style.color = 'var(--text-secondary)';
-  host.innerHTML = 'Did you mean <strong>' + fixed.replace(/[<>&"]/g, '') + '</strong>? ' +
-    '<button type="button" id="login-email-fix" style="background:none;border:0;padding:2px 4px;' +
-    'font-family:inherit;font-size:inherit;color:var(--accent);text-decoration:underline;cursor:pointer">' +
-    'Use this</button>';
+  host.innerHTML = 'Did you mean <strong>' + safeFix + '</strong>? ' +
+    '<button type="button" id="login-email-fix" style="' + LINKY + 'color:var(--accent)">' +
+    'Use this</button> ' +
+    '<button type="button" id="login-email-keep" style="' + LINKY + 'color:var(--text-tertiary)">' +
+    'Dismiss</button>';
+
   var b = document.getElementById('login-email-fix');
   if (b) b.addEventListener('click', function () {
     var inp = document.getElementById('login-email-input');
     if (inp) inp.value = fixed;
     host.textContent = '';
     sendLoginLink(true);
+  });
+
+  /* ⚠ LABELLED "Dismiss", NOT "Don't use this" (owner, 2026-08-19). "this" sits next
+     to two addresses and reads just as easily as "don't use your own email" as it does
+     "don't use the suggestion". "Dismiss" refers to the message, so it cannot be misread.
+     ⚠ DISMISSING MUST SAY WHAT HAPPENS NEXT, not just go blank. The point of this
+     button is to remove the fear of being stuck, and an empty status line leaves that
+     fear exactly where it was. The address is already marked as offered, so the very
+     next press sends it — tell them so. */
+  var k = document.getElementById('login-email-keep');
+  if (k) k.addEventListener('click', function () {
+    host.style.color = 'var(--text-secondary)';
+    host.textContent = 'No problem — tap the button again to use ' + safeTyped + '.';
   });
   return true;
 }

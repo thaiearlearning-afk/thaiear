@@ -33,7 +33,16 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v348';   // v348: LEGIBILITY — gloss chips were the smallest type on the site
+const VERSION = 'v349';   // v349: the mistyped-email suggestion gained a DISMISS button.
+                          // Mechanically nothing changed — the next press already sent the address
+                          // as typed — but with only a "Use this" button the prompt read as a
+                          // demand, and since the version that briefly shipped genuinely DID block
+                          // (v347), the fear of being stuck is well founded. Dismissing does not
+                          // just clear the line either: it says "tap the button again to use
+                          // <what you typed>", because a blank status leaves exactly the doubt the
+                          // button exists to remove. Labelled "Dismiss", not "Don't use this":
+                          // "this" sits next to two addresses and reads either way.
+                          // v348:   // v348: LEGIBILITY — gloss chips were the smallest type on the site
                           // (11px on mobile) and some users could not enlarge them at all. Two
                           // changes. (1) Bigger default: 12/11px -> 13/12.5px. The chip's Thai
                           // carries stacked vowels and tone marks in the same nominal size its
