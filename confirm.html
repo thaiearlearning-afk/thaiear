@@ -150,9 +150,14 @@
 
     <p id="cf-status" style="margin-top:12px;min-height:1.2em;font-size:13px;color:var(--text-tertiary)"></p>
 
-    <!-- Fallback for scanners that DO press buttons, and for a link mangled in transit.
-         {{ .Token }} and {{ .ConfirmationURL }} are two renderings of the SAME OTP record,
-         so this is a second way in, never a second credential. -->
+    <!-- ⚠ WHAT THIS IS FOR — and what it is NOT. {{ .Token }} and the link are two
+         renderings of the SAME OTP record, so this is a second way IN, never a second
+         credential — and it is NOT protection against a sandbox that presses the button
+         above, because that spends the token and kills the code with it. What it buys:
+         the email opened in a WebView or on another device and the user wants to sign in
+         where they already are; a corporate rewriter mangled the URL; and it is the
+         migration path to a code-ONLY email, which IS the defence if a scanner ever
+         starts pressing buttons. -->
     <div id="cf-code-wrap" style="display:none;margin-top:1.4rem;padding-top:1.4rem;border-top:0.5px solid var(--border)">
       <p style="font-size:13px;color:var(--text-secondary);margin-bottom:0.7rem">Enter the code printed in the same email.</p>
       <label for="cf-email" style="display:block;font-size:12px;color:var(--text-tertiary);margin-bottom:4px">Your email address</label>

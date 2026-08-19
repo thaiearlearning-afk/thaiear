@@ -447,6 +447,94 @@ function setEmailConsent(optIn, btnId) {
     if (btn) { btn.disabled = false; btn.textContent = optIn ? 'Subscribe to email updates' : 'Unsubscribe'; }
   });
 }
+/* ── The code route, offered ON THIS PAGE (2026-08-19) ────────────────────────
+   Added after the first live test. The code used to be reachable only by
+   clicking the email LINK first — i.e. the one thing it exists to work without.
+   Now sending a link also reveals a code box here, on both this page and the
+   other one carrying this control, and for RETURNING users as well as new ones
+   (both Supabase templates print {{ .Token }}).
+
+   ⚠ WHAT THE CODE IS AND IS NOT. It is the SAME OTP record as the link, so it
+   is NOT protection against a scanner that presses the button on confirm.html —
+   a spent link is a spent code. What it actually buys:
+     · the email opens in a WebView or on a different device, and the user wants
+       to sign in where they already are (the common real-world case);
+     · a corporate rewriter mangles the URL in transit;
+     · it is the migration path to a code-ONLY email, which is the real defence
+       if a detonation sandbox ever does start pressing buttons.
+   See ADS_OPERATIONS.md §5.6. */
+var _resendTick = null;
+
+function showLoginCodeBox() {
+  var w = document.getElementById('login-code-wrap');
+  if (w) w.style.display = 'block';
+}
+
+/* The resend button is VISIBLE THE WHOLE TIME and counts down, rather than
+   appearing out of nowhere at zero. A static page with no affordance reads as
+   "nothing is happening"; a ticking number reads as "wait, then you can retry". */
+function startResendCountdown(secs) {
+  if (_resendTick) { clearInterval(_resendTick); _resendTick = null; }
+  var left = secs;
+  function paint() {
+    var b = document.getElementById('login-link-btn');
+    if (!b) { clearInterval(_resendTick); _resendTick = null; return; }
+    if (left <= 0) {
+      clearInterval(_resendTick); _resendTick = null;
+      b.disabled = false;
+      b.textContent = 'Send another link';
+      return;
+    }
+    b.disabled = true;
+    b.textContent = 'Send another link in ' + left + 's';
+    left--;
+  }
+  paint();
+  _resendTick = setInterval(paint, 1000);
+}
+
+function signInWithCode() {
+  var a = window.ThaiEarAuth;
+  var emailEl = document.getElementById('login-email-input');
+  var codeEl = document.getElementById('login-code-input');
+  var btn = document.getElementById('login-code-btn');
+  var st = document.getElementById('login-code-status');
+  function say(msg, kind) {
+    if (!st) return;
+    st.style.color = kind === 'err' ? '#B00020' : (kind === 'ok' ? 'var(--accent)' : 'var(--text-tertiary)');
+    st.textContent = msg;
+  }
+  var email = ((emailEl && emailEl.value) || '').trim();
+  var code = ((codeEl && codeEl.value) || '').trim().replace(/\s+/g, '');
+  if (!email || email.indexOf('@') < 1 || email.indexOf('.') < 0) { say('Enter the email address the code was sent to.', 'err'); return; }
+  if (!/^\d{4,10}$/.test(code)) { say('Enter the code printed in the email (digits only).', 'err'); return; }
+  if (!a || typeof a.verifyOtpCode !== 'function') { say('Still loading — try again in a moment.', 'err'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing you in…'; }
+  say('');
+  /* Same cascade as confirm.html: gotrue matches a token by its TYPE as well as
+     its value, and the right string differs between the signup and magic-link
+     templates. A mismatch is a lookup miss, not a consumption, so trying more
+     than one is safe. */
+  var queue = ['email', 'magiclink', 'signup'];
+  (function attempt(i, firstErr) {
+    if (i >= queue.length) {
+      var e = firstErr || new Error('please try again.');
+      say('That code didn’t work: ' + (e.message || 'please try again.'), 'err');
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign in with the code'; }
+      return;
+    }
+    a.verifyOtpCode(email, code, queue[i]).then(function (res) {
+      if (res && res.error) throw res.error;
+      say('Signed in — taking you to your account…', 'ok');
+      var local = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.)/.test(location.hostname || '');
+      setTimeout(function () { location.replace(local ? '/account.html' : '/account'); }, 500);
+    }).catch(function (err) {
+      if (/expired/i.test((err && err.message) || '')) { attempt(queue.length, err); return; }
+      attempt(i + 1, firstErr || err);
+    });
+  })(0);
+}
+
 function sendLoginLink() {
   var a = window.ThaiEarAuth;
   var input = document.getElementById('login-email-input');
@@ -467,16 +555,11 @@ function sendLoginLink() {
        ever clicks it (ADS_OPERATIONS.md §4.2), and then the FIRST thing the user needs
        is another one. Re-arm after 60 s — matched to gotrue's own resend floor, so the
        button is never live before a resend could actually succeed. */
-    if (btn) {
-      btn.textContent = 'Link sent';
-      setTimeout(function () {
-        var b = document.getElementById('login-link-btn');   // re-read: account.html re-renders this box
-        if (!b) return;
-        b.disabled = false;
-        b.textContent = 'Send another link';
-      }, 60000);   /* NOT 30 s: gotrue's SMTP_MAX_FREQUENCY floor is 1 minute, so an
-                      earlier re-arm buys the user a rate-limit error, not an email. */
-    }
+    /* Offer the code straight away — it must not require the link to work first. */
+    showLoginCodeBox();
+    /* 60 s, matched to gotrue's SMTP_MAX_FREQUENCY floor: re-arming sooner would
+       buy the user a rate-limit error rather than an email. Counted down in view. */
+    startResendCountdown(60);
   }).catch(function (err) {
     /* The send failing used to be INVISIBLE on the button — fail() wrote to the status
        line, but the button just went back to its resting label, which reads as "nothing
@@ -543,6 +626,7 @@ function renderAccount() {
         '<button class="btn btn-ghost login-btn" id="login-link-btn" onclick="sendLoginLink()">Email me a sign-in link</button>' +
         '<p class="acct-muted" style="margin-top:8px;font-size:12.5px;line-height:1.5">New here? No separate sign-up needed — just enter your email and we’ll create your account automatically. No password to remember.</p>' +
         '<p id="login-email-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
+        '<div id="login-code-wrap" style="display:none;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)"><p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">Link not working, or the email opening in the wrong browser? Enter the code from that email instead.</p><input id="login-code-input" class="login-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code from your email"><button class="btn btn-ghost" id="login-code-btn" onclick="signInWithCode()">Sign in with the code</button><p id="login-code-status" style="margin-top:8px;min-height:1em;font-size:13px;color:var(--text-tertiary)"></p></div>' +
         '<p class="acct-muted login-terms">By continuing you agree to our ' +
           '<a href="terms.html" style="color:var(--accent);text-decoration:none">Terms</a> and ' +
           '<a href="privacy.html" style="color:var(--accent);text-decoration:none">Privacy Policy</a>.</p>' +

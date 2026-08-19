@@ -33,7 +33,18 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v343';   // v343: a sentence tap can no longer strand its own button. The play
+const VERSION = 'v344';   // v344: the sign-in CODE is now offered on the page that sent the link,
+                          // for returning users as well as new ones, instead of being reachable
+                          // only by first clicking the email LINK — the one thing it exists to
+                          // work without. The resend button is also visible from the moment a
+                          // link is sent, greyed and counting down, rather than materialising at
+                          // 60s onto what until then looked like a dead page.
+                          // ⚠ THE CODE IS THE SAME OTP RECORD AS THE LINK, so it is NOT a defence
+                          // against a scanner that presses the button on /confirm — that spends
+                          // the token and kills the code too. It is for the email opening in a
+                          // WebView or on another device, for a mangled URL, and as the migration
+                          // path to a code-ONLY email. Comments saying otherwise were corrected.
+                          // v343: a sentence tap can no longer strand its own button. The play
                           // button lit on tap and was only ever un-lit by ended/error/a rejected
                           // play()/a timer armed inside loadedmetadata - so a media load that
                           // merely HANGS (no error, no metadata, no rejection: the ordinary
