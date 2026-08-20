@@ -366,12 +366,10 @@
    to escape. join.html learned the same lesson on 2026-08-19; this is that fix,
    applied to all three routes below.
 
-   🚨 KNOWN GAP — THE EMAIL *LINK* ROUTE STILL LANDS ON /account, AND NO CODE HERE
-   CAN CHANGE IT. The magic-link email is built from Supabase's own template, which
-   sends the user to confirm.html with `next` unset; confirm.html then defaults to
-   '/account' (confirm.html:216). Fixing it is a ONE-LINE DASHBOARD EDIT — add
-   `&next=/` to the confirm URL in Auth → Email Templates — not a code change.
-   The Google route and the CODE route below both land correctly already.
+   ✅ THE EMAIL *LINK* ROUTE ALSO LANDS ON THE HOME PAGE. This block used to describe it as a
+   known gap needing a Supabase dashboard edit; that was already stale when written. confirm.html
+   defaults `next` to '/' (confirm.html:225, commit 0c149e1, same day), so all three routes --
+   Google, the code box, and the emailed link -- land correctly with no template change.
    ============================================================================ */
 (function () {
   'use strict';
@@ -382,29 +380,6 @@
     var local = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.)/.test(location.hostname || '');
     return local ? 'index.html' : '/';
   }
-
-  /* ⚠⚠ DIAGNOSTIC ONLY — `?nogo=1` (2026-08-20). Holds the page after sign-in instead of
-     leaving for the home page, and prints the URL we came back on. It exists to answer ONE
-     question: does the query string — and therefore a `gclid` — survive the OAuth round trip?
-
-     Two theories were floated for why `?gclid=TEST123` vanished and BOTH were wrong: it was
-     not Google stripping it, and it was not a Supabase Redirect-URLs allow-list miss
-     (`https://thaiear.com/**` is already listed). The honest position is that the first test
-     could not have worked — render() replaces the URL 900 ms after sign-in, so the evidence
-     was destroyed either way. Hence measuring instead of theorising.
-
-     ⭐ IT IS SELF-DIAGNOSING, which is the whole trick. `nogo` is itself a query param, so it
-     can only survive by the same route a `gclid` would:
-       • held on /start, URL shown   → the query string SURVIVES; gclid capture is viable
-       • bounced to /start, no query → params stripped, path kept
-       • bounced to /                → Supabase fell back to Site URL
-     A negative result therefore still lands somewhere readable; there is no outcome that
-     looks like a broken page.
-
-     ⛔ TEMPORARY. Remove once the question is answered. It is opt-in and this page is
-     noindex, so leaving it costs nothing, but it is a hold on the one page whose entire job
-     is to move people through — it is not a feature. */
-  function nogo() { return /[?&]nogo=1(&|$)/.test(location.search); }
 
   var leaving = false;
   function render() {
@@ -422,20 +397,6 @@
     var g = document.getElementById('lp-google');
     if (g) { g.disabled = true; g.textContent = 'Signed in ✓'; }
     if (st) { st.style.color = 'var(--accent)'; st.textContent = 'You’re signed in — taking you to the topics…'; }
-
-    /* The diagnostic hold. Deliberately AFTER the button/status update, so the page still
-       looks like a normal successful sign-in and only the departure is suppressed. */
-    if (nogo()) {
-      var got = null;
-      try { got = new URLSearchParams(location.search).get('gclid'); } catch (_) {}
-      if (st) {
-        st.style.wordBreak = 'break-all';
-        st.style.textAlign = 'left';
-        st.textContent = 'HELD (nogo=1) — gclid: ' + (got || 'NOT PRESENT')
-          + '  ·  returned on: ' + location.href;
-      }
-      return;
-    }
 
     /* A beat, so the success registers instead of the page just flickering. */
     setTimeout(function () { location.replace(homeHref()); }, 900);
