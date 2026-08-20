@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v365';   // v365: THE PROGRESS PAGE IS BACK, as a read-only report. The one
+const VERSION = 'v366';   // v366: restore .page-wrap on progress.html. The page was assembled by
+                          // slicing the archived one's <head>, and the slice stopped ONE LINE
+                          // SHORT of the rule that gives the site its 640px centred column — so it
+                          // shipped rendering flush to the viewport edge. Nothing was missing from
+                          // the DOM and every test passed; it simply had no width. Caught by
+                          // looking at the live page. test_progress_page.js now pins the column,
+                          // the centring and the body palette, so the next assembly slip fails a
+                          // test instead of a screenshot. v365: THE PROGRESS PAGE IS BACK, as a read-only report. The one
                           // retired earlier today asked the user to tap "+ Add progress" and
                           // self-report; this one only shows what was measured. Sentences listened
                           // to, time (a FLOOR — it counts the Thai itself, not the pauses, the

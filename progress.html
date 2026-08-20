@@ -48,6 +48,12 @@
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
 
+  /* ⚠ RESTORED. This rule was lost when the page was assembled from the archived shell — the
+     extract stopped one line short of it, so the whole page rendered flush to the viewport edge
+     with no column at all. Nothing in the DOM was missing; it just had no width. Caught by looking
+     at the live page, which was the only way it was going to be caught. */
+  .page-wrap { max-width: 640px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+
   /* ── the yak + "Fluency loading…" (carried over from the retired page, 2026-08-20) ────────
      Pure CSS dot cycle, no JS. */
   .fluency-block { text-align: center; margin: 0.25rem 0 1.5rem; }
