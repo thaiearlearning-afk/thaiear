@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v372';   // v372: the cookie banner is suppressed site-wide — consent.js
+const VERSION = 'v373';   // v373: comment-only in gtag.js — records that the tag, the GA4
+                          // property and the conversion labels are DORMANT, not dead, while
+                          // consent.js BANNER_OFF is true, so none of it gets pruned. Also
+                          // removes a stale "NOT WIRED UP YET" warning that had been wrong
+                          // since v299. Bumped because gtag.js is precached and cache-first.
+                          // v372: the cookie banner is suppressed site-wide — consent.js
                           // `BANNER_OFF = true`. Nothing relied on the tag any more (Search
                           // lands on /start, which carries no tag; the video campaigns are
                           // paused), so it was noise in front of every visitor. It suppresses

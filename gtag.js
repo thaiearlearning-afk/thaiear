@@ -17,9 +17,20 @@
    false there, so this never loads. No ad click ever lands inside the
    app, so there is nothing to measure and nothing to consent to.
 
-   ⚠ NOT WIRED UP YET. Nothing loads this file. The <script> tags and the
-   sw.js PRECACHE entry + VERSION bump are the last step, held back to
-   avoid colliding with the parallel session in player.js / sw.js.
+   ⚠ THAT "NOT WIRED UP YET" WARNING WAS STALE AND IS GONE (corrected 2026-08-20).
+   This file has been loaded site-wide and precached since sw v299 / 2026-08-12.
+   attrib.js carried the identical stale warning and was corrected on 2026-08-17;
+   this copy was simply missed. Do not re-add it.
+
+   ⛔⛔ CURRENTLY DORMANT BY DESIGN — PAUSED, NOT RETIRED. DO NOT DELETE (owner,
+   2026-08-20). Since consent.js gained `BANNER_OFF = true` (sw v372) no new visitor
+   is ever asked for consent, so `granted()` is false for them and the Google script
+   is never fetched. That makes THIS FILE, the GA4 property, the conversion actions
+   and the labels below all look like dead code. THEY ARE NOT. The switch is one
+   boolean in consent.js, and the expected moment to flip it back is the human-audio
+   launch (or spending the £382 of ad credit before it expires ~23 Oct).
+   Deleting any of it would turn a one-character change into a rebuild — and the
+   conversion labels in particular are account-specific and slow to reconstruct.
 
    Conversion labels come from Goals → Conversions → each action → Tag
    setup. They are NOT secret (they ship in the page either way), but they
