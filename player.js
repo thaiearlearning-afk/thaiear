@@ -6432,7 +6432,12 @@
        Hidden only under te-v2 so classic live pages keep it until rollout. */
     'body.te-v2 .speed-toggle{display:none}' +
     'body.dyn-plmode .speed-toggle{display:none}' +   // r132: playlist player matches the topic template - no tortoise (owner)
-    'body.te-v2 .dyn-x-btn{order:7}' +
+    /* ⚠ EXCLUDE IS THE LAST ITEM IN THE ROW AND MUST STAY THAT WAY (owner, 2026-08-20).
+       With the plays chip after it, the chip appearing or going 1->2 digits pushed the
+       exclude button LEFT, so a control the user aims at moved under their finger.
+       Ordered last, it is pinned to the right edge: .sent-preview is the flex:1 item, so
+       it absorbs the chip's width instead and nothing after it shifts. */
+    'body.te-v2 .dyn-x-btn{order:8}' +
     /* Playlist locked rows + their "Premium content" divider. Gold TEXT tone #B29234 (the index
        "Premium" pill colour) — the brighter #F0CC5C is for fills/graphics only. Deliberately
        understated: it marks content, it does not advertise. */
@@ -6504,7 +6509,7 @@
     '.te-plays.on{display:inline-flex}' +
     '.te-plays svg{width:8px;height:8px;fill:currentColor;flex-shrink:0}' +
     'body.premium-topic .te-plays{color:#B29234}' +
-    'body.te-v2 .te-plays{order:8}' +
+    'body.te-v2 .te-plays{order:7}' +
 
     /* owner 2026-07-27: quiet card look (was a solid accent pill — garish next to its neighbours) */
     '.dyn-addpl{display:block;margin:10px auto 0;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:7px 14px;cursor:pointer}' +

@@ -33,7 +33,19 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v357';   // v357: PER-SENTENCE PLAY COUNTS. Every pill shows how many times you
+const VERSION = 'v359';   // v359: the exclude button is the LAST item in the sentence pill again.
+                          // The plays chip sat after it, so the chip appearing (or going 1->2
+                          // digits) pushed exclude left — a control moving under the user's
+                          // finger. Ordered last it is pinned to the right edge; .sent-preview is
+                          // the flex:1 item and absorbs the chip's width instead. v358: #player-root's CLS reserve, MEASURED in live Chrome at four
+                          // widths. It had been wrong by ~230px since the dyn rollout on
+                          // 2026-08-02: the 350/379 figures were measured on 2026-06-24 against
+                          // the CLASSIC player, before dyn added its heading, status line, pause
+                          // slider, repeats row and playlist buttons — so every topic page has
+                          // been shoving its whole sentence list down on load ever since, and the
+                          // last Lighthouse run predated the rollout so nothing caught it.
+                          // Now 512 / 510 / 528 / 560 across the four bands the controls wrap at.
+                          // v357: PER-SENTENCE PLAY COUNTS. Every pill shows how many times you
                           // have heard that sentence; topic cards and playlist rows show the
                           // MINIMUM across their sentences, which is what makes it mean "complete
                           // listens". Counting is a 2s-or-clip-end dwell, so scrubbing the pause
