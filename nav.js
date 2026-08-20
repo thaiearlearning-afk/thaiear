@@ -377,6 +377,13 @@
     // Read Thai mobile-menu entry removed — reading is reached via the index's Read panel now (owner, 2026-08-02).
     { label: 'About', page: 'about.html', public: true },
     { label: 'Guide', page: 'guide.html', public: true },
+    /* ⚠ THE MAIN MENU, NOT THE PERSON ICON (owner, 2026-08-20). The account dropdown was
+       collapsed to a direct link when it was left with one item; putting progress back there
+       would undo that. `public: true` because the page is a first-class SIGNED-OUT state —
+       every figure reads 0 and the heading invites signup, which is most of the reason to
+       show it at all. Routing it through join.html would hide the feature from the people
+       it is meant to sell. */
+    { label: 'My progress', page: 'progress.html', public: true },
     { label: 'Socials', page: 'socials.html', public: true },
     // Visible everywhere INCLUDING inside the Capacitor app (owner, 2026-08-02 — the page now
     // documents offline downloads/playlists, useful in-app; supersedes the old fourth-wall hide).

@@ -1,8 +1,9 @@
 /* ============================================================
    functions/api/plays.js — per-sentence play counts
    ------------------------------------------------------------
-   POST /api/plays  { batchId: "<uuid>", deltas: { "1220": 3, "1221": 1 } }
-   GET  /api/plays                       -> { counts: { "1220": 5, ... } }
+   POST   /api/plays  { batchId: "<uuid>", deltas: { "1220": 3, "1221": 1 } }
+   GET    /api/plays  -> { counts, lastListenDate, daysListened, streak, bestStreak }
+   DELETE /api/plays  -> reset this user's counters to zero (the row survives)
 
    Owning doc: PLAYS_COUNTER.md. Schema + the atomic increment: sentence_plays_schema.sql.
 
@@ -125,15 +126,50 @@ export async function onRequestGet({ request, env }) {
   try {
     const got = await fetch(
       env.SUPABASE_URL + '/rest/v1/sentence_plays?user_id=eq.' +
-        encodeURIComponent(auth.user.id) + '&select=counts',
+        encodeURIComponent(auth.user.id) +
+        '&select=counts,last_listen_date,days_listened,streak,best_streak',
       { headers: svcHeaders(env) });
     if (!got.ok) {
       return json({ error: 'db_error', status: got.status,
                     detail: (await got.text()).slice(0, 300) }, 502);
     }
     const rows = await got.json();
-    // No row yet is not an error — it is a user who has not played anything.
-    return json({ counts: (rows[0] && rows[0].counts) || {} }, 200);
+    const r = rows[0] || {};
+    /* No row yet is not an error — it is a user who has not played anything. Every field gets a
+       defined default so the Progress page never has to guard, and never renders "undefined". */
+    return json({
+      counts: r.counts || {},
+      lastListenDate: r.last_listen_date || null,
+      daysListened: r.days_listened || 0,
+      streak: r.streak || 0,
+      bestStreak: r.best_streak || 0,
+    }, 200);
+  } catch (e) {
+    return json({ error: 'db_unavailable', detail: msg(e) }, 502);
+  }
+}
+
+/* Reset — the Progress page's red button.
+   ⚠ AN UPDATE, NOT A DELETE, and the distinction is deliberate. `sentence_plays` withholds DELETE
+   from service_role so that the `on delete cascade` remains the ONLY thing that removes rows —
+   that cascade IS the GDPR erasure mechanism, and handing this route a destructive privilege it
+   does not need would weaken it. Clearing the numbers is a different act from erasing the record,
+   which is also why the button says "reset": tracking continues, the count starts again.
+   Deleting the ACCOUNT still removes everything, via account.html. */
+export async function onRequestDelete({ request, env }) {
+  const auth = await authenticate(request, env);
+  if (auth.error) return auth.error;
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'config' }, 500);
+  try {
+    const rpc = await fetch(env.SUPABASE_URL + '/rest/v1/rpc/reset_plays', {
+      method: 'POST', headers: svcHeaders(env),
+      body: JSON.stringify({ p_user: auth.user.id }),
+    });
+    if (!rpc.ok) {
+      return json({ error: 'db_error', status: rpc.status,
+                    detail: (await rpc.text()).slice(0, 300) }, 502);
+    }
+    return json({ ok: true }, 200);
   } catch (e) {
     return json({ error: 'db_unavailable', detail: msg(e) }, 502);
   }

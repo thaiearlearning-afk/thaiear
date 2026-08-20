@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Your progress</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- pwa:start (gen_pwa.js) -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#4B41AD">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ThaiEar">
+<!-- pwa:end -->
+<link rel="preload" href="/fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/inter-latin-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/sarabun-thai-400.woff2" as="font" type="font/woff2" crossorigin>
+<style id="te-fonts">
+@font-face{font-family:'Inter';font-style:normal;font-weight:300;font-display:optional;src:url('/fonts/inter-latin-300.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/inter-latin-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/inter-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/inter-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:300;font-display:optional;src:url('/fonts/sarabun-thai-300.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:300;font-display:optional;src:url('/fonts/sarabun-latin-300.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/sarabun-thai-400.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/sarabun-latin-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/sarabun-thai-500.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/sarabun-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/sarabun-thai-600.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/sarabun-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
+
+  /* ── the yak + "Fluency loading…" (carried over from the retired page, 2026-08-20) ────────
+     Pure CSS dot cycle, no JS. */
+  .fluency-block { text-align: center; margin: 0.25rem 0 1.5rem; }
+  .fluency-img { width: 195px; max-width: 55%; height: auto; display: block; margin: 0 auto 0.4rem; }
+  .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
+  /* fixed-width dots so the text never jitters as they cycle */
+  .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
+  /* ⚠ Reveal WIDTH, not `content` — the app webview cannot animate `content`, which is what froze
+     the original. steps(3, start) shows 1 → 2 → 3 dots. */
+  .fluency-text .dots::after {
+    content: '...'; display: inline-block; width: 0; overflow: hidden;
+    vertical-align: bottom; animation: fluency-dots 1.5s steps(3, start) infinite;
+  }
+  @keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
+
+  h1.prog-title { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 0.15rem; }
+  .prog-sub { font-size: 13.5px; color: var(--text-tertiary); margin-bottom: 1.5rem; }
+
+  /* ── the four headline figures ───────────────────────────────────────────────────────── */
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.75rem; }
+  .stat-card {
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
+    padding: 0.9rem 1rem;
+  }
+  .stat-val {
+    font-size: 24px; font-weight: 600; color: var(--accent); line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  /* The time figure is three units, so it needs to be allowed to be smaller and to wrap. */
+  .stat-card.wide { grid-column: 1 / -1; }
+  .stat-card.wide .stat-val { font-size: 20px; }
+  .stat-lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .stat-note { font-size: 11.5px; color: var(--text-tertiary); margin-top: 3px; line-height: 1.45; }
+
+  /* ── per-topic list ──────────────────────────────────────────────────────────────────── */
+  h2.prog-h2 { font-size: 15px; font-weight: 600; margin: 0 0 0.15rem; }
+  .prog-h2-note { font-size: 12.5px; color: var(--text-tertiary); margin-bottom: 0.9rem; }
+  .prog-list { display: flex; flex-direction: column; gap: 1px; }
+  .prog-row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    background: var(--surface); border: 0.5px solid var(--border);
+    padding: 0.5rem 0.85rem; text-decoration: none; color: inherit;
+  }
+  .prog-row:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+  .prog-row:last-child  { border-radius: 0 0 var(--radius-md) var(--radius-md); }
+  .prog-row:hover { border-color: var(--border-strong); }
+  .prog-row-name { font-size: 13.5px; min-width: 0; overflow-wrap: break-word; }
+  /* Same green as the index card and .reveal-all-btn on a premium topic — the one number on the
+     row that is about the reader rather than about the topic. */
+  .prog-row-plays { font-size: 12.5px; font-weight: 500; color: #1F5D3A; white-space: nowrap;
+    font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .prog-band { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text-tertiary); margin: 1.4rem 0 0.5rem; }
+  .prog-band:first-child { margin-top: 0; }
+
+  /* ── reset ───────────────────────────────────────────────────────────────────────────── */
+  .reset-wrap { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); text-align: center; }
+  .reset-btn {
+    font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+    color: #C0392B; background: var(--surface); border: 0.5px solid #E3B5AE;
+    border-radius: var(--radius-md); padding: 8px 16px; cursor: pointer;
+  }
+  .reset-btn:hover { background: #FDF1F0; }
+  .reset-btn[disabled] { opacity: 0.55; cursor: default; }
+  .reset-note { font-size: 11.5px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.5; }
+
+  /* The site's own modal idiom (matched to .dl-modal in index.html / pl-list.js) — deliberately
+     NOT window.confirm, which is the grey browser box. */
+  .te-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,40,0.55);
+    display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
+  .te-modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 360px;
+    width: 100%; padding: 1.8rem 1.5rem; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+  .te-modal-card p { font-size: 14px; line-height: 1.6; margin-bottom: 1.2rem; }
+  .te-modal-card strong { font-weight: 600; }
+  .te-modal-actions { display: flex; gap: 10px; }
+  .te-modal-actions button { flex: 1; font-family: var(--font-ui); font-size: 13.5px; font-weight: 500;
+    border-radius: var(--radius-md); padding: 10px 12px; cursor: pointer; }
+  .te-modal-cancel { background: var(--surface); color: var(--text-secondary); border: 0.5px solid var(--border-strong); }
+  .te-modal-confirm { background: #C0392B; color: #fff; border: none; }
+
+  @media (max-width: 600px) {
+    .page-wrap { padding: 2rem 1rem 3rem; }
+    h1.prog-title { font-size: 22px; }
+    .stat-val { font-size: 21px; }
+    .stat-card.wide .stat-val { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top nav comes from the shared nav.js (do NOT inline it). -->
+<div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
+
+<div class="page-wrap">
+  <div id="prog-root"></div>
+</div>
+
+<script>
+/* ============================================================
+   progress.html — "<name>'s progress"
+
+   Owning docs: PROGRESS_PAGE_SPEC.md (the design), PLAYS_COUNTER.md (the counter it displays).
+
+   ⚠ THIS IS NOT THE OLD PROGRESS PAGE. The one retired on 2026-08-20 asked the user to tap
+   "+ Add progress" and self-report. This one only reports what was measured. Nothing on it is
+   editable except the reset.
+
+   ⚠ SIGNED OUT IS A FIRST-CLASS STATE, NOT AN ERROR. Every figure reads 0 and the heading becomes
+   "Sign in to track progress". A stranger should be able to see the SHAPE of the feature — that is
+   most of the reason to sign up — so nothing is hidden and nothing throws.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var root = document.getElementById('prog-root');
+  var A = function () { return window.ThaiEarAuth; };
+  var T = function () { return window.ThaiEarTopics; };
+  var durations = null;     // {num: seconds}, from clip-durations.json
+  var sentNums = null;      // {page: [nums]}, from topic-sentences.json
+  var painted = '';         // signature of what is on screen, so repeats are free
+
+  /* ── formatting ─────────────────────────────────────────────────────────────────────────── */
+
+  /* "2 days, 4 hours, 4 minutes" — always all three units, even at zero, because the owner asked
+     for a shape that reads the same every time rather than one that changes as it grows.
+     Rounded to the nearest minute. */
+  function humanTime(seconds) {
+    var mins = Math.round((seconds || 0) / 60);
+    var d = Math.floor(mins / 1440);
+    var h = Math.floor((mins - d * 1440) / 60);
+    var m = mins - d * 1440 - h * 60;
+    var p = function (n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); };
+    return p(d, 'day') + ', ' + p(h, 'hour') + ', ' + p(m, 'minute');
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  /* The display name from the Google account, first name only — "Toby's progress" reads better
+     than the full name, and the full name is on the account page anyway. Falls back to the part
+     of the email before the @ so the heading is never "'s progress". */
+  function firstName(user) {
+    var n = (user && (user.username || user.name || user.full_name)) || '';
+    n = String(n).trim().split(/\s+/)[0] || '';
+    if (!n && user && user.email) n = String(user.email).split('@')[0];
+    return n;
+  }
+
+  /* ── the numbers ────────────────────────────────────────────────────────────────────────── */
+
+  function totals(counts) {
+    var listens = 0, seconds = 0;
+    for (var k in counts) {
+      var n = counts[k] || 0;
+      listens += n;
+      /* A sentence with no measured duration contributes 0 rather than breaking the sum. That is
+         why gen_clip_durations.js REFUSES to write when a live sentence is missing one — it would
+         quietly make this figure read short. */
+      if (durations && durations[k]) seconds += durations[k] * n;
+    }
+    return { listens: listens, seconds: seconds };
+  }
+
+  /* ── render ─────────────────────────────────────────────────────────────────────────────── */
+
+  function render() {
+    var a = A(), t = T();
+    if (!t) return;                                   // topics.js not in yet; the auth event repaints
+    var user = a && a.getUser && a.getUser();
+    var counts = (user && a.getPlays) ? a.getPlays() : {};
+    var stats = (user && a.getPlayStats) ? a.getPlayStats() : { daysListened: 0, streak: 0, bestStreak: 0 };
+    var tot = totals(counts);
+
+    /* Repaint guard. auth.js legitimately notifies several times during startup and once per
+       recorded play, and rebuilding this list each time throws away scroll position. */
+    var sig = [user ? user.id : 'out', tot.listens, Math.round(tot.seconds),
+               stats.daysListened, stats.streak, stats.bestStreak,
+               sentNums ? 1 : 0, durations ? 1 : 0].join('|');
+    if (sig === painted) return;
+    painted = sig;
+
+    var heading = user
+      ? esc(firstName(user)) + '&rsquo;s progress'
+      : 'Sign in to track progress';
+
+    var html =
+      '<div class="fluency-block">' +
+        '<img class="fluency-img" src="yak.png" alt="" width="195" height="195">' +
+        '<div class="fluency-text">Fluency loading<span class="dots" aria-hidden="true"></span></div>' +
+      '</div>' +
+      '<h1 class="prog-title">' + heading + '</h1>' +
+      '<p class="prog-sub">' + (user
+        ? 'Everything here is measured automatically as you listen.'
+        : '<a href="' + (t.hrefFor ? t.hrefFor('join.html') : 'join.html') +
+          '?feature=1&amp;next=progress.html">Create a free account</a> and your listening is tracked from then on.')
+      + '</p>' +
+
+      '<div class="stat-grid">' +
+        card(tot.listens.toLocaleString(), 'sentences listened to') +
+        card(stats.daysListened, 'day' + (stats.daysListened === 1 ? '' : 's') + ' listened') +
+        card(stats.streak, 'day' + (stats.streak === 1 ? '' : 's') + ' in a row',
+             stats.bestStreak > stats.streak ? 'Best so far: ' + stats.bestStreak : '') +
+        card(humanTime(tot.seconds), 'of Thai heard', 'Counts the Thai itself, so it is a floor — ' +
+             'the pauses, the English and any repeats are not included.', true) +
+      '</div>' +
+
+      topicList(counts) +
+
+      (user ? resetBlock() : '');
+
+    root.innerHTML = html;
+    if (user) wireReset();
+  }
+
+  function card(val, lbl, note, wide) {
+    return '<div class="stat-card' + (wide ? ' wide' : '') + '">' +
+      '<div class="stat-val">' + esc(val) + '</div>' +
+      '<div class="stat-lbl">' + esc(lbl) + '</div>' +
+      (note ? '<div class="stat-note">' + note + '</div>' : '') +
+    '</div>';
+  }
+
+  /* Every live unit, in the site's own display order, grouped by difficulty band — the same
+     ordering the index uses, taken from topics.js so the two can never disagree. */
+  function topicList(counts) {
+    var t = T();
+    if (!t || !t.liveSequence) return '';
+    var units = t.liveSequence();
+    if (!units || !units.length) return '';
+
+    var rows = '', lastBand = null;
+    for (var i = 0; i < units.length; i++) {
+      var u = units[i];
+      var band = t.levelText ? t.levelText(u.levels) : '';
+      if (band && band !== lastBand) {
+        rows += '<div class="prog-band">' + esc(band) + '</div>';
+        lastBand = band;
+      }
+      /* The SAME roll-up the index card uses — one implementation, so the number here and the
+         number on the card cannot drift apart. Signed out it returns '' and we show a plain 0. */
+      var cap = (t.playsCaptionFor && sentNums) ? t.playsCaptionFor(u.page, u.audio) : '';
+      rows += '<a class="prog-row" href="' + esc(t.hrefFor ? t.hrefFor(u.page) : u.page) + '">' +
+                '<span class="prog-row-name">' + esc(u.name) + '</span>' +
+                '<span class="prog-row-plays">' + esc(cap || 'Plays: 0') + '</span>' +
+              '</a>';
+    }
+    return '<h2 class="prog-h2">Every topic</h2>' +
+           '<p class="prog-h2-note">A topic’s number is its <strong>least</strong>-played sentence, ' +
+           'so it only moves when you have been through the whole thing. Sentences you have excluded ' +
+           'do not hold it back.</p>' +
+           '<div class="prog-list">' + rows + '</div>';
+  }
+
+  function resetBlock() {
+    return '<div class="reset-wrap">' +
+      '<button type="button" class="reset-btn" id="prog-reset">Reset progress data</button>' +
+      '<p class="reset-note">Sets every count back to zero. Tracking carries on from there — ' +
+      'this does not turn it off, and it does not delete your account.<br>' +
+      'Days are counted in UTC, so a streak rolls over at 7am Bangkok time.</p>' +
+    '</div>';
+  }
+
+  /* ── reset, behind the site's own modal (never window.confirm) ──────────────────────────── */
+
+  function wireReset() {
+    var btn = document.getElementById('prog-reset');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var ov = document.createElement('div');
+      ov.className = 'te-modal';
+      ov.innerHTML = '<div class="te-modal-card" role="dialog" aria-modal="true">' +
+        '<p>Are you sure you want to delete your progress data?<br><strong>This cannot be undone.</strong></p>' +
+        '<div class="te-modal-actions">' +
+          '<button type="button" class="te-modal-cancel">Cancel</button>' +
+          '<button type="button" class="te-modal-confirm">Delete</button>' +
+        '</div></div>';
+      document.body.appendChild(ov);
+      var close = function () { try { ov.remove(); } catch (_) {} };
+      ov.querySelector('.te-modal-cancel').addEventListener('click', close);
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('.te-modal-confirm').addEventListener('click', function () {
+        var go = ov.querySelector('.te-modal-confirm');
+        go.disabled = true; go.textContent = 'Deleting…';
+        A().resetPlays().then(function (okd) {
+          close();
+          if (!okd) {
+            btn.textContent = 'Could not reset — try again';
+            setTimeout(function () { btn.textContent = 'Reset progress data'; }, 2500);
+            return;
+          }
+          painted = '';        // force a full repaint onto the zeroed numbers
+          render();
+        });
+      });
+    });
+  }
+
+  /* ── boot ───────────────────────────────────────────────────────────────────────────────── */
+
+  render();                                     // paint the signed-out shape immediately
+  window.addEventListener('thaiear:auth', render);
+
+  /* The two lookups this page needs. Both are precached, so offline they come from the cache;
+     both fail soft, because a missing lookup should cost a number, not the page. */
+  fetch('clip-durations.json').then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d) { durations = d; painted = ''; render(); } })
+    .catch(function () {});
+  if (T() && T().loadSentenceNums) {
+    T().loadSentenceNums().then(function (m) { if (m) { sentNums = m; painted = ''; render(); } })
+      .catch(function () {});
+  }
+  (function pull() {
+    var a = A();
+    if (a && a.getUser && a.getUser() && a.loadPlays) a.loadPlays().then(function () { render(); }).catch(function () {});
+  })();
+  window.addEventListener('thaiear:auth', function () {
+    var a = A();
+    if (a && a.getUser && a.getUser() && a.loadPlays) a.loadPlays().then(function () { render(); }).catch(function () {});
+  });
+})();
+</script>
+<script src="topics.js" defer></script>
+<script src="auth.js" defer></script>
+<script src="consent.js" defer></script>
+<script src="attrib.js" defer></script>
+<script src="gtag.js" defer></script>
+<script src="nav.js" defer></script>
+</body>
+</html>

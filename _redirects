@@ -31,11 +31,11 @@
 # concat("https://thaiear.com", http.request.uri.path), preserve query string.
 # thaiear.pages.dev is NOT in the zone so no rule can reach it; it relies on its canonical
 # tag, which is acceptable because nothing links to it.
-# 2026-08-20: "My progress" and "My sentences" retired (PLAYS_COUNTER.md). Per-sentence play
-# counts on the cards replace progress; playlists replace flags. Both pages point at the account.
+# 2026-08-20: "My sentences" retired (PLAYS_COUNTER.md) — playlists replace flags.
 # ⚠ These entries are REQUIRED, not tidy-up: Cloudflare Pages keeps serving a deleted /live file
 # from its edge, so deleting the page alone leaves the old one live.
-/progress        /account   301
-/progress.html   /account   301
+# ⚠ /progress is DELIBERATELY ABSENT. It was retired the same day and then REBUILT hours later as
+# the read-only Progress page (PROGRESS_PAGE_SPEC.md). A redirect left here would shadow the new
+# page entirely — _redirects is applied before a file is served, so the file would never be reached.
 /sentences       /account   301
 /sentences.html  /account   301

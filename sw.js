@@ -33,7 +33,24 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v364';   // v364: the sentence-count line sits LOWER in the same band (its margin
+const VERSION = 'v365';   // v365: THE PROGRESS PAGE IS BACK, as a read-only report. The one
+                          // retired earlier today asked the user to tap "+ Add progress" and
+                          // self-report; this one only shows what was measured. Sentences listened
+                          // to, time (a FLOOR — it counts the Thai itself, not the pauses, the
+                          // English or the repeats), days listened, current and best streak, and
+                          // every topic with its Plays: N.
+                          // ⚠ In the MAIN menu, not the person icon — that dropdown was collapsed
+                          // to a direct link today precisely because it had one item left.
+                          // ⚠ Signed out is a FIRST-CLASS STATE: every figure reads 0 and the
+                          // heading invites signup. A stranger seeing the shape of the feature is
+                          // most of the reason to show it.
+                          // ⚠ /progress is NOT in _redirects — it was retired and rebuilt hours
+                          // apart, and a leftover redirect would shadow the page completely.
+                          // Streak columns live on sentence_plays (contract basis), never on
+                          // user_activity: days_active counts any signed-in PAGE LOAD, so it is
+                          // simply a different quantity, and that table's LI assessment describes
+                          // an invisible record. privacy.html + ROPA updated in this same commit.
+                          // v364: the sentence-count line sits LOWER in the same band (its margin
                           // moved from below to above, so it drops without the space growing) and
                           // is 13->14px, because at 13 it read as fine print rather than as
                           // orientation.
@@ -515,6 +532,7 @@ const PRECACHE = [
   // logged-out/offline state) instead of falling through to the generic offline notice. Topic pages
   // are intentionally NOT here (cached on visit / via the download feature).
   '/account.html', '/subscribe.html', '/join.html', '/about.html', '/guide.html', '/socials.html', '/app.html',
+  '/progress.html',
   '/privacy.html', '/terms.html', '/refunds.html', '/deleted.html',
   /* The sign-in interstitial the email links to (v340). It is where a user lands from their
      inbox, i.e. often on a device that has never opened the site, so it must not depend on a
@@ -542,6 +560,7 @@ const PRECACHE = [
      without it every offline playlist would silently fall back to the old derivation. ~100 KB. */
   '/sentence-hints.json',
   '/topic-sentences.json',
+  '/clip-durations.json',
   /* Advertising measurement, r166. All three are on all 122 landable pages, so an un-precached
      copy means three failed requests on every offline page open. They are also the wrong thing to
      let a network fetch decide: consent.js carries the visitor's stored cookie choice and MUST be

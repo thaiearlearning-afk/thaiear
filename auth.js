@@ -497,6 +497,12 @@
   var plysTimer = null;
   var plysFlushing = false;
   var plysResync = false;      // a duplicate ack asked us to re-read the server total
+  /* The server-decided figures the Progress page shows. NOT computed here and never sent by the
+     client — /api/plays decides them from last_listen_date, the same discipline as /api/seen
+     deciding days_active. A counter a browser can set is a counter a browser can invent.
+     Cached in localStorage so the page has something honest to show offline. */
+  var plysStats = null;
+  var PLYS_STATS_KEY = 'thaiear_plays_stats';
 
   function plysBlank() { return { synced: {}, pending: {}, outbox: null }; }
   function plysRead() {
@@ -638,6 +644,20 @@
      The server value REPLACES `synced` rather than being merged into it: it already contains
      every batch this device has had acknowledged, plus anything other devices have added. What is
      still in `pending`/`outbox` is by definition NOT in it, and stays on top. */
+  function plysStatsGet() {
+    if (plysStats) return plysStats;
+    var c = lsGet(PLYS_STATS_KEY);
+    plysStats = (c && c.uid === uid()) ? c.data : { daysListened: 0, streak: 0, bestStreak: 0, lastListenDate: null };
+    return plysStats;
+  }
+  function plysStatsSet(d) {
+    plysStats = {
+      daysListened: d.daysListened || 0, streak: d.streak || 0,
+      bestStreak: d.bestStreak || 0, lastListenDate: d.lastListenDate || null,
+    };
+    if (uid()) lsSet(PLYS_STATS_KEY, { uid: uid(), data: plysStats });
+  }
+
   function plysLoad() {
     if (plysLoaded) return Promise.resolve(plysMerged());
     var tok = currentSession && currentSession.access_token;
@@ -649,6 +669,7 @@
           /* ⚠ read-modify-write: this page may have been sitting on a stale snapshot while
              another page queued plays, and a blind write here would delete them. */
           plysMutate(function (cur) { cur.synced = d.counts; });
+          plysStatsSet(d);
           plysLoaded = true; notify();
         }
         plysFlush();                                  // deliver anything queued from last time
@@ -1074,6 +1095,30 @@
     // Deliver the queue now. Called by the pagehide/visibilitychange hooks and on 'online';
     // exposed for tests and for anything that wants to force delivery before navigating.
     flushPlays: function () { return plysFlush(); },
+    /* Server-decided listening stats for the Progress page: { daysListened, streak, bestStreak,
+       lastListenDate }. Synchronous and always defined — the cached copy answers offline.
+       ⚠ These are NOT computed client-side. /api/plays decides them from last_listen_date, in
+       UTC days, so a streak can break at 07:00 Bangkok; the page says so in words. */
+    getPlayStats: function () { return currentUser ? plysStatsGet() : { daysListened: 0, streak: 0, bestStreak: 0, lastListenDate: null }; },
+    /* Reset every counter to zero. ⚠ A RESET, NOT AN ERASURE — the row survives and tracking
+       continues; deleting the account is what removes the record, via account.html. Clears the
+       LOCAL store too, including any queued outbox, or the next flush resurrects what was just
+       cleared. Resolves true on success. */
+    resetPlays: function () {
+      var tok = currentSession && currentSession.access_token;
+      if (!currentUser || !tok) return Promise.resolve(false);
+      return fetch('/api/plays', { method: 'DELETE', headers: { Authorization: 'Bearer ' + tok } })
+        .then(function (res) {
+          if (!res.ok) return false;
+          plysCache = plysBlank();
+          plysPersist();
+          plysStatsSet({});
+          plysLoaded = true;
+          notify();
+          return true;
+        })
+        .catch(function () { return false; });
+    },
 
     // ---- flagged sentences --------------------------------------------------
     loadFlags: function () {
@@ -2046,7 +2091,7 @@
         /* Play counts too. The localStorage record is uid-stamped and plysStore() checks it, but
            the in-memory cache is not re-read once populated, so without this the previous account's
            counters would stay on screen (and worse, plysNote() would append to them) until reload. */
-        plysCache = null; plysLoaded = false;
+        plysCache = null; plysLoaded = false; plysStats = null;
         /* ⚠ AND ANYTHING STILL IN FLIGHT FOR THE PREVIOUS USER. Without this, a request issued a
            moment before the account changed would still be the published in-flight promise, so the
            next caller would join it and receive the OLD user's rows. Dropping the slots (rather
