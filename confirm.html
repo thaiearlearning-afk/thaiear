@@ -212,9 +212,18 @@
   var type = params.get('type') || 'email';
   /* Where to land after a successful sign-in. Clean URL, not /account.html —
      the .html form 308-redirects through the origin (see CLAUDE.md). Only
-     same-origin paths are honoured, so the email can never bounce a user off-site. */
-  var nextRaw = params.get('next') || '/account';
-  var next = (nextRaw.charAt(0) === '/' && nextRaw.charAt(1) !== '/') ? nextRaw : '/account';
+     same-origin paths are honoured, so the email can never bounce a user off-site.
+
+     ⚠⚠ THE DEFAULT IS THE HOME PAGE, NOT /account (changed 2026-08-20, owner).
+     Nothing in the codebase passes `next` — it can only ever arrive from the Supabase
+     email template, which does not set it. So this default IS the behaviour for every
+     magic-link sign-in, and it was dropping people on the account page: a small grey
+     panel with no obvious way out. join.html learned the same lesson on 2026-08-19 and
+     start.html was built with it. This is the last route that still did it.
+     ⚠ A `next` in the URL still wins, so adding `&next=/whatever` to the template
+     later needs no code change. */
+  var nextRaw = params.get('next') || '/';
+  var next = (nextRaw.charAt(0) === '/' && nextRaw.charAt(1) !== '/') ? nextRaw : '/';
 
   var btn = document.getElementById('cf-btn');
   var status = document.getElementById('cf-status');
@@ -255,13 +264,19 @@
   }
 
   function done() {
-    say(status, 'Signed in — taking you to your account...', 'ok');
+    say(status, next === '/' ? 'Signed in — taking you to the topics...'
+                             : 'Signed in — taking you to your account...', 'ok');
     /* Clean URL in production; re-add .html on localhost/LAN, because
        `python -m http.server` has no clean-URL resolution and the owner's own
        local test of this page would end on a 404. Same rule as hrefFor() in
-       nav.js / topics.js / player.js / read.js — see CLAUDE.md. */
+       nav.js / topics.js / player.js / read.js — see CLAUDE.md.
+       ⚠ '/' IS THE SPECIAL CASE and it is easy to miss: it contains no dot, so the
+       old expression appended .html and produced "/.html" — a 404 on every local
+       test of the new default. Bare root maps to /index.html, not to root + ".html". */
     var local = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname || '');
-    var dest = (local && next.indexOf('.') === -1) ? next + '.html' : next;
+    var dest = next;
+    if (local) dest = (next === '/') ? '/index.html'
+                    : (next.indexOf('.') === -1 ? next + '.html' : next);
     setTimeout(function () { location.replace(dest); }, 600);
   }
 

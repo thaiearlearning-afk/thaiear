@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v370';   // v370: privacy.html §1 now says "how many times you have listened to a
+const VERSION = 'v371';   // v371: confirm.html now sends a magic-link sign-in to the HOME page
+                          // instead of /account. Nothing in the codebase passes `next`, so that
+                          // default WAS the behaviour, and it dropped people into a small grey
+                          // panel with no obvious way out. ⚠ THE BUMP IS LOAD-BEARING, NOT TIDY:
+                          // confirm.html is PRECACHED and cache-first, so without it every
+                          // returning visitor keeps the old /account copy indefinitely.
+                          // (New page /start.html is deliberately NOT precached — ads-only,
+                          // noindex, one visit per person.)
+                          // v370: privacy.html §1 now says "how many times you have listened to a
                           // sentence" rather than "how many sentences you have listened to in
                           // total". Since v368 `listens` counts REPETITIONS, so ten sentences at
                           // four repeats reads 40 — the old wording implied 10. The privacy

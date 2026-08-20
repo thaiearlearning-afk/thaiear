@@ -86,6 +86,19 @@
      Desktop  → box | CARD | box   with the third box spanning under the card.
      Mobile   → CARD first, then the boxes (the ask must not be below the fold). */
   .lp-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+  /* ⚠ SCOPED TO max-width — AND THAT SCOPE IS LOAD-BEARING. These rules first shipped
+     unscoped, and while the desktop block below does override `.lp-col`, nothing overrode
+     `.lp-card { order: -1 }` — so on desktop the sign-in card jumped out of the centre and
+     rendered as the FIRST column. Caught in review, 2026-08-20.
+     Below the breakpoint the wrappers dissolve (`display: contents`) so all five panels are
+     direct grid items again, and `order` restores the flat sequence with the ask FIRST —
+     the DOM order is A, C, card, B, D, which is only correct for desktop columns. */
+  @media (max-width: 899.98px) {
+    .lp-col  { display: contents; }
+    .lp-card { order: -1; }
+    .lp-box-a { order: 1; } .lp-box-b { order: 2; }
+    .lp-box-c { order: 3; } .lp-box-d { order: 4; }
+  }
   @media (min-width: 900px) {
     /* ⚠ The 40ch cap on .lp-head is a MOBILE measure. Left in place on desktop it wrapped
        the headline into the middle third of a 1080px page for no reason. Release the cap
@@ -96,12 +109,10 @@
     .lp-lede { max-width: 54ch; margin-left: auto; margin-right: auto;
                font-size: calc(16px * var(--te-ui, 1)); }
 
+    /* Three INDEPENDENT columns. No item spans a row, so nothing the card does can
+       resize a row and shove the side boxes around. */
     .lp-grid { grid-template-columns: 1fr 1.15fr 1fr; align-items: start; }
-    .lp-card { grid-column: 2; grid-row: 1 / span 2; }
-    .lp-box-a { grid-column: 1; grid-row: 1; }
-    .lp-box-b { grid-column: 3; grid-row: 1; }
-    .lp-box-c { grid-column: 1 / span 1; grid-row: 2; }
-    .lp-box-d { grid-column: 3; grid-row: 2; }
+    .lp-col  { display: flex; flex-direction: column; gap: 1rem; }
   }
 
   .lp-box, .lp-card { background: var(--surface); border: 0.5px solid var(--border);
@@ -220,6 +231,42 @@
   </div>
 
   <div class="lp-grid">
+    <!-- ⚠⚠ THE SIDE BOXES ARE WRAPPED IN COLUMNS, AND THAT IS LOAD-BEARING (2026-08-20).
+         They used to be four flat grid items with the card set `grid-row: 1 / span 2`.
+         CSS Grid distributes a ROW-SPANNING item's height across the rows it spans, so the
+         moment the card grew — pressing "Email me a sign-in link" reveals a status line and
+         the whole code box — row 1 grew with it and the bottom two boxes SLID DOWN, leaving
+         a gap under the top two. Reported live by the owner.
+         Each column is now its own flex stack, so the card's height cannot move anything.
+         ⚠ On mobile the columns become `display: contents` and `order` restores the flat
+            sequence with the card FIRST — see the stylesheet. -->
+    <div class="lp-col lp-col-l">
+      <div class="lp-box lp-box-a">
+        <div class="lp-box-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h7M8 11h7"/></svg>
+          Learn to read Thai<span class="lp-free">Free</span>
+        </div>
+        <p class="lp-stat">12-step course &middot; 208 audio examples</p>
+        <ul class="lp-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Consonant classes, vowels and final sounds, step by step</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>The <strong>tone rules</strong> explained in plain English, with audio to guide pronunciation</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Tests at every step, and a three-part reading quiz at the end</li>
+        </ul>
+      </div>
+      <div class="lp-box lp-box-c">
+        <div class="lp-box-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 11v2"/></svg>
+          43 topics, 2,200+ sentences
+        </div>
+        <p class="lp-stat">Every sentence with audio and a translation</p>
+        <ul class="lp-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>Two ways to practise:</strong> hear the Thai and repeat it, or hear the English first and try to produce the Thai yourself</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Real situations &mdash; ordering food, getting around, work, health, family</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Cultural notes and language tips across all topics</li>
+        </ul>
+      </div>
+    </div>
+
 
     <!-- ── THE ASK ─────────────────────────────────────────────────────────── -->
     <div class="lp-card" id="signup">
@@ -258,80 +305,33 @@
     </div>
 
     <!-- ── BOX A — reading course. "Free" is CORRECT here. ──────────────────── -->
-    <div class="lp-box lp-box-a">
-      <div class="lp-box-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h7M8 11h7"/></svg>
-        Learn to read Thai<span class="lp-free">Free</span>
+    <div class="lp-col lp-col-r">
+      <div class="lp-box lp-box-b">
+        <div class="lp-box-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><circle cx="18" cy="16" r="3"/><path d="M21 16V7"/></svg>
+          Your own playlists<span class="lp-free">Free</span>
+        </div>
+        <p class="lp-stat">Build them from any topic</p>
+        <ul class="lp-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Pick the sentences <strong>you keep getting wrong</strong> and drill just those</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Combine sentences <strong>across multiple topics and themes</strong> to suit you</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Your progress and listening streak are saved to your account</li>
+        </ul>
       </div>
-      <p class="lp-stat">12-step course &middot; 208 audio examples</p>
-      <ul class="lp-list">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Consonant classes, vowels and final sounds, step by step</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>The <strong>tone rules</strong> explained in plain English, with audio to guide pronunciation</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Tests at every step, and a three-part reading quiz at the end</li>
-      </ul>
+      <div class="lp-box lp-box-d">
+        <div class="lp-box-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M6 9h12M6 15h12"/></svg>
+          Set your own pace
+        </div>
+        <p class="lp-stat">You decide how much thinking time you get</p>
+        <ul class="lp-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Set <strong>sentence repeats</strong> anywhere from one to four times</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Adjust pause lengths to suit your speed</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Or play sentences individually &mdash; each comes with <strong>word-by-word breakdowns</strong>, so you can see how the sentence is built</li>
+        </ul>
+      </div>
     </div>
 
-    <!-- ── BOX B — playlists + progress. "Free" is CORRECT here. ────────────── -->
-    <div class="lp-box lp-box-b">
-      <div class="lp-box-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><circle cx="18" cy="16" r="3"/><path d="M21 16V7"/></svg>
-        Your own playlists<span class="lp-free">Free</span>
-      </div>
-      <p class="lp-stat">Build them from any topic</p>
-      <ul class="lp-list">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Pick the sentences <strong>you keep getting wrong</strong> and drill just those</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Combine sentences <strong>across multiple topics and themes</strong> to suit you</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Your progress and listening streak are saved to your account</li>
-      </ul>
-    </div>
-
-    <!-- ══ BOX C — THE SENTENCE LIBRARY ═══════════════════════════════════════
-         ⛔⛔ NO PRICE WORD IN THIS BOX. NOT "free", NOT "included", NOT a .lp-free
-         chip. Only 12 of 93 units are open without a subscription, so joining the
-         sentence count to a free claim is FALSE — ADS_OPERATIONS.md §7 decision 15.
-         It also must not sit directly beside the CTA on desktop; the grid places it
-         on the far column for exactly that reason.
-         ⛔ And no "native speaker" / "recorded by" language until the human audio
-         ships, and no speed language ever (§7). -->
-    <div class="lp-box lp-box-c">
-      <div class="lp-box-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 11v2"/></svg>
-        43 topics, 2,200+ sentences
-      </div>
-      <p class="lp-stat">Every sentence with audio and a translation</p>
-      <ul class="lp-list">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>Two ways to practise:</strong> hear the Thai and repeat it, or hear the English first and try to produce the Thai yourself</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Real situations &mdash; ordering food, getting around, work, health, family</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Cultural notes and language tips across all topics</li>
-      </ul>
-    </div>
-
-    <!-- ══ BOX D — SET THE PACE ════════════════════════════════════════════════
-         ⚠⚠ REWRITTEN 2026-08-20. The first version of this box claimed THREE features
-         that do not exist, and it is worth recording why so nobody re-adds them:
-           • "Slow a sentence down"  — the 🐢 .speed-toggle is `display:none` on every
-             dyn page (player.js: `body.te-v2 .speed-toggle{display:none}`), and all 93
-             topic pages are dyn. There is no speed control on the live site.
-           • "Loop it until it sticks" — #btn-repeat is `title="Repeat this topic"`.
-             It repeats the TOPIC. There is no per-sentence loop.
-           • "Keeps going when you lock the screen" — that is the APP, not the web page,
-             and this landing page must not pitch app behaviour as site behaviour.
-         Everything below is read off the actual dyn controls: dynRepeats (1–4) for the
-         repeat count, dynFactor for the pause slider, and the per-sentence play button
-         (.sent-play-btn) whose card carries the gloss chips and the cultural note.
-         ⛔ Do not add capabilities to this box without opening player.js first. -->
-    <div class="lp-box lp-box-d">
-      <div class="lp-box-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M6 9h12M6 15h12"/></svg>
-        Set your own pace
-      </div>
-      <p class="lp-stat">You decide how much thinking time you get</p>
-      <ul class="lp-list">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Set <strong>sentence repeats</strong> anywhere from one to four times</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Adjust pause lengths to suit your speed</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Or play sentences individually &mdash; each comes with <strong>word-by-word breakdowns</strong>, so you can see how the sentence is built</li>
-      </ul>
-    </div>
 
   </div>
 
@@ -601,12 +601,29 @@
      call into the nav is guarded (`window.ThaiEarNav && …`, auth.js:259), and auth.js also
      hosts the consent banner, which we still want.
      ⚠ attrib.js is REQUIRED, not optional: it writes the consent-free ad_attribution row at
-     signup, which is the only measurement this page exists to produce. consent.js must load
-     BEFORE it — attrib fails closed when the consent API is absent, so the order is
-     load-bearing, and `defer` scripts run in document order. -->
-<script src="consent.js" defer></script>
+     signup, which is the only measurement this page exists to produce. -->
+<!-- ⚠⚠ NO consent.js AND NO gtag.js ON THIS PAGE — DELIBERATE (owner, 2026-08-20).
+     Every other page loads both. Here the cookie banner bought almost nothing and cost the
+     one thing this page has to protect: a single, uncluttered decision. There is no audio,
+     no navigation and nothing to personalise — the only question is do they sign up.
+
+     THIS IS A REMOVAL OF TRACKING, NOT A BYPASS OF CONSENT. Every consumer fails CLOSED,
+     which is why dropping the two tags is safe rather than sneaky:
+       • attrib.js  adConsent() is `!!(window.ThaiEarConsent && ...)` — undefined means
+                    false, so capture()/stored() never touch localStorage. No device write,
+                    so PECR reg 6 is not engaged at all.
+       • attrib.js  track() additionally requires window.gtag AND a granted advertising
+                    consent, so it is a no-op.
+       • gtag.js    line 126 is `if (window.ThaiEarConsent)`, so it would sit inert anyway.
+                    Removed as well so the Google script can never be fetched from here.
+     What SURVIVES is exactly the measurement this page exists for: attrib.js still POSTs to
+     /api/attrib at signup (first-party, consent-free by design) and /api/seen still fires.
+
+     🚨 CONSEQUENCE TO EXPECT, NOT TO DEBUG: Google Ads will report ZERO conversions for
+     traffic landing here. Both conversion actions (`activation`, `signup`) are sent through
+     gtag. The number to read is Supabase signups, not the Ads conversion column.
+     ⚠ Do NOT "restore consistency" by adding the tags back. -->
 <script src="attrib.js" defer></script>
-<script src="gtag.js" defer></script>
 <script src="auth.js" defer></script>
 </body>
 </html>
