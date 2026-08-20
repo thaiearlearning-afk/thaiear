@@ -1136,7 +1136,8 @@
          where it started and nothing opened; the last of those re-renders wrote fresh DOM with
          exactly one handler, which is why the second tap always worked.
          Returning early is safe precisely BECAUSE the markup is identical: same nodes, and the
-         handlers already on them close over equal data. Covered by test_pl_open.js. */
+         handlers already on them close over equal data. Covered by test_pl_open.js.
+         Full story: `SESSION_2026-08-20_PLAYER_FIXES.md` §4. */
       if (!setList(html)) return;
       root.querySelectorAll('.pl-box').forEach(function (box) {
         var id = box.getAttribute('data-id');

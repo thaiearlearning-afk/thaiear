@@ -5263,7 +5263,8 @@
 
      150 ms is free: a block is always preceded by that sentence's `gap`, which is at least 2 s of
      silence (see the floors in the builder), so the cue can never bleed the previous sentence.
-     Verified by test_dyn_seek.js, which runs these functions' real source. */
+          Verified by test_dyn_seek.js, which runs these functions' real source.
+     Full story: `SESSION_2026-08-20_PLAYER_FIXES.md` §5. */
   var DYN_SEEK_LEAD = 0.15;
   function dynCue(i) {
     var map = dynSession.map;
@@ -6668,7 +6669,8 @@
      added here. Revealing a pill on a playlist therefore wiped the equaliser and the select
      tick off every card. (The .dyn-live highlight was lost the same way; that one is fixed at
      source, in cardHtml.) Idempotent: a card that still carries its tick is skipped, so the
-     SSR path (where nothing is ever destroyed) costs one querySelector per card. */
+          SSR path (where nothing is ever destroyed) costs one querySelector per card.
+     Full story: `SESSION_2026-08-20_PLAYER_FIXES.md` §1. */
   function dynDecorateCards() {
     plysRepaintChips();          // play-count chips (re-attached after a non-SSR rebuild too)
     sentences.forEach(function (s) {
@@ -7044,7 +7046,8 @@
 
      ⚠ NEVER while something is playing: assigning src would kill the audio it is asked to protect.
      ⚠ NATIVE is exempt — the Media3 shim has no gesture requirement and no src to clobber.
-     A failed prime clears the flag so the next tap tries again. */
+          A failed prime clears the flag so the next tap tries again.
+     Full story: `SESSION_2026-08-20_PLAYER_FIXES.md` §2. */
   var MAIN_SILENCE = 'data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
   // Self-clearing test: no real source is ever a data: URI, so nothing has to remember to reset a
   // flag when the session lands. The 20 ms clip fires 'ended' mid-build — that is what this is for.
@@ -7660,7 +7663,7 @@
      and does nothing if a newer tap has superseded it. `sentCurSrc` is the source the CURRENT
      attempt put on the element, so an error can be attributed to a load rather than assumed to be
      about whatever is playing now — teardown loads set it to null and are therefore ignored.
-     Covered by test_sent_race.js. */
+          Covered by test_sent_race.js. Full story: `SESSION_2026-08-20_PLAYER_FIXES.md` §6a. */
   var sentGen = 0;
   var sentCurSrc = null;
 
@@ -7754,7 +7757,8 @@
        as well.
        The double-fire it actually guards against is a repeat on the SAME button, so that is all it
        guards now. Two different sentences overlapping is safe since sentGen: the newer attempt
-       supersedes the older one, and every stale callback checks its generation. */
+              supersedes the older one, and every stale callback checks its generation.
+       Full story: `SESSION_2026-08-20_PLAYER_FIXES.md` §6b. */
     if (sentLock === num) return;
     sentLock = num;
     setTimeout(function () { if (sentLock === num) sentLock = null; }, 300);
