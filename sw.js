@@ -33,7 +33,9 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v355';   // v355: privacy policy — the "last updated" date was still 12 Aug after
+const VERSION = 'v356';   // v356: a playlist row opens on the FIRST tap — a skipped re-render
+                          // was hanging a duplicate click handler on the same node.
+                          // v355: privacy policy — the "last updated" date was still 12 Aug after
                           // two substantive edits on 19 Aug, and section 4 now discloses that the
                           // desktop-download allow-list keeps an email after account deletion.
                           // ⚠ privacy.html is PRECACHED and served cache-first, so this bump is

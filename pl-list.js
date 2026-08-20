@@ -1080,7 +1080,7 @@
         setList('<p class="pl-note">No playlists yet. Tap <strong>＋ Add playlist</strong>, then add sentences from any topic page (the “＋ Add sentences…” button under its player).</p>');
         return;
       }
-      setList(lists.map(function (p) {
+      var html = lists.map(function (p) {
         var st = dlState(p);
         return '<div class="pl-box' + (p.id === openId ? ' open' : '') + '" data-id="' + p.id + '">' +
           '<button class="pl-box-head" type="button">' +
@@ -1100,7 +1100,19 @@
             '<button class="pl-rename" type="button">Rename playlist</button>' +
             '<button class="pl-del" type="button">Delete playlist</button>' +
           '</div></div>';
-      }).join(''));
+      }).join('');
+      /* ⚠ IF setList() SKIPPED THE WRITE, DO NOT RE-WIRE (2026-08-20). Owner: "if i tap a
+         playlist, only on the second tap do the four options appear."
+         setList() deliberately skips the DOM write when the markup is byte-identical, but the
+         wiring below used to run either way — so every skipped render hung ANOTHER click handler
+         on the same, still-present nodes. auth.js notifies ~5 times during startup and each one
+         calls render(), so a row could easily be carrying several.
+         Each handler flips openId and re-renders, so an EVEN number of them toggled a tap back to
+         where it started and nothing opened; the last of those re-renders wrote fresh DOM with
+         exactly one handler, which is why the second tap always worked.
+         Returning early is safe precisely BECAUSE the markup is identical: same nodes, and the
+         handlers already on them close over equal data. Covered by test_pl_open.js. */
+      if (!setList(html)) return;
       root.querySelectorAll('.pl-box').forEach(function (box) {
         var id = box.getAttribute('data-id');
         var p = lists.filter(function (x) { return x.id === id; })[0];
