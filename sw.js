@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v369';   // v369: terms.html no longer promises "sentence flagging" — the
+const VERSION = 'v370';   // v370: privacy.html §1 now says "how many times you have listened to a
+                          // sentence" rather than "how many sentences you have listened to in
+                          // total". Since v368 `listens` counts REPETITIONS, so ten sentences at
+                          // four repeats reads 40 — the old wording implied 10. The privacy
+                          // character is identical either way (one integer, no sentence identity,
+                          // nothing extra stored) but a notice should be exact about what it
+                          // describes. ROPA row 8 and LIA B carry the same wording. privacy.html
+                          // is precached and cache-first, so this bump is what delivers it.
+                          // v369: terms.html no longer promises "sentence flagging" — the
                           // feature was retired in r196 and the page still listed it as something
                           // a free account enables. terms.html is precached, so this bump is what
                           // delivers the correction. Everything else in this pass is comments and
