@@ -4392,8 +4392,11 @@
         var gap = Math.max(2.0 * up, 3.0 * st.pf);
         var start = pos / DYN_SR;
         var r;
+        var th0;   // absolute seconds at which the THAI first begins in this block
         if (mode === 'et') {
-          pushBuf(en); pushSil(recall); pushBuf(th);
+          pushBuf(en); pushSil(recall);
+          th0 = pos / DYN_SR;          // ⚠ captured HERE — after the English and the recall gap
+          pushBuf(th);
           for (r = 1; r < st.rp; r++) { pushSil(repeat); pushBuf(th); }
         } else {
           // TE: English lands after the ep-th Thai repeat (round-15 item 4); ep === repeats
@@ -4407,7 +4410,14 @@
           }
         }
         pushSil(gap);
-        map.push({ num: s.num, start: start, end: pos / DYN_SR });
+        /* ⚠ th0 EXISTS FOR PLAY COUNTING, and only ET needs it. In Thai-first the block opens on
+           the Thai, so th0 === start. In English-first the block is [English, recall gap, Thai...],
+           and without this the 2-second dwell elapsed while the ENGLISH was playing — so a
+           sentence counted as heard before a word of Thai had been said (owner, 2026-08-20).
+           ⚠ A session built BEFORE this change has no th0 in its stored map and falls back to
+           `start`, i.e. the old behaviour, until it is rebuilt (any settings change does it).
+           Degrades, does not break. */
+        map.push({ num: s.num, start: start, end: pos / DYN_SR, th0: (mode === 'et' ? th0 : start) });
       });
       var out = new Float32Array(pos);   // silence = the zero-filled default
       var o = 0;
@@ -5346,9 +5356,22 @@
      values in sentence_plays.counts. Split them and they drift apart permanently, for a reason
      nobody could reconstruct later. test_plays.js asserts the invariant.
      auth.js no-ops when signed out, so no guard is needed here. */
+  /* ⚠⚠ COUNT AGAINST THE GLOBAL SENTENCE NUMBER, NEVER THE PAGE'S `num`.
+     On a PLAYLIST, `s.num` is a SYNTHETIC page-unique id (100001 + index, minted in
+     playlists.html) and the real spreadsheet number lives in `clipNum`. Counting `s.num` there
+     wrote every playlist play to keys 100001, 100002, ... — so a sentence played in a playlist
+     and the same sentence played on its topic page were two different counters that could never
+     agree, which is exactly what the owner reported. The whole cross-surface design depends on
+     one key per sentence.
+     This is the established convention in this file (see sentFileFor, dynClipKey, dynDlGroups):
+     `clipNum` when present, `num` otherwise. Topic pages have no clipNum, so they are unchanged. */
+  function globalNumOf(s, fallback) {
+    return (s && s.clipNum != null) ? s.clipNum : fallback;
+  }
   function notePlaySentence(num) {
+    var g = globalNumOf(sentById(num), num);
     var a = window.ThaiEarAuth;
-    if (a && a.notePlay) { try { a.notePlay(num); } catch (_) {} }
+    if (a && a.notePlay) { try { a.notePlay(g); } catch (_) {} }
     var at = window.ThaiEarAttrib;
     if (at && at.noteListen) { try { at.noteListen(1); } catch (_) {} }
   }
@@ -5418,7 +5441,7 @@
     var on = !!(a && a.getUser && a.getUser() && a.getPlayCount);
     sentences.forEach(function (s) {
       if (sentLocked(s)) return;                 // locked rows are padlocks, not players
-      var n = on ? a.getPlayCount(s.num) : 0;
+      var n = on ? a.getPlayCount(globalNumOf(s, s.num)) : 0;   // playlist: clipNum, not the synthetic id
       var el = plysChipFor(s.num);
       if (!el) return;
       el.classList.toggle('on', on && n > 0);
@@ -5431,11 +5454,21 @@
 
   // Highlight the card whose block is playing (called from the timeupdate handler when DYN).
   function dynHighlight(t) {
-    var map = dynSession.map, num = null, dur = 0;
+    var map = dynSession.map, num = null, dur = 0, counting = false;
     var i = dynBlockAt(t);
-    if (i >= 0) { num = map[i].num; dur = map[i].end - map[i].start; }
+    if (i >= 0) {
+      num = map[i].num;
+      /* ⚠ THE DWELL MEASURES THE THAI, NOT THE BLOCK. In English-first the block opens with the
+         English translation, so measuring from block start counted a sentence as heard before any
+         Thai had played. th0 is where the Thai begins (=== start in Thai-first). A session built
+         before 2026-08-20 has no th0 and falls back to start — the old behaviour — until rebuilt. */
+      var th0 = (map[i].th0 != null) ? map[i].th0 : map[i].start;
+      dur = map[i].end - th0;
+      counting = t >= th0;
+    }
     // Runs on EVERY timeupdate, not only on a change of card — the dwell has to accumulate.
-    if (num != null) plysDwellTick(num, dur); else plysDwellReset();
+    if (num != null && counting) plysDwellTick(num, dur);
+    else if (num == null) plysDwellReset();
     if (num === dynLastLive) return;
     if (dynLastLive != null) { var prev = document.getElementById('sc-' + dynLastLive); if (prev) prev.classList.remove('dyn-live'); }
     if (num != null) { var cur = document.getElementById('sc-' + num); if (cur) cur.classList.add('dyn-live'); }
@@ -7591,6 +7624,28 @@
   var sentResetTimer = null;
   var sentCurFile = null;    // the clip the sentence element is currently on (for the retry above)
   var sentRetried = {};      // file -> already re-minted once this page
+  /* ⚠ ONE <audio> ELEMENT SERVES EVERY SENTENCE, SO EVERY CALLBACK MUST SAY WHICH ATTEMPT IT IS
+     FROM (2026-08-20, r197). Owner: "sometimes I click an individual sentence and it doesn't play,
+     but lights up blue and the icon stays as the play icon; if I hit again it plays fine —
+     it happens almost 1/3 of the time."
+
+     THE LOOP THAT CAUSED IT. An `error` on a clip runs failSentLoad, which retries once: it drops
+     the cached mint and bytes, DETACHES the dead source (removeAttribute('src') + load()), and
+     re-enters toggleSentPlay. But detaching is itself a load — of the empty string, which resolves
+     against the document URL — so the browser fires a SECOND `error` a moment later. That one
+     lands on the retry that was just started, finds `sentRetried[file]` already set, and takes the
+     give-up branch: resetSentBtn(). The button un-lights, sentPlaying goes null, and the retry's
+     own src promise then sees `sentPlaying !== num` and quietly bails. Nothing plays, nothing is
+     lit, and the next tap works because it starts clean. The blue is the button's :hover, which
+     sticks after a tap on touch — which is why the icon stayed a play triangle.
+
+     `sentGen` numbers the attempts: anything asynchronous captures the generation it belongs to
+     and does nothing if a newer tap has superseded it. `sentCurSrc` is the source the CURRENT
+     attempt put on the element, so an error can be attributed to a load rather than assumed to be
+     about whatever is playing now — teardown loads set it to null and are therefore ignored.
+     Covered by test_sent_race.js. */
+  var sentGen = 0;
+  var sentCurSrc = null;
 
   /* ---- the stall watchdog (2026-08-19) ----
      ⚠ THE BUTTON HAD NO WAY BACK FROM A LOAD THAT NEITHER LOADS NOR FAILS. toggleSentPlay lights
@@ -7608,16 +7663,17 @@
   function clearSentStall() {
     if (sentStallTimer) { clearTimeout(sentStallTimer); sentStallTimer = null; }
   }
-  function armSentStall(num, file) {
+  function armSentStall(num, file, gen) {
     clearSentStall();
     sentStallTimer = setTimeout(function () {
       sentStallTimer = null;
-      failSentLoad(num, file, 'stalled');
+      failSentLoad(num, file, 'stalled', gen);
     }, SENT_STALL_MS);
   }
   /* Shared by the `error` event and the watchdog above. Both mean the same thing to a user (I
      pressed play and nothing happened) and both want the same cure, so they must not drift. */
-  function failSentLoad(num, file, why) {
+  function failSentLoad(num, file, why, gen) {
+    if (gen != null && gen !== sentGen) return;       // this attempt was superseded - it owns nothing
     clearSentStall();
     if (num == null || sentPlaying !== num) return;   // superseded by a later tap - leave it alone
     if (file && !sentRetried[file]) {
@@ -7626,6 +7682,9 @@
       if (sentBlobs[file]) { sentBlobBytes -= (sentBlobs[file].size || 0); delete sentBlobs[file]; }
       /* Detach the dead source before retrying. A hung element left with its old src can fire a
          late error over the top of the retry and cancel it. */
+      /* Disown the source FIRST. Detaching fires an `error` of its own (an empty src is a load
+         of the document URL), and without this the retry below is killed by its own cleanup. */
+      sentCurSrc = null;
       try { var sa = getSentAudio(); sa.pause(); sa.removeAttribute('src'); sa.load(); } catch (_) {}
       sentPlaying = null; sentLock = false; sentBusyUntil = 0;
       toggleSentPlay({ stopPropagation: function () {}, preventDefault: function () {} }, num);
@@ -7645,7 +7704,13 @@
        we cached for that clip and try ONCE with a freshly minted URL; a second failure resets
        the button exactly as before. Without this, one stale mint would look like broken audio
        for the rest of the page's life. */
-    el.addEventListener('error', function () { failSentLoad(sentPlaying, sentCurFile, 'error'); });
+    el.addEventListener('error', function () {
+      /* Only errors about the source THIS attempt put on the element count. Our own teardown loads
+         (the stop path's src='', failSentLoad's detach) null sentCurSrc first, so they are ignored
+         instead of cancelling the clip that is starting. */
+      if (!sentCurSrc || el.getAttribute('src') !== sentCurSrc) return;
+      failSentLoad(sentPlaying, sentCurFile, 'error', sentGen);
+    });
     el.addEventListener('loadedmetadata', function () {
       /* Proof the source was good: stand the watchdog down, release the network back to the
          prewarm, and let this clip be retried again later if it ever goes bad. */
@@ -7666,6 +7731,7 @@
     if (sentLock) return;
     sentLock = true;
     setTimeout(function () { sentLock = false; }, 300);
+    var gen = ++sentGen;   // this tap's attempt number — see the note above sentGen
     var sa = getSentAudio();
     clearSentStall();
     /* Hand the network to the tap. The idle prewarm runs three fetches at a time and WebKit
@@ -7678,6 +7744,7 @@
     // tapping the playing sentence again stops it
     if (sentPlaying === num) {
       plysClipDisarm();          // stopped before the dwell elapsed → not a listen
+      sentCurSrc = null;   // an empty src fires `error`; disowning it first keeps that quiet
       sa.pause(); sa.src = ''; revokeSentBlob(); sentPlaying = null; updateSentBtn(num, false);
       sentBusyUntil = 0;
       maybeResumeMain();
@@ -7705,14 +7772,16 @@
     // Pass the sentence's OWN prefix/tier — on a playlist the page-level ones are ''/'free'.
     sentSrcFor(file, sentGated, (sObj && sObj.prefix) || null, (sObj && sObj.tier) || null).then(function (u) {
       // user stopped/switched while the URL was resolving → drop the freshly-made blob to avoid a leak
-      if (sentPlaying !== num) { if (u && u.indexOf('blob:') === 0) { try { URL.revokeObjectURL(u); } catch (_) {} } return; }
+      if (gen !== sentGen || sentPlaying !== num) { if (u && u.indexOf('blob:') === 0) { try { URL.revokeObjectURL(u); } catch (_) {} } return; }
       revokeSentBlob();                                    // free the previous clip's object URL
       sa.src = u;
+      sentCurSrc = u;                                      // the source THIS attempt owns
       if (u && u.indexOf('blob:') === 0) sentBlobUrl = u;  // track for revocation on next swap/stop
       sa.load();
-      armSentStall(num, file);   // nothing else un-lights the button if this load simply hangs
+      armSentStall(num, file, gen);   // nothing else un-lights the button if this load simply hangs
       sa.addEventListener('loadedmetadata', function onMeta() {
         sa.removeEventListener('loadedmetadata', onMeta);
+        if (gen !== sentGen) return;   // a later tap owns the element now
         var duration = sa.duration || 5;
         if (sentResetTimer) clearTimeout(sentResetTimer);
         sentResetTimer = setTimeout(function () { resetSentBtn(); sentResetTimer = null; }, (duration + 0.5) * 1000);
@@ -7721,6 +7790,7 @@
       sa.playbackRate = slowMode ? 0.75 : 1.0;
       return sa.play();
     }).catch(function (err) {
+      if (gen !== sentGen) return;   // superseded — the newer tap owns the button now
       plysClipDisarm();          // never played → never counted
       updateSentBtn(num, false);
       if (sentPlaying === num) sentPlaying = null;

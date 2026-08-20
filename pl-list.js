@@ -1094,7 +1094,7 @@
           if (tier !== 'free' && T.canAccess && !T.canAccess(tier)) locked[String(it.num)] = 1;
         });
         var n = T.playsMin(nums, counts, function (num) { return !!locked[String(num)]; });
-        return ' · Plays: ' + n;
+        return '<span class="pl-box-plays">Plays: ' + n + '</span>';
       }
 
       var lists = currentLists();
@@ -1110,10 +1110,10 @@
           '<button class="pl-box-head" type="button">' +
             '<span class="pl-box-name">' + esc(p.name) + '</span>' +
             '<span class="pl-box-meta">' + p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') +
-              playsCaption(p) +
               (st === 'downloaded' ? ' · downloaded'
                 : st === 'available' ? ' · available offline'
                 : st === 'update' ? ' · update available' : '') + '</span>' +
+            playsCaption(p) +            // its own line beneath the meta — see .pl-box-plays
             dlControl(p, st) +
           '</button>' +
           '<div class="pl-box-body">' +

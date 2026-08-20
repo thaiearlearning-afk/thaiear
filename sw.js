@@ -33,7 +33,24 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v360';   // v360: the CLS reserve is DROPPED once the real player mounts
+const VERSION = 'v361';   // v361: two play-counter bugs the harnesses could not see, both found
+                          // by the owner on the live site.
+                          // (1) PLAYLIST AND TOPIC COUNTS DID NOT LINK. On a playlist `s.num` is a
+                          // SYNTHETIC page id (100001 + index, minted in playlists.html) and the
+                          // real spreadsheet number is `clipNum` — so every playlist play was
+                          // written to key 100001, 100002, ... The unit tests all passed because
+                          // they called notePlay() with real numbers; the mapping only exists on a
+                          // real page. Now resolved through globalNumOf(), the same clipNum
+                          // convention sentFileFor and dynClipKey already use, on the write AND
+                          // the read.
+                          // (2) ENGLISH-FIRST COUNTED THE ENGLISH. The ET block is [English,
+                          // recall gap, Thai...], so the 2s dwell elapsed before a word of Thai.
+                          // The map now carries th0 (where the Thai starts; === start in TE) and
+                          // the dwell only accumulates past it. A session built before this has no
+                          // th0 and falls back to the old behaviour until rebuilt.
+                          // Also: "Plays: N" moves to its own line on topic cards and playlist
+                          // rows, in the premium-topic green #1F5D3A, with the surrounding lines
+                          // tightened so the extra line costs almost no height. v360: the CLS reserve is DROPPED once the real player mounts
                           // (body.te-player-mounted). v358 set #player-root's floor from
                           // measurements taken in desktop-Chrome iframes at narrow widths, and an
                           // iPhone is not a narrow desktop — the PWA showed a large permanent gap

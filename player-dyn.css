@@ -139,7 +139,13 @@
    for horizontal space and never moves. Also serves "the download interface looks like a
    centrepiece; it is just a function." */
 .pl-box-head { flex-wrap: wrap; }
-.pl-box-meta { font-size: 12.5px; color: var(--text-tertiary); flex: 1 0 100%; order: 3; margin-top: 2px; }
+.pl-box-meta { font-size: 12.5px; color: var(--text-tertiary); flex: 1 0 100%; order: 3; margin-top: 1px; }
+/* The play count on its OWN line under the meta (owner, 2026-08-20). A playlist row already
+   carries a name, a sentence count and a download caption; a fourth item on the same line
+   read as crowded, and this row has the width to spare. Green is the same #1F5D3A as
+   .reveal-all-btn on a premium topic — the one number here that is about YOU, not the list.
+   margin-top on .pl-box-meta drops 2px->1px so the extra line costs almost no height. */
+.pl-box-plays { font-size: 12.5px; font-weight: 500; color: #1F5D3A; flex: 1 0 100%; order: 4; margin-top: 1px; }
 /* .pl-box-chev removed r31 — the whole .pl-box-head is a button, so the chevron was clutter that
    read as a sibling of the download circles/ticks. Its rules went with it. */
 .pl-box-body { display: none; padding: 0 1.15rem 1.15rem; }

@@ -439,7 +439,9 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     text-decoration: none;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    /* 2px, not 4: the card gained a third line (the play count) and 4px between all of them read
+       as crowded. Tightening the gap buys the new line back without growing the card. */
+    gap: 2px;
     transition: border-color 0.15s, box-shadow 0.15s;
     cursor: pointer;
     position: relative;
@@ -573,6 +575,16 @@ if(pend||bf)d.className+=' te-warp';})();</script>
   .topic-sent-count {
     font-size: 12px;
     color: var(--text-tertiary);
+  }
+  /* The play count gets its OWN line at the bottom of the card (owner, 2026-08-20): on one line
+     with the sentence count and the download caption it was three things competing in 12px grey.
+     Green is the same #1F5D3A as .reveal-all-btn on a premium topic — a deliberate second colour,
+     because this is the one number on the card that is about YOU rather than about the topic. */
+  .topic-plays {
+    font-size: 12px;
+    font-weight: 500;
+    color: #1F5D3A;
+    line-height: 1.3;
   }
 
   /* ── PREMIUM (locked) CARD ── */
@@ -1828,7 +1840,6 @@ function renderCard(t, sentences, access, pageHref, audio) {
      never be baked into the static HTML — every visitor would be served the last person's number. */
   const playsCap = (live && typeof ThaiEarTopics.playsCaptionFor === 'function')
     ? ThaiEarTopics.playsCaptionFor(pageHref, audio) : '';
-  if (playsCap) sentCount += (sentCount ? ' · ' : '') + playsCap;
   if (dlState && dlState.caption) sentCount += (sentCount ? ' · ' : '') + dlState.caption;
   const inner =
       `<span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
@@ -1840,7 +1851,8 @@ function renderCard(t, sentences, access, pageHref, audio) {
       <div class="topic-meta-row">
         <span class="topic-sent-count">${sentCount}</span>
         ${dlState ? dlState.html : ''}
-      </div>`;
+      </div>
+      ${playsCap ? `<div class="topic-plays">${playsCap}</div>` : ''}`;
   if (!live) return `<div class="topic-card coming-soon">${inner}</div>`;
   const cls = 'topic-card' + (access === 'premium' ? ' premium' : access === 'member' ? ' member' : '')
     + (audio && working[audio] ? ' dl-working' : '');
