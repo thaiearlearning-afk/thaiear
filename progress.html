@@ -82,9 +82,6 @@
     font-size: 24px; font-weight: 600; color: var(--accent); line-height: 1.15;
     font-variant-numeric: tabular-nums;
   }
-  /* The time figure is three units, so it needs to be allowed to be smaller and to wrap. */
-  .stat-card.wide { grid-column: 1 / -1; }
-  .stat-card.wide .stat-val { font-size: 20px; }
   .stat-lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
   .stat-note { font-size: 11.5px; color: var(--text-tertiary); margin-top: 3px; line-height: 1.45; }
 
@@ -138,7 +135,6 @@
     .page-wrap { padding: 2rem 1rem 3rem; }
     h1.prog-title { font-size: 22px; }
     .stat-val { font-size: 21px; }
-    .stat-card.wide .stat-val { font-size: 18px; }
   }
 </style>
 </head>
@@ -177,16 +173,19 @@
 
   /* ── formatting ─────────────────────────────────────────────────────────────────────────── */
 
-  /* "2 days, 4 hours, 4 minutes" — always all three units, even at zero, because the owner asked
-     for a shape that reads the same every time rather than one that changes as it grows.
-     Rounded to the nearest minute. */
+  /* COMPACT: "10 min", "2h 5min", "1d 3h 6min". Rounded to the nearest minute.
+     ⚠ Changed from the spelled-out "0 days, 0 hours, 10 minutes" (owner, 2026-08-20). That form
+     read the same every time, which was the point of it, but it is three times the width of the
+     other three figures and forced this card to span the row. Dropping leading zero units lets it
+     sit in the same square as the rest, and a unit that is zero carries no information anyway. */
   function humanTime(seconds) {
     var mins = Math.round((seconds || 0) / 60);
     var d = Math.floor(mins / 1440);
     var h = Math.floor((mins - d * 1440) / 60);
     var m = mins - d * 1440 - h * 60;
-    var p = function (n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); };
-    return p(d, 'day') + ', ' + p(h, 'hour') + ', ' + p(m, 'minute');
+    if (d) return d + 'd ' + h + 'h ' + m + 'min';
+    if (h) return h + 'h ' + m + 'min';
+    return m + ' min';
   }
 
   function esc(s) {
@@ -259,8 +258,7 @@
         card(stats.daysListened, 'day' + (stats.daysListened === 1 ? '' : 's') + ' listened') +
         card(stats.streak, 'day' + (stats.streak === 1 ? '' : 's') + ' in a row',
              stats.bestStreak > stats.streak ? 'Best so far: ' + stats.bestStreak : '') +
-        card(humanTime(tot.seconds), 'of Thai heard', 'Counts the Thai itself, so it is a floor — ' +
-             'the pauses, the English and any repeats are not included.', true) +
+        card(humanTime(tot.seconds), 'Thai listening time') +
       '</div>' +
 
       topicList(counts) +
@@ -271,8 +269,8 @@
     if (user) wireReset();
   }
 
-  function card(val, lbl, note, wide) {
-    return '<div class="stat-card' + (wide ? ' wide' : '') + '">' +
+  function card(val, lbl, note) {
+    return '<div class="stat-card">' +
       '<div class="stat-val">' + esc(val) + '</div>' +
       '<div class="stat-lbl">' + esc(lbl) + '</div>' +
       (note ? '<div class="stat-note">' + note + '</div>' : '') +

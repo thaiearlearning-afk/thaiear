@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v366';   // v366: restore .page-wrap on progress.html. The page was assembled by
+const VERSION = 'v367';   // v367: the Progress page's time figure is COMPACT — "10 min",
+                          // "2h 5min", "1d 3h 6min" — so it sits in the same square as the other
+                          // three instead of spanning the row. The spelled-out "0 days, 0 hours,
+                          // 10 minutes" read the same every time, which was the point of it, but
+                          // it was three times the width and a zero unit carries no information.
+                          // Explanation dropped with it; the card is now just "Thai listening
+                          // time". v366: restore .page-wrap on progress.html. The page was assembled by
                           // slicing the archived one's <head>, and the slice stopped ONE LINE
                           // SHORT of the rule that gives the site its 640px centred column — so it
                           // shipped rendering flush to the viewport edge. Nothing was missing from
