@@ -836,8 +836,6 @@
       setTimeout(function () { prewarmSentences((tries || 0) + 1); }, PREWARM_WAIT_MS);
       return;
     }
-    prewarmStarted = true;
-
     var refs = [];
     for (var i = 0; i < sentences.length && refs.length < PREWARM_MAX_FILES; i++) {
       var s = sentences[i];
@@ -852,6 +850,19 @@
     // One batch mint for every gated clip, then the fetches — so the whole topic costs ONE
     // /api/audio round trip instead of one per clip.
     var gatedFiles = refs.filter(function (r) { return r.gated; }).map(function (r) { return r.file; });
+    /* ⚠ WAIT FOR THE TOKEN — DO NOT LATCH WITHOUT ONE. This runs at idle (~2.5–4 s), and auth.js
+       only resolves after a dynamic esm.sh import, so on a cold load the token can easily arrive
+       later. mintMany() and buildUrl() both no-op silently on a null token, so latching here left
+       a gated topic with NO warm blob and NO cached mint for the rest of the page's life — which
+       puts every first tap on the slow, ASYNCHRONOUS path, and that is the path the stale-event
+       race and the user-gesture rule both live on. Same wait as the dynBuilding case above. */
+    if (gatedFiles.length && !authToken()) {
+      if ((tries || 0) >= PREWARM_WAIT_TRIES) return;
+      setTimeout(function () { prewarmSentences((tries || 0) + 1); }, PREWARM_WAIT_MS);
+      return;
+    }
+    prewarmStarted = true;
+
     (gatedFiles.length ? mintMany(gatedFiles) : Promise.resolve()).then(function () {
       var queue = refs.slice();
       function lane() {
@@ -2743,6 +2754,13 @@
     mintUser = id; mintUserSeen = true;
   });
 
+  /* The Supabase access token /api/audio wants, or null while auth is still resolving. Null is a
+     "not yet", never a "no" — callers must not treat it as a permanent answer. */
+  function authToken() {
+    return (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken)
+      ? window.ThaiEarAuth.getAccessToken() : null;
+  }
+
   /* Mint MANY urls in one request (/api/audio?files=…). The auth check inside the Function is
      per USER, not per file, so one call replaces N round trips — the dynamic build mints one per
      clip. Never rejects: anything unexpected just leaves the cache unfilled and every caller
@@ -2753,8 +2771,7 @@
       if (files[i] && !mintGet(files[i]) && want.indexOf(files[i]) < 0) want.push(files[i]);
     }
     if (!want.length) return Promise.resolve();
-    var token = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken)
-      ? window.ThaiEarAuth.getAccessToken() : null;
+    var token = authToken();
     if (!token) return Promise.resolve();
     var chunks = [];
     for (var c = 0; c < want.length; c += 100) chunks.push(want.slice(c, c + 100));
@@ -2779,8 +2796,7 @@
     var cached = mintGet(file);
     if (cached) return Promise.resolve(cached);
     if (mintInflight[file]) return mintInflight[file];
-    var token = (window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken)
-      ? window.ThaiEarAuth.getAccessToken() : null;
+    var token = authToken();
     if (!token) return Promise.reject({ code: 'noauth' });
     var p = fetch(AUDIO_API + '?file=' + encodeURIComponent(file), {
       headers: { Authorization: 'Bearer ' + token }
@@ -3287,7 +3303,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r196';   // r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r197';   // r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -7681,6 +7697,33 @@
           Covered by test_sent_race.js. Full story: `SESSION_2026-08-20_PLAYER_FIXES.md` §6a. */
   var sentGen = 0;
   var sentCurSrc = null;
+  /* ⚠ THE OTHER THREE LISTENERS NEEDED THE SAME TREATMENT, AND ONLY `error` GOT IT (2026-08-20,
+     r197). Owner, still: "tap, it goes dark blue, the play button doesn't change and no
+     audio — the second tap usually works."
+
+     `ended` / `pause` / `timeupdate` all end in resetSentBtn(), which un-lights whatever
+     `sentPlaying` is AT THAT MOMENT. pause() does not act immediately: per spec it QUEUES
+     `timeupdate` then `pause`. So the switch path — sa.pause(), then synchronously light the new
+     sentence — lets the OUTGOING clip's events land on the INCOMING one. They still see the old
+     clip's duration/currentTime, so `currentTime >= duration - 0.3` passes, resetSentBtn() fires,
+     `sentPlaying` goes null, and the new attempt's src promise then finds `sentPlaying !== num`
+     and bails without a sound.
+
+     ⚠ IT ONLY BITES WHEN THE NEW SRC RESOLVES ASYNCHRONOUSLY, which is why it survived §6a and
+     its test. A free, prewarmed clip resolves in a MICROTASK, so `sa.src = u` runs BEFORE the
+     queued events and resets duration to NaN — the guards then fail and the race is closed by
+     accident. The src is genuinely async for: a DOWNLOADED clip (localBlobUrl / cachedBlobUrl,
+     always — and the prewarm deliberately skips downloaded prefixes, so there is never a warm
+     blob to shortcut it), a gated clip whose mint is not cached, and any clip past MINT_TTL_MS.
+     A downloaded topic or playlist therefore takes the async path on EVERY tap.
+
+     `sentSrcGen` is the attempt that put the CURRENT source on the element — the generation twin
+     of `sentCurSrc`. Set when the src is assigned, nulled by every teardown (stop, switch,
+     failSentLoad's detach), so an event queued by the clip we just abandoned is inert while an
+     event from the clip actually playing still works exactly as before.
+     Covered by test_sent_race.js. */
+  var sentSrcGen = null;
+  function sentEvtMine() { return sentSrcGen != null && sentSrcGen === sentGen; }
 
   /* ---- the stall watchdog (2026-08-19) ----
      ⚠ THE BUTTON HAD NO WAY BACK FROM A LOAD THAT NEITHER LOADS NOR FAILS. toggleSentPlay lights
@@ -7719,7 +7762,7 @@
          late error over the top of the retry and cancel it. */
       /* Disown the source FIRST. Detaching fires an `error` of its own (an empty src is a load
          of the document URL), and without this the retry below is killed by its own cleanup. */
-      sentCurSrc = null;
+      sentCurSrc = null; sentSrcGen = null;
       try { var sa = getSentAudio(); sa.pause(); sa.removeAttribute('src'); sa.load(); } catch (_) {}
       sentPlaying = null; sentLock = null; sentBusyUntil = 0;
       toggleSentPlay({ stopPropagation: function () {}, preventDefault: function () {} }, num);
@@ -7732,7 +7775,9 @@
   function initSentAudio() {
     var el = $('sent-audio-el');
     if (!el) return;
-    el.addEventListener('ended', resetSentBtn);
+    // All three of these un-light the button, so all three must belong to the attempt that owns
+    // the element — see the note above sentSrcGen.
+    el.addEventListener('ended', function () { if (sentEvtMine()) resetSentBtn(); });
     /* ⚠ A REUSED SIGNED URL FAILS HERE, NOT IN A REJECTED PROMISE. buildUrl() has already
        resolved by the time the media element goes to R2, so an R2 token rotation — or a clock
        skew wider than mintPut()'s 10-minute margin — arrives as a plain media error. Drop what
@@ -7749,12 +7794,47 @@
     el.addEventListener('loadedmetadata', function () {
       /* Proof the source was good: stand the watchdog down, release the network back to the
          prewarm, and let this clip be retried again later if it ever goes bad. */
+      if (sentOnSilence()) return;   // the priming clip proves nothing about the real one
       clearSentStall();
       sentBusyUntil = 0;
       if (sentCurFile) delete sentRetried[sentCurFile];
     });
-    el.addEventListener('pause', function () { if (el.duration && el.currentTime >= el.duration - 0.3) resetSentBtn(); });
-    el.addEventListener('timeupdate', function () { if (el.duration && el.currentTime > 0 && el.currentTime >= el.duration - 0.15) resetSentBtn(); });
+    el.addEventListener('pause', function () { if (sentEvtMine() && el.duration && el.currentTime >= el.duration - 0.3) resetSentBtn(); });
+    el.addEventListener('timeupdate', function () { if (sentEvtMine() && el.duration && el.currentTime > 0 && el.currentTime >= el.duration - 0.15) resetSentBtn(); });
+  }
+
+  /* ⚠ §2's PRIMING, FOR THE OTHER ELEMENT. The gesture requirement is PER ELEMENT, so unlocking
+     mainAudio in primeMainAudio() does nothing for #sent-audio-el — and this element's src is
+     resolved ASYNCHRONOUSLY on exactly the paths listed above sentSrcGen (a downloaded clip
+     always; a gated clip with no cached mint; anything past MINT_TTL_MS). By the time sa.play()
+     runs, the tap's gesture token is gone, WebKit refuses with NotAllowedError, the catch
+     un-lights the button and nothing is heard — the reported symptom, from a second direction.
+
+     Playing 20 ms of silence synchronously INSIDE the tap marks the element allowed-to-play
+     before the wait starts, and re-activates the iOS audio session, which a pause deactivates.
+     Not one-shot, for the same reason primeMainAudio() is not.
+
+     The silence belongs to NO attempt: sentCurSrc / sentSrcGen stay null across it, so every
+     listener on the element already ignores its `ended`, `pause` and `error` — including the
+     `error` a CSP that blocks data: media would produce, which is why this degrades instead of
+     breaking. Its `loadedmetadata` is filtered by sentOnSilence() so it cannot stand the real
+     clip's stall watchdog down. */
+  function sentOnSilence() {
+    var el = getSentAudio();
+    if (!el) return false;
+    var u = el.currentSrc || el.src || '';
+    return u.indexOf('data:audio') === 0;
+  }
+  function primeSentAudio(sa) {
+    if (!sa || !sa.paused) return;   // never clobber audio this is meant to protect
+    try {
+      sentCurSrc = null; sentSrcGen = null;   // the priming clip is not an attempt
+      sa.src = MAIN_SILENCE;
+      sa.load();
+      var p = sa.play();
+      // An AbortError once the real clip lands is the normal hand-off — see primeMainAudio().
+      if (p && p.then) p.then(null, function () {});
+    } catch (_) {}
   }
 
   function toggleSentPlay(e, num) {
@@ -7790,14 +7870,22 @@
     // tapping the playing sentence again stops it
     if (sentPlaying === num) {
       plysClipDisarm();          // stopped before the dwell elapsed → not a listen
-      sentCurSrc = null;   // an empty src fires `error`; disowning it first keeps that quiet
+      sentCurSrc = null; sentSrcGen = null;   // an empty src fires `error`; disowning it first keeps that quiet
       sa.pause(); sa.src = ''; revokeSentBlob(); sentPlaying = null; updateSentBtn(num, false);
       sentBusyUntil = 0;
       maybeResumeMain();
       return;
     }
     // stop any other sentence (top player stays paused — don't resume between clips)
-    if (sentPlaying !== null) { plysClipDisarm(); sa.pause(); updateSentBtn(sentPlaying, false); sentPlaying = null; }
+    /* ⚠ DISOWN THE OUTGOING CLIP BEFORE PAUSING IT. sa.pause() only QUEUES its `timeupdate` and
+       `pause`; they land after this function has already lit the new sentence, and until r197
+       they reset it — see the note above sentSrcGen. */
+    if (sentPlaying !== null) {
+      plysClipDisarm();
+      sentCurSrc = null; sentSrcGen = null;
+      sa.pause(); updateSentBtn(sentPlaying, false); sentPlaying = null;
+    }
+    primeSentAudio(sa);   // ⚠ SYNCHRONOUS, inside the gesture — the src below may take a round trip
 
     // If the top player is going, pause it — but DON'T auto-resume when the clip ends. The user
     // restarts the main track themselves in their own time. (Was: resumeMainAfter = true, which
@@ -7822,6 +7910,7 @@
       revokeSentBlob();                                    // free the previous clip's object URL
       sa.src = u;
       sentCurSrc = u;                                      // the source THIS attempt owns
+      sentSrcGen = gen;                                    // …and the attempt that owns it
       if (u && u.indexOf('blob:') === 0) sentBlobUrl = u;  // track for revocation on next swap/stop
       sa.load();
       armSentStall(num, file, gen);   // nothing else un-lights the button if this load simply hangs

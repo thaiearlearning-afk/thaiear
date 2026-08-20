@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v374';   // v374: comment-only — GDPR redaction. account.html / join.html /
+const VERSION = 'v375';   // v375: player.js — the individual-sentence play button. A tap that
+                          // switched away from a clip in its last ~0.3 s was killed by that
+                          // clip's own queued `pause`/`timeupdate`, which reset the button that
+                          // had just been lit; the src promise then bailed silently. Topic pages
+                          // AND playlists. player.js is precached and cache-first, so without
+                          // this bump the fix reaches nobody. Previous note below.
+                          // v374: comment-only — GDPR redaction. account.html / join.html /
                           // sw.js described the mistyped-domain guard using the two REAL
                           // addresses it was built from; one carried a family surname. They
                           // now describe the SHAPE of each typo instead, which is what the
