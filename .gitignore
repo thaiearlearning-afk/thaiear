@@ -123,3 +123,6 @@ spicy-clips/
 
 # dyn clip pipeline probe (2026-08-20) — local diagnostic only, never deploy
 dynclip-probe.html
+
+# Local-only preview harness for start.html (the ads landing page). Never deploy.
+_mobile-preview.html

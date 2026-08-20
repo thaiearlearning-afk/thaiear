@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThaiEar — Create your free account</title>
+<meta name="description" content="Create a free ThaiEar account to start listening: a free learn-to-read course, your own playlists, and 43 topics of Thai sentences with audio.">
+
+<!-- ⚠⚠ ADS-ONLY LANDING PAGE. NOINDEX IS LOAD-BEARING, NOT TIDINESS.
+     This page must never rank: it would compete with "/" and "/read" for the same
+     queries the Search campaign already buys, and dilute both. It is deliberately
+     ABSENT from sitemap.xml (gen_sitemap.js uses an explicit static list, so it
+     will not pick this up) and from sw.js PRECACHE (a one-visit page has nothing
+     to gain from being seeded offline, and every PRECACHE entry is a hole that a
+     flaky install can leave behind — see CLAUDE.md).
+     ⛔ Do NOT run gen_static_seo.js against this file: it would add a canonical
+     and og/twitter tags, which is the opposite of what a noindex page wants. -->
+<meta name="robots" content="noindex, nofollow">
+
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#4B41AD">
+<link rel="preload" href="/fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/inter-latin-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/sarabun-thai-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/inter-latin-600.woff2" as="font" type="font/woff2" crossorigin>
+<!-- ⚠⚠ font-display:swap HERE, NOT optional — THIS PAGE ONLY (2026-08-20).
+     Every other page uses font-display:optional, which gives the font ~100ms and then
+     keeps the FALLBACK for the rest of that page load without ever swapping. That is a
+     deliberate CLS/Lighthouse trade site-wide, and it works there because most visitors
+     arrive with the fonts already cached from an earlier page.
+     It is exactly wrong here. This page is ads-only, noindex and linked from nowhere, so
+     EVERY visitor is a first-time visitor with a cold font cache — i.e. ~100% of paid
+     clicks would have seen system-ui for their whole visit (owner reported it, 2026-08-20).
+     And the thing `optional` buys is Core Web Vitals, which a noindex page does not need.
+     ⚠ Do not "make this consistent with the other pages". The inconsistency is the point.
+     ⚠ This block is INLINE per page, so this changes nothing anywhere else. -->
+<style id="te-fonts">
+@font-face{font-family:'Inter';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/inter-latin-300.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-latin-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/inter-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/inter-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/sarabun-thai-300.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/sarabun-latin-300.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/sarabun-thai-400.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/sarabun-latin-400.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/sarabun-thai-500.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/sarabun-latin-500.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/sarabun-thai-600.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
+@font-face{font-family:'Sarabun';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/sarabun-latin-600.woff2') format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
+    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7; --accent-deep: #1C124E;
+    --gold: #F0CC5C; --gold-dark: #C8A030; --gold-light: #FBF5DC;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui);
+         font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+  /* ⚠ THE BRAND MARK IS NOT A LINK, AND THAT IS THE POINT OF THIS PAGE.
+     Every other page on the site wraps the swirl in <a href="index.html">. Here the only
+     route onward is the sign-in control, so the mark is a plain <span>. If you ever
+     "fix" this into a link you have removed the gate and the experiment measures
+     nothing. Same reason there is no nav.js on this page. */
+  .lp-mark { display: flex; align-items: center; justify-content: center; gap: 4px;
+             margin-bottom: 1.4rem; }
+  .lp-mark img { height: 30px; width: auto; display: block; }
+  .lp-mark span { font-family: var(--font-thai); font-size: calc(22px * var(--te-ui, 1));
+                  font-weight: 600; color: var(--accent-deep); letter-spacing: 0.02em; }
+
+  .lp-wrap { max-width: 1080px; margin: 0 auto; padding: 2.6rem 1.25rem 3rem; }
+  .lp-head { text-align: center; max-width: 40ch; margin: 0 auto 2rem; }
+  .lp-h1 { font-size: calc(30px * var(--te-ui, 1)); font-weight: 500; letter-spacing: -0.02em;
+           line-height: 1.15; margin-bottom: 0.7rem; }
+  .lp-lede { color: var(--text-secondary); font-size: calc(15px * var(--te-ui, 1)); }
+
+  /* The grid: three benefit boxes around a central sign-in card.
+     Desktop  → box | CARD | box   with the third box spanning under the card.
+     Mobile   → CARD first, then the boxes (the ask must not be below the fold). */
+  .lp-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+  @media (min-width: 900px) {
+    /* ⚠ The 40ch cap on .lp-head is a MOBILE measure. Left in place on desktop it wrapped
+       the headline into the middle third of a 1080px page for no reason. Release the cap
+       here so the h1 can run on one line, but keep a separate reading measure on the LEDE —
+       a sub-heading set 1080px wide is hard to read even though the h1 is fine that way. */
+    .lp-head { max-width: none; margin-bottom: 2.2rem; }
+    .lp-h1 { font-size: calc(34px * var(--te-ui, 1)); }
+    .lp-lede { max-width: 54ch; margin-left: auto; margin-right: auto;
+               font-size: calc(16px * var(--te-ui, 1)); }
+
+    .lp-grid { grid-template-columns: 1fr 1.15fr 1fr; align-items: start; }
+    .lp-card { grid-column: 2; grid-row: 1 / span 2; }
+    .lp-box-a { grid-column: 1; grid-row: 1; }
+    .lp-box-b { grid-column: 3; grid-row: 1; }
+    .lp-box-c { grid-column: 1 / span 1; grid-row: 2; }
+    .lp-box-d { grid-column: 3; grid-row: 2; }
+  }
+
+  .lp-box, .lp-card { background: var(--surface); border: 0.5px solid var(--border);
+                      border-radius: var(--radius-lg); padding: 1.4rem 1.35rem; }
+  .lp-card { border: 1px solid var(--accent); box-shadow: 0 2px 20px rgba(75,65,173,0.10);
+             padding: 1.7rem 1.5rem; }
+
+  .lp-box-title { display: flex; align-items: center; gap: 9px; font-size: calc(16px * var(--te-ui, 1));
+                  font-weight: 600; letter-spacing: -0.01em; margin-bottom: 0.35rem; }
+  .lp-box-title svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--accent); }
+  .lp-stat { font-size: calc(13px * var(--te-ui, 1)); color: var(--text-tertiary); margin-bottom: 0.8rem; }
+  /* ⚠ THE BULLET IS NOT A FLEX ROW, DELIBERATELY (changed 2026-08-20).
+     It used to be `display:flex`, which made every inline <strong> its OWN FLEX ITEM —
+     a bold lead-in got squeezed into a narrow column beside the rest of the sentence.
+     It cost one bug already ("Two ways to practise:") and would have cost one per bolded
+     phrase as more were added. Absolutely positioning the tick lets the text stay a single
+     normal inline flow, so <strong>/<em> anywhere inside a bullet just works.
+     ⛔ Do not "tidy" this back to flex + gap. */
+  .lp-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+  .lp-list li { position: relative; padding-left: 23px;
+                font-size: calc(14px * var(--te-ui, 1)); color: var(--text-secondary); }
+  .lp-list li svg { position: absolute; left: 0; top: 5px;
+                    width: 14px; height: 14px; color: var(--accent); }
+  /* One bold phrase per bullet, at most one bullet per box — bold is for SCANNING, so the
+     bolded words alone should carry the gist of the page. Adding more devalues all of it. */
+  .lp-list strong { color: var(--text-primary); font-weight: 500; }
+
+  /* ⚠⚠ CLAIM SAFETY — ADS_OPERATIONS.md §7 decision 15.
+     "free" may sit on the reading-course and playlist boxes, which ARE free with an
+     account. It must NEVER sit on, or adjacent to, the sentence-count box: only 12 of
+     93 units are open, so "2,000+ free sentences" is FALSE. The .lp-free chip is the
+     only thing that renders the word, and it is applied by hand, per box. Do not
+     promote it into a shared component that any box can pick up. */
+  .lp-free { display: inline-block; font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+             text-transform: uppercase; color: var(--accent); background: var(--accent-light);
+             padding: 3px 9px; border-radius: 20px; margin-left: 8px; vertical-align: 2px; }
+
+  .lp-card-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11px;
+    font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent);
+    background: var(--accent-light); padding: 4px 11px; border-radius: 20px; margin-bottom: 12px; }
+  .lp-card-title { font-size: calc(21px * var(--te-ui, 1)); font-weight: 600; letter-spacing: -0.02em;
+                   line-height: 1.2; margin-bottom: 0.45rem; }
+  .lp-card-sub { font-size: calc(14px * var(--te-ui, 1)); color: var(--text-secondary); margin-bottom: 1.2rem; }
+
+  .btn { font-family: var(--font-ui); font-size: calc(15px * var(--te-ui, 1)); font-weight: 500;
+         border-radius: var(--radius-sm); padding: 12px 20px; cursor: pointer;
+         border: 0.5px solid var(--border-strong); width: 100%; display: inline-flex;
+         align-items: center; justify-content: center; gap: 9px;
+         transition: background 0.15s, border-color 0.15s, color 0.15s; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover:not([disabled]) { background: var(--accent-mid); }
+  .btn-ghost { background: var(--surface); color: var(--text-primary); }
+  .btn-ghost:hover:not([disabled]) { border-color: var(--accent); color: var(--accent); }
+  .btn[disabled] { opacity: 0.6; cursor: default; }
+  .btn svg { width: 18px; height: 18px; }
+
+  .login-sep { display: flex; align-items: center; gap: 12px; margin: 1rem 0; color: var(--text-tertiary); font-size: 12px; }
+  .login-sep::before, .login-sep::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .login-input { width: 100%; text-align: left; font-family: var(--font-ui);
+    font-size: calc(14px * var(--te-ui, 1)); padding: 11px 12px; border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm); margin-bottom: 0.7rem; background: var(--surface); color: var(--text-primary); }
+  .login-input:focus { outline: none; border-color: var(--accent); }
+  /* ⚠ The reserve COLLAPSES WHEN EMPTY. These two status lines are empty on arrival and
+     a fixed min-height put ~3 lines of dead air inside the sign-in card — very visible on
+     a phone, where the card is the whole first screen. :empty keeps the reserve for the
+     case that actually shifts (a message arriving) while costing nothing at rest.
+     The email line is the only one that appears while the user is still reading, so it is
+     the one that keeps a real reserve; #lp-status only fires as we navigate away. */
+  .lp-status { font-size: calc(13px * var(--te-ui, 1)); color: var(--text-secondary); margin-top: 0.8rem; min-height: 1.2em; }
+  .lp-status:empty { min-height: 0; margin-top: 0; }
+  #login-email-status:empty { min-height: 0.6em; margin-top: 0.4rem; }
+  .lp-note { font-size: calc(13px * var(--te-ui, 1)); color: var(--text-tertiary); margin-top: 0.7rem; line-height: 1.5; }
+  .lp-note a { color: var(--accent); text-decoration: none; font-weight: 500; }
+
+  /* Mobile-only repeat CTA. On a phone the boxes push the card off screen once you
+     scroll, so the bottom of the page needs a way back to it. Anchor, not a second form. */
+  /* ⚠ text-decoration:none — this CTA is an <a> (it anchors back up to the card), so
+     without it the button renders with a link underline through the label. */
+  .lp-jump { display: block; text-align: center; margin-top: 1.25rem; text-decoration: none; }
+  @media (min-width: 900px) { .lp-jump { display: none; } }
+
+  .lp-foot { text-align: center; margin-top: 2.2rem; font-size: 13px; color: var(--text-tertiary); }
+  .lp-foot a { color: var(--text-secondary); text-decoration: none; }
+  .lp-foot a:hover { color: var(--accent); }
+
+  /* ⚠ MOBILE IS MOST OF THE TRAFFIC, AND THE HEADER WAS EATING THE FIRST SCREEN.
+     Measured at 390×844: the "Continue with Google" button started ~640px down, which
+     clears the fold on a tall handset but NOT on a 667px-tall SE with browser chrome.
+     The header is trimmed here rather than the card, because the card is the ask. */
+  @media (max-width: 600px) {
+    .lp-wrap { padding: 1.4rem 1rem 2.5rem; }
+    .lp-mark { margin-bottom: 0.9rem; }
+    .lp-mark img { height: 26px; }
+    .lp-head { margin-bottom: 1.3rem; }
+    .lp-h1 { font-size: calc(24px * var(--te-ui, 1)); margin-bottom: 0.5rem; }
+    .lp-lede { font-size: calc(14px * var(--te-ui, 1)); }
+    .lp-card { padding: 1.4rem 1.25rem; }
+    .lp-card-title { font-size: calc(19px * var(--te-ui, 1)); }
+    .lp-card-sub { margin-bottom: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="lp-wrap">
+
+  <!-- Brand mark only. NOT a link — see the .lp-mark note in the stylesheet. -->
+  <div class="lp-mark">
+    <img src="nav-swirl-2x.png" alt="" width="54" height="52" style="height:30px">
+    <span>ThaiEar</span>
+  </div>
+
+  <div class="lp-head">
+    <h1 class="lp-h1">Learn Thai in whole sentences, not word lists</h1>
+    <p class="lp-lede">Create your free account to start listening. No payment, no card.</p>
+  </div>
+
+  <div class="lp-grid">
+
+    <!-- ── THE ASK ─────────────────────────────────────────────────────────── -->
+    <div class="lp-card" id="signup">
+      <span class="lp-card-eyebrow">Free account</span>
+      <h2 class="lp-card-title">Create your free account to start listening</h2>
+      <p class="lp-card-sub">One tap with Google, or we&rsquo;ll email you a sign-in link. There&rsquo;s no password to
+        create and nothing to pay.</p>
+
+      <button class="btn btn-primary" id="lp-google" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>
+        Continue with Google
+      </button>
+
+      <div class="login-sep">or</div>
+
+      <input id="login-email-input" class="login-input" type="email" inputmode="email"
+             autocomplete="email" placeholder="you@example.com" aria-label="Your email address">
+      <button class="btn btn-ghost" id="login-link-btn" type="button">Email me a sign-in link</button>
+
+      <p class="lp-note" style="margin-top:8px">New here? There&rsquo;s no separate sign-up step &mdash;
+        enter your email and your account is created automatically.</p>
+      <p id="login-email-status" class="lp-status"></p>
+
+      <div id="login-code-wrap" style="display:none;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">Link not working, or the email
+          opening in the wrong browser? Enter the code from that email instead.</p>
+        <input id="login-code-input" class="login-input" type="text" inputmode="numeric"
+               autocomplete="one-time-code" maxlength="10" placeholder="Code from your email" aria-label="Sign-in code">
+        <button class="btn btn-ghost" id="login-code-btn" type="button">Sign in with the code</button>
+        <p id="login-code-status" style="margin-top:8px;min-height:1em;font-size:13px;color:var(--text-tertiary)"></p>
+      </div>
+
+      <p id="lp-status" class="lp-status"></p>
+      <p class="lp-note">By continuing you agree to our <a href="terms.html">Terms</a> and
+        <a href="privacy.html">Privacy Policy</a>.</p>
+    </div>
+
+    <!-- ── BOX A — reading course. "Free" is CORRECT here. ──────────────────── -->
+    <div class="lp-box lp-box-a">
+      <div class="lp-box-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h7M8 11h7"/></svg>
+        Learn to read Thai<span class="lp-free">Free</span>
+      </div>
+      <p class="lp-stat">12-step course &middot; 208 audio examples</p>
+      <ul class="lp-list">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Consonant classes, vowels and final sounds, step by step</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>The <strong>tone rules</strong> explained in plain English, with audio to guide pronunciation</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Tests at every step, and a three-part reading quiz at the end</li>
+      </ul>
+    </div>
+
+    <!-- ── BOX B — playlists + progress. "Free" is CORRECT here. ────────────── -->
+    <div class="lp-box lp-box-b">
+      <div class="lp-box-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><circle cx="18" cy="16" r="3"/><path d="M21 16V7"/></svg>
+        Your own playlists<span class="lp-free">Free</span>
+      </div>
+      <p class="lp-stat">Build them from any topic</p>
+      <ul class="lp-list">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Pick the sentences <strong>you keep getting wrong</strong> and drill just those</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Combine sentences <strong>across multiple topics and themes</strong> to suit you</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Your progress and listening streak are saved to your account</li>
+      </ul>
+    </div>
+
+    <!-- ══ BOX C — THE SENTENCE LIBRARY ═══════════════════════════════════════
+         ⛔⛔ NO PRICE WORD IN THIS BOX. NOT "free", NOT "included", NOT a .lp-free
+         chip. Only 12 of 93 units are open without a subscription, so joining the
+         sentence count to a free claim is FALSE — ADS_OPERATIONS.md §7 decision 15.
+         It also must not sit directly beside the CTA on desktop; the grid places it
+         on the far column for exactly that reason.
+         ⛔ And no "native speaker" / "recorded by" language until the human audio
+         ships, and no speed language ever (§7). -->
+    <div class="lp-box lp-box-c">
+      <div class="lp-box-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 11v2"/></svg>
+        43 topics, 2,200+ sentences
+      </div>
+      <p class="lp-stat">Every sentence with audio and a translation</p>
+      <ul class="lp-list">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>Two ways to practise:</strong> hear the Thai and repeat it, or hear the English first and try to produce the Thai yourself</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Real situations &mdash; ordering food, getting around, work, health, family</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Cultural notes and language tips across all topics</li>
+      </ul>
+    </div>
+
+    <!-- ══ BOX D — SET THE PACE ════════════════════════════════════════════════
+         ⚠⚠ REWRITTEN 2026-08-20. The first version of this box claimed THREE features
+         that do not exist, and it is worth recording why so nobody re-adds them:
+           • "Slow a sentence down"  — the 🐢 .speed-toggle is `display:none` on every
+             dyn page (player.js: `body.te-v2 .speed-toggle{display:none}`), and all 93
+             topic pages are dyn. There is no speed control on the live site.
+           • "Loop it until it sticks" — #btn-repeat is `title="Repeat this topic"`.
+             It repeats the TOPIC. There is no per-sentence loop.
+           • "Keeps going when you lock the screen" — that is the APP, not the web page,
+             and this landing page must not pitch app behaviour as site behaviour.
+         Everything below is read off the actual dyn controls: dynRepeats (1–4) for the
+         repeat count, dynFactor for the pause slider, and the per-sentence play button
+         (.sent-play-btn) whose card carries the gloss chips and the cultural note.
+         ⛔ Do not add capabilities to this box without opening player.js first. -->
+    <div class="lp-box lp-box-d">
+      <div class="lp-box-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M6 9h12M6 15h12"/></svg>
+        Set your own pace
+      </div>
+      <p class="lp-stat">You decide how much thinking time you get</p>
+      <ul class="lp-list">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Set <strong>sentence repeats</strong> anywhere from one to four times</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Adjust pause lengths to suit your speed</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Or play sentences individually &mdash; each comes with <strong>word-by-word breakdowns</strong>, so you can see how the sentence is built</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <a class="lp-jump btn btn-primary" href="#signup" style="width:auto;max-width:340px;margin-left:auto;margin-right:auto">Create your free account</a>
+
+  <p class="lp-foot"><a href="terms.html">Terms</a> &nbsp;&middot;&nbsp; <a href="privacy.html">Privacy</a></p>
+</div>
+
+<script>
+/* ============================================================================
+   start.html — the ads-only landing page.
+
+   WHAT IT IS FOR. Ad groups A and C of the Search campaign point here instead of
+   at "/". Two reasons, and the second is the one that matters:
+     1. it asks for the signup, which "/" never did; and
+     2. it makes the DENOMINATOR clean — every visit to this URL is a paid click,
+        so "signups per ad click" is readable without GA4, without consent, and
+        without a gclid. See ADS_OPERATIONS.md.
+   ⚠ Ad group B (Read Thai) deliberately still lands on /read: that traffic wants
+   the alphabet, /read is the SEO asset, and a signup wall in front of it is the
+   worst version of the promise mismatch.
+
+   ⚠⚠ THE ONLY WAY OFF THIS PAGE IS THROUGH SIGN-IN. There is no nav.js, the brand
+   mark is not a link, and nothing here points at index.html. Terms and Privacy are
+   the two exceptions and they are not optional — Google Ads requires reachable
+   privacy information on a landing page, and the consent banner needs somewhere to
+   point. If you add any other outbound link you have removed the gate, and the
+   signup number this page exists to produce stops meaning anything.
+
+   ⚠ WHERE A SIGNED-IN VISITOR GOES: the HOME PAGE, never /account. Owner, 2026-08-20
+   — landing on the account page drops people into a small grey panel they then have
+   to escape. join.html learned the same lesson on 2026-08-19; this is that fix,
+   applied to all three routes below.
+
+   🚨 KNOWN GAP — THE EMAIL *LINK* ROUTE STILL LANDS ON /account, AND NO CODE HERE
+   CAN CHANGE IT. The magic-link email is built from Supabase's own template, which
+   sends the user to confirm.html with `next` unset; confirm.html then defaults to
+   '/account' (confirm.html:216). Fixing it is a ONE-LINE DASHBOARD EDIT — add
+   `&next=/` to the confirm URL in Auth → Email Templates — not a code change.
+   The Google route and the CODE route below both land correctly already.
+   ============================================================================ */
+(function () {
+  'use strict';
+
+  /* Clean URL in production; `python -m http.server` cannot resolve one, so keep the
+     .html locally. Same helper join.html uses — kept identical on purpose. */
+  function homeHref() {
+    var local = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.)/.test(location.hostname || '');
+    return local ? 'index.html' : '/';
+  }
+
+  var leaving = false;
+  function render() {
+    var a = window.ThaiEarAuth;
+    var st = document.getElementById('lp-status');
+    if (!a || !a.isReady) return;
+    if (!a.getUser()) return;
+
+    /* ⚠ CANNOT be keyed on a signed-out → signed-in TRANSITION. signInWithGoogle uses
+       `redirectTo: window.location.href`, so the OAuth round trip destroys this page and
+       returns as a fresh load — there is no transition left to observe. Check state, not
+       change. (join.html:render carries the same note; do not "simplify" either.) */
+    if (leaving) return;
+    leaving = true;
+    var g = document.getElementById('lp-google');
+    if (g) { g.disabled = true; g.textContent = 'Signed in ✓'; }
+    if (st) { st.style.color = 'var(--accent)'; st.textContent = 'You’re signed in — taking you to the topics…'; }
+    /* A beat, so the success registers instead of the page just flickering. */
+    setTimeout(function () { location.replace(homeHref()); }, 900);
+  }
+
+  var gbtn = document.getElementById('lp-google');
+  if (gbtn) gbtn.addEventListener('click', function () {
+    if (window.ThaiEarAuth) window.ThaiEarAuth.signInWithGoogle();
+  });
+
+  /* ── the email route ─────────────────────────────────────────────────────────
+     Lifted from join.html unchanged in behaviour, because every part of it was
+     bought with a real failure: the typo table (2 of the first 16 email signups
+     were created on domains that cannot exist), the once-only suggestion (a
+     fuzzy version became a WALL in front of unusual real addresses), the 60 s
+     re-arm (matched to gotrue's SMTP_MAX_FREQUENCY — sooner buys a rate-limit
+     error, not an email), and the code box (a mail scanner can spend a
+     single-use link before the human ever clicks it — ADS_OPERATIONS.md §4.2).
+     ⚠ NO FUZZY MATCHING in the typo guard. An explicit table cannot invent a
+     correction for a domain it has never seen; edit-distance flagged mail.com,
+     gmx.com, bt.com and hey.com as mistakes. Keep it a table. */
+  var TLD_TYPOS = {
+    'comp': 'com', 'con': 'com', 'cmo': 'com', 'comm': 'com', 'cim': 'com',
+    'cpm': 'com', 'clm': 'com', 'xom': 'com', 'vom': 'com', 'som': 'com',
+    'co.um': 'co.uk', 'co.uj': 'co.uk', 'co.ik': 'co.uk', 'co.yk': 'co.uk',
+    'orh.uk': 'org.uk', 'ac.uj': 'ac.uk'
+  };
+  var DOMAIN_TYPOS = {
+    'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmaill.com': 'gmail.com',
+    'gamil.com': 'gmail.com', 'gnail.com': 'gmail.com', 'gmail.om': 'gmail.com',
+    'yaho.com': 'yahoo.com', 'yahooo.com': 'yahoo.com',
+    'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com', 'hotmall.com': 'hotmail.com',
+    'outlok.com': 'outlook.com', 'outllok.com': 'outlook.com', 'outlook.co': 'outlook.com',
+    'iclould.com': 'icloud.com', 'icoud.com': 'icloud.com',
+    'live.co': 'live.com', 'aol.co': 'aol.com'
+  };
+
+  function suggestEmail(email) {
+    var at = String(email || '').lastIndexOf('@');
+    if (at < 1) return null;
+    var local = email.slice(0, at), domain = email.slice(at + 1).toLowerCase();
+    if (!domain || domain.indexOf('.') < 1) return null;
+    if (DOMAIN_TYPOS[domain]) return local + '@' + DOMAIN_TYPOS[domain];
+    var parts = domain.split('.');
+    /* Two-part suffix FIRST, so `.co.um` reads as a broken `.co.uk` and not a bare `.um`. */
+    if (parts.length >= 3) {
+      var two = parts.slice(-2).join('.');
+      if (TLD_TYPOS[two]) return local + '@' + parts.slice(0, -2).join('.') + '.' + TLD_TYPOS[two];
+    }
+    var one = parts[parts.length - 1];
+    if (TLD_TYPOS[one]) return local + '@' + parts.slice(0, -1).join('.') + '.' + TLD_TYPOS[one];
+    return null;
+  }
+
+  var suggestedFor = null;
+  function showSuggestion(email) {
+    var host = document.getElementById('login-email-status');
+    var fixed = suggestEmail(email);
+    if (!host || !fixed) return false;
+    if (suggestedFor === email) return false;      // offered once; pressing again means "I meant it"
+    suggestedFor = email;
+    var LINKY = 'background:none;border:0;padding:2px 4px;font-family:inherit;font-size:inherit;text-decoration:underline;cursor:pointer;';
+    var safeFix = fixed.replace(/[<>&"]/g, '');
+    var safeTyped = String(email).replace(/[<>&"]/g, '');
+    host.style.color = 'var(--text-secondary)';
+    host.innerHTML = 'Did you mean <strong>' + safeFix + '</strong>? ' +
+      '<button type="button" id="email-fix" style="' + LINKY + 'color:var(--accent)">Use this</button> ' +
+      '<button type="button" id="email-keep" style="' + LINKY + 'color:var(--text-tertiary)">Dismiss</button>';
+    var b = document.getElementById('email-fix');
+    if (b) b.addEventListener('click', function () {
+      var inp = document.getElementById('login-email-input');
+      if (inp) inp.value = fixed;
+      host.textContent = '';
+      sendLink(true);
+    });
+    /* ⚠ "Dismiss", not "Don't use this" — "this" sits next to two addresses and reads just
+       as easily as "don't use your own email". And it must say what happens NEXT: an empty
+       status line leaves the fear of being stuck exactly where it was. */
+    var k = document.getElementById('email-keep');
+    if (k) k.addEventListener('click', function () {
+      host.style.color = 'var(--text-secondary)';
+      host.textContent = 'No problem — tap the button again to use ' + safeTyped + '.';
+    });
+    return true;
+  }
+
+  var resendTick = null;
+  function startResendCountdown(secs) {
+    if (resendTick) { clearInterval(resendTick); resendTick = null; }
+    var left = secs;
+    function paint() {
+      var b = document.getElementById('login-link-btn');
+      if (!b) { clearInterval(resendTick); resendTick = null; return; }
+      if (left <= 0) {
+        clearInterval(resendTick); resendTick = null;
+        b.disabled = false; b.textContent = 'Send another link'; return;
+      }
+      b.disabled = true;
+      b.textContent = 'Send another link in ' + left + 's';
+      left--;
+    }
+    paint();
+    resendTick = setInterval(paint, 1000);
+  }
+
+  function sendLink(skipSuggestion) {
+    var a = window.ThaiEarAuth;
+    var input = document.getElementById('login-email-input');
+    var status = document.getElementById('login-email-status');
+    var btn = document.getElementById('login-link-btn');
+    var email = ((input && input.value) || '').trim();
+    function fail(msg) { if (status) { status.style.color = '#B00020'; status.textContent = msg; } }
+    if (!email || email.indexOf('@') < 1 || email.indexOf('.') < 0) { fail('Please enter a valid email address.'); return; }
+    if (!a || !a.sendMagicLink) { fail('Still loading — try again in a moment.'); return; }
+    if (!skipSuggestion && showSuggestion(email)) return;
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+    if (status) { status.style.color = 'var(--text-tertiary)'; status.textContent = ''; }
+    a.sendMagicLink(email).then(function (res) {
+      if (res && res.error) throw res.error;
+      if (status) {
+        status.style.color = 'var(--accent)';
+        status.textContent = 'Check your inbox — we sent a sign-in link to ' + email + '. It can take a minute to arrive.';
+      }
+      showCodeBox();
+      startResendCountdown(60);
+    }).catch(function (err) {
+      /* The send failing used to be invisible on the button, which reads as "nothing
+         happened". Say so on the control the user is looking at. */
+      fail('Couldn’t send a link: ' + ((err && err.message) || 'please try again.'));
+      if (btn) { btn.disabled = false; btn.textContent = 'Try again'; }
+    });
+  }
+
+  function showCodeBox() {
+    var w = document.getElementById('login-code-wrap');
+    if (w) w.style.display = 'block';
+  }
+
+  function signInWithCode() {
+    var a = window.ThaiEarAuth;
+    var emailEl = document.getElementById('login-email-input');
+    var codeEl = document.getElementById('login-code-input');
+    var btn = document.getElementById('login-code-btn');
+    var st = document.getElementById('login-code-status');
+    function say(msg, kind) {
+      if (!st) return;
+      st.style.color = kind === 'err' ? '#B00020' : (kind === 'ok' ? 'var(--accent)' : 'var(--text-tertiary)');
+      st.textContent = msg;
+    }
+    var email = ((emailEl && emailEl.value) || '').trim();
+    var code = ((codeEl && codeEl.value) || '').trim().replace(/\s+/g, '');
+    if (!email || email.indexOf('@') < 1) { say('Enter the email address the code was sent to.', 'err'); return; }
+    if (!/^\d{4,10}$/.test(code)) { say('Enter the code printed in the email (digits only).', 'err'); return; }
+    if (!a || typeof a.verifyOtpCode !== 'function') { say('Still loading — try again in a moment.', 'err'); return; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Signing you in…'; }
+    say('');
+    /* gotrue matches a token by its TYPE as well as its value, and the right string differs
+       between the signup and magic-link templates. A mismatch is a lookup MISS, not a
+       consumption, so cascading through the candidates is safe. Same list as confirm.html. */
+    var queue = ['email', 'magiclink', 'signup'];
+    (function attempt(i, firstErr) {
+      if (i >= queue.length) {
+        var e = firstErr || new Error('please try again.');
+        say('That code didn’t work: ' + (e.message || 'please try again.'), 'err');
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign in with the code'; }
+        return;
+      }
+      a.verifyOtpCode(email, code, queue[i]).then(function (res) {
+        if (res && res.error) throw res.error;
+        say('Signed in — taking you to the topics…', 'ok');
+        /* ⚠ HOME, not /account. join.html's copy of this sends people to the account page;
+           that is the grey-box dead end the owner asked us to stop doing (2026-08-20). */
+        setTimeout(function () { location.replace(homeHref()); }, 600);
+      }).catch(function (err) {
+        if (/expired/i.test((err && err.message) || '')) { attempt(queue.length, err); return; }
+        attempt(i + 1, firstErr || err);
+      });
+    })(0);
+  }
+
+  var lbtn = document.getElementById('login-link-btn');
+  if (lbtn) lbtn.addEventListener('click', function () { sendLink(false); });
+  var cbtn = document.getElementById('login-code-btn');
+  if (cbtn) cbtn.addEventListener('click', signInWithCode);
+  /* Enter in either field does the obvious thing. */
+  var einp = document.getElementById('login-email-input');
+  if (einp) einp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendLink(false); } });
+  var cinp = document.getElementById('login-code-input');
+  if (cinp) cinp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); signInWithCode(); } });
+
+  window.addEventListener('thaiear:auth', render);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
+  else render();
+})();
+</script>
+
+<!-- ⚠ NO nav.js — see the header comment. That has ONE non-obvious consequence: nav.js is
+     what injects auth.js on every other page (its ensureAuth(), nav.js:503), so without it
+     nothing would define window.ThaiEarAuth and every control above would sit there inert.
+     Hence the explicit auth.js tag below. It is safe on a nav-less page: auth.js's only
+     call into the nav is guarded (`window.ThaiEarNav && …`, auth.js:259), and auth.js also
+     hosts the consent banner, which we still want.
+     ⚠ attrib.js is REQUIRED, not optional: it writes the consent-free ad_attribution row at
+     signup, which is the only measurement this page exists to produce. consent.js must load
+     BEFORE it — attrib fails closed when the consent API is absent, so the order is
+     load-bearing, and `defer` scripts run in document order. -->
+<script src="consent.js" defer></script>
+<script src="attrib.js" defer></script>
+<script src="gtag.js" defer></script>
+<script src="auth.js" defer></script>
+</body>
+</html>
