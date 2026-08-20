@@ -33,7 +33,9 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v352';   // v352: playlist cards — a reveal no longer wipes the playing-card
+const VERSION = 'v353';   // v353: the top player is unlocked INSIDE the tap, so a freshly built
+                          // dyn mp3 starts on the first press instead of needing a second one.
+                          // v352: playlist cards — a reveal no longer wipes the playing-card
                           // highlight, the equaliser cue or the select tick (non-SSR rebuild).
                           // v351: retention — pending plays now FLUSH when the page goes away.
                           // v350 tallied plays in memory and sent them on the next throttled ping,

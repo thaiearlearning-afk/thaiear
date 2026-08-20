@@ -3315,7 +3315,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r193';   // r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r194';   // r194: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -6837,6 +6837,52 @@
   // downloaded local copy can be used (offline-aware).
   if (!DYN && !mainGated && !OFFLINE && !(WEB_DL && isDownloaded(mainPrefix))) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
 
+  /* ⚠ UNLOCK THE TOP PLAYER INSIDE THE TAP (2026-08-20, r194) — owner-reported on the PWA:
+     "I construct a dynamic mp3, it shows as playing but it's sat at 0:00 with no sound; if I then
+     hit pause it PLAYS."
+
+     THE SHAPE OF IT. togglePlay() → ensureMainSrc() → dynEnsureSession(), and on a cold open that
+     last step BUILDS the file: fetch every clip, decode, encode, mux. Seconds. Only when it
+     resolves does mainAudio.play() run — by which time the user-gesture token is long gone, and
+     WebKit refuses with NotAllowedError. The individual sentences played beforehand do not help:
+     the gesture requirement is PER ELEMENT and those play through a different one (#sent-audio-el).
+     The second tap works because the session is built by then, so ensureMainSrc() resolves in a
+     microtask, which keeps the gesture.
+
+     THE FIX. Give the element something to play WHILE we still hold the gesture — 20 ms of silence
+     as a data URI — so WebKit marks it allowed-to-play before the build starts. The real source
+     replaces it when the build finishes. (r27 fixed the sibling case on the lock-screen handler by
+     calling play() synchronously; the on-page button cannot, because on a cold open there is no
+     audio to play yet.) It also re-activates the iOS audio session, which a pause deactivates —
+     the r27 note above set('play') describes what that failure sounds like.
+
+     ⚠ NEVER while something is playing: assigning src would kill the audio it is asked to protect.
+     ⚠ NATIVE is exempt — the Media3 shim has no gesture requirement and no src to clobber.
+     A failed prime clears the flag so the next tap tries again. */
+  var MAIN_SILENCE = 'data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+  // Self-clearing test: no real source is ever a data: URI, so nothing has to remember to reset a
+  // flag when the session lands. The 20 ms clip fires 'ended' mid-build — that is what this is for.
+  function mainOnSilence() {
+    var u = mainAudio.currentSrc || mainAudio.src || '';
+    return u.indexOf('data:audio') === 0;
+  }
+  /* ⚠ NOT one-shot. iOS deactivates the page's audio session on every pause (see the r27 note in
+     setupMediaSession), so "we unlocked it once at mount" is not a state that stays true — each
+     cold start has to re-assert it. Both bails below are about not making things worse:
+     a playing element is already unlocked with a live session, and an element holding a loaded
+     source must not have it clobbered by silence just to prove a point. */
+  function primeMainAudio() {
+    if (NATIVE) return;         // Media3 shim: no gesture requirement, and no src of ours to clobber
+    if (!mainAudio.paused) return;
+    if (mainSrcReady) return;   // real source loaded → play() is one microtask away, which iOS allows
+    try {
+      mainAudio.src = MAIN_SILENCE;
+      mainAudio.load();
+      var p = mainAudio.play();
+      if (p && p.then) p.then(null, function (e) { dynLog('prime FAIL ' + ((e && e.name) || e)); });
+    } catch (e) { dynLog('prime THREW ' + ((e && e.name) || e)); }
+  }
+
   // Resolve + attach the current main file's src if not already done (premium- and offline-aware).
   // Web offline serves a blob: URL; revoke the previous one on each swap so it doesn't leak.
   var mainBlobUrl = null;
@@ -6850,12 +6896,14 @@
     });
   }
   mainAudio.addEventListener('loadedmetadata', function () {
+    if (mainOnSilence()) return;   // the priming clip is not a track — see primeMainAudio()
     var t = $('time-total'); if (t) t.textContent = formatTime(mainAudio.duration);
     if ('mediaSession' in navigator && navigator.mediaSession.setPositionState && mainAudio.duration && isFinite(mainAudio.duration)) {
       try { navigator.mediaSession.setPositionState({ duration: mainAudio.duration, playbackRate: 1, position: 0 }); } catch (_) {}
     }
   });
   mainAudio.addEventListener('timeupdate', function () {
+    if (mainOnSilence()) return;   // ditto — it must not paint the transport or move dynLastPos
     var pct = mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
     var f = $('scrubber-fill'); if (f) f.style.width = pct + '%';
     var c = $('time-cur'); if (c) c.textContent = formatTime(mainAudio.currentTime);
@@ -6885,6 +6933,10 @@
     writeWebResume();   // keep the cross-page resume position fresh while playing (web only, throttled)
   });
   mainAudio.addEventListener('ended', function () {
+    /* ⚠ THE PRIMING CLIP ENDS AFTER 20 ms, MID-BUILD. Without this guard autoplay would read that
+       as "the topic finished" and advanceTopic(1) would hop to the next unit before the audio the
+       user asked for had even been stitched. */
+    if (mainOnSilence()) return;
     if (DYN) dynLastPos = 0;   // track finished — a later play starts over, not at the end
     setMainIcon(false);
     // repeat-one wins over autoplay: loop the current topic.
@@ -6914,6 +6966,7 @@
     if (mainAudio.paused) {
       if (!entitledForPage()) { gate(mainTier); return; }   // gated topic + not entitled → no playback
       userStartedHere = true;   // this page's player is now user-driven → sync must not adopt a stale label
+      primeMainAudio();         // ⚠ SYNCHRONOUS, inside the gesture — the build below can take seconds
       ensureMainSrc().then(function () {
         // Round-10 item 4: a long pause can idle the engine and drop the position to 0 —
         // restore the last known position before resuming (and again after a native
@@ -6922,13 +6975,25 @@
           (!mainAudio.duration || !isFinite(mainAudio.duration) || dynLastPos < mainAudio.duration - 0.5)) ? dynLastPos : null;
         if (want != null) { try { mainAudio.currentTime = want; } catch (_) {} }
         var pp = mainAudio.play();
-        if (want != null && pp && pp.then) {
+        setMainIcon(true); setupMediaSession();   // optimistic: the tap gets its feedback instantly
+        /* …but the icon is CORRECTED from the promise. It used to be set unconditionally while the
+           rejection went uncaught, so a refused start left the button showing "playing" over a
+           silent element parked at 0:00 — the owner's report. A lying transport is worse than a
+           failed one: the next tap then reads as "pause made it play". */
+        if (pp && pp.then) {
           pp.then(function () {
-            if ((mainAudio.currentTime || 0) < 0.5) { try { mainAudio.currentTime = want; } catch (_) {} }
-          }).catch(function () {});
+            if (want != null && (mainAudio.currentTime || 0) < 0.5) { try { mainAudio.currentTime = want; } catch (_) {} }
+          }, function (e) {
+            dynLog('play FAIL ' + ((e && e.name) || e));
+            setMainIcon(!mainAudio.paused);
+            if (mainAudio.paused) {
+              dynStatus('Tap play to start', false);
+              var seq = dynStatusSeq;
+              setTimeout(function () { if (seq === dynStatusSeq) dynStatus(null); }, 4000);
+            }
+          });
         }
-        setMainIcon(true); setupMediaSession();
-      }).catch(function (e) { handleDenied(e, mainTier); });
+      }).catch(function (e) { setMainIcon(false); handleDenied(e, mainTier); });
     } else {
       if (DYN && !dynPosStale) dynLastPos = mainAudio.currentTime || dynLastPos;   // remember where we paused
       mainAudio.pause(); setMainIcon(false); writeWebResume(true);
@@ -7050,7 +7115,20 @@
     // English checkbox is TE-only; re-resolve neighbour placeholders.
     if (DYN) { dynLastPos = 0; dynAttached = false; dynLoadSettings(); dynPrefsRepaintControls(); dynSyncEnToggle(); dynPrefetchNeighbours(); }
     applyDirClass();                      // flip the accordion reveal order to match the new direction
-    if (wasPlaying) ensureMainSrc().then(function () { mainAudio.play(); setMainIcon(true); }).catch(function (e) { handleDenied(e, mainTier); });
+    /* Same gesture problem as togglePlay: in dyn mode this rebuilds the session for the new
+       direction, which takes seconds, and the pause two lines up has already deactivated the iOS
+       audio session. Prime inside the tap, and let the promise — not optimism — own the icon. */
+    if (wasPlaying) {
+      primeMainAudio();
+      ensureMainSrc().then(function () {
+        var pp = mainAudio.play();
+        setMainIcon(true);
+        if (pp && pp.then) pp.then(null, function (e) {
+          dynLog('switch play FAIL ' + ((e && e.name) || e));
+          setMainIcon(!mainAudio.paused);
+        });
+      }).catch(function (e) { setMainIcon(false); handleDenied(e, mainTier); });
+    }
   }
 
   /* ---- continuous playback: advance to another topic in the SAME audio element ----
