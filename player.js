@@ -3315,7 +3315,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r192';   // r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r193';   // r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -6479,6 +6479,72 @@
   var DYN_DIGIT1 = '<path d="M12.36 15.94v-4.27h-.09l-1.77.63v.69l1.01-.31v3.26h.85z"/>';
   var DYN_SVG_PREV = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>' + DYN_DIGIT1 + '</svg>';
   var DYN_SVG_NEXT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 13c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6s-6-2.7-6-6 2.7-6 6-6v4l5-5-5-5v4c-4.4 0-8 3.6-8 8z"/>' + DYN_DIGIT1 + '</svg>';
+  /* PER-CARD DYN DECORATION (select tick, equaliser cue, per-session exclude −).
+     ⚠ SPLIT OUT OF initDyn (2026-08-20) BECAUSE IT HAS TO BE RE-RUNNABLE. On a NON-SSR page
+     — i.e. the playlist player, which builds window.ThaiEarTopic at runtime and so has no
+     static cards — render() rebuilds #sentence-list with innerHTML, which destroys every node
+     added here. Revealing a pill on a playlist therefore wiped the equaliser and the select
+     tick off every card. (The .dyn-live highlight was lost the same way; that one is fixed at
+     source, in cardHtml.) Idempotent: a card that still carries its tick is skipped, so the
+     SSR path (where nothing is ever destroyed) costs one querySelector per card. */
+  function dynDecorateCards() {
+    sentences.forEach(function (s) {
+      // Locked playlist rows are padlocks, not players — no select tick, no equalizer, no ①
+      // skip button. Their header carries the gate handler and nothing else.
+      if (sentLocked(s)) return;
+      var hdr = document.querySelector('#sc-' + s.num + ' .sentence-header');
+      if (!hdr) return;
+      if (hdr.querySelector('.dyn-tick')) return;   // already decorated (SSR pages: always)
+      var flag = hdr.querySelector('.sent-flag-btn');
+      // Select-mode tick (batch add-to-playlist): hidden until #sentence-list gets .dyn-selecting.
+      var tick = document.createElement('span');
+      tick.className = 'dyn-tick' + (TIER === 'premium' ? ' gold' : '');
+      tick.setAttribute('aria-hidden', 'true');
+      // Re-decorating MID-SELECTION must not silently drop what is already ticked.
+      if (dynSel && dynSel.now && dynSel.now[s.num]) tick.classList.add('on');
+      hdr.insertBefore(tick, hdr.querySelector('.sent-num') || hdr.firstChild);
+      // Equalizer cue next to the number — shows on the playing card while audio runs (addendum C).
+      var eq = document.createElement('span');
+      eq.className = 'dyn-eq';
+      eq.setAttribute('aria-hidden', 'true');
+      eq.innerHTML = '<i></i><i></i><i></i><i></i>';
+      var snEl = hdr.querySelector('.sent-num');
+      if (snEl) hdr.insertBefore(eq, snEl.nextSibling); else hdr.appendChild(eq);
+      // Round-11 item 4: no exclude − on playlist cards — playlist curation happens in the
+      // playlists menu (Remove sentences), not per-session exclusion.
+      if (!PLMODE) {
+        var xb = document.createElement('button');
+        xb.className = 'dyn-card-btn dyn-x-btn';
+        var xPaint = function () {
+          var on = !!dynExcluded[s.num];
+          xb.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="' + (on ? 'M12 5v14M5 12h14' : 'M5 12h14') + '"/></svg>';
+          xb.setAttribute('aria-label', on ? 'Include in session' : 'Exclude from session');
+          xb.title = on ? 'Include in session' : 'Exclude from session';
+        };
+        xPaint();
+        xb.addEventListener('click', function (e) {
+          e.stopPropagation(); e.preventDefault();
+          // Same gate as play/reveal/flag: on a locked topic this was the one control still
+          // live, so a non-entitled visitor could sit there toggling sentences in and out of a
+          // session they cannot hear.
+          if (!entitledForPage()) { gate(TIER); return; }
+          dynExcluded[s.num] = !dynExcluded[s.num];
+          dynSaveExcluded();
+          var card = document.getElementById('sc-' + s.num);
+          if (card) card.classList.toggle('dyn-off', !!dynExcluded[s.num]);
+          xPaint();
+          dynInvalidate();
+          dynPrefsQueue('excl');
+        });
+        hdr.insertBefore(xb, flag ? flag.nextSibling : null);
+        if (dynExcluded[s.num]) {
+          var card0 = document.getElementById('sc-' + s.num);
+          if (card0) card0.classList.add('dyn-off');
+        }
+      }
+    });
+  }
+
   // Mount-time DOM injection: status line + pause slider + sentence-skip transport buttons
   // + the per-card playlist/exclude buttons. Only ever called when DYN.
   function initDyn() {
@@ -6677,58 +6743,7 @@
         plRow.appendChild(pll);
       }
     }
-    sentences.forEach(function (s) {
-      // Locked playlist rows are padlocks, not players — no select tick, no equalizer, no ①
-      // skip button. Their header carries the gate handler and nothing else.
-      if (sentLocked(s)) return;
-      var hdr = document.querySelector('#sc-' + s.num + ' .sentence-header');
-      if (!hdr) return;
-      var flag = hdr.querySelector('.sent-flag-btn');
-      // Select-mode tick (batch add-to-playlist): hidden until #sentence-list gets .dyn-selecting.
-      var tick = document.createElement('span');
-      tick.className = 'dyn-tick' + (TIER === 'premium' ? ' gold' : '');
-      tick.setAttribute('aria-hidden', 'true');
-      hdr.insertBefore(tick, hdr.querySelector('.sent-num') || hdr.firstChild);
-      // Equalizer cue next to the number — shows on the playing card while audio runs (addendum C).
-      var eq = document.createElement('span');
-      eq.className = 'dyn-eq';
-      eq.setAttribute('aria-hidden', 'true');
-      eq.innerHTML = '<i></i><i></i><i></i><i></i>';
-      var snEl = hdr.querySelector('.sent-num');
-      if (snEl) hdr.insertBefore(eq, snEl.nextSibling); else hdr.appendChild(eq);
-      // Round-11 item 4: no exclude − on playlist cards — playlist curation happens in the
-      // playlists menu (Remove sentences), not per-session exclusion.
-      if (!PLMODE) {
-        var xb = document.createElement('button');
-        xb.className = 'dyn-card-btn dyn-x-btn';
-        var xPaint = function () {
-          var on = !!dynExcluded[s.num];
-          xb.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="' + (on ? 'M12 5v14M5 12h14' : 'M5 12h14') + '"/></svg>';
-          xb.setAttribute('aria-label', on ? 'Include in session' : 'Exclude from session');
-          xb.title = on ? 'Include in session' : 'Exclude from session';
-        };
-        xPaint();
-        xb.addEventListener('click', function (e) {
-          e.stopPropagation(); e.preventDefault();
-          // Same gate as play/reveal/flag: on a locked topic this was the one control still
-          // live, so a non-entitled visitor could sit there toggling sentences in and out of a
-          // session they cannot hear.
-          if (!entitledForPage()) { gate(TIER); return; }
-          dynExcluded[s.num] = !dynExcluded[s.num];
-          dynSaveExcluded();
-          var card = document.getElementById('sc-' + s.num);
-          if (card) card.classList.toggle('dyn-off', !!dynExcluded[s.num]);
-          xPaint();
-          dynInvalidate();
-          dynPrefsQueue('excl');
-        });
-        hdr.insertBefore(xb, flag ? flag.nextSibling : null);
-        if (dynExcluded[s.num]) {
-          var card0 = document.getElementById('sc-' + s.num);
-          if (card0) card0.classList.add('dyn-off');
-        }
-      }
-    });
+    dynDecorateCards();
     if (DYN_PREBUILD) {
       dynStatus('Preparing both directions', true);
       var t0 = Date.now();
@@ -7585,9 +7600,23 @@
       .catch(function () {});
   }
 
+  /* RUNTIME dyn state classes (2026-08-20).
+     syncCard() re-applies these after every SSR reveal; the non-SSR path (the playlist player)
+     rebuilds #sentence-list wholesale from these two helpers instead, so without this the
+     .dyn-live highlight on the currently-playing card was DESTROYED the moment you touched any
+     pill — the exact "it highlights while playing, then vanishes if I interact with it" report.
+     Keep this in step with syncCard(): the two must produce the same class list. */
+  function dynStateClasses(s) {
+    if (!DYN || !s) return '';
+    var cls = '';
+    if (dynExcluded[s.num]) cls += ' dyn-off';
+    if (dynLastLive === s.num) cls += ' dyn-live';
+    return cls;
+  }
+
   function lockedCardHtml(s) {
     var d = dispNum(s);
-    return '<div class="sentence-card' + sentCardClasses(s) + '" id="sc-' + s.num + '">' +
+    return '<div class="sentence-card' + sentCardClasses(s) + dynStateClasses(s) + '" id="sc-' + s.num + '">' +
       '<div class="sentence-header" onclick="gateSentence(' + s.num + ')" role="button" tabindex="0" ' +
         'aria-label="Sentence ' + d + ': ' + previewAria(s) + ' — Premium content">' +
         '<span class="sent-num">' + d + '</span>' +
@@ -7614,7 +7643,7 @@
           'title="' + (flagged ? 'Flagged — click to remove' : 'Flag this sentence') + '">' + FLAG_SVG + '</button>'
       : '<button class="sent-flag-btn" onclick="flagSignIn(event)" ' +
           'aria-label="Sign in to flag sentence ' + d + '" title="Sign in to flag sentences">' + FLAG_SVG + '</button>');
-    return '<div class="sentence-card' + sentCardClasses(s) + '" id="sc-' + s.num + '">' +
+    return '<div class="sentence-card' + sentCardClasses(s) + dynStateClasses(s) + '" id="sc-' + s.num + '">' +
       '<div class="sentence-header" onclick="cycle(' + s.num + ')" role="button" tabindex="0" aria-label="Sentence ' + d + ': ' + previewAria(s) + '">' +
         '<span class="sent-num">' + d + '</span>' +
         '<button class="sent-play-btn' + (playing ? ' playing' : '') + '" onclick="toggleSentPlay(event,' + s.num + ')" aria-label="Play sentence ' + d + '">' +
@@ -7685,7 +7714,13 @@
 
   function render() {
     if (SSR) sentences.forEach(function (s) { syncCard(s.num); });
-    else $('sentence-list').innerHTML = listHtml();
+    else {
+      // innerHTML replaces every card node, so anything the dyn layer ATTACHED to a card (the
+      // equaliser cue, the select tick, the exclude −) is destroyed with it and has to be
+      // re-attached. State that lives in a class is carried by dynStateClasses() above.
+      $('sentence-list').innerHTML = listHtml();
+      if (DYN) dynDecorateCards();
+    }
     applyDirClass();   // keep the reveal order in sync with the current TE/ET direction
     applyTranslitClass();   // reflect the stored transliteration preference (default on)
 

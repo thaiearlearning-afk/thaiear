@@ -33,7 +33,9 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v351';   // v351: retention — pending plays now FLUSH when the page goes away.
+const VERSION = 'v352';   // v352: playlist cards — a reveal no longer wipes the playing-card
+                          // highlight, the equaliser cue or the select tick (non-SSR rebuild).
+                          // v351: retention — pending plays now FLUSH when the page goes away.
                           // v350 tallied plays in memory and sent them on the next throttled ping,
                           // but a navigation re-executes attrib.js and reset the tally: load a
                           // topic, play three clips, move to the next topic inside five minutes,
