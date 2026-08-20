@@ -111,7 +111,11 @@
   .page-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
   .topic-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   .topic-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
-  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 1.75rem; }
+  /* 0.8rem, was 1.75rem (owner, 2026-08-20). The old figure was set when the classic player
+     sat under this line; the dyn player begins with its own heading and card, and with the
+     progress bar removed from the top of it the two were separated by nearly a finger's
+     width on an iPhone. */
+  .topic-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 0.8rem; }
   .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
   .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
   .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; min-width: 0; overflow-wrap: break-word; font-size: calc(13px * var(--te-ui, 1)); font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
@@ -123,7 +127,7 @@
   .topic-nav-right { text-align: right; }
   @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
   @media (max-width: 600px) {
-    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 1.25rem; }
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 0.7rem; }
     .topic-nav-btn { font-size: calc(12px * var(--te-ui, 1)); padding: 6px 10px; }
   }
   @media (max-width: 380px) { .topic-title { font-size: 18px; } }

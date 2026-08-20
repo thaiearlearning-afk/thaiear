@@ -2253,7 +2253,12 @@
        with no JS and no ordering risk; the reserve still applies in full to the signed-in counter,
        which is what it was measured for. */
     /* The DEFAULT state now, not the signed-out-in-browser special case. */
-    .progress-controls.te-anon:empty { min-height: 0; margin-bottom: 0; }
+    .progress-controls:empty { min-height: 0; margin-bottom: 0; }
+    /* ⚠ NO .te-anon REQUIREMENT ANY MORE. With the progress bar gone this slot is either
+       the signed-out signup card or genuinely empty, so an empty slot should ALWAYS
+       collapse — including in the window before auth resolves and sets any class at all.
+       Requiring te-anon left a bare 0.9rem margin between the sentence-count line and the
+       player on every load (owner: "almost a finger width on iphone"). */
     /* ---- APP / INSTALLED PWA, SIGNED OUT: the signup card lands in THIS slot ----
        ⚠ THIS SLOT IS THE FIRST CHILD OF #player-root, so when it grows the ENTIRE PLAYER moves
        down. Collapsing it to 0 and then filling it with a 133px card shoved the play button and

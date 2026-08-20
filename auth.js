@@ -496,15 +496,34 @@
   var plysLoaded = false;      // has the server blob been read this session?
   var plysTimer = null;
   var plysFlushing = false;
+  var plysResync = false;      // a duplicate ack asked us to re-read the server total
 
   function plysBlank() { return { synced: {}, pending: {}, outbox: null }; }
+  function plysRead() {
+    var c = lsGet(PLYS_KEY);
+    return (c && c.uid === uid())
+      ? { synced: c.synced || {}, pending: c.pending || {}, outbox: c.outbox || null }
+      : plysBlank();
+  }
+  // Reads may use the cached copy — they are called per card on every repaint.
   function plysStore() {
-    if (!plysCache) {
-      var c = lsGet(PLYS_KEY);
-      plysCache = (c && c.uid === uid())
-        ? { synced: c.synced || {}, pending: c.pending || {}, outbox: c.outbox || null }
-        : plysBlank();
-    }
+    if (!plysCache) plysCache = plysRead();
+    return plysCache;
+  }
+  /* ⚠⚠ EVERY MUTATION MUST GO THROUGH HERE — READ-MODIFY-WRITE, NEVER A BLIND OVERWRITE.
+     localStorage is shared by every ThaiEar page in the browser; `plysCache` is per-page and is
+     read ONCE. So a page holding a stale snapshot that called plysPersist() wrote its old copy
+     over whatever another page had queued in the meantime, and those plays were gone — a
+     classic lost update. The owner hit it: three real plays recorded in a playlist vanished,
+     and the topic page briefly showed the higher number before settling on the lower one.
+     It needs nothing exotic to happen — a second tab, or a bfcache restore, is enough.
+     Re-reading immediately before every mutation closes it: JS is single-threaded per page, so
+     between this read and the write below nothing else in THIS page can run, and another page's
+     write either lands before the read (and is picked up) or after the write (and picks us up). */
+  function plysMutate(fn) {
+    plysCache = plysRead();      // adopt whatever is on disk right now
+    fn(plysCache);
+    plysPersist();
     return plysCache;
   }
   function plysPersist() {
@@ -518,7 +537,10 @@
   }
   // The number a user sees: everything known plus everything not yet delivered.
   function plysMerged() {
-    var st = plysStore(), out = {};
+    /* Re-read rather than trusting the cache: another page may have recorded a play since this
+       one last looked, and a number that is quietly behind is the same defect as a wrong one. */
+    plysCache = plysRead();
+    var st = plysCache, out = {};
     plysAddInto(out, st.synced);
     plysAddInto(out, st.pending);
     if (st.outbox) plysAddInto(out, st.outbox.deltas);
@@ -530,9 +552,9 @@
   function plysNote(num, n) {
     if (!currentUser) return;                 // signed out: the feature does not exist
     n = Math.max(1, Math.min(500, parseInt(n, 10) || 1));
-    var st = plysStore();
-    st.pending[String(num)] = (st.pending[String(num)] || 0) + n;
-    plysPersist();
+    plysMutate(function (st) {                // ⚠ read-modify-write — see plysMutate
+      st.pending[String(num)] = (st.pending[String(num)] || 0) + n;
+    });
     notify();                                 // repaint the chips
     /* Debounced, not immediate: a dyn session produces one of these every few seconds and each
        POST is a round trip. 20s bundles a normal listening run into a handful of requests while
@@ -545,17 +567,17 @@
      there is nothing to send, no session, or no network. Never throws, never rejects. */
   function plysFlush() {
     if (plysFlushing || !currentUser) return Promise.resolve();
-    var st = plysStore();
     // Form a batch if one is not already outstanding. A batch already in flight is retried AS IS,
     // with its original id - that is what makes the retry idempotent server-side.
-    if (!st.outbox && Object.keys(st.pending).length) {
-      st.outbox = {
-        batchId: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : plUuidFallback(),
-        deltas: st.pending
-      };
-      st.pending = {};
-      plysPersist();
-    }
+    var st = plysMutate(function (st) {
+      if (!st.outbox && Object.keys(st.pending).length) {
+        st.outbox = {
+          batchId: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : plUuidFallback(),
+          deltas: st.pending
+        };
+        st.pending = {};
+      }
+    });
     if (!st.outbox) return Promise.resolve();
     var tok = currentSession && currentSession.access_token;
     if (!tok || !navigator.onLine) return Promise.resolve();   // stays queued; 'online' retries
@@ -569,10 +591,26 @@
       keepalive: true        // survives the navigation that triggered the flush
     }).then(function (res) {
       if (res.ok) {
-        plysAddInto(st.synced, sending.deltas);
-        st.outbox = null;
-        plysPersist();
-        return;
+        /* ⚠⚠ A REPLAY MUST NOT BE FOLDED IN. /api/plays answers 200 {duplicate:true} when it has
+           already applied this batch id, and that is a SUCCESS — but the server added nothing, so
+           adding the deltas to `synced` here would inflate the local total above the truth. The
+           owner saw exactly that: a sentence read 11 on the topic page, then dropped to 8 the
+           moment plysLoad() replaced `synced` with the server's copy.
+
+           ⚠ AND THIS IS THE COMMON PATH, NOT AN EDGE CASE. The POST is `keepalive` and is fired
+           from pagehide, so it very often LANDS while the response never gets back to a page that
+           is already unloading. The fetch rejects, the outbox is kept, the next page retries — and
+           the retry is a duplicate. Any bug here would fire on ordinary navigation, repeatedly.
+
+           So on a duplicate we drop the batch and force a re-read instead of guessing: the server
+           total is authoritative and already contains it. Self-healing, no arithmetic. */
+        return res.json().catch(function () { return {}; }).then(function (d) {
+          plysMutate(function (cur) {
+            cur.outbox = null;                 // re-applied: plysMutate re-read the disk copy
+            if (d && d.duplicate) { plysLoaded = false; plysResync = true; }
+            else plysAddInto(cur.synced, sending.deltas);
+          });
+        });
       }
       /* 4xx vs 5xx IS THE WHOLE ERROR POLICY, and /api/plays is written to honour it.
          4xx - malformed; it can never succeed, so drop it or it blocks every later batch for ever.
@@ -582,13 +620,15 @@
          silently delete real listening. */
       if (res.status >= 400 && res.status < 500) {
         console.warn('[plays] dropped an unsyncable batch (' + res.status + ')');
-        st.outbox = null;
-        plysPersist();
+        plysMutate(function (cur) { cur.outbox = null; });
       }
     }).catch(function () {
       /* Network failure - keep it queued. No log: offline is the normal case here. */
     }).then(function () {
       plysFlushing = false;
+      /* Re-read AFTER the flush has settled, never inside it: plysLoad() calls plysFlush(), and
+         doing that while plysFlushing is still true would silently no-op. */
+      if (plysResync) { plysResync = false; plysLoad(); }
       // More arrived while that was in flight - deliver it too rather than waiting 20s.
       if (Object.keys(st.pending).length && navigator.onLine) plysFlush();
     });
@@ -600,13 +640,17 @@
      still in `pending`/`outbox` is by definition NOT in it, and stays on top. */
   function plysLoad() {
     if (plysLoaded) return Promise.resolve(plysMerged());
-    var st = plysStore();
     var tok = currentSession && currentSession.access_token;
     if (!currentUser || !tok || !navigator.onLine) return Promise.resolve(plysMerged());
     return fetch('/api/plays', { headers: { Authorization: 'Bearer ' + tok } })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (d) {
-        if (d && d.counts) { st.synced = d.counts; plysLoaded = true; plysPersist(); notify(); }
+        if (d && d.counts) {
+          /* ⚠ read-modify-write: this page may have been sitting on a stale snapshot while
+             another page queued plays, and a blind write here would delete them. */
+          plysMutate(function (cur) { cur.synced = d.counts; });
+          plysLoaded = true; notify();
+        }
         plysFlush();                                  // deliver anything queued from last time
         return plysMerged();
       })
@@ -621,6 +665,18 @@
      pagehide AND visibilitychange: iOS Safari frequently gives no pagehide when the user switches
      apps or locks the phone. `keepalive` on the POST is what lets it outlive the page. */
   window.addEventListener('pagehide', function () { plysFlush(); });
+  /* Another tab (or the playlist player in a second window) recorded a play. localStorage is
+     shared but `plysCache` is per-page and is never re-read once populated, so without this the
+     other tab's numbers stay stale until a reload — which is part of what "slow to update" looked
+     like. Cheap: re-read the record and repaint, nothing more.
+     ⚠ Only when nothing of ours is in flight. Mid-flush the on-disk copy is a snapshot the running
+     flush is about to supersede, and adopting it would resurrect an outbox we have just cleared. */
+  window.addEventListener('storage', function (e) {
+    if (!e || e.key !== PLYS_KEY || plysFlushing || !currentUser) return;
+    plysCache = null;
+    plysStore();
+    notify();
+  });
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') plysFlush();
   });

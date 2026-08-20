@@ -33,7 +33,25 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v361';   // v361: two play-counter bugs the harnesses could not see, both found
+const VERSION = 'v362';   // v362: TWO WAYS PLAY COUNTS COULD GO WRONG, both owner-reported.
+                          // (1) DROPPED PLAYS — the serious one. `plysCache` is per-page and read
+                          // ONCE, but localStorage is shared by every ThaiEar page, so a page
+                          // sitting on a stale snapshot wrote it straight over whatever another
+                          // page had queued: a classic lost update. plysLoad() persists, so merely
+                          // OPENING a topic page could delete a playlist's queued plays. Every
+                          // mutation is now a read-modify-write (plysMutate).
+                          // (2) A REPLAYED BATCH INFLATED THE LOCAL TOTAL. /api/plays answers
+                          // 200 {duplicate:true} for a batch it already applied — a success, but
+                          // it added nothing, and the client folded the deltas in regardless. The
+                          // owner saw 11 on a topic page settle back to 8. And the replay path is
+                          // ORDINARY: the POST is keepalive from pagehide, so it often lands while
+                          // the answer never reaches the unloading page. Duplicates now re-read
+                          // the server total instead of guessing.
+                          // Also: a 'storage' listener so a second tab is not stale; the gap above
+                          // the player cut (.topic-meta 1.75rem->0.8rem / 1.25->0.7rem, and an
+                          // EMPTY progress slot now always collapses rather than only when
+                          // .te-anon was set); tier pills pulled left so their content aligns with
+                          // the topic title. v361: two play-counter bugs the harnesses could not see, both found
                           // by the owner on the live site.
                           // (1) PLAYLIST AND TOPIC COUNTS DID NOT LINK. On a playlist `s.num` is a
                           // SYNTHETIC page id (100001 + index, minted in playlists.html) and the
