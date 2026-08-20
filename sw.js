@@ -33,7 +33,17 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v368';   // v368: TWO COUNTERS, because "a play" was doing two jobs that want
+const VERSION = 'v369';   // v369: terms.html no longer promises "sentence flagging" — the
+                          // feature was retired in r196 and the page still listed it as something
+                          // a free account enables. terms.html is precached, so this bump is what
+                          // delivers the correction. Everything else in this pass is comments and
+                          // documentation: the streak migration's header overstated the law (it
+                          // said showing an LI-based field would be unlawful — it would not;
+                          // transparency strengthens a balancing test, and the DECIDING reason was
+                          // always that days_active counts page loads and is simply the wrong
+                          // number), a wrong cross-reference, and the `listens` invariant note,
+                          // which holds for INCREMENTS and not for absolute totals (live: 122
+                          // against a sum of 71, because listens predates v357). v368: TWO COUNTERS, because "a play" was doing two jobs that want
                           // opposite answers. PASSES (`counts`) = one trip through a sentence,
                           // whatever the repeat setting — this is what the pill shows and what the
                           // topic/playlist MINIMUM rolls up, and that roll-up only means "complete

@@ -189,8 +189,14 @@
      ⚠ BOTH COUNTERS MUST FIRE FROM THE SAME EVENT AND THE SAME GATE. player.js calls
      notePlaySentence() once per sentence and that function drives both. If one ever counted
      without the dwell they would drift apart permanently for a reason nobody could
-     reconstruct — and the free invariant would be lost: `listens` is now, by construction,
-     the SUM of the values in `sentence_plays.counts`. test_plays.js asserts it. */
+     reconstruct.
+
+     ⚠ THE INVARIANT IS ABOUT INCREMENTS, NOT TOTALS, and stating it absolutely misleads anyone
+     who checks. From v357 onward every increment to `listens` is the same increment applied to
+     `sentence_plays.reps` (the REPETITIONS counter since v368 — four Thai repeats are four
+     listens, not one). But the running totals do NOT match on an existing row: `listens`
+     accumulated under the old audio-STARTS semantics before v357 and was never reset. Measured
+     live on 2026-08-20: listens 122 against a sum of 71. That is history, not a bug. */
   function postSeen(kind) {
     if (!accessToken()) return;
     var now = Date.now();

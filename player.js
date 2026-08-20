@@ -5368,7 +5368,9 @@
      event, which on the dyn player counted a whole 32-sentence session as ONE and five
      pause/resumes as SIX. Driving both from here makes `listens` by construction the SUM of the
      values in sentence_plays.counts. Split them and they drift apart permanently, for a reason
-     nobody could reconstruct later. test_plays.js asserts the invariant.
+     nobody could reconstruct later.
+     ⚠ Same increment, not the same total: `listens` carries pre-v357 history recorded under the
+     old audio-starts semantics, so the running totals differ on any row that predates it.
      auth.js no-ops when signed out, so no guard is needed here. */
   /* ⚠⚠ COUNT AGAINST THE GLOBAL SENTENCE NUMBER, NEVER THE PAGE'S `num`.
      On a PLAYLIST, `s.num` is a SYNTHETIC page-unique id (100001 + index, minted in
