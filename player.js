@@ -3216,7 +3216,9 @@
   var states = {};
   sentences.forEach(function (s) { states[s.num] = 0; });
   var sentPlaying = null;
-  var sentLock = false;
+  /* The sentence that owns the 300 ms tap debounce, or null. NOT a boolean — see the note in
+     toggleSentPlay: a blunt global lock discards taps on OTHER sentences in complete silence. */
+  var sentLock = null;
   var sentBlobUrl = null;   // object URL of the clip currently in the sentence <audio>; revoked on swap/stop
   function revokeSentBlob() { if (sentBlobUrl) { try { URL.revokeObjectURL(sentBlobUrl); } catch (_) {} sentBlobUrl = null; } }
   var slowMode = false;
@@ -6432,11 +6434,15 @@
           number → play → Thai, with the tools out of the reading path.
        5. The three-segment reveal indicator goes. The tap-to-expand-in-stages mechanic it
           described is untouched — only the ornament is removed. */
-    'body.te-v2 .te-intro-wrap{position:relative;margin-bottom:1.1rem}' +
+    /* 0.3rem, was 1.1rem (owner, 2026-08-20). Measured on the live page: the band between the
+       collapsed intro and the player card was 89.9px, of which 46px was pure whitespace in three
+       gaps. Halving the band means cutting the gaps, not moving the sentence line — which is
+       what a previous attempt did, and the owner rightly said was not the same thing. */
+    'body.te-v2 .te-intro-wrap{position:relative;margin-bottom:0.3rem}' +
     'body.te-v2 .te-intro-wrap .topic-intro{overflow:hidden;margin-bottom:0}' +
     'body.te-v2 .te-intro-wrap:not(.open) .topic-intro{max-height:3.3em}' +
     "body.te-v2 .te-intro-wrap:not(.open)::after{content:'';position:absolute;left:0;right:0;bottom:1.85em;height:2.1em;background:linear-gradient(to bottom,rgba(250,250,248,0),var(--bg));pointer-events:none}" +
-    'body.te-v2 .te-intro-more{margin-top:3px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:none;border:0;padding:2px 0;cursor:pointer}' +
+    'body.te-v2 .te-intro-more{margin-top:2px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:none;border:0;padding:2px 0;cursor:pointer}' +
     'body.te-v2 .te-intro-more:hover{text-decoration:underline}' +
     /* settings disclosure */
     'body.te-v2 .dyn-set-wrap{margin-top:2px}' +
@@ -7691,7 +7697,7 @@
          of the document URL), and without this the retry below is killed by its own cleanup. */
       sentCurSrc = null;
       try { var sa = getSentAudio(); sa.pause(); sa.removeAttribute('src'); sa.load(); } catch (_) {}
-      sentPlaying = null; sentLock = false; sentBusyUntil = 0;
+      sentPlaying = null; sentLock = null; sentBusyUntil = 0;
       toggleSentPlay({ stopPropagation: function () {}, preventDefault: function () {} }, num);
       return;
     }
@@ -7733,9 +7739,19 @@
     if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no sentence audio
     if (gateSent(num)) return;                    // playlist: locked sentence → its own tier's gate
     if (noDlSent(num)) return;                    // playlist: offline + clip not on the device
-    if (sentLock) return;
-    sentLock = true;
-    setTimeout(function () { sentLock = false; }, 300);
+    /* ⚠ DEBOUNCE THE SAME SENTENCE, NEVER A DIFFERENT ONE (2026-08-20).
+       This was a blunt global: ANY tap within 300 ms of ANY other was discarded in complete
+       silence — no audio, no icon, no message. It is the only path in this function that drops a
+       tap without telling the user anything, and 300 ms is a long time on a phone: tap a sentence,
+       feel nothing happen while the clip loads, reach for the next one, and that tap is eaten.
+       failSentLoad's retry re-enters here too, so an auto-retry could swallow the user's next tap
+       as well.
+       The double-fire it actually guards against is a repeat on the SAME button, so that is all it
+       guards now. Two different sentences overlapping is safe since sentGen: the newer attempt
+       supersedes the older one, and every stale callback checks its generation. */
+    if (sentLock === num) return;
+    sentLock = num;
+    setTimeout(function () { if (sentLock === num) sentLock = null; }, 300);
     var gen = ++sentGen;   // this tap's attempt number — see the note above sentGen
     var sa = getSentAudio();
     clearSentStall();

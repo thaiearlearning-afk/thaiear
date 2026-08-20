@@ -439,9 +439,10 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     text-decoration: none;
     display: flex;
     flex-direction: column;
-    /* 2px, not 4: the card gained a third line (the play count) and 4px between all of them read
-       as crowded. Tightening the gap buys the new line back without growing the card. */
-    gap: 2px;
+    /* 1px between the text lines — title, sentence count, play count now read as one block.
+       The AIR goes above the title instead (.topic-card-top margin-bottom), because the tier pill
+       is a different kind of thing and wants separating from them (owner, 2026-08-20). */
+    gap: 1px;
     transition: border-color 0.15s, box-shadow 0.15s;
     cursor: pointer;
     position: relative;
@@ -523,6 +524,7 @@ if(pend||bf)d.className+=' te-warp';})();</script>
     align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
+    margin-bottom: 6px;   /* separate the tier pill from the title block below it */
   }
   .level-badge {
     font-size: calc(10px * var(--te-ui, 1));

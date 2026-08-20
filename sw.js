@@ -33,7 +33,18 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v362';   // v362: TWO WAYS PLAY COUNTS COULD GO WRONG, both owner-reported.
+const VERSION = 'v363';   // v363: spacing, MEASURED on the live page rather than adjusted by eye.
+                          // The band between the collapsed intro and the player card was 89.9px,
+                          // and 46px of it was pure whitespace in three gaps: 18.9 under "Read
+                          // more", 12.8 under the sentence-count line, and 14.4 under an EMPTY
+                          // progress slot. A previous pass moved the sentence line down instead of
+                          // shrinking the space it sits in, which is not the same thing. Now
+                          // ~50px: intro wrap 1.1rem->0.3rem, .topic-meta 0.8rem->0.3rem with
+                          // line-height 1.3, and the empty-slot collapse from v362 doing its job.
+                          // Index cards: 1px between title / sentence count / play count so they
+                          // read as one block, with the air moved ABOVE the title (.topic-card-top
+                          // margin-bottom 6px) to separate the tier pill, which is a different
+                          // kind of thing. v362: TWO WAYS PLAY COUNTS COULD GO WRONG, both owner-reported.
                           // (1) DROPPED PLAYS — the serious one. `plysCache` is per-page and read
                           // ONCE, but localStorage is shared by every ThaiEar page, so a page
                           // sitting on a stale snapshot wrote it straight over whatever another
