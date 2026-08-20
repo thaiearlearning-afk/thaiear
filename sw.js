@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v354';   // v354: the top player is unlocked INSIDE the tap, so a freshly built
+const VERSION = 'v355';   // v355: privacy policy — the "last updated" date was still 12 Aug after
+                          // two substantive edits on 19 Aug, and section 4 now discloses that the
+                          // desktop-download allow-list keeps an email after account deletion.
+                          // ⚠ privacy.html is PRECACHED and served cache-first, so this bump is
+                          // what makes the corrected policy reach anyone who has visited before.
+                          // v354: the top player is unlocked INSIDE the tap, so a freshly built
                           // dyn mp3 starts on the first press instead of needing a second one.
                           // v352: playlist cards — a reveal no longer wipes the playing-card
                           // highlight, the equaliser cue or the select tick (non-SSR rebuild).
