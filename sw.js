@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v371';   // v371: confirm.html now sends a magic-link sign-in to the HOME page
+const VERSION = 'v372';   // v372: the cookie banner is suppressed site-wide — consent.js
+                          // `BANNER_OFF = true`. Nothing relied on the tag any more (Search
+                          // lands on /start, which carries no tag; the video campaigns are
+                          // paused), so it was noise in front of every visitor. It suppresses
+                          // the ASK only: a new visitor never grants, so nothing non-essential
+                          // is written; an earlier accepter keeps the consent they gave.
+                          // ⚠ consent.js is PRECACHED and cache-first, so the bump is what
+                          // actually delivers this to returning visitors.
+                          // v371: confirm.html now sends a magic-link sign-in to the HOME page
                           // instead of /account. Nothing in the codebase passes `next`, so that
                           // default WAS the behaviour, and it dropped people into a small grey
                           // panel with no obvious way out. ⚠ THE BUMP IS LOAD-BEARING, NOT TIDY:

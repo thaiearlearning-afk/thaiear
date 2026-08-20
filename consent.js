@@ -274,7 +274,44 @@
 
   /* ---------- go --------------------------------------------------------- */
 
-  function boot() { if (!current && !IS_APP) render(); }
+  /* ⚠⚠ BANNER_OFF — THE BANNER IS CURRENTLY SUPPRESSED SITE-WIDE (owner, 2026-08-20).
+     Flip to false to bring it straight back; nothing else needs changing.
+
+     ⛔⛔ THIS IS PAUSED, NOT RETIRED. DO NOT DELETE ANY OF IT (owner, explicitly).
+     Not consent.js, not gtag.js, not the CSS below, not the options panel, not the
+     `te_consent` record, and not the tags on the other 90-odd pages. The moment a
+     campaign needs measurement again — the human-audio launch is the expected one, and
+     the £382 of ad credit expires ~23 Oct — this becomes `false` and everything works
+     as before. A deletion would turn a one-character change into a rebuild, and would
+     also throw away the wording and the equal-width button layout that were argued over
+     on 2026-08-17. Treat it as switched off at the wall, not thrown out.
+
+     WHY IT IS OFF NOW: with Search landing on /start (which carries no tag at all) and
+     the video campaigns paused, nothing was relying on the tag, so the banner was pure
+     noise in front of every visitor — and the only question this site currently needs
+     answered (do they sign up?) is measured first-party, without it.
+
+     WHAT THIS IS, PRECISELY: it suppresses the ASK. It does not fake, assume or revoke a
+     decision. `current` still comes from a real stored choice, so
+       • a NEW visitor is never asked → never grants → gtag.js never fetches Google's
+         script and nothing non-essential is written. Strictly MORE private than before.
+       • someone who accepted EARLIER keeps the consent they actually gave, until it ages
+         out of MAX_AGE on its own. Silently discarding a valid consent would be its own
+         kind of wrong.
+       • ThaiEarConsent.show() still works, so the chooser stays reachable (and
+         consent-preview.html still tests it).
+     privacy.html needs no edit: it is written conditionally throughout ("only with your
+     consent"), which stays true when we never ask.
+
+     ⚠ WHAT GOES DARK while this is true: GA4 (sessions, activations, the campaign x country
+     read), the Google Ads conversion actions, and the gclid/utm capture in attrib.js.
+     ⚠ WHAT SURVIVES, and it is most of what actually gets used: Cloudflare RUM is cookieless
+     (visits, pageviews, country, landing paths, referrers), the zone logs are raw, and
+     Supabase still has signups, ad_attribution geography, user_activity and sentence_plays.
+     GA4 was the weakest of those four and the only one that needed consent at all. */
+  var BANNER_OFF = true;
+
+  function boot() { if (BANNER_OFF || IS_APP) return; if (!current) render(); }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
