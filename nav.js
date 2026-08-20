@@ -383,7 +383,7 @@
        every figure reads 0 and the heading invites signup, which is most of the reason to
        show it at all. Routing it through join.html would hide the feature from the people
        it is meant to sell. */
-    { label: 'My progress', page: 'progress.html', public: true },
+    { label: 'Progress', page: 'progress.html', public: true },
     { label: 'Socials', page: 'socials.html', public: true },
     // Visible everywhere INCLUDING inside the Capacitor app (owner, 2026-08-02 — the page now
     // documents offline downloads/playlists, useful in-app; supersedes the old fourth-wall hide).

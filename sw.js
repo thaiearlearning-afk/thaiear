@@ -33,7 +33,23 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v367';   // v367: the Progress page's time figure is COMPACT — "10 min",
+const VERSION = 'v368';   // v368: TWO COUNTERS, because "a play" was doing two jobs that want
+                          // opposite answers. PASSES (`counts`) = one trip through a sentence,
+                          // whatever the repeat setting — this is what the pill shows and what the
+                          // topic/playlist MINIMUM rolls up, and that roll-up only means "complete
+                          // listens" if a playback preference cannot inflate it. REPETITIONS
+                          // (`reps`) = how many times the Thai was actually heard — this is what
+                          // "sentences listened to" and "Thai listening time" mean, and hearing
+                          // something four times is four listens.
+                          // They ride in ONE batch under one id, so they cannot drift; the repeat
+                          // count comes from the SESSION'S OWN KEY, not the live slider, because a
+                          // session built at 4 keeps playing 4 after the slider moves.
+                          // user_activity.listens takes the repetitions too, so it stays the sum of
+                          // sentence_plays.reps by construction.
+                          // Also: Progress page gains a Playlists section under the topics —
+                          // listed even at ZERO, which the retired page did not do (a playlist only
+                          // appeared once it carried a manual tick). Menu label is "Progress".
+                          // v367: the Progress page's time figure is COMPACT — "10 min",
                           // "2h 5min", "1d 3h 6min" — so it sits in the same square as the other
                           // three instead of spanning the row. The spelled-out "0 days, 0 hours,
                           // 10 minutes" read the same every time, which was the point of it, but

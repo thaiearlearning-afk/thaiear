@@ -1,7 +1,7 @@
 /* ============================================================
    functions/api/plays.js — per-sentence play counts
    ------------------------------------------------------------
-   POST   /api/plays  { batchId: "<uuid>", deltas: { "1220": 3, "1221": 1 } }
+   POST   /api/plays  { batchId, deltas: {num: passes}, reps: {num: repetitions} }
    GET    /api/plays  -> { counts, lastListenDate, daysListened, streak, bestStreak }
    DELETE /api/plays  -> reset this user's counters to zero (the row survives)
 
@@ -70,6 +70,20 @@ export async function onRequestPost({ request, env }) {
   }
   if (!Object.keys(deltas).length) return json({ ok: true, empty: true }, 200);
 
+  /* REPETITIONS, the second counter. `deltas` is PASSES — one trip through a sentence, whatever
+     the dyn repeat setting was; `reps` is how many times the Thai was actually heard. The topic
+     roll-up needs the first (or a repeat setting would inflate "complete listens"); the headline
+     total and the listening time need the second. See PLAYS_COUNTER.md.
+     ⚠ Never LOWER than the passes: you cannot pass through a sentence and hear it fewer times.
+     A client that sends nothing here gets the passes, which is the honest floor — apply_plays()
+     does the same, so an old client and an old server both degrade the same way. */
+  const rawReps = (body.reps && typeof body.reps === 'object' && !Array.isArray(body.reps)) ? body.reps : {};
+  const reps = {};
+  for (const k of Object.keys(deltas)) {
+    const v = parseInt(rawReps[k], 10);
+    reps[k] = Number.isFinite(v) ? Math.min(Math.max(v, deltas[k]), MAX_DELTA) : deltas[k];
+  }
+
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'config' }, 500);
   const H = svcHeaders(env);
 
@@ -96,7 +110,7 @@ export async function onRequestPost({ request, env }) {
     const rpc = await fetch(env.SUPABASE_URL + '/rest/v1/rpc/apply_plays', {
       method: 'POST',
       headers: H,
-      body: JSON.stringify({ p_user: user.id, p_deltas: deltas }),
+      body: JSON.stringify({ p_user: user.id, p_deltas: deltas, p_reps: reps }),
     });
     if (!rpc.ok) {
       /* The claim landed but the increment did not, so this batch id would block its own retry
@@ -127,7 +141,7 @@ export async function onRequestGet({ request, env }) {
     const got = await fetch(
       env.SUPABASE_URL + '/rest/v1/sentence_plays?user_id=eq.' +
         encodeURIComponent(auth.user.id) +
-        '&select=counts,last_listen_date,days_listened,streak,best_streak',
+        '&select=counts,reps,last_listen_date,days_listened,streak,best_streak',
       { headers: svcHeaders(env) });
     if (!got.ok) {
       return json({ error: 'db_error', status: got.status,
@@ -139,6 +153,11 @@ export async function onRequestGet({ request, env }) {
        defined default so the Progress page never has to guard, and never renders "undefined". */
     return json({
       counts: r.counts || {},
+      /* ⚠ EMPTY counts AS ABSENT, not just null. The column defaults to '{}', so a row written
+         before the migration — or one the backfill somehow missed — would otherwise report a
+         perfectly valid empty map and drop that person's listening time to zero. Falling back to
+         the passes is the floor. */
+      reps: (r.reps && Object.keys(r.reps).length) ? r.reps : (r.counts || {}),
       lastListenDate: r.last_listen_date || null,
       daysListened: r.days_listened || 0,
       streak: r.streak || 0,

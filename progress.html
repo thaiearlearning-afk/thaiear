@@ -206,6 +206,9 @@
 
   /* ── the numbers ────────────────────────────────────────────────────────────────────────── */
 
+  /* ⚠ FED FROM REPETITIONS, NOT PASSES. Hearing a sentence four times is four listens and four
+     times the audio; the topic roll-up is the number that must stay immune to the repeat setting,
+     not this one. auth.getPlayReps() is the repetitions; auth.getPlays() is the passes. */
   function totals(counts) {
     var listens = 0, seconds = 0;
     for (var k in counts) {
@@ -225,15 +228,24 @@
     var a = A(), t = T();
     if (!t) return;                                   // topics.js not in yet; the auth event repaints
     var user = a && a.getUser && a.getUser();
-    var counts = (user && a.getPlays) ? a.getPlays() : {};
+    var counts = (user && a.getPlays) ? a.getPlays() : {};          // PASSES — the per-topic rows
+    var repsMap = (user && a.getPlayReps) ? a.getPlayReps() : {};   // REPETITIONS — the two totals
     var stats = (user && a.getPlayStats) ? a.getPlayStats() : { daysListened: 0, streak: 0, bestStreak: 0 };
-    var tot = totals(counts);
+    var tot = totals(repsMap);
 
     /* Repaint guard. auth.js legitimately notifies several times during startup and once per
        recorded play, and rebuilding this list each time throws away scroll position. */
+    /* ⚠ ADD ANY NEW INPUT TO THIS SIGNATURE. It is what stops auth.js's several startup
+       notifications rebuilding the list and throwing away scroll position — but an input missing
+       from it renders once and then never updates. The playlist count is here because the section
+       appears only after playlists.load() resolves. */
+    var pls = playlistsNow();
     var sig = [user ? user.id : 'out', tot.listens, Math.round(tot.seconds),
                stats.daysListened, stats.streak, stats.bestStreak,
-               sentNums ? 1 : 0, durations ? 1 : 0].join('|');
+               sentNums ? 1 : 0, durations ? 1 : 0,
+               pls ? pls.length : -1,
+               pls ? pls.map(function (p) { return p.id + ':' + (p.items ? p.items.length : 0); }).join(',') : ''
+              ].join('|');
     if (sig === painted) return;
     painted = sig;
 
@@ -262,6 +274,7 @@
       '</div>' +
 
       topicList(counts) +
+      playlistList(counts) +
 
       (user ? resetBlock() : '');
 
@@ -306,6 +319,55 @@
            'so it only moves when you have been through the whole thing. Sentences you have excluded ' +
            'do not hold it back.</p>' +
            '<div class="prog-list">' + rows + '</div>';
+  }
+
+  /* Every playlist the user has, in the same shape as the topic rows.
+     ⚠⚠ LISTED EVEN AT ZERO. The retired page only showed a playlist once it had a manually-added
+     progress tick, so a playlist you had built but not yet finished simply was not there — the
+     owner had to fake a tick to make one appear. A page that reports listening must list the
+     things you can listen to, not only the ones you have finished.
+     ⚠ The MINIMUM across the playlist's own items, skipping any the user is not entitled to play:
+     a free visitor with a premium sentence in a playlist could never move it, so counting it
+     would pin the row at 0 for ever. Same rule and the same shared playsMin() as pl-list.js —
+     never a second implementation. */
+  function playlistList(counts) {
+    var t = T(), a = A();
+    if (!t || !t.playsMin) return '';
+    if (!(a && a.getUser && a.getUser())) return '';       // signed out: nothing to list
+    var lists = playlistsNow();
+    if (!lists || !lists.length) return '';
+
+    var rows = lists.map(function (p) {
+      var n = 0;
+      if (p.items && p.items.length) {
+        var locked = {};
+        p.items.forEach(function (it) {
+          var tier = (t.tierForPrefix && t.tierForPrefix(it.prefix)) || it.tier || 'free';
+          if (tier !== 'free' && t.canAccess && !t.canAccess(tier)) locked[String(it.num)] = 1;
+        });
+        n = t.playsMin(p.items.map(function (it) { return it.num; }), counts,
+                       function (num) { return !!locked[String(num)]; });
+      }
+      return '<a class="prog-row" href="playlists.html?pl=' + encodeURIComponent(p.id) + '">' +
+               '<span class="prog-row-name">' + esc(p.name) + '</span>' +
+               '<span class="prog-row-plays">Plays: ' + n + '</span>' +
+             '</a>';
+    }).join('');
+
+    return '<h2 class="prog-h2" style="margin-top:2rem">Playlists</h2>' +
+           '<p class="prog-h2-note">Counted the same way — a playlist’s number is its ' +
+           '<strong>least</strong>-played sentence.</p>' +
+           '<div class="prog-list">' + rows + '</div>';
+  }
+
+  /* The local playlist cache, read the same way pl-list.js reads it: the API first, then the
+     localStorage mirror, so this works offline and before playlists.load() has resolved. */
+  function playlistsNow() {
+    var a = A(), pl = a && a.playlists;
+    var lists = (pl && pl.get) ? pl.get() : null;
+    if (!lists && pl && pl.peek) lists = pl.peek();
+    if (!lists) { try { lists = JSON.parse(localStorage.getItem('thaiear_playlists') || 'null'); } catch (_) { lists = null; } }
+    return lists || null;
   }
 
   function resetBlock() {
@@ -366,14 +428,16 @@
     T().loadSentenceNums().then(function (m) { if (m) { sentNums = m; painted = ''; render(); } })
       .catch(function () {});
   }
-  (function pull() {
+  function pullAll() {
     var a = A();
-    if (a && a.getUser && a.getUser() && a.loadPlays) a.loadPlays().then(function () { render(); }).catch(function () {});
-  })();
-  window.addEventListener('thaiear:auth', function () {
-    var a = A();
-    if (a && a.getUser && a.getUser() && a.loadPlays) a.loadPlays().then(function () { render(); }).catch(function () {});
-  });
+    if (!(a && a.getUser && a.getUser())) return;
+    if (a.loadPlays) a.loadPlays().then(function () { render(); }).catch(function () {});
+    /* Playlists too, or the section below the topics is empty until some other page has loaded
+       them into the cache. Fire and forget — the local mirror already answered. */
+    if (a.playlists && a.playlists.load) a.playlists.load().then(function () { render(); }).catch(function () {});
+  }
+  pullAll();
+  window.addEventListener('thaiear:auth', pullAll);
 })();
 </script>
 <script src="topics.js" defer></script>

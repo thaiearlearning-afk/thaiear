@@ -5382,12 +5382,18 @@
   function globalNumOf(s, fallback) {
     return (s && s.clipNum != null) ? s.clipNum : fallback;
   }
-  function notePlaySentence(num) {
+  function notePlaySentence(num, reps) {
     var g = globalNumOf(sentById(num), num);
+    /* ⚠ ONE PASS, `reps` REPETITIONS. The dyn player repeats the Thai inside a single block, so
+       one trip through a card at repeats=4 is ONE pass and FOUR listens. Both go in the same call
+       for the same reason both counters go in the same batch: they must not drift. */
+    reps = Math.max(1, parseInt(reps, 10) || 1);
     var a = window.ThaiEarAuth;
-    if (a && a.notePlay) { try { a.notePlay(g); } catch (_) {} }
+    if (a && a.notePlay) { try { a.notePlay(g, 1, reps); } catch (_) {} }
     var at = window.ThaiEarAttrib;
-    if (at && at.noteListen) { try { at.noteListen(1); } catch (_) {} }
+    /* user_activity.listens counts SENTENCES heard, so it takes the repetitions too — that is
+       what makes it the sum of sentence_plays.reps by construction. */
+    if (at && at.noteListen) { try { at.noteListen(reps); } catch (_) {} }
   }
   function plysDwellReset() { plysDwell = null; }
   /* Advance the dwell for whichever block is live. `dur` is that block's length in seconds. */
@@ -5406,7 +5412,14 @@
     if (d > 0 && d <= 600) plysDwell.ms += d;
     if (!plysDwell.counted && plysDwell.ms >= plysDwell.need) {
       plysDwell.counted = true;
-      notePlaySentence(num);
+      /* The repeat count of the session actually playing, not the current control value — a
+         session built at repeats=4 keeps playing four repeats even if the slider is moved
+         afterwards, and it is what the listener heard that counts. */
+      /* From the SESSION'S OWN KEY, not the live control. A session built at repeats=4 keeps
+         playing four repeats even if the slider is moved afterwards, and what the listener
+         actually heard is what counts. dynParseKey is the one place that decoding lives. */
+      var pk = (dynSession && dynSession.key) ? dynParseKey(dynSession.key) : null;
+      notePlaySentence(num, (pk && pk.rp) || dynRepeats || 1);
     }
   }
 
@@ -5421,7 +5434,7 @@
     var need = Math.min(2000, Math.max(250, (dur || 0) * 900));
     plysClipTimer = setTimeout(function () {
       plysClipTimer = null;
-      notePlaySentence(num);
+      notePlaySentence(num, 1);   // the ▶ button plays the clip once, by definition
     }, need);
   }
   // Stopped, switched away, or failed to load — nothing was heard, so nothing is counted.

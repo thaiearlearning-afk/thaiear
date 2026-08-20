@@ -504,11 +504,25 @@
   var plysStats = null;
   var PLYS_STATS_KEY = 'thaiear_plays_stats';
 
-  function plysBlank() { return { synced: {}, pending: {}, outbox: null }; }
+  /* ⚠⚠ TWO COUNTERS, BECAUSE "A PLAY" MEANS TWO DIFFERENT THINGS (2026-08-20).
+       counts / pending  = PASSES.       One trip through a sentence, however many times the dyn
+                                         player repeated the Thai inside it. This is what the pill
+                                         shows and what the topic/playlist MINIMUM rolls up, and
+                                         that roll-up only means "complete listens" if a repeat
+                                         setting cannot inflate it.
+       reps / pendingReps = REPETITIONS. How many times the Thai was actually heard. This is what
+                                         "sentences listened to" and "Thai listening time" mean;
+                                         hearing something four times is four listens and the time
+                                         figure is simply wrong without it.
+     They travel in ONE batch and are merged by the same server-side increment, so they cannot get
+     out of step. Do not collapse them back into one number — each is wrong for the other's job. */
+  function plysBlank() { return { synced: {}, syncedReps: {}, pending: {}, pendingReps: {}, outbox: null }; }
   function plysRead() {
     var c = lsGet(PLYS_KEY);
     return (c && c.uid === uid())
-      ? { synced: c.synced || {}, pending: c.pending || {}, outbox: c.outbox || null }
+      ? { synced: c.synced || {}, syncedReps: c.syncedReps || c.synced || {},
+          pending: c.pending || {}, pendingReps: c.pendingReps || c.pending || {},
+          outbox: c.outbox || null }
       : plysBlank();
   }
   // Reads may use the cached copy — they are called per card on every repaint.
@@ -534,13 +548,27 @@
   }
   function plysPersist() {
     if (uid() && plysCache) lsSet(PLYS_KEY, { uid: uid(),
-      synced: plysCache.synced, pending: plysCache.pending, outbox: plysCache.outbox });
+      synced: plysCache.synced, syncedReps: plysCache.syncedReps,
+      pending: plysCache.pending, pendingReps: plysCache.pendingReps,
+      outbox: plysCache.outbox });
   }
 
   function plysAddInto(target, src) {
     Object.keys(src || {}).forEach(function (k) { target[k] = (target[k] || 0) + src[k]; });
     return target;
   }
+  /* Merge one bucket family. `which` is 'synced'/'pending' (PASSES) or the Reps pair. */
+  function plysMergeOf(syncKey, pendKey, outKey) {
+    plysCache = plysRead();
+    var st = plysCache, out = {};
+    plysAddInto(out, st[syncKey]);
+    plysAddInto(out, st[pendKey]);
+    if (st.outbox) plysAddInto(out, st.outbox[outKey] || st.outbox.deltas);
+    return out;
+  }
+  // REPETITIONS — what "sentences listened to" and the listening time are built from.
+  function plysMergedReps() { return plysMergeOf('syncedReps', 'pendingReps', 'reps'); }
+
   // The number a user sees: everything known plus everything not yet delivered.
   function plysMerged() {
     /* Re-read rather than trusting the cache: another page may have recorded a play since this
@@ -555,11 +583,15 @@
 
   /* Record n plays of one sentence. Local and instant - never awaits the network, never rejects.
      Called from player.js on the dwell rule (2s of playback, or the clip/block ending). */
-  function plysNote(num, n) {
+  function plysNote(num, n, reps) {
     if (!currentUser) return;                 // signed out: the feature does not exist
     n = Math.max(1, Math.min(500, parseInt(n, 10) || 1));
+    /* Repetitions default to the passes when the caller does not say — the true minimum, since a
+       sentence cannot be passed through zero times. player.js passes the dyn repeat setting. */
+    reps = Math.max(n, Math.min(500, parseInt(reps, 10) || 0));
     plysMutate(function (st) {                // ⚠ read-modify-write — see plysMutate
       st.pending[String(num)] = (st.pending[String(num)] || 0) + n;
+      st.pendingReps[String(num)] = (st.pendingReps[String(num)] || 0) + reps;
     });
     notify();                                 // repaint the chips
     /* Debounced, not immediate: a dyn session produces one of these every few seconds and each
@@ -579,9 +611,11 @@
       if (!st.outbox && Object.keys(st.pending).length) {
         st.outbox = {
           batchId: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : plUuidFallback(),
-          deltas: st.pending
+          deltas: st.pending,
+          reps: st.pendingReps
         };
         st.pending = {};
+        st.pendingReps = {};
       }
     });
     if (!st.outbox) return Promise.resolve();
@@ -593,7 +627,8 @@
     return fetch('/api/plays', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ batchId: sending.batchId, deltas: sending.deltas }),
+      body: JSON.stringify({ batchId: sending.batchId, deltas: sending.deltas,
+                             reps: sending.reps || sending.deltas }),
       keepalive: true        // survives the navigation that triggered the flush
     }).then(function (res) {
       if (res.ok) {
@@ -614,7 +649,10 @@
           plysMutate(function (cur) {
             cur.outbox = null;                 // re-applied: plysMutate re-read the disk copy
             if (d && d.duplicate) { plysLoaded = false; plysResync = true; }
-            else plysAddInto(cur.synced, sending.deltas);
+            else {
+              plysAddInto(cur.synced, sending.deltas);
+              plysAddInto(cur.syncedReps, sending.reps || sending.deltas);
+            }
           });
         });
       }
@@ -668,7 +706,12 @@
         if (d && d.counts) {
           /* ⚠ read-modify-write: this page may have been sitting on a stale snapshot while
              another page queued plays, and a blind write here would delete them. */
-          plysMutate(function (cur) { cur.synced = d.counts; });
+          plysMutate(function (cur) {
+            cur.synced = d.counts;
+            /* An older server, or a row written before the column existed, sends no reps. Falling
+               back to the passes is the honest floor, never zero. */
+            cur.syncedReps = d.reps || d.counts;
+          });
           plysStatsSet(d);
           plysLoaded = true; notify();
         }
@@ -1079,6 +1122,10 @@
     // Synchronous and always safe to call: the local store answers instantly, online or off,
     // signed in or not. Signed out it is an empty map, because the feature does not exist there.
     getPlays: function () { return currentUser ? plysMerged() : {}; },
+    /* REPETITIONS, not passes. getPlays() is what the pill and the topic/playlist minimum use;
+       this is what the headline total and the listening time use. ⚠ They are different numbers on
+       purpose — see plysBlank(). */
+    getPlayReps: function () { return currentUser ? plysMergedReps() : {}; },
     getPlayCount: function (num) {
       if (!currentUser) return 0;
       return plysMerged()[String(num)] || 0;
@@ -1091,7 +1138,7 @@
        the dwell rule (2s of playback, or the clip/block ending) lives there, not here, because
        only the player knows whether audio was actually running. Thai repeats set to 4 is still
        ONE call: repeats are one listen, not four. Fire and forget; returns nothing. */
-    notePlay: function (num, n) { plysNote(num, n); },
+    notePlay: function (num, n, reps) { plysNote(num, n, reps); },
     // Deliver the queue now. Called by the pagehide/visibilitychange hooks and on 'online';
     // exposed for tests and for anything that wants to force delivery before navigating.
     flushPlays: function () { return plysFlush(); },
