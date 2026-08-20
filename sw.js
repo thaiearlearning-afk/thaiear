@@ -33,7 +33,11 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v376';   // v376: attrib.js gains fromUrl() -- the consent-free gclid capture --
+const VERSION = 'v377';   // v377: keepalive on the /api/attrib POST -- /start navigates away
+                          // 900 ms after sign-in and was cancelling it -- plus the missed
+                          // email-typo shapes in all three copies of DOMAIN_TYPOS.
+                          // attrib.js is precached, so this bump is what delivers it.
+                          // v376:   // v376: attrib.js gains fromUrl() -- the consent-free gclid capture --
                           // and functions/api/attrib.js strips click fields for UK/EEA/CH.
                           // ⚠ privacy.html changed in the SAME release and is PRECACHED, so
                           // this bump is what delivers the new policy wording; without it

@@ -314,7 +314,24 @@ var TE_DOMAIN_TYPOS = {
   'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com', 'hotmall.com': 'hotmail.com',
   'outlok.com': 'outlook.com', 'outllok.com': 'outlook.com', 'outlook.co': 'outlook.com',
   'iclould.com': 'icloud.com', 'icoud.com': 'icloud.com',
-  'live.co': 'live.com', 'aol.co': 'aol.com'
+  'live.co': 'live.com', 'aol.co': 'aol.com',
+  /* Added 2026-08-20 after a real signup was lost to a missed typo: the user mistyped
+     gmail.com by inserting one QWERTY-adjacent letter, no correction was offered,
+     signInWithOtp created the account anyway, and the magic link went to a domain that
+     cannot exist. They recovered only by pressing the Google button.
+     ⚠ ALL THREE COPIES of this table (account.html, join.html, start.html) must stay
+     identical -- test_login_code_box.js asserts it.
+     ⚠ NO FUZZY MATCHING. Edit distance was tried and became a WALL in front of unusual
+     but real domains. Every entry here is an explicit, unambiguous typo. */
+  'gbmail.com': 'gmail.com',
+  'ggmail.com': 'gmail.com',
+  'gmaail.com': 'gmail.com',
+  'gmali.com': 'gmail.com',
+  'gmail.cm': 'gmail.com',
+  'gmail.co': 'gmail.com',
+  'hotmail.co': 'hotmail.com',
+  'yahoo.co': 'yahoo.com',
+  'icloud.co': 'icloud.com'
 };
 
 /* Returns a corrected address, or null when there is nothing certain to say. */

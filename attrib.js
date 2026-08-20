@@ -348,6 +348,20 @@
         method: 'POST',
         headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
         body: JSON.stringify(hit),
+        /* ⚠⚠ KEEPALIVE IS LOAD-BEARING ON /start, AND ONLY THERE (added 2026-08-20).
+           /start is the only page that navigates away BY ITSELF after sign-in -- render()
+           calls location.replace(homeHref()) 900 ms after the auth event (600 ms on the code
+           route). Without keepalive the browser cancels this request when the document goes,
+           so a signup on the ads landing page -- the ONE page where a gclid actually exists --
+           silently records nothing whenever the round trip loses that race. And the retry
+           cannot save it: the page is gone, so no further `thaiear:auth` event ever fires.
+
+           Observed live: of two confirmed signups in the 40 minutes after the capture shipped,
+           one landed and one did not. Same code, different luck. The /api/seen ping thirty
+           lines above has carried this flag since it was written, for exactly this reason.
+           ⚠ Do not remove it to "match" the other fetches in this file. The body is a few
+           hundred bytes, far inside the 64 KB keepalive limit. */
+        keepalive: true,
       }).then(function (r) {
         if (r && r.ok) { if (adConsent()) ls(function () { localStorage.setItem(DONE + user.id, '1'); }); }
         else inFlight[user.id] = false;              // failed → let a later auth event retry
