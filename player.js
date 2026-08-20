@@ -3315,7 +3315,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r194';   // r194: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r195';   // r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -6879,7 +6879,15 @@
       mainAudio.src = MAIN_SILENCE;
       mainAudio.load();
       var p = mainAudio.play();
-      if (p && p.then) p.then(null, function (e) { dynLog('prime FAIL ' + ((e && e.name) || e)); });
+      if (p && p.then) p.then(null, function (e) {
+        /* An AbortError once the real source has landed is the NORMAL hand-off — setting src
+           interrupts the silence, by design. Measured on the live site: every successful start
+           produces one. Logging it would put "prime FAIL" in the debug overlay on every play and
+           send the next person reading that trace after a fault that isn't there. Only a rejection
+           while the element is STILL on the silence is a real refusal. */
+        if (!mainOnSilence()) return;
+        dynLog('prime FAIL ' + ((e && e.name) || e));
+      });
     } catch (e) { dynLog('prime THREW ' + ((e && e.name) || e)); }
   }
 
