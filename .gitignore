@@ -120,3 +120,6 @@ translit-review-audio/
 # S96 English "The food is very spicy" review (2026-08-20) — local review only, never deploy
 spicy-review.html
 spicy-clips/
+
+# dyn clip pipeline probe (2026-08-20) — local diagnostic only, never deploy
+dynclip-probe.html
