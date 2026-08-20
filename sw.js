@@ -33,7 +33,16 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v359';   // v359: the exclude button is the LAST item in the sentence pill again.
+const VERSION = 'v360';   // v360: the CLS reserve is DROPPED once the real player mounts
+                          // (body.te-player-mounted). v358 set #player-root's floor from
+                          // measurements taken in desktop-Chrome iframes at narrow widths, and an
+                          // iPhone is not a narrow desktop — the PWA showed a large permanent gap
+                          // between the player and the first sentence, worse than the shift the
+                          // reserve exists to prevent. A floor can only be wrong in two
+                          // directions; once the player is really there its own height is
+                          // authoritative, so the guess is removed rather than re-tuned. That
+                          // makes over-reserving impossible on ANY device, which no amount of
+                          // re-measuring could guarantee. v359: the exclude button is the LAST item in the sentence pill again.
                           // The plays chip sat after it, so the chip appearing (or going 1->2
                           // digits) pushed exclude left — a control moving under the user's
                           // finger. Ordered last it is pinned to the right edge; .sent-preview is

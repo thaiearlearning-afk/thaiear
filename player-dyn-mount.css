@@ -31,6 +31,9 @@
        ⚠ Re-measure these four numbers if the card's copy, padding or type size changes — they are
        measurements, not round numbers. The dyn-plmode display:none rule (2 classes) still beats
        the display:flex here, so the playlist player is unaffected. */
+    /* Reserve dropped once the real player is in the DOM — see the note at the mount site.
+       Its own height is authoritative from then on, so the guess cannot leave a gap. */
+    body.te-player-mounted #player-root { min-height: 0; }
     /* No min-height: with the bar gone this slot is either the signup card (which
        carries its own .te-rsv-card reserve below) or empty. */
     .progress-controls { margin-bottom: 0.9rem; display: flex; }

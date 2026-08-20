@@ -2236,6 +2236,9 @@
        ⚠ Re-measure these four numbers if the card's copy, padding or type size changes — they are
        measurements, not round numbers. The dyn-plmode display:none rule (2 classes) still beats
        the display:flex here, so the playlist player is unaffected. */
+    /* Reserve dropped once the real player is in the DOM — see the note at the mount site.
+       Its own height is authoritative from then on, so the guess cannot leave a gap. */
+    body.te-player-mounted #player-root { min-height: 0; }
     /* No min-height: with the bar gone this slot is either the signup card (which
        carries its own .te-rsv-card reserve below) or empty. */
     .progress-controls { margin-bottom: 0.9rem; display: flex; }
@@ -8132,6 +8135,20 @@
     dynApplyLockOrder();    // playlists: sink any locked sentence before the first render
     var root = $('player-root');
     if (root) root.innerHTML = PLAYER_HTML;
+    /* ⚠⚠ DROP THE CLS RESERVE THE MOMENT THE REAL PLAYER EXISTS (2026-08-20).
+       #player-root carries a min-height so the static SSR cards below it do not jump when this
+       innerHTML lands. That reserve is a FLOOR, and a floor is only ever right in one direction:
+       too small and the cards shift, too LARGE and it leaves a permanent visible gap between the
+       player and the first sentence — which is exactly what an iPhone PWA showed, because the
+       figures were measured in desktop-Chrome iframes at narrow widths and an iPhone is not a
+       narrow desktop (owner-reported within minutes of the deploy).
+       Once the player is really here its own height is authoritative and the guess is worthless,
+       so the floor is removed rather than tuned. This makes the reserve unable to over-reserve on
+       ANY device, which no amount of re-measuring could guarantee.
+       ⚠ The rule lives in each page's own <style> as well as player-dyn-mount.css — a returning
+       visitor's first load after a deploy pairs new markup with the OLD cached stylesheet, and
+       without the inline copy that load would keep the gap. */
+    document.body.classList.add('te-player-mounted');
     // sync the transport bar if metadata already arrived before mount
     if (mainAudio.duration) { var t = $('time-total'); if (t) t.textContent = formatTime(mainAudio.duration); }
     render();
