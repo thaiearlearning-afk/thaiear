@@ -1821,6 +1821,14 @@ function renderCard(t, sentences, access, pageHref, audio) {
     tierPill = `<span class="topic-premium">${LOCK_SVG}Premium</span>`;
   }
   let sentCount = (typeof sentences === 'number' && sentences > 0) ? `${sentences} sentences` : '';
+  /* Play count (PLAYS_COUNTER.md). Returns '' when signed out or before topic-sentences.json has
+     loaded, so it simply is not there rather than flashing a wrong number. Shown even at 0 — on a
+     CARD zero means "not started yet", unlike the sentence pill where it is hidden as noise.
+     ⚠ RUNTIME ONLY. gen_home.js pre-renders this grid, but a play count is per-user and must
+     never be baked into the static HTML — every visitor would be served the last person's number. */
+  const playsCap = (live && typeof ThaiEarTopics.playsCaptionFor === 'function')
+    ? ThaiEarTopics.playsCaptionFor(pageHref, audio) : '';
+  if (playsCap) sentCount += (sentCount ? ' · ' : '') + playsCap;
   if (dlState && dlState.caption) sentCount += (sentCount ? ' · ' : '') + dlState.caption;
   const inner =
       `<span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
@@ -2051,6 +2059,21 @@ renderGrid();
 // Premium cards depend on login state, which resolves asynchronously (auth.js, loaded by
 // nav.js). Re-render when it lands or changes so premium topics unlock for entitled users.
 window.addEventListener('thaiear:auth', renderGrid);
+/* Play counts on the cards need two things this page does not have at parse time: the account's
+   counts (auth.js fetches them) and the unit -> sentence-numbers lookup. Pull both, then re-render.
+   Deliberately fire-and-forget: the grid is already on screen from the pre-render, so this only
+   ever ADDS the caption, and a failure leaves the cards exactly as they are today.
+   ⚠ ThaiEarSentenceNums is 11 KB and only this page needs it — a topic page has its own sentences
+   and a playlist carries its own items, which is why loadSentenceNums() is lazy rather than part
+   of topics.js. It is precached, so offline it comes from the cache. */
+(function loadPlayCaptions() {
+  const T = window.ThaiEarTopics, A = window.ThaiEarAuth;
+  if (!T || !T.loadSentenceNums) return;
+  Promise.all([
+    T.loadSentenceNums(),
+    (A && A.loadPlays) ? A.loadPlays().catch(() => null) : Promise.resolve(null)
+  ]).then(renderGrid).catch(() => {});
+})();
 // Re-render when connectivity flips, so downloaded topics unlock/lock on the grid offline.
 window.addEventListener('online', function () { renderGrid(); precacheDownloadedPages(); });
 window.addEventListener('offline', renderGrid);

@@ -59,7 +59,7 @@
     var bar = document.getElementById('offline-bar');
     var root = document.getElementById('player-root');
     var slot = !prog ? '-' : prog.querySelector('.te-signup') ? 'CARD'
-      : prog.querySelector('.prog-ctl-card') ? 'BAR' : (prog.innerHTML.trim() === '' ? 'empty' : '?');
+      : (prog.innerHTML.trim() === '' ? 'empty' : '?');
     var obar = !bar ? '-' : bar.querySelector('.te-signup') ? 'CARD'
       : bar.querySelector('.te-appcta') ? 'APP'
       : (bar.style.display === 'none' ? 'hidden' : (bar.innerHTML.trim() === '' ? 'empty' : 'DL'));
@@ -2236,34 +2236,20 @@
        ⚠ Re-measure these four numbers if the card's copy, padding or type size changes — they are
        measurements, not round numbers. The dyn-plmode display:none rule (2 classes) still beats
        the display:flex here, so the playlist player is unaffected. */
-    .progress-controls { margin-bottom: 0.9rem; min-height: 54px; display: flex; }
-    .progress-controls > .prog-ctl-card { flex: 1; }
-    .prog-ctl-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    /* No min-height: with the bar gone this slot is either the signup card (which
+       carries its own .te-rsv-card reserve below) or empty. */
+    .progress-controls { margin-bottom: 0.9rem; display: flex; }
       background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.7rem 0.9rem; }
-    .prog-ctl-left { display: flex; align-items: baseline; gap: 7px; }
-    .prog-ctl-count { font-size: 20px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1; transition: transform 0.18s; }
-    .prog-ctl-count.bump { animation: prog-bump 0.4s cubic-bezier(0.2,0.8,0.3,1.3); }
     @keyframes prog-bump { 0% { transform: scale(1); } 45% { transform: scale(1.35); } 100% { transform: scale(1); } }
-    .prog-ctl-label { font-size: 12.5px; color: var(--text-secondary); }
-    .prog-ctl-btns { display: flex; align-items: center; gap: 7px; }
-    .prog-ctl-btn { font-family: var(--font-ui); font-size: 13px; font-weight: 500; border-radius: var(--radius-sm);
       border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary);
       padding: 6px 12px; cursor: pointer; min-width: 36px; display: inline-flex; align-items: center; justify-content: center;
       gap: 5px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
-    .prog-ctl-btn:hover:not([disabled]) { border-color: var(--accent); color: var(--accent); }
-    .prog-ctl-btn[disabled] { opacity: 0.55; cursor: default; }
-    .prog-ctl-btn.prog-ctl-add { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .prog-ctl-btn.prog-ctl-add:hover:not([disabled]) { background: var(--accent-mid); color: #fff; }
-    .prog-ctl-minus { font-size: 17px; line-height: 1; font-weight: 400; padding: 5px 13px; }
-    .prog-ctl-my { font-size: 12.5px; font-weight: 500; color: var(--accent); text-decoration: none; margin-left: 3px; white-space: nowrap; }
-    .prog-ctl-my:hover { color: var(--accent-mid); }
-    .prog-ctl-join { font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
-    .prog-ctl-join:hover { color: var(--accent-mid); }
     /* Signed out → renderProgress leaves this slot EMPTY (the signup card lives below the player,
        in the offline-bar slot). Without this the measured reserve above becomes ~94px of blank gap
        over the player on a phone. :empty rather than a body class so it tracks the actual render
        with no JS and no ordering risk; the reserve still applies in full to the signed-in counter,
        which is what it was measured for. */
+    /* The DEFAULT state now, not the signed-out-in-browser special case. */
     .progress-controls.te-anon:empty { min-height: 0; margin-bottom: 0; }
     /* ---- APP / INSTALLED PWA, SIGNED OUT: the signup card lands in THIS slot ----
        ⚠ THIS SLOT IS THE FIRST CHILD OF #player-root, so when it grows the ENTIRE PLAYER moves
@@ -2298,24 +2284,7 @@
     .prog-tick { display: inline-block; font-weight: 700; animation: prog-tick-pop 0.4s cubic-bezier(0.2,0.8,0.3,1.3) both; }
     @keyframes prog-tick-pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
     @media (max-width: 600px) {
-      /* 439–600px band: max(logged-in 46.9, logged-out 73.4) — see the measurement table above. */
-      .progress-controls { min-height: 74px; }
-      .prog-ctl-card { padding: 0.6rem 0.7rem; }
-      .prog-ctl-count { font-size: 18px; }
-      .prog-ctl-btn { font-size: 12px; padding: 5px 10px; }
     }
-    /* 375–438px — EVERY CURRENT IPHONE. The logged-in card wraps here and becomes the taller of
-       the two (80.4 vs 73.4); the wrap point is between 437 and 439, measured.
-       ⚠ THE .98 IS NOT A TYPO AND MUST NOT BE ROUNDED. On a fractional devicePixelRatio (1.35 on
-       the machine these were measured on, and every modern phone) the viewport width is itself
-       fractional, so an integer max-width: 438px evaluates FALSE at innerWidth 438 — verified. An
-       breakpoint therefore leaves exactly one pixel column of width at which the reserve is one
-       band too small and the shift comes straight back. Same reason Bootstrap offsets its own
-       max-width breakpoints by .98. */
-    @media (max-width: 438.98px) { .progress-controls { min-height: 81px; } }
-    /* ≤374px — the logged-out label wraps to a third line and takes over as the tallest (93.4);
-       the wrap point is between 374 and 375, measured. */
-    @media (max-width: 374.98px) { .progress-controls { min-height: 94px; } }
     .player-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1rem; margin-bottom: 1.75rem; }
     .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
     .audio-toggle { display: flex; flex-wrap: wrap; max-width: 100%; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
@@ -2386,14 +2355,6 @@
     .speed-toggle { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-light); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; font-size: 14px; line-height: 1; }
     .speed-toggle:hover { background: var(--accent); }
     .speed-toggle.active { background: var(--accent); }
-    .sent-flag-btn { width: 26px; height: 26px; border-radius: 50%; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; transition: background 0.15s, transform 0.15s; }
-    .sent-flag-btn:hover { background: var(--accent-light); }
-    .sent-flag-btn svg { width: 15px; height: 15px; fill: none; stroke: var(--purple-mid); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; transition: fill 0.15s, stroke 0.15s, opacity 0.15s; }
-    .sent-flag-btn:hover svg { opacity: 1; }
-    .sent-flag-btn.flagged svg { fill: var(--accent); stroke: var(--accent); opacity: 1; }
-    .sent-flag-btn.pending { opacity: 0.5; pointer-events: none; }
-    .sent-flag-btn.pop { animation: sent-flag-pop 0.4s cubic-bezier(0.2,0.8,0.3,1.3); }
-    @keyframes sent-flag-pop { 0% { transform: scale(1); } 45% { transform: scale(1.4); } 100% { transform: scale(1); } }
     .sent-preview { font-family: var(--font-thai); font-size: 16px; color: var(--text-primary); flex: 1; line-height: 1.4; }
     .sent-preview .ell { color: var(--text-tertiary); }
     /* ---- direction-aware PILL HINT (2026-08-18) ----
@@ -2572,8 +2533,6 @@
     body.premium-topic .sent-play-btn:hover svg { fill: #3D2E00; }
     body.premium-topic .toggle-btn.active,
     body.premium-topic .xtra-toggle.active,
-    body.premium-topic .prog-ctl-add,
-    body.premium-topic .prog-ctl-add:hover:not([disabled]),
     /* Added 2026-08-15 — every newly-FILLED control needs the same treatment. The signup CTA and
        the two playlist buttons are accent-filled, so on a premium topic they sit on bright gold
        and white text was reported as hard to read. Same #3D2E00 as the Thai-first/English-first
@@ -2592,9 +2551,6 @@
        so they need explicit rules anyway. See the premium-gold-palette memory for the full standard. */
     body.premium-topic .topic-eyebrow,
     body.premium-topic .topic-subtitle,
-    body.premium-topic .prog-ctl-count,
-    body.premium-topic .prog-ctl-my,
-    body.premium-topic .prog-ctl-join,
     body.premium-topic .orientation-text a,
     body.premium-topic .offline-btn,
     body.premium-topic .offline-status.offline-ok { color: #B29234; }
@@ -3315,7 +3271,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r195';   // r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r196';   // r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -5264,6 +5220,43 @@
     el.hidden = false;
     el.innerHTML = escapeHtml(text) + (dots ? '<span class="dyn-dots"></span> <span id="dyn-status-count"></span>' : '');
   }
+  /* ⚠ LAND SHORT OF A BLOCK, NEVER ON IT (2026-08-20, r196).
+     Every seek that targets a sentence — the ① skip buttons and the scrubber's snap — used to go
+     to map[i].start EXACTLY, which in English-first mode is literally the first sample of the
+     English clip. The only cushion was whatever digital silence the clip happened to carry, about
+     100 ms, and any engine that rounds a seek forward eats into it.
+
+     THE REPORT THAT FOUND IT (owner, 2026-08-20): "the English sounds like 'food is very spicy'
+     rather than 'The food is very spicy'" — but only when scrubbing; listening straight through
+     you hear it fine. Measured, the clip is intact and "The" peaks at −13 dB, LOUDER than "food"
+     at −17 dB. What makes this one sentence show the fault is its prosody: the voice says
+     "The", leaves a 110 ms gap, then "food is very spicy". Land a few tens of ms late and you get
+     a fragment, silence, then "food is very spicy" — which the ear hears as the sentence starting
+     at "food". Every other sentence runs its first word into the second, so a late landing merely
+     shaves an attack and the word survives.
+
+     150 ms is free: a block is always preceded by that sentence's `gap`, which is at least 2 s of
+     silence (see the floors in the builder), so the cue can never bleed the previous sentence.
+     Verified by test_dyn_seek.js, which runs these functions' real source. */
+  var DYN_SEEK_LEAD = 0.15;
+  function dynCue(i) {
+    var map = dynSession.map;
+    return Math.max(0, map[i].start - DYN_SEEK_LEAD);
+  }
+  /* Which block governs time t? Shared so the SEEK and the HIGHLIGHT agree — a cued position sits
+     150 ms before its block starts, and if the finder still called that the PREVIOUS block, the
+     card highlight would flick to the wrong sentence for a tenth of a second and a following
+     ①-back would restart the block you just left instead of stepping back one.
+     The last block keeps its true end, so nothing clips the tail of a session. */
+  function dynBlockAt(t) {
+    var map = dynSession && dynSession.map;
+    if (!map || !map.length) return -1;
+    for (var i = 0; i < map.length; i++) {
+      var edge = (i === map.length - 1) ? map[i].end : map[i].end - DYN_SEEK_LEAD;
+      if (t < edge) return i;
+    }
+    return -1;
+  }
   // Round-8: snap an in-page scrub commit to the nearest sentence-block start, so a seek
   // never lands mid-pause. (Lock-screen drag scrubbing is APK v4 native work.)
   function dynSnapTime(t) {
@@ -5272,7 +5265,7 @@
     var best = t, bd = Infinity;
     for (var i = 0; i < map.length; i++) {
       var d = Math.abs(map[i].start - t);
-      if (d < bd) { bd = d; best = map[i].start; }
+      if (d < bd) { bd = d; best = dynCue(i); }
     }
     return best;
   }
@@ -5300,25 +5293,146 @@
   // Seek-only — never calls play(), so it repositions while PAUSED too (round-8 item 4).
   function dynSentSkip(dir) {
     if (!dynSession || !dynSession.map.length) return;
-    var t = mainAudio.currentTime || 0, map = dynSession.map, i;
-    for (i = 0; i < map.length; i++) { if (t < map[i].end) break; }
-    if (i >= map.length) i = map.length - 1;
+    var t = mainAudio.currentTime || 0, map = dynSession.map;
+    var i = dynBlockAt(t);
+    if (i < 0) i = map.length - 1;
     var target = null;
     if (dir > 0) {
-      if (i + 1 < map.length) target = map[i + 1].start;
+      if (i + 1 < map.length) target = dynCue(i + 1);
     } else if (t - map[i].start < 1.5 && i > 0) {
-      target = map[i - 1].start;
+      target = dynCue(i - 1);
     } else {
-      target = map[i].start;
+      target = dynCue(i);
     }
     if (target == null) return;
     mainAudio.currentTime = target;
     dynPaintPos();
   }
+  /* ══ PLAY COUNTING (PLAYS_COUNTER.md) ═════════════════════════════════════════
+     One play = one sentence HEARD once, however it was heard. Two entry points feed it: the dyn
+     session's highlighted block (below) and the individual clip button (see notePlayClip).
+
+     THE DWELL RULE — 2 seconds of actual playback, OR the clip/block ending, whichever comes
+     first. Both halves are load-bearing:
+       · The 2s rejects the two ways a count could be fabricated — dragging the pause slider across
+         twenty cards, and tapping play then immediately stopping.
+       · "or the end" exists because 140 of the 2,271 clips are SHORTER THAN 2 SECONDS (measured,
+         speed-audit/full_scan_syl.json; shortest 1.00s). A flat 2s would have made those 140
+         sentences permanently uncountable from the ▶ button, and every topic containing one stuck
+         at a minimum of 0 for ever.
+     Implemented as `need = min(2000ms, 90% of this clip's length)`, which satisfies both without
+     a special case.
+
+     ⚠ THAI REPEATS ARE ONE LISTEN, NOT FOUR. The dyn block already contains its repeats, so
+     entering the block counts once and the repeat setting is invisible here. Do not "fix" this by
+     counting per repetition.
+
+     ⚠ WALL-CLOCK DWELL, NOT `currentTime - block.start`. Seeking into the middle of a block makes
+     the latter instantly large, so a scrub would count every block it crossed — the exact thing
+     the dwell exists to prevent. Time is accumulated only from timeupdate ticks, which fire only
+     while audio is running, so a paused player accrues nothing. */
+  var plysDwell = null;   // { num, ms, last, need, counted }
+
+  /* Report ONE sentence heard. This is the single choke point for both counters, and that is
+     deliberate (owner, 2026-08-20):
+       · ThaiEarAuth.notePlay  -> sentence_plays, the per-sentence number on the pills and cards.
+       · ThaiEarAttrib.noteListen -> user_activity.listens, the aggregate retention series.
+     ⚠⚠ THEY MUST STAY WIRED TO THE SAME CALL. `listens` used to increment off the media `play`
+     event, which on the dyn player counted a whole 32-sentence session as ONE and five
+     pause/resumes as SIX. Driving both from here makes `listens` by construction the SUM of the
+     values in sentence_plays.counts. Split them and they drift apart permanently, for a reason
+     nobody could reconstruct later. test_plays.js asserts the invariant.
+     auth.js no-ops when signed out, so no guard is needed here. */
+  function notePlaySentence(num) {
+    var a = window.ThaiEarAuth;
+    if (a && a.notePlay) { try { a.notePlay(num); } catch (_) {} }
+    var at = window.ThaiEarAttrib;
+    if (at && at.noteListen) { try { at.noteListen(1); } catch (_) {} }
+  }
+  function plysDwellReset() { plysDwell = null; }
+  /* Advance the dwell for whichever block is live. `dur` is that block's length in seconds. */
+  function plysDwellTick(num, dur) {
+    var now = Date.now();
+    if (!plysDwell || plysDwell.num !== num) {
+      plysDwell = { num: num, ms: 0, last: now, counted: false,
+                    need: Math.min(2000, Math.max(250, (dur || 0) * 900)) };
+      return;
+    }
+    /* ⚠ CLAMP THE INCREMENT. timeupdate fires roughly every 250ms while playing; a gap larger
+       than that means playback was paused or the tab was backgrounded, and adding that wall-clock
+       time would credit a listen that never happened. */
+    var d = now - plysDwell.last;
+    plysDwell.last = now;
+    if (d > 0 && d <= 600) plysDwell.ms += d;
+    if (!plysDwell.counted && plysDwell.ms >= plysDwell.need) {
+      plysDwell.counted = true;
+      notePlaySentence(num);
+    }
+  }
+
+  /* The individual ▶ button's half of the dwell rule. A single clip has no pause control — tapping
+     it again stops it — so a timer is enough here and there is nothing to accumulate.
+     `need = min(2000ms, 90% of the clip)` is what makes "or the clip ending" fall out for free:
+     a 1.4s clip needs 1.26s, which elapses before it finishes; a 5s clip needs the full 2s.
+     ⚠ Armed from loadedmetadata, because that is the first moment the duration is known. */
+  var plysClipTimer = null;
+  function plysClipArm(num, dur) {
+    plysClipDisarm();
+    var need = Math.min(2000, Math.max(250, (dur || 0) * 900));
+    plysClipTimer = setTimeout(function () {
+      plysClipTimer = null;
+      notePlaySentence(num);
+    }, need);
+  }
+  // Stopped, switched away, or failed to load — nothing was heard, so nothing is counted.
+  function plysClipDisarm() {
+    if (plysClipTimer) { clearTimeout(plysClipTimer); plysClipTimer = null; }
+  }
+
+  /* The per-pill chip. ⚠ NOT part of the SSR cards: a play count is per-user, so it cannot be
+     baked into static HTML — it is attached here and repainted whenever auth or a play changes.
+     That is also why removing flags touches all 93 pages and this touches none of them.
+     ⚠ HIDDEN AT ZERO (owner, 2026-08-20). 2,271 pills reading "0" is noise; a topic CARD shows
+     its zero, because there it means "not started". */
+  var PLAY_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><polygon points="4,2 13,8 4,14"/></svg>';
+
+  function plysChipFor(num) {
+    var hdr = document.querySelector('#sc-' + num + ' .sentence-header');
+    if (!hdr) return null;
+    var el = hdr.querySelector('.te-plays');
+    if (!el) {
+      el = document.createElement('span');
+      el.className = 'te-plays';
+      el.innerHTML = PLAY_SVG + '<i class="te-plays-n"></i>';
+      hdr.appendChild(el);   // order:8 under te-v2 puts it right of the exclude button
+    }
+    return el;
+  }
+  /* Repaint every chip. Cheap (a querySelector + two writes per card) and idempotent, so it can
+     be called from the auth event, which fires several times during startup. */
+  function plysRepaintChips() {
+    var a = window.ThaiEarAuth;
+    var on = !!(a && a.getUser && a.getUser() && a.getPlayCount);
+    sentences.forEach(function (s) {
+      if (sentLocked(s)) return;                 // locked rows are padlocks, not players
+      var n = on ? a.getPlayCount(s.num) : 0;
+      var el = plysChipFor(s.num);
+      if (!el) return;
+      el.classList.toggle('on', on && n > 0);
+      var i = el.querySelector('.te-plays-n');
+      if (i) i.textContent = n;
+      el.setAttribute('aria-label', 'Played ' + n + ' time' + (n === 1 ? '' : 's'));
+      el.setAttribute('title', 'You have played this sentence ' + n + ' time' + (n === 1 ? '' : 's'));
+    });
+  }
+
   // Highlight the card whose block is playing (called from the timeupdate handler when DYN).
   function dynHighlight(t) {
-    var map = dynSession.map, num = null;
-    for (var i = 0; i < map.length; i++) { if (t < map[i].end) { num = map[i].num; break; } }
+    var map = dynSession.map, num = null, dur = 0;
+    var i = dynBlockAt(t);
+    if (i >= 0) { num = map[i].num; dur = map[i].end - map[i].start; }
+    // Runs on EVERY timeupdate, not only on a change of card — the dwell has to accumulate.
+    if (num != null) plysDwellTick(num, dur); else plysDwellReset();
     if (num === dynLastLive) return;
     if (dynLastLive != null) { var prev = document.getElementById('sc-' + dynLastLive); if (prev) prev.classList.remove('dyn-live'); }
     if (num != null) { var cur = document.getElementById('sc-' + num); if (cur) cur.classList.add('dyn-live'); }
@@ -5974,7 +6088,7 @@
           return;
         }
         // flag + exclude are disabled during selection (also dimmed via CSS)
-        if (el.closest('.sent-flag-btn') || el.closest('.dyn-card-btn')) { e.preventDefault(); e.stopPropagation(); return; }
+        if (el.closest('.dyn-card-btn')) { e.preventDefault(); e.stopPropagation(); return; }
         // everything else — reveal-cycle, sentence play, tortoise — behaves normally
       };
       list.addEventListener('click', dynSelListener, true);
@@ -6318,7 +6432,6 @@
        Hidden only under te-v2 so classic live pages keep it until rollout. */
     'body.te-v2 .speed-toggle{display:none}' +
     'body.dyn-plmode .speed-toggle{display:none}' +   // r132: playlist player matches the topic template - no tortoise (owner)
-    'body.te-v2 .sent-flag-btn{order:6}' +
     'body.te-v2 .dyn-x-btn{order:7}' +
     /* Playlist locked rows + their "Premium content" divider. Gold TEXT tone #B29234 (the index
        "Premium" pill colour) — the brighter #F0CC5C is for fills/graphics only. Deliberately
@@ -6348,8 +6461,7 @@
     '.sentence-card.sent-nodl{opacity:.45;background:var(--surface)}' +
     '.sentence-card.sent-nodl .sentence-header{cursor:pointer}' +
     '.sentence-card.sent-nodl .sent-preview{color:var(--text-secondary)}' +
-    '.sentence-card.sent-nodl .sent-play-btn,.sentence-card.sent-nodl .speed-toggle,' +
-      '.sentence-card.sent-nodl .sent-flag-btn{opacity:.5}' +
+    '.sentence-card.sent-nodl .sent-play-btn,.sentence-card.sent-nodl .speed-toggle{opacity:.5}' +
     /* r16a: the ⓘ explainer labels + their dismissible box */
     '.dyn-info-lbl{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-align:left}' +
     '.dyn-info-lbl:hover{color:var(--accent)}' +
@@ -6381,6 +6493,19 @@
        entirely (owner-reported: always the same card per page, immune to refresh/scroll — the
        classic sub-pixel signature). A shadow ring can't be rounded away and follows the radius. */
     '.sentence-card.dyn-live{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}' +
+    /* Play count on the collapsed pill. COMPACT on purpose (owner, 2026-08-20): the full
+       "Plays: 12" is ~2x the width and the pill already carries a number, a play button, an
+       exclude button and the hint — at 320px with OS text scaling it squeezes the hint out.
+       Topic cards and playlist rows, which have the room, say "Plays: N" in full.
+       ⚠ flex-shrink:0 + tabular-nums: the chip must not compress or jitter between 1 and 2
+       digits, or every pill on the page reflows as counts tick over. */
+    '.te-plays{display:none;align-items:center;gap:4px;flex-shrink:0;font-family:var(--font-ui);'
+      + 'font-size:calc(11px * var(--te-ui, 1));font-variant-numeric:tabular-nums;color:var(--text-tertiary)}' +
+    '.te-plays.on{display:inline-flex}' +
+    '.te-plays svg{width:8px;height:8px;fill:currentColor;flex-shrink:0}' +
+    'body.premium-topic .te-plays{color:#B29234}' +
+    'body.te-v2 .te-plays{order:8}' +
+
     /* owner 2026-07-27: quiet card look (was a solid accent pill — garish next to its neighbours) */
     '.dyn-addpl{display:block;margin:10px auto 0;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:7px 14px;cursor:pointer}' +
     '.dyn-addpl:hover{background:var(--accent-light)}' +
@@ -6406,7 +6531,7 @@
     ".dyn-tick::before{content:'';position:absolute;inset:-14px -24px -14px -16px}" +
     '#sentence-list.dyn-selecting .dyn-tick{display:inline-block}' +
     /* select mode: flag + exclude are out of play (the capture listener also swallows them) */
-    '#sentence-list.dyn-selecting .sent-flag-btn,#sentence-list.dyn-selecting .dyn-card-btn{opacity:.35;pointer-events:none}' +
+    '#sentence-list.dyn-selecting .dyn-card-btn{opacity:.35;pointer-events:none}' +
     '.dyn-tick.on{background:var(--accent);border-color:var(--accent)}' +
     '.dyn-tick.on.gold{background:#B29234;border-color:#B29234}' +
     ".dyn-tick.on::after{content:'';position:absolute;left:6px;top:2.5px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}" +
@@ -6432,7 +6557,6 @@
        through and counted like a topic, keyed on its 'pl-<id>' namespace (see progressKey()).
        The .progress-controls reserve above therefore now applies on playlists.html too, which is
        why that page needed its own #player-root reserve at the same time. */
-    'body.dyn-plmode .sent-flag-btn{display:none}' +
     /* round-10 addendum C: animated equalizer on the playing sentence card (index .te-eq design);
        visible only while actually playing; premium pages get the gold tone */
     '.dyn-eq{display:none;align-items:flex-end;gap:2px;height:12px;width:16px;flex-shrink:0}' +
@@ -6488,6 +6612,7 @@
      source, in cardHtml.) Idempotent: a card that still carries its tick is skipped, so the
      SSR path (where nothing is ever destroyed) costs one querySelector per card. */
   function dynDecorateCards() {
+    plysRepaintChips();          // play-count chips (re-attached after a non-SSR rebuild too)
     sentences.forEach(function (s) {
       // Locked playlist rows are padlocks, not players — no select tick, no equalizer, no ①
       // skip button. Their header carries the gate handler and nothing else.
@@ -6495,7 +6620,7 @@
       var hdr = document.querySelector('#sc-' + s.num + ' .sentence-header');
       if (!hdr) return;
       if (hdr.querySelector('.dyn-tick')) return;   // already decorated (SSR pages: always)
-      var flag = hdr.querySelector('.sent-flag-btn');
+
       // Select-mode tick (batch add-to-playlist): hidden until #sentence-list gets .dyn-selecting.
       var tick = document.createElement('span');
       tick.className = 'dyn-tick' + (TIER === 'premium' ? ' gold' : '');
@@ -6536,7 +6661,10 @@
           dynInvalidate();
           dynPrefsQueue('excl');
         });
-        hdr.insertBefore(xb, flag ? flag.nextSibling : null);
+        /* Appended, not inserted before the flag button (which no longer exists). Position is
+           decided by CSS order under te-v2 — .dyn-x-btn is order:7, the plays chip order:8 — so
+           DOM order here is irrelevant and the exclude button still lands where it always did. */
+        hdr.appendChild(xb);
         if (dynExcluded[s.num]) {
           var card0 = document.getElementById('sc-' + s.num);
           if (card0) card0.classList.add('dyn-off');
@@ -7541,13 +7669,14 @@
 
     // tapping the playing sentence again stops it
     if (sentPlaying === num) {
+      plysClipDisarm();          // stopped before the dwell elapsed → not a listen
       sa.pause(); sa.src = ''; revokeSentBlob(); sentPlaying = null; updateSentBtn(num, false);
       sentBusyUntil = 0;
       maybeResumeMain();
       return;
     }
     // stop any other sentence (top player stays paused — don't resume between clips)
-    if (sentPlaying !== null) { sa.pause(); updateSentBtn(sentPlaying, false); sentPlaying = null; }
+    if (sentPlaying !== null) { plysClipDisarm(); sa.pause(); updateSentBtn(sentPlaying, false); sentPlaying = null; }
 
     // If the top player is going, pause it — but DON'T auto-resume when the clip ends. The user
     // restarts the main track themselves in their own time. (Was: resumeMainAfter = true, which
@@ -7579,10 +7708,12 @@
         var duration = sa.duration || 5;
         if (sentResetTimer) clearTimeout(sentResetTimer);
         sentResetTimer = setTimeout(function () { resetSentBtn(); sentResetTimer = null; }, (duration + 0.5) * 1000);
+        plysClipArm(num, duration);   // play counting — the dwell rule, see plysClipArm
       });
       sa.playbackRate = slowMode ? 0.75 : 1.0;
       return sa.play();
     }).catch(function (err) {
+      plysClipDisarm();          // never played → never counted
       updateSentBtn(num, false);
       if (sentPlaying === num) sentPlaying = null;
       maybeResumeMain();
@@ -7610,7 +7741,6 @@
   }
 
   // Feather-style flag. Faint purple outline (unflagged) → solid purple (flagged), via CSS.
-  var FLAG_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
     '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>' +
     '<line x1="4" y1="22" x2="4" y2="15"/></svg>';
 
@@ -7718,17 +7848,6 @@
     var playing = sentPlaying === s.num;
     var displayThai = cleanThai(s.thai);
     var d = dispNum(s);
-    // Flag control shows for everyone. Signed in → toggles a saved flag. Signed out → same
-    // look (not greyed), but a click routes to the feature sign-in page (it doesn't flag).
-    var A = window.ThaiEarAuth;
-    var loggedIn = !!(A && A.getUser && A.getUser());
-    var flagged = loggedIn && A.isFlagged && A.isFlagged(TOPIC_KEY, s.num);
-    var flagBtn = PLMODE ? '' : (loggedIn
-      ? '<button class="sent-flag-btn' + (flagged ? ' flagged' : '') + '" onclick="flagSent(event,' + s.num + ')" ' +
-          'aria-label="' + (flagged ? 'Remove flag from sentence ' : 'Flag sentence ') + d + '" ' +
-          'title="' + (flagged ? 'Flagged — click to remove' : 'Flag this sentence') + '">' + FLAG_SVG + '</button>'
-      : '<button class="sent-flag-btn" onclick="flagSignIn(event)" ' +
-          'aria-label="Sign in to flag sentence ' + d + '" title="Sign in to flag sentences">' + FLAG_SVG + '</button>');
     return '<div class="sentence-card' + sentCardClasses(s) + dynStateClasses(s) + '" id="sc-' + s.num + '">' +
       '<div class="sentence-header" onclick="cycle(' + s.num + ')" role="button" tabindex="0" aria-label="Sentence ' + d + ': ' + previewAria(s) + '">' +
         '<span class="sent-num">' + d + '</span>' +
@@ -7738,7 +7857,6 @@
             : '<polygon points="4,2 13,8 4,14"/>') + '</svg>' +
         '</button>' +
         '<button class="speed-toggle' + (slowMode ? ' active' : '') + '" onclick="toggleSlow(event)" aria-label="Slow playback" title="Slow speed">🐢</button>' +
-        flagBtn +
         previewHtml(s) +
         /* r145 — NO reveal-stage segment bar on a PLAYLIST card (owner, 2026-08-08: "the old pill
            expander thing … is defunct"). All 93 topic pages ship style2, and body.te-v2 hides
@@ -7773,18 +7891,6 @@
     if (DYN && dynLastLive === num) cls += ' dyn-live';
     cls += sentCardClasses(sentById(num));   // nor the playlist lock / premium-gold classes
     c.className = cls;
-  }
-  // SSR: toggle flag visuals on the existing static buttons (no list rebuild).
-  function syncFlags() {
-    var a = window.ThaiEarAuth;
-    var loggedIn = !!(a && a.getUser && a.getUser());
-    sentences.forEach(function (s) {
-      var b = document.querySelector('#sc-' + s.num + ' .sent-flag-btn');
-      if (!b) return;
-      var flagged = loggedIn && a.isFlagged && a.isFlagged(TOPIC_KEY, s.num);
-      b.classList.toggle('flagged', !!flagged);
-      b.setAttribute('title', flagged ? 'Flagged — click to remove' : (loggedIn ? 'Flag this sentence' : 'Sign in to flag sentences'));
-    });
   }
 
   // Playlist list HTML, with the "Premium content" divider inserted before the first locked
@@ -7849,27 +7955,7 @@
      Single-source like the rest of the player: every topic page gets this row
      above the transport bar. Logged out → a prompt that routes to join.html.
      Logged in → a live tally with +/- buttons that write to the user's row. */
-  var progLock = false;
 
-  /* r140 — PLAYLISTS TRACK PROGRESS TOO (owner, 2026-08-03). This row used to blank itself in
-     PLMODE; there is no reason a playlist cannot be "listened through" and counted like a topic.
-     THE KEY. Progress is stored as a free-form JSONB map (progress.topics, auth.js) — any string
-     works, so this needed NO schema, RLS or migration change. A topic keys on TOPIC_KEY, i.e. its
-     page file minus .html ('topic-01'). A playlist CANNOT do that: every playlist is served by the
-     same playlists.html, so a page-derived key would make every playlist share one counter. It
-     keys on its dyn namespace instead — 'pl-<id>' — which is per-playlist by construction and
-     cannot collide with the 'topic-' space.
-     ⚠ Read lazily, never cached into a var at load: DYN_KEY_NS is assigned further down the file,
-     and a playlist page can swap units in place along the dyn chain, so the key must be re-read
-     each time rather than frozen at mount.
-     ⚠ The `pl-` test is the safety: DYN_KEY_NS falls back to PREFIX when cfg.dynKey is absent, and
-     silently counting a playlist listen under an AUDIO PREFIX would corrupt a topic's tally. No
-     usable key → behave exactly as before and render nothing. */
-  function progressKey() {
-    if (!PLMODE) return TOPIC_KEY;
-    var k = String(DYN_KEY_NS || '');
-    return k.indexOf('pl-') === 0 ? k : null;
-  }
   /* END-OF-TOPIC ASK (2026-08-15) — signed out, FREE topic only.
      Someone who has scrolled past every sentence is the warmest visitor this site gets, and until
      now the only thing offered at that point was a link to the next topic.
@@ -7907,172 +7993,52 @@
     nav.parentNode.insertBefore(d, nav);
   }
 
+  /* ⚠ THE SLOT SURVIVES; ONLY THE PROGRESS BAR IS GONE (2026-08-20, PLAYS_COUNTER.md).
+     The "+ Add progress" counter was a manual tap asking the user to self-report what the site
+     now measures for itself — the per-sentence play counts on the cards below.
+
+     ⚠⚠ DO NOT DELETE #progress-controls ALONG WITH IT. This slot is ALSO where the signed-out
+     signup card renders inside the app and the installed PWA (in a plain browser that card lives
+     in the offline-bar slot instead). Removing the element would leave a signed-out app user with
+     no signup CTA at all — the exact bug reported and fixed on 2026-08-15.
+
+     So this now has exactly two outcomes:
+       signed out, in app/PWA -> the signup card   (reserve: .te-rsv-card, 133/153/114px)
+       everything else        -> empty, collapsed  (reserve: 0)
+     which is why the four measured breakpoint bands the old bar needed (54/74/81/94px) are gone
+     from STYLES: they existed only because the BAR was a variable-height element that wrapped at
+     375 and 439px. Nothing in this slot varies with width any more except the card, which carries
+     its own reserve. */
   function renderProgress() {
     var box = $('progress-controls');
     if (!box) return;
-    /* ⚠ STAMP THE SLOT WITH THE GUESS FIRST — before any early return below can skip it.
-       The measured min-height reserve on .progress-controls exists for the SIGNED-IN bar. While
-       auth is still resolving the slot is empty, and :empty collapsed that reserve to 0 for
-       everyone — so on a signed-in device the bar arrived into no reserved space and shoved the
-       page down (owner-reported, 2026-08-15). The collapse must apply to signed-OUT visitors only,
-       where the slot legitimately stays empty and the reserve would be a blank gap.
-       Guessing wrong costs a gap, never a shift; a missing app-cta.js leaves the class off, which
-       keeps the full reserve — the safe direction. */
-    var G0 = window.ThaiEarAppCTA;
-    /* Which reserve this slot needs depends on WHERE the signed-out card renders:
-         app / installed PWA -> here, so hold its height (te-rsv-card)
-         browser             -> the offline bar, so this stays empty and collapses (te-anon)
-       Both predicates are synchronous, so the right reserve is in place before anything paints.
-       A wrong guess costs at most the difference between the card and the bar (~52px), never the
-       133px the collapse was costing. */
-    var guessOut = !!(G0 && G0.authGuess && G0.authGuess() === 'out');
-    var inApp = !!(G0 && G0.noDownloadUi && !G0.noDownloadUi());
-    box.classList.toggle('te-anon', guessOut && !inApp);
-    box.classList.toggle('te-rsv-card', guessOut && inApp);
-    var key = progressKey();
-    /* ⚠ Every blanking path clears data-sig too — otherwise a later render whose signature
-       happens to match the last PAINTED one is skipped and the slot stays empty permanently. */
-    if (!key) { box.innerHTML = ''; box.removeAttribute('data-sig'); return; }   // playlist without a resolvable id → as before
+    var G = window.ThaiEarAppCTA;
+    var inApp = !!(G && G.noDownloadUi && !G.noDownloadUi());
     var a = window.ThaiEarAuth;
-    /* ⚠ DO NOT HOLD FOR isReady HERE — that is what makes the progress bar flash.
-       This used to render nothing until auth settled, then paint. In the APP that produced a
-       visible progress bar for an instant before the signup card replaced it (owner-reported,
-       2026-08-15): auth.js resolves its DURABLE identity first, so getUser() is briefly non-null
-       on a device that has been signed in before, and the signed-in counter painted before the
-       real answer arrived. Deciding from authGuess() — which reads the signed-out marker
-       synchronously — makes the FIRST paint the right one, so there is nothing to replace.
-       Falls back to the old hold only if app-cta.js is missing (stale cache / blocked script). */
-    var G = G0;
+    /* ⚠ Decide from authGuess(), not isReady, for the same reason as before: getUser() is null
+       for the first few hundred ms even on a device that is definitely signed in, so waiting
+       painted the signup card and then took it away again — a visible flash AND a shove, because
+       the two states are different heights. authGuess() reads the signed-out marker
+       synchronously, so the FIRST paint is the right one. */
     var guess = (G && G.authGuess) ? G.authGuess() : null;
-    if (!a || (!a.isReady && !guess)) { box.innerHTML = ''; box.removeAttribute('data-sig'); return; }
-    var user = a.getUser && a.getUser();
-    /* ⚠ "SIGNED IN, BUT THE USER OBJECT HAS NOT ARRIVED YET" IS ITS OWN STATE — treat it as
-       signed IN, not signed out. getUser() returns null for the first few hundred ms even on a
-       device that is definitely signed in, so an earlier version fell through to the signed-out
-       branch, painted the signup card, and then repainted the real progress bar: the flash AND
-       the downward shove the owner reported (2026-08-15), because the two are different heights.
-       Painting the signed-in card straight away makes the box the right size and shape from the
-       first paint; only the COUNT changes when auth settles, which is a text swap inside a
-       fixed-height row and moves nothing.
-       ⚠ The controls are inert while pending (pointer-events, not [disabled] — [disabled] dims
-       them to 0.55 opacity, which would just trade a layout flash for a colour one). A tap in
-       that window would otherwise reach progStep() with a null user and route a signed-IN person
-       to join.html. */
-    var pending = !a.isReady && !user && guess === 'in';
-    var thing = PLMODE ? 'playlist' : 'topic';
-    /* SIGNED OUT → the signup card, on free and premium topics alike (owner, 2026-08-15).
-       This replaces BOTH of the old signed-out branches: the "Sign in to track progress →" prompt
-       on free topics, and the dead-but-visible progress bar on premium ones.
+    var user = a && a.getUser && a.getUser();
+    var signedOut = !user && guess !== 'in';
 
-       ⚠ SUPERSEDES the 2026-08-10 rule that a non-entitled visitor must still see the REAL
-       progress bar with the tap gated. That rule existed to ADVERTISE progress as a feature
-       rather than hide it — and this card does exactly that, in words ("keeps track of what
-       you've listened to"), while also giving the visitor something to act on. Rendering a
-       zeroed progress bar NEXT to a card describing the same feature is redundant, not safer.
-       So the principle survives; only the mechanism changed. Do not "restore" the zeroed bar.
+    // Only one thing can ever render here now, so the reserve is a straight two-way choice.
+    box.classList.toggle('te-rsv-card', signedOut && inApp);
+    box.classList.toggle('te-anon', !(signedOut && inApp));
 
-       ⚠ Signed-IN rendering below is untouched, and so is progStep()'s gating — a logged-out tap
-       can no longer reach it from here, but the entitlement-before-signed-in ordering still
-       matters for every other caller.
+    var sig = signedOut && inApp ? 'card|' + (PLMODE ? 'pl' : 'topic') : 'empty';
+    if (box.getAttribute('data-sig') === sig) return;   // idempotence: auth notifies ~5x on startup
+    box.setAttribute('data-sig', sig);
 
-       Why the whole card and not just a link: a stranger arriving from an advert has no progress
-       and no reason to want progress tracked, so the old copy asked them to value a feature they
-       could not yet have. This leads with the benefit and names what a free account actually
-       gives — deliberately NOT downloads, which are tier-keyed, not auth-keyed. */
-    if (!user && !pending) {
-      /* ⚠ TWO DIFFERENT PLACES, DECIDED BY app-vs-browser — do not collapse them.
-         BROWSER: the card is NOT rendered here, it goes in the offline-bar slot BELOW
-         .player-card. Measured 2026-08-15 at 430px: rendered in THIS slot it is 198px tall and
-         pushes .player-card from ~295 down to 493 on a ~660px fold, burying the play button and
-         the Thai/English toggle — the exact thing the ads promise, hidden to show a signup advert.
-         Ask AFTER the experience, not in front of it.
-         APP / INSTALLED PWA: the offline-bar slot is occupied by the REAL download controls, so
-         the card has nowhere to go down there and a signed-out app user saw nothing at all
-         (owner-reported, 2026-08-15). It renders here instead, without its app zone — telling
-         someone inside the app to go and get the app is noise. */
-      var A = window.ThaiEarAppCTA;
-      /* Same guard for the signed-OUT shape. It must be a DIFFERENT signature from the signed-in
-         one above, or signing in/out would be skipped as "no change". */
-      var outSig = ['out', A && A.noDownloadUi && !A.noDownloadUi() ? 'app' : 'web'].join('|');
-      if (box.getAttribute('data-sig') === outSig) return;
-      box.setAttribute('data-sig', outSig);
-      if (A && A.noDownloadUi && !A.noDownloadUi()) {
-        box.innerHTML = A.signupHtml(PLMODE ? 'playlist' : 'topic', PAGE_FILE, { app: false });
-      } else {
-        box.innerHTML = '';   // browser: the card lives in the offline bar; sig already set above
-      }
-      return;
+    if (signedOut && inApp && G && G.signupHtml) {
+      box.innerHTML = G.signupHtml(PLMODE ? 'playlist' : 'topic', PAGE_FILE, { app: false });
+    } else {
+      box.innerHTML = '';   // browser signed-out: the card lives in the offline bar, as before
     }
-    var count = (user && a.getTopicProgress) ? a.getTopicProgress(key) : 0;
-    /* ⚠ IDEMPOTENCE GUARD — NOT a change to auth.js, which is correct. auth.js legitimately calls
-       notify() ~5 times during startup (main resolution, cached subscription, lifetime,
-       desktop-DL, profile), so this ran FOUR times in ~2ms and tore down and rebuilt the card each
-       time (measured on device, 2026-08-15). The events are right; re-rendering identical markup
-       is not, and every rebuild throws away focus and restarts the count animation.
-       Compare everything that decides the output and bail when nothing moved.
-       ⚠ ADD TO THIS SIGNATURE IF YOU ADD AN INPUT to the markup below, or the new input will
-       render once and then never update. */
-    var sigNow = ['in', key, user.id, count, PLMODE ? 1 : 0].join('|');
-    if (box.getAttribute('data-sig') === sigNow) return;
-    box.setAttribute('data-sig', sigNow);
-    box.innerHTML =
-      '<div class="prog-ctl-card">' +
-        '<div class="prog-ctl-left">' +
-          '<span class="prog-ctl-count" id="prog-count">' + count + '</span>' +
-          '<span class="prog-ctl-label">complete listen' + (count === 1 ? '' : 's') + '</span>' +
-        '</div>' +
-        '<div class="prog-ctl-btns"' + (pending ? ' style="pointer-events:none"' : '') + '>' +
-          '<button class="prog-ctl-btn prog-ctl-minus" id="prog-remove" onclick="progRemove()" aria-label="Remove one listen" title="Remove one listen">−</button>' +
-          '<button class="prog-ctl-btn prog-ctl-add" id="prog-add" onclick="progAdd()" aria-label="Add one listen">+ Add progress</button>' +
-          '<a class="prog-ctl-my" href="progress.html">My progress</a>' +
-        '</div>' +
-      '</div>';
   }
 
-  // Shared by + and −. Disables both buttons, shows a spinner then a tick, and holds
-  // the lock for a beat after the write so an accidental double-click can't land —
-  // mirrors the subscribe button's deliberate, lag-then-confirm feel.
-  function progStep(kind) {
-    var a = window.ThaiEarAuth;
-    /* ⚠ ENTITLEMENT BEFORE SIGNED-IN — the order matters and was the other way round until
-       2026-08-10. On a premium topic the TIER is the real blocker, so checking sign-in first meant
-       a logged-out tap returned silently (doing nothing at all) and a "please sign in" route would
-       only have pointed at a page that couldn't unlock it. Now a non-entitled tap gets the premium
-       message on both: app → neutral sheet, web → paywall. */
-    if (!entitledForPage()) { gate(TIER); return; }
-    // Entitled but signed out (a free topic) → progress genuinely needs an account.
-    if (!a || !(a.getUser && a.getUser())) { gateSignIn(); return; }
-    if (progLock) return;
-    progLock = true;
-    var addBtn = $('prog-add'), remBtn = $('prog-remove'), countEl = $('prog-count');
-    var actBtn = kind === 'add' ? addBtn : remBtn;
-    var orig = actBtn ? actBtn.innerHTML : '';
-    if (addBtn) addBtn.disabled = true;
-    if (remBtn) remBtn.disabled = true;
-    if (actBtn) actBtn.innerHTML = '<span class="prog-spin"></span>';
-    var pkey = progressKey();                      // r140: 'topic-NN' or a playlist's 'pl-<id>'
-    if (!pkey) { progLock = false; return; }
-    var op = kind === 'add' ? a.addProgress(pkey) : a.removeProgress(pkey);
-    op.then(function () {
-      if (countEl) {
-        countEl.textContent = a.getTopicProgress(pkey);
-        countEl.classList.remove('bump'); void countEl.offsetWidth; countEl.classList.add('bump');
-      }
-      if (actBtn) actBtn.innerHTML = '<span class="prog-tick">✓</span>';
-    }).catch(function (e) {
-      console.warn('player.js: progress save failed', e);
-      if (actBtn) actBtn.innerHTML = orig;
-    }).then(function () {
-      setTimeout(function () {
-        progLock = false;
-        // re-render to refresh the label (listen/listens) and restore button text
-        renderProgress();
-      }, 600);
-    });
-  }
-  function progGate() { gate(TIER); }   // premium card CTA — platform-correct copy lives in gate()
-  function progAdd() { progStep('add'); }
-  function progRemove() { progStep('remove'); }
 
   // Load the user's progress once, then render; re-run whenever auth resolves/changes.
   function initProgress() {
@@ -8088,8 +8054,16 @@
     } else {
       renderProgress();
     }
+    /* Play counts: pull the account copy once so the numbers on this page reflect what was heard
+       on other devices, and so anything queued from a previous offline session is delivered.
+       Deliberately NOT awaited and NOT gated on the render — it never blocks or delays anything,
+       and offline it resolves the local copy rather than hanging. */
+    if (a.getUser && a.getUser() && a.loadPlays) a.loadPlays().catch(function () {});
   }
   window.addEventListener('thaiear:auth', initProgress);
+  /* auth.js notify()s on every play too (plysNote -> notify), so this is what makes a chip
+     tick over the moment the dwell rule fires, without the player knowing anything about it. */
+  window.addEventListener('thaiear:auth', plysRepaintChips);
   /* The offline bar's app-card branch is now auth-dependent (suppressed while signed out, since
      the signup card carries the app line), and auth settles AFTER first paint — so it has to
      repaint here or a signed-in visitor keeps the signed-out state for the whole session. */
@@ -8097,65 +8071,6 @@
   mountEndCta();
   window.addEventListener('thaiear:auth', mountEndCta);
 
-  /* ---- sentence flagging ----
-     Toggle this sentence's flag (saved to the user's account). Debounced + a pop so a
-     double-tap can't land — same discipline as the progress buttons. Updates just the
-     button (no full re-render, to stay snappy). */
-  var flagLock = false;
-  // Logged-out flag click → the feature sign-in page, with ?next back to this topic.
-  function flagSignIn(e) {
-    e.stopPropagation(); e.preventDefault();
-    // On a gated topic an un-entitled flag tap follows the same gate (premium → paywall/locked,
-    // member → sign-in). On a FREE topic it's just "sign in to flag".
-    if (!entitledForPage()) { gate(); return; }
-    window.location.href = 'join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE);
-  }
-  function flagSent(e, num) {
-    e.stopPropagation(); e.preventDefault();
-    if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no flagging
-    var a = window.ThaiEarAuth;
-    // SSR pages use one flag button that always calls flagSent; route a signed-out click to
-    // sign-in. Legacy pages render a separate flagSignIn button when signed out, so this branch
-    // only changes SSR behaviour (guarded) and leaves legacy byte-for-byte.
-    if (!a || !(a.getUser && a.getUser())) { return SSR ? flagSignIn(e) : undefined; }
-    if (!a.toggleFlag) return;
-    if (flagLock) return;
-    flagLock = true;
-    var btn = document.querySelector('#sc-' + num + ' .sent-flag-btn');
-    if (btn) btn.classList.add('pending');
-    var s = null;
-    for (var i = 0; i < sentences.length; i++) { if (sentences[i].num === num) { s = sentences[i]; break; } }
-    var nugget = s
-      ? { num: s.num, preview: s.preview, thai: s.thai, english: s.english, gloss: s.gloss, cultural: s.cultural || '', audioPrefix: PREFIX }
-      : { num: num, audioPrefix: PREFIX };
-    a.toggleFlag(TOPIC_KEY, nugget).then(function (isOn) {
-      if (btn) {
-        btn.classList.remove('pending');
-        btn.classList.toggle('flagged', isOn);
-        btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
-        btn.setAttribute('title', isOn ? 'Flagged — click to remove' : 'Flag this sentence');
-      }
-    }).catch(function (err) {
-      console.warn('player.js: flag save failed', err);
-      if (btn) btn.classList.remove('pending');
-    }).then(function () {
-      setTimeout(function () { flagLock = false; }, 300);
-    });
-  }
-
-  // Load the user's flags once, then show flag state; re-run on auth. SSR pages sync flag
-  // classes onto the static buttons; legacy pages re-render the list (cardHtml reads isFlagged).
-  function refreshFlags() { if (SSR) syncFlags(); else render(); }
-  function initFlags() {
-    if (PLMODE) return;   // playlists: flagging is a topic-page feature
-    var a = window.ThaiEarAuth;
-    if (a && a.isReady && a.getUser && a.getUser() && a.loadFlags) {
-      a.loadFlags().then(refreshFlags).catch(function () {});
-    } else {
-      refreshFlags(); // logged out (or auth gone) → show flags (SSR routes to sign-in on click)
-    }
-  }
-  window.addEventListener('thaiear:auth', initFlags);
   /* Playlists: entitlement is only knowable once auth resolves, and sentLocked() deliberately
      returns false until then (never lock a paying user mid-resolve). So the lock grouping has to
      be re-applied on every auth change — sign-in, sign-out, and the subscription arriving a beat
@@ -8220,7 +8135,6 @@
     schedulePrewarm();      // have the sentence clips in memory before the first tap asks for them
     initScrubber();
     initProgress();
-    initFlags();
     initXtraControls();
     initMiniPlayer();       // floating mini transport (shows when the main player scrolls out of view)
     renderOfflineBar();
@@ -8232,7 +8146,7 @@
   // inline onclick in the injected markup call these by name
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow, toggleTranslit: toggleTranslit,
-    progAdd: progAdd, progRemove: progRemove, progGate: progGate, flagSent: flagSent, flagSignIn: flagSignIn,
+
     advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat,
     downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete, refreshTopic: refreshTopic,
     dynUpdateAudio: dynUpdateAudio, gateSentence: gateSent });

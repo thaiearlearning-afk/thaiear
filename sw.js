@@ -33,7 +33,30 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v356';   // v356: a playlist row opens on the FIRST tap — a skipped re-render
+const VERSION = 'v357';   // v357: PER-SENTENCE PLAY COUNTS. Every pill shows how many times you
+                          // have heard that sentence; topic cards and playlist rows show the
+                          // MINIMUM across their sentences, which is what makes it mean "complete
+                          // listens". Counting is a 2s-or-clip-end dwell, so scrubbing the pause
+                          // slider and tap-then-stop do not register, and Thai repeats set to 4
+                          // are still ONE listen. Offline it queues DELTAS and the server
+                          // increments — every other queue on this site is last-write-wins, which
+                          // for a counter would silently discard listening (3 offline on one
+                          // device + 2 on another must be 5, not 3). Retries carry a client-minted
+                          // batch id so a redelivery cannot double-count.
+                          // ⚠ `user_activity.listens` now counts SENTENCES, not audio starts: it
+                          // fired off the media play event, so a 32-sentence dyn session recorded
+                          // 1 and five pause/resumes recorded 6. Both counters now fire from ONE
+                          // call in player.js through ONE dwell gate, so listens is the sum of
+                          // sentence_plays.counts by construction.
+                          // RETIRED in the same release: sentence flags + /sentences.html, and the
+                          // "+ Add progress" bar + /progress.html — playlists and the play counter
+                          // replace them. The person icon is now a direct link, not a one-item
+                          // menu. #player-root's CLS reserve drops 350->282 / 379->284 because the
+                          // progress bar was inside it; leaving it would have left ~70-100px of
+                          // permanent dead space above the play button, not a shift.
+                          // ⚠ privacy.html changed in the SAME release and is precached — this
+                          // bump is what delivers the corrected notice. PLAYS_COUNTER.md.
+                          // v356: a playlist row opens on the FIRST tap — a skipped re-render   // v356: a playlist row opens on the FIRST tap — a skipped re-render
                           // was hanging a duplicate click handler on the same node.
                           // v355: privacy policy — the "last updated" date was still 12 Aug after
                           // two substantive edits on 19 Aug, and section 4 now discloses that the
@@ -414,7 +437,7 @@ const PRECACHE = [
   // logged-out/offline state) instead of falling through to the generic offline notice. Topic pages
   // are intentionally NOT here (cached on visit / via the download feature).
   '/account.html', '/subscribe.html', '/join.html', '/about.html', '/guide.html', '/socials.html', '/app.html',
-  '/progress.html', '/sentences.html', '/privacy.html', '/terms.html', '/refunds.html', '/deleted.html',
+  '/privacy.html', '/terms.html', '/refunds.html', '/deleted.html',
   /* The sign-in interstitial the email links to (v340). It is where a user lands from their
      inbox, i.e. often on a device that has never opened the site, so it must not depend on a
      lucky network moment — and it is the ONLY route back in for anyone whose magic link was
@@ -440,6 +463,7 @@ const PRECACHE = [
      mid-word cut of the saved Thai. Offline playlists are a shipped feature, so it has to be here:
      without it every offline playlist would silently fall back to the old derivation. ~100 KB. */
   '/sentence-hints.json',
+  '/topic-sentences.json',
   /* Advertising measurement, r166. All three are on all 122 landable pages, so an un-precached
      copy means three failed requests on every offline page open. They are also the wrong thing to
      let a network fetch decide: consent.js carries the visitor's stored cookie choice and MUST be

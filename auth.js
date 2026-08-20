@@ -465,12 +465,172 @@
       else delete currentFlags[key];
     });
   }
+  /* == PER-SENTENCE PLAY COUNTS =================================================
+     "How many times have I heard sentence 1220." Owning doc: PLAYS_COUNTER.md.
+
+     WARNING: THIS IS A COUNTER, AND IT DELIBERATELY DOES NOT WORK LIKE ANYTHING ELSE IN THIS FILE.
+     Everything above and below - flags, progress, dyn_prefs, the playlist outbox - queues the
+     DESIRED FINAL VALUE and lets the newest write win. That is right for a toggle and wrong here:
+     play 1220 three times on the phone offline and twice in the browser offline, reconnect both,
+     and last-write-wins stores 3 or 2 when the answer is 5. So this queues DELTAS and the server
+     ADDS them (functions/api/plays.js -> apply_plays()). Do NOT "harmonise" it with its neighbours.
+
+     Local shape, keyed by uid() for the same non-negotiable reason as every other queue here -
+     a pending write must never leak into whichever account signs in next:
+
+         { uid, synced: {num:n}, pending: {num:n}, outbox: {batchId, deltas} | null }
+
+     - synced  = what the server is known to hold.
+     - pending = heard since, not yet handed to a batch.
+     - outbox  = the batch currently in flight (or awaiting a retry). SEPARATE FROM `pending`
+                 ON PURPOSE. If a play landed in the same bucket that is being sent, the ack would
+                 fold in plays the server never received, and they would be lost for ever.
+     - The batchId is minted WHEN THE BATCH IS FORMED and persisted with it, so a retry - even
+       after a reload, even days later - carries the SAME id and the server recognises it as a
+       replay instead of adding the plays twice.
+
+     Displayed value is synced + pending + outbox, so the number moves the instant something is
+     heard, online or off. */
+  var PLYS_KEY = 'thaiear_plays';
+  var plysCache = null;        // the parsed local store; null until first touched
+  var plysLoaded = false;      // has the server blob been read this session?
+  var plysTimer = null;
+  var plysFlushing = false;
+
+  function plysBlank() { return { synced: {}, pending: {}, outbox: null }; }
+  function plysStore() {
+    if (!plysCache) {
+      var c = lsGet(PLYS_KEY);
+      plysCache = (c && c.uid === uid())
+        ? { synced: c.synced || {}, pending: c.pending || {}, outbox: c.outbox || null }
+        : plysBlank();
+    }
+    return plysCache;
+  }
+  function plysPersist() {
+    if (uid() && plysCache) lsSet(PLYS_KEY, { uid: uid(),
+      synced: plysCache.synced, pending: plysCache.pending, outbox: plysCache.outbox });
+  }
+
+  function plysAddInto(target, src) {
+    Object.keys(src || {}).forEach(function (k) { target[k] = (target[k] || 0) + src[k]; });
+    return target;
+  }
+  // The number a user sees: everything known plus everything not yet delivered.
+  function plysMerged() {
+    var st = plysStore(), out = {};
+    plysAddInto(out, st.synced);
+    plysAddInto(out, st.pending);
+    if (st.outbox) plysAddInto(out, st.outbox.deltas);
+    return out;
+  }
+
+  /* Record n plays of one sentence. Local and instant - never awaits the network, never rejects.
+     Called from player.js on the dwell rule (2s of playback, or the clip/block ending). */
+  function plysNote(num, n) {
+    if (!currentUser) return;                 // signed out: the feature does not exist
+    n = Math.max(1, Math.min(500, parseInt(n, 10) || 1));
+    var st = plysStore();
+    st.pending[String(num)] = (st.pending[String(num)] || 0) + n;
+    plysPersist();
+    notify();                                 // repaint the chips
+    /* Debounced, not immediate: a dyn session produces one of these every few seconds and each
+       POST is a round trip. 20s bundles a normal listening run into a handful of requests while
+       still landing well inside a typical page visit. pagehide/visibilitychange force it early. */
+    if (plysTimer) clearTimeout(plysTimer);
+    plysTimer = setTimeout(function () { plysTimer = null; plysFlush(); }, 20000);
+  }
+
+  /* Deliver whatever is queued. Safe to call at any time and from anywhere; it is a no-op when
+     there is nothing to send, no session, or no network. Never throws, never rejects. */
+  function plysFlush() {
+    if (plysFlushing || !currentUser) return Promise.resolve();
+    var st = plysStore();
+    // Form a batch if one is not already outstanding. A batch already in flight is retried AS IS,
+    // with its original id - that is what makes the retry idempotent server-side.
+    if (!st.outbox && Object.keys(st.pending).length) {
+      st.outbox = {
+        batchId: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : plUuidFallback(),
+        deltas: st.pending
+      };
+      st.pending = {};
+      plysPersist();
+    }
+    if (!st.outbox) return Promise.resolve();
+    var tok = currentSession && currentSession.access_token;
+    if (!tok || !navigator.onLine) return Promise.resolve();   // stays queued; 'online' retries
+
+    plysFlushing = true;
+    var sending = st.outbox;
+    return fetch('/api/plays', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batchId: sending.batchId, deltas: sending.deltas }),
+      keepalive: true        // survives the navigation that triggered the flush
+    }).then(function (res) {
+      if (res.ok) {
+        plysAddInto(st.synced, sending.deltas);
+        st.outbox = null;
+        plysPersist();
+        return;
+      }
+      /* 4xx vs 5xx IS THE WHOLE ERROR POLICY, and /api/plays is written to honour it.
+         4xx - malformed; it can never succeed, so drop it or it blocks every later batch for ever.
+         5xx / offline - transient; keep it, with its id, and try again. There is deliberately no
+         age cap (unlike the playlist outbox, where a stuck op disables download GC): nothing here
+         is gated on the queue being empty, so a stuck batch is harmless, and discarding it would
+         silently delete real listening. */
+      if (res.status >= 400 && res.status < 500) {
+        console.warn('[plays] dropped an unsyncable batch (' + res.status + ')');
+        st.outbox = null;
+        plysPersist();
+      }
+    }).catch(function () {
+      /* Network failure - keep it queued. No log: offline is the normal case here. */
+    }).then(function () {
+      plysFlushing = false;
+      // More arrived while that was in flight - deliver it too rather than waiting 20s.
+      if (Object.keys(st.pending).length && navigator.onLine) plysFlush();
+    });
+  }
+
+  /* Read the server blob once per session and reconcile it with what is queued locally.
+     The server value REPLACES `synced` rather than being merged into it: it already contains
+     every batch this device has had acknowledged, plus anything other devices have added. What is
+     still in `pending`/`outbox` is by definition NOT in it, and stays on top. */
+  function plysLoad() {
+    if (plysLoaded) return Promise.resolve(plysMerged());
+    var st = plysStore();
+    var tok = currentSession && currentSession.access_token;
+    if (!currentUser || !tok || !navigator.onLine) return Promise.resolve(plysMerged());
+    return fetch('/api/plays', { headers: { Authorization: 'Bearer ' + tok } })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (d) {
+        if (d && d.counts) { st.synced = d.counts; plysLoaded = true; plysPersist(); notify(); }
+        plysFlush();                                  // deliver anything queued from last time
+        return plysMerged();
+      })
+      .catch(function () { return plysMerged(); });   // offline -> the local copy is the answer
+  }
+
+  /* FLUSH BEFORE THE PAGE GOES, OR MOST LISTENING IS NEVER RECORDED.
+     Exactly the bug that made user_activity.listens near-worthless at sw v350 and had to be fixed
+     in v351: plays inside the debounce window live only in localStorage, and while THAT survives a
+     navigation, the 20s timer does not - so a user who plays four sentences and moves on every
+     couple of minutes would never deliver anything until some later page happened to sit still.
+     pagehide AND visibilitychange: iOS Safari frequently gives no pagehide when the user switches
+     apps or locks the phone. `keepalive` on the POST is what lets it outlive the page. */
+  window.addEventListener('pagehide', function () { plysFlush(); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') plysFlush();
+  });
+
   /* Flush queued writes whenever the connection returns.
      ⚠ plFlush() is declared further down (with the playlists API) — a hoisted function
      declaration, and this listener only runs on an event, so the ordering is safe. It matters
      more than the others: until the playlist outbox drains, playlists.authoritative() stays false
      and dlReconcileRefs() cannot reap ghost download claims. */
-  window.addEventListener('online', function () { flushProgress(); flushFlags(); dpFlush(); plFlush(); });
+  window.addEventListener('online', function () { flushProgress(); flushFlags(); dpFlush(); plFlush(); plysFlush(); });
 
   // ---- listening progress (own `progress` row, RLS) ----------------------
   // One jsonb row per user: { goal, topics:{ topicKey:count } }. Read on demand
@@ -838,6 +998,27 @@
     resetProgress: function () {
       return mutateProgress(function (p) { p.topics = {}; });
     },
+    // ---- per-sentence play counts (PLAYS_COUNTER.md) -------------------------
+    // Synchronous and always safe to call: the local store answers instantly, online or off,
+    // signed in or not. Signed out it is an empty map, because the feature does not exist there.
+    getPlays: function () { return currentUser ? plysMerged() : {}; },
+    getPlayCount: function (num) {
+      if (!currentUser) return 0;
+      return plysMerged()[String(num)] || 0;
+    },
+    // Async: pull the account copy once per session, then resolve the merged map. Callers may
+    // repeat it freely. Offline it resolves the local copy rather than hanging or rejecting.
+    loadPlays: function () { return plysLoad(); },
+    isPlaysLoaded: function () { return plysLoaded; },
+    /* Record that a sentence was heard. player.js calls this ONCE per sentence per listen -
+       the dwell rule (2s of playback, or the clip/block ending) lives there, not here, because
+       only the player knows whether audio was actually running. Thai repeats set to 4 is still
+       ONE call: repeats are one listen, not four. Fire and forget; returns nothing. */
+    notePlay: function (num, n) { plysNote(num, n); },
+    // Deliver the queue now. Called by the pagehide/visibilitychange hooks and on 'online';
+    // exposed for tests and for anything that wants to force delivery before navigating.
+    flushPlays: function () { return plysFlush(); },
+
     // ---- flagged sentences --------------------------------------------------
     loadFlags: function () {
       if (flagsLoaded && currentFlags) return Promise.resolve(currentFlags);
@@ -1806,6 +1987,10 @@
         if (session && session.access_token) { writeIdentity(session); }
         currentProgress = null; progressLoaded = false; // re-fetch for the new (or no) user
         currentFlags = null; flagsLoaded = false;
+        /* Play counts too. The localStorage record is uid-stamped and plysStore() checks it, but
+           the in-memory cache is not re-read once populated, so without this the previous account's
+           counters would stay on screen (and worse, plysNote() would append to them) until reload. */
+        plysCache = null; plysLoaded = false;
         /* ⚠ AND ANYTHING STILL IN FLIGHT FOR THE PREVIOUS USER. Without this, a request issued a
            moment before the account changed would still be the published in-flight promise, so the
            next caller would join it and receive the OLD user's rows. Dropping the slots (rather

@@ -279,10 +279,6 @@
       width: 30px; height: 30px; border-radius: 50%; color: var(--text-secondary);
       text-decoration: none; transition: background .15s, color .15s; }
     .nav-person:hover { background: var(--accent-light); color: var(--accent); }
-    /* person icon is also a .nav-menu-btn (dropdown trigger) — keep its accent hover, and don't
-       let .nav-menu-btn's text/gap styles distort the circular icon button. */
-    .nav-person.nav-menu-btn { gap: 0; }
-    .nav-person.nav-menu-btn:hover { color: var(--accent); }
     .nav-person svg { width: 18px; height: 18px; }
     .nav-auth { font-size: calc(13px * var(--te-ui, 1)); font-weight: 500; color: var(--accent);
       text-decoration: none; white-space: nowrap; flex-shrink: 0; }
@@ -388,11 +384,10 @@
   ];
   // Personal / account items — these live in the person-icon dropdown (logged in only),
   // NOT the generic Menu above.
-  const PERSON_ITEMS = [
-    { label: 'Account', page: 'account.html' },
-    { label: 'My progress', page: 'progress.html' },
-    { label: 'My sentences', page: 'sentences.html' },
-  ];
+  /* ⚠ THE PERSON DROPDOWN IS GONE (2026-08-20, PLAYS_COUNTER.md). "My progress" and
+     "My sentences" were the only entries besides Account, and both features were retired — the
+     per-sentence play counts on the cards replace progress, and playlists replace flags. A menu
+     with one item in it is worse than a link, so the icon IS the link now. */
   function menuHtml() {
     if (!FEATURES.members) return '';
     const loggedIn = !!getUser();
@@ -415,20 +410,11 @@
     );
   }
 
-  // Personal/account dropdown hung off the person icon (logged in only): Account, My progress,
-  // My sentences. Generic links live in the separate "Menu" dropdown (MENU_ITEMS).
+  // The person icon (logged in only) — a direct link to the account page. It was a dropdown
+  // until 2026-08-20; see the note on PERSON_ITEMS above for why it is not any more.
   function personMenuHtml() {
-    const here = currentPage();
-    const links = PERSON_ITEMS.map(it => {
-      const active = bareName(it.page) === here ? ' class="active"' : '';
-      return `<a href="${pageHref(it.page)}"${active}>${it.label}</a>`;
-    }).join('');
-    return (
-      `<div class="nav-menu" id="nav-person-menu">` +
-        `<button type="button" class="nav-person nav-menu-btn" id="nav-person-btn" aria-haspopup="true" aria-expanded="false" aria-label="Your account" title="Account">${PERSON_SVG}</button>` +
-        `<div class="nav-menu-drop" id="nav-person-drop" hidden>${links}</div>` +
-      `</div>`
-    );
+    const active = bareName('account.html') === currentPage() ? ' active' : '';
+    return `<a class="nav-person${active}" href="${pageHref('account.html')}" aria-label="Your account" title="Account">${PERSON_SVG}</a>`;
   }
 
   /* Has auth actually resolved? Until it has, the nav must render NEITHER state.
@@ -449,7 +435,7 @@
     }
     const user = getUser();
     if (user) {
-      // Logged in: username + person-icon dropdown (Account / My progress / My sentences).
+      // Logged in: username + the person icon, which links straight to the account page.
       return (
         `<span class="nav-username">${escapeHtml(user.username)}</span>` +
         personMenuHtml()

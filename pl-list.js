@@ -1073,6 +1073,30 @@
         setList('');
         return;
       }
+      /* Play count for a playlist row (PLAYS_COUNTER.md §2). A playlist carries its own items,
+         so unlike a topic card this needs no topic-sentences.json lookup — the numbers are
+         already here.
+         ⚠ LOCKED SENTENCES ARE SKIPPED. A free visitor with a premium sentence in a playlist can
+         never play it, so counting it would pin the row at 0 for ever — the same reason exclusions
+         are skipped on a topic card. Playlists have no exclusion UI (round-11), so locked is the
+         only filter that applies here.
+         ⚠ And the fallback still holds: if EVERY item is locked, they all count again, because the
+         rule is that this must always show a real number. playsMin() owns that; don't reimplement it. */
+      function playsCaption(p) {
+        var T = window.ThaiEarTopics, A = window.ThaiEarAuth;
+        if (!T || !T.playsMin || !A || !A.getUser || !A.getUser() || !A.getPlays) return '';
+        if (!p.items || !p.items.length) return '';
+        var counts = A.getPlays();
+        var nums = p.items.map(function (it) { return it.num; });
+        var locked = {};
+        p.items.forEach(function (it) {
+          var tier = (T.tierForPrefix && T.tierForPrefix(it.prefix)) || it.tier || 'free';
+          if (tier !== 'free' && T.canAccess && !T.canAccess(tier)) locked[String(it.num)] = 1;
+        });
+        var n = T.playsMin(nums, counts, function (num) { return !!locked[String(num)]; });
+        return ' · Plays: ' + n;
+      }
+
       var lists = currentLists();
       if (!lists) { showLoading(); return; }   // no cache on this device yet → indicator until load resolves
       paintedJson = JSON.stringify(lists);
@@ -1086,6 +1110,7 @@
           '<button class="pl-box-head" type="button">' +
             '<span class="pl-box-name">' + esc(p.name) + '</span>' +
             '<span class="pl-box-meta">' + p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') +
+              playsCaption(p) +
               (st === 'downloaded' ? ' · downloaded'
                 : st === 'available' ? ' · available offline'
                 : st === 'update' ? ' · update available' : '') + '</span>' +
@@ -1307,6 +1332,14 @@
     window.addEventListener('thaiear:auth', function () {
       if (PL()) PL().load(true).then(render);
     });
+    /* Pull the account's play counts once, then repaint so the rows carry "Plays: N".
+       ⚠ No lookup file needed here — a playlist carries its own items, unlike a topic card.
+       Fire-and-forget: the rows are already correct without it, this only adds the caption.
+       Thereafter auth.js notify()s on every recorded play, and the listener above repaints. */
+    (function () {
+      var A = window.ThaiEarAuth;
+      if (A && A.loadPlays) A.loadPlays().then(render).catch(function () {});
+    })();
     /* r80 — REPAINT ON RETURN. Two different responses:
          · pageshow[persisted] = a genuine bfcache restore, rare → reload contents AND repaint;
          · visibilitychange = app foregrounded, frequent → repaint only.

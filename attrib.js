@@ -173,21 +173,44 @@
     });
   }
 
-  function postSeen(isListen) {
+  /* `kind` is one of:
+       'load'  — the once-per-page-load ping
+       'touch' — refresh last_seen_at only, no tally (see onPlay)
+       a NUMBER — that many SENTENCES were heard
+
+     ⚠⚠ `listens` COUNTS SENTENCES, NOT AUDIO STARTS (changed 2026-08-20, PLAYS_COUNTER.md).
+     It used to increment straight off the media `play` event, which was wrong in both
+     directions on the dyn player: a built session is ONE mp3 on ONE audio element, so
+     listening straight through a 32-sentence topic recorded **1**, while five pause/resumes
+     recorded **6**. It now increments from the same place `sentence_plays` does — the
+     `.dyn-live` card becoming live, gated by the same 2s-or-clip-end dwell — so listening
+     through 32 sentences reads 32, and three Thai repeats of one sentence still read 1.
+
+     ⚠ BOTH COUNTERS MUST FIRE FROM THE SAME EVENT AND THE SAME GATE. player.js calls
+     notePlaySentence() once per sentence and that function drives both. If one ever counted
+     without the dwell they would drift apart permanently for a reason nobody could
+     reconstruct — and the free invariant would be lost: `listens` is now, by construction,
+     the SUM of the values in `sentence_plays.counts`. test_plays.js asserts it. */
+  function postSeen(kind) {
     if (!accessToken()) return;
     var now = Date.now();
 
     /* ⚠ COUNT FIRST, SEND LATER. A naive throttle made `listens` a count of
-       five-minute WINDOWS rather than of clips: three plays inside one window sent
+       five-minute WINDOWS rather than of sentences: three inside one window sent
        one ping, and on a long listen that undercounts by about 3x. Tally them in
        memory and hand the tally to whichever ping goes next, so the requests stay
        bounded and the number stays true. */
-    if (isListen) {
-      pendingListens++;
-      /* A listen also refreshes last_seen_at, so that a LONG UNINTERRUPTED LISTEN is
-         not mistaken for a second session. /api/seen only hears from us on a page
-         load otherwise, so someone who opens one topic and listens for 40 minutes
-         would look like a 40-minute absence. One request per 5 minutes, not per clip. */
+    if (typeof kind === 'number') {
+      pendingListens += kind;
+      if (now - lastSeenPing < SEEN_THROTTLE_MS) return;
+    } else if (kind === 'touch') {
+      /* Refresh last_seen_at WITHOUT tallying, so that a LONG UNINTERRUPTED LISTEN is
+         not mistaken for a second session. /api/seen only hears from us on a page load
+         otherwise, so someone who opens one topic and listens for 40 minutes would look
+         like a 40-minute absence. One request per 5 minutes, not per play.
+         ⚠ This is why onPlay still fires at all. It matters most on the READ arm, whose
+         audio is not sentences and so contributes nothing to the tally — without this
+         touch, a long reading session would be counted as two visits. */
       if (now - lastSeenPing < SEEN_THROTTLE_MS) return;
     } else {
       if (seenSent) return;                           // auth.js notifies 3-4x per load
@@ -222,7 +245,7 @@
        signed-in load, not only new accounts, and deliberately does NOT require
        created_at -- a missing created_at is exactly what killed ad attribution for
        weeks (v338), and this must not be able to die the same way. */
-    postSeen(false);
+    postSeen('load');
 
     if (!user.created_at) return;
 
@@ -302,9 +325,11 @@
 
   var activated = false;
   function onPlay() {
-    /* Throttled to one request per 5 minutes; see postSeen(). This is what stops a
-       long listen being counted as a second session. */
-    postSeen(true);
+    /* ⚠ 'touch', NOT a tally. Audio STARTING is no longer what `listens` counts — player.js
+       reports sentences instead (see postSeen). This still fires so that last_seen_at keeps
+       moving during a long listen, which is what stops one 40-minute session being recorded
+       as two. Throttled to one request per 5 minutes. */
+    postSeen('touch');
     if (activated) return;
     activated = true;                               // once per page view
     track('activation');
@@ -337,6 +362,9 @@
   });
 
   window.ThaiEarAttrib = {
+    /* Called by player.js's notePlaySentence(), once per sentence heard, already gated by the
+       dwell rule. ⚠ This is the ONLY thing that may increment `listens` — see postSeen(). */
+    noteListen: function (n) { postSeen(Math.max(1, parseInt(n, 10) || 1)); },
     click:  stored,                                 // what click is on file
     events: function () { return queue.slice(); },  // what would have been sent
     track:  track,
