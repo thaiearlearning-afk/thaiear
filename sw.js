@@ -33,7 +33,18 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v363';   // v363: spacing, MEASURED on the live page rather than adjusted by eye.
+const VERSION = 'v364';   // v364: the sentence-count line sits LOWER in the same band (its margin
+                          // moved from below to above, so it drops without the space growing) and
+                          // is 13->14px, because at 13 it read as fine print rather than as
+                          // orientation.
+                          // ⚠ And the empty progress slot finally collapses. `.progress-controls:
+                          // empty` was correct CSS, shipped in the stylesheet, and measurably DID
+                          // NOT APPLY on the live page — the slot matched :empty, had zero child
+                          // nodes, and still computed margin-bottom: 14.4px. Replaced with an
+                          // explicit .te-empty class set by renderProgress() where it already
+                          // toggles te-anon and te-rsv-card: the collapse is now decided by the
+                          // code that decides what renders, which is deterministic and can be
+                          // debugged. v363: spacing, MEASURED on the live page rather than adjusted by eye.
                           // The band between the collapsed intro and the player card was 89.9px,
                           // and 46px of it was pure whitespace in three gaps: 18.9 under "Read
                           // more", 12.8 under the sentence-count line, and 14.4 under an EMPTY

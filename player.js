@@ -2253,7 +2253,13 @@
        with no JS and no ordering risk; the reserve still applies in full to the signed-in counter,
        which is what it was measured for. */
     /* The DEFAULT state now, not the signed-out-in-browser special case. */
-    .progress-controls:empty { min-height: 0; margin-bottom: 0; }
+    .progress-controls.te-empty { min-height: 0; margin-bottom: 0; }
+    /* ⚠ AN EXPLICIT CLASS, NOT :empty. The :empty version was correct CSS and shipped in the
+       stylesheet, but measurement on the live page showed it simply not applying — the slot
+       matched :empty, had zero child nodes, and still computed margin-bottom: 14.4px. Rather
+       than keep chasing it through the cascade, renderProgress() now sets this class in the
+       same place it already toggles te-anon and te-rsv-card, so the collapse is decided by the
+       code that decides what renders. Deterministic and debuggable. */
     /* ⚠ NO .te-anon REQUIREMENT ANY MORE. With the progress bar gone this slot is either
        the signed-out signup card or genuinely empty, so an empty slot should ALWAYS
        collapse — including in the window before auth resolves and sets any class at all.
@@ -8126,6 +8132,7 @@
     // Only one thing can ever render here now, so the reserve is a straight two-way choice.
     box.classList.toggle('te-rsv-card', signedOut && inApp);
     box.classList.toggle('te-anon', !(signedOut && inApp));
+    box.classList.toggle('te-empty', !(signedOut && inApp));   // collapses the slot's own margin
 
     var sig = signedOut && inApp ? 'card|' + (PLMODE ? 'pl' : 'topic') : 'empty';
     if (box.getAttribute('data-sig') === sig) return;   // idempotence: auth notifies ~5x on startup

@@ -115,7 +115,10 @@
      sat under this line; the dyn player begins with its own heading and card, and with the
      progress bar removed from the top of it the two were separated by nearly a finger's
      width on an iPhone. */
-  .topic-meta { font-size: 13px; line-height: 1.3; color: var(--text-tertiary); margin-bottom: 0.3rem; }
+  /* Sits LOWER in the same band (owner, 2026-08-20): the margin moves from below the line to
+     above it, so the line drops without the space around it growing. Font up 13->14px — at 13
+     it read as fine print rather than orientation. */
+  .topic-meta { font-size: 14px; line-height: 1.28; color: var(--text-tertiary); margin: 0.2rem 0 0.1rem; }
   .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
   .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
   .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; min-width: 0; overflow-wrap: break-word; font-size: calc(13px * var(--te-ui, 1)); font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
@@ -127,7 +130,7 @@
   .topic-nav-right { text-align: right; }
   @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
   @media (max-width: 600px) {
-    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 12px; margin-bottom: 0.28rem; }
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 13px; margin: 0.2rem 0 0.08rem; }
     .topic-nav-btn { font-size: calc(12px * var(--te-ui, 1)); padding: 6px 10px; }
   }
   @media (max-width: 380px) { .topic-title { font-size: 18px; } }
