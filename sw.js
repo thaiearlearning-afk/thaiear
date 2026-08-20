@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v373';   // v373: comment-only in gtag.js — records that the tag, the GA4
+const VERSION = 'v374';   // v374: comment-only — GDPR redaction. account.html / join.html /
+                          // sw.js described the mistyped-domain guard using the two REAL
+                          // addresses it was built from; one carried a family surname. They
+                          // now describe the SHAPE of each typo instead, which is what the
+                          // guard actually keys on. Standing rule: CLAUDE.md golden rule 0.
+                          // v373: comment-only in gtag.js — records that the tag, the GA4
                           // property and the conversion labels are DORMANT, not dead, while
                           // consent.js BANNER_OFF is true, so none of it gets pruned. Also
                           // removes a stale "NOT WIRED UP YET" warning that had been wrong
@@ -303,7 +308,7 @@ const VERSION = 'v373';   // v373: comment-only in gtag.js — records that the 
                           // real domains sit 1-2 characters from popular ones constantly. It is
                           // now an explicit table of unambiguous typos, which cannot invent a
                           // correction for a domain it has never seen, and it still catches both
-                          // addresses that actually happened (yahoo.comp, example.co.um).
+                          // addresses that actually happened (a .comp for .com, a .co.um for .co.uk).
                           // Also: join.html no longer strands a visitor after Google sign-in —
                           // startGoogleSignIn uses redirectTo: window.location.href, so Google
                           // returns them to the join page as a FRESH LOAD, where they landed on
