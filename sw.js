@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v375';   // v375: player.js — the individual-sentence play button. A tap that
+const VERSION = 'v376';   // v376: attrib.js gains fromUrl() -- the consent-free gclid capture --
+                          // and functions/api/attrib.js strips click fields for UK/EEA/CH.
+                          // ⚠ privacy.html changed in the SAME release and is PRECACHED, so
+                          // this bump is what delivers the new policy wording; without it
+                          // returning visitors keep reading the old one. attrib.js is
+                          // precached too. Previous note below.
+                          // v375: player.js — the individual-sentence play button. A tap that
                           // switched away from a clip in its last ~0.3 s was killed by that
                           // clip's own queued `pause`/`timeupdate`, which reset the button that
                           // had just been lit; the src promise then bailed silently. Topic pages

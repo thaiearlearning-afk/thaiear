@@ -87,6 +87,51 @@
     ls(function () { localStorage.setItem(STORE, JSON.stringify(hit)); });
   }
 
+  /* ⭐ THE CONSENT-FREE FALLBACK (2026-08-20). Reads the click straight off the CURRENT URL.
+
+     WHY IT HAD TO EXIST. capture()/stored() above are the good path, but both are gated on
+     advertising consent, and since `BANNER_OFF` (sw v372) nobody is ever asked, so nobody ever
+     grants. On /start there is no consent.js at all. The gate is therefore shut permanently,
+     and `ad_attribution.gclid` was being written on 0 of 0 signups -- while the reply to
+     Google's Ads API compliance team on 18 Aug already claimed "our site captures the gclid
+     first-party at landing". This is what makes that true.
+
+     ⚠⚠ IT TOUCHES NO DEVICE STORAGE, AND THAT IS THE ENTIRE POINT. Reading a URL the browser
+     was just sent is not "access to terminal equipment", so PECR reg 6 is not engaged and no
+     consent is required -- the same reasoning that keeps the /api/seen ping consent-free. Do
+     NOT "tidy" this into localStorage to share code with capture(); that would silently move
+     it behind a gate that is closed, which is the bug it exists to fix.
+
+     ⚠ IT ONLY WORKS WHERE SIGNUP HAPPENS ON THE LANDING PAGE. Verified live on 2026-08-20:
+     signing in from `/start?gclid=TEST123&nogo=1` returns to that exact URL, params intact.
+     The header comment at the top of this file says the round trip leaves "the query string
+     long gone" -- that is true of ordinary pages, where people navigate before signing in, and
+     NOT of /start, whose only exit is sign-in. That is precisely why /start is the ads landing
+     page. Someone who lands on "/" with a gclid and signs up three pages later is still only
+     covered by the consented path above.
+
+     ⚠ `referrer` and `first_seen` are deliberately NOT set here.
+       * referrer  -- at this moment document.referrer is Google's OAuth origin, not the ad's
+                      referrer. Recording it would be worse than recording nothing.
+       * first_seen -- we do not know when the click happened, only that it was this session.
+                      The row's own created_at carries signup time. Stamping "now" would look
+                      like a click-to-signup latency of zero and quietly corrupt that read.
+     Both columns are nullable; the endpoint skips absent fields. */
+  function fromUrl() {
+    var q = ls(function () { return new URLSearchParams(location.search); }, null);
+    if (!q) return null;
+
+    var hit = {}, any = false;
+    PARAMS.forEach(function (p) {
+      var v = q.get(p);
+      if (v) { hit[p] = String(v).slice(0, 512); any = true; }
+    });
+    if (!any) return null;
+
+    hit.landing_page = location.pathname;   // path only -- never the query string
+    return hit;
+  }
+
   function stored() {
     if (!adConsent()) return null;                  // PECR: reading is access as well
     var raw = ls(function () { return localStorage.getItem(STORE); }, null);
@@ -273,7 +318,10 @@
        where a user came from. The Supabase auth log carries the IP but expires after 7 days.
        ⚠ The organic test therefore MOVED: it is now `gclid is null and utm_campaign is null`,
        NOT the absence of a row. supabase_ad_attribution.sql says the same. */
-    var hit = stored() || {};
+    /* Stored click first: when consent IS granted it is the richer record (real referrer,
+       real click time, and it survives navigation away from the landing page). The URL is the
+       fallback that works when the gate is shut -- i.e. right now, on every signup. */
+    var hit = stored() || fromUrl() || {};
 
     var tok = accessToken();
     if (!tok) return;

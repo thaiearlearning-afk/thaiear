@@ -21,6 +21,42 @@ const FIELDS = [
   'utm_term', 'utm_content', 'landing_page', 'referrer',
 ];
 
+/* ⚠⚠ WHERE A CLICK IDENTIFIER MAY NOT BE RECORDED AT ALL (2026-08-20).
+
+   The gclid/utm capture runs on LEGITIMATE INTERESTS, not consent, because attrib.js reads it out
+   of the URL and writes nothing to the device (PECR reg 6 is not engaged). That reasoning is
+   written up as LIA C in DATA_PROTECTION.md. It is deliberately NOT relied on here:
+
+     • Google's own EU user consent policy and Consent Mode v2 apply in the EEA, the UK and
+       Switzerland, and require consent signals we do not have while the banner is suppressed. An
+       unconsented conversion from those regions cannot be used for matching — so storing the id
+       would be processing personal data for a purpose it cannot actually serve, which fails the
+       necessity limb before the balancing test is even reached.
+     • It keeps the most consent-sensitive audience out of a judgement call.
+
+   ⚠ THE STRIP IS SERVER-SIDE ON PURPOSE. The browser cannot be trusted to know or report its own
+   country, and a client-side check would be bypassable; `request.cf.country` is resolved by
+   Cloudflare at the edge. Do NOT move this into attrib.js.
+
+   ⚠ GEOGRAPHY IS NOT STRIPPED — only the click fields. geo_country/city/asn run on a separate
+   basis (LIA A, ROPA row 7) and are wanted for every signup, including these.
+
+   ⚠ It keys on the country AT SIGNUP, the only signal available at that moment. Someone who clicks
+   in Bangkok and signs up in London is treated as UK. Accepted, and recorded in LIA C §4.
+
+   ⚠ An UNKNOWN country (cf.country absent — local wrangler, or an edge that could not resolve it)
+   FAILS CLOSED and is treated as consent-required. Recording nothing is recoverable; recording
+   something we should not have is not. */
+const CONSENT_REQUIRED_COUNTRIES = new Set([
+  // EU 27
+  'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE',
+  'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
+  // rest of the EEA
+  'IS', 'LI', 'NO',
+  // + UK and Switzerland
+  'GB', 'CH',
+]);
+
 export async function onRequestPost({ request, env }) {
   const token = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
   if (!token) return json({ error: 'unauthorized' }, 401);
@@ -62,6 +98,15 @@ export async function onRequestPost({ request, env }) {
   if (cf.country) row.geo_country = String(cf.country).slice(0, 8);
   if (cf.city) row.geo_city = String(cf.city).slice(0, 128);
   if (cf.asOrganization) row.geo_asn_org = String(cf.asOrganization).slice(0, 128);
+
+  /* ⬛ THE CARVE-OUT. Runs AFTER the geo block above, because it needs cf.country -- and because
+     the geography is deliberately kept. See CONSENT_REQUIRED_COUNTRIES at the top of this file.
+     Fails closed on an unknown country. */
+  const country = cf.country ? String(cf.country).toUpperCase() : null;
+  if (!country || CONSENT_REQUIRED_COUNTRIES.has(country)) {
+    for (const f of FIELDS) delete row[f];
+    delete row.first_seen;
+  }
 
   /* ⚠ THE `if (!any) return` EARLY EXIT WAS REMOVED HERE (2026-08-17). It used to skip organic
      signups entirely, which is why "no row" meant "not from paid". Every signup now writes a row
