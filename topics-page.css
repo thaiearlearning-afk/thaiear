@@ -855,6 +855,10 @@
 .tp-wrap.tp-wide { max-width: 900px; padding-top: 1.5rem; }
 .tp-title { font-size: 30px; font-weight: 600; letter-spacing: -0.025em; color: #1C124E;
   overflow-wrap: anywhere; }
+/* Copied value-for-value from index.html's retired .panel-sub, which is what playlists.html
+   inlines for "Learn Thai by Your Ear". The two pages must look like siblings. */
+.tp-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent); margin: 6px 0 16px; }
 
 /* Breadcrumb — the point of putting a level between the home page and a topic is
    that you can always see where you are and step back without the browser's back
