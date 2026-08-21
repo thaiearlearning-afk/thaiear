@@ -2253,11 +2253,17 @@
     /* No min-height: with the bar gone this slot is either the signup card (which
        carries its own .te-rsv-card reserve below) or empty. */
     .progress-controls { margin-bottom: 0.9rem; display: flex; }
-      background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.7rem 0.9rem; }
     @keyframes prog-bump { 0% { transform: scale(1); } 45% { transform: scale(1.35); } 100% { transform: scale(1); } }
-      border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary);
-      padding: 6px 12px; cursor: pointer; min-width: 36px; display: inline-flex; align-items: center; justify-content: center;
-      gap: 5px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    /* ⚠ TWO ORPHANED DECLARATION BLOCKS WERE REMOVED HERE (2026-08-21). When the progress bar
+       was retired (6905723) its SELECTORS were deleted and their bodies were left behind, so
+       STYLES contained two rule bodies with nothing to belong to — and each carried a closing
+       brace. A stray closing brace does not just do nothing: the CSS parser treats it as the end of a
+       block and skips to recover, swallowing the NEXT rule with it. That is why
+       ".player-top { display: flex }" was in the file but absent from the CSSOM, and why the
+       guide page's demo player collapsed into a full-width column while every other surface
+       looked fine — the dyn player uses .dyn-* classes, so the guide's classic markup was the
+       only thing still depending on the rules that were being eaten.
+       Found by counting braces, not by reading: the file looks completely normal. */
     /* Signed out → renderProgress leaves this slot EMPTY (the signup card lives below the player,
        in the offline-bar slot). Without this the measured reserve above becomes ~94px of blank gap
        over the player on a phone. :empty rather than a body class so it tracks the actual render

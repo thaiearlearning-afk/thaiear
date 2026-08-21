@@ -94,11 +94,13 @@
 </style>
 <style id="player-styles-copy">
     /* Reserve the late-loading (auth-gated) progress card's slot on desktop/tablet too, so it
-      background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.7rem 0.9rem; }
     @keyframes prog-bump { 0% { transform: scale(1); } 45% { transform: scale(1.35); } 100% { transform: scale(1); } }
-      border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary);
-      padding: 6px 12px; cursor: pointer; min-width: 36px; display: inline-flex; align-items: center; justify-content: center;
-      gap: 5px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    /* ⚠ The two orphaned declaration blocks that used to sit here are GONE (2026-08-21) — the
+       same repair as player.js's STYLES, applied by hand BECAUSE gen_dyncss.js does not sync
+       this copy (it reports 'already matches' and writes nothing; TEXT_SCALING.md section 5).
+       Their stray closing braces made the CSS parser skip the next rule, which is how
+       .player-top lost its display:flex and this page's demo player collapsed into a
+       full-width column while every other surface looked fine. */
     .prog-spin { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: prog-spin 0.6s linear infinite; }
     @keyframes prog-spin { to { transform: rotate(360deg); } }
     .prog-tick { display: inline-block; font-weight: 700; animation: prog-tick-pop 0.4s cubic-bezier(0.2,0.8,0.3,1.3) both; }
