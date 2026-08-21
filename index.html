@@ -339,6 +339,12 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 .medal{
   position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
   z-index:3; pointer-events:none; line-height:0;
+  /* ⚠ THE RING AND SHADOW LIVE ON THE PARENT, NOT THE DISC. The disc is clip-path'd to a
+     circle (see below) and clip-path clips EVERYTHING, box-shadow included — leaving them on
+     the disc would have silently deleted the white ring the mark needs to read against three
+     different backgrounds. */
+  border-radius:50%;
+  box-shadow:0 0 0 5px rgba(255,255,255,.9), 0 10px 30px rgba(28,18,78,.28);
 }
 .medal-disc{
   /* ⚠ display:block is load-bearing. It is a <span>, and width / border-radius /
@@ -348,8 +354,23 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   display:block;
   width:clamp(104px, min(15vw, 19vh), 168px); aspect-ratio:1;
   border-radius:50%; overflow:hidden;
-  box-shadow:0 0 0 5px rgba(255,255,255,.9), 0 10px 30px rgba(28,18,78,.28);
+  /* ⚠ clip-path, NOT just border-radius, AND THAT IS THE WHOLE POINT OF IT HERE.
+     border-radius rounds the PAINT but leaves the hit area a square, so the mark's four corners
+     would swallow taps that visually land on Topics or Playlists — the exact confusion the owner
+     asked to avoid ("logo might start rotating but person gets navigated"). clip-path DOES affect
+     hit testing, so the tappable area is the circle you can see, to the pixel. Outside it, the
+     event reaches the region underneath as if the mark were not there. */
+  clip-path:circle(50%);
+  pointer-events:auto;      /* .medal above is none; the disc is the only live part */
+  cursor:pointer;
 }
+/* One full clockwise turn. Eased rather than linear so it starts and stops gently — a linear
+   spin on a logo reads as a loading spinner. */
+@keyframes te-swirl { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+.medal-disc.spin{ animation:te-swirl 3s cubic-bezier(.45,.05,.35,1) 1; }
+/* Someone who has asked the OS for less motion does not want the logo spinning at them. The
+   mark stays interactive; it simply does not animate. */
+@media (prefers-reduced-motion: reduce) { .medal-disc.spin{ animation:none; } }
 .medal-disc img{ width:100%; height:100%; display:block; }
 
 /* ── phone ────────────────────────────────────────────────────────────────
@@ -494,23 +515,6 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
     <line class="over down"  x1="50" y1="50" x2="0"  y2="83.33"/>
     <line class="over down"  x1="50" y1="50" x2="100" y2="83.33"/>
   </svg>
-  <script>
-  /* Copy --split-n onto the two sloping lines so they land on the clip-path corners. See the
-     note by `.lines .down` for why this cannot be CSS. Re-run on resize because the value
-     changes at the 700px breakpoint. */
-  (function () {
-    var svg = document.currentScript.previousElementSibling;
-    function sync() {
-      var n = getComputedStyle(document.documentElement).getPropertyValue('--split-n').trim();
-      if (!n) return;
-      var ls = svg.querySelectorAll('.down');
-      for (var i = 0; i < ls.length; i++) ls[i].setAttribute('y2', n);
-    }
-    sync();
-    addEventListener('resize', sync);
-    if (window.matchMedia) try { matchMedia('(max-width:700px)').addEventListener('change', sync); } catch (e) {}
-  })();
-  </script>
 
 
   <!-- The welcome / create-account block. A SIBLING of the three regions, never a child:
@@ -528,6 +532,57 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
          RGBA re-save comes out at 230 KB, the same trap gen_og_image.py records. -->
     <img src="home-swirl.png" alt="ThaiEar" width="420" height="420" fetchpriority="high" decoding="async"></span>
   </div>
+  <!-- ⚠ AFTER the mark, not before it. This script binds the spin trigger to .medal-disc,
+       and when it sat above the medal that lookup returned null and the easter egg simply
+       never armed — silently, because a missing element is not an error. Still inline and
+       still in the stage, so the divider-line sync above it continues to run before paint. -->
+  <script>
+  /* Copy --split-n onto the two sloping lines so they land on the clip-path corners. See the
+     note by `.lines .down` for why this cannot be CSS. Re-run on resize because the value
+     changes at the 700px breakpoint. */
+  (function () {
+    var svg = document.currentScript.previousElementSibling;
+    function sync() {
+      var n = getComputedStyle(document.documentElement).getPropertyValue('--split-n').trim();
+      if (!n) return;
+      var ls = svg.querySelectorAll('.down');
+      for (var i = 0; i < ls.length; i++) ls[i].setAttribute('y2', n);
+    }
+    sync();
+    addEventListener('resize', sync);
+
+    /* ── the mark spins, once, on tap or hover ──────────────────────────────────────────
+       3s turn, then a 1s cooldown before it can be triggered again, so a mouse crossing it
+       repeatedly cannot start a stutter. `animationend` is what removes the class, so the
+       cooldown starts when the turn really finishes rather than when a timer guesses it has.
+       Hover is bound only on devices that actually hover — on a touchscreen a tap synthesises
+       a mouseenter, which would fire the trigger twice for one tap. */
+    var disc = document.querySelector('.medal-disc');
+    if (disc) {
+      var busyUntil = 0;
+      var spin = function () {
+        var now = Date.now();
+        if (now < busyUntil || disc.classList.contains('spin')) return;
+        busyUntil = now + 4000;                       // 3s turn + 1s cooldown
+        disc.classList.add('spin');
+        armClear();
+      };
+      /* ⚠ A TIMER BACKSTOP AS WELL AS animationend, because a missed animationend would leave
+         the class stuck and the easter egg dead for the rest of the page's life — adding a class
+         that is already there does nothing. CSS animations are FROZEN in a background tab, so an
+         animationend can genuinely go missing: verified here, currentTime stuck at 0 with
+         playState "running" while document.hidden was true. Both paths are idempotent. */
+      var clear = function () { disc.classList.remove('spin'); };
+      disc.addEventListener('animationend', clear);
+      var armClear = function () { setTimeout(clear, 3400); };
+      disc.addEventListener('click', spin);
+      if (window.matchMedia && matchMedia('(hover: hover)').matches) {
+        disc.addEventListener('mouseenter', spin);
+      }
+    }
+    if (window.matchMedia) try { matchMedia('(max-width:700px)').addEventListener('change', sync); } catch (e) {}
+  })();
+  </script>
 
 </main>
 
