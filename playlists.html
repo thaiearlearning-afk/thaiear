@@ -15,7 +15,7 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
 <style>.te-embed #site-nav-root,.te-embed nav.site-nav{display:none!important}
 .te-embed .wrap{padding-top:0}/* r128: panel title sits the same distance below the switcher as the topics title */
 </style>
-<title>My Playlists — ThaiEar</title>
+<title>Playlists — ThaiEar</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -61,7 +61,12 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <div class="wrap" id="pl-list-wrap">
-  <h1>My Playlists</h1>
+  <h1>Playlists</h1>
+  <!-- Brought across from index.html's playlists panel, where it was the only subtitle this
+       surface ever had (r137 — the panel shipped with no heading at all). .panel-sub is
+       declared in index.html, which this page does not load, so its values are inlined:
+       11px/500, 0.08em, uppercase, var(--accent). -->
+  <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);margin:6px 0 16px">Learn Thai by Your Ear</div>
   <!-- r130 — the rest of the list experience (lede, meditator caption, layout-B add-card, download
        batch bar, playlist boxes) is now rendered BY pl-list.js's mount() into this container, so the
        exact same module can mount natively into the index Playlists panel. See pl-list.js. -->
@@ -93,7 +98,10 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
      left alone (the player is still its own top-level page); ?embed=1 is left alone too, purely so
      an old cached copy of the index still iframing this page during the cache-transition window
      keeps working. */
-  if (!PLID && !/[?&]embed=1(&|$)/.test(location.search)) { location.replace('index.html#playlists'); return; }
+  /* The bare-visit redirect to index.html#playlists is GONE (2026-08-21). It existed because
+     the list only ever rendered inside the index switcher panel; with that panel retired this
+     page is the destination, so a direct visit must render the list. `PLID` still selects the
+     player view below. */
 
   /* r130 — LIST VIEW: the entire list experience (markup, CSS, download machinery, modals,
      create/rename/delete/remove-sentences flows) now lives in pl-list.js, shared with the index

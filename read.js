@@ -1744,6 +1744,12 @@
       var toLessons = location.hash === '#lessons';
       if (toLessons && 'scrollRestoration' in history) history.scrollRestoration = 'manual';
       renderHub(root);
+      /* The jump control is STATIC in read.html's markup (2026-08-21), so unlike the index
+         panel — where mountHub() builds it — this path has to bring its own CSS and handler.
+         Both are the same ones mountHub uses; without them the control is three inert '>'
+         characters. Guarded on the element so read-*.html lesson pages are unaffected. */
+      var jumpBtn = document.getElementById('te-jump-btn');
+      if (jumpBtn) { injectHubMountCss(); jumpBtn.addEventListener('click', scrollToLessons); }
       markTerms(document.body);
       prefetchWhenIdle(sectionAudioIds('hub'));
       if (toLessons) scrollToLessons();
