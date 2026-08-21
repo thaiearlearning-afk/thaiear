@@ -102,6 +102,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 
 ## Pages
 
+- [Topics by level](https://thaiear.com/topics): Every topic grouped into five difficulty bands, beginner to advanced
 - [Read Thai](https://thaiear.com/read): Learn to read Thai script from zero — the consonant classes, vowels and tone rules, with audio and self-tests
 - [About](https://thaiear.com/about): What ThaiEar is and who it's for
 - [Guide](https://thaiear.com/guide): How to use ThaiEar to learn Thai by listening

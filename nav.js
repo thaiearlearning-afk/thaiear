@@ -374,7 +374,12 @@
   // login page (join.html) which bounces back via ?next after sign-in.
   const MENU_ITEMS = [
     { label: 'Home', page: 'index.html', public: true },
-    // Read Thai mobile-menu entry removed — reading is reached via the index's Read panel now (owner, 2026-08-02).
+    /* ⚠ NO Topics / Read Thai / Playlists entries here, and that is deliberate (owner,
+       2026-08-02 and re-confirmed 2026-08-21 when the home page became the three-way splash).
+       The splash IS the chooser: the logo and this menu's Home entry both lead to it, and it
+       offers all three in one screen. Repeating them in the menu would put a second, smaller
+       chooser one tap away from the real one. Crawlers reach /topics through sitemap.xml,
+       llms.txt and the splash's own links — none of which needs a menu entry. */
     { label: 'About', page: 'about.html', public: true },
     { label: 'Guide', page: 'guide.html', public: true },
     /* ⚠ THE MAIN MENU, NOT THE PERSON ICON (owner, 2026-08-20). The account dropdown was
