@@ -182,6 +182,10 @@
     stage.style.setProperty('--cta-h', Math.ceil(tallestHeight()) + 'px');
     var next = html();
     if (el.innerHTML !== next) el.innerHTML = next;   // never rewrite an identical node
+    /* The gold ground belongs to the SIGNED-IN greeting only; the signed-out state is a button,
+       which needs no panel behind it. Set here rather than with :has() so the CSS has no
+       dependency on selector support at first paint. */
+    el.classList.toggle('has-welcome', !!el.querySelector('.cta-welcome'));
     fitName();
   }
 
