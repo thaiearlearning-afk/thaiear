@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v381';   // v381: /topics + the five band pages join the precached shell
+const VERSION = 'v382';   // v382: app signed-out signup card spacing (player.js + the extracted CSS are precached)
                           // 900 ms after sign-in and was cancelling it -- plus the missed
                           // email-typo shapes in all three copies of DOMAIN_TYPOS.
                           // attrib.js is precached, so this bump is what delivers it.

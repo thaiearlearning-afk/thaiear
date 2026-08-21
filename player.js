@@ -2288,7 +2288,18 @@
        container — 153 up to 337, 133 to 573, 114 above. A first pass measured the card in a
        stand-alone box and got 559 as the upper breakpoint, which left a 19px shift at 560. Re-measure if its copy or padding changes. Higher specificity than the plain
        .progress-controls rules, so it beats them inside their media queries too. */
-    .progress-controls.te-rsv-card { min-height: 133px; }
+    /* ⚠ SPACING, MEASURED (owner, 2026-08-21: "very very close" on the app). In the app/PWA
+       signed-out case the card's top sat 1px below the "N sentences - Click each sentence..."
+       line, because the slot's only margin was on the BOTTOM. It now breathes above and sits a
+       little tighter to the player, which is what was asked for.
+       ⚠ BOTH MARGINS BELONG ON .te-rsv-card, NOT ON .progress-controls. The plain slot is EMPTY
+       in a browser and when signed in, and giving it a top margin there would push the player
+       down on every other surface — desktop and mobile web are both fine today and must stay
+       that way.
+       Net effect on the insertion shift is +9.6px on a 147.4px move (14.4 bottom-only, before;
+       14 top + 10 bottom, now), because the card and its margins arrive together with the class.
+       Measured at 390 CSS px in the real page: gap above 1px -> 14px, gap below 14px -> 10px. */
+    .progress-controls.te-rsv-card { min-height: 133px; margin-top: 14px; margin-bottom: 10px; }
     @media (max-width: 337.98px) { .progress-controls.te-rsv-card { min-height: 153px; } }
     @media (min-width: 574px)    { .progress-controls.te-rsv-card { min-height: 114px; } }
     /* --- end-of-topic ask (2026-08-15). Sits between the last sentence and the prev/next nav.
