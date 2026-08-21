@@ -166,7 +166,15 @@
   --navy:#1C124E;
   --cream:#FAF6EC;
   --line-w:3px;
-  --split:83.33%;          /* where the two lower lines meet the side edges */
+  /* ⚠ ONE NUMBER, UNITLESS, FOR BOTH THE CLIP EDGES AND THE DRAWN LINES.
+     It was two: the clip-path took a percentage while the SVG carried y2="83.33" as a hard
+     attribute. They agree at the desktop value, so nothing looked wrong — but the phone
+     breakpoint moves the split to 72 and the ATTRIBUTE cannot follow a CSS variable, so the
+     drawn lines stayed at 83.33 while the colour boundary moved to 72. The result was a second
+     pair of grey lines at a visibly different angle across the white region, on every phone
+     (owner, iPhone PWA). Unitless so it can be read as a percentage by clip-path and as user
+     units by the SVG geometry properties below. */
+  --split-n:83.33;
 }
 
 /* The splash is EXACTLY one screen: nav on top, stage filling the rest, and
@@ -185,10 +193,18 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
       overflow:hidden; isolation:isolate; }
 
 /* ── the three regions ─────────────────────────────────────────────────── */
-.sect{ position:absolute; inset:0; display:block; text-decoration:none; transition:filter .18s ease; }
-.s1{ clip-path:polygon(50% 50%, 50% 0, 0 0, 0 var(--split)); }
-.s2{ clip-path:polygon(50% 50%, 50% 0, 100% 0, 100% var(--split)); }
-.s3{ clip-path:polygon(50% 50%, 0 var(--split), 0 100%, 100% 100%, 100% var(--split)); }
+/* ⚠ THE TAP HIGHLIGHT IGNORES clip-path. Each region is a FULL-PAGE <a> that only LOOKS
+   like a third of the screen, so iOS painted its default highlight over the element's whole
+   rectangle: tap one region and the entire home page went dark grey for a moment (owner,
+   iPhone PWA). Suppressing it is not enough on its own — a tap must still feel like it did
+   something — so the feedback is a `filter` on the same element, and a filter IS clipped, so
+   only the third you actually touched reacts. Lighter and shorter than the OS default, too. */
+.sect{ position:absolute; inset:0; display:block; text-decoration:none;
+       transition:filter .18s ease; -webkit-tap-highlight-color:transparent; }
+.sect:active{ filter:brightness(.94) saturate(1.03); transition:filter .06s ease; }
+.s1{ clip-path:polygon(50% 50%, 50% 0, 0 0, 0 calc(var(--split-n) * 1%)); }
+.s2{ clip-path:polygon(50% 50%, 50% 0, 100% 0, 100% calc(var(--split-n) * 1%)); }
+.s3{ clip-path:polygon(50% 50%, 0 calc(var(--split-n) * 1%), 0 100%, 100% 100%, 100% calc(var(--split-n) * 1%)); }
 
 /* ── the three colours ─────────────────────────────────────────────────── */
 .c-purple{ background:linear-gradient(150deg,#5348BE 0%, #4B41AD 46%, #3B3391 100%); }
@@ -289,6 +305,16 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 .lines .under{ stroke:rgba(28,18,78,.16); stroke-width:calc(var(--line-w) + 3px); }
 .lines .over { stroke:#FFFFFF; stroke-width:var(--line-w); }
 .lines line{ vector-effect:non-scaling-stroke; stroke-linecap:round; }
+/* ⚠ THE DRAWN ENDPOINTS ARE SET IN JS, NOT CSS, AND THAT IS NOT LAZINESS.
+   The obvious fix is the SVG2 geometry property `.down { y2: calc(var(--split-n) * 1px) }`,
+   which is exactly the right shape — one number driving both the clip corners and the lines.
+   It does not work: `CSS.supports('y2','10px')` is FALSE in current Chrome, so the rule is
+   dropped and the lines silently keep their attribute value. Measured, not assumed — the line
+   still ended at 83.3% of the stage while the colour boundary was at 72%.
+   So a four-line script copies --split-n onto the attributes instead (see below the SVG). It
+   runs during parse, changes no layout (the overlay is absolutely positioned and the lines are
+   decorative), and the y2="83.33" attributes remain the fallback if it never runs — which is
+   the correct picture at desktop width, where the script matters least. */
 
 /* ── centre mark ──────────────────────────────────────────────────────────
    The ROUND icon (the nav / favicon swirl) already IS a disc, so it fills the
@@ -323,14 +349,19 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
      enough to hold its label, and the higher that label can sit. The cost is that the
      bottom band takes a little more than a third on a phone — the "roughly equal"
      caveat that already applies at this size. */
-  :root{ --split:72%; --line-w:2.5px; }
+  :root{ --split-n:72; --line-w:2.5px; }
   .s1 .s-label,.s2 .s-label{ top:26%; width:44vw; }
   .s3 .s-label{ top:74%; width:88vw; }
   .s-title{ font-size:calc(clamp(20px,6vw,26px) * var(--te-ui, 1)); }
   .s3 .s-title{ font-size:calc(clamp(20px,6vw,26px) * var(--te-ui, 1)); }
   .s-sub{ font-size:calc(12px * var(--te-ui, 1)); }
   .medal-disc{ width:min(30vw, 20vh, 132px); }
-  .s-go{ width:26px; height:26px; margin-top:.5rem; }
+  /* The chevron buttons go on phones (owner, 2026-08-21): with three coloured regions filling
+     the screen it is obvious you tap the one you want, so they are clutter — and clutter is
+     expensive here, because the regions are short. Kept on desktop, where there is room and a
+     cursor makes an explicit target useful. Removed with display:none rather than by dropping
+     the markup: the affordance is a property of the VIEWPORT, not of the page. */
+  .s-go{ display:none; }
 }
 /* A short phone (an SE at 568px, or any phone in landscape) cannot carry the
    descriptions at all — three titles plus the mark already fill it. */
@@ -393,12 +424,29 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 
   <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
     <line class="under" x1="50" y1="50" x2="50" y2="0"/>
-    <line class="under" x1="50" y1="50" x2="0"  y2="83.33"/>
-    <line class="under" x1="50" y1="50" x2="100" y2="83.33"/>
+    <line class="under down" x1="50" y1="50" x2="0"  y2="83.33"/>
+    <line class="under down" x1="50" y1="50" x2="100" y2="83.33"/>
     <line class="over"  x1="50" y1="50" x2="50" y2="0"/>
-    <line class="over"  x1="50" y1="50" x2="0"  y2="83.33"/>
-    <line class="over"  x1="50" y1="50" x2="100" y2="83.33"/>
+    <line class="over down"  x1="50" y1="50" x2="0"  y2="83.33"/>
+    <line class="over down"  x1="50" y1="50" x2="100" y2="83.33"/>
   </svg>
+  <script>
+  /* Copy --split-n onto the two sloping lines so they land on the clip-path corners. See the
+     note by `.lines .down` for why this cannot be CSS. Re-run on resize because the value
+     changes at the 700px breakpoint. */
+  (function () {
+    var svg = document.currentScript.previousElementSibling;
+    function sync() {
+      var n = getComputedStyle(document.documentElement).getPropertyValue('--split-n').trim();
+      if (!n) return;
+      var ls = svg.querySelectorAll('.down');
+      for (var i = 0; i < ls.length; i++) ls[i].setAttribute('y2', n);
+    }
+    sync();
+    addEventListener('resize', sync);
+    if (window.matchMedia) try { matchMedia('(max-width:700px)').addEventListener('change', sync); } catch (e) {}
+  })();
+  </script>
 
   <div class="medal" id="medal">
     <span class="medal-disc"><img src="icon-512.png" alt="ThaiEar" width="512" height="512" fetchpriority="high"></span>
