@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v388';   // v388: a redirected response was being handed to navigations (PWA blob error)
+const VERSION = 'v389';   // v389: the playlists download batch bar is gone
                           // sentence of a page load and every 30s after, not every 5
                           // minutes. A tally inside the window lives only in memory, so
                           // the window was the amount of listening a bad exit destroys.

@@ -104,6 +104,11 @@
        does appear. Here the hint STAYS visible while busy (dlKeepOpen), so the status row genuinely
        adds a line at download start — input-driven, once, and the price of losing the dead space. */
     '.dl-batch-status { font-size: 13px; color: var(--text-secondary); line-height: 1.2; min-height: 1.2em; }' +
+    /* ⚠ The plain circle was the batch bar's SELECT control; with the bar gone it would be a
+       control that does nothing. Hidden, not deleted: dlState() still computes the verdict
+       and test_pl_dlstate.js still reads it off this node. The tick (.dl-badge) and the
+       dashed update dot (.dl-update) stay — those report rather than act. */
+    '.dl-select:not(.dl-update) { display: none; }' +
     '.dl-batch-status:empty { display: none; }' +
     '.dl-batch-status.err { color: #B00020; }' +
     '.dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); line-height: 1.35; }' +
@@ -159,21 +164,13 @@
       '<button class="pl-add" id="pl-add" type="button">＋ Add playlist</button>' +
       '<span class="pl-add-hint">Add sentences to your playlists from topic pages</span>' +
     '</div>' +
-    '<div class="dl-batch-bar" id="dl-batch-bar" hidden>' +
-      '<div class="dl-batch-btns">' +
-        '<button class="dl-batch-btn" id="dl-btn" type="button">Download Playlist(s)</button>' +
-        '<button class="dl-batch-btn dl-clear-btn" id="clear-btn" type="button">Remove Selected Downloads</button>' +
-      '</div>' +
-      '<div class="dl-batch-btns dl-batch-btns-2">' +
-        '<button class="dl-batch-btn dl-removeall-btn" id="removeall-btn" type="button">Remove All Downloads</button>' +
-      '</div>' +
-      '<span class="dl-batch-status" id="dl-status"></span>' +
-      '<span class="dl-batch-hint dl-share-note" id="dl-share-note">' +
-        '<span id="dl-hint">Tap a playlist\'s circle to download, or a tick to remove, then pick an action.</span>' +
-        '<span class="more-body"><br><br>A playlist can say <strong>available offline</strong> when its sentences are already saved by something else — a topic you\'ve downloaded, or another playlist. Clearing this playlist won\'t remove those files while something else still needs them.<br><br>Downloaded playlists will always be available offline, no matter which other topic or playlist downloads you remove.</span>' +
-        '<button type="button" class="dl-share-more" id="dl-share-more">more</button>' +
-      '</span>' +
-    '</div>' +
+    /* ⛔ THE DOWNLOAD BATCH BAR IS GONE (owner, 2026-08-21). Downloading happens INSIDE a
+       playlist now, exactly as it does inside a topic — four Download/Remove bars across the
+       site was messy UI, and the bulk clear moved to account.html, which is the only thing the
+       bar did that nothing else could.
+       The CODE is deliberately left in place: dlRunDownloads / dlRunClear / dlRemoveAll and
+       their wiring all look their elements up by id and no-op when absent, so nothing here is
+       dead-but-dangerous, and restoring the bar is putting this markup back. */
     '<div id="pl-root"><p class="pl-note">Loading…</p></div>';
 
   function mount(rootEl) {
@@ -357,7 +354,9 @@
          itself in the app, so one call serves both. */
       var A = window.ThaiEarAppCTA;
       if (A) {
-        var anchor = rootEl.querySelector('#dl-batch-bar');
+        /* The bar it used to sit in front of no longer exists, so fall back to the list
+           container — the card keeps the same slot, between the add-card and the rows. */
+        var anchor = rootEl.querySelector('#dl-batch-bar') || rootEl.querySelector('#pl-root');
         if (A.authGuess && A.authGuess() === 'out') A.insertSignupBefore(anchor, 'playlist');
         else if (noDl) A.insertBefore(anchor, 'playlist');
       }
