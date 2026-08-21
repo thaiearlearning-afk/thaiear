@@ -103,6 +103,11 @@
 
   @media (max-width: 600px) { .wrap { padding: 2rem 1.1rem 2.5rem; } h1 { font-size: 24px; } }
 </style>
+<!-- identity.js: who is this, synchronously, before Supabase answers. Must be a plain
+     blocking script in the head — nav.js mounts before auth.js is even appended, so
+     anything deferred is too late to stop the first frame painting the wrong state. ~1 KB,
+     precached. -->
+<script src="/identity.js"></script>
 </head>
 <body>
 

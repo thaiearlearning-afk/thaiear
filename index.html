@@ -34,6 +34,22 @@
 @font-face{font-family:'Sarabun';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/sarabun-thai-400.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
 @font-face{font-family:'Sarabun';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/sarabun-thai-500.woff2') format('woff2');unicode-range:U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC}
 </style>
+<script src="/identity.js"></script>
+
+<script>
+/* ⚠ MUST RUN BEFORE FIRST PAINT — it is inline, in the head, on purpose. It stamps the saved
+   greeting colour onto <html> so the band's very first frame is already right. Deferred, it
+   would paint the default and then change, which is a visible flicker on every load.
+   localStorage, not a Supabase column: this is a cosmetic, per-device preference the user sets
+   by tapping, so it should work offline, cost no round trip, and not become a stored personal
+   record. Unknown or absent falls back to sand, the shipped default. */
+(function () {
+  var T = ['sand','stone','olive','indigo','lilac','rose','ink'], t = 'sand';
+  try { var v = localStorage.getItem('thaiear_greet_theme'); if (T.indexOf(v) > -1) t = v; } catch (e) {}
+  document.documentElement.setAttribute('data-gt', t);
+})();
+</script>
+
 <!-- pwa:start (gen_pwa.js) -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#4B41AD">
@@ -475,25 +491,52 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
    B — the progress page's stat card (.stat-card + .stat-val): white ground with a hairline
        border, and the greeting in var(--accent), the blue "3 mins" is set in.
    Whichever wins, the losing rules and the switcher come out and it becomes plain CSS. */
-/* ── the greeting's treatment: the GOLD family (owner picked D of five, 2026-08-21) ──
-   The problem it solves: on the white Read Thai region the greeting was not distinct enough
-   from the region itself. A warm ground separates it, and gold is the one colour on the page
-   the mark already carries, so the block reads as part of the design rather than an inserted
-   panel. #6E5410 on --gold-light is the same pairing the topics page uses for its
-   Beginner→Lower Intermediate band strip, so the two surfaces draw from one palette.
-   ⚠ Applies to the SIGNED-IN block only — the signed-out state is the accent button, which
-   needs no ground of its own. */
-/* ⚠ A CLASS, NOT :has(). The selector would work in every browser this site supports, but this
-   rule paints on first frame and a class set by the same code that renders the greeting is one
-   less thing that can be a support question — home-cta.js adds `has-welcome` when, and only when,
-   it renders the signed-in state. */
+/* ── the greeting: a FULL-BLEED BAND, and seven grounds to cycle through ──────────────
+   Owner, 2026-08-21: bound vertically only, so it spans the whole width of the screen, and
+   tapping it cycles the colour. The choice is remembered in localStorage (see home-cta.js for
+   why that rather than a Supabase column).
+
+   ⚠ FULL BLEED APPLIES TO THE SIGNED-IN GREETING ONLY. Signed out the block is the accent
+   button, which wants to stay a button — a full-width band with a button floating in it reads
+   as a cookie bar. `has-welcome` is set by the renderer, so the two states cannot be confused.
+
+   ⚠ THE BAND COVERS THE BOTTOM STRIP OF THE READ THAI REGION, so a tap there cycles the colour
+   instead of opening the reading course. That is the trade the full-bleed shape asks for; the
+   Read Thai label itself sits above the band and is unaffected.
+
+   ⚠ THE THEME IS STAMPED ON <html> BEFORE FIRST PAINT by the inline head script, not applied by
+   home-cta.js afterwards. The owner's requirement: "don't want a flurry of color changes on first
+   load". A deferred script would paint the default sand and then swap — one visible change every
+   single load, which is worse than the flash it replaced. The attribute is set while the head is
+   parsing, so the very first frame is already the chosen colour.
+
+   The seven grounds are the site's own palette — sand is the /topics Beginner→Lower Intermediate
+   strip, lilac and rose are its Upper-Intermediate and Advanced strips, stone is Intermediate,
+   indigo is the accent — plus olive and a dark ink for range. */
 .te-hero-cta.has-welcome{
-  background:var(--gold-light); border:0.5px solid rgba(200,160,48,.45);
-  border-radius:var(--radius-lg); padding:.6rem 1.05rem;
-  width:auto; max-width:min(420px,86vw);
+  left:0; right:0; width:auto; max-width:none; transform:none;
+  padding:.6rem 1.05rem; border-radius:0;
+  border-top:0.5px solid var(--gt-line, transparent);
+  background:var(--gt-bg, var(--gold-light));
+  cursor:pointer;
 }
-.te-hero-cta .cta-welcome{ color:#6E5410; }
-.te-hero-cta .cta-streak{ color:#8a6b1c; }
+.te-hero-cta.has-welcome .cta-welcome{ color:var(--gt-fg, #6E5410); }
+.te-hero-cta.has-welcome .cta-streak{ color:var(--gt-sub, #8a6b1c); }
+
+/* sand — the shipped default, and the /topics Beginner→Lower Intermediate strip */
+[data-gt="sand"] .te-hero-cta.has-welcome{ --gt-bg:#FBF5DC; --gt-fg:#6E5410; --gt-sub:#8a6b1c; --gt-line:rgba(200,160,48,.45); }
+/* stone */
+[data-gt="stone"] .te-hero-cta.has-welcome{ --gt-bg:#EEF0F6; --gt-fg:#4A5578; --gt-sub:#6b769c; --gt-line:rgba(74,85,120,.25); }
+/* olive */
+[data-gt="olive"] .te-hero-cta.has-welcome{ --gt-bg:#EEF1E4; --gt-fg:#4F5A22; --gt-sub:#6d7a37; --gt-line:rgba(79,90,34,.25); }
+/* indigo — the accent family */
+[data-gt="indigo"] .te-hero-cta.has-welcome{ --gt-bg:#EEEDFE; --gt-fg:#3B3488; --gt-sub:#5a51b8; --gt-line:rgba(75,65,173,.25); }
+/* lilac — the Upper Intermediate strip */
+[data-gt="lilac"] .te-hero-cta.has-welcome{ --gt-bg:#F0EFFD; --gt-fg:#534AB7; --gt-sub:#7F77DD; --gt-line:rgba(127,119,221,.3); }
+/* rose — the Advanced strip */
+[data-gt="rose"] .te-hero-cta.has-welcome{ --gt-bg:#FBECEC; --gt-fg:#A23A3A; --gt-sub:#c06a6a; --gt-line:rgba(162,58,58,.25); }
+/* ink — the one dark ground, with the mark's gold on it */
+[data-gt="ink"] .te-hero-cta.has-welcome{ --gt-bg:#2B2566; --gt-fg:#F0CC5C; --gt-sub:rgba(240,204,92,.75); --gt-line:rgba(240,204,92,.3); }
 /* No room for it at all once the label stack is inflated on a short phone. */
 @media (max-width:700px) and (max-height:720px){ .te-hero-cta{ display:none; } }
 

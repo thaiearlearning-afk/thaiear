@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v404';   // v404: the greeting takes the gold treatment (owner picked D)
+const VERSION = 'v405';   // v405: one identity reader; greeting is a full-bleed band with 7 grounds
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
@@ -638,6 +638,8 @@ const PRECACHE = [
   '/topics-lower-intermediate-to-intermediate.html',
   '/topics-intermediate-to-upper-intermediate.html',
   '/topics-upper-intermediate-to-advanced.html',
+  /* The one identity reader. Blocking in every page's head, so it must be on disk. */
+  '/identity.js',
   '/topics-page.css', '/topics-page.js',
   /* The home splash's welcome / create-account block. Precached with the rest of the shell:
      the home page is the route to every downloaded topic, and it must render completely

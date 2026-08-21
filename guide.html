@@ -393,6 +393,11 @@
   /* the real pages define these tokens in their own CSS; guide.html lacks a couple the player CSS uses */
   :root { --gold-light: #FBF5DC; }
 </style>
+<!-- identity.js: who is this, synchronously, before Supabase answers. Must be a plain
+     blocking script in the head — nav.js mounts before auth.js is even appended, so
+     anything deferred is too late to stop the first frame painting the wrong state. ~1 KB,
+     precached. -->
+<script src="/identity.js"></script>
 </head>
 <body class="te-v2">
 

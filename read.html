@@ -76,6 +76,11 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
   @media (max-width: 600px) { .fluency-img { width: 210px; } }  /* phone size; desktop keeps the base width */
 </style>
 <link rel="stylesheet" href="read.css">
+<!-- identity.js: who is this, synchronously, before Supabase answers. Must be a plain
+     blocking script in the head — nav.js mounts before auth.js is even appended, so
+     anything deferred is too late to stop the first frame painting the wrong state. ~1 KB,
+     precached. -->
+<script src="/identity.js"></script>
 </head>
 <body>
 

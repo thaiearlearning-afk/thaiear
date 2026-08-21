@@ -262,30 +262,16 @@
      auth.js's own anySignedIn() reads exactly these three things in this order; keep them in step.
      The key is discovered by PATTERN rather than rebuilt from the project ref, so this file does
      not have to know it — supabase stores under `sb-<ref>-auth-token`. */
+  /* ⚠ THE RULES MOVED TO identity.js (2026-08-21) — one reader for the whole site. The long
+     note that used to live here, about parsing the supabase key rather than testing that it
+     exists because the key SURVIVES SIGN-OUT, is now in that file. Same return shape as before
+     ('in' | 'out'), so every existing caller is untouched. */
   function authGuess() {
-    var st = authState();
-    if (st !== 'pending') return st;                 // real answer beats the guess
-    try {
-      if (localStorage.getItem('thaiear_signed_out') === '1') return 'out';
-      if (localStorage.getItem('thaiear_identity')) return 'in';
-      /* ⚠ PARSE IT — the KEY SURVIVES SIGN-OUT. supabase leaves `sb-<ref>-auth-token` in place
-         with a null/empty session inside, so testing that the key merely EXISTS answered "signed
-         in" for someone who had signed out. That made renderProgress paint the working progress
-         bar and then replace it with the signup card — the signed-OUT flash reported 2026-08-15.
-         auth.js's readStoredSession() unwraps `currentSession` and requires `.user`; do the same
-         thing here or the two disagree about who is signed in. */
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (!k || !/^sb-.+-auth-token$/.test(k)) continue;
-        try {
-          var o = JSON.parse(localStorage.getItem(k) || 'null');
-          var sess = (o && o.currentSession) ? o.currentSession : o;
-          if (sess && sess.user) return 'in';
-        } catch (_) {}
-      }
-    } catch (_) {}
-    return 'out';
+    var I = window.ThaiEarIdentity;
+    if (!I) return authState();               // identity.js absent → whatever auth already knows
+    return I.state(authState());
   }
+
   // Put the card where the withheld control would have been. No-op on a missing anchor, so a
   // call site whose markup changed shape fails quiet rather than throwing mid-render.
   function insertBefore(anchor, surface) {

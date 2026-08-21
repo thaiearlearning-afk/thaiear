@@ -454,38 +454,19 @@
      same signed-out guard, same username derivation. If they drift, the nav paints one name and
      auth resolves to another — a flicker with a wrong name in it, which is worse than the one
      this removes. */
-  /* Three-way, exactly like app-cta.js's authGuess(): 'in' with a user, 'out', or null when we
-     genuinely cannot tell. ⚠ THE 'out' ANSWER MATTERS AS MUCH AS 'in' — the owner sees the same
-     flicker signed OUT, because the invisible 48px placeholder is 8px WIDER than "Log in", so the
-     group shifts right as it settles. Knowing someone is signed out lets the first paint be the
-     final paint there too. */
+  /* ⚠ ONE READER FOR THE WHOLE SITE — identity.js. This used to be a hand-written copy of the
+     same rules, one of three, which is three chances to drift on a question where drift paints a
+     wrong name rather than a wrong pixel. identity.js is a synchronous head script, so it is
+     already there when the nav mounts (which is before auth.js has even been appended — nav.js
+     is what appends it). */
   function guessAuth() {
-    try {
-      if (localStorage.getItem('thaiear_signed_out') === '1') return { state: 'out' };
-      var o = JSON.parse(localStorage.getItem('thaiear_identity') || 'null');
-      var u = o && o.user;
-      if (u && u.id) return { state: 'in', user: userish(u) };
-      /* ⚠ PARSE THE SUPABASE KEY, DO NOT JUST TEST THAT IT EXISTS — it SURVIVES SIGN-OUT with an
-         empty session inside, so a bare existence check answers "signed in" for someone who has
-         signed out. auth.js's readStoredSession() unwraps `currentSession` and requires .user;
-         app-cta.js's authGuess() does the same. All three must agree. */
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (!k || !/^sb-.+-auth-token$/.test(k)) continue;
-        try {
-          var parsed = JSON.parse(localStorage.getItem(k) || 'null');
-          var sess = (parsed && parsed.currentSession) ? parsed.currentSession : parsed;
-          if (sess && sess.user) return { state: 'in', user: userish(sess.user) };
-        } catch (_) {}
-      }
-      /* No identity, no session: a first-time visitor really is signed out. Same default
-         app-cta.js takes. */
-      return { state: 'out' };
-    } catch (_) { return null; }   // storage unavailable — genuinely unknown
-  }
-  function userish(u) {
-    var meta = u.user_metadata || {};
-    return { username: meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member') };
+    var I = window.ThaiEarIdentity;
+    if (!I) return null;                      // identity.js absent → unknown, so paint neither
+    var g = I.guess();
+    if (!g) return null;
+    return g.state === 'in'
+      ? { state: 'in', user: { username: I.usernameOf(g.user) } }
+      : { state: 'out' };
   }
 
   function memberHtml() {

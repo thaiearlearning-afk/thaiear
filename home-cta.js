@@ -40,8 +40,12 @@
      front of their email address is worse than not greeting them at all. */
   function firstName(u) {
     if (!u || !u.username) return '';
-    var prefix = (u.email || '').split('@')[0];
-    if (u.username === prefix) return '';
+    /* "Is this a real name or just an email prefix?" is identity.js's rule, not a second
+       opinion held here. Falls back to the same comparison if it is somehow absent. */
+    var I = window.ThaiEarIdentity;
+    var real = I ? I.hasRealName({ email: u.email, user_metadata: { full_name: u.username } })
+                 : u.username !== (u.email || '').split('@')[0];
+    if (!real) return '';
     return String(u.username).split(' ')[0];
   }
 
@@ -56,37 +60,17 @@
     } catch (e) { return 0; }
   }
 
-  /* ⚠ THE SAME THREE-WAY SYNCHRONOUS GUESS nav.js USES, and for the same reason. auth.js
-     resolves a few hundred ms after paint, so rendering from getUser() alone meant a signed-in
-     visitor saw the blue "Create a free account" button flash and then be replaced by their
-     greeting (owner, on the live site). auth.js mirrors every resolved session into
-     `thaiear_identity`, which holds the FULL user object — so both the ANSWER and the NAME are
-     available before Supabase replies, and the first render can be the final one.
-     ⚠ KEEP IN STEP WITH auth.js readIdentity()/userFromSession(), app-cta.js authGuess() and
-     nav.js guessAuth(): same key, same signed-out guard, same username derivation, and the same
-     reason for PARSING the supabase key rather than testing that it exists — that key survives
-     sign-out with an empty session inside. */
+  /* ⚠ ONE READER FOR THE WHOLE SITE — identity.js, a synchronous head script. This was a
+     hand-written third copy of the same rules; see the note in identity.js for why that was a
+     bad idea and what it now guarantees. */
   function guess() {
-    try {
-      if (localStorage.getItem('thaiear_signed_out') === '1') return { state: 'out' };
-      var o = JSON.parse(localStorage.getItem('thaiear_identity') || 'null');
-      if (o && o.user && o.user.id) return { state: 'in', user: userish(o.user) };
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (!k || !/^sb-.+-auth-token$/.test(k)) continue;
-        try {
-          var parsed = JSON.parse(localStorage.getItem(k) || 'null');
-          var sess = (parsed && parsed.currentSession) ? parsed.currentSession : parsed;
-          if (sess && sess.user) return { state: 'in', user: userish(sess.user) };
-        } catch (_) {}
-      }
-      return { state: 'out' };
-    } catch (_) { return null; }        // storage unavailable — genuinely unknown
-  }
-  function userish(u) {
-    var meta = u.user_metadata || {};
-    return { username: meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member'),
-             email: u.email || '' };
+    var I = window.ThaiEarIdentity;
+    if (!I) return null;
+    var g = I.guess();
+    if (!g) return null;
+    return g.state === 'in'
+      ? { state: 'in', user: { username: I.usernameOf(g.user), email: g.user.email || '' } }
+      : { state: 'out' };
   }
 
   function html() {
@@ -217,6 +201,24 @@
   if (document.readyState === 'complete') setTimeout(apply, 0);
   else window.addEventListener('load', function () { setTimeout(apply, 0); });
   apply();
+
+  /* ── tap the greeting to change its colour ─────────────────────────────────────────
+     Seven grounds, cycled on tap, remembered per device. ⚠ THE CHOSEN ONE IS APPLIED BEFORE
+     FIRST PAINT by the inline head stamp in index.html, not here — this only handles the
+     CHANGE. Doing it here as well would repaint the default and then the saved colour on every
+     load, which is the flicker the owner asked to avoid.
+     localStorage rather than a Supabase column, deliberately: a cosmetic per-device preference
+     the user sets by tapping should work offline, cost no round trip, and not become a stored
+     personal record. */
+  var THEMES = ['sand', 'stone', 'olive', 'indigo', 'lilac', 'rose', 'ink'];
+  el.addEventListener('click', function () {
+    if (!el.classList.contains('has-welcome')) return;    // signed out: it is a link, leave it
+    var root = document.documentElement;
+    var now = root.getAttribute('data-gt') || 'sand';
+    var next = THEMES[(THEMES.indexOf(now) + 1) % THEMES.length];
+    root.setAttribute('data-gt', next);
+    try { localStorage.setItem('thaiear_greet_theme', next); } catch (e) {}
+  });
 
   // mock-only: the phone harness cycles the states through this.
   window.__ctaState = function (s) { forced = s; apply(); };
