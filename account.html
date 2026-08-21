@@ -772,13 +772,16 @@ function renderAccount() {
   el.innerHTML =
     '<p>Signed in as <span class="email">' + escEmail(user.email || user.username) + '</span></p>' +
     '<div id="membership" style="min-height:80px"></div>' +
-    offlineDlHtml() +
     consentHtml +
     // Admin-only; stays an empty div for everyone else. Populated by renderDesktopDlAdmin() once
     // auth.js has a SERVER answer — never rendered optimistically.
     '<div id="desktop-dl-admin"></div>' +
     resetHtml +
     '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="confirmLogout()">Log out</button></p>' +
+    /* Between Log out and Delete my account (owner, 2026-08-21). Above the email-updates block
+       it read as a headline feature; it is housekeeping, and it belongs with the other
+       destructive housekeeping at the foot of the page. */
+    offlineDlHtml() +
     '<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">' +
       '<button class="btn" onclick="deleteAccount()" style="font-size:12px;color:#B00020;background:none;border-color:rgba(176,0,32,0.35)">Delete my account</button>' +
       '<p id="delete-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
@@ -818,14 +821,19 @@ function offlineDlHtml() {
   // remove and no control to show.
   if (!dlAvailable()) return '';
   var n = dlCount();
-  return '<div id="offline-dl" style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
+  return '<div id="offline-dl" style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">' +
     '<h2 style="font-size:15px;font-weight:600;margin-bottom:4px">Offline downloads</h2>' +
     '<p class="acct-muted" id="offline-dl-count">' +
       (n ? n + ' item' + (n === 1 ? '' : 's') + ' stored on this device.'
          : 'Nothing downloaded on this device.') +
     '</p>' +
-    '<p style="margin-top:8px"><button class="btn btn-ghost" id="offline-dl-btn" ' +
-      'onclick="removeAllDownloads()" style="font-size:13px"' + (n ? '' : ' disabled') +
+    /* Same treatment as "Delete my account" below it: 12px, #B00020 on a plain ground with a
+       faded red border. Both remove data, both are typed-confirmation actions, so they should
+       read as the same KIND of button (owner, 2026-08-21). */
+    '<p style="margin-top:8px"><button class="btn" id="offline-dl-btn" ' +
+      'onclick="removeAllDownloads()" ' +
+      'style="font-size:12px;color:#B00020;background:none;border-color:rgba(176,0,32,0.35)"' +
+      (n ? '' : ' disabled') +
       '>Remove all downloads</button></p>' +
     '<p id="offline-dl-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
   '</div>';

@@ -306,9 +306,9 @@
   // specialised units whose sentences are a genuine step up (e.g. Buddhism).
   const LEVEL_ORDER = ['beg', 'li1', 'int', 'li2', 'adv'];
   const LEVEL_CLASS = { beg: 'badge-beg', li1: 'badge-li1', int: 'badge-int', li2: 'badge-li2', adv: 'badge-adv' };
-  const LEVEL_FULL  = { beg: 'Beginner', li1: 'Lower intermediate', int: 'Intermediate', li2: 'Upper intermediate', adv: 'Advanced' };
+  const LEVEL_FULL  = { beg: 'Beginner', li1: 'Lower Intermediate', int: 'Intermediate', li2: 'Upper Intermediate', adv: 'Advanced' };
   // User-facing labels are NEVER abbreviated — "Lower int" is internal shorthand only.
-  const LEVEL_SHORT = { beg: 'Beginner', li1: 'Lower intermediate', int: 'Intermediate', li2: 'Upper intermediate', adv: 'Advanced' };
+  const LEVEL_SHORT = { beg: 'Beginner', li1: 'Lower Intermediate', int: 'Intermediate', li2: 'Upper Intermediate', adv: 'Advanced' };
 
   function levelBounds(levels) {
     const present = LEVEL_ORDER.filter(l => levels.includes(l));

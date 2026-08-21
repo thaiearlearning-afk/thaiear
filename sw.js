@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v386';   // v386: phone fixes on the new home page -- divider angle, tap highlight, chevrons
+const VERSION = 'v387';   // v387: capitalised level labels, trimmed footer, account page changes
                           // sentence of a page load and every 30s after, not every 5
                           // minutes. A tally inside the window lives only in memory, so
                           // the window was the amount of listening a bad exit destroys.
