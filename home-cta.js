@@ -210,7 +210,12 @@
      localStorage rather than a Supabase column, deliberately: a cosmetic per-device preference
      the user sets by tapping should work offline, cost no round trip, and not become a stored
      personal record. */
-  var THEMES = ['sand', 'stone', 'olive', 'indigo', 'lilac', 'rose', 'ink'];
+  /* ⚠ THIS LIST AND THE `T` ARRAY IN index.html's PRE-PAINT STAMP MUST MATCH. The stamp only
+     honours a saved value it recognises, so a theme added here and not there would be applied
+     on the tap that set it and silently fall back to sand on the next load. Both come from
+     home-mock.html and gen_home_splash.js copies the stamp verbatim — so edit the MOCK. */
+  var THEMES = ['sand', 'stone', 'olive', 'indigo', 'lilac', 'rose',
+                'ink', 'navy', 'forest'];      // the last three are the dark, high-contrast grounds
   el.addEventListener('click', function () {
     if (!el.classList.contains('has-welcome')) return;    // signed out: it is a link, leave it
     var root = document.documentElement;
