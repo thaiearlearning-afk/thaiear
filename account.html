@@ -772,6 +772,7 @@ function renderAccount() {
   el.innerHTML =
     '<p>Signed in as <span class="email">' + escEmail(user.email || user.username) + '</span></p>' +
     '<div id="membership" style="min-height:80px"></div>' +
+    offlineDlHtml() +
     consentHtml +
     // Admin-only; stays an empty div for everyone else. Populated by renderDesktopDlAdmin() once
     // auth.js has a SERVER answer — never rendered optimistically.
@@ -789,6 +790,69 @@ function renderAccount() {
   renderDesktopDlAdmin();
   if (doReset) loadResetDebug();
 }
+/* ── OFFLINE DOWNLOADS: the new home of "Remove all downloads" ─────────────────────────
+   Moved here 2026-08-21 with the homepage redesign, which retires the index grid's download
+   BATCH BAR (owner: four Download/Remove bars across the site is messy UI; downloading now
+   happens inside a topic or a playlist, and a card only reports state).
+
+   ⚠ IT COULD NOT SIMPLY BE DELETED. Remove All is the ONLY bulk disk clear on the site — the
+   only other route is opening each downloaded topic and pressing Delete — and it is also the
+   only thing that sweeps leftover files from interrupted downloads. Losing it would leave a
+   user who wants their storage back with no practical way to get it.
+
+   ⚠ RENDERED IN THE SAME innerHTML PASS as the rest of the account body, deliberately. Both
+   predicates it needs are SYNCHRONOUS — ThaiEarAppCTA.noDownloadUi() reads display-mode, and
+   the manifest is localStorage — so there is nothing to wait for and therefore nothing to
+   reserve: the section is either there from the first paint or never. That is strictly better
+   than a min-height guess, which is what the async blocks on this page (membership, consent)
+   have to use because their answers arrive from the network. */
+function dlAvailable() {
+  var G = window.ThaiEarAppCTA;
+  return !!(G && G.noDownloadUi && !G.noDownloadUi() && window.ThaiEarDL);
+}
+function dlCount() {
+  try { return Object.keys(window.ThaiEarDL.getManifest()).length; } catch (_) { return 0; }
+}
+function offlineDlHtml() {
+  // Download UI is app + installed-PWA only, so in a plain browser tab there is nothing to
+  // remove and no control to show.
+  if (!dlAvailable()) return '';
+  var n = dlCount();
+  return '<div id="offline-dl" style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border)">' +
+    '<h2 style="font-size:15px;font-weight:600;margin-bottom:4px">Offline downloads</h2>' +
+    '<p class="acct-muted" id="offline-dl-count">' +
+      (n ? n + ' item' + (n === 1 ? '' : 's') + ' stored on this device.'
+         : 'Nothing downloaded on this device.') +
+    '</p>' +
+    '<p style="margin-top:8px"><button class="btn btn-ghost" id="offline-dl-btn" ' +
+      'onclick="removeAllDownloads()" style="font-size:13px"' + (n ? '' : ' disabled') +
+      '>Remove all downloads</button></p>' +
+    '<p id="offline-dl-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
+  '</div>';
+}
+/* The same call the index's batch bar made, including the typed-REMOVE modal — dl-core owns
+   both, so the dialog a user sees is word for word the one they saw before. The cache name
+   must match player.js's. */
+function removeAllDownloads() {
+  if (!dlAvailable()) return;
+  var btn = document.getElementById('offline-dl-btn');
+  var status = document.getElementById('offline-dl-status');
+  window.ThaiEarDL.removeAllModal(dlCount(), function () {
+    if (btn) btn.disabled = true;
+    if (status) status.textContent = 'Removing all downloads…';
+    window.ThaiEarDL.removeAllDownloads(window.ThaiEarDL.capabilities(), 'thaiear-audio-dl')
+      .then(function () {
+        var c = document.getElementById('offline-dl-count');
+        if (c) c.textContent = 'Nothing downloaded on this device.';
+        if (status) status.textContent = 'All downloads removed.';
+      })
+      .catch(function (e) {
+        if (btn) btn.disabled = false;
+        if (status) status.textContent = 'Could not remove everything: ' + (e && e.message ? e.message : e);
+      });
+  });
+}
+
 function loadResetDebug() {
   var a = window.ThaiEarAuth;
   var token = a && a.getAccessToken && a.getAccessToken();
@@ -1009,6 +1073,11 @@ window.addEventListener('thaiear:auth', renderAccount);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderAccount);
 else renderAccount();
 </script>
+<!-- dl-core owns the download manifest and the typed-REMOVE modal; app-cta owns the ONE
+     "can this device download?" predicate. Both are needed by the Offline downloads section
+     above, and both are already in sw.js's PRECACHE. -->
+<script src="dl-core.js"></script>
+<script src="app-cta.js"></script>
 <script src="consent.js" defer></script>
 <script src="attrib.js" defer></script>
 <script src="gtag.js" defer></script>
