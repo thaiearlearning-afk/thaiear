@@ -604,21 +604,22 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
          act on anything but the CURRENT turn. Exactly the rule the sentence player had to learn
          (sentEvtMine): one shared element, several attempts in flight, so a listener without an
          identity un-does whatever is running now. */
-      var busyUntil = 0, turn = 0, timer = 0;
+      /* ⚠ NO COOLDOWN AT ALL (owner: "I'm having fun just tapping and the 0.1s dead zone breaks
+         the flow"). The only rule is that a turn in progress cannot be interrupted, and the class
+         alone says that — it is added when a turn starts and removed the moment it ends, so the
+         very next tap after a spin concludes is accepted with no dead time. The clock-based guard
+         that used to sit here is gone: it was only ever protecting against the stale-timer bug,
+         and the turn ids below fixed that properly. */
+      var turn = 0, timer = 0;
       var spin = function () {
-        var now = Date.now();
-        if (now < busyUntil || disc.classList.contains('spin')) return;
+        if (disc.classList.contains('spin')) return;   // a turn owns the mark until it finishes
         /* A different turn every time: 1-4s, and either direction. `reverse` plays the same
            0->360deg keyframes backwards, which is anticlockwise — no second keyframe set needed. */
         var ms = 1000 + Math.floor(Math.random() * 3000);
         disc.style.setProperty('--te-spin', ms + 'ms');
         disc.style.setProperty('--te-spin-dir', Math.random() < 0.5 ? 'normal' : 'reverse');
-        /* ⚠ THE COOLDOWN AND THE BACKSTOP BOTH TRACK THE CHOSEN DURATION. A fixed 4000 would
-           have meant a 1s turn was locked out for three seconds after it finished, and a hard
-           3400ms backstop would have cut a 4s turn short. The cooldown itself is only 0.1s — it
-           exists to stop a re-trigger landing in the same frame the turn ends, not to make the
-           user wait. */
-        busyUntil = now + ms + 100;                   // this turn + a 0.1s cooldown (owner)
+        /* ⚠ THE BACKSTOP TRACKS THE CHOSEN DURATION. A hard 3400ms would cut a 4s turn short
+           and leave a 1s turn's class hanging for 2.4s after it finished. */
         var me = ++turn;
         clearTimeout(timer);                          // a stale backstop must never outlive its turn
         disc.classList.add('spin');

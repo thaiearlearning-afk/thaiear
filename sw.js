@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v402';   // v402: greeting renders from the synchronous identity (no button flash)
+const VERSION = 'v403';   // v403: spin cooldown removed; a turn is simply uninterruptible
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
