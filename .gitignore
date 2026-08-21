@@ -126,3 +126,14 @@ dynclip-probe.html
 
 # Local-only preview harness for start.html (the ads landing page). Never deploy.
 _mobile-preview.html
+
+# Homepage/topics redesign mock (2026-08-21) — local exploration only, never deploy.
+# mock-shared.css is index.html's <style> block extracted verbatim so the mock cards match the live ones.
+home-mock.html
+topics-mock.html
+topics-mock-level.html
+mock-bands.js
+mock-shared.css
+_mock-phone.html
+playlists-mock.html
+read-mock.html

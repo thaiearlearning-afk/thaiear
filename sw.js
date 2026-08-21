@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v377';   // v377: keepalive on the /api/attrib POST -- /start navigates away
+const VERSION = 'v378';   // v378: 5 difficulty bands (topics.js is precached -- without this bump returning visitors keep the old 4)
                           // 900 ms after sign-in and was cancelling it -- plus the missed
                           // email-typo shapes in all three copies of DOMAIN_TYPOS.
                           // attrib.js is precached, so this bump is what delivers it.
