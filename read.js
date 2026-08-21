@@ -638,12 +638,11 @@
     }
     nav.innerHTML = btn(prev, 'l') + btn(next, 'r');
     var all = document.getElementById('read-all');
-    // r130: the hub now lives natively in the index's Read panel (mountHub, above), so this
-    // back-link routes THERE, not to read.html — index.html#read-lessons is a new deep-link hash
-    // the index side handles (opens the Read panel, scrolls to the learning-path/#lessons position
-    // minus ~72px; coordinator's side, not this file). read.html itself is still live for SEO/direct
-    // visits and its OWN #lessons hash-landing (scrollToLessons, boot(), above) is unchanged.
-    if (all) all.innerHTML = '<a href="index.html#read-lessons">← All reading sections</a>';
+    // 2026-08-21: routes back to READ.HTML again. r130 sent it to index.html#read-lessons because
+    // the hub had moved into the index's Read panel; the homepage redesign deletes that panel, so
+    // the standalone page is the destination once more. #lessons is read.html's OWN hash-landing
+    // (scrollToLessons, boot(), above) and has worked throughout — nothing new to handle.
+    if (all) all.innerHTML = '<a href="read#lessons">← All reading sections</a>';
   }
 
   /* ── explainer grid (letters + vowels share it) ────────── */
@@ -1718,8 +1717,8 @@
   // now that the hub can render on the index natively. #lessons only exists once the hub body has
   // been built (renderHub or mountHub), so this must run AFTER that, and must win over the browser's
   // own native hash-jump-on-load — take over scroll restoration and scroll on the next paint once
-  // layout has settled. (A lesson's back-link routes to index.html#read-lessons since r130 — see
-  // renderChrome, above — not to read.html#lessons; that hash remains read.html's own, unchanged.)
+  // layout has settled. (A lesson's back-link routes here, to read#lessons — see renderChrome,
+  // above. Between r130 and 2026-08-21 it pointed at the index's Read panel instead.)
   function scrollToLessons() {
     var el = document.getElementById('lessons');
     if (!el) return;

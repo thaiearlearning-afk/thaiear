@@ -78,7 +78,7 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
 <div class="wrap" id="pl-player-wrap" hidden>
   <div class="eyebrow">Playlist</div>
   <h1 id="pl-player-title">Loading…</h1>
-  <p style="font-size:12.5px;margin:-2px 0 16px"><a href="index.html#playlists" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
+  <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
 </div>
 
@@ -222,10 +222,10 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
     (function wait() {
       if (!authReady()) { setTimeout(wait, 250); return; }
       // r130: bare playlists.html is no longer a destination — send failures straight to the panel.
-      if (!PL() || !user()) { location.href = 'index.html#playlists'; return; }
+      if (!PL() || !user()) { location.href = 'playlists'; return; }
       PL().load(true).then(function (lists) {
         var p2 = findList(lists, PLID);
-        if (!p2 || !p2.items || !p2.items.length) { location.href = 'index.html#playlists'; return; }
+        if (!p2 || !p2.items || !p2.items.length) { location.href = 'playlists'; return; }
         launchPlayer(p2, lists);
       }).catch(function () {
         document.getElementById('pl-player-title').textContent = 'Couldn’t load this playlist — check your connection.';

@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v379';   // v379: playlists.html + read.html stand alone (both precached, as is read.js)
+const VERSION = 'v380';   // v380: the 24 links into the index switcher panels now point at /read and /playlists
                           // 900 ms after sign-in and was cancelling it -- plus the missed
                           // email-typo shapes in all three copies of DOMAIN_TYPOS.
                           // attrib.js is precached, so this bump is what delivers it.

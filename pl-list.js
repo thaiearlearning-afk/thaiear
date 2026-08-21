@@ -37,7 +37,7 @@
        are needed here (unlike the legacy ?embed=1 <base> hack, which stays only in playlists.html
        for old cached copies of the index still iframing it during the cache-transition window).
      - Any link this module renders back to "the playlist list" (as opposed to the `?pl=` player,
-       which stays `playlists.html?pl=ID`) points at `index.html#playlists` — the panel is the only
+       which stays `playlists.html?pl=ID`) points at `playlists` — the panel is the only
        list location now; there is no reason to route through the redirecting bare playlists.html.
 */
 (function () {

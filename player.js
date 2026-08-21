@@ -6932,7 +6932,7 @@
       if (orient) { orient.parentNode.insertBefore(apl, orient); orient.style.display = 'none'; }
       else aplAnchor.parentNode.insertBefore(apl, aplAnchor.nextSibling);
       var pll = document.createElement('a');
-      pll.className = 'dyn-pl-link'; pll.href = 'index.html#playlists';   // r127: bare playlists.html now redirects — link the panel directly
+      pll.className = 'dyn-pl-link'; pll.href = 'playlists';   // 2026-08-21: the bare page renders standalone again (the r127 redirect is gone), so link it directly
       // The build tag already shows in the corner of the settings block, so the link does not
       // need to carry it once these are proper side-by-side buttons.
       /* ⚠ AN SVG, NOT THE 🎵 EMOJI (owner, 2026-08-15). Once the button became accent-FILLED the
