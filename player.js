@@ -828,7 +828,7 @@
   function prewarmSentences(tries) {
     if (prewarmStarted) return;
     if (!sentences || !sentences.length) return;
-    if (!navigator.onLine || !entitledForPage()) return;
+    if (!navigator.onLine || !mayListen()) return;   // no account → nothing to prewarm
     var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (conn && (conn.saveData || /2g/.test(conn.effectiveType || ''))) return;
     if (dynBuilding) {   // let the build have the network to itself
@@ -2836,6 +2836,26 @@
   // words, but the gated INTERACTIONS — revealing a sentence, flagging, and playing (sentence or the
   // main TE/ET) — are blocked for non-entitled visitors.
   //
+  /* mayListen(): may THIS visitor PLAY AUDIO here? (2026-08-21)
+     Listening now needs a free account on EVERY tier, premium and free alike — the one access
+     change that came with the home-page redesign.
+
+     ⚠ IT IS SEPARATE FROM entitledForPage() ON PURPOSE, and the two must not be merged.
+     entitledForPage() guards revealing, flagging and downloading as well, and REVEALING MUST
+     STAY OPEN to a signed-out visitor: the sentence text is server-rendered into every topic
+     page for crawlers, so hiding it from people while serving it to Googlebot is the definition
+     of cloaking. The deal is "the page is readable, the audio needs an account".
+
+     ⚠ Auth resolves a few hundred ms after paint and can be briefly null offline, so an
+     unresolved state must never gate — a paying, downloaded, offline listener has to be able to
+     press play. Same rule entitledForPage() already follows. */
+  function mayListen() {
+    var a = window.ThaiEarAuth;
+    if (!a || !a.isReady) return true;                 // still resolving → never wrongly refuse
+    if (!(a.getUser && a.getUser())) return false;     // no account → no audio, any tier
+    return entitledForPage();
+  }
+
   // entitledForPage(): may THIS visitor use the gated interactions on this page?
   function entitledForPage() {
     if (TIER !== 'member' && TIER !== 'premium') return true;   // free topic → open
@@ -2867,6 +2887,11 @@
   // needs a login routes to gateSignIn() above.
   function gate(tier) {
     if (tier == null) tier = TIER;
+    /* ⚠ A FREE TOPIC CAN NOW BE REFUSED, and when it is there is exactly one reason — no
+       account — so the remedy is the free sign-in, never the paywall. Without this branch a
+       signed-out visitor tapping play on a free topic would be sent to subscribe.html and asked
+       to pay for something that is free. */
+    if (tier !== 'member' && tier !== 'premium') { gateSignIn(); return; }
     if (tier === 'member') { gateSignIn(); return; }   // legacy value; no unit declares it any more
     /* Two very different reasons a premium tap can be refused, and they must not share a message:
          · the server told us the subscription is LAPSED  → the paywall is honest
@@ -7209,7 +7234,7 @@
 
   function togglePlay() {
     if (mainAudio.paused) {
-      if (!entitledForPage()) { gate(mainTier); return; }   // gated topic + not entitled → no playback
+      if (!mayListen()) { gate(mainTier); return; }   // no account, or not entitled → no playback
       userStartedHere = true;   // this page's player is now user-driven → sync must not adopt a stale label
       primeMainAudio();         // ⚠ SYNCHRONOUS, inside the gesture — the build below can take seconds
       ensureMainSrc().then(function () {
@@ -7857,7 +7882,7 @@
   function toggleSentPlay(e, num) {
     e.stopPropagation();
     e.preventDefault();
-    if (!entitledForPage()) { gate(); return; }   // gated topic + not entitled → no sentence audio
+    if (!mayListen()) { gate(); return; }   // no account, or not entitled → no sentence audio
     if (gateSent(num)) return;                    // playlist: locked sentence → its own tier's gate
     if (noDlSent(num)) return;                    // playlist: offline + clip not on the device
     /* ⚠ DEBOUNCE THE SAME SENTENCE, NEVER A DIFFERENT ONE (2026-08-20).
@@ -8202,6 +8227,15 @@
      Re-entrant: called on mount AND on thaiear:auth, so it must remove its own node when the
      visitor turns out to be signed in, and must not stack duplicates when called twice. */
   function mountEndCta() {
+    /* ⛔ RETIRED 2026-08-21. It said "That's all N sentences. Save what you've done — a free
+       account keeps your progress…" to a signed-out visitor on a free topic. Since audio needs
+       an account, that visitor has now listened to NOTHING, so both halves are false: they have
+       not reached the end of anything, and there is no work to save. The ask that belongs in
+       that moment is the play gate itself, which they will already have met.
+       Left as an early return rather than deleted: the markup, the styles and the placement were
+       all tuned, and if the ask comes back in another form this is where it goes. */
+    return;
+    /* eslint-disable no-unreachable */
     if (PLMODE) return;
     var nav = document.querySelector('.topic-nav');
     if (!nav || !nav.parentNode) return;

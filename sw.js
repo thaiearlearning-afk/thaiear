@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v392';   // v392: orphaned CSS was eating .player-top (guide demo player)
+const VERSION = 'v393';   // v393: listening requires a free account on every tier
                           // sentence of a page load and every 30s after, not every 5
                           // minutes. A tally inside the window lives only in memory, so
                           // the window was the amount of listening a bad exit destroys.
