@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v395';   // v395: nav auth guess both ways; the home swirl is 68 KB not 433 KB
+const VERSION = 'v396';   // v396: preload the font weights the home splash actually uses
                           // sentence of a page load and every 30s after, not every 5
                           // minutes. A tally inside the window lives only in memory, so
                           // the window was the amount of listening a bad exit destroys.

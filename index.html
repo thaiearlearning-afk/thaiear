@@ -42,6 +42,19 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ThaiEar">
 <!-- pwa:end -->
+<!-- ⚠ THE SPLASH'S HEADINGS ARE INTER 600, AND 600 WAS NOT PRELOADED.
+     Every @font-face here uses font-display: optional, which is what keeps this page at CLS 0 —
+     but "optional" means a face that is not ready within a very short block period is NOT USED
+     AT ALL for that page view. The shared head preloads Inter 400 and 500; the three big region
+     titles and the wordmark are 600, so on any load where it had not arrived they rendered in
+     system-ui: the "fatter, uglier, less styled" text the owner reported. Nothing to do with SEO
+     and nothing to do with a pre-paint frame.
+     Preloading it makes it ready before first paint, so optional uses it — the fix is the
+     preload, NOT switching to font-display: swap, which would trade this for a visible reflow
+     and put CLS back. 48 KB, and it is precached and edge-cached after the first visit.
+     Sarabun 500 is the Thai glyph on the Read Thai region, same reasoning at 10 KB. -->
+<link rel="preload" href="/fonts/inter-latin-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/sarabun-thai-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/home-swirl.png" as="image" fetchpriority="high">
 <style>
 /* --- base: reset, tokens, body, footer. Lifted from topics-page.css by
