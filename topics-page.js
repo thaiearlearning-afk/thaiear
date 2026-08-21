@@ -74,6 +74,25 @@
     });
   }
 
+  /* ── the band pill row: put the CURRENT band where it can be seen ──────────────
+     On a phone the five band names do not fit, so .tp-tabs is a horizontal scroller. It
+     always started at the left, i.e. on "Beginner", whatever band you were actually on —
+     so choosing "Lower Intermediate → Intermediate" showed you a highlighted pill far off
+     to the right, and choosing the last band showed you no highlighted pill at all
+     (owner, 2026-08-21).
+     `inline:'start'` puts the active pill at the LEFT EDGE, which is also the right answer
+     for the last band: the browser scrolls as far as it can, which lands at the rightmost
+     point with the pill visible. `block:'nearest'` is what stops it scrolling the PAGE as
+     well — without it, landing on a band page would jump you past the heading. */
+  (function () {
+    var on = document.querySelector('.tp-tab.on');
+    var row = on && on.parentElement;
+    if (!on || !row || !on.scrollIntoView) return;
+    if (row.scrollWidth <= row.clientWidth + 1) return;   // not scrolling — nothing to do
+    try { on.scrollIntoView({ inline: 'start', block: 'nearest' }); }
+    catch (e) { row.scrollLeft = on.offsetLeft - row.offsetLeft; }
+  })();
+
   /* ── entitlement: unlock the Premium pill for a subscriber ─────────────────
      The static pill is the SIGNED-OUT state, because that is what a crawler and a
      first-time visitor get. A subscriber's pill is swapped in place — the <a> and its

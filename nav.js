@@ -439,9 +439,41 @@
     try { return !!(window.ThaiEarAuth && window.ThaiEarAuth.isReady); } catch (_) { return false; }
   }
 
+  /* ⚠ THE SYNCHRONOUS GUESS — why the nav no longer jumps sideways on every page load.
+     Supabase resolves a few hundred ms after paint, so until 2026-08-21 the nav painted a blank
+     48px placeholder and then swapped in the real thing. For a signed-in user that real thing is
+     a username plus a person icon, roughly twice as wide, so the whole right-hand group — Menu
+     included — visibly slid left as it landed. Owner reported it switching between the topic band
+     pages, where you see it once per navigation.
+     auth.js already mirrors every resolved session into localStorage as `thaiear_identity` (its
+     durable offline identity), and that record holds the FULL user object. So the name is
+     available synchronously and the first paint can be the FINAL paint: when the guess is right —
+     which is every ordinary load — r149's "rebuild only when the markup changed" then sees
+     identical markup and never rebuilds at all, so there is nothing to flicker.
+     ⚠ KEEP THESE RULES IN STEP WITH auth.js's readIdentity() AND userFromSession(). Same key,
+     same signed-out guard, same username derivation. If they drift, the nav paints one name and
+     auth resolves to another — a flicker with a wrong name in it, which is worse than the one
+     this removes. */
+  function guessUser() {
+    try {
+      if (localStorage.getItem('thaiear_signed_out') === '1') return null;   // they really did log out
+      var o = JSON.parse(localStorage.getItem('thaiear_identity') || 'null');
+      var u = o && o.user;
+      if (!u || !u.id) return null;
+      var meta = u.user_metadata || {};
+      return { username: meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member') };
+    } catch (_) { return null; }
+  }
+
   function memberHtml() {
     if (!FEATURES.members) return '';
     if (!authReady()) {
+      var guess = guessUser();
+      /* A confident guess paints the real thing. No guess means we genuinely do not know yet —
+         and an invisible same-width placeholder is still better than flashing "Log in" at
+         someone who is signed in, which after the offline-logout bug reads as being signed out
+         again. */
+      if (guess) return `<span class="nav-username">${escapeHtml(guess.username)}</span>` + personMenuHtml();
       return '<span class="nav-auth nav-auth-pending" aria-hidden="true" ' +
         'style="display:inline-block;min-width:48px;opacity:0"></span>';
     }
