@@ -379,6 +379,15 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   clip-path:circle(50%);
   pointer-events:auto;      /* .medal above is none; the disc is the only live part */
   cursor:pointer;
+  /* ⚠ NO ANDROID TAP FLASH ON THIS ONE. The WebView paints a translucent blue box over
+     anything it considers tappable, and it is a SQUARE - so on the one element whose whole
+     point is that its hit area is a circle, the flash announces the square we went to some
+     trouble to remove. The spin IS the feedback here; the highlight only competes with it.
+     user-select / touch-callout go with it because a slightly-held tap on an <img> otherwise
+     starts a selection or offers "save image", either of which cancels the tap. */
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+  user-select:none; -webkit-user-select:none;
 }
 /* One full clockwise turn. Eased rather than linear so it starts and stops gently — a linear
    spin on a logo reads as a loading spinner. */
@@ -392,7 +401,7 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 /* Someone who has asked the OS for less motion does not want the logo spinning at them. The
    mark stays interactive; it simply does not animate. */
 @media (prefers-reduced-motion: reduce) { .medal-disc.spin{ animation:none; } }
-.medal-disc img{ width:100%; height:100%; display:block; }
+.medal-disc img{ width:100%; height:100%; display:block; -webkit-user-drag:none; }
 
 /* ── phone ────────────────────────────────────────────────────────────────
    The same geometry, not a different layout — the split moves up a little so
@@ -514,6 +523,12 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
    strip, lilac and rose are its Upper-Intermediate and Advanced strips, stone is Intermediate,
    indigo is the accent — plus olive and a dark ink for range. */
 .te-hero-cta.has-welcome{
+  /* Same reasoning as the mark: tapping the band recolours it, and the recolour is the
+     feedback. A blue flash on top of a colour change reads as a mis-tap - and the band is
+     not a link, so the highlight promises a navigation that will not happen. */
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+  user-select:none; -webkit-user-select:none;
   left:0; right:0; width:auto; max-width:none; transform:none;
   padding:.6rem 1.05rem; border-radius:0;
   border-top:0.5px solid var(--gt-line, transparent);

@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v405';   // v405: one identity reader; greeting is a full-bleed band with 7 grounds
+const VERSION = 'v406';   // v406: no Android tap flash on the mark or the greeting band
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
