@@ -42,7 +42,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ThaiEar">
 <!-- pwa:end -->
-<link rel="preload" href="/icon-512.png" as="image" fetchpriority="high">
+<link rel="preload" href="/home-swirl.png" as="image" fetchpriority="high">
 <style>
 /* --- base: reset, tokens, body, footer. Lifted from topics-page.css by
    gen_home_splash.js; see the note there for why it is inlined. --- */
@@ -506,7 +506,14 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   <div class="te-hero-cta" id="te-hero-cta"></div>
 
   <div class="medal" id="medal">
-    <span class="medal-disc"><img src="icon-512.png" alt="ThaiEar" width="512" height="512" fetchpriority="high"></span>
+    <span class="medal-disc"><!-- ⚠ NOT icon-512.png. That is the PWA/app-store icon: 512x512 RGBA, 433 KB, and it was
+         being shown here at 168 CSS px at most — so the centrepiece of the home page was
+         downloading nearly half a megabyte and painting in visible stages (owner: "sometimes
+         half loads"). home-swirl.png is the same artwork at 420x420, palette-quantised to 96
+         colours: 68 KB, an 85% cut, with no visible banding in the gold. 420 covers 2.5x DPR
+         against the 168px cap. Regenerate it FROM icon-512.png, and quantise — a straight
+         RGBA re-save comes out at 230 KB, the same trap gen_og_image.py records. -->
+    <img src="home-swirl.png" alt="ThaiEar" width="420" height="420" fetchpriority="high" decoding="async"></span>
   </div>
 
 </main>

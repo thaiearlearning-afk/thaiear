@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v394';   // v394: nav paints the real username at first paint; band pill scrolls into view
+const VERSION = 'v395';   // v395: nav auth guess both ways; the home swirl is 68 KB not 433 KB
                           // sentence of a page load and every 30s after, not every 5
                           // minutes. A tally inside the window lives only in memory, so
                           // the window was the amount of listening a bad exit destroys.
@@ -701,6 +701,8 @@ const PRECACHE = [
   // PWA install vehicle: manifest + its icons, so "Add to Home Screen" works and the
   // installed app has its launch icon available offline.
   '/manifest.json', '/icon-512.png', '/icon-512-maskable.png',
+  /* The home page's centrepiece — a right-sized copy of the swirl, not the 433 KB PWA icon. */
+  '/home-swirl.png',
   '/logo-hero.png', '/nav-swirl-2x.png', '/favicon.png', '/favicon.ico',
   '/favicon-16.png', '/favicon-32.png', '/favicon-192.png', '/apple-touch-icon.png',
   '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png', '/hornbill.png', '/yak.png',

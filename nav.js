@@ -454,26 +454,52 @@
      same signed-out guard, same username derivation. If they drift, the nav paints one name and
      auth resolves to another — a flicker with a wrong name in it, which is worse than the one
      this removes. */
-  function guessUser() {
+  /* Three-way, exactly like app-cta.js's authGuess(): 'in' with a user, 'out', or null when we
+     genuinely cannot tell. ⚠ THE 'out' ANSWER MATTERS AS MUCH AS 'in' — the owner sees the same
+     flicker signed OUT, because the invisible 48px placeholder is 8px WIDER than "Log in", so the
+     group shifts right as it settles. Knowing someone is signed out lets the first paint be the
+     final paint there too. */
+  function guessAuth() {
     try {
-      if (localStorage.getItem('thaiear_signed_out') === '1') return null;   // they really did log out
+      if (localStorage.getItem('thaiear_signed_out') === '1') return { state: 'out' };
       var o = JSON.parse(localStorage.getItem('thaiear_identity') || 'null');
       var u = o && o.user;
-      if (!u || !u.id) return null;
-      var meta = u.user_metadata || {};
-      return { username: meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member') };
-    } catch (_) { return null; }
+      if (u && u.id) return { state: 'in', user: userish(u) };
+      /* ⚠ PARSE THE SUPABASE KEY, DO NOT JUST TEST THAT IT EXISTS — it SURVIVES SIGN-OUT with an
+         empty session inside, so a bare existence check answers "signed in" for someone who has
+         signed out. auth.js's readStoredSession() unwraps `currentSession` and requires .user;
+         app-cta.js's authGuess() does the same. All three must agree. */
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || !/^sb-.+-auth-token$/.test(k)) continue;
+        try {
+          var parsed = JSON.parse(localStorage.getItem(k) || 'null');
+          var sess = (parsed && parsed.currentSession) ? parsed.currentSession : parsed;
+          if (sess && sess.user) return { state: 'in', user: userish(sess.user) };
+        } catch (_) {}
+      }
+      /* No identity, no session: a first-time visitor really is signed out. Same default
+         app-cta.js takes. */
+      return { state: 'out' };
+    } catch (_) { return null; }   // storage unavailable — genuinely unknown
+  }
+  function userish(u) {
+    var meta = u.user_metadata || {};
+    return { username: meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member') };
   }
 
   function memberHtml() {
     if (!FEATURES.members) return '';
     if (!authReady()) {
-      var guess = guessUser();
-      /* A confident guess paints the real thing. No guess means we genuinely do not know yet —
-         and an invisible same-width placeholder is still better than flashing "Log in" at
-         someone who is signed in, which after the offline-logout bug reads as being signed out
-         again. */
-      if (guess) return `<span class="nav-username">${escapeHtml(guess.username)}</span>` + personMenuHtml();
+      var guess = guessAuth();
+      /* A confident guess paints the real thing, in EITHER direction. Only a genuinely unknown
+         state falls back to the invisible placeholder — and it stays a placeholder rather than
+         "Log in", because flashing that at someone who is signed in reads as being signed out
+         again, which after the offline-logout bug is the last thing to show them. */
+      if (guess && guess.state === 'in') {
+        return `<span class="nav-username">${escapeHtml(guess.user.username)}</span>` + personMenuHtml();
+      }
+      if (guess && guess.state === 'out') return `<a class="nav-auth" href="account.html">Log in</a>`;
       return '<span class="nav-auth nav-auth-pending" aria-hidden="true" ' +
         'style="display:inline-block;min-width:48px;opacity:0"></span>';
     }
