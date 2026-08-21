@@ -773,9 +773,6 @@ function renderAccount() {
     '<p>Signed in as <span class="email">' + escEmail(user.email || user.username) + '</span></p>' +
     '<div id="membership" style="min-height:80px"></div>' +
     consentHtml +
-    // Admin-only; stays an empty div for everyone else. Populated by renderDesktopDlAdmin() once
-    // auth.js has a SERVER answer — never rendered optimistically.
-    '<div id="desktop-dl-admin"></div>' +
     resetHtml +
     '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="confirmLogout()">Log out</button></p>' +
     /* Between Log out and Delete my account (owner, 2026-08-21). Above the email-updates block
@@ -785,7 +782,17 @@ function renderAccount() {
     '<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">' +
       '<button class="btn" onclick="deleteAccount()" style="font-size:12px;color:#B00020;background:none;border-color:rgba(176,0,32,0.35)">Delete my account</button>' +
       '<p id="delete-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
-    '</div>';
+    '</div>' +
+    /* ⚠ LAST ON THE PAGE, AND THAT IS THE FIX (owner, 2026-08-21: "every time I go into my
+       account it renders as I'm mid scroll"). It is admin-only and its answer comes from the
+       SERVER (/api/desktop-dl), so it can only ever arrive late — it is never rendered
+       optimistically, deliberately. While it sat above the reset/logout/delete blocks, its
+       arrival pushed all of them down under whoever was reading them.
+       A min-height reserve would have been the wrong tool: it is empty for everyone except two
+       accounts, so reserving would give every other user a blank gap. Putting it at the end
+       means the only thing its arrival changes is the page's total height, which shifts nothing.
+       It stays an empty div for everyone else. */
+    '<div id="desktop-dl-admin"></div>';
   renderMembershipBox(cacheSub()); // instant from the cached Supabase state
   _acctRenderedSubSig = subSig();
   loadMembership();                // then refine with the authoritative Stripe state

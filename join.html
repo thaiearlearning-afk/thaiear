@@ -4,18 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ThaiEar — Free membership</title>
-<meta name="description" content="Sign in with Google to unlock free ThaiEar member topics — no payment, no card.">
+<meta name="description" content="Create a free ThaiEar account to listen — no payment, no card.">
 <link rel="canonical" href="https://thaiear.com/join">
 <!-- og:start (gen_static_seo.js) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ThaiEar">
 <meta property="og:title" content="ThaiEar — Free membership">
-<meta property="og:description" content="Sign in with Google to unlock free ThaiEar member topics — no payment, no card.">
+<meta property="og:description" content="Create a free ThaiEar account to listen — no payment, no card.">
 <meta property="og:url" content="https://thaiear.com/join">
 <meta property="og:image" content="https://thaiear.com/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ThaiEar — Free membership">
-<meta name="twitter:description" content="Sign in with Google to unlock free ThaiEar member topics — no payment, no card.">
+<meta name="twitter:description" content="Create a free ThaiEar account to listen — no payment, no card.">
 <meta name="twitter:image" content="https://thaiear.com/og-image.png">
 <!-- og:end -->
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -140,7 +140,7 @@
     Free membership
   </span>
   <h1 class="sub-title">Create an account or sign in to unlock — it’s free</h1>
-  <p class="sub-lede" id="join-lede">Create a free account or sign in to unlock member topics, playlists and all
+  <p class="sub-lede" id="join-lede">Create a free account or sign in to listen, build playlists and use all
     reading course material straight away. No payment or card required.</p>
 
   <div class="sub-card">
@@ -155,7 +155,7 @@
       </li>
       <li class="benefit">
         <span class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-        <span class="benefit-text"><strong>Completely free</strong><span>Member topics cost nothing — signing in is all it takes.</span></span>
+        <span class="benefit-text"><strong>Completely free</strong><span>An account costs nothing — signing in is all it takes.</span></span>
       </li>
     </ul>
 
@@ -178,9 +178,11 @@
 </div>
 
 <script>
-/* Free-membership explainer (member tier). Member topics are gated server-side
-   (/api/audio), so the value is the login. ?next=<page> sends the visitor to the
-   topic they wanted once signed in. */
+/* The free sign-in page. ⚠ "MEMBER" IS A RETIRED WORD (tier retirement 2026-08-10, and the
+   owner flagged it still showing here on 2026-08-21) — there are two tiers, Free and Premium,
+   and signing in is what an account gets you, not a tier. Since the 2026-08-21 access change
+   LISTENING itself needs an account on every tier, which is the main reason a visitor arrives
+   here. ?next=<page> sends them back to the topic they wanted once signed in. */
 
 // Reader-app compliance: in the Capacitor app, hide the "See premium membership" link (it leads to
 // the web checkout). Direct Capacitor check so it applies immediately, before auth.js resolves.

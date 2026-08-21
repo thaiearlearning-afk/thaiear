@@ -191,10 +191,21 @@
     var p = location.pathname.replace(/\/$/, '');
     if (!(p === '' || /\/index(\.html)?$/.test(p) || p === '/index.html')) return;
     if (document.getElementById('ownersim-panel')) return;
+    /* ⚠ FIXED AND COLLAPSED, NOT AN IN-FLOW BLOCK (2026-08-21).
+       It used to be `margin:2rem auto 5rem` appended to <body>. That was harmless while the home
+       page was a long scrolling grid, but the page is now a flex column that fills exactly one
+       screen — body is `display:flex; min-height:100dvh` and the stage is `flex:1` — so ANY extra
+       in-flow sibling takes its height out of the stage. The owner saw the whole splash squash to
+       make room for a debug panel (his accounts only, which is why nobody else could see it).
+       Taking it out of flow is the fix; collapsing it by default is why it is no longer ugly.
+       Same reason the footer on that page is hand-built rather than appended after paint. */
     var d = document.createElement('div');
     d.id = 'ownersim-panel';
-    d.style.cssText = 'max-width:640px;margin:2rem auto 5rem;padding:14px 16px;border:1px dashed #7A1F1F;' +
-      'border-radius:10px;font:13px/1.6 system-ui,-apple-system,sans-serif;color:#5A5A5A';
+    d.style.cssText = 'position:fixed;right:12px;z-index:99998;max-width:min(420px,calc(100vw - 24px));' +
+      'padding:14px 16px;border:1px dashed #7A1F1F;background:rgba(255,255,255,.97);' +
+      'box-shadow:0 8px 28px rgba(0,0,0,.18);' +
+      'border-radius:10px;font:13px/1.6 system-ui,-apple-system,sans-serif;color:#5A5A5A;' +
+      'max-height:70vh;overflow:auto';
     var opts = [['', 'Off (real account)'], ['premium', 'Premium — entitled'],
                 ['expired', 'Signed in, no subscription (free account or expired)'], ['signedout', 'Signed out']];
     var cur = state();
@@ -228,7 +239,41 @@
           (window.ThaiEarPlayerBuild ? ' · player ' + window.ThaiEarPlayerBuild : '');
       }).catch(function () { ver.textContent = 'build: unavailable'; });
     } catch (_) { ver.textContent = 'build: unavailable'; }
+    /* A collapsed handle by default — the panel is a diagnostic, not furniture. The choice is
+       remembered so a testing session does not mean re-opening it on every navigation. */
+    var t = document.createElement('button');
+    t.id = 'ownersim-toggle';
+    t.type = 'button';
+    t.style.cssText = 'position:fixed;right:12px;z-index:99998;border:1px dashed #7A1F1F;' +
+      'background:rgba(255,255,255,.97);color:#7A1F1F;border-radius:999px;padding:5px 11px;' +
+      'font:12px/1.3 system-ui,-apple-system,sans-serif;cursor:pointer;' +
+      'box-shadow:0 4px 14px rgba(0,0,0,.16)';
+    var OPEN_KEY = 'thaiear_ownersim_open';
+    function isOpen() { try { return localStorage.getItem(OPEN_KEY) === '1'; } catch (_) { return false; } }
+    function paint() {
+      var open = isOpen();
+      d.style.display = open ? '' : 'none';
+      t.textContent = open ? 'Owner ▾' : 'Owner ▸';
+    }
+    t.addEventListener('click', function () {
+      try { localStorage.setItem(OPEN_KEY, isOpen() ? '0' : '1'); } catch (_) {}
+      paint(); place();
+    });
+
+    /* Sit clear of the red "simulation live" banner, which is itself fixed to the bottom and only
+       present while a simulation is running. Measured rather than assumed, because its height
+       depends on how the text wraps. */
+    function place() {
+      var b = document.getElementById('ownersim-bar');   // the banner's real id
+      var bh = b ? Math.ceil(b.getBoundingClientRect().height) : 0;
+      t.style.bottom = (bh + 12) + 'px';
+      d.style.bottom = (bh + 12 + (isOpen() ? 34 : 0)) + 'px';
+    }
+
     document.body.appendChild(d);
+    document.body.appendChild(t);
+    paint(); place();
+    window.addEventListener('resize', place);
   }
 
   /* The email hash IS the gate — K_ON is not consulted here any more. Requiring a URL-set flag
