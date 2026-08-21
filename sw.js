@@ -33,7 +33,9 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v398';   // v398: the home mark spins once on tap or hover
+const VERSION = 'v399';   // v399: signup geography is COUNTRY ONLY -- city and network
+                          // operator are no longer collected, and privacy.html says so.
+                          // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
                           // minutes. A tally inside the window lives only in memory, so
                           // the window was the amount of listening a bad exit destroys.

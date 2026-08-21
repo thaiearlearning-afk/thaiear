@@ -96,8 +96,14 @@ export async function onRequestPost({ request, env }) {
      ⚠ `request.cf` is undefined under local wrangler, hence the guard. */
   const cf = request.cf || {};
   if (cf.country) row.geo_country = String(cf.country).slice(0, 8);
-  if (cf.city) row.geo_city = String(cf.city).slice(0, 128);
-  if (cf.asOrganization) row.geo_asn_org = String(cf.asOrganization).slice(0, 128);
+  /* ⛔ CITY AND NETWORK OPERATOR ARE DELIBERATELY NOT STORED (owner decision 2026-08-21).
+     request.cf offers `city` and `asOrganization` free, and both were written per user for a
+     month. NOTHING beyond the country was ever used by any analysis -- the carve-out, the
+     drop-rate measurement and every geography question this project has asked are all
+     country-level. A city and an ISP tied to an account is a standing liability for no
+     return, so they go. `privacy.html` now promises country only; re-adding either would
+     make the published notice false. Guarded by test_attrib_geo.mjs, whose stub still sends
+     both on purpose. */
 
   /* ⬛ THE CARVE-OUT. Runs AFTER the geo block above, because it needs cf.country -- and because
      the geography is deliberately kept. See CONSENT_REQUIRED_COUNTRIES at the top of this file.
