@@ -367,7 +367,12 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 /* One full clockwise turn. Eased rather than linear so it starts and stops gently — a linear
    spin on a logo reads as a loading spinner. */
 @keyframes te-swirl { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
-.medal-disc.spin{ animation:te-swirl 3s cubic-bezier(.45,.05,.35,1) 1; }
+/* Duration and direction are set per-turn from JS (--te-spin / --te-spin-dir), so no two spins
+   are quite the same. The values here are only the fallback if the script never ran. */
+.medal-disc.spin{
+  animation:te-swirl var(--te-spin, 2s) cubic-bezier(.45,.05,.35,1) 1;
+  animation-direction:var(--te-spin-dir, normal);
+}
 /* Someone who has asked the OS for less motion does not want the logo spinning at them. The
    mark stays interactive; it simply does not animate. */
 @media (prefers-reduced-motion: reduce) { .medal-disc.spin{ animation:none; } }
@@ -449,6 +454,15 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 .te-hero-cta .cta-streak{
   font-size:calc(12px * var(--te-ui, 1)); color:var(--gold-dark); margin-top:3px;
 }
+
+/* ── MOCK ONLY: two treatments for the signed-in greeting, for the owner to pick between.
+   The owner's note: on the white Read Thai region the greeting is "not distinct enough".
+   Type and size stay exactly as they are in both — this is only ground and colour.
+
+   A — the guide page's explainer box (.dp-info): accent-light ground, #3B3488 text.
+   B — the progress page's stat card (.stat-card + .stat-val): white ground with a hairline
+       border, and the greeting in var(--accent), the blue "3 mins" is set in.
+   Whichever wins, the losing rules and the switcher come out and it becomes plain CSS. */
 /* No room for it at all once the label stack is inflated on a short phone. */
 @media (max-width:700px) and (max-height:720px){ .te-hero-cta{ display:none; } }
 
@@ -541,7 +555,13 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
      note by `.lines .down` for why this cannot be CSS. Re-run on resize because the value
      changes at the 700px breakpoint. */
   (function () {
-    var svg = document.currentScript.previousElementSibling;
+    /* ⚠ SELECT THE OVERLAY BY CLASS, NEVER BY DOM POSITION. This was
+       `document.currentScript.previousElementSibling`, which silently became the MARK the moment
+       the script had to move below it to bind the spin — so the sync found no lines, the phone
+       split stayed at the desktop 83.33, and the crossed grey lines came straight back. A
+       position-based lookup fails silently: a missing element is not an error. */
+    var svg = document.querySelector('.lines');
+    if (!svg) return;
     function sync() {
       var n = getComputedStyle(document.documentElement).getPropertyValue('--split-n').trim();
       if (!n) return;
@@ -563,9 +583,19 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
       var spin = function () {
         var now = Date.now();
         if (now < busyUntil || disc.classList.contains('spin')) return;
-        busyUntil = now + 4000;                       // 3s turn + 1s cooldown
+        /* A different turn every time: 1-4s, and either direction. `reverse` plays the same
+           0->360deg keyframes backwards, which is anticlockwise — no second keyframe set needed. */
+        var ms = 1000 + Math.floor(Math.random() * 3000);
+        disc.style.setProperty('--te-spin', ms + 'ms');
+        disc.style.setProperty('--te-spin-dir', Math.random() < 0.5 ? 'normal' : 'reverse');
+        /* ⚠ THE COOLDOWN AND THE BACKSTOP BOTH TRACK THE CHOSEN DURATION. A fixed 4000 would
+           have meant a 1s turn was locked out for three seconds after it finished, and a hard
+           3400ms backstop would have cut a 4s turn short. The cooldown itself is only 0.1s — it
+           exists to stop a re-trigger landing in the same frame the turn ends, not to make the
+           user wait. */
+        busyUntil = now + ms + 100;                   // this turn + a 0.1s cooldown (owner)
         disc.classList.add('spin');
-        armClear();
+        armClear(ms + 400);
       };
       /* ⚠ A TIMER BACKSTOP AS WELL AS animationend, because a missed animationend would leave
          the class stuck and the easter egg dead for the rest of the page's life — adding a class
@@ -574,7 +604,7 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
          playState "running" while document.hidden was true. Both paths are idempotent. */
       var clear = function () { disc.classList.remove('spin'); };
       disc.addEventListener('animationend', clear);
-      var armClear = function () { setTimeout(clear, 3400); };
+      var armClear = function (ms) { setTimeout(clear, ms); };
       disc.addEventListener('click', spin);
       if (window.matchMedia && matchMedia('(hover: hover)').matches) {
         disc.addEventListener('mouseenter', spin);
