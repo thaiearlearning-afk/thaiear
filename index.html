@@ -368,6 +368,55 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 @media (max-width:700px) and (max-height:720px){ .s-sub{ display:none; } }
 
 
+/* ── MOCK ONLY: the welcome / create-account block ────────────────────────────────
+   Owner idea (2026-08-21): use the empty space under "Read Thai" for a Create account
+   button when signed out, and "Welcome back, <first name>" plus a streak line when
+   signed in. Mocked here first because he wanted to see how it sits.
+
+   ⚠ IT IS A SIBLING OF THE THREE REGIONS, NOT A CHILD. The bottom region is a full-page
+   <a>, so a <button> placed in that space would be interactive content nested inside a
+   link — invalid, and the two tap targets would fight. This is its own layer, like the
+   centre mark, so the button is a button and the region link stops where the block starts.
+
+   ⚠ THE STREAK NUMBER BELOW IS NOT REAL. user_activity stores days_active — a count of
+   DISTINCT days seen, which is not a consecutive streak — and there is no GET endpoint to
+   read it from the client at all. A real streak needs a counter maintained in
+   functions/api/seen.js (increment if the previous seen day was yesterday, else reset to 1)
+   and a way to read it back. Both are small; neither exists. */
+/* ⚠ PHONE ONLY (owner, 2026-08-21: "scrap this idea for desktop - there is no room").
+   ⚠ AND IT IS ONE STACK WITH THE READ THAI LABEL, NOT A SECOND FLOATING THING. Positioned
+   independently they overlapped the moment the window got short — the label ran to 87% of the
+   stage and the block started at 85%. Both are now anchored to the SAME bottom edge with the
+   label offset by the block's height, so they cannot collide whatever the stage height is.
+   --cta-h is that height; change the block's contents and change this with it. */
+/* ⚠ EVERYTHING VISUAL KEYS OFF ONE CLASS, `cta-fits`, which home-cta.js sets only when the
+   TALLEST state measures as fitting. The label's offset is in the same rule, so the label and
+   the block move together and cannot overlap — and when the block is not shown the label
+   returns to its normal place rather than leaving a hole. */
+.te-hero-cta{ display:none; }
+.tri.cta-fits .te-hero-cta{
+  display:block;
+  position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+  z-index:4; text-align:center; width:min(420px, 86vw);
+}
+.tri.cta-fits .s3 .s-label{ bottom:calc(14px + var(--cta-h, 52px) + 12px); }
+.te-hero-cta .cta-btn{
+  display:inline-block; text-decoration:none;
+  font-family:var(--font-ui); font-size:calc(14px * var(--te-ui, 1)); font-weight:600;
+  color:#fff; background:var(--accent); border:0.5px solid var(--accent);
+  border-radius:22px; padding:10px 22px;
+  box-shadow:0 4px 14px rgba(28,18,78,.18);
+  transition:background .15s, transform .15s;
+}
+.te-hero-cta .cta-btn:hover{ background:var(--accent-mid); transform:translateY(-1px); }
+.te-hero-cta .cta-welcome{
+  font-size:calc(17px * var(--te-ui, 1)); font-weight:600; color:var(--navy); line-height:1.2;
+}
+.te-hero-cta .cta-streak{
+  font-size:calc(12px * var(--te-ui, 1)); color:var(--gold-dark); margin-top:3px;
+}
+/* No room for it at all once the label stack is inflated on a short phone. */
+@media (max-width:700px) and (max-height:720px){ .te-hero-cta{ display:none; } }
 
 /* ── mock-only control bar (not part of the design) ───────────────────── */
 .mockbar{
@@ -451,6 +500,10 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   </script>
 
 
+  <!-- The welcome / create-account block. A SIBLING of the three regions, never a child:
+       the bottom region is a full-page <a>, so a button inside it would be a link in a link.
+       Filled and gated by home-cta.js — it is empty until that decides it fits. -->
+  <div class="te-hero-cta" id="te-hero-cta"></div>
 
   <div class="medal" id="medal">
     <span class="medal-disc"><img src="icon-512.png" alt="ThaiEar" width="512" height="512" fetchpriority="high"></span>
@@ -490,6 +543,7 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
     if (el) el.textContent = now > START ? START + '\u2013' + now : String(START);
   })();
 </script>
+<script src="home-cta.js" defer></script>
 <script src="consent.js" defer></script>
 <script src="attrib.js" defer></script>
 <script src="gtag.js" defer></script>

@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v390';   // v390: 'Learn Thai by Ear' subtitle on the topics landing
+const VERSION = 'v391';   // v391: the home welcome / create-account block
                           // sentence of a page load and every 30s after, not every 5
                           // minutes. A tally inside the window lives only in memory, so
                           // the window was the amount of listening a bad exit destroys.
@@ -637,6 +637,10 @@ const PRECACHE = [
   '/topics-intermediate-to-upper-intermediate.html',
   '/topics-upper-intermediate-to-advanced.html',
   '/topics-page.css', '/topics-page.js',
+  /* The home splash's welcome / create-account block. Precached with the rest of the shell:
+     the home page is the route to every downloaded topic, and it must render completely
+     offline, not partly. */
+  '/home-cta.js',
   /* The sign-in interstitial the email links to (v340). It is where a user lands from their
      inbox, i.e. often on a device that has never opened the site, so it must not depend on a
      lucky network moment — and it is the ONLY route back in for anyone whose magic link was
