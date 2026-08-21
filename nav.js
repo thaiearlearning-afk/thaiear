@@ -461,7 +461,12 @@
   function navHtml() {
     return (
       `<nav class="site-nav">` +
-        `<a class="nav-logo" href="index.html">` +
+        /* ⚠ "/" not "index.html". Pages 308s /index.html -> /, and that redirect is
+           cf-cache-status: DYNAMIC — an uncached origin round trip on the most-clicked link on
+           the site. It also made the logo the one navigation that could hand the service worker
+           a redirected response, which is not usable for a navigation (blob error page on the
+           PWA, 2026-08-21). The SW is hardened for it now; this removes the cause as well. */
+        `<a class="nav-logo" href="/">` +
           `<img src="nav-swirl-2x.png" alt="ThaiEar logo" width="54" height="52">` +
           `<span class="nav-wordmark">Thai<span>Ear</span></span>` +
         `</a>` +

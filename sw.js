@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v387';   // v387: capitalised level labels, trimmed footer, account page changes
+const VERSION = 'v388';   // v388: a redirected response was being handed to navigations (PWA blob error)
                           // sentence of a page load and every 30s after, not every 5
                           // minutes. A tally inside the window lives only in memory, so
                           // the window was the amount of listening a bad exit destroys.
@@ -968,7 +968,18 @@ self.addEventListener('fetch', function (e) {
           var copy = res.clone();
           cleanRedirect(copy).then(function (clean) { caches.open(CACHE).then(function (c) { c.put(req, clean); }); });
         }
-        return res;
+        /* ⚠ THE BROWSER NEEDS THE CLEANED RESPONSE TOO, NOT JUST THE CACHE.
+           Until 2026-08-21 cleanRedirect() was applied only to the COPY being stored, so a
+           navigation that went down this path was handed the redirected Response itself — and a
+           redirected Response cannot be used for a navigation request. WebKit shows it as a blob
+           error page (the same symptom the probeOnly flag was added for, further down).
+           It bit on the PWA the moment the home page moved: the nav logo pointed at
+           /index.html, Cloudflare Pages 308s that to /, and any navigation that missed the cache
+           — a fresh worker after a VERSION bump, say — died instead of loading. Every redirected
+           navigation was exposed, not just this one; the cache hit path simply hid it most of the
+           time. cleanRedirect() returns the response untouched when it was not redirected, so
+           this costs nothing in the normal case. */
+        return (req.mode === 'navigate') ? cleanRedirect(res) : res;
       }, function (err) { noteNetDown(); throw err; });
     }
     /* ⚠ FAST PATH — the network is already known to be down, so do NOT pay NET_TIMEOUT_MS again.
