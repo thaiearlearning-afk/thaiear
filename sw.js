@@ -33,7 +33,11 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v384';   // v384: THE FLIP -- index.html is the three-way splash; the switcher panels are gone
+const VERSION = 'v385';   // v385: attrib.js -- the listen tally is sent on the FIRST
+                          // sentence of a page load and every 30s after, not every 5
+                          // minutes. A tally inside the window lives only in memory, so
+                          // the window was the amount of listening a bad exit destroys.
+                          // attrib.js is precached, so this bump is what delivers it.
                           // 900 ms after sign-in and was cancelling it -- plus the missed
                           // email-typo shapes in all three copies of DOMAIN_TYPOS.
                           // attrib.js is precached, so this bump is what delivers it.

@@ -193,10 +193,18 @@
 
      ⚠ It must never be awaited, never retried, and never surface an error. A
      missed ping is worth nothing; a slowed page load is worth less than nothing. */
-  var SEEN_THROTTLE_MS = 5 * 60 * 1000;
+  /* ⚠ 30s, NOT 5 MINUTES (changed 2026-08-21). Plays inside the window live only in
+     memory until something flushes them, so the window IS the amount of listening a bad
+     exit can destroy -- an app kill or a crash gives neither pagehide nor
+     visibilitychange. Five minutes was chosen defensively against a request-volume
+     problem this site does not have: 30s costs at most 2 POSTs per minute per ACTIVELY
+     LISTENING user, and the site has ~50 accounts. Raise it again if Supabase round trips
+     ever become a real line item -- /api/seen makes two per ping (verify + upsert). */
+  var SEEN_THROTTLE_MS = 30 * 1000;
   var seenSent = false;          // the plain once-per-page-load ping
   var lastSeenPing = 0;          // throttle for the listen pings
   var pendingListens = 0;        // plays counted but not yet sent
+  var tallySent = false;         // has ANY listen tally left this page load yet?
 
   /* The only thing that actually sends. Kept separate from the decision to send,
      because a forced flush must not disturb the tally it is flushing. */
@@ -253,7 +261,16 @@
        bounded and the number stays true. */
     if (typeof kind === 'number') {
       pendingListens += kind;
-      if (now - lastSeenPing < SEEN_THROTTLE_MS) return;
+      /* ⭐ THE FIRST SENTENCE OF A PAGE LOAD ALWAYS SENDS, throttle or not.
+         The single most valuable fact about a visitor is whether they played ANYTHING,
+         and under a pure throttle that fact is the one most easily lost: the page-load
+         ping starts the window, so the first play is always inside it and lives only in
+         memory. Measured 2026-08-21 -- of eleven signups, four recorded zero listens, and
+         for at least one of them a lost tally is a better explanation than not listening.
+         Everything AFTER the first is throttled as before, so a long session still costs
+         two requests a minute, not one per clip. */
+      if (tallySent && now - lastSeenPing < SEEN_THROTTLE_MS) return;
+      tallySent = true;
     } else if (kind === 'touch') {
       /* Refresh last_seen_at WITHOUT tallying, so that a LONG UNINTERRUPTED LISTEN is
          not mistaken for a second session. /api/seen only hears from us on a page load
