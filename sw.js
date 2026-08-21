@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v380';   // v380: the 24 links into the index switcher panels now point at /read and /playlists
+const VERSION = 'v381';   // v381: /topics + the five band pages join the precached shell
                           // 900 ms after sign-in and was cancelling it -- plus the missed
                           // email-typo shapes in all three copies of DOMAIN_TYPOS.
                           // attrib.js is precached, so this bump is what delivers it.
@@ -623,6 +623,16 @@ const PRECACHE = [
   '/account.html', '/subscribe.html', '/join.html', '/about.html', '/guide.html', '/socials.html', '/app.html',
   '/progress.html',
   '/privacy.html', '/terms.html', '/refunds.html', '/deleted.html',
+  /* The /topics landing + its five difficulty bands (2026-08-21). They are the navigation
+     spine of the redesigned site — every route to a topic page runs through one of them —
+     so they must open offline like the rest of the shell. Their cards are static HTML, so
+     an offline visitor sees the whole catalogue and can open anything downloaded. */
+  '/topics.html',
+  '/topics-beginner.html', '/topics-beginner-to-lower-intermediate.html',
+  '/topics-lower-intermediate-to-intermediate.html',
+  '/topics-intermediate-to-upper-intermediate.html',
+  '/topics-upper-intermediate-to-advanced.html',
+  '/topics-page.css', '/topics-page.js',
   /* The sign-in interstitial the email links to (v340). It is where a user lands from their
      inbox, i.e. often on a device that has never opened the site, so it must not depend on a
      lucky network moment — and it is the ONLY route back in for anyone whose magic link was

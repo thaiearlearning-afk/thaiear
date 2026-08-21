@@ -1,0 +1,984 @@
+/* topics-page.css — the /topics landing page and the five band pages.
+ *
+ * PROVENANCE: the bulk of this file is index.html's own <style> block, lifted verbatim on
+ * 2026-08-21 so the topic cards, tier pills, filter tabs and footer on the new pages ARE the
+ * ones people already know, not a re-implementation that drifts. Hero, switcher and panel
+ * rules come along and are inert here; they are kept rather than pruned, because pruning by
+ * eye is exactly how a rule something still depends on gets deleted.
+ *
+ * ⚠ THIS FILE BECOMES THE OWNER of the card styles when index.html is replaced by the new
+ * home page, which has no cards on it. Until that lands the two copies are identical; after
+ * it, edit HERE.
+ *
+ * Page chrome specific to /topics is appended at the end of the file.
+ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.09);
+    --border-strong: rgba(0,0,0,0.16);
+    --text-primary: #1A1A1A;
+    --text-secondary: #5A5A5A;
+    --text-tertiary: #9A9A9A;
+    --accent: #4B41AD;
+    --accent-mid: #534AB7;
+    --accent-light: #EEEDFE;
+    --gold: #F0CC5C;
+    --gold-dark: #C8A030;
+    --gold-light: #FBF5DC;
+    --purple-mid: #7F77DD;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --font-ui: 'Inter', system-ui, sans-serif;
+    --font-thai: 'Sarabun', system-ui, sans-serif;
+    --font-serif: Georgia, 'Times New Roman', serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Accessible/SEO heading that isn't part of the visual hero design (the hero's
+     visual "heading" is the logo + stylised Thai). Standard sr-only pattern. */
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+
+  /* ── NAV ── */
+  
+  
+  
+  
+  
+  
+  
+
+  /* ── HERO ── */
+  .hero {
+    background: #4B41AD;
+    overflow: hidden;
+    text-align: center;
+  }
+  .hero-inner {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 0.875rem 2rem 0;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-logo {
+    width: 88px;
+    height: auto;
+    display: block;
+    margin: 0 auto 0.44rem;
+    opacity: 0.93;
+  }
+  .hero-thai {
+    font-family: var(--font-thai);
+    font-size: 46px;
+    font-weight: 300;
+    color: #F0CC5C;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    margin-bottom: 0.85rem;
+    text-shadow: 0 0 1px rgba(29,19,77,1), 0 0 3px rgba(29,19,77,0.8), 0 1px 12px rgba(240,204,92,0.20);
+  }
+  .hero-tagline {
+    font-family: var(--font-serif);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.50);
+    margin-bottom: 0.85rem;
+  }
+  /* The one visible "free" signal in the hero (2026-08-10). Before this, the word "free" appeared
+     NOWHERE a human could read on the index — only in the JSON-LD, the sr-only <h1> and the topic
+     literally named "Hobbies & free time" — while "Premium" was chipped on 81 cards. The only tier
+     signal on the page was the locked kind, which read as a paywall to cold ad traffic.
+     clamp() instead of a breakpoint override so it needs no new media query; static markup so it
+     is present at first paint and cannot shift the layout (the page holds Lighthouse CLS ~0). */
+  .hero-free {
+    font-size: clamp(13px, 3.4vw, 15px);
+    line-height: 1.5;
+    color: rgba(255,255,255,0.80);
+    max-width: 30ch;
+    margin: 0 auto 1.4rem;
+  }
+  .hero-rule {
+    width: 48px;
+    height: 1.5px;
+    background: #F0CC5C;
+    margin: 0 auto 1.4rem;
+    opacity: 0.55;
+  }
+  .hero-stats-band {
+    background: rgba(0,0,0,0.14);
+    border-top: 0.5px solid rgba(255,255,255,0.09);
+    margin-top: 0.625rem;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 3.5rem;
+    flex-wrap: wrap;
+    /* ⚠ THE LEADING HAS TO BE SET HERE, NOT ON .hero-stat-label. The label is an INLINE element,
+       so its own line-height sizes its inline box but does NOT size the line box it sits in — the
+       containing block's strut does, and that was inheriting 1.6 from the body. Tightening only
+       the label left "UNIQUE" and "WORDS" visibly adrift from each other with the old leading
+       still between them. Setting it on the flex container inherits to both the columns and the
+       labels. Resolves to plain 1.6 at --te-ui: 1, so normal view is unchanged. */
+    line-height: max(1.15, calc(1.6 * var(--te-ui, 1)));
+    padding: 1.1rem 2rem;
+    max-width: 620px;
+    margin: 0 auto;
+  }
+  /* Decorative stats band, so it takes the --te-ui cap (see nav.js uiScale): at full Android
+     text inflation the three stats broke onto two rows and the band grew to 415px tall
+     (owner-reported, 2026-08-09). Capping the type is only half of it — the fixed 2rem mobile
+     gap ate 64px of a 345px viewport on its own, so the gap flexes with the viewport too. */
+  .hero-stat-num {
+    font-size: calc(24px * var(--te-ui, 1));
+    font-weight: 500;
+    color: #F0CC5C;
+    display: block;
+    line-height: max(1.05, calc(1.2 * var(--te-ui, 1)));
+    text-shadow: 0 0 1px rgba(29,19,77,1), 0 0 3px rgba(29,19,77,0.8);
+  }
+  /* ⚠ EVERY VALUE HERE IS A NO-OP AT NORMAL SIZE, BY CONSTRUCTION. --te-ui is exactly 1 unless
+     Android is inflating text, so `calc(X * var(--te-ui, 1))` resolves to plain X on desktop, on
+     iOS, and on an Android phone at the default font size. The max() floors only ever bite on the
+     inflated side. That is what lets the band tighten under pressure while normal view is
+     untouched — verified by measuring with these rules and with them overridden away.
+     WHY tighten at all: at 320px/2x the band reached 204px, and "UNIQUE WORDS" wrapping at an
+     inherited 1.6 line-height was 63px of it. Owner keeps the word "unique" (it is a real claim),
+     so the height has to come out of the leading and the letter-spacing instead.
+     ⚠ line-height was INHERITED (1.6, from the body) before this; pinning it means a future change
+     to the body's line-height will no longer reach this label. Deliberate, but easy to forget. */
+  .hero-stat-label {
+    font-size: calc(11px * var(--te-ui, 1));
+    color: rgba(255,255,255,0.44);
+    line-height: max(1.15, calc(1.6 * var(--te-ui, 1)));
+    letter-spacing: calc(0.08em * var(--te-ui, 1));
+    text-transform: uppercase;
+  }
+
+  /* ── PAGE INTRO (gold accent bar) ── */
+  /* Owner 2026-08-02 (round 7): the intro sentence is GONE entirely — hero → switcher, no
+     in-between copy ("users can navigate the website to see what we are about"). */
+
+  /* ── THREE-WAY SWITCHER (Topic Sentences / Read Thai / Playlists) ──
+     Replaces the old sentences⇄read toggle (superseded). Ported from index-mock.html, the
+     owner-approved cosmetics pass (2026-08-02, rounds 1-7): unselected = gold theme, selected =
+     accent purple. Sits in its own slim wrapper OUTSIDE .topics-section (below) so the panel
+     sections can each stay a single <section class="topics-section">, which is what keeps
+     gen_home.js's #topic-grid regex (topic-grid's closing </div> immediately followed by
+     </section>) matching correctly — see the deploy notes at the end of this file. */
+  .switcher-wrap { max-width: 900px; margin: 0 auto; padding: 0.7rem 1.5rem 0; }
+  .mode-switch { display: flex; gap: 3px; background: var(--surface); border: 0.5px solid var(--border-strong);
+    border-radius: 14px; padding: 3px; margin-bottom: 0.85rem; }
+  /* ⚠ `min-width: 0` + wrapping are LOAD-BEARING here — do not restore `white-space: nowrap`.
+     `flex: 1` sets flex-basis to 0, so these three buttons look like they should always be
+     equal width. They are not: a flex item's automatic minimum size is its MIN-CONTENT width,
+     and with nowrap that is the entire label. "Topic Sentences" therefore had a floor the other
+     two did not, and spent it squeezing them — measured 173px vs 112/100 at 1.4× text, with
+     "Playlists" pushed 71px off the edge of the page (owner-reported on Android, 2026-08-09).
+     Letting the label wrap drops the floor to the longest single WORD, which fits at every
+     size we can reach. Nothing wraps at default size, so the bar is visually unchanged.
+     The `var(--te-ui, 1)` sizes (see nav.js uiScale) cap Android's text inflation at 15% on
+     top of that; the min-width fix stands on its own if the var is ever absent. */
+  .ms-btn { flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: var(--font-ui); font-size: calc(14px * var(--te-ui, 1)); font-weight: 500; color: #B29234;
+    background: #FBF5DC; border: none; border-radius: 11px; padding: 12px 6px; cursor: pointer;
+    transition: background 0.15s, color 0.15s; white-space: normal; text-align: center; line-height: 1.25;
+    overflow-wrap: break-word; }
+  .ms-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+  .ms-ico { font-family: var(--font-thai); font-size: calc(17px * var(--te-ui, 1)); font-weight: 600; line-height: 1; flex-shrink: 0; }
+  .ms-btn:hover { color: #8F7526; }
+  .ms-btn.active { background: var(--accent); color: #fff; }
+  /* ⚠ PHONES GET `flex-basis: auto`, DESKTOP KEEPS `0`. Three EQUAL thirds are only 100px wide
+     at 360px, and "Topic Sentences" needs ~125px for one line — so forcing equal widths here
+     wrapped the label and grew the bar 39px → 55px at DEFAULT text size, on every phone. That
+     is a visible change to an owner-approved design, and it is not what this pass is for.
+     Basis `auto` keeps each button at its natural width (exactly today's look), while
+     `min-width: 0` + wrapping still let them give ground once the OS inflates the text.
+     Desktop has room for equal thirds, so it keeps them. */
+  @media (max-width: 480px) {
+    .ms-btn { flex: 1 1 auto; font-size: calc(13px * var(--te-ui, 1)); padding: 11px 3px; gap: 5px; }
+  }
+
+  /* Same-origin embedded panels (Read Thai / Playlists) — lazy-loaded iframes, auto-sized to
+     their content by the switcher script so they scroll as part of this page. */
+  /* r130: the panel iframes are GONE (true native panels) — no .embed-frame, no frame sizing. */
+  /* r131 — anti-jank (owner: switches/teleports "visually jerky"). Three parts:
+     1. every panel swap fades in (.18s) instead of popping;
+     2. an UNMOUNTED panel keeps 65vh of reserved height while its assets load, so the page never
+        collapses and a deep-link scroll can never clamp to the bottom then snap up;
+     3. .panel-veiled holds opacity 0 with NO transition while loading — removing it lets the
+        .18s transition play the reveal. */
+  .topics-section { transition: opacity .26s ease; }   /* r133: 180ms read as a pop (owner) */
+  /* ⚠⚠ 100vh, NOT 65vh — AND IT IS ARITHMETIC, NOT TASTE (r142).
+     The topics panel is ~3675px of a ~4337px document. Switching hides it and leaves only this
+     reserve, so the document collapses and the browser CLAMPS scrollY to the new maximum. With
+     65vh the sums do not work: scrolled so the switcher sat at the top of the viewport
+     (scrollY 523), the post-switch maximum scroll was 470 — 53px short — so the page slid up and
+     the switcher dropped down the screen. Measured on the live site, 2026-08-03.
+     The requirement is: the incoming panel alone must be able to fill the viewport, so the
+     switcher can still reach the top. reserve >= vh - switcherHeight - footerHeight, and 100vh
+     satisfies that for every viewport by construction.
+     ⚠ WHY ONLY IPHONE REPORTED IT: Chrome implements scroll anchoring (overflow-anchor) and
+     silently compensates for the collapse; WebKit has never shipped it. The bug was always
+     present everywhere — Safari and the iPhone PWA are just the only places it is visible. */
+  .topics-section.panel-pending { min-height: 100vh; }
+  .topics-section.panel-veiled { opacity: 0; transition: none; }
+
+    /* ── TOPICS SECTION ──
+       Reused (same class) by the Read Thai + Playlists panel sections below, so all three panels
+       share one container width/padding. padding-top is 0 here because .switcher-wrap (above)
+       now supplies the vertical gap before the switcher — see its comment. */
+  .topics-section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1.5rem 5rem;
+  }
+  /* Panel heading style (owner round 7): title = read.css .read-title; subtitle = the eyebrow
+     style, UNDER the title. Used by #panel-topics's "Listen and learn by topic" heading. */
+  .panel-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary);
+    margin-bottom: 4px; line-height: 1.2; }
+  .panel-sub { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); margin: 6px 0 16px; }
+  @media (max-width: 600px) { .panel-title { font-size: 20px; } }
+
+  /* ── LEVEL FILTER ── */
+  .filter-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+  }
+  /* Pills are chrome, not reading matter — they take the --te-ui cap too (owner asked, and
+     the `.filter-tabs` row already wraps, so this only stops them eating the whole toolbar). */
+  .filter-tab {
+    font-size: calc(13px * var(--te-ui, 1));
+    font-family: var(--font-ui);
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  /* Per-tier access pills: hover matches the tier palette of the topic cards below (grey for
+     Free, gold for Premium) instead of the default purple. Scoped :not(.active) so the
+     selected pill keeps its solid styling. Member + All access stay purple by design. */
+  .filter-tab.tab-free:not(.active):hover { border-color: var(--text-tertiary); color: var(--text-primary); }
+  .filter-tab.tab-premium:not(.active):hover { border-color: var(--gold-dark); color: #B29234; }
+
+  /* ── GRID TOOLBAR ── pills + search in ONE quiet card instead of stacked loose rows
+     (ported from index-mock.html). */
+  .grid-toolbar { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
+    padding: 9px 11px 11px; margin-bottom: 0.9rem; }
+  .grid-toolbar .filter-tabs { margin: 0 0 9px; gap: 6px; }
+  .grid-toolbar .filter-tab { font-size: calc(12px * var(--te-ui, 1)); padding: 4px 12px; }
+  .grid-toolbar .topic-search-wrap { margin: 0; }
+  .grid-toolbar .topic-search { background: var(--bg); border-color: transparent; }
+  .grid-toolbar .topic-search:focus { border-color: var(--accent); background: var(--surface); }
+  .grid-toolbar .topic-search-count { position: static; display: block; margin-top: 4px; min-height: 0; }
+
+  /* ── TOPIC SEARCH ──
+     Sits directly under the access pills. The pills stay the outer gate; this narrows
+     within them. Fixed height so the result count appearing can't shift the grid (CLS). */
+  .topic-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: -1.25rem 0 1.75rem;   /* pull up under the pills' own bottom margin */
+    max-width: 420px;
+  }
+  .topic-search-icon {
+    position: absolute; left: 12px; width: 15px; height: 15px;
+    color: var(--text-tertiary); pointer-events: none;
+  }
+  /* Capped: the placeholder ("Search topics — try “temple” or “วัด”") is a single unwrappable
+     line inside an input, so it cannot reflow — past a certain size it just runs out through
+     the end of the field. Capping the type is the only thing that keeps it readable. */
+  .topic-search {
+    width: 100%;
+    font-size: calc(13.5px * var(--te-ui, 1));
+    font-family: var(--font-ui);
+    padding: 8px 34px 8px 34px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text-primary);
+    transition: border-color 0.15s;
+    -webkit-appearance: none;     /* kill Safari's native search chrome */
+    appearance: none;
+  }
+  .topic-search::placeholder { color: var(--text-tertiary); }
+  .topic-search:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .topic-search::-webkit-search-cancel-button { display: none; } /* we render our own ✕ */
+  .topic-search-clear {
+    position: absolute; right: 10px;
+    border: 0; background: none; cursor: pointer;
+    color: var(--text-tertiary); font-size: 17px; line-height: 1;
+    padding: 2px 4px;
+  }
+  .topic-search-clear:hover { color: var(--text-primary); }
+  .topic-search-count {
+    position: absolute; left: 0; top: 100%;
+    margin-top: 5px;
+    font-size: 11.5px;
+    font-family: var(--font-ui);
+    color: var(--text-tertiary);
+    min-height: 14px;             /* reserve the row so it can't push the grid */
+  }
+
+  /* ── TOPIC GRID ── */
+  .topic-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  /* Cards ~30% shorter (owner 2026-08-02): tighter padding + gap. */
+  .topic-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 0.6rem 1rem 0.55rem;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    /* 1px between the text lines — title, sentence count, play count now read as one block.
+       The AIR goes above the title instead (.topic-card-top margin-bottom), because the tier pill
+       is a different kind of thing and wants separating from them (owner, 2026-08-20). */
+    gap: 1px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+    position: relative;
+  }
+  /* App/PWA only: accent border while this card's download is in progress. */
+  .topic-card.dl-working { border-color: var(--accent); }
+  /* "Now playing" equalizer — app-only cue on the card whose audio is currently playing. */
+  .te-eq { position: absolute; top: 0.85rem; right: 1.05rem; display: none; align-items: flex-end;
+           gap: 2px; height: 13px; pointer-events: none; }
+  .topic-card.playing .te-eq { display: flex; }
+  .topic-card.premium .te-eq i { background: #F0CC5C; }
+  .te-eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--accent);
+             transform-origin: bottom; animation: te-eq-bounce 0.9s ease-in-out infinite; }
+  .te-eq i:nth-child(2) { animation-delay: 0.3s; }
+  .te-eq i:nth-child(3) { animation-delay: 0.15s; }
+  .te-eq i:nth-child(4) { animation-delay: 0.45s; }
+  @keyframes te-eq-bounce { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+  /* Default hover = accent purple, matching the de-greyed non-member chip below (owner
+     2026-08-02: reverted the grey scheme back to the free-member accent scheme).
+     Member + premium cards override this below with their own purple / gold hovers. */
+  .topic-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  .topic-card.coming-soon {
+    opacity: 0.48;
+    cursor: default;
+  }
+  .topic-card.coming-soon:hover {
+    border-color: var(--border);
+    box-shadow: none;
+  }
+  .coming-soon-label {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    font-weight: 500;
+  }
+  /* Section divider for not-yet-built topics, and the no-results message. Both span
+     the full grid width since they live inside the CSS grid. */
+  .coming-soon-heading {
+    grid-column: 1 / -1;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 1.75rem 0 0.25rem;
+    padding-top: 1.5rem;
+    border-top: 0.5px solid var(--border);
+  }
+  /* The multi-column "Coming soon" list block (soon-block/soon-items/soon-lk) is GONE
+     (2026-08-02 index redesign) — not-yet-built topics now collapse to a single
+     ".coming-soon-heading" line ("More coming soon") at the grid bottom; see soonList()
+     in the script below. .coming-soon-heading itself is kept — it's reused for that line. */
+  .grid-msg {
+    grid-column: 1 / -1;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    padding: 1rem 0;
+  }
+  /* Difficulty band heading for LIVE topics — deliberately MORE assertive than the
+     subtle grey "Coming soon" divider: navy, larger, sentence-case. Slimmed 2026-08-02
+     alongside the shorter cards (ported from index-mock.html). */
+  .level-heading {
+    grid-column: 1 / -1;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #1C124E;
+    margin: 1.4rem 0 0.7rem;
+    padding-top: 1.1rem;
+    border-top: 0.5px solid var(--border);
+  }
+  .level-heading:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+  .topic-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;   /* separate the tier pill from the title block below it */
+  }
+  .level-badge {
+    font-size: calc(10px * var(--te-ui, 1));
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .badge-beg {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+  .badge-li1 {
+    background: #FEF6E7;
+    color: #B87A00;
+  }
+  /* Intermediate — the 5th level, added 2026-08-21 when the 46-unit
+     "Lower intermediate → Upper intermediate" band was split in three. A neutral slate
+     between the gold of Lower intermediate and the violet of Upper intermediate: the two
+     it sits between are already a warm and a cool, so anything on that axis reads as one
+     of them at 10px. Judgement call — one line to change. */
+  .badge-int {
+    background: #EEF0F6;
+    color: #4A5578;
+  }
+  .badge-li2 {
+    background: #F0EFFD;
+    color: #534AB7;
+  }
+  /* Advanced (tertiary / niche) — deep crimson, distinct from the cooler lower tiers. */
+  .badge-adv {
+    background: #FBECEC;
+    color: #A23A3A;
+  }
+  .level-badges {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .topic-name {
+    min-width: 0;
+    overflow-wrap: break-word;   /* only bites when a word genuinely cannot fit */
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.28;
+    flex: 1;
+  }
+  .topic-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .topic-sent-count {
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+  /* The play count gets its OWN line at the bottom of the card (owner, 2026-08-20): on one line
+     with the sentence count and the download caption it was three things competing in 12px grey.
+     Green is the same #1F5D3A as .reveal-all-btn on a premium topic — a deliberate second colour,
+     because this is the one number on the card that is about YOU rather than about the topic. */
+  .topic-plays {
+    font-size: 12px;
+    font-weight: 500;
+    color: #1F5D3A;
+    line-height: 1.3;
+  }
+
+  /* ── PREMIUM (locked) CARD ── */
+  .topic-card.premium:hover {
+    border-color: var(--gold-dark);
+    box-shadow: 0 0 0 3px var(--gold-light);
+  }
+  .topic-premium {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    /* Mellow gold: golder/less orange than the badge-li1 amber, a touch softer than the
+       former intense --gold-dark, on the creamier --gold-light bg — the "coming soon" faded
+       vibe at full opacity (not washed out). */
+    color: #B29234;
+    background: #FBF5DC;
+    padding: 2px 9px 2px 7px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .topic-premium svg {
+    width: 11px;
+    height: 11px;
+  }
+  /* Entitled view: owned/unlocked premium — same mellow gold, no padlock. */
+  .topic-premium.unlocked {
+    background: #FBF5DC;
+    color: #B29234;
+  }
+
+  /* ── MEMBER (login-only) CARD — accent (purple), distinct from gold premium ── */
+  .topic-card.member:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  .topic-member {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 2px 9px 2px 7px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .topic-member svg { width: 11px; height: 11px; }
+  /* Entitled view: same soft Beginner-pill palette, no padlock (was a strong solid purple). */
+  .topic-member.unlocked { background: var(--accent-light); color: var(--accent); }
+  /* ── NON-MEMBER (free, open) CARD — accent chip (de-greyed, owner 2026-08-02: reverted to the
+     free-member accent scheme so it doesn't read as locked/disabled). ── */
+  .topic-nonmember {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 2px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  /* Slimmer tier pills (owner 2026-08-02): less card height. Same specificity as the three
+     per-tier rules above and comes later in source order, so it wins on the shared properties. */
+  .topic-premium, .topic-member, .topic-nonmember {
+    font-size: 10px; padding: 1px 7px; gap: 3px; letter-spacing: 0.03em;
+    /* Pull the pill left by its own left padding so its CONTENT starts in the same column as the
+       topic title below it (owner, 2026-08-20). Without this the pill's 7px inset made every card
+       look like it had two different left edges.
+       ⚠ On a PREMIUM pill the padlock comes first, so its "P" still sits ~13px right of the title's
+       first letter — aligning that exactly would mean shifting a further 13px, which pushes the
+       padlock outside the card's 1rem padding. Moving the padlock after the word is the only way
+       to get both letters flush; not done, because it is a design change nobody asked for. */
+    margin-left: -7px;
+  }
+  .topic-premium svg, .topic-member svg { width: 10px; height: 10px; }
+  /* App-only selection controls. The OUTER span is a big, finger-friendly tap target; the inner
+     dot/tick is the smaller visible mark — so they're easy to hit without catching the card link. */
+  .dl-select, .dl-badge { position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; margin-left: 4px; vertical-align: middle; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  /* Invisible enlarged hit area (~52px, >2× the visual mark) centred on the dot/tick — easy to tap. */
+  .dl-select::before, .dl-badge::before { content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); width: 52px; height: 52px; border-radius: 50%; }
+  /* Download select circle: light purple → dark when selected. */
+  .dl-dot { width: 23px; height: 23px; border-radius: 50%; background: var(--accent-light);
+    border: 1.5px solid var(--accent-light); transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+  .dl-select:hover .dl-dot { border-color: var(--accent); }
+  .dl-select.selected .dl-dot { background: var(--accent); border-color: var(--accent); }
+  .dl-select:active .dl-dot { transform: scale(0.92); }
+  /* Premium topics: gold select circle (light gold → dark gold when selected) instead of purple. */
+  .dl-select[data-tier="premium"] .dl-dot { background: var(--gold-light); border-color: var(--gold-light); }
+  .dl-select[data-tier="premium"]:hover .dl-dot { border-color: #F0CC5C; }
+  .dl-select[data-tier="premium"].selected .dl-dot { background: #F0CC5C; border-color: #F0CC5C; }
+  /* Update ring (dl-core §D.1, ported from dyn-index.html r83): dashed border = "there is
+     something to fetch" — a superseded download or a D0 legacy claim — distinct from a plain
+     download circle at a glance. */
+  .dl-select.dl-update .dl-dot { background: transparent; border-color: var(--accent); border-style: dashed; }
+  .dl-select.dl-update.selected .dl-dot { background: var(--accent); border-style: solid; }
+  .dl-select[data-tier="premium"].dl-update .dl-dot { border-color: #F0CC5C; }
+  .dl-select[data-tier="premium"].dl-update.selected .dl-dot { background: #F0CC5C; border-style: solid; }
+  /* Downloaded tick: a lavender ring appears when selected for removal. */
+  .dl-tick { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px;
+    border-radius: 50%; color: var(--accent); border: 2px solid transparent; transition: border-color 0.15s, background 0.15s; }
+  .dl-badge.clear-selected .dl-tick { border-color: #9d92e0; background: var(--accent-light); }
+  /* Premium downloaded topics: gold tick (graphic accent gold), not purple. */
+  .dl-badge[data-tier="premium"] .dl-tick { color: #F0CC5C; }
+  /* Working (downloading) row: an animated ellipsis in place of the circle/tick. */
+  .dl-working-dots { display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; margin-left: 4px; vertical-align: middle; }
+  .dots { display: inline-block; width: 1.1em; text-align: left; }
+  .dots::after { content: '...'; display: inline-block; width: 0; overflow: hidden; vertical-align: bottom;
+    animation: te-dl-dots 1.2s steps(3, start) infinite; }
+  @keyframes te-dl-dots { from { width: 0 } to { width: 1.05em } }
+  /* Download/remove controls (dl-core §D.1, ported from index-mock.html + dyn-index.html): ONE
+     selection set + a three-button layout — Download/Remove Selected on one half-height row,
+     a quiet Remove All beneath. display:flex is the BASE state now (was JS-toggled); visibility
+     is governed entirely by body.te-no-dl (§1f, below) so a plain browser tab reflows into the
+     space instead of reserving it. */
+  .dl-batch-bar { display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+    background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md);
+    padding: 0.65rem 0.9rem 0.55rem; margin-bottom: 0.9rem; }
+  .dl-batch-btns { display: flex; gap: 8px; }
+  .dl-batch-btn { flex: 1; font-family: var(--font-ui); font-size: 13px; font-weight: 500; color: #fff;
+    background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; }
+  .dl-batch-btn:hover:not([disabled]) { background: var(--accent-mid); }
+  .dl-batch-btn[disabled] { background: var(--border); color: var(--text-tertiary); cursor: default; }
+  .dl-clear-btn { background: var(--surface); color: var(--text-secondary); border: 0.5px solid var(--border-strong); }
+  .dl-clear-btn:hover:not([disabled]) { background: var(--bg); color: var(--accent); border-color: var(--accent); }
+  /* Quiet Remove All — a reset, not a third verb for the current selection; danger tone on hover only. */
+  .dl-removeall-btn { background: transparent; color: var(--text-tertiary); border: 0.5px solid var(--border);
+    font-size: 12px; padding: 4px 10px; }
+  .dl-removeall-btn:hover:not([disabled]) { background: #FDF1F2; color: #B00020; border-color: #E8C4C8; }
+  /* #dl-batch-status = the RUNNING JOB's progress; #dl-batch-note = transient tap feedback.
+     Deliberately separate elements (dl-core §D.1) so a selection tap mid-download can never
+     evict the only evidence that work is still happening. */
+  /* ⚠ THE EMPTY STATUS LINE NO LONGER RESERVES A BLANK ROW (2026-08-16). It used to sit between the
+     buttons and the hint as ~22px of dead white (min-height 1.1em + the 8px flex gap), which is what
+     made this card read as too thick. :empty collapses it — and because a flex item with display:none
+     takes no gap either, the whole row goes, not just its box.
+     It was never an honest anti-shift reserve anyway: min-height was 1.1em (14.3px) while the text's
+     own line box is line-height 1.6 (20.8px), so a status message ALREADY grew the card by ~6px. The
+     line-height/min-height pair below now match exactly, so the only movement is the row appearing.
+     That is input-driven and near-neutral in the normal flow: updateBatchBar() hides the hint the
+     moment anything is selected, so the status row replaces a row of almost the same height (15 vs
+     17px). Don't "restore" a standing reserve — it buys ~2px of stability for 22px of white. */
+  .dl-batch-status { font-size: 13px; color: var(--text-secondary); line-height: 1.2; min-height: 1.2em; }
+  .dl-batch-status:empty { display: none; }
+  .dl-batch-status.err { color: #B00020; }
+  .dl-batch-note { font-size: 12.5px; color: var(--text-tertiary); line-height: 1.2; min-height: 1.2em; }
+  .dl-batch-hint { font-size: 12.5px; color: var(--text-tertiary); line-height: 1.35; }
+  /* Confirm dialog (clear downloads). */
+  .dl-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,40,0.55); display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
+  .dl-modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 360px; width: 100%; padding: 1.8rem 1.5rem; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+  .dl-modal-card p { color: var(--text-secondary); font-size: 14.5px; line-height: 1.6; margin-bottom: 1.5rem; }
+  .dl-modal-actions { display: flex; gap: 10px; }
+  .dl-modal-actions button { flex: 1; font-family: var(--font-ui); font-size: 15px; font-weight: 500; border-radius: var(--radius-sm); padding: 11px 16px; cursor: pointer; }
+  .dl-modal-cancel { background: var(--surface); color: var(--text-secondary); border: 0.5px solid var(--border-strong); }
+  .dl-modal-confirm { background: #C0392B; color: #fff; border: none; }
+  .dl-modal-confirm:hover { background: #a93226; }
+
+  /* ── §1f DOWNLOAD-UI VISIBILITY (owner rule, 2026-08-02, ported from index-mock.html) ──
+     Download interfaces are APP/PWA-ONLY: the Android app and an installed (standalone) PWA see
+     them; a plain browser tab (Safari/Chrome, desktop or phone) never does. Everything below is
+     a normal-flow element, so hiding it reflows the layout — nothing reserves the space. Belt &
+     braces alongside the JS-level gate: dlCardState() (below) already returns null when
+     !OFFLINE_UI, so a plain browser tab never even gets this markup — the caption text it would
+     add to .topic-sent-count is skipped at the source, not merely hidden. The predicate that adds
+     this class lives in the download-engine script, below. */
+  body.te-no-dl .dl-batch-bar,
+  body.te-no-dl .dl-select,
+  body.te-no-dl .dl-badge,
+  body.te-no-dl .dl-working-dots {
+    display: none !important;
+  }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    border-top: 0.5px solid var(--border);
+    padding: 1.5rem 2rem;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+  }
+  .footer-thai { justify-self: end; }
+  /* ⚠ THIS FOOTER WAS THE SIDE-SCROLL. Six links in a `display: flex` row with no wrap, and
+     on mobile the grid switches to one centred column, where `justify-items: center` sizes
+     each item to MAX-CONTENT — so both the link row and the copyright line could exceed the
+     column and take the whole document with them (measured: 190px of overflow at 1.4× text,
+     page scrollWidth 535 against a 345px viewport). `max-width: 100%` keeps every child inside
+     the column and `flex-wrap` lets the links reflow. Keep both. */
+  .site-footer > * { max-width: 100%; min-width: 0; }
+  .footer-note {
+    font-size: calc(12px * var(--te-ui, 1));
+    color: var(--text-tertiary);
+  }
+  .footer-links {
+    display: flex;
+    gap: 1.1rem;
+    flex-wrap: wrap;
+  }
+  .footer-links a {
+    font-size: calc(12px * var(--te-ui, 1));
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .footer-links a:hover { color: var(--accent); }
+  .footer-thai {
+    font-family: var(--font-thai);
+    font-size: calc(13px * var(--te-ui, 1));
+    color: var(--gold-dark);
+    opacity: 0.7;
+  }
+
+  /* ── RESPONSIVE ── */
+
+  /* Tablet: 600–900px — 2 column grid, smaller hero text */
+  @media (max-width: 900px) {
+    .topic-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .hero-thai { font-size: 36px; }
+    .hero-stats { gap: 2.5rem; }
+  }
+
+  /* Mobile: up to 600px — single column, compact hero */
+  @media (max-width: 600px) {
+    .topic-grid {
+      grid-template-columns: 1fr;
+    }
+
+
+    
+    .hero-inner { padding: 2.5rem 1.25rem 0; }
+    .hero-logo { width: 91px; margin-bottom: 1.25rem; }
+    .hero-thai { font-size: 30px; }
+    .hero-tagline { font-size: 11px; letter-spacing: 0.16em; }
+    /* ⚠ px + vw, NOT rem. Android's textZoom scales the ROOT font size, so every `rem` length
+       inflates with the text — a 2rem gap became 33.6px and ate 67px of a 345px viewport,
+       which is what pushed the third stat onto its own row. px and vw are immune. */
+    /* Padding was 80px of that 204px band - `1.25rem` doubling under textZoom, nothing to do
+       with the text itself. px stops it inflating; * var(--te-ui) actively tightens it when
+       inflated; max() stops it collapsing. At --te-ui: 1 this is exactly 20px/16px, i.e.
+       byte-identical to the 1.25rem/1rem it replaces. */
+    .hero-stats {
+      gap: clamp(10px, 4vw, 32px);
+      padding: max(12px, calc(20px * var(--te-ui, 1))) max(10px, calc(16px * var(--te-ui, 1)));
+      flex-wrap: wrap;
+    }
+    /* ⚠ BASIS `auto`, NOT `0` — equal thirds were CAUSING the wrap, not absorbing it. With
+       basis 0 all three columns get 87px at 320px/2x, and "UNIQUE WORDS" needs ~100px, so it
+       broke onto two lines and took the band to 117px. Content-sized columns let the widest
+       label claim the room the two short ones do not want (58 / 89 / 115), and it fits on one
+       line — band 83px. Exactly the same mistake, and the same fix, as the .ms-btn switcher.
+       `min-width: 0` stays so that at some more extreme size they can still shrink and wrap
+       rather than overflow. Phones only; desktop keeps its natural centred spacing. */
+    .hero-stats > div { flex: 1 1 auto; min-width: 0; text-align: center; }
+    .hero-stat-num { font-size: calc(20px * var(--te-ui, 1)); }
+    .switcher-wrap {
+      padding: 0.7rem 1rem 0;
+    }
+    .topics-section {
+      padding: 0 16px 3rem;      /* px sides — see .topic-card */
+    }
+    .filter-tabs {
+      gap: 5px;
+    }
+    .filter-tab {
+      font-size: calc(12px * var(--te-ui, 1));
+      padding: 5px 12px;
+    }
+    .topic-search-wrap { max-width: none; margin-top: -1rem; }
+    .topic-search { font-size: calc(12.5px * var(--te-ui, 1)); padding: 7px 30px; }
+    .topic-card {
+      padding: 14px 16px 13px;   /* px, not rem — rem padding inflates under Android textZoom */
+      min-width: 0;              /* grid item: stop min-content blowing past the 1fr column */
+    }
+    .level-badge {
+      font-size: calc(9px * var(--te-ui, 1));
+    }
+    .site-footer {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      text-align: center;
+    }
+    .footer-thai { justify-self: center; }
+  }
+
+  /* Very small screens: up to 380px — tighten further */
+  @media (max-width: 380px) {
+    .hero-thai { font-size: 26px; }
+    .hero-logo { width: 77px; }
+    .hero-stats { gap: clamp(8px, 3.5vw, 24px); }   /* px/vw, not rem — see the ≤600px rule */
+    
+    .filter-tabs {
+      flex-wrap: wrap;
+    }
+    .filter-tab {
+      font-size: calc(11px * var(--te-ui, 1));
+      padding: 4px 10px;
+    }
+  }
+
+  /* Desktop/tablet (≥601px): tighten the hero's vertical rhythm — closer lines,
+     smaller gaps — so the dark stats band lands above the fold on load. Phones are
+     all ≤600px, so this leaves the mobile hero (handled above) untouched. */
+  @media (min-width: 601px) {
+    .hero-inner { padding-top: 0.35rem; }
+    .hero-logo { margin-bottom: 0.05rem; }     /* Thai script sits right under the logo */
+    .hero-thai { margin-bottom: 0.3rem; }      /* tagline sits closer under the Thai script */
+    .hero-tagline { margin-bottom: 0.7rem; }   /* less space above the gold rule */
+    .hero-rule { margin-bottom: 0.7rem; }      /* less space below the gold rule */
+    .hero-stats-band { margin-top: 0.3rem; }
+    .hero-stats { padding: 0.5rem 2rem; }      /* shorter band so the gold labels clear the fold */
+  }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   /topics PAGE CHROME — added 2026-08-21 with the redesign. Everything above
+   this line came from index.html; everything below is new and owned here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tp-wrap { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 3rem; }
+.tp-wrap.tp-wide { max-width: 900px; padding-top: 1.5rem; }
+.tp-title { font-size: 30px; font-weight: 600; letter-spacing: -0.025em; color: #1C124E;
+  overflow-wrap: anywhere; }
+
+/* Breadcrumb — the point of putting a level between the home page and a topic is
+   that you can always see where you are and step back without the browser's back
+   button. */
+.tp-crumb { font-size: 12.5px; color: var(--text-tertiary); margin-bottom: 1rem;
+  /* ⚠ `anywhere`, not `break-word`. Only `anywhere` also shrinks the element's INTRINSIC
+     width, and intrinsic width is what forces the page to scroll sideways. Measured at
+     320@2.0x: the crumb's <em> overflowed by 21px before this. */
+  overflow-wrap: anywhere; }
+.tp-crumb a { color: var(--accent); text-decoration: none; }
+.tp-crumb a:hover { text-decoration: underline; }
+.tp-crumb span { margin: 0 0.4rem; opacity: 0.6; }
+
+/* Search stays on the LANDING page, not the band pages: someone who already knows
+   what they want should not have to guess which band it sits in. */
+.tp-search { position: relative; display: flex; align-items: center; max-width: 440px; margin: 1.2rem 0 2rem; }
+.tp-search > svg { position: absolute; left: 12px; width: 15px; height: 15px; color: var(--text-tertiary); pointer-events: none; }
+#tp-q {
+  width: 100%; font-family: var(--font-ui); font-size: 14px;
+  padding: 9px 34px; border-radius: 20px; border: 0.5px solid var(--border-strong);
+  background: var(--surface); color: var(--text-primary); -webkit-appearance: none; appearance: none;
+}
+#tp-q:focus { outline: none; border-color: var(--accent); }
+#tp-q::-webkit-search-cancel-button { display: none; }
+.tp-clear { position: absolute; right: 10px; border: 0; background: none; cursor: pointer;
+  color: var(--text-tertiary); font-size: 17px; line-height: 1; padding: 2px 4px; }
+.tp-clear:hover { color: var(--text-primary); }
+
+/* ── the five band rows ─────────────────────────────────────────────────── */
+.tp-bands { display: grid; gap: 10px; }
+.tp-band {
+  display: flex; align-items: center; gap: 1rem; text-decoration: none; position: relative;
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.05rem 1.25rem 1.05rem 1.6rem;
+  overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+/* The strip is the band's identity, keyed off its CEILING level — two bands share a
+   floor ("Beginner" and "Beginner → Lower intermediate"), so a floor-keyed hue would
+   give those two the same colour and the strip would stop carrying information. */
+.tp-band::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--bc); }
+.tp-band:hover { border-color: var(--bc); box-shadow: 0 0 0 3px var(--bc-soft); transform: translateY(-1px); }
+.tp-band-name { flex: 1 1 auto; min-width: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.015em; color: #1C124E;
+  overflow-wrap: anywhere; }
+.tp-band-count { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-tertiary); white-space: nowrap; }
+.tp-band-go { color: var(--bc); font-size: 19px; line-height: 1; opacity: 0.5; }
+.tp-band:hover .tp-band-go { opacity: 1; }
+
+.bc-beg { --bc: #4B41AD; --bc-soft: #EEEDFE; }
+.bc-li1 { --bc: #C8A030; --bc-soft: #FBF5DC; }
+.bc-int { --bc: #4A5578; --bc-soft: #EEF0F6; }
+.bc-li2 { --bc: #7F77DD; --bc-soft: #F0EFFD; }
+.bc-adv { --bc: #A23A3A; --bc-soft: #FBECEC; }
+
+/* ── a band page's own header ────────────────────────────────────────────── */
+.tp-head { display: flex; align-items: baseline; gap: 1rem; justify-content: space-between;
+  flex-wrap: wrap;   /* the count drops under the title rather than squeezing it */
+  border-left: 5px solid var(--bc, #4B41AD); padding-left: 1rem; margin-bottom: 1.3rem; }
+.tp-head h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.025em; color: #1C124E; line-height: 1.15;
+  /* min-width:0 because a flex item will NOT shrink below its content's minimum width
+     without it, whatever the wrapping rules say. Measured at 320@2.0x: +23px of page
+     overflow before this pair. The type is deliberately NOT capped with --te-ui — this is
+     content, not chrome, and capping a heading's growth is what WCAG 1.4.4 forbids. Let it
+     get big; just make it wrap. */
+  min-width: 0; overflow-wrap: anywhere; }
+.tp-stat { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-tertiary); white-space: nowrap; }
+
+/* Sideways movement between levels without going back up to /topics — what a learner
+   does when a band turns out to be the wrong one. */
+.tp-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.tp-tab { font-family: var(--font-ui); font-size: 12.5px; padding: 5px 11px; border-radius: 20px;
+  border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary);
+  text-decoration: none; white-space: nowrap; }
+.tp-tab:hover { border-color: var(--accent); color: var(--accent); }
+.tp-tab.on { background: #1C124E; border-color: #1C124E; color: #fff; }
+
+/* Hidden by the tier filter. A CLASS, not a re-render: rebuilding the grid destroys the
+   card under a finger mid-tap, which is the documented cause of the "have to click
+   twice" on the PWA. Hydrate, never rebuild. */
+.topic-card.tp-off { display: none; }
+
+@media (max-width: 600px) {
+  /* ⚠ px, not rem. Android's textZoom inflates every rem length as well as the text, so at
+     2x these two side paddings took 70px out of a 305px viewport and squeezed the content
+     that has to fit. px and vw are immune. The tabs' negative margin below matches this
+     number and must be changed with it. */
+  .tp-wrap { padding: 1.4rem 18px 2.5rem; }
+  .tp-wrap.tp-wide { padding-top: 1.1rem; }
+  .tp-title { font-size: 24px; }
+  .tp-head h1 { font-size: 22px; }
+  .tp-stat { display: none; }
+  .tp-band { padding: 0.9rem 1rem 0.9rem 1.35rem; gap: 0.7rem; }
+  .tp-band-name { font-size: 16px; }
+  .tp-band-count { font-size: 10px; }
+  .tp-band-go { display: none; }
+  /* The five band names are long and must NOT be abbreviated (user-facing level labels
+     are always spelled out), so wrapped they take five rows and push the topics off the
+     screen. One scrolling row instead, with a fade so it reads as "more this way". */
+  .tp-tabs {
+    flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    margin-left: -18px; margin-right: -18px; padding: 0 18px 2px;   /* matches .tp-wrap's px padding */
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 88%, transparent 100%);
+            mask-image: linear-gradient(to right, #000 0, #000 88%, transparent 100%);
+  }
+  .tp-tabs::-webkit-scrollbar { display: none; }
+  .tp-tab { scroll-snap-align: start; }
+}
+
+/* ── the Muay Thai mascot ─────────────────────────────────────────────────
+   RECOVERED, not invented. This block lived on the "My flagged sentences" page until
+   that page was retired with the flags feature (commit 6905723, sw v357). Its image is
+   still in sw.js's PRECACHE with nothing left referencing it — the only trace it ever
+   existed. Lifted verbatim from the pre-retirement sentences.html: same "In training"
+   caption, same rules.
+   ⚠ The ellipsis animates WIDTH, not `content` — the app's webview cannot animate
+   `content`. steps(3, start) shows 1 -> 2 -> 3 dots. Do not "simplify" it. */
+.fluency-block { text-align: center; margin: 2.5rem 0 0.5rem; }
+.fluency-img { width: 158px; max-width: 42%; height: auto; display: block; margin: 0 auto 0.4rem; }
+.fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
+.fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
+.fluency-text .dots::after {
+  content: '...'; display: inline-block; width: 0; overflow: hidden;
+  vertical-align: bottom; animation: fluency-dots 1.5s steps(3, start) infinite;
+}
+@keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
