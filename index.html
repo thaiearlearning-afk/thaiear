@@ -449,7 +449,19 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 }
 .te-hero-cta .cta-btn:hover{ background:var(--accent-mid); transform:translateY(-1px); }
 .te-hero-cta .cta-welcome{
-  font-size:calc(17px * var(--te-ui, 1)); font-weight:600; color:var(--navy); line-height:1.2;
+  /* ⚠ ONE LINE, ALWAYS (owner). "Welcome back, <name>" wrapping onto two lines reads as a
+     paragraph rather than a greeting, and at 17px two lines is bulky enough to crowd the Read
+     Thai label above it. nowrap guarantees the line; home-cta.js then steps --cta-fs down until
+     a long name FITS that line, rather than truncating it — someone's name is the one thing on
+     this page that should not get an ellipsis. */
+  font-size:calc(var(--cta-fs, 17px) * var(--te-ui, 1));
+  font-weight:600; color:var(--navy); line-height:1.2; white-space:nowrap;
+  /* ⚠ LAST RESORT ONLY. home-cta.js shrinks the type to 12px trying to fit the whole name, and
+     that is enough for anything realistic — measured, a 33-character FIRST name still fits on a
+     390px phone at 13px. Below 12px it would stop reading as a greeting, so at that floor the
+     name is clipped rather than allowed to spill outside the box. Spilling is worse: it breaks
+     the block's shape and, on the tinted treatments, runs text off the coloured ground. */
+  overflow:hidden; text-overflow:ellipsis; max-width:100%;
 }
 .te-hero-cta .cta-streak{
   font-size:calc(12px * var(--te-ui, 1)); color:var(--gold-dark); margin-top:3px;

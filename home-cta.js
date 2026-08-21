@@ -56,12 +56,61 @@
     } catch (e) { return 0; }
   }
 
+  /* ⚠ THE SAME THREE-WAY SYNCHRONOUS GUESS nav.js USES, and for the same reason. auth.js
+     resolves a few hundred ms after paint, so rendering from getUser() alone meant a signed-in
+     visitor saw the blue "Create a free account" button flash and then be replaced by their
+     greeting (owner, on the live site). auth.js mirrors every resolved session into
+     `thaiear_identity`, which holds the FULL user object — so both the ANSWER and the NAME are
+     available before Supabase replies, and the first render can be the final one.
+     ⚠ KEEP IN STEP WITH auth.js readIdentity()/userFromSession(), app-cta.js authGuess() and
+     nav.js guessAuth(): same key, same signed-out guard, same username derivation, and the same
+     reason for PARSING the supabase key rather than testing that it exists — that key survives
+     sign-out with an empty session inside. */
+  function guess() {
+    try {
+      if (localStorage.getItem('thaiear_signed_out') === '1') return { state: 'out' };
+      var o = JSON.parse(localStorage.getItem('thaiear_identity') || 'null');
+      if (o && o.user && o.user.id) return { state: 'in', user: userish(o.user) };
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || !/^sb-.+-auth-token$/.test(k)) continue;
+        try {
+          var parsed = JSON.parse(localStorage.getItem(k) || 'null');
+          var sess = (parsed && parsed.currentSession) ? parsed.currentSession : parsed;
+          if (sess && sess.user) return { state: 'in', user: userish(sess.user) };
+        } catch (_) {}
+      }
+      return { state: 'out' };
+    } catch (_) { return null; }        // storage unavailable — genuinely unknown
+  }
+  function userish(u) {
+    var meta = u.user_metadata || {};
+    return { username: meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member'),
+             email: u.email || '' };
+  }
+
   function html() {
     var a = window.ThaiEarAuth;
-    var user = forced === 'out' ? null
-             : forced === 'named' ? { username: 'Toby Ralph', email: 'toby@example.com' }
-             : forced === 'anon' ? { username: 'toby', email: 'toby@example.com' }
-             : (a && a.getUser && a.getUser());
+    var user;
+    if (forced) {
+      user = forced === 'out' ? null
+           : forced === 'named' ? { username: 'Toby Ralph', email: 'toby@example.com' }
+           /* a deliberately punishing name, so the shrink-to-fit can be judged rather than
+              assumed — this is the case the owner asked about */
+           /* ONE long token on purpose: firstName() takes the text up to the first space, so a
+              long FULL name proves nothing — only a long FIRST name reaches the line. */
+           : forced === 'long' ? { username: 'Bartholomewicz-Wolfeschlegelstein', email: 'b@example.com' }
+           : { username: 'toby', email: 'toby@example.com' };
+    } else if (a && a.isReady) {
+      user = (a.getUser && a.getUser()) || null;        // authoritative
+    } else {
+      var g = guess();
+      /* ⚠ UNKNOWN RENDERS NOTHING, not the button. The block is absolutely positioned, so an
+         empty one costs no layout — the region simply stays plain until we know. Guessing wrong
+         here is what produces the flash the owner reported. */
+      if (!g) return '';
+      user = g.state === 'in' ? g.user : null;
+    }
     if (!user) return '<a class="cta-btn" href="join.html?next=%2F">Create a free account</a>';
     var n = firstName(user);
     var d = forced ? 8 : streakDays();
@@ -133,6 +182,24 @@
     stage.style.setProperty('--cta-h', Math.ceil(tallestHeight()) + 'px');
     var next = html();
     if (el.innerHTML !== next) el.innerHTML = next;   // never rewrite an identical node
+    fitName();
+  }
+
+  /* ⚠ SHRINK THE GREETING UNTIL A LONG NAME FITS ITS ONE LINE — do not truncate it.
+     The line is nowrap (see the CSS note), so without this a long full name would simply run
+     out past the box. Stepping the size down keeps the whole name readable, which matters more
+     here than a fixed type size: it is the one string on the page that belongs to the reader.
+     17px is the design size and almost every name keeps it; 12px is the floor, below which it
+     stops looking like a greeting. Measured against the real rendered box, so it accounts for
+     the OS text scale as well as the name. */
+  function fitName() {
+    var line = el.querySelector('.cta-welcome');
+    if (!line) return;
+    el.style.removeProperty('--cta-fs');
+    for (var px = 17; px > 12; px--) {
+      if (line.scrollWidth <= el.clientWidth) break;
+      el.style.setProperty('--cta-fs', (px - 1) + 'px');
+    }
   }
 
   /* auth.js notifies several times during startup, and the play stats arrive after it — apply()
