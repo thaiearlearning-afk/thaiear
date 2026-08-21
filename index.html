@@ -579,7 +579,20 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
        a mouseenter, which would fire the trigger twice for one tap. */
     var disc = document.querySelector('.medal-disc');
     if (disc) {
-      var busyUntil = 0;
+      /* ⚠⚠ EVERY CLEANUP MUST SAY WHICH TURN IT BELONGS TO.
+         Owner: "sometimes the spin gets 3-5% of the way through then just reverts". That is a
+         turn being cancelled ~100-300ms in — by the PREVIOUS turn's cleanup.
+         The backstop timer is armed for duration + 400ms. While the cooldown was 1s that timer
+         always fired before the next turn could start, so it was harmless; cutting the cooldown
+         to 0.1s (owner's request, and the right call) let turn N+1 begin while turn N's timer was
+         still pending, and that timer then stripped the class off a turn that had barely begun.
+         Random durations make it intermittent: it only bites when a short turn is followed
+         quickly by a longer one.
+         So each turn takes an id, and both cleanup paths — the timer AND animationend — refuse to
+         act on anything but the CURRENT turn. Exactly the rule the sentence player had to learn
+         (sentEvtMine): one shared element, several attempts in flight, so a listener without an
+         identity un-does whatever is running now. */
+      var busyUntil = 0, turn = 0, timer = 0;
       var spin = function () {
         var now = Date.now();
         if (now < busyUntil || disc.classList.contains('spin')) return;
@@ -594,17 +607,21 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
            exists to stop a re-trigger landing in the same frame the turn ends, not to make the
            user wait. */
         busyUntil = now + ms + 100;                   // this turn + a 0.1s cooldown (owner)
+        var me = ++turn;
+        clearTimeout(timer);                          // a stale backstop must never outlive its turn
         disc.classList.add('spin');
-        armClear(ms + 400);
+        timer = setTimeout(function () { clear(me); }, ms + 400);
       };
       /* ⚠ A TIMER BACKSTOP AS WELL AS animationend, because a missed animationend would leave
          the class stuck and the easter egg dead for the rest of the page's life — adding a class
          that is already there does nothing. CSS animations are FROZEN in a background tab, so an
          animationend can genuinely go missing: verified here, currentTime stuck at 0 with
          playState "running" while document.hidden was true. Both paths are idempotent. */
-      var clear = function () { disc.classList.remove('spin'); };
-      disc.addEventListener('animationend', clear);
-      var armClear = function (ms) { setTimeout(clear, ms); };
+      var clear = function (id) {
+        if (id !== turn) return;                      // a later turn owns the element now
+        disc.classList.remove('spin');
+      };
+      disc.addEventListener('animationend', function () { clear(turn); });
       disc.addEventListener('click', spin);
       if (window.matchMedia && matchMedia('(hover: hover)').matches) {
         disc.addEventListener('mouseenter', spin);
