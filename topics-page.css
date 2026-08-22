@@ -661,8 +661,21 @@
      14px SVG fits exactly — while fitting inside the row, so height stops depending on
      whether THIS visitor has downloaded THIS topic. Scoped to .topic-card so the playlist
      control keeps its tap target. */
-  .topic-card .dl-badge { width: 18px; height: 18px; margin-left: 6px; }
+  .topic-card .dl-badge { width: 18px; height: 18px; }
   .topic-card .dl-tick  { width: 18px; height: 18px; }
+  /* ⚠ CENTRED IN THE CARD, NOT ALIGNED TO A TEXT LINE (owner, 2026-08-22: "dont align with
+     text in the box — literally just have it in the middle"). It is appended into
+     .topic-meta-row, the LAST text line, so in flow it measured 14px below the card's centre.
+     Taking it out of flow also means it can no longer affect the row's height at all, which is
+     what the 18px above was compensating for — that is now belt and braces rather than the
+     mechanism. The card is already position:relative (.te-eq depends on it), and .te-eq sits at
+     the top so the two never meet.
+     The padding-right reserve is not decoration: out of flow the badge no longer displaces
+     anything, so a long topic name or a "· update available" count would run underneath it.
+     22px clears the 18px badge plus the gap. */
+  .topic-card .dl-badge { position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); }
+  .topic-card .topic-name,
+  .topic-card .topic-meta-row { padding-right: 22px; }
   /* Working (downloading) row: an animated ellipsis in place of the circle/tick. */
   .dl-working-dots { display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px; margin-left: 4px; vertical-align: middle; }

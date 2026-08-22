@@ -130,7 +130,24 @@
        inert reported state and could simply be made smaller; here it is a real control and
        the tap target has to survive. Verified: the badge still sits inside the box and clears
        both the name and the meta row. */
-    '.pl-box-head .dl-select, .pl-box-head .dl-badge { margin-top: -6px; margin-bottom: -6px; }' +
+    /* ⚠ CENTRED IN THE HEAD, AND INERT (owner, 2026-08-22). Two corrections in one rule.
+       POSITION: it shared the head's first flex line with .pl-box-name, so it sat 24px ABOVE
+       the head's centre, level with the title. Owner: "dont align with text in the box —
+       literally just have it in the middle". Absolute + translateY(-50%) puts it on the exact
+       centre and, as a side effect, removes it from the flex line entirely — which is a better
+       fix for the height bug than the negative margins this replaces.
+       NOT A CONTROL: the download button was removed from the playlists menu, so #dl-batch-bar
+       is never rendered anywhere (verified) — dlBatchBar() returns on its first line and a tap
+       could only ever toggle dlSel and repaint a 'selected' ring that nothing can act on. The
+       markup no longer carries data-dl/role=button, and these rules stop it looking or
+       behaving like a target: no pointer cursor, no hit area, no pointer events. Same status-
+       only role as the topic-card tick.
+       The reserve on .pl-box-name is required, not cosmetic: out of flow the badge displaces
+       nothing, and a long playlist name was measured running underneath it. */
+    '.pl-box-head { position: relative; }' +
+    '.pl-box-head .dl-select, .pl-box-head .dl-badge { position: absolute; top: 50%; right: 1.15rem; transform: translateY(-50%); margin: 0; cursor: default; pointer-events: none; }' +
+    '.pl-box-head .dl-select::before, .pl-box-head .dl-badge::before { display: none; }' +
+    '.pl-box-name { padding-right: 34px; }' +
     '.dl-dot { width: 23px; height: 23px; border-radius: 50%; background: var(--accent-light); border: 1.5px solid var(--accent-light); transition: background .15s, border-color .15s, transform .1s; }' +
     '.dl-select:hover .dl-dot { border-color: var(--accent); }' +
     '.dl-select.selected .dl-dot { background: var(--accent); border-color: var(--accent); }' +
@@ -541,33 +558,32 @@
       if (!DL_OK || !p.items.length) return '';
       if (dlWorking[p.id]) return '<span class="dots" aria-hidden="true"></span>';
       st = st || dlState(p);
-      /* ⚠ REMOVAL IS ALWAYS AVAILABLE — this runs AFTER the download states, so it only ever
-         suppresses the DOWNLOAD affordance, never the clear one. Do not move it above `downloaded`. */
-      if (st !== 'downloaded' && !plOpenItems(p).length) return '';
-      /* AVAILABLE-BY-CHANCE still offers the download, deliberately — a plain download circle. */
-      if (st === 'available') {
-        return '<span class="dl-select' + (dlSel[p.id] ? ' selected' : '') + '" data-dl="' + p.id +
-          '" data-mode="sel" role="button" title="Available offline via another download - tap to select and download this playlist itself"' +
-          ' aria-label="Available offline via another download - select to download this playlist itself"><span class="dl-dot"></span></span>';
-      }
+      /* ⚠ STATUS ONLY — NOTHING HERE IS SELECTABLE (owner, 2026-08-22: "its not a real control
+         in playlists, that is old code left behind. we deleted the download button from the
+         playlists menu"). Verified before changing anything: `id="dl-batch-bar"` is not created
+         by any file in the site, so dlPaintBar() returns on its first line and a tap could only
+         ever toggle dlSel and repaint a 'selected' ring that nothing was able to act on.
+         So this now mirrors the TOPIC CARD exactly, which is the owner's stated model: a tick
+         when downloaded, an update dot when the audio has moved on, and NOTHING otherwise.
+         Gone with the selection: data-dl (so the delegated click listener cannot match at all),
+         data-mode, role="button", the dlSel classes, and every "tap to select" title.
+         ⚠ The plain 'available' and default circles are deliberately DROPPED rather than made
+         inert. They were pure selection affordances — a circle whose only meaning was "tick me
+         to download this" — so with the button gone they invite a tap that does nothing.
+         topics-page.js has no equivalent, which is the point of matching it.
+         The dlSel machinery below is left in place, not ripped out: it still serves the delete
+         flow's dlClearOne() path, and restoring a download button here should not mean
+         rewriting it. */
       if (st === 'update') {
-        /* r137 — ONE WORDING FOR BOTH UPDATE ROUTES, the owner's r83 ruling applied here too:
-           "you're missing clips vs your clips are superseded — a pointless distinction. It should
-           just always be 'Download audio update?'" This row can now reach 'update' either way
-           (added sentences, or re-rendered audio), and the action is identical, so the old
-           "New sentences added" wording would be wrong half the time. */
-        return '<span class="dl-select dl-update' + (dlSel[p.id] ? ' selected' : '') + '" data-dl="' + p.id +
-          '" data-mode="sel" role="button" title="Download audio update - tap to select and update this download"' +
-          ' aria-label="Download audio update - select to update this download"><span class="dl-dot"></span></span>';
+        return '<span class="dl-select dl-update" title="Audio update available"' +
+          ' aria-label="Audio update available"><span class="dl-dot"></span></span>';
       }
       if (st === 'downloaded') {
-        return '<span class="dl-badge' + (dlSel[p.id] ? ' clear-selected' : '') + '" data-dl="' + p.id +
-          '" data-mode="sel" role="button" title="Downloaded - tap to select">' +
+        return '<span class="dl-badge" title="Downloaded" aria-label="Downloaded">' +
           '<span class="dl-tick"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
           'stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>';
       }
-      return '<span class="dl-select' + (dlSel[p.id] ? ' selected' : '') + '" data-dl="' + p.id +
-        '" data-mode="sel" role="button" aria-label="Select this playlist"><span class="dl-dot"></span></span>';
+      return '';
     }
     function dlPaintBar() {
       var bar = document.getElementById('dl-batch-bar'); if (!bar) return;
