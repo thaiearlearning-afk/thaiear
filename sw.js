@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v410';   // v410: delivers the b3a5e03 caption relabel — topics.js + pl-list.js are precached
+const VERSION = 'v411';   // v411: install() can no longer strand a version; 819 KB of unreferenced icons out of PRECACHE
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
@@ -702,12 +702,24 @@ const PRECACHE = [
      topic page, so an un-precached copy would mean a network round trip before a downloaded topic
      could paint offline — exactly the case the offline download exists to serve. */
   '/player-dyn-mount.css',
-  // PWA install vehicle: manifest + its icons, so "Add to Home Screen" works and the
-  // installed app has its launch icon available offline.
-  '/manifest.json', '/icon-512.png', '/icon-512-maskable.png',
+  // PWA install vehicle. The MANIFEST is precached; its three icons are NOT.
+  /* ⚠ DO NOT PUT icon-512.png / icon-512-maskable.png BACK (removed 2026-08-22, measured).
+     They are 433 KB and 286 KB — together 25% of everything install() downloads — and NO PAGE
+     EVER REQUESTS THEM. Their only referrer is manifest.json, i.e. the OS reads them once, at
+     "Add to Home Screen" time, which cannot happen offline anyway; after that the launcher owns
+     the icon and never asks us again. index.html mentions icon-512.png only in a comment saying
+     explicitly NOT to use it (the home mark is /home-swirl.png, a right-sized copy). So the old
+     comment here — "so the installed app has its launch icon available offline" — described a
+     need that does not exist, and the cost was 719 KB re-downloaded on EVERY version bump.
+     favicon-192.png stays: it is a manifest icon too, but it is 65 KB, and small enough not to
+     be worth reasoning about twice. */
+  '/manifest.json',
   /* The home page's centrepiece — a right-sized copy of the swirl, not the 433 KB PWA icon. */
   '/home-swirl.png',
-  '/logo-hero.png', '/nav-swirl-2x.png', '/favicon.png', '/favicon.ico',
+  /* ⚠ /favicon.png was here and is REFERENCED BY NOTHING — not one page, not manifest.json, not
+     nav.js. 100 KB re-fetched on every bump for a file no client ever asks for. Removed
+     2026-08-22; the real favicons are the .ico/.svg/-16/-32/-192 set below, which pages do link. */
+  '/logo-hero.png', '/nav-swirl-2x.png', '/favicon.ico',
   '/favicon-16.png', '/favicon-32.png', '/favicon-192.png', '/apple-touch-icon.png',
   '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png', '/hornbill.png', '/yak.png',
   // Self-hosted fonts (replaced Google Fonts 2026-06-24): precache the full used set so a
@@ -772,10 +784,47 @@ function migrateGaps(c, gaps, olds) {
   })).then(function () { return gaps; });
 }
 
+/* ⚠⚠ INSTALL MUST NOT BE ABLE TO FAIL, AND MUST NOT WAIT FOR THE WHOLE PRECACHE (2026-08-22).
+   Until now skipWaiting() was chained BEHIND the full precache, so activation — the only thing
+   that makes a new VERSION real — was gated on ~90 files completing. Two ways that leaves a
+   device stranded on an old version with no way out, both reported live:
+
+     1. THE INSTALL IS INTERRUPTED. On iOS the worker only runs while the PWA is foregrounded, so
+        force-quitting mid-install aborts it. The owner force-closed ~15 times trying to force an
+        update and was, each time, killing the very thing that would have delivered it.
+     2. THE INSTALL REJECTS. `caches.open()` or a `c.add()` can fail outright — a storage quota
+        hit is the obvious one, and this origin also holds `thaiear-dl` and `thaiear-audio-dl`,
+        which are never version-wiped and grow with every offline download. A rejected waitUntil
+        FAILS the install: the worker is discarded and retried only on the next update check, and
+        it will fail again the same way. That state is invisible from the device and no amount of
+        waiting or relaunching escapes it.
+
+   So: race the precache against a budget, swallow everything, and skipWaiting() unconditionally.
+   The precache is NOT cancelled when the budget wins — c.add() keeps filling the cache behind us.
+
+   ⚠ THIS IS ONLY SAFE BECAUSE activate() ALREADY REPAIRS A HALF-FINISHED INSTALL (v258, see the
+   PRECACHE REPAIR note above). It fills every gap from the OUTGOING cache with NO network, then
+   deletes the old caches, then re-fetches those gaps opportunistically. That machinery was built
+   for exactly this shape and until now could barely ever run, because install could only finish
+   or be killed. Do not weaken activate() on the grounds that install "usually" completes.
+
+   ⚠ The one ordering hazard, and why it is benign: activate() computes its gap list, so a file
+   the racing precache lands a moment LATER can be overwritten by migrateGaps() with the older
+   copy. Stage 3 then re-fetches precisely that gap list from the network, so it converges on the
+   fresh copy. A stale entry can survive only until the next successful fetch, never permanently.
+
+   8s is chosen to be longer than a healthy install on wifi and far shorter than a user's patience.
+   It is a CEILING on time-to-activate, not a target. */
+const INSTALL_BUDGET_MS = 8000;
+
 self.addEventListener('install', function (e) {
   e.waitUntil(
-    caches.open(CACHE)
-      .then(function (c) { return addBatched(c, PRECACHE, 6); })
+    Promise.race([
+      caches.open(CACHE).then(function (c) { return addBatched(c, PRECACHE, 6); }),
+      new Promise(function (res) { setTimeout(res, INSTALL_BUDGET_MS); })
+    ])
+      // ⚠ Swallow EVERYTHING. A rejection here used to mean the version could never install.
+      .catch(function () {})
       .then(function () { return self.skipWaiting(); })
   );
 });
