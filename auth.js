@@ -1290,6 +1290,45 @@
       if (!client) return Promise.reject(new Error('auth still loading'));
       return client.auth.verifyOtp({ email: email, token: token, type: type || 'email' });
     },
+    /* ── CHANGE THE DISPLAY NAME ───────────────────────────────────────────────────────
+       SUPABASE, NOT localStorage, and the reason is not storage size — it is that this is
+       identity, not a preference. The name is painted in the nav on every page and in the
+       home greeting, on every device the person signs in on. A localStorage name would be
+       right on the browser they typed it into and wrong on their phone and in the app, and
+       would vanish when they cleared site data. (Contrast the greeting's colour, which IS
+       localStorage on purpose: cosmetic, per-device, and nobody else ever sees it.)
+
+       It needs NO schema, NO migration and NO table: `full_name` already lives in
+       `user_metadata`, which is where Google puts it at signup and where userFromSession()
+       and identity.js's usernameOf() already read from. One write and the nav, the greeting
+       and the account page all follow, because they all derive from the same field.
+
+       ⚠ THE LOCAL COPIES MUST BE UPDATED IN THE SAME BREATH. There are three: currentUser,
+       currentSession.user, and the durable `thaiear_identity` mirror that identity.js reads
+       before supabase has answered. Update the server and not the mirror and the new name
+       appears, then reverts to the old one on the next page load — the mirror is what paints
+       the first frame. That is also why writeIdentity() is called with the PATCHED session. */
+    updateDisplayName: function (name) {
+      if (!client) return Promise.reject(new Error('auth still loading'));
+      var clean = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
+      if (!clean) return Promise.reject(new Error('Please enter a name.'));
+      if (clean.length > 20) return Promise.reject(new Error('Please use 20 characters or fewer.'));
+      return client.auth.updateUser({ data: { full_name: clean } }).then(function (res) {
+        if (res && res.error) throw res.error;
+        var u = res && res.data && res.data.user;
+        if (currentSession) {
+          if (u) currentSession.user = u;
+          else if (currentSession.user) {
+            currentSession.user.user_metadata =
+              Object.assign({}, currentSession.user.user_metadata || {}, { full_name: clean });
+          }
+          writeIdentity(currentSession);
+          currentUser = userFromSession(currentSession);
+        }
+        notify();
+        return clean;
+      });
+    },
     signOut: function () {
       if (!client) return Promise.resolve();
       // Logout must work even with NO connection. Supabase's signOut() POSTs to /logout to revoke the

@@ -291,6 +291,124 @@ function postCancel(resume) {
     })
     .catch(function (e) { if (st) st.textContent = 'Error: ' + e; });
 }
+/* ── DISPLAY NAME ─────────────────────────────────────────────────────────────────────
+   Above the membership box (owner, 2026-08-22: "above cancel membership"), which puts it
+   directly under "Signed in as <email>" — the two identity facts together, before anything
+   about money.
+
+   ⚠ IT RENDERS IN THE SAME SYNCHRONOUS innerHTML AS THE REST OF THE CARD, so it needs no
+   min-height reserve. That is the whole reason it goes HERE rather than being appended
+   later: the reserves on this page (#membership 80px, #consent-area 96px, #membership.mb-wait
+   163/127/106px) exist for blocks whose content arrives from the network AFTER first paint.
+   This one's content is the user object we already have. Adding a reserve for it would be
+   cargo-culting the pattern and would just add a gap.
+
+   ⚠ THE EDIT STATE IS ~90px TALLER THAN THE READ STATE, AND THAT IS FINE — but only
+   because it is USER-INITIATED. Measured: 124px reading, 217px editing. Everything below
+   (membership, consent, delete) moves down when someone taps Change. That is an expansion
+   they asked for, not layout shifting under a reader, which is the thing this page's
+   reserves exist to prevent. Do NOT "fix" it with a min-height of 217px: that would hold
+   90px of empty space open permanently, for every visitor, for a control almost nobody
+   opens — paying the cost the reserves were meant to avoid, in order to solve a problem
+   nobody has. */
+var DISPLAY_NAME_MAX = 20;
+
+function displayNameHtml(user) {
+  var name = (user && user.username) || '';
+  /* auth.js falls back to the email prefix when the account has no name — a magic-link
+     signup. Showing that as "your display name" would present a fallback as a fact, and the
+     person would then "change" something they never set. Say it is not set. */
+  var prefix = ((user && user.email) || '').split('@')[0];
+  var real = name && name !== prefix;
+  return '' +
+    '<div id="dispname" style="margin-top:1.25rem;padding:0.85rem 1rem;background:var(--surface);' +
+      'border:0.5px solid var(--border);border-radius:var(--radius-md)">' +
+      '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">Display name</div>' +
+      '<div id="dispname-read" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+        '<span id="dispname-current" style="font-weight:600;overflow-wrap:anywhere">' +
+          (real ? esc(name) : '<span style="font-weight:400;color:var(--text-tertiary)">Not set</span>') +
+        '</span>' +
+        '<button class="btn btn-ghost" style="font-size:13px;padding:6px 14px" ' +
+          'onclick="startEditName()">Change</button>' +
+      '</div>' +
+      '<div id="dispname-edit" style="display:none">' +
+        '<input id="dispname-input" class="login-input" type="text" autocomplete="name" ' +
+          'maxlength="' + DISPLAY_NAME_MAX + '" placeholder="Your name" ' +
+          'style="margin-bottom:8px">' +
+        '<div class="btn-row">' +
+          '<button class="btn btn-primary" style="font-size:13px;padding:6px 14px" ' +
+            'onclick="saveDisplayName()" id="dispname-save">Confirm</button>' +
+          '<button class="btn btn-ghost" style="font-size:13px;padding:6px 14px" ' +
+            'onclick="cancelEditName()">Cancel</button>' +
+        '</div>' +
+      '</div>' +
+      '<p id="dispname-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
+    '</div>';
+}
+
+function startEditName() {
+  var read = document.getElementById('dispname-read');
+  var edit = document.getElementById('dispname-edit');
+  var input = document.getElementById('dispname-input');
+  if (!read || !edit || !input) return;
+  /* Prefill with what they already have, so "change" is an edit rather than a re-type.
+     ⚠ FALL BACK TO WHAT IS ON SCREEN. getUser() is the authority, but it is null before auth
+     resolves and on any page opened without a session — and the read line beside this button
+     is already showing the right name in exactly those cases, because it was rendered from
+     the user object the card was built with. Trusting only getUser() gave an EMPTY box while
+     the name sat visible two inches above it. */
+  var u = window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser();
+  var prefix = ((u && u.email) || '').split('@')[0];
+  var name = (u && u.username) || '';
+  if (!name || name === prefix) {
+    var cur = document.getElementById('dispname-current');
+    var shown = cur ? cur.textContent.trim() : '';
+    name = (shown && shown !== 'Not set') ? shown : '';
+  }
+  input.value = name;
+  read.style.display = 'none';
+  edit.style.display = '';
+  setStatus('');
+  input.focus();
+  input.select();
+}
+
+function cancelEditName() {
+  var read = document.getElementById('dispname-read');
+  var edit = document.getElementById('dispname-edit');
+  if (read) read.style.display = '';
+  if (edit) edit.style.display = 'none';
+  setStatus('');
+}
+
+function setStatus(msg, err) {
+  var st = document.getElementById('dispname-status');
+  if (!st) return;
+  st.textContent = msg || '';
+  st.style.color = err ? '#B00020' : '';
+}
+
+function saveDisplayName() {
+  var input = document.getElementById('dispname-input');
+  var btn = document.getElementById('dispname-save');
+  var a = window.ThaiEarAuth;
+  if (!input || !a || !a.updateDisplayName) return;
+  /* Disabled while in flight: updateUser is a network write, and a double tap would fire two
+     of them and race over which name lands. */
+  if (btn) { btn.disabled = true; }
+  setStatus('Saving…');
+  a.updateDisplayName(input.value).then(function (clean) {
+    var cur = document.getElementById('dispname-current');
+    if (cur) cur.textContent = clean;
+    cancelEditName();
+    setStatus('Saved.');
+  }).catch(function (e) {
+    setStatus((e && e.message) || 'Could not save that name.', true);
+  }).then(function () {
+    if (btn) btn.disabled = false;
+  });
+}
+
 // Render the membership box from a subscription-state object. Shared by the instant
 // cache render and the Stripe refine, so both paths produce identical markup.
 function renderMembershipBox(s) {
@@ -776,6 +894,7 @@ function renderAccount() {
     : '';
   el.innerHTML =
     '<p>Signed in as <span class="email">' + escEmail(user.email || user.username) + '</span></p>' +
+    displayNameHtml(user) +
     '<div id="membership" style="min-height:80px"></div>' +
     consentHtml +
     resetHtml +

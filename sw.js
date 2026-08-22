@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v417';   // v417: Food & drink 1 -> premium; free units pinned to the top of each band
+const VERSION = 'v418';   // v418: change your display name from the account page (auth.js + account.html)
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
