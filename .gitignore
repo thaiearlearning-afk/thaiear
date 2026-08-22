@@ -140,3 +140,7 @@ read-mock.html
 
 # Local preview of the listening-time caption (2026-08-22) — never deploy
 _listen-time-preview.html
+
+# hornbill A/B compare (2026-08-22) — local only, never deploy
+_hb-orig.png
+_hb-compare.html

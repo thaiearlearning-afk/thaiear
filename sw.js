@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v411';   // v411: install() can no longer strand a version; 819 KB of unreferenced icons out of PRECACHE
+const VERSION = 'v412';   // v412: hornbill.png re-quantised 402 KB -> 60 KB (it was the only RGBA mascot)
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
