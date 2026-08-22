@@ -129,8 +129,13 @@
 /* playlists page */
 .pl-add { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-ui); font-size: 13.5px; font-weight: 600; color: #fff; background: var(--accent); border: none; border-radius: 20px; padding: 9px 20px; cursor: pointer; margin-bottom: 1.25rem; }
 .pl-add:hover { background: var(--accent-mid); }
-.pl-box { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 0.85rem; overflow: hidden; }
-.pl-box-head { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: none; border: none; padding: 1rem 1.15rem; cursor: pointer; font-family: var(--font-ui); }
+/* ⚠ SIZED TO MATCH A TOPIC CARD (owner, 2026-08-22: "playlists look quite tall in
+   comparison"). Measured against .topic-card at 358px: a captioned playlist box was 108px
+   and an uncaptioned one 79.67px, against 99.43px for every topic card. margin-bottom is
+   10px to match the .topic-grid gap, and .pl-box-head's row-gap drops 12px -> 7px, which
+   lands the box at 98.92px. Do not restore 0.85rem/12px without re-measuring both. */
+.pl-box { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 10px; overflow: hidden; }
+.pl-box-head { display: flex; align-items: center; gap: 12px; row-gap: 7px; width: 100%; text-align: left; background: none; border: none; padding: 1rem 1.15rem; cursor: pointer; font-family: var(--font-ui); }
 .pl-box-name { flex: 1; font-size: 15px; font-weight: 600; color: var(--text-primary); }
 /* r85 — the state caption sits on its OWN LINE. Owner, 2026-08-01: the caption "jumps left" when
    it reads `· update available`. Cause: this row is [name flex:1][meta][control], so meta is
@@ -145,7 +150,14 @@
    read as crowded, and this row has the width to spare. Green is the same #1F5D3A as
    .reveal-all-btn on a premium topic — the one number here that is about YOU, not the list.
    margin-top on .pl-box-meta drops 2px->1px so the extra line costs almost no height. */
-.pl-box-plays { font-size: 12.5px; font-weight: 500; color: #1F5D3A; flex: 1 0 100%; order: 4; margin-top: 1px; }
+.pl-box-plays { font-size: 12.5px; font-weight: 500; color: #1F5D3A; flex: 1 0 100%; order: 4; margin-top: 1px;
+  /* ⚠ RESERVED, and the span is now emitted EMPTY by pl-list.js rather than omitted.
+     Two faults, one cause: a box with a caption was ~16px taller than one without, and
+     clip-durations.json arrives after the first paint, so the caption used to be INSERTED
+     into an already-rendered list — the owner saw "Thai listening time" pop in after
+     everything else and shove the row. With the slot always present at its final height,
+     the late data only fills in text and nothing moves. Same fix as .topic-plays. */
+  min-height: 1.3em; }
 /* .pl-box-chev removed r31 — the whole .pl-box-head is a button, so the chevron was clutter that
    read as a sibling of the download circles/ticks. Its rules went with it. */
 .pl-box-body { display: none; padding: 0 1.15rem 1.15rem; }

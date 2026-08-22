@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v434';   // v434: playlists.html was missing topics.js — stale tier routing + no listening-time caption
+const VERSION = 'v435';   // v435: the download tick stops resizing topic cards; playlist boxes match them
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5

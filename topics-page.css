@@ -649,6 +649,20 @@
   .dl-badge.clear-selected .dl-tick { border-color: #9d92e0; background: var(--accent-light); }
   /* Premium downloaded topics: gold tick (graphic accent gold), not purple. */
   .dl-badge[data-tier="premium"] .dl-tick { color: #F0CC5C; }
+
+  /* ⚠ ON A TOPIC CARD THE TICK MUST NOT SET THE ROW'S HEIGHT (owner, 2026-08-22).
+     .dl-badge is 30px because on the playlist list it is a real control with a tap target.
+     On a topic card it is REPORTED STATE, never actioned (see applyDownloadState() in
+     topics-page.js) — and it is appended INTO .topic-meta-row, a flex row whose natural
+     height is the 12px count text, ~19px. A 30px child therefore set the row height and made
+     a downloaded card 110.23px against 99.43px for an identical un-downloaded one: the owner
+     watched a card snap to the right height as soon as the download was deleted.
+     18px keeps the glyph its original size — .dl-tick is border-box with a 2px border, so a
+     14px SVG fits exactly — while fitting inside the row, so height stops depending on
+     whether THIS visitor has downloaded THIS topic. Scoped to .topic-card so the playlist
+     control keeps its tap target. */
+  .topic-card .dl-badge { width: 18px; height: 18px; margin-left: 6px; }
+  .topic-card .dl-tick  { width: 18px; height: 18px; }
   /* Working (downloading) row: an animated ellipsis in place of the circle/tick. */
   .dl-working-dots { display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px; margin-left: 4px; vertical-align: middle; }

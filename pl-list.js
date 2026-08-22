@@ -1086,12 +1086,21 @@
          Do not reintroduce either filter here.
 
          ⚠ REPETITIONS, NOT PASSES — see listenCaptionFor() in topics.js. */
+      /* ⚠ ALWAYS RETURNS THE SPAN, EMPTY WHEN THERE IS NOTHING TO SAY (2026-08-22).
+         It used to return '' and the caption was INSERTED on a later render, once
+         clip-durations.json resolved. Two owner-visible faults came out of that, and both are
+         this one decision: a captioned box stood ~16px taller than an uncaptioned one, and on
+         opening the list the caption appeared "after everything else" and pushed the row down.
+         The slot now ships at its final height (min-height on .pl-box-plays), so late data
+         only fills in text. The EMPTY case is still silent — an empty span shows nothing, so a
+         row never briefly claims "0 mins" to someone who has listened. */
       function listenCaption(p) {
         var T = window.ThaiEarTopics, A = window.ThaiEarAuth;
-        if (!T || !T.listenSeconds || !A || !A.getUser || !A.getUser() || !A.getPlayReps) return '';
-        if (!p.items || !p.items.length) return '';
+        var EMPTY = '<span class="pl-box-plays"></span>';
+        if (!T || !T.listenSeconds || !A || !A.getUser || !A.getUser() || !A.getPlayReps) return EMPTY;
+        if (!p.items || !p.items.length) return EMPTY;
         var durs = window.ThaiEarClipDurations;
-        if (!durs) return '';                       // still in flight — say nothing rather than "0 mins"
+        if (!durs) return EMPTY;                    // still in flight — say nothing rather than "0 mins"
         var nums = p.items.map(function (it) { return it.num; });
         var secs = T.listenSeconds(nums, A.getPlayReps(), durs);
         return '<span class="pl-box-plays">Thai listening time: ' +
@@ -1312,6 +1321,27 @@
       });
     });
 
+    /* ⚠ START THE CAPTION'S INPUTS BEFORE THE FIRST render(), NOT AFTER IT (owner, 2026-08-22:
+       "why does it load slower in playlists but instant in topic pages? that is a big clue").
+       It was a real ordering bug, not a slow fetch. clip-durations.json is PRECACHED and
+       topics.js memoises it, so it resolves almost immediately — but this kick-off used to sit
+       ~30 lines BELOW the first render(), so the request had not even been issued when the rows
+       hit the screen, and the caption could only ever arrive as a second, visible repaint. A
+       topic page has no equivalent gap: topics-page.js asks for the same file during its initial
+       hydration. Requested here, a cache hit usually lands before or with the first paint, so
+       the caption is simply part of it.
+       ⚠ Unlike a topic card this needs NO topic-sentences.json — a playlist carries its own item
+       numbers — but it DOES need clip-durations.json, because the caption is time, not a count.
+       Both stay fire-and-forget: the rows are correct without them, this only adds the caption,
+       and listenCaption() stays silent until the durations are in so a row can never briefly
+       claim "0 mins" to someone who has listened. The repaint on arrival is the backstop for a
+       cold cache; the reserved .pl-box-plays slot means it moves nothing either way. */
+    (function () {
+      var A = window.ThaiEarAuth, T = window.ThaiEarTopics;
+      if (A && A.loadPlays) A.loadPlays().then(render).catch(function () {});
+      if (T && T.loadClipDurations) T.loadClipDurations().then(function (d) { if (d) render(); });
+    })();
+
     // CACHE-FIRST: paint the localStorage copy immediately (no waiting on auth/server); the
     // loading indicator only appears when this device has no cache at all.
     render();
@@ -1334,18 +1364,6 @@
     window.addEventListener('thaiear:auth', function () {
       if (PL()) PL().load(true).then(render);
     });
-    /* Pull the two inputs the listening-time caption needs, then repaint.
-       ⚠ Unlike a topic card this needs NO topic-sentences.json — a playlist carries its own item
-       numbers — but it DOES need clip-durations.json, because the caption is time, not a count.
-       Both are fire-and-forget: the rows are already correct without them, this only adds the
-       caption. Thereafter auth.js notify()s on every recorded play and the listener above
-       repaints, and listenCaption() renders nothing until the durations are in, so a row can
-       never briefly claim "0 mins" to someone who has listened. */
-    (function () {
-      var A = window.ThaiEarAuth, T = window.ThaiEarTopics;
-      if (A && A.loadPlays) A.loadPlays().then(render).catch(function () {});
-      if (T && T.loadClipDurations) T.loadClipDurations().then(function (d) { if (d) render(); });
-    })();
     /* r80 — REPAINT ON RETURN. Two different responses:
          · pageshow[persisted] = a genuine bfcache restore, rare → reload contents AND repaint;
          · visibilitychange = app foregrounded, frequent → repaint only.
