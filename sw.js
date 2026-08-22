@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v409';   // v409: topic cards, playlist rows and Progress show LISTENING TIME, not a play count
+const VERSION = 'v410';   // v410: delivers the b3a5e03 caption relabel — topics.js + pl-list.js are precached
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
