@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v422';   // v422: join.html's code route lands on home, not the account page
+const VERSION = 'v423';   // v423: sw answers te-version, so the owner panel can say which build is ACTIVE
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
@@ -907,6 +907,41 @@ self.addEventListener('activate', function (e) {
       })
       .then(function () { return self.clients.claim(); })
   );
+});
+
+/* ══ "WHICH VERSION ARE YOU?" ══════════════════════════════════════════════════════════════
+   The page cannot work this out on its own, and that gap has cost real time twice.
+   navigator.serviceWorker.getRegistration() hands back .installing/.waiting/.active, but every
+   one of them has the same scriptURL ('/sw.js') — the VERSION lives only in here. And listing
+   caches.keys() from the page, which the owner panel used to do alone, answers a DIFFERENT
+   question: it shows every thaiear-vN cache present, active and orphaned alike, with no way to
+   tell them apart. That is why "my PWA is showing four versions at once" was unanswerable.
+
+   ⚠ AN ORPHANED CACHE IS NORMAL AT A FAST RELEASE CADENCE, and that is the thing the panel now
+   makes visible rather than alarming. caches.open(CACHE) CREATES thaiear-vN before a single file
+   is fetched, and only activate() ever deletes old caches. So a worker that is superseded before
+   it activates — install v417, discover v418 mid-install, v417 goes redundant — leaves its cache
+   behind with nothing to collect it. Ship four versions in an afternoon and several can pile up
+   without anything being wrong. What WOULD be wrong is the active version lagging the newest
+   installed one, which is exactly what this reply lets the panel say out loud.
+
+   Deliberately tiny and side-effect free: it reads two constants and replies. */
+self.addEventListener('message', function (e) {
+  var d = e.data;
+  if (!d) return;
+  if (d === 'te-version' || d.type === 'te-version') {
+    /* Reply down the SAME port the page opened where there is one (MessageChannel), else to the
+       client that asked. The port form is what lets the page await a single answer instead of
+       listening globally and hoping. */
+    var payload = { te: 'version', version: VERSION, cache: CACHE };
+    if (e.ports && e.ports[0]) { e.ports[0].postMessage(payload); return; }
+    if (e.source && e.source.postMessage) e.source.postMessage(payload);
+    return;
+  }
+  /* Let the owner panel promote a waiting worker without a reload dance. Only ever reachable from
+     our own page, and skipWaiting() is what install() already calls unconditionally — this just
+     lets a human trigger it on demand while testing. */
+  if (d === 'te-skip-waiting' || d.type === 'te-skip-waiting') self.skipWaiting();
 });
 
 self.addEventListener('fetch', function (e) {

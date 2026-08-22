@@ -229,16 +229,10 @@
        ⚠ It reports the ACTIVE cache, which is what the page is really being served from — that is
        the question, not what the server last published. */
     var ver = document.createElement('div');
-    ver.style.cssText = 'margin-top:10px;font-size:12px;color:#7A1F1F';
-    ver.textContent = 'build: checking…';
+    ver.style.cssText = 'margin-top:10px;font-size:12px;color:#7A1F1F;line-height:1.65';
+    ver.innerHTML = 'service worker: checking…';
     d.appendChild(ver);
-    try {
-      window.caches.keys().then(function (ks) {
-        var shell = ks.filter(function (k) { return /^thaiear-v\d+$/.test(k); });
-        ver.textContent = 'build on this device: ' + (shell.length ? shell.join(', ') : 'no shell cache yet') +
-          (window.ThaiEarPlayerBuild ? ' · player ' + window.ThaiEarPlayerBuild : '');
-      }).catch(function () { ver.textContent = 'build: unavailable'; });
-    } catch (_) { ver.textContent = 'build: unavailable'; }
+    swReport(ver);
     /* A collapsed handle by default — the panel is a diagnostic, not furniture. The choice is
        remembered so a testing session does not mean re-opening it on every navigation. */
     var t = document.createElement('button');
@@ -275,6 +269,174 @@
     paint(); place();
     window.addEventListener('resize', place);
   }
+
+  /* ══ SERVICE-WORKER REPORT ════════════════════════════════════════════════════════════════
+     WHAT THIS REPLACED, AND WHY. The panel used to print one line — caches.keys() filtered to
+     thaiear-vN — under the label "build on this device". Every word of that was misleading once
+     more than one cache existed: it listed FOUR versions with no way to tell which one was
+     serving the page, so "my PWA is showing v416 through v419" could not be answered, and the
+     honest reading (are these orphans, or is the device stuck?) was a coin flip. Getting that
+     wrong by inference has now cost two wrong diagnoses.
+
+     THE TWO QUESTIONS IT NOW SEPARATES:
+       · WHICH VERSION IS SERVING ME?  Only the worker knows — VERSION is a constant inside sw.js
+         and every registration slot reports the same scriptURL. So we ask it (sw.js's te-version
+         handler) over a MessageChannel and await one reply.
+       · WHICH CACHES EXIST?  caches.keys(), as before — but now labelled against the answer above,
+         so an orphan reads as an orphan.
+
+     ⚠ ORPHANS ARE EXPECTED WHEN SHIPPING FAST, and saying so is half the point. caches.open()
+     creates thaiear-vN before any file is fetched, and only activate() deletes old caches, so a
+     worker superseded mid-install never activates and never cleans up after itself. Several
+     stacked caches with the NEWEST one active is housekeeping. The newest cache NOT being active
+     is the fault worth chasing.
+
+     ⚠ NO REPLY IS ITSELF A READING, not an error: it means the active worker predates the
+     te-version handler, i.e. this device has not taken v423 yet. Say that in words rather than
+     showing a spinner for ever — a 1.5s timeout, because a sleeping worker takes a moment to
+     boot and a hung one must not leave the panel blank. */
+  function swAsk(timeoutMs) {
+    return new Promise(function (resolve) {
+      var sw = navigator.serviceWorker;
+      if (!sw || !sw.controller) { resolve(null); return; }
+      var done = false;
+      var ch = new MessageChannel();
+      var timer = setTimeout(function () { if (!done) { done = true; resolve(null); } }, timeoutMs || 1500);
+      ch.port1.onmessage = function (e) {
+        if (done) return;
+        done = true; clearTimeout(timer);
+        resolve(e.data && e.data.te === 'version' ? e.data : null);
+      };
+      try { sw.controller.postMessage('te-version', [ch.port2]); }
+      catch (_) { clearTimeout(timer); resolve(null); }
+    });
+  }
+
+  function swReport(el) {
+    var out = { active: null, caches: [], reg: null };
+    var jobs = [];
+
+    jobs.push(swAsk().then(function (r) { out.active = r; }));
+    jobs.push(
+      (window.caches && window.caches.keys ? window.caches.keys() : Promise.resolve([]))
+        .then(function (ks) {
+          out.caches = ks.filter(function (k) { return /^thaiear-v\d+$/.test(k); })
+            /* Numeric, not lexical: v9 must not sort above v421. */
+            .sort(function (a, b) { return (+a.slice(9)) - (+b.slice(9)); });
+        }).catch(function () {})
+    );
+    jobs.push(
+      (navigator.serviceWorker && navigator.serviceWorker.getRegistration
+        ? navigator.serviceWorker.getRegistration() : Promise.resolve(null))
+        .then(function (r) { out.reg = r || null; }).catch(function () {})
+    );
+
+    Promise.all(jobs).then(function () { swPaint(el, out); });
+  }
+
+  /* ⚠ THE VERDICT IS A PURE FUNCTION, ON PURPOSE. It is the only part of this panel that
+     REASONS rather than reports, it is the sentence the owner will act on, and getting it
+     backwards would send someone chasing a bug that is not there (or, worse, call a real stall
+     "normal"). Split out so it can be tested against the four states directly — the panel itself
+     needs a live service worker and an owner email hash to render at all.
+       tidy    — one cache, and it is active.
+       orphans — several caches, NEWEST is active. Expected at a fast release cadence: a worker
+                 superseded mid-install never activates, and only activate() deletes old caches.
+       stuck   — the newest cache is NOT active. The device downloaded a build it is not running.
+       unknown — the active worker predates the te-version handler, so we cannot say. */
+  function swVerdict(list, activeCache) {
+    var n = list.length;
+    var newest = list[n - 1];
+    if (!activeCache) {
+      return { code: 'unknown', html: n + ' cache(s). Which is active is unknown until this device takes v423+.' };
+    }
+    if (n === 1) return { code: 'tidy', html: 'tidy — one cache, and it is the active one.' };
+    if (newest === activeCache) {
+      return { code: 'orphans', html: (n - 1) + ' orphan(s), newest is active — normal when shipping fast. ' +
+        'A superseded install never activates, so it never cleans up.' };
+    }
+    return { code: 'stuck', html: '<b>STUCK: the newest cache (' + newest.slice(8) +
+      ') is not the active one.</b> The device is being served an older build than it has downloaded.' };
+  }
+  /* Exposed for the harness only. ownersim.js is a debug module that never loads for anyone but
+     the owner, so this adds no surface to the real site. */
+  try { window.__teSwVerdict = swVerdict; } catch (_) {}
+
+  function swPaint(el, out) {
+    var esc = function (t) { return String(t).replace(/[&<>]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); };
+    var activeCache = out.active && out.active.cache;
+    var rows = [];
+
+    rows.push('<strong>service worker</strong>');
+    rows.push('active: ' + (out.active
+      ? esc(out.active.version)
+      : (navigator.serviceWorker && navigator.serviceWorker.controller
+          /* The handler shipped in v423, so silence localises the active worker to "older than
+             that" — which is the answer, not a failure. */
+          ? 'older than v423 (no reply)'
+          : 'none controlling this page')));
+
+    var reg = out.reg;
+    if (reg) {
+      if (reg.waiting) rows.push('waiting: a newer worker is installed and ready — tap Update');
+      if (reg.installing) rows.push('installing: a newer worker is downloading now');
+    }
+
+    if (!out.caches.length) rows.push('caches: none yet');
+    else {
+      var newest = out.caches[out.caches.length - 1];
+      var labelled = out.caches.map(function (k) {
+        var v = k.slice(8);   // 'thaiear-' is 8 chars
+        if (activeCache && k === activeCache) return '<b>' + esc(v) + ' (active)</b>';
+        return esc(v);
+      });
+      rows.push('caches: ' + labelled.join(' · '));
+      var v = swVerdict(out.caches, activeCache);
+      rows.push('<span style="' + (v.code === 'stuck' ? 'color:#7A1F1F' :
+                                   v.code === 'unknown' ? 'opacity:.75' : 'color:#1F5D3A') + '">' +
+                v.html + '</span>');
+    }
+    if (window.ThaiEarPlayerBuild) rows.push('player: ' + esc(window.ThaiEarPlayerBuild));
+
+    el.innerHTML = rows.join('<br>') +
+      '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button type="button" id="ownersim-sw-update" style="' + SWBTN + '">Check for update</button>' +
+        '<button type="button" id="ownersim-sw-sweep" style="' + SWBTN + '"' +
+          (activeCache && out.caches.length > 1 ? '' : ' disabled') + '>Clear orphan caches</button>' +
+      '</div>';
+
+    var u = el.querySelector('#ownersim-sw-update');
+    if (u) u.addEventListener('click', function () {
+      u.textContent = 'checking…';
+      (navigator.serviceWorker.getRegistration() || Promise.resolve(null))
+        .then(function (r) {
+          if (!r) return null;
+          return r.update().then(function () {
+            /* A worker that installed but is waiting will sit there until every tab controlled by
+               the old one goes away. Nudging it is the whole reason the panel has this button. */
+            if (r.waiting) r.waiting.postMessage('te-skip-waiting');
+          });
+        })
+        .catch(function () {})
+        .then(function () { setTimeout(function () { swReport(el); }, 1200); });
+    });
+
+    var sweep = el.querySelector('#ownersim-sw-sweep');
+    if (sweep) sweep.addEventListener('click', function () {
+      /* ⚠ ONLY thaiear-vN CACHES, and NEVER the active one — deleting that would strip the shell
+         this page is running on until it refetched. The three durable caches (thaiear-vendor,
+         thaiear-dl, thaiear-audio-dl) do not match the pattern at all, so downloaded topics and
+         downloaded audio cannot be touched here. Disabled outright unless we KNOW which cache is
+         active, so there is no path where it guesses. */
+      sweep.textContent = 'clearing…';
+      Promise.all(out.caches.filter(function (k) { return k !== activeCache; })
+        .map(function (k) { return window.caches.delete(k).catch(function () {}); }))
+        .then(function () { swReport(el); });
+    });
+  }
+  var SWBTN = 'border:1px solid #7A1F1F;background:#fff;color:#7A1F1F;border-radius:6px;' +
+    'padding:4px 9px;font:12px/1.3 system-ui,-apple-system,sans-serif;cursor:pointer';
 
   /* The email hash IS the gate — K_ON is not consulted here any more. Requiring a URL-set flag
      made the picker unreachable in a standalone PWA / the Android app, which have no address bar
