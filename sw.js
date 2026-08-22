@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v424';   // v424: account card restructure (faa01ed) - account.html is precached
+const VERSION = 'v425';   // v425: activate() survives a failed cache delete; the panel's verdict corrected
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
@@ -845,7 +845,16 @@ self.addEventListener('activate', function (e) {
             .then(function (gaps) { return migrateGaps(c, gaps, doomed); })
             // 2. only now is it safe to drop the old versions
             .then(function (gaps) {
-              return Promise.all(doomed.map(function (k) { return caches.delete(k); }))
+              /* ⚠ PER-ITEM catch (2026-08-22). This was a bare Promise.all, so ONE rejecting
+                 caches.delete() rejected the whole thing — and everything downstream of it is in
+                 the same chain: the thaiear-dl poison repair, navigationPreload.enable(), and
+                 clients.claim(). A single stubborn cache could therefore leave the new worker
+                 controlling NOTHING, which is the same class of failure as the install that could
+                 not activate (v411). A delete that fails is worth nothing; a claim that never
+                 happens costs the whole release. Swallow per entry. */
+              return Promise.all(doomed.map(function (k) {
+                return caches.delete(k).catch(function () {});
+              }))
                 .then(function () {
                   /* 3. refresh the rescued copies — ⚠ DELIBERATELY NOT RETURNED, so activation
                      does NOT wait for it. Returning it (v258) was a serious regression: OFFLINE

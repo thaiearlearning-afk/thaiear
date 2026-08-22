@@ -336,14 +336,24 @@
 
   /* ⚠ THE VERDICT IS A PURE FUNCTION, ON PURPOSE. It is the only part of this panel that
      REASONS rather than reports, it is the sentence the owner will act on, and getting it
-     backwards would send someone chasing a bug that is not there (or, worse, call a real stall
-     "normal"). Split out so it can be tested against the four states directly — the panel itself
-     needs a live service worker and an owner email hash to render at all.
-       tidy    — one cache, and it is active.
-       orphans — several caches, NEWEST is active. Expected at a fast release cadence: a worker
-                 superseded mid-install never activates, and only activate() deletes old caches.
-       stuck   — the newest cache is NOT active. The device downloaded a build it is not running.
-       unknown — the active worker predates the te-version handler, so we cannot say. */
+     backwards would send someone chasing a bug that is not there — or, worse, call a real stall
+     "normal". Split out so it can be tested against every state directly; the panel itself needs
+     a live service worker and an owner email hash to render at all.
+
+     ⚠⚠ CORRECTED 2026-08-22, SAME DAY, AND THE CORRECTION IS THE WHOLE POINT OF THE FUNCTION.
+     The first version said several caches with the newest active was "normal when shipping fast".
+     THAT IS WRONG, and it would have talked the owner out of a real fault. activate() deletes
+     EVERY cache that is not the current one (bar thaiear-vendor / -dl / -audio-dl), so a settled
+     device has EXACTLY ONE. Orphans cannot survive an activation. Therefore:
+
+         more than one cache  ⟹  no activation has completed since the oldest of them appeared.
+
+     The only benign multi-cache state is the brief window while an install is in flight — two
+     caches, the newer one not yet active. Everything else means activations are not happening,
+     which is precisely the v408 stall in a milder dress.
+
+     States: tidy · installing (transient, 2) · undeleted (newest active, others survived —
+     activate() ran but its delete did not finish) · stuck (newest NOT active) · unknown. */
   function swVerdict(list, activeCache) {
     var n = list.length;
     var newest = list[n - 1];
@@ -351,12 +361,19 @@
       return { code: 'unknown', html: n + ' cache(s). Which is active is unknown until this device takes v423+.' };
     }
     if (n === 1) return { code: 'tidy', html: 'tidy — one cache, and it is the active one.' };
-    if (newest === activeCache) {
-      return { code: 'orphans', html: (n - 1) + ' orphan(s), newest is active — normal when shipping fast. ' +
-        'A superseded install never activates, so it never cleans up.' };
+    if (newest !== activeCache) {
+      /* The active worker is older than a build this device has already downloaded. */
+      return { code: 'stuck', html: '<b>STUCK: ' + (n - 1) + ' cache(s) newer than the active one (newest is ' +
+        newest.slice(8) + ').</b> This device downloaded builds it is not running — installs are ' +
+        'not activating. Tap Check for update.' };
     }
-    return { code: 'stuck', html: '<b>STUCK: the newest cache (' + newest.slice(8) +
-      ') is not the active one.</b> The device is being served an older build than it has downloaded.' };
+    if (n === 2) {
+      return { code: 'installing', html: 'one older cache alongside the active one — normal for a few ' +
+        'seconds while an install finishes. If it is still here in a minute, tap Clear orphan caches.' };
+    }
+    return { code: 'undeleted', html: '<b>' + (n - 1) + ' old caches survived this worker’s activate().</b> ' +
+      'It should have deleted every one of them, so activations have been failing or partial. ' +
+      'Not serving you anything wrong right now — the newest IS active — but it is worth clearing.' };
   }
   /* Exposed for the harness only. ownersim.js is a debug module that never loads for anyone but
      the owner, so this adds no surface to the real site. */
@@ -393,9 +410,9 @@
       });
       rows.push('caches: ' + labelled.join(' · '));
       var v = swVerdict(out.caches, activeCache);
-      rows.push('<span style="' + (v.code === 'stuck' ? 'color:#7A1F1F' :
-                                   v.code === 'unknown' ? 'opacity:.75' : 'color:#1F5D3A') + '">' +
-                v.html + '</span>');
+      var tone = (v.code === 'stuck' || v.code === 'undeleted') ? 'color:#7A1F1F'
+               : v.code === 'unknown' ? 'opacity:.75' : 'color:#1F5D3A';
+      rows.push('<span style="' + tone + '">' + v.html + '</span>');
     }
     if (window.ThaiEarPlayerBuild) rows.push('player: ' + esc(window.ThaiEarPlayerBuild));
 
