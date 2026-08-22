@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v429';   // v429: account page - drop two confirmation lines, white tick on the subscribed button
+const VERSION = 'v430';   // v430: account page - the membership CTA gets its own island
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5

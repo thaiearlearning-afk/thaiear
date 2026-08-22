@@ -125,8 +125,21 @@
      thing twice, which is what makes it read at a glance rather than needing to be read.
      :empty keeps it from drawing an empty box for a signed-out visitor, who has none of these
      actions. */
+  /* ⚠ THREE ISLANDS, AND WHICH ONE A BUTTON IS ON IS DECIDED BY WHAT IT DOES TO YOUR
+     MEMBERSHIP, not by what kind of button it is (owner, 2026-08-22):
+       card 1  the facts, and everything reversible
+       card 2  the one button that STARTS or RESTARTS paying — Upgrade, or Resume
+       card 3  everything that takes something away — Cancel, Remove downloads, Delete
+     So the same membership sits in a different place depending on its state: free shows
+     Upgrade on card 2; premium running shows Cancel on card 3 and card 2 disappears
+     entirely; premium already cancelled shows Resume back on card 2 in gold. There is never
+     more than one membership CTA, and where it sits tells you which direction it goes in
+     before you have read it.
+     Both extra cards are :empty-hidden, which is what lets card 2 vanish rather than leaving
+     an empty box, and is why the state changes read as the card moving rather than the button
+     changing its label. */
   .acct-danger { margin-top: 1.75rem; }
-  #account-danger:empty { display: none; }
+  #account-danger:empty, #account-membership:empty { display: none; }
 
   .acct-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
   /* In the danger card the stack IS the card, so it needs no top offset of its own. */
@@ -140,6 +153,14 @@
      inside the stack, so one descendant rule covers all of them, and they reappear the
      instant they have text. */
   .acct-stack p:empty { display: none; }
+  /* ⚠ AND THE SAME FOR EMPTY SLOT DIVS — the p-only rule was half the fix. #membership-cancel,
+     #membership-actions and #consent-area are placeholders that renderMembershipBox and the
+     consent load fill LATER, and an unfilled one is an invisible flex item still claiming its
+     10px. On a free account #membership-cancel is empty for good, so the danger card opened
+     with 10px more space above "Remove all downloads" than it had below "Delete my account"
+     (owner, 2026-08-22). Written as `> div:empty` rather than another id so the next slot
+     added to this stack is covered without anyone having to remember this. */
+  .acct-stack > div:empty { display: none; }
   /* Membership's buttons are written into the stack by renderMembershipBox, which runs late.
      :empty keeps it from contributing a phantom 10px gap before it does. */
   #membership-actions { display: flex; flex-direction: column; gap: 10px; }
@@ -199,20 +220,22 @@
      just as surely as no reserve lets a jump through. Re-measured after the even-spacing pass, and
      AGAIN after the danger card took three buttons out of this one — three times in three
      commits, which is the whole argument for writing them down rather than trusting them.
-     Now: signed in 353 under 400px and 329 above; signed out 507 and 445, so the signed-in
-     card is now much the SHORTER of the two. The signed-in figure covers the FREE card,
-     which is the taller tier HERE: free shows "Upgrade to Premium" in this card, while
-     premium's Cancel button has moved out to the danger card. Over-reserving costs a moment
+     Now: signed in 347 under 400px and 323 above; signed out 507 and 445, so the signed-in
+     card is much the SHORTER of the two. ⚠ The signed-in figure covers PREMIUM (347/323),
+     and which tier is taller here has now flipped TWICE as buttons moved between the three
+     cards — free was taller while Upgrade lived in this card, and premium is taller now that
+     Upgrade has its own island and premium keeps Update payment method. Do not assume; measure
+     both tiers and take the larger. Over-reserving costs a moment
      before render; under-reserving costs a jump.
      ⚠ The danger card needs NO reserve of its own — it is filled in the same synchronous
      pass as the body, so it has never not been there when the page paints. Re-measure whenever the copy
      or the button list changes.
      ⚠ AND IT IS min-height, SO AN UNDER-ESTIMATE STILL DEGRADES TO TODAY'S BEHAVIOUR rather
      than clipping anything. */
-  #account-body.acct-wait-in  { min-height: 353px; }
+  #account-body.acct-wait-in  { min-height: 347px; }
   #account-body.acct-wait-out { min-height: 507px; }
   @media (min-width: 400px) {
-    #account-body.acct-wait-in  { min-height: 329px; }
+    #account-body.acct-wait-in  { min-height: 323px; }
     #account-body.acct-wait-out { min-height: 445px; }
   }
 
@@ -291,6 +314,7 @@
     <div class="fluency-text">In safe hands<span class="dots" aria-hidden="true"></span></div>
   </div>
   <div class="acct-card" id="account-body"><p class="acct-muted">Loading…</p></div>
+  <div class="acct-card acct-danger" id="account-membership"></div>
   <div class="acct-card acct-danger" id="account-danger"></div>
 </div>
 <script>
@@ -602,10 +626,15 @@ function renderMembershipBox(s) {
   var line = document.getElementById('membership-line');
   var acts = document.getElementById('membership-actions');
   var cancelSlot = document.getElementById('membership-cancel');
+  var island = document.getElementById('account-membership');
   if (!line || !acts) return;
-  /* Three destinations now: the fact line at the top, the keep-it-going actions in the main
-     card, and cancelling down in the danger card with the other endings. All three are
-     rewritten on every refine, so they cannot disagree about your tier. */
+  function setIsland(html) { if (island) island.innerHTML = html || ''; }
+  /* Four destinations: the fact line at the top, the keep-it-going actions in the main card,
+     the start/restart CTA on its own island, and cancelling down in the danger card with the
+     other endings. ⚠ EVERY BRANCH BELOW SETS ALL FOUR, including to empty. Leave one unset
+     and a stale button survives a tier change — a Cancel button on a free account, or an
+     Upgrade island under an active subscription — which is exactly the kind of thing the
+     Stripe refine exists to correct. */
   function setCancel(html) { if (cancelSlot) cancelSlot.innerHTML = html || ''; }
   /* ⚠ ONE FUNCTION, TWO DESTINATIONS, AND THAT IS THE POINT. The statement of what you have
      belongs with "Signed in as …" at the top; the buttons belong in the one action stack with
@@ -635,7 +664,7 @@ function renderMembershipBox(s) {
          are not peers: one keeps the thing going, one ends it, and the one that ends it
          belongs with the other endings at the foot of the stack. */
       : (s.cancel_at_period_end
-          ? '<button class="btn btn-gold btn-wide" onclick="resumeMembership()">Resume membership</button>'
+          ? ''
           : '<button class="btn btn-primary btn-wide" onclick="openPortal()">Update payment method</button>') +
       /* ⚠ <p>, NOT <span>. Every status line in the stack is a <p> so ONE `p:empty` rule
          retires all of them when they have nothing to say. As a span this one was an empty
@@ -646,8 +675,14 @@ function renderMembershipBox(s) {
     setCancel(native || s.cancel_at_period_end ? '' :
       '<button class="btn btn-destructive btn-wide" onclick="cancelMembership()">Cancel membership</button>' +
       '<p id="cancel-status" class="acct-muted" style="margin:0"></p>');
+    /* Already cancelled → the only membership action left is to start paying again, so it
+       goes back to the middle island in gold. Still running → there is nothing to start, and
+       the island disappears rather than showing a disabled or redundant control. */
+    setIsland(native || !s.cancel_at_period_end ? '' :
+      '<button class="btn btn-gold btn-wide" onclick="resumeMembership()">Resume membership</button>' +
+      '<p id="cancel-status" class="acct-muted" style="margin:0"></p>');
   } else if (s && s.needsPayment) {
-    setCancel('');
+    setCancel(''); setIsland('');
     line.innerHTML = 'Membership: <strong style="color:#B00020">Payment problem</strong> — your last payment didn\u2019t go through. Update your card to keep it; access resumes once it clears.';
     acts.innerHTML = native
       ? noteBox('To update your payment details, use a web browser.')
@@ -658,8 +693,9 @@ function renderMembershipBox(s) {
     // now name a tier that doesn't exist. Two tiers: Free and Premium.
     setCancel('');
     line.innerHTML = 'Membership: <strong>Free</strong>';
-    acts.innerHTML = native ? '' :
-      '<a class="btn btn-gold btn-wide" href="subscribe.html" style="text-decoration:none">Upgrade to Premium</a>';
+    acts.innerHTML = '';
+    setIsland(native ? '' :
+      '<a class="btn btn-gold btn-wide" href="subscribe.html" style="text-decoration:none">Upgrade to Premium</a>');
   }
 }
 // Build a membership-state object from the cached Supabase subscription (instant).
@@ -1069,6 +1105,8 @@ function renderAccount() {
        under the sign-in form would read as something failing to load. */
     var dzOut = document.getElementById('account-danger');
     if (dzOut) dzOut.innerHTML = '';
+    var isOut = document.getElementById('account-membership');
+    if (isOut) isOut.innerHTML = '';
     el.innerHTML =
       '<div class="login-box">' +
         '<p style="margin-bottom:1.2rem">Sign in or create your account to manage your membership and unlock premium topics.</p>' +
