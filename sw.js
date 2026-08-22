@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v418';   // v418: change your display name from the account page (auth.js + account.html)
+const VERSION = 'v419';   // v419: account page revamp - phi mascot, one button vocabulary, pre-paint reserve
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
@@ -721,7 +721,7 @@ const PRECACHE = [
      2026-08-22; the real favicons are the .ico/.svg/-16/-32/-192 set below, which pages do link. */
   '/logo-hero.png', '/nav-swirl-2x.png', '/favicon.ico',
   '/favicon-16.png', '/favicon-32.png', '/favicon-192.png', '/apple-touch-icon.png',
-  '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png', '/hornbill.png', '/yak.png',
+  '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png', '/hornbill.png', '/yak.png', '/phi.png',
   // Self-hosted fonts (replaced Google Fonts 2026-06-24): precache the full used set so a
   // freshly-downloaded topic renders Sarabun (Thai) + Inter offline, not the system fallback.
   '/fonts/inter-latin-300.woff2', '/fonts/inter-latin-400.woff2',

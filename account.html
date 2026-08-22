@@ -86,6 +86,81 @@
   .btn-gold:hover { background: var(--gold-dark); color: #fff; border-color: var(--gold-dark); }
   /* Membership action buttons — flex row so they align and wrap cleanly. */
   .btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+
+  /* ── ONE BUTTON VOCABULARY (owner, 2026-08-22: "buttons in similar categories should look
+     the same"). Four kinds, and the kind is the MEANING, not the place:
+       .btn-primary      the one thing this block is for (Confirm, Subscribe)
+       .btn-gold         spend money (Upgrade, Resume) — the premium palette
+       .btn-ghost        reversible housekeeping (Change, Log out, Cancel membership)
+       .btn-destructive  removes data and asks you to type a word first
+     ⚠ .btn-destructive REPLACES A STYLE THAT WAS INLINED TWICE — "Remove all downloads" and
+     "Delete my account" each carried their own copy of the same four declarations, which is
+     how they drift. They are the same KIND of action and must keep reading as one. */
+  .btn-destructive { font-size: 12px; color: #B00020; background: none; border-color: rgba(176,0,32,0.35); }
+  .btn-destructive:hover:not([disabled]) { border-color: #B00020; background: rgba(176,0,32,0.05); }
+  /* For buttons that sit INSIDE a bordered box, where the full-size button looks oversized. */
+  .btn-sm { font-size: 13px; padding: 6px 14px; }
+  /* Full width — for an action that belongs to the whole account rather than to one box. */
+  .btn-wide { display: block; width: 100%; text-align: center; }
+
+  /* ⚠ SECTION RHYTHM IS ONE RULE, NOT A MARGIN TYPED AT EACH CALL SITE. The blocks on this
+     page had picked up 1.25rem/1.5rem tops and 1rem/1.25rem padding in whatever combination
+     each was written in, which is why the gap between "Remove all downloads" and "Delete my
+     account" was visibly bigger than every other gap (owner, 2026-08-22). Same rule, same
+     gap, everywhere. */
+  /* ⚠ RESERVE THE CARD BEFORE IT RENDERS, AND RESERVE THE RIGHT AMOUNT. The card is built in
+     one pass once auth resolves, so until then it is a one-line "Loading…" — and everything
+     after it jumped when the real content landed (owner, 2026-08-22: "elements popping up one
+     by one and shifting everything").
+
+     The trick is that ONE reserve cannot be right: the signed-in card is ~150px taller than
+     the sign-in box, so a single figure either leaves a hole for signed-out visitors or fails
+     to cover signed-in ones. It does not have to be one figure, because identity.js ALREADY
+     KNOWS which it will be, synchronously, before first paint — the same durable identity the
+     nav and the home greeting paint from. The head script below stamps the answer on the card
+     and the right reserve applies from the first frame.
+
+     ⚠ MEASURED, NOT GUESSED, at three widths — and they do not move in the same direction,
+     which is why they are separate: the signed-in card grows as it narrows (656 at 360px,
+     632 at 420, 609 at 700) because the membership and consent copy rewrap, while the
+     sign-in box is 445 at everything above ~400px and 507 below. Re-measure if the copy in
+     either changes; a stale reserve is a gap rather than a jump, but it is still wrong.
+     ⚠ AND IT IS min-height, SO AN UNDER-ESTIMATE STILL DEGRADES TO TODAY'S BEHAVIOUR rather
+     than clipping anything. */
+  #account-body.acct-wait-in  { min-height: 656px; }
+  #account-body.acct-wait-out { min-height: 507px; }
+  @media (min-width: 400px) {
+    #account-body.acct-wait-in  { min-height: 632px; }
+    #account-body.acct-wait-out { min-height: 445px; }
+  }
+  @media (min-width: 601px) {
+    #account-body.acct-wait-in  { min-height: 609px; }
+  }
+
+  .acct-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 0.5px solid var(--border); }
+  .acct-section h2 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+
+  /* ── the mascot, exactly as app.html / socials.html / read.html do it ──────────────────
+     ⚠ width + height ATTRIBUTES ON THE <img> AND aspect-ratio HERE, both. The attributes let
+     the browser reserve the box before the bytes arrive; aspect-ratio keeps that reservation
+     true when CSS resizes it. Ship one without the other and the mascot's arrival shoves the
+     whole card down — which is the exact fault the reserves elsewhere on this page exist to
+     stop. Sized off phi.png's real 480×532. */
+  .acct-lede { color: var(--text-secondary); font-size: 14.5px; line-height: 1.6; margin: 0 0 0.5rem; }
+  .fluency-block { text-align: center; margin: 1rem 0 1.5rem; }
+  .fluency-img { width: 158px; max-width: 42%; height: auto; aspect-ratio: 480 / 532; display: block; margin: 0 auto 0.4rem; }
+  .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
+  .fluency-text .dots { display: inline-block; width: 1.1em; text-align: left; }
+  .fluency-text .dots::after {
+    content: '...'; display: inline-block; width: 0; overflow: hidden;
+    vertical-align: bottom; animation: fluency-dots 1.5s steps(3, start) infinite;
+  }
+  @keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
+  /* Motion is decoration here; someone who has asked the OS for less of it gets the dots
+     without the animation rather than nothing. */
+  @media (prefers-reduced-motion: reduce) {
+    .fluency-text .dots::after { animation: none; width: 1.05em; }
+  }
   /* ── sign-in ── */
   .login-box { max-width: 340px; margin: 0 auto; text-align: center; }
   .login-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 11px 18px; }
@@ -124,8 +199,30 @@
 <div class="page-wrap">
   <div class="acct-eyebrow">ThaiEar</div>
   <h1 class="acct-title">Your account</h1>
+  <p class="acct-lede">Manage everything to do with your account here — your display name,
+    your premium membership and payment details, email updates, and what is stored on this
+    device.</p>
+  <div class="fluency-block">
+    <img class="fluency-img" src="phi.png" alt="" width="480" height="532">
+    <div class="fluency-text">In safe hands<span class="dots" aria-hidden="true"></span></div>
+  </div>
   <div class="acct-card" id="account-body"><p class="acct-muted">Loading…</p></div>
 </div>
+<script>
+/* Inline and immediately after the element, on purpose: it has to run before the browser
+   paints the card, and identity.js (a blocking head script) has already answered by here.
+   `null` means storage itself was unreadable and we genuinely cannot tell — reserve nothing
+   rather than guess, which is the same rule the nav and the home greeting follow.
+   The class is removed by renderAccount() the moment real content replaces "Loading…", so
+   the reserve can never hold a gap open under a card that has already arrived. */
+(function () {
+  try {
+    var el = document.getElementById('account-body');
+    var I = window.ThaiEarIdentity, g = I && I.guess();
+    if (el && g) el.classList.add(g.state === 'in' ? 'acct-wait-in' : 'acct-wait-out');
+  } catch (e) {}
+})();
+</script>
 
 <script>
 function esc(s) {
@@ -321,25 +418,22 @@ function displayNameHtml(user) {
   var prefix = ((user && user.email) || '').split('@')[0];
   var real = name && name !== prefix;
   return '' +
-    '<div id="dispname" style="margin-top:1.25rem;padding:0.85rem 1rem;background:var(--surface);' +
+    '<div id="dispname" style="margin-top:1rem;padding:0.85rem 1rem;background:var(--surface);' +
       'border:0.5px solid var(--border);border-radius:var(--radius-md)">' +
       '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">Display name</div>' +
       '<div id="dispname-read" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
         '<span id="dispname-current" style="font-weight:600;overflow-wrap:anywhere">' +
           (real ? esc(name) : '<span style="font-weight:400;color:var(--text-tertiary)">Not set</span>') +
         '</span>' +
-        '<button class="btn btn-ghost" style="font-size:13px;padding:6px 14px" ' +
-          'onclick="startEditName()">Change</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="startEditName()">Change</button>' +
       '</div>' +
       '<div id="dispname-edit" style="display:none">' +
         '<input id="dispname-input" class="login-input" type="text" autocomplete="name" ' +
           'maxlength="' + DISPLAY_NAME_MAX + '" placeholder="Your name" ' +
           'style="margin-bottom:8px">' +
         '<div class="btn-row">' +
-          '<button class="btn btn-primary" style="font-size:13px;padding:6px 14px" ' +
-            'onclick="saveDisplayName()" id="dispname-save">Confirm</button>' +
-          '<button class="btn btn-ghost" style="font-size:13px;padding:6px 14px" ' +
-            'onclick="cancelEditName()">Cancel</button>' +
+          '<button class="btn btn-primary btn-sm" onclick="saveDisplayName()" id="dispname-save">Confirm</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="cancelEditName()">Cancel</button>' +
         '</div>' +
       '</div>' +
       '<p id="dispname-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
@@ -844,6 +938,10 @@ function renderAccount() {
   if (!el) return;
   var a = window.ThaiEarAuth;
   if (!a || !a.isReady) { el.innerHTML = '<p class="acct-muted">Loading…</p>'; return; }
+  /* Real content from here on, so the pre-paint reserve has done its job and must go — left
+     on, it would hold its floor open under a card that happens to be shorter (a signed-out
+     visitor whose guess was 'in', or any future trim to the copy). */
+  el.classList.remove('acct-wait-in', 'acct-wait-out');
   var user = a.getUser();
   var uid = user ? user.id : null;
   // Same signed-in user already rendered → don't rebuild the whole body (that reloads
@@ -879,7 +977,7 @@ function renderAccount() {
     return;
   }
   var consentHtml =
-    '<div id="consent-area" style="margin-top:1.25rem;padding-top:1.25rem;border-top:0.5px solid var(--border);min-height:96px">' +
+    '<div id="consent-area" class="acct-section" style="min-height:96px">' +
       consentInner() +
     '</div>';
   // Hidden maintenance control — only when the page is opened as /account?reset=1.
@@ -895,16 +993,22 @@ function renderAccount() {
   el.innerHTML =
     '<p>Signed in as <span class="email">' + escEmail(user.email || user.username) + '</span></p>' +
     displayNameHtml(user) +
+    /* ⚠ LOG OUT SITS WITH THE OTHER ACCOUNT ACTIONS, NOT AT THE BOTTOM OF THE PAGE (owner,
+       2026-08-22: "the log out button is v far below the subscribe to email updates button,
+       but also why is it even there?"). It was stranded between the consent block and the
+       offline downloads, which made it read as belonging to email updates. It belongs to the
+       account as a whole, which is why it is full width rather than sitting in a row with
+       buttons that act on one box. */
+    '<p style="margin-top:1rem"><button class="btn btn-ghost btn-wide" onclick="confirmLogout()">Log out</button></p>' +
     '<div id="membership" style="min-height:80px"></div>' +
     consentHtml +
     resetHtml +
-    '<p style="margin-top:1.25rem"><button class="btn btn-ghost" onclick="confirmLogout()">Log out</button></p>' +
     /* Between Log out and Delete my account (owner, 2026-08-21). Above the email-updates block
        it read as a headline feature; it is housekeeping, and it belongs with the other
        destructive housekeeping at the foot of the page. */
     offlineDlHtml() +
-    '<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">' +
-      '<button class="btn" onclick="deleteAccount()" style="font-size:12px;color:#B00020;background:none;border-color:rgba(176,0,32,0.35)">Delete my account</button>' +
+    '<div class="acct-section">' +
+      '<button class="btn btn-destructive" onclick="deleteAccount()">Delete my account</button>' +
       '<p id="delete-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
     '</div>' +
     /* ⚠ LAST ON THE PAGE, AND THAT IS THE FIX (owner, 2026-08-21: "every time I go into my
@@ -952,18 +1056,17 @@ function offlineDlHtml() {
   // remove and no control to show.
   if (!dlAvailable()) return '';
   var n = dlCount();
-  return '<div id="offline-dl" style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)">' +
-    '<h2 style="font-size:15px;font-weight:600;margin-bottom:4px">Offline downloads</h2>' +
+  return '<div id="offline-dl" class="acct-section">' +
+    '<h2>Offline downloads</h2>' +
     '<p class="acct-muted" id="offline-dl-count">' +
       (n ? n + ' item' + (n === 1 ? '' : 's') + ' stored on this device.'
          : 'Nothing downloaded on this device.') +
     '</p>' +
-    /* Same treatment as "Delete my account" below it: 12px, #B00020 on a plain ground with a
-       faded red border. Both remove data, both are typed-confirmation actions, so they should
-       read as the same KIND of button (owner, 2026-08-21). */
-    '<p style="margin-top:8px"><button class="btn" id="offline-dl-btn" ' +
-      'onclick="removeAllDownloads()" ' +
-      'style="font-size:12px;color:#B00020;background:none;border-color:rgba(176,0,32,0.35)"' +
+    /* Same treatment as "Delete my account": both remove data, both are typed-confirmation
+       actions, so they read as the same KIND of button (owner, 2026-08-21). Since 2026-08-22
+       that is a shared CLASS rather than two copies of the same four declarations. */
+    '<p style="margin-top:8px"><button class="btn btn-destructive" id="offline-dl-btn" ' +
+      'onclick="removeAllDownloads()"' +
       (n ? '' : ' disabled') +
       '>Remove all downloads</button></p>' +
     '<p id="offline-dl-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
