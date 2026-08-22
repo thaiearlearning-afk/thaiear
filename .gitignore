@@ -144,3 +144,7 @@ _listen-time-preview.html
 # hornbill A/B compare (2026-08-22) — local only, never deploy
 _hb-orig.png
 _hb-compare.html
+
+# sign-in popup draft (2026-08-22) — local only, never deploy
+_gate-mock.html
+_toast-live.html
