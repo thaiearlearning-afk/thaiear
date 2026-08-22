@@ -281,9 +281,14 @@ function signInWithCode() {
     }
     a.verifyOtpCode(email, code, queue[i]).then(function (res) {
       if (res && res.error) throw res.error;
-      say('Signed in — taking you to your account…', 'ok');
-      var local = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.)/.test(location.hostname || '');
-      setTimeout(function () { location.replace(local ? '/account.html' : '/account'); }, 500);
+      say('Signed in — taking you to the topics…', 'ok');
+      /* ⚠ HOME, not /account — the last route that still landed people on the account
+         page's small grey panel with no obvious way out (owner, 2026-08-20). The Google
+         path in render() below, start.html and confirm.html all go home; this copy was
+         missed at the time, so join.html sent people to two different places depending
+         on which sign-in route they used. Uses the shared homeHref() (hoisted, same
+         script block) rather than repeating the localhost rule. */
+      setTimeout(function () { location.replace(homeHref()); }, 500);
     }).catch(function (err) {
       if (/expired/i.test((err && err.message) || '')) { attempt(queue.length, err); return; }
       attempt(i + 1, firstErr || err);
