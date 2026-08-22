@@ -44,7 +44,7 @@
    by tapping, so it should work offline, cost no round trip, and not become a stored personal
    record. Unknown or absent falls back to sand, the shipped default. */
 (function () {
-  var T = ['sand','stone','olive','indigo','lilac','rose','ink','navy','forest'], t = 'sand';
+  var T = ['sand','olive','indigo','purple','navy','graphite','black'], t = 'sand';
   try { var v = localStorage.getItem('thaiear_greet_theme'); if (T.indexOf(v) > -1) t = v; } catch (e) {}
   document.documentElement.setAttribute('data-gt', t);
 })();
@@ -520,8 +520,14 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
    parsing, so the very first frame is already the chosen colour.
 
    The seven grounds are the site's own palette — sand is the /topics Beginner→Lower Intermediate
-   strip, lilac and rose are its Upper-Intermediate and Advanced strips, stone is Intermediate,
-   indigo is the accent — plus olive and a dark ink for range. */
+   strip and indigo is the accent — plus olive, and four dark grounds that carry LIGHT text.
+   See the note over the palette itself for why the pale end was cut back to three. */
+/* ⚠ THE BAND IS TWO RULES, AND THE SPLIT IS DELIBERATE. Everything that is only ever set
+   here — ground, borders, padding, the tap behaviour — stays on the shallow selector, so it
+   also reaches the OFF-SCREEN PROBE home-cta.js measures the fit with (that probe is measured
+   while `cta-fits` is deliberately off; put the padding behind `.cta-fits` and the fit test
+   silently starts measuring a box 19px shorter than the real one). Only the four declarations
+   that have to BEAT `.tri.cta-fits .te-hero-cta` are in the deep rule below. */
 .te-hero-cta.has-welcome{
   /* Same reasoning as the mark: tapping the band recolours it, and the recolour is the
      feedback. A blue flash on top of a colour change reads as a mis-tap - and the band is
@@ -529,39 +535,64 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   -webkit-tap-highlight-color:transparent;
   -webkit-touch-callout:none;
   user-select:none; -webkit-user-select:none;
-  left:0; right:0; width:auto; max-width:none; transform:none;
   padding:.6rem 1.05rem; border-radius:0;
+  /* ⚠ BOTH EDGES, ALWAYS. The band floats 14px above the stage floor, so it has a strip of
+     the Read Thai region under it as well as over it - and on the light grounds that strip is
+     near enough the band's own colour that an un-ruled bottom edge simply dissolves (owner,
+     2026-08-22: "there seems to be an outline on the top of the box, but not the bottom").
+     The dark grounds do not need it, but they are not harmed by it, so it is unconditional. */
   border-top:0.5px solid var(--gt-line, transparent);
+  border-bottom:0.5px solid var(--gt-line, transparent);
   background:var(--gt-bg, var(--gold-light));
   cursor:pointer;
+}
+/* ⚠ THIS SELECTOR CARRIES `.tri.cta-fits` FOR A REASON, AND IT IS NOT DECORATION.
+   `.tri.cta-fits .te-hero-cta` above is three classes; a bare `.te-hero-cta.has-welcome` is
+   two, so it LOSES on specificity and all four of these overrides were silently discarded —
+   left/right/width/transform stayed at the centred `min(420px, 86vw)` box and the band was
+   never full bleed at all (owner, 2026-08-22: "make it span the entire width"). Nothing about
+   the rule LOOKED wrong, which is why it shipped: the band was tinted, bordered and tappable,
+   just not wide. A rule that exists to override another must sit at the same depth as it. */
+.tri.cta-fits .te-hero-cta.has-welcome{
+  left:0; right:0; width:auto; max-width:none; transform:none;
 }
 .te-hero-cta.has-welcome .cta-welcome{ color:var(--gt-fg, #6E5410); }
 .te-hero-cta.has-welcome .cta-streak{ color:var(--gt-sub, #8a6b1c); }
 
+/* ── THE SEVEN GROUNDS ─────────────────────────────────────────────
+   ⚠ CYCLED, SO THE TEST IS "CAN YOU TELL THIS ONE FROM THE LAST ONE?", NOT "IS IT A NICE
+   COLOUR?". The first nine were nice colours and five of them were the same pale tint: the
+   owner read stone, indigo and lilac as three light blues, two of which he could not tell
+   apart at all (2026-08-22). Five came out - stone, lilac, rose, ink and forest - and three
+   went in that invert the relationship instead of re-tinting it: LIGHT TEXT ON A DARK GROUND.
+   A saved value that is no longer in the list is not recognised by the pre-paint stamp and
+   falls back to sand, so nobody is stranded on a theme that no longer exists.
+
+   The order runs light → dark on purpose, so a tap always moves somewhere obviously
+   different from where it was.
+
+   Measured contrast, greeting against ground: sand 6.53, olive 6.51, indigo 8.94,
+   purple 7.90, navy 9.74, graphite 9.06, black 19.67 - every one clears WCAG AA large
+   comfortably and five clear AAA (7:1). */
 /* sand — the shipped default, and the /topics Beginner→Lower Intermediate strip */
 [data-gt="sand"] .te-hero-cta.has-welcome{ --gt-bg:#FBF5DC; --gt-fg:#6E5410; --gt-sub:#8a6b1c; --gt-line:rgba(200,160,48,.45); }
-/* stone */
-[data-gt="stone"] .te-hero-cta.has-welcome{ --gt-bg:#EEF0F6; --gt-fg:#4A5578; --gt-sub:#6b769c; --gt-line:rgba(74,85,120,.25); }
 /* olive */
 [data-gt="olive"] .te-hero-cta.has-welcome{ --gt-bg:#EEF1E4; --gt-fg:#4F5A22; --gt-sub:#6d7a37; --gt-line:rgba(79,90,34,.25); }
-/* indigo — the accent family */
+/* indigo — the accent family, and the only pale blue left of the three that used to be here */
 [data-gt="indigo"] .te-hero-cta.has-welcome{ --gt-bg:#EEEDFE; --gt-fg:#3B3488; --gt-sub:#5a51b8; --gt-line:rgba(75,65,173,.25); }
-/* lilac — the Upper Intermediate strip */
-[data-gt="lilac"] .te-hero-cta.has-welcome{ --gt-bg:#F0EFFD; --gt-fg:#534AB7; --gt-sub:#7F77DD; --gt-line:rgba(127,119,221,.3); }
-/* rose — the Advanced strip */
-[data-gt="rose"] .te-hero-cta.has-welcome{ --gt-bg:#FBECEC; --gt-fg:#A23A3A; --gt-sub:#c06a6a; --gt-line:rgba(162,58,58,.25); }
-/* ── the three dark grounds ────────────────────────────────────────────────
-   High contrast, all three carrying the mark's own gold (#F0CC5C — the GRAPHIC gold of the
-   two-tone premium palette, not the #B29234 TEXT gold, which is tuned for white and goes muddy
-   on a dark ground).
-   Measured: ink 8.66:1, navy 9.74:1, forest 9.24:1 - all three clear WCAG AAA (7:1). */
-/* ink — the site's own deep indigo */
-[data-gt="ink"] .te-hero-cta.has-welcome{ --gt-bg:#2B2566; --gt-fg:#F0CC5C; --gt-sub:rgba(240,204,92,.75); --gt-line:rgba(240,204,92,.3); }
-/* navy — a TRUE navy, deliberately separate from ink: ink is purple-leaning (it is the brand
-   indigo), and the owner asked specifically for navy blue with gold writing. */
+/* ── the four inverted grounds: the text is LIGHTER than what it sits on ──────── */
+/* purple — the Topics region's own blue-purple (var(--accent), the mid stop of .c-purple's
+   gradient), so the band reads as a piece of the same page rather than a new colour */
+[data-gt="purple"] .te-hero-cta.has-welcome{ --gt-bg:#4B41AD; --gt-fg:#FFFFFF; --gt-sub:rgba(255,255,255,.78); --gt-line:rgba(255,255,255,.28); }
+/* navy — a TRUE navy carrying the mark's own gold (#F0CC5C — the GRAPHIC gold of the two-tone
+   premium palette, not the #B29234 TEXT gold, which is tuned for white and goes muddy here) */
 [data-gt="navy"] .te-hero-cta.has-welcome{ --gt-bg:#10254A; --gt-fg:#F0CC5C; --gt-sub:rgba(240,204,92,.72); --gt-line:rgba(240,204,92,.32); }
-/* forest — the third dark ground, so the dark end of the cycle is not all blue */
-[data-gt="forest"] .te-hero-cta.has-welcome{ --gt-bg:#12352A; --gt-fg:#EFD48F; --gt-sub:rgba(239,212,143,.72); --gt-line:rgba(239,212,143,.3); }
+/* graphite — dark grey with yellow writing. A warmer, plainer yellow than the brand gold on
+   purpose: on a neutral grey the gold reads as a slightly dirty cream. */
+[data-gt="graphite"] .te-hero-cta.has-welcome{ --gt-bg:#33333A; --gt-fg:#FFD84D; --gt-sub:rgba(255,216,77,.74); --gt-line:rgba(255,216,77,.3); }
+/* black — white on near-black. Not #000: a true black band against the cream page is a hole
+   in it, and on an OLED phone the edge against the white region shimmers. */
+[data-gt="black"] .te-hero-cta.has-welcome{ --gt-bg:#0B0B0C; --gt-fg:#FFFFFF; --gt-sub:rgba(255,255,255,.72); --gt-line:rgba(255,255,255,.25); }
 /* No room for it at all once the label stack is inflated on a short phone. */
 @media (max-width:700px) and (max-height:720px){ .te-hero-cta{ display:none; } }
 

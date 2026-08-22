@@ -69,8 +69,42 @@
     var g = I.guess();
     if (!g) return null;
     return g.state === 'in'
-      ? { state: 'in', user: { username: I.usernameOf(g.user), email: g.user.email || '' } }
+      /* created_at comes across too: it is what firstVisit() reads, and this path paints the
+         greeting for a whole second before auth.js answers. Without it every returning visitor
+         would be greeted correctly and every brand-new one would read "Welcome back" first and
+         correct itself, which is the one case the wording exists to get right. */
+      ? { state: 'in', user: { username: I.usernameOf(g.user), email: g.user.email || '',
+                               created_at: g.user.created_at || '' } }
       : { state: 'out' };
+  }
+
+  /* ── "Welcome" on the first day, "Welcome back" ever after ──────────────────────────
+     Owner, 2026-08-22: someone who has just created their account has not been anywhere to
+     come BACK from, and greeting them as though they had is the one greeting the page can get
+     factually wrong.
+
+     ⚠ THE TRIGGER IS THE ACCOUNT'S OWN AGE, NOT A FLAG WE SET. The obvious implementation is a
+     localStorage marker written the first time we greet someone — and it is wrong twice: it
+     says "Welcome" again on every new device they ever sign in on, and it is one more piece of
+     state that can be left behind in a broken position (cleared storage, a private window) with
+     no way for the page to tell. `created_at` is a fact about the account that every device
+     agrees on, is already in the session object we hold, costs no round trip, and REVERTS BY
+     ITSELF — there is nothing to clean up, and no state that can get stuck.
+
+     24 hours = "your first day". Signing up and coming back after lunch is still the first
+     visit in every sense the greeting cares about; coming back tomorrow morning is not.
+     Anything without a usable created_at (an old account, or storage we could not parse) falls
+     through to "Welcome back", which is the safe answer: it is merely unremarkable, where the
+     wrong one is a small lie. */
+  var FIRST_DAY_MS = 24 * 60 * 60 * 1000;
+  function firstVisit(user) {
+    var t = user && user.created_at ? Date.parse(user.created_at) : NaN;
+    if (!t) return false;
+    var age = Date.now() - t;
+    /* A clock skewed into the future would otherwise read as a negative age and, being < the
+       window, greet every returning user as new. Treat anything not inside the window as not
+       new — including impossible values. */
+    return age >= 0 && age < FIRST_DAY_MS;
   }
 
   function html() {
@@ -79,6 +113,9 @@
     if (forced) {
       user = forced === 'out' ? null
            : forced === 'named' ? { username: 'Toby Ralph', email: 'toby@example.com' }
+           /* the first-signup wording, for the mock harness */
+           : forced === 'new' ? { username: 'Toby Ralph', email: 'toby@example.com',
+                                  created_at: new Date().toISOString() }
            /* a deliberately punishing name, so the shrink-to-fit can be judged rather than
               assumed — this is the case the owner asked about */
            /* ONE long token on purpose: firstName() takes the text up to the first space, so a
@@ -97,8 +134,9 @@
     }
     if (!user) return '<a class="cta-btn" href="join.html?next=%2F">Create a free account</a>';
     var n = firstName(user);
-    var d = forced ? 8 : streakDays();
-    return '<div class="cta-welcome">Welcome back' + (n ? ', ' + esc(n) : '') + '</div>' +
+    var d = (forced && forced !== 'new') ? 8 : streakDays();
+    var hello = firstVisit(user) ? 'Welcome' : 'Welcome back';
+    return '<div class="cta-welcome">' + hello + (n ? ', ' + esc(n) : '') + '</div>' +
            (d > 1 ? '<div class="cta-streak">You’re on a ' + d + ' day streak</div>' : '');
   }
   function esc(s) {
@@ -214,8 +252,8 @@
      honours a saved value it recognises, so a theme added here and not there would be applied
      on the tap that set it and silently fall back to sand on the next load. Both come from
      home-mock.html and gen_home_splash.js copies the stamp verbatim — so edit the MOCK. */
-  var THEMES = ['sand', 'stone', 'olive', 'indigo', 'lilac', 'rose',
-                'ink', 'navy', 'forest'];      // the last three are the dark, high-contrast grounds
+  var THEMES = ['sand', 'olive', 'indigo',           // light ground, dark text
+                'purple', 'navy', 'graphite', 'black'];  // dark ground, LIGHT text
   el.addEventListener('click', function () {
     if (!el.classList.contains('has-welcome')) return;    // signed out: it is a link, leave it
     var root = document.documentElement;
