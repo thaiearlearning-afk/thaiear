@@ -229,17 +229,33 @@
      for a block that is 64px tall (2026-08-22). fits() happened to be safe because it strips
      the class before measuring — every other caller was not. State-independence is cheaper to
      guarantee here than to remember at each call site. */
+  /* ⚠⚠ A PROBE MUST BE FULLY SPECIFIED, NEVER INHERITED. `cloneNode(false)` copies the
+     ELEMENT'S CLASS LIST, and the greeting's own styling hangs off `has-pill` — which
+     apply() adds AFTER its first call to this function. So on the very first measurement the
+     clone had no `has-pill`, the pill was an unstyled inline span, and the block measured
+     **24px instead of 64px** (2026-08-22, and it is the whole of that day's third judder).
+     Setting the class the RENDERER would set makes the answer the same on every call, in
+     the state the block will actually be in. `style.cssText` is assigned rather than appended
+     for the same reason — it replaces the whole attribute, so a `--cta-fs` left on `el` by a
+     previous fitName() cannot leak into the measurement either. */
+  var PROBE_CLASS = 'te-hero-cta ' + (PILL ? 'has-pill' : 'has-welcome');
+  var PROBE_STYLE = 'position:absolute;left:-9999px;top:0;bottom:auto;right:auto;' +
+                    'visibility:hidden;display:block';
   function tallestHeight() {
     var probe = el.cloneNode(false);
     probe.id = '';
-    probe.style.cssText = 'position:absolute;left:-9999px;top:0;bottom:auto;right:auto;' +
-                          'visibility:hidden;display:block';
+    probe.className = PROBE_CLASS;
+    probe.style.cssText = PROBE_STYLE;
     probe.innerHTML = greetingHtml('Welcome back, Wwwwwwww', 'You’re on a 88 day streak');
     stage.appendChild(probe);
     var h = probe.getBoundingClientRect().height;
     var btn = el.cloneNode(false);
     btn.id = '';
-    btn.style.cssText = probe.style.cssText;
+    /* The signed-out state carries NEITHER class — and that matters: in banner mode
+       `.has-welcome` puts padding on the block itself, which would inflate a button that
+       never has it. */
+    btn.className = 'te-hero-cta';
+    btn.style.cssText = PROBE_STYLE;
     btn.innerHTML = '<a class="cta-btn" href="#">Create a free account</a>';
     stage.appendChild(btn);
     h = Math.max(h, btn.getBoundingClientRect().height);
