@@ -692,7 +692,10 @@ function renderMembershipBox(s) {
     // "Free", not "Free member" — the member tier was retired 2026-08-10 and the word would
     // now name a tier that doesn't exist. Two tiers: Free and Premium.
     setCancel('');
-    line.innerHTML = 'Membership: <strong>Free</strong>';
+    /* Free takes var(--accent) — the Topics region's purple on the home page — the way Premium
+       takes the gold. Grey was the inherited default of the line it sits in, which made the
+       tier read as absent rather than as a tier you are actually on. */
+    line.innerHTML = 'Membership: <strong style="color:var(--accent)">Free</strong>';
     acts.innerHTML = '';
     setIsland(native ? '' :
       '<a class="btn btn-gold btn-wide" href="subscribe.html" style="text-decoration:none">Upgrade to Premium</a>');
