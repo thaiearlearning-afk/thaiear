@@ -2882,136 +2882,6 @@
   function gateSignIn() {
     window.location.href = 'join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE);
   }
-  /* ══ THE LISTEN TOAST (owner, 2026-08-22) ═════════════════════════════════════════════
-     What a PLAY tap does when the only thing missing is a free account.
-
-     ⚠ IT REPLACES A FULL PAGE NAVIGATION, and that is the whole point. Pressing ▶ used to run
-     gateSignIn(), i.e. window.location = join.html — so tapping play on a FREE sentence threw the
-     visitor off the topic entirely and onto a membership page listing three benefits, two sign-in
-     methods and a link to premium. Owner: "feels like overkill… they don't need the whole page
-     obscured and then a load of free member benefits." The page stays; a small dismissible card
-     appears at the bottom instead.
-
-     ⚠⚠ THE FULL join.html ROUTE IS STILL CORRECT ELSEWHERE AND MUST STAY. Playlists, downloads,
-     progress and flagging are FEATURES — there is nothing on the page to stay for, so sending the
-     visitor to the page that explains the feature is right. This is only for CONTENT: the audio is
-     already in front of them.
-
-     ⚠ THE COPY IS ONLY TRUE ON A FREE TOPIC. "…to listen to free audio" would be a lie on a
-     premium one, where an account alone does not unlock anything. gateListen() below is what
-     guarantees that, and it is the piece to check first if tiers move.
-
-     ⚠ "One tap with Google" IS LITERALLY ONE TAP — it calls ThaiEarAuth.signInWithGoogle(), whose
-     OAuth kick-off sets redirectTo: window.location.href, so the visitor lands back on THIS page,
-     signed in, and can press play. Do not "simplify" it to a join.html link: that reintroduces the
-     detour this exists to remove, and makes the label false. The email route keeps join.html
-     because that is where the magic-link form lives.
-
-     ⚠ Styles are INLINE, deliberately, exactly like premiumInfoSheet(). Putting them in STYLES
-     would mean re-running gen_dyncss.js, which rewrites the <style> block of all 94 dyn pages —
-     a change this does not need, and one that would collide with any parallel session editing
-     those pages. Nothing here paints before a tap, so there is no first-paint flash to avoid.
-
-     ⚠ Font sizes multiply by --te-ui (TEXT_SCALING.md): OS text scaling must grow this card, and
-     the cap is what stops an inflated setting pushing the buttons off the screen. */
-  var listenToastEl = null;
-  function listenToastClose() {
-    if (listenToastEl && listenToastEl.parentNode) listenToastEl.parentNode.removeChild(listenToastEl);
-    listenToastEl = null;
-  }
-  function listenToast() {
-    try {
-      /* One instance. A second play tap must NOT stack another card — it re-pulses the one that is
-         already there, so an impatient tap-tap-tap cannot bury the page in toasts. */
-      if (listenToastEl && listenToastEl.parentNode) {
-        listenToastEl.style.transform = 'translateX(-50%) scale(1.03)';
-        setTimeout(function () {
-          if (listenToastEl) listenToastEl.style.transform = 'translateX(-50%) scale(1)';
-        }, 130);
-        return;
-      }
-      var UI = 'var(--te-ui, 1)';
-      var F = "var(--font-ui, 'Inter', system-ui, sans-serif)";
-      var el = document.createElement('div');
-      el.id = 'te-listen-toast';
-      /* role=status + aria-live=polite: the card appears in response to the user's own tap, so it
-         should be announced, but it must not interrupt — assertive would cut off whatever the
-         screen reader is mid-sentence on. */
-      el.setAttribute('role', 'status');
-      el.setAttribute('aria-live', 'polite');
-      el.style.cssText =
-        'position:fixed;left:50%;transform:translateX(-50%) scale(1);' +
-        /* Above the page and above #dyn-sel-bar (250), below premiumInfoSheet (99999) — this is a
-           notice, never a modal, so it must never outrank a real dialog. */
-        'bottom:calc(16px + env(safe-area-inset-bottom, 0px));z-index:300;' +
-        'width:calc(100% - 32px);max-width:400px;box-sizing:border-box;' +
-        'background:var(--surface,#fff);border:.5px solid var(--border,rgba(0,0,0,.10));' +
-        'border-radius:14px;box-shadow:0 8px 30px rgba(20,16,48,.18);' +
-        'padding:14px 42px 12px 16px;font-family:' + F + ';' +
-        'opacity:0;transition:opacity .16s ease, transform .13s ease;';
-      var rowCss =
-        'display:flex;align-items:center;gap:8px;width:100%;text-align:left;' +
-        'background:none;border:0;padding:7px 0 0;margin:0;cursor:pointer;' +
-        'font-family:' + F + ';font-size:calc(13.5px * ' + UI + ');font-weight:500;' +
-        'color:var(--accent,#4B41AD);text-decoration:none;';
-      var dot = '<span aria-hidden="true" style="flex:0 0 auto;width:5px;height:5px;border-radius:50%;' +
-                'background:currentColor;opacity:.55"></span>';
-      el.innerHTML =
-        '<button type="button" class="te-lt-x" aria-label="Dismiss" style="position:absolute;top:6px;' +
-          'right:6px;width:32px;height:32px;border:0;background:none;color:var(--text-tertiary,#9A9A9A);' +
-          'cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;padding:0;">' +
-          '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
-          'stroke-width="2.2" stroke-linecap="round" aria-hidden="true">' +
-          '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
-        '<div style="font-size:calc(14px * ' + UI + ');font-weight:600;line-height:1.4;' +
-          'color:var(--text-primary,#1A1A1A);">Log in or sign up to listen to free audio</div>' +
-        '<button type="button" class="te-lt-google" style="' + rowCss + '">' + dot +
-          '<span>One tap with Google</span></button>' +
-        '<a class="te-lt-email" href="join.html?feature=1&amp;next=' +
-          encodeURIComponent(PAGE_FILE) + '" style="' + rowCss + '">' + dot +
-          '<span>Or email link</span></a>';
-      document.body.appendChild(el);
-      listenToastEl = el;
-      requestAnimationFrame(function () { el.style.opacity = '1'; });
-
-      var x = el.querySelector('.te-lt-x');
-      if (x) x.addEventListener('click', listenToastClose);
-      var g = el.querySelector('.te-lt-google');
-      if (g) g.addEventListener('click', function () {
-        var a = window.ThaiEarAuth;
-        /* ⚠ Fall back to the sign-in page rather than doing nothing. auth.js is appended by nav.js
-           and resolves a little after paint, so a very fast tap can land before it exists — and a
-           button that silently does nothing is the exact defect auth.js's own OAuth-error work was
-           written to stop (SESSION_2026-08-17). */
-        if (a && a.signInWithGoogle) { a.signInWithGoogle(); return; }
-        gateSignIn();
-      });
-    } catch (_) { gateSignIn(); }   // never let a UI failure swallow the tap outright
-  }
-  /* Dismiss on Escape, and clear it the moment a sign-in actually lands — otherwise the card sits
-     there telling someone who is now signed in to sign in. */
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && listenToastEl) listenToastClose();
-  });
-  window.addEventListener('thaiear:auth', function () {
-    var a = window.ThaiEarAuth;
-    if (listenToastEl && a && a.getUser && a.getUser()) listenToastClose();
-  });
-
-  /* gateListen(): what a refused PLAY tap does, as opposed to a refused feature tap.
-     ⚠ THE TOAST IS ONLY FOR "no account, and the audio is free". Every other refusal still goes to
-     gate(), which owns the premium branches (lapsed licence, the app's neutral sheet, the paywall)
-     — none of which a friendly "it's free" card could honestly stand in for.
-     ⚠ Reveal and flag deliberately do NOT come through here. They are guarded by entitledForPage(),
-     which is true on a free topic, so they only ever fire on a premium one where gate() is right. */
-  function gateListen(tier) {
-    if (tier == null) tier = TIER;
-    var a = window.ThaiEarAuth;
-    var signedOut = !(a && a.getUser && a.getUser());
-    if (signedOut && tier !== 'premium' && tier !== 'member') { listenToast(); return; }
-    gate(tier);
-  }
-
   // gate(): what a non-entitled tap does. Premium → the paywall on the WEBSITE, but in the APP an
   // informational sheet instead (Google Play forbids steering to outside payment). A tier that only
   // needs a login routes to gateSignIn() above.
@@ -7371,9 +7241,7 @@
 
   function togglePlay() {
     if (mainAudio.paused) {
-      // ⚠ gateListen, NOT gate: a free topic refused for want of an account gets the toast, not
-      // a page navigation. Everything else still routes through gate(). See listenToast().
-      if (!mayListen()) { gateListen(mainTier); return; }   // no account, or not entitled → no playback
+      if (!mayListen()) { gate(mainTier); return; }   // no account, or not entitled → no playback
       userStartedHere = true;   // this page's player is now user-driven → sync must not adopt a stale label
       primeMainAudio();         // ⚠ SYNCHRONOUS, inside the gesture — the build below can take seconds
       ensureMainSrc().then(function () {
@@ -8021,7 +7889,7 @@
   function toggleSentPlay(e, num) {
     e.stopPropagation();
     e.preventDefault();
-    if (!mayListen()) { gateListen(); return; }   // no account, or not entitled → no sentence audio
+    if (!mayListen()) { gate(); return; }   // no account, or not entitled → no sentence audio
     if (gateSent(num)) return;                    // playlist: locked sentence → its own tier's gate
     if (noDlSent(num)) return;                    // playlist: offline + clip not on the device
     /* ⚠ DEBOUNCE THE SAME SENTENCE, NEVER A DIFFERENT ONE (2026-08-20).
