@@ -407,14 +407,44 @@
       .catch(function () {});
   }
 
+  /* ⚠ THE CONSENT FLAG IS CACHED ON DISK, AND THAT IS WHAT MAKES THE BUTTON APPEAR AT ONCE.
+     consentInner() on account.html renders NOTHING until isMarketingConsentLoaded() is true —
+     deliberately, so it never flashes the wrong state — so before this cache existed the email-list
+     button could not be drawn until a Supabase round trip came back. The card painted, and a beat
+     later the button faded into its reserved slot: the pop-in the owner reported (2026-08-23).
+     The answer is one boolean that changes only when the user themselves taps the button, so the
+     last one for THIS uid is stored and used to paint immediately, with the fetch below correcting
+     it in place. Same "instant from cache, reconcile with the server" shape as cacheSub() on
+     account.html — and no flash when they agree, because renderAccount() only touches the DOM when
+     consentSig() actually changes. */
+  function persistConsent() { if (uid()) lsSet('thaiear_consent', { uid: uid(), v: !!currentConsent }); }
+  function hydrateConsent() {
+    if (consentLoaded || !currentUser) return false;
+    var c = lsGet('thaiear_consent');
+    if (!c || c.uid !== uid()) return false;
+    currentConsent = !!c.v; consentLoaded = true;
+    return true;
+  }
+
   // Read the user's marketing-consent flag (profiles row), cache it, re-notify.
   function refreshProfile() {
     if (!client || !currentUser) { currentConsent = false; consentLoaded = false; return; }
+    // Paint from the last known answer now; the read below is the correction, not the source.
+    if (hydrateConsent()) notify();
     // Deduped: init and the onAuthStateChange that follows it both call this, ~6 ms apart.
     once('profile', function () {
       return client.from('profiles').select('marketing_opt_in').maybeSingle()
-        .then(function (res) { currentConsent = !!(res && res.data && res.data.marketing_opt_in); })
-        .catch(function () { currentConsent = false; })
+        .then(function (res) {
+          if (res && res.error) throw res.error;
+          currentConsent = !!(res && res.data && res.data.marketing_opt_in);
+          persistConsent();
+        })
+        /* ⚠ A FAILED READ MUST KEEP THE CACHED ANSWER, not fall back to false. With no cache
+           false was the only safe resting state; now, un-ticking a subscribed user's button
+           every time the read fails (offline, mostly) would tell them they are not on the list
+           and invite a second opt-in. Only an account we have never had an answer for falls
+           back to false. */
+        .catch(function () { if (!consentLoaded) currentConsent = false; })
         .then(function () { consentLoaded = true; notify(); });
     });
   }
@@ -1058,6 +1088,7 @@
       return client.from('profiles').upsert(row).then(function (res) {
         if (res && res.error) throw res.error;
         currentConsent = !!optIn;
+        persistConsent();   // so the next load paints the new state, not the previous one
         // Best-effort sync to MailerLite. Pull a FRESH token from the client (the cached
         // session can be momentarily stale), and log the outcome so failures are visible in
         // the console rather than silently swallowed. Consent is already saved in Supabase
@@ -2154,6 +2185,9 @@
       currentUser = userFromSession(currentSession);
       if (currentSession && currentSession.access_token) writeIdentity(currentSession);
       window.ThaiEarAuth.isReady = true;
+      /* Before the first notify, not after: account.html renders its whole card on this one, and
+         a consent answer that arrives a tick later costs a second render of the email-list slot. */
+      hydrateConsent();
       notify();
       refreshSubscription(); // async; fires another notify when it resolves
       refreshProfile();      // marketing-consent flag
