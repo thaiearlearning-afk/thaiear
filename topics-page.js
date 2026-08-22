@@ -198,7 +198,68 @@
       .catch(function () {});
   }
 
-  function refresh() { applyEntitlement(); applyDownloadState(); }
+  /* ── listening time ────────────────────────────────────────────────────────
+     The one line on a card that is about YOU rather than about the topic, and the reason it is
+     green rather than grey (.topic-plays, carried over from the old index grid unchanged).
+
+     Σ repetitions × Thai clip length over the topic's sentences — topics.js owns the sum and the
+     wording so this page, pl-list.js and progress.html cannot drift apart. It needs TWO lookups
+     that no other part of this page wants (topic-sentences.json, clip-durations.json), which is
+     why both are fetched lazily below rather than linked in the head.
+
+     ⚠ RUNTIME ONLY, like the download state. gen_topics_pages.js ships these cards as static HTML
+     to every visitor and a cache serves one copy to all of them, so a per-user figure baked in
+     would show the last person's number to the next.
+
+     ⚠ HYDRATE, NEVER REBUILD (the rule at the top of this file). The caption is created once and
+     thereafter only its textContent changes, so a tap in flight on the card is never destroyed by
+     a repaint — and auth.js notifies on EVERY recorded play, so repaints are frequent. */
+  function applyListenTime() {
+    var A = window.ThaiEarAuth;
+    var user = A && A.getUser && A.getUser();
+    /* Read the merged map ONCE for the whole grid. getPlayReps() re-reads and re-merges
+       localStorage on every call (auth.js plysMergeOf), and a band page has up to 33 cards. */
+    var reps = (user && A.getPlayReps) ? A.getPlayReps() : null;
+    var ready = reps && window.ThaiEarSentenceNums && window.ThaiEarClipDurations;
+    var cards = document.querySelectorAll('.topic-card[data-page]');
+    for (var i = 0; i < cards.length; i++) {
+      var el = cards[i].querySelector('.topic-plays');
+      var cap = ready ? T.listenCaptionFor(cards[i].getAttribute('data-page'), reps) : '';
+      if (!cap) {                       // signed out, or a lookup still in flight
+        if (el) el.parentNode.removeChild(el);
+        continue;
+      }
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'topic-plays';
+        cards[i].appendChild(el);       // last child = the bottom line of the card
+      }
+      if (el.textContent !== cap) el.textContent = cap;
+    }
+  }
+
+  /* The two lookups, fetched once and only on this page. Both are in sw.js PRECACHE, so offline
+     they come straight from the cache; both resolve null rather than rejecting, and
+     applyListenTime() simply renders nothing until they are in — a card never briefly claims
+     "0 mins" to someone who has listened. */
+  var listenInputsAsked = false;
+  function loadListenInputs() {
+    var A = window.ThaiEarAuth;
+    if (!A || !A.getUser || !A.getUser()) return;      // signed out: the feature does not exist
+    /* ⚠ ONCE PER PAGE LOAD, not once per refresh(). refresh() runs on every thaiear:auth event,
+       and auth.js fires one on every recorded play — so without this guard a listening session
+       would issue a fresh /api/plays fetch per sentence heard. The two topics.js loaders memoise
+       themselves; loadPlays() only does so AFTER it has succeeded, which is exactly the window
+       that matters. Called from refresh() rather than at the bottom of this file because the
+       user is not known yet when this script runs. */
+    if (listenInputsAsked) return;
+    listenInputsAsked = true;
+    if (A.loadPlays) A.loadPlays().then(applyListenTime).catch(function () {});
+    if (T.loadSentenceNums) T.loadSentenceNums().then(applyListenTime);
+    if (T.loadClipDurations) T.loadClipDurations().then(applyListenTime);
+  }
+
+  function refresh() { applyEntitlement(); applyDownloadState(); applyListenTime(); loadListenInputs(); }
 
   /* auth.js fires this several times during startup — cheap here, because every apply is
      a no-op once the DOM already says the right thing. */
@@ -230,8 +291,11 @@
              : open ? '<span class="topic-premium unlocked">Premium</span>'
                     : '<span class="topic-premium">' + LOCK_SVG + 'Premium</span>';
     var n = (typeof u.sentences === 'number' && u.sentences > 0) ? u.sentences + ' sentences' : '';
+    /* data-page mirrors gen_topics_pages.js's card(): it is what applyListenTime() keys the
+       topic-sentences.json lookup off, so a search hit gets the same caption as a band card. */
     return '<a class="topic-card' + (premium ? ' premium' : '') + '" href="' + T.hrefFor(u.page) +
-           '" data-audio="' + (u.audio || '') + '" data-tier="' + access + '">' +
+           '" data-audio="' + (u.audio || '') + '" data-page="' + u.page +
+           '" data-tier="' + access + '">' +
       '<div class="topic-card-top">' + pill + '</div>' +
       '<div class="topic-name">' + u.name + '</div>' +
       '<div class="topic-meta-row"><span class="topic-sent-count">' + n + '</span></div></a>';
@@ -257,6 +321,7 @@
       : '<p class="grid-msg">No topics match that. Try a Thai word, or an English one like ' +
         '&ldquo;hospital&rdquo;.</p>';
     applyDownloadState();
+    applyListenTime();      // results are rebuilt from scratch, so their captions are too
   }
   q.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(run, 120); });
   q.addEventListener('search', run);          // the native clear (Esc / the X on some browsers)

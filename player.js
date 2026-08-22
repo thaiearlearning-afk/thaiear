@@ -5506,7 +5506,13 @@
      baked into static HTML — it is attached here and repainted whenever auth or a play changes.
      That is also why removing flags touches all 93 pages and this touches none of them.
      ⚠ HIDDEN AT ZERO (owner, 2026-08-20). 2,271 pills reading "0" is noise; a topic CARD shows
-     its zero, because there it means "not started". */
+     its zero, because there it means "not started".
+     ⚠⚠ IT COUNTS REPETITIONS, NOT PASSES (owner, 2026-08-22 — changed from getPlayCount()).
+     One trip through this card with Thai repeats at 4 adds FOUR, because the listener heard the
+     Thai four times and the chip claims "played N times". The PASSES counter is still recorded
+     and still synced — it is simply no longer displayed anywhere, now that every roll-up above
+     it is listening TIME (topics.js listenCaptionFor). Do not switch this back to getPlayCount()
+     to make it agree with something: nothing on screen shows passes any more. */
   var PLAY_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><polygon points="4,2 13,8 4,14"/></svg>';
 
   function plysChipFor(num) {
@@ -5525,10 +5531,10 @@
      be called from the auth event, which fires several times during startup. */
   function plysRepaintChips() {
     var a = window.ThaiEarAuth;
-    var on = !!(a && a.getUser && a.getUser() && a.getPlayCount);
+    var on = !!(a && a.getUser && a.getUser() && a.getPlayRepCount);
     sentences.forEach(function (s) {
       if (sentLocked(s)) return;                 // locked rows are padlocks, not players
-      var n = on ? a.getPlayCount(globalNumOf(s, s.num)) : 0;   // playlist: clipNum, not the synthetic id
+      var n = on ? a.getPlayRepCount(globalNumOf(s, s.num)) : 0;   // playlist: clipNum, not the synthetic id
       var el = plysChipFor(s.num);
       if (!el) return;
       el.classList.toggle('on', on && n > 0);
@@ -6626,9 +6632,10 @@
        classic sub-pixel signature). A shadow ring can't be rounded away and follows the radius. */
     '.sentence-card.dyn-live{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}' +
     /* Play count on the collapsed pill. COMPACT on purpose (owner, 2026-08-20): the full
-       "Plays: 12" is ~2x the width and the pill already carries a number, a play button, an
+       "Played 12 times" is ~3x the width and the pill already carries a number, a play button, an
        exclude button and the hint — at 320px with OS text scaling it squeezes the hint out.
-       Topic cards and playlist rows, which have the room, say "Plays: N" in full.
+       Topic cards and playlist rows, which have the room, carry the listening-time caption
+       instead ("Total time listened to Thai: 12 mins" — topics.js listenCaptionFor).
        ⚠ flex-shrink:0 + tabular-nums: the chip must not compress or jitter between 1 and 2
        digits, or every pill on the page reflows as counts tick over. */
     '.te-plays{display:none;align-items:center;gap:4px;flex-shrink:0;font-family:var(--font-ui);'

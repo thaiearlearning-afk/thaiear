@@ -1072,28 +1072,30 @@
         setList('');
         return;
       }
-      /* Play count for a playlist row (PLAYS_COUNTER.md §2). A playlist carries its own items,
-         so unlike a topic card this needs no topic-sentences.json lookup — the numbers are
-         already here.
-         ⚠ LOCKED SENTENCES ARE SKIPPED. A free visitor with a premium sentence in a playlist can
-         never play it, so counting it would pin the row at 0 for ever — the same reason exclusions
-         are skipped on a topic card. Playlists have no exclusion UI (round-11), so locked is the
-         only filter that applies here.
-         ⚠ And the fallback still holds: if EVERY item is locked, they all count again, because the
-         rule is that this must always show a real number. playsMin() owns that; don't reimplement it. */
-      function playsCaption(p) {
+      /* Listening time for a playlist row (PLAYS_COUNTER.md §2, revised 2026-08-22). Σ over the
+         playlist's items of repetitions × that clip's Thai length — the SAME measure and the same
+         wording as a topic card, because a playlist and a topic are the same kind of thing to a
+         listener. A playlist carries its own items, so unlike a topic card this needs no
+         topic-sentences.json lookup; it does need clip-durations.json, loaded below.
+
+         ⚠ IT SUPERSEDED A MINIMUM, AND THAT DELETED TWO SPECIAL CASES. The old caption was
+         playsMin() over the items, which had to skip LOCKED sentences (a free visitor with a
+         premium item could never play it, so it pinned the row at 0 for ever) and then had to
+         un-skip them when EVERYTHING was locked. A sum needs neither: a sentence you never played
+         contributes zero on its own, so nothing can be pinned and there is no empty-set case.
+         Do not reintroduce either filter here.
+
+         ⚠ REPETITIONS, NOT PASSES — see listenCaptionFor() in topics.js. */
+      function listenCaption(p) {
         var T = window.ThaiEarTopics, A = window.ThaiEarAuth;
-        if (!T || !T.playsMin || !A || !A.getUser || !A.getUser() || !A.getPlays) return '';
+        if (!T || !T.listenSeconds || !A || !A.getUser || !A.getUser() || !A.getPlayReps) return '';
         if (!p.items || !p.items.length) return '';
-        var counts = A.getPlays();
+        var durs = window.ThaiEarClipDurations;
+        if (!durs) return '';                       // still in flight — say nothing rather than "0 mins"
         var nums = p.items.map(function (it) { return it.num; });
-        var locked = {};
-        p.items.forEach(function (it) {
-          var tier = (T.tierForPrefix && T.tierForPrefix(it.prefix)) || it.tier || 'free';
-          if (tier !== 'free' && T.canAccess && !T.canAccess(tier)) locked[String(it.num)] = 1;
-        });
-        var n = T.playsMin(nums, counts, function (num) { return !!locked[String(num)]; });
-        return '<span class="pl-box-plays">Plays: ' + n + '</span>';
+        var secs = T.listenSeconds(nums, A.getPlayReps(), durs);
+        return '<span class="pl-box-plays">Total time listened to Thai: ' +
+               T.humanListenTime(secs) + '</span>';
       }
 
       var lists = currentLists();
@@ -1112,7 +1114,7 @@
               (st === 'downloaded' ? ' · downloaded'
                 : st === 'available' ? ' · available offline'
                 : st === 'update' ? ' · update available' : '') + '</span>' +
-            playsCaption(p) +            // its own line beneath the meta — see .pl-box-plays
+            listenCaption(p) +           // its own line beneath the meta — see .pl-box-plays
             dlControl(p, st) +
           '</button>' +
           '<div class="pl-box-body">' +
@@ -1332,13 +1334,17 @@
     window.addEventListener('thaiear:auth', function () {
       if (PL()) PL().load(true).then(render);
     });
-    /* Pull the account's play counts once, then repaint so the rows carry "Plays: N".
-       ⚠ No lookup file needed here — a playlist carries its own items, unlike a topic card.
-       Fire-and-forget: the rows are already correct without it, this only adds the caption.
-       Thereafter auth.js notify()s on every recorded play, and the listener above repaints. */
+    /* Pull the two inputs the listening-time caption needs, then repaint.
+       ⚠ Unlike a topic card this needs NO topic-sentences.json — a playlist carries its own item
+       numbers — but it DOES need clip-durations.json, because the caption is time, not a count.
+       Both are fire-and-forget: the rows are already correct without them, this only adds the
+       caption. Thereafter auth.js notify()s on every recorded play and the listener above
+       repaints, and listenCaption() renders nothing until the durations are in, so a row can
+       never briefly claim "0 mins" to someone who has listened. */
     (function () {
-      var A = window.ThaiEarAuth;
+      var A = window.ThaiEarAuth, T = window.ThaiEarTopics;
       if (A && A.loadPlays) A.loadPlays().then(render).catch(function () {});
+      if (T && T.loadClipDurations) T.loadClipDurations().then(function (d) { if (d) render(); });
     })();
     /* r80 — REPAINT ON RETURN. Two different responses:
          · pageshow[persisted] = a genuine bfcache restore, rare → reload contents AND repaint;

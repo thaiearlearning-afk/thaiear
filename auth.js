@@ -1130,6 +1130,16 @@
       if (!currentUser) return 0;
       return plysMerged()[String(num)] || 0;
     },
+    /* One sentence's REPETITIONS — how many times its Thai was actually heard. This is what the
+       collapsed pill shows (owner, 2026-08-22: "if 4 Thai repeats, EACH individual repeat adds
+       one"), and it is the same measure every listening-time roll-up sums.
+       ⚠ getPlayCount() — the PASSES figure — is now displayed NOWHERE. It is still recorded and
+       still synced, and it is what playsMin() would need if the retired minimum roll-up ever came
+       back, so do not delete either. See PLAYS_COUNTER.md §2a. */
+    getPlayRepCount: function (num) {
+      if (!currentUser) return 0;
+      return plysMergedReps()[String(num)] || 0;
+    },
     // Async: pull the account copy once per session, then resolve the merged map. Callers may
     // repeat it freely. Offline it resolves the local copy rather than hanging or rejecting.
     loadPlays: function () { return plysLoad(); },

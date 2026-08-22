@@ -193,6 +193,11 @@
     return m + ' min';
   }
 
+  /* topic-sentences.json is keyed on the page name WITHOUT the .html, the same normalisation
+     topics.js's bare() does. Kept local rather than exported: this is the only caller that holds
+     the raw map instead of going through listenCaptionFor(). */
+  function bareOf(page) { return String(page || '').toLowerCase().replace(/\.html$/, ''); }
+
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -233,8 +238,11 @@
     var a = A(), t = T();
     if (!t) return;                                   // topics.js not in yet; the auth event repaints
     var user = a && a.getUser && a.getUser();
-    var counts = (user && a.getPlays) ? a.getPlays() : {};          // PASSES — the per-topic rows
-    var repsMap = (user && a.getPlayReps) ? a.getPlayReps() : {};   // REPETITIONS — the two totals
+    /* ⚠ REPETITIONS ONLY, everywhere on this page (owner, 2026-08-22). The per-topic and
+       per-playlist rows used to be a MINIMUM over the PASSES counter; they are now the same
+       time sum as the headline card, so getPlays() is no longer read here at all. It is still
+       recorded and still synced — nothing on the site displays it any more. */
+    var repsMap = (user && a.getPlayReps) ? a.getPlayReps() : {};
     var stats = (user && a.getPlayStats) ? a.getPlayStats() : { daysListened: 0, streak: 0, bestStreak: 0 };
     var tot = totals(repsMap);
 
@@ -278,8 +286,8 @@
         card(humanTime(tot.seconds), 'Thai listening time') +
       '</div>' +
 
-      topicList(counts) +
-      playlistList(counts) +
+      topicList(repsMap) +
+      playlistList(repsMap) +
 
       (user ? resetBlock() : '');
 
@@ -297,7 +305,7 @@
 
   /* Every live unit, in the site's own display order, grouped by difficulty band — the same
      ordering the index uses, taken from topics.js so the two can never disagree. */
-  function topicList(counts) {
+  function topicList(reps) {
     var t = T();
     if (!t || !t.liveSequence) return '';
     var units = t.liveSequence();
@@ -311,18 +319,21 @@
         rows += '<div class="prog-band">' + esc(band) + '</div>';
         lastBand = band;
       }
-      /* The SAME roll-up the index card uses — one implementation, so the number here and the
-         number on the card cannot drift apart. Signed out it returns '' and we show a plain 0. */
-      var cap = (t.playsCaptionFor && sentNums) ? t.playsCaptionFor(u.page, u.audio) : '';
+      /* The SAME sum the topic cards use — topics.js owns it, so the figure here and the figure
+         on the card cannot drift apart. The row shows the bare time: the section heading and its
+         note already say what is being measured, and "Total time listened to Thai: 12 mins" on
+         every one of 93 rows would not fit beside the topic name anyway. */
+      var secs = (sentNums && sentNums[bareOf(u.page)])
+        ? t.listenSeconds(sentNums[bareOf(u.page)], reps, durations) : 0;
       rows += '<a class="prog-row" href="' + esc(t.hrefFor ? t.hrefFor(u.page) : u.page) + '">' +
                 '<span class="prog-row-name">' + esc(u.name) + '</span>' +
-                '<span class="prog-row-plays">' + esc(cap || 'Plays: 0') + '</span>' +
+                '<span class="prog-row-plays">' + esc(t.humanListenTime(secs)) + '</span>' +
               '</a>';
     }
     return '<h2 class="prog-h2">Every topic</h2>' +
-           '<p class="prog-h2-note">A topic’s number is its <strong>least</strong>-played sentence, ' +
-           'so it only moves when you have been through the whole thing. Sentences you have excluded ' +
-           'do not hold it back.</p>' +
+           '<p class="prog-h2-note">Thai audio heard, added up across every sentence in the topic ' +
+           '— a sentence heard four times counts four times, and each Thai repeat counts. ' +
+           'Rounded to the nearest minute.</p>' +
            '<div class="prog-list">' + rows + '</div>';
   }
 
@@ -331,37 +342,30 @@
      progress tick, so a playlist you had built but not yet finished simply was not there — the
      owner had to fake a tick to make one appear. A page that reports listening must list the
      things you can listen to, not only the ones you have finished.
-     ⚠ The MINIMUM across the playlist's own items, skipping any the user is not entitled to play:
-     a free visitor with a premium sentence in a playlist could never move it, so counting it
-     would pin the row at 0 for ever. Same rule and the same shared playsMin() as pl-list.js —
-     never a second implementation. */
-  function playlistList(counts) {
+     ⚠ A SUM, not the old minimum, and that removed two special cases with it. The minimum had to
+     skip sentences the user is not entitled to play (a premium item in a free visitor's playlist
+     pinned the row at 0 for ever) and then un-skip them when everything was locked. A sum needs
+     neither: a sentence never played contributes zero on its own. Same shared listenSeconds() as
+     pl-list.js and the topic cards — never a second implementation. */
+  function playlistList(reps) {
     var t = T(), a = A();
-    if (!t || !t.playsMin) return '';
+    if (!t || !t.listenSeconds) return '';
     if (!(a && a.getUser && a.getUser())) return '';       // signed out: nothing to list
     var lists = playlistsNow();
     if (!lists || !lists.length) return '';
 
     var rows = lists.map(function (p) {
-      var n = 0;
-      if (p.items && p.items.length) {
-        var locked = {};
-        p.items.forEach(function (it) {
-          var tier = (t.tierForPrefix && t.tierForPrefix(it.prefix)) || it.tier || 'free';
-          if (tier !== 'free' && t.canAccess && !t.canAccess(tier)) locked[String(it.num)] = 1;
-        });
-        n = t.playsMin(p.items.map(function (it) { return it.num; }), counts,
-                       function (num) { return !!locked[String(num)]; });
-      }
+      var secs = (p.items && p.items.length)
+        ? t.listenSeconds(p.items.map(function (it) { return it.num; }), reps, durations) : 0;
       return '<a class="prog-row" href="playlists.html?pl=' + encodeURIComponent(p.id) + '">' +
                '<span class="prog-row-name">' + esc(p.name) + '</span>' +
-               '<span class="prog-row-plays">Plays: ' + n + '</span>' +
+               '<span class="prog-row-plays">' + esc(t.humanListenTime(secs)) + '</span>' +
              '</a>';
     }).join('');
 
     return '<h2 class="prog-h2" style="margin-top:2rem">Playlists</h2>' +
-           '<p class="prog-h2-note">Counted the same way — a playlist’s number is its ' +
-           '<strong>least</strong>-played sentence.</p>' +
+           '<p class="prog-h2-note">Measured the same way — Thai audio heard across the ' +
+           'playlist’s sentences.</p>' +
            '<div class="prog-list">' + rows + '</div>';
   }
 

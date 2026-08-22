@@ -137,3 +137,6 @@ mock-shared.css
 _mock-phone.html
 playlists-mock.html
 read-mock.html
+
+# Local preview of the listening-time caption (2026-08-22) — never deploy
+_listen-time-preview.html

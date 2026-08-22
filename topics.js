@@ -500,6 +500,83 @@
     return 'Plays: ' + n;
   }
 
+  /* ── LISTENING TIME (owner, 2026-08-22) ───────────────────────────────────────
+     The caption a topic card actually shows. It REPLACES the "Plays: N" roll-up above on the
+     /topics band pages: same slot, same green, a different measure.
+
+     WHY IT REPLACES IT. `playsMin` answers "how many complete passes through this topic?" — a
+     MINIMUM over its sentences, so it is pinned by whichever sentence you happened never to
+     reach, and it moves not at all for the twenty you played six times. This is a SUM of time:
+     Σ repetitions[num] × duration[num] over the unit's sentences. Nothing can pin it, no sentence
+     is privileged, and it keeps meaning the same thing when a topic gains or loses sentences.
+     Owner's words: "an overall minutes listened is a better representation of someone's time".
+
+     ⚠⚠ FED FROM REPETITIONS (`getPlayReps`), NEVER PASSES (`getPlays`). That is the whole point:
+     one trip through a card at Thai-repeats 4 is ONE pass and FOUR listens, and four listens is
+     four times the audio. Swap in getPlays() and a listener on repeats 4 is credited a quarter of
+     the Thai they actually heard. The two counters exist precisely so this sum can be honest —
+     see plysBlank() in auth.js.
+
+     ⚠ A sentence with no measured duration contributes 0 rather than breaking the sum, which is
+     why gen_clip_durations.js REFUSES to write when a live sentence is missing one.
+
+     ⚠ THE HUMAN RECORDINGS WILL INVALIDATE EVERY DURATION. clip-durations.json is measured off
+     the shipped TTS `_TH.mp3`s; when the studio audio lands, re-run the speed-audit scan and
+     `node gen_clip_durations.js`, or every one of these captions quietly reads wrong. */
+  let clipDursPromise = null;
+  function loadClipDurations() {
+    if (window.ThaiEarClipDurations) return Promise.resolve(window.ThaiEarClipDurations);
+    if (clipDursPromise) return clipDursPromise;
+    clipDursPromise = fetch('clip-durations.json')
+      .then(r => (r.ok ? r.json() : null))
+      .then(m => { if (m) window.ThaiEarClipDurations = m; return m || null; })
+      .catch(() => null);
+    return clipDursPromise;
+  }
+
+  /* Seconds of Thai heard across `nums`. `reps` = ThaiEarAuth.getPlayReps(), `durs` =
+     window.ThaiEarClipDurations. Exclusions and locks are deliberately NOT filtered here, unlike
+     playsMin: a sentence you never played contributes zero all by itself, so there is nothing to
+     pin and no fallback rule to get wrong. */
+  function listenSeconds(nums, reps, durs) {
+    if (!nums || !nums.length || !reps || !durs) return 0;
+    let s = 0;
+    for (let i = 0; i < nums.length; i++) {
+      const k = String(nums[i]);
+      const n = reps[k];
+      if (n) s += (durs[k] || 0) * n;
+    }
+    return s;
+  }
+
+  /* "12 mins" · "1 hr 5 mins" — ALWAYS minutes below the hour, never a decimal (owner: "never
+     1.86 minutes; it would read 2 minutes"). Rounded, so a 1.86-minute total reads "2 mins" and
+     a 20-second one reads "0 mins" — which is right on a card, where 0 is the "not started yet"
+     signal rather than an absence.
+     Deliberately NOT progress.html's humanTime(): that one is compact ("2h 5min") because it
+     shares a row with three other stat cards. This is a full sentence on its own line. */
+  function humanListenTime(seconds) {
+    const mins = Math.round((seconds || 0) / 60);
+    if (mins < 60) return mins + (mins === 1 ? ' min' : ' mins');
+    const h = Math.floor(mins / 60), m = mins - h * 60;
+    return h + (h === 1 ? ' hr ' : ' hrs ') + m + (m === 1 ? ' min' : ' mins');
+  }
+
+  /* The finished caption, or '' when there is nothing honest to show — signed out, or either
+     lookup still in flight. Callers concatenate it unconditionally.
+     ⚠ Pass `reps` in from the caller when painting a grid. getPlayReps() re-reads and re-merges
+     localStorage on every call (see plysMergeOf), and a band page has up to 33 cards. */
+  function listenCaptionFor(page, reps) {
+    const A = window.ThaiEarAuth;
+    if (!A || !A.getUser || !A.getUser() || !A.getPlayReps) return '';
+    const map = window.ThaiEarSentenceNums, durs = window.ThaiEarClipDurations;
+    if (!map || !durs) return '';
+    const nums = map[bare(page)];
+    if (!nums || !nums.length) return '';
+    return 'Total time listened to Thai: ' +
+           humanListenTime(listenSeconds(nums, reps || A.getPlayReps(), durs));
+  }
+
   // Can the current visitor open this unit? (drives card links + prev/next unlock)
   function canAccess(access) {
     if (access === 'premium') {
@@ -630,6 +707,7 @@
     levelBounds, levelText, levelBadge, matchesFilter, findByPage,
     canAccess, accessFor, tierForPrefix, authState, ENFORCE_SUBSCRIPTION,
     playsMin, exclFor, playsCaptionFor, loadSentenceNums,   // play-count roll-up — ONE implementation, three call sites
+    loadClipDurations, listenSeconds, humanListenTime, listenCaptionFor,   // listening time — the topic-card caption
     liveSequence, pageUnit, nextAccessible,
     searchUnits, tokenize,
     hrefFor   // ⚠ every emitted topic link goes through this — see the note above hrefFor()
