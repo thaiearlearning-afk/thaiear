@@ -87,6 +87,25 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
   <div id="player-root"></div>
 </div>
 
+<!-- ⚠⚠ topics.js IS LOAD-BEARING HERE, AND ITS ABSENCE WAS A SILENT BUG (added 2026-08-22).
+     This page had no topics.js at all, so window.ThaiEarTopics was undefined and pl-list.js
+     degraded in two places, neither of which announced itself:
+
+       1. plTier() fell back to the SAVED tier on every item. That snapshot is written when a
+          sentence is added and cannot see a tier change — and the tier decides which BUCKET the
+          clip is fetched from. It is the exact 2026-08-13 fault (ShoppingAndMoney_BEG_S323): a
+          demoted topic's saved 'member' row asks /api/audio to sign a private-bucket URL for a
+          file that has moved to the public one, which 404s the whole playlist download with no
+          retry that can help. Topics have been moving between tiers all day, so this was live.
+       2. The row caption ("Thai listening time: N") returned '' at its first guard, so it never
+          rendered — the defect that surfaced this.
+
+     It was almost certainly fine until 2026-08-21: playlists used to be reached through the index
+     switcher panel, and index.html loads topics.js. Removing the panels made playlists.html the
+     only route, and it never had it.
+     ⚠ NOT deferred, and BEFORE pl-list.js: pl-list.js is not deferred either and reads
+     ThaiEarTopics during mount. -->
+<script src="topics.js"></script>
 <script src="dl-core.js"></script>
 <script src="pl-list.js"></script>
 <script>
