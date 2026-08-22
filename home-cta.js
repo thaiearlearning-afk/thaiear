@@ -66,13 +66,55 @@
 
   /* The listening streak, from sentence_plays via /api/plays. It counts days a sentence was
      actually PLAYED, not days visited, and it is UTC-based — both are deliberate (see
-     progress_streak_migration.sql). 1 is not worth announcing. */
-  function streakDays() {
+     progress_streak_migration.sql). 1 is not worth announcing.
+
+     ⚠⚠ THE STREAK HAS TO BE ANSWERED IN THE SAME TASK AS THE GREETING, OR THE BLOCK JOLTS.
+     The block is `position:absolute; bottom:14px`, so it grows UPWARDS: adding a second line
+     later moves the pill up by a whole line, on a page that has already painted. That is what
+     the owner saw (2026-08-22) — the greeting appears, and a split second later the streak
+     shoves it upward.
+
+     `ThaiEarAuth.getPlayStats()` cannot answer yet at that moment: it returns zeros until
+     supabase has resolved a session, which is a network round trip away, and the greeting
+     itself is painted BEFORE that from identity.js's synchronous guess. So the two halves of
+     one line were being decided at two different times.
+
+     auth.js already mirrors the resolved stats into localStorage under `thaiear_plays_stats`
+     (plysStatsSet), keyed by user id — the same durable-copy trick identity.js uses for the
+     session. Reading it here is synchronous, needs no module loaded, and gives the same answer
+     auth.js is about to give. */
+  var PLYS_STATS_KEY = 'thaiear_plays_stats';    // ⚠ auth.js owns this key; keep them identical
+  function cachedStreak(user) {
+    try {
+      var c = JSON.parse(localStorage.getItem(PLYS_STATS_KEY) || 'null');
+      /* Keyed by uid, exactly as auth.js reads it back — a cached streak belonging to a
+         previous account on this device must never be greeted onto the current one. */
+      if (c && c.data && user && user.id && c.uid === user.id) return c.data.streak || 0;
+    } catch (e) {}
+    return 0;
+  }
+  function streakDays(user) {
     try {
       var a = window.ThaiEarAuth;
-      var s = a && a.getPlayStats && a.getPlayStats();
-      return (s && s.streak) || 0;
+      var s = (a && a.isReady && a.getPlayStats) ? a.getPlayStats() : null;
+      var d = (s && s.streak) || 0;
+      /* Pre-resolution (and offline) the authoritative reader answers 0 for everyone, so fall
+         through to the copy it wrote last time rather than paint a streakless greeting we will
+         have to correct. */
+      return d || cachedStreak(user);
     } catch (e) { return 0; }
+  }
+
+  /* ⚠ DECIDED ONCE PER PAGE VIEW, AND THEN IT DOES NOT MOVE. apply() re-runs several times
+     during startup (auth notifies more than once, and /api/plays lands after it), and a value
+     that changes between those runs is a relayout of a block the reader is already looking at.
+     Latching it means the answer is whatever was known when the greeting was first painted; a
+     correction from the server shows on the next load, which is soon enough for a greeting and
+     is the price of never jolting. */
+  var streakLatched = null;
+  function streakFor(user) {
+    if (streakLatched === null) streakLatched = streakDays(user);
+    return streakLatched;
   }
 
   /* ⚠ ONE READER FOR THE WHOLE SITE — identity.js, a synchronous head script. This was a
@@ -88,8 +130,10 @@
          greeting for a whole second before auth.js answers. Without it every returning visitor
          would be greeted correctly and every brand-new one would read "Welcome back" first and
          correct itself, which is the one case the wording exists to get right. */
-      ? { state: 'in', user: { username: I.usernameOf(g.user), email: g.user.email || '',
-                               created_at: g.user.created_at || '' } }
+      /* `id` comes across for the same reason: the cached streak is stored per user id, so
+         without it the pre-auth paint could not read one at all. */
+      ? { state: 'in', user: { id: g.user.id || '', username: I.usernameOf(g.user),
+                               email: g.user.email || '', created_at: g.user.created_at || '' } }
       : { state: 'out' };
   }
 
@@ -149,7 +193,7 @@
     }
     if (!user) return '<a class="cta-btn" href="join.html?next=%2F">Create a free account</a>';
     var n = firstName(user);
-    var d = (forced && forced !== 'new') ? 8 : streakDays();
+    var d = (forced && forced !== 'new') ? 8 : streakFor(user);
     var hello = firstVisit(user) ? 'Welcome' : 'Welcome back';
     return greetingHtml(hello + (n ? ', ' + esc(n) : ''),
                         d > 1 ? 'You’re on a ' + d + ' day streak' : '');
