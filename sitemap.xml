@@ -149,10 +149,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-24a</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://thaiear.com/topic-49a</loc>
     <priority>0.8</priority>
   </url>
@@ -198,6 +194,10 @@
   </url>
   <url>
     <loc>https://thaiear.com/topic-22a</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-24a</loc>
     <priority>0.8</priority>
   </url>
   <url>

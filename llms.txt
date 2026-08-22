@@ -42,7 +42,6 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Home & daily routine 2 in Thai](https://thaiear.com/topic-10b): Beginner → Lower intermediate, 32 sentences
 - [Social life & events 1 in Thai](https://thaiear.com/topic-16): Beginner → Lower intermediate, 21 sentences
 - [Romantic relationships & dating 1 in Thai](https://thaiear.com/topic-36a): Lower intermediate, 24 sentences
-- [Technology & communication 1 in Thai](https://thaiear.com/topic-24a): Lower intermediate, 24 sentences
 - [Compliments & opinions 1 in Thai](https://thaiear.com/topic-49a): Lower intermediate, 33 sentences
 - [Body & health 1 in Thai](https://thaiear.com/topic-13a): Lower intermediate, 26 sentences
 - [Body & health 2 in Thai](https://thaiear.com/topic-13b): Lower intermediate, 30 sentences
@@ -55,6 +54,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Working life 1 in Thai](https://thaiear.com/topic-20a): Lower intermediate, 24 sentences
 - [Education system 1 in Thai](https://thaiear.com/topic-21a): Lower intermediate, 28 sentences
 - [Food culture & eating out 1 in Thai](https://thaiear.com/topic-22a): Lower intermediate, 29 sentences
+- [Technology & communication 1 in Thai](https://thaiear.com/topic-24a): Lower intermediate, 24 sentences
 - [Nature, environment & conservation 1 in Thai](https://thaiear.com/topic-23a): Lower intermediate, 25 sentences
 - [School and University 1 in Thai](https://thaiear.com/topic-45a): Lower intermediate, 28 sentences
 - [School and University 2 in Thai](https://thaiear.com/topic-45b): Lower intermediate, 30 sentences

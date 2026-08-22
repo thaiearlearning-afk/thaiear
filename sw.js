@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v419';   // v419: account page revamp - phi mascot, one button vocabulary, pre-paint reserve
+const VERSION = 'v420';   // v420: Technology & communication 1 -> premium, back to its length-ordered slot
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5

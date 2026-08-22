@@ -154,8 +154,6 @@
     // ── LOWER → UPPER INTERMEDIATE ──────────────────
     { id: 36, part: 1, name: "Romantic relationships & dating 1", levels: ['li1','int'], sentences: 24, page: "topic-36a.html", audio: "Romance_LI1",
       keywords: ['dating','เดท','single','โสด','dating app','แอปหาคู่','swipe','ปัดขวา','match','romance','meet someone','love life'] },
-    { id: 24, part: 1, name: "Technology & communication 1", levels: ['li1','int'], sentences: 24, page: "topic-24a.html", audio: "Tech_LI1",
-      keywords: ['technology','เทคโนโลยี','phone','โทรศัพท์','internet','อินเทอร์เน็ต','app','แอป','computer','คอมพิวเตอร์','online','message','ข้อความ','digital'] },
     { id: 49, part: 1, name: "Compliments & opinions 1", levels: ['li1','int'], sentences: 33, page: "topic-49a.html", audio: "Compliments_LI1", access: "premium",
       keywords: ['compliment','ชม','praise','nice','good','เก่ง','well done','flatter','admire','kind words','ชมเชย'] },
     { id: 13, part: 1, name: "Body & health 1", levels: ['li1','int'], sentences: 26, page: "topic-13a.html", audio: "BodyHealth_BEG", access: "premium",
@@ -180,6 +178,8 @@
       keywords: ['education','การศึกษา','school','โรงเรียน','study','เรียน','teacher','ครู','student','นักเรียน','class','subject','วิชา','schooling'] },
     { id: 22, part: 1, name: "Food culture & eating out 1", levels: ['li1','int'], sentences: 29, page: "topic-22a.html", audio: "FoodSocial_LI1", access: "premium",
       keywords: ['restaurant','ร้านอาหาร','eating out','order','สั่ง','menu','เมนู','waiter','bill','เช็คบิล','table','จอง','food culture','dining'] },
+    { id: 24, part: 1, name: "Technology & communication 1", levels: ['li1','int'], sentences: 24, page: "topic-24a.html", audio: "Tech_LI1", access: "premium",
+      keywords: ['technology','เทคโนโลยี','phone','โทรศัพท์','internet','อินเทอร์เน็ต','app','แอป','computer','คอมพิวเตอร์','online','message','ข้อความ','digital'] },
     { id: 23, part: 1, name: "Nature, environment & conservation 1", levels: ['li1','int'], sentences: 25, page: "topic-23a.html", audio: "Nature_LI1", access: "premium",
       keywords: ['nature','ธรรมชาติ','environment','สิ่งแวดล้อม','tree','ต้นไม้','forest','ป่า','river','แม่น้ำ','mountain','ภูเขา','sea','ทะเล','outdoors'] },
     { id: 45, part: 1, name: "School and University 1", levels: ['li1','int'], sentences: 28, page: "topic-45a.html", audio: "School_LI1", access: "premium",
