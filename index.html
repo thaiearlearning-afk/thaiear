@@ -450,20 +450,32 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 /* ⚠ PHONE ONLY (owner, 2026-08-21: "scrap this idea for desktop - there is no room").
    ⚠ AND IT IS ONE STACK WITH THE READ THAI LABEL, NOT A SECOND FLOATING THING. Positioned
    independently they overlapped the moment the window got short — the label ran to 87% of the
-   stage and the block started at 85%. Both are now anchored to the SAME bottom edge with the
-   label offset by the block's height, so they cannot collide whatever the stage height is.
-   --cta-h is that height; change the block's contents and change this with it. */
-/* ⚠ EVERYTHING VISUAL KEYS OFF ONE CLASS, `cta-fits`, which home-cta.js sets only when the
-   TALLEST state measures as fitting. The label's offset is in the same rule, so the label and
-   the block move together and cannot overlap — and when the block is not shown the label
-   returns to its normal place rather than leaving a hole. */
+   stage and the block started at 85%.
+
+   ⚠⚠ THE LABEL DOES NOT MOVE WHEN THE BLOCK APPEARS, AND IT MUST NOT (owner, 2026-08-22).
+   It used to: this rule also carried
+       .tri.cta-fits .s3 .s-label{ bottom:calc(14px + var(--cta-h) + 12px); }
+   which was a SECOND anchor on an element that already has `top:74%` — over-constrained, so
+   the browser stretched the box instead of moving it — and because --cta-h was itself being
+   mis-measured as the whole stage (see tallestHeight() in home-cta.js), the sum came out taller
+   than the stage and collapsed the label to ZERO height, dropping its text 33px. That landed one frame
+   after paint, because home-cta.js is `defer`: the judder the owner reported on the PWA.
+
+   The clearance the old rule was reaching for is already guaranteed, and by the only thing
+   that can measure it: fits() in home-cta.js refuses the class unless the space beneath the
+   label's real bottom is at least the block's height + GAP + FLOOR. So the label keeps its
+   authored place in BOTH states, the two cannot collide, and there is nothing left for a
+   late-running script to shift. Do not re-introduce a second offset here.
+
+   ⚠ EVERYTHING VISUAL KEYS OFF ONE CLASS, `cta-fits`, which home-cta.js sets only when the
+   TALLEST state measures as fitting — so the block is either shown in full or not at all, and
+   the layout around it never changes either way. */
 .te-hero-cta{ display:none; }
 .tri.cta-fits .te-hero-cta{
   display:block;
   position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
   z-index:4; text-align:center; width:min(420px, 86vw);
 }
-.tri.cta-fits .s3 .s-label{ bottom:calc(14px + var(--cta-h, 52px) + 12px); }
 .te-hero-cta .cta-btn{
   display:inline-block; text-decoration:none;
   font-family:var(--font-ui); font-size:calc(14px * var(--te-ui, 1)); font-weight:600;

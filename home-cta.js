@@ -219,11 +219,21 @@
 
   /* The tallest the block can ever be: the welcome line PLUS a streak line. Measured from a
      real, laid-out clone rather than guessed, so it stays right when the copy or the type
-     changes — and so it includes whatever the OS has done to the text size. */
+     changes — and so it includes whatever the OS has done to the text size.
+
+     ⚠⚠ `bottom:auto` IS LOAD-BEARING. THE PROBE CARRIES THE BLOCK'S CLASS, AND WITH IT THE
+     BLOCK'S STYLESHEET RULES. `.tri.cta-fits .te-hero-cta` sets `bottom:14px`; the inline
+     style below sets `top:0` and does NOT clear `bottom`, so whenever the stage already had
+     `cta-fits` the clone was over-constrained and the browser STRETCHED it to the stage
+     instead of letting it size to its content. Measured on a 390x844 phone: 636px returned
+     for a block that is 64px tall (2026-08-22). fits() happened to be safe because it strips
+     the class before measuring — every other caller was not. State-independence is cheaper to
+     guarantee here than to remember at each call site. */
   function tallestHeight() {
     var probe = el.cloneNode(false);
     probe.id = '';
-    probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;display:block';
+    probe.style.cssText = 'position:absolute;left:-9999px;top:0;bottom:auto;right:auto;' +
+                          'visibility:hidden;display:block';
     probe.innerHTML = greetingHtml('Welcome back, Wwwwwwww', 'You’re on a 88 day streak');
     stage.appendChild(probe);
     var h = probe.getBoundingClientRect().height;
@@ -247,9 +257,12 @@
     if (!label) return false;
     var sr = stage.getBoundingClientRect();
     if (!sr.height) return false;
-    /* Measure with the block OUT of the layout, so the answer does not depend on whether it
-       is currently shown — otherwise showing it makes it fit and hiding it makes it not, and
-       the class oscillates. */
+    /* Measure in ONE known state, whichever one the stage happens to be in — so the answer
+       cannot depend on the previous answer, which is how a fit test starts oscillating. Since
+       2026-08-22 neither input actually moves with the class (the label keeps its authored
+       place, and tallestHeight()'s probe pins `bottom:auto`), so this is now an invariant being
+       held rather than a difference being cancelled. Hold it anyway: it is one line, and it is
+       what lets a future rule key off `cta-fits` without silently re-introducing the loop. */
     var had = stage.classList.contains('cta-fits');
     stage.classList.remove('cta-fits');
     var lr = label.getBoundingClientRect();
@@ -270,11 +283,13 @@
     var ok = fits();
     stage.classList.toggle('cta-fits', ok);
     if (!ok) { el.innerHTML = ''; return; }
-    /* ⚠ THE LABEL'S OFFSET IS THE MEASURED HEIGHT, NOT A CONSTANT. The CSS carries a 52px
-       default only so the rule is valid before this runs; at inflated text the block is half
-       as tall again, and a fixed offset would let the Read Thai label sit on top of it. Set it
-       from the same measurement the fit test used, so the two can never disagree. */
-    stage.style.setProperty('--cta-h', Math.ceil(tallestHeight()) + 'px');
+    /* ⚠ NOTHING IS WRITTEN BACK TO THE STAGE, AND THAT IS THE POINT (owner, 2026-08-22).
+       This used to set `--cta-h`, which the CSS fed into a second offset on the Read Thai
+       label — so the label's position depended on a measurement taken by a `defer`red script,
+       and moved one frame after paint. The label now keeps its authored place whether the
+       block is shown or not; the clearance is guaranteed by fits() refusing the class unless
+       the room is genuinely there, which is a decision, not a nudge. See the note over the
+       rule in home-mock.html before adding an offset here again. */
     var next = html();
     if (el.innerHTML !== next) el.innerHTML = next;   // never rewrite an identical node
     /* The gold ground belongs to the SIGNED-IN greeting only; the signed-out state is a button,
