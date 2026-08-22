@@ -208,12 +208,19 @@
     });
   }
 
-  /* The display name from the Google account, first name only — "Toby's progress" reads better
-     than the full name, and the full name is on the account page anyway. Falls back to the part
-     of the email before the @ so the heading is never "'s progress". */
+  /* What to call them in the heading. identity.js decides first-name-vs-whole-name (a Google
+     name is greeted by its first word, a name they typed on the account page is used whole), so
+     this page and the home greeting cannot say two different things about one person.
+     ⚠ ITS FALLBACK IS THE OPPOSITE OF THE HOME GREETING'S, deliberately: greetingName() returns
+     '' rather than greet someone off their email prefix, but this heading would then read
+     "'s progress", so here the prefix is better than nothing. */
   function firstName(user) {
-    var n = (user && (user.username || user.name || user.full_name)) || '';
-    n = String(n).trim().split(/\s+/)[0] || '';
+    var I = window.ThaiEarIdentity;
+    var n = (I && I.greetingName) ? I.greetingName(user) : '';
+    if (!n) {
+      n = (user && (user.username || user.name || user.full_name)) || '';
+      n = String(n).trim().split(/\s+/)[0] || '';
+    }
     if (!n && user && user.email) n = String(user.email).split('@')[0];
     return n;
   }

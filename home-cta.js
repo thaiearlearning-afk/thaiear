@@ -50,17 +50,20 @@
   var PILL = true;
   var forced = null;                  // mock-only override, see __ctaState below
 
-  /* A first name, but ONLY when the account actually has one. auth.js falls back to the email
-     prefix when Google gave no full_name — a magic-link signup — and greeting someone by the
-     front of their email address is worse than not greeting them at all. */
-  function firstName(u) {
+  /* The name to greet by, but ONLY when the account actually has one. auth.js falls back to the
+     email prefix when Google gave no full_name — a magic-link signup — and greeting someone by
+     the front of their email address is worse than not greeting them at all.
+
+     ⚠ FIRST NAME OR WHOLE NAME IS identity.js's CALL, not a rule held here. A provider name is
+     greeted by its first word; a name the person typed on the account page is used WHOLE,
+     because they chose every word of it, and cutting it at the first space loses the point of
+     choosing it (owner, 2026-08-23). The fallback keeps the old first-word behaviour for the
+     case where identity.js somehow has not loaded. */
+  function greetName(u) {
     if (!u || !u.username) return '';
-    /* "Is this a real name or just an email prefix?" is identity.js's rule, not a second
-       opinion held here. Falls back to the same comparison if it is somehow absent. */
     var I = window.ThaiEarIdentity;
-    var real = I ? I.hasRealName({ email: u.email, user_metadata: { full_name: u.username } })
-                 : u.username !== (u.email || '').split('@')[0];
-    if (!real) return '';
+    if (I && I.greetingName) return I.greetingName(u);
+    if (u.username === (u.email || '').split('@')[0]) return '';
     return String(u.username).split(' ')[0];
   }
 
@@ -130,6 +133,33 @@
     return streakLatched || 0;
   }
 
+  /* ⚠⚠ THE SPLASH HAS TO ASK FOR THE STATS. NOTHING ELSE ON THIS PAGE DOES.
+     `/api/plays` is fetched by `ThaiEarAuth.loadPlays()`, and its callers are `player.js`,
+     `pl-list.js`, `topics-page.js` and `progress.html` — every one of them a page you reach by
+     going somewhere. The home page reads `getPlayStats()`, which answers from the localStorage
+     copy those pages leave behind, and asked for nothing itself.
+
+     So on a browser that has never visited one of them the copy is empty, nothing ever fills
+     it, and THE STREAK LINE CAN NEVER APPEAR ON THE HOME PAGE — whatever the real streak is.
+     Found 2026-08-23: the owner's account was on a 3-day streak, showing on the installed app
+     (which had been to those pages) and missing in Chrome (which had not). It reads as a layout
+     bug and is not one: `fits()` had already shown the block, with room to spare.
+
+     Safe to fetch and drop in late ONLY because the block reserves its tallest state — the line
+     lands in space already held open. Before that reserve this would have been the §3d jolt.
+     Guarded so it happens once: auth.js's own `plysLoaded` also guards, but not until it has a
+     token, and apply() runs several times before then. */
+  var plysAsked = false;
+  function ensurePlays() {
+    if (plysAsked) return;
+    var a = window.ThaiEarAuth;
+    if (!a || !a.isReady || !a.loadPlays || !a.getUser || !a.getUser()) return;
+    plysAsked = true;
+    /* loadPlays() notifies on success, which re-enters apply() — the .then is the belt to that
+       braces, for the case where the value was already loaded and no event fires. */
+    try { a.loadPlays().then(apply).catch(function () {}); } catch (e) {}
+  }
+
   /* ⚠ ONE READER FOR THE WHOLE SITE — identity.js, a synchronous head script. This was a
      hand-written third copy of the same rules; see the note in identity.js for why that was a
      bad idea and what it now guarantees. */
@@ -145,7 +175,12 @@
          correct itself, which is the one case the wording exists to get right. */
       /* `id` comes across for the same reason: the cached streak is stored per user id, so
          without it the pre-auth paint could not read one at all. */
+      /* ⚠ providerName comes across as well, and without it this path cannot tell an EDITED
+         name from a provider one: the slim object below is all greetName() gets, and a missing
+         provider name reads as "they typed this", which would greet every visitor by their full
+         name a second before auth.js corrects it. */
       ? { state: 'in', user: { id: g.user.id || '', username: I.usernameOf(g.user),
+                               providerName: I.providerNameOf(g.user),
                                email: g.user.email || '', created_at: g.user.created_at || '' } }
       : { state: 'out' };
   }
@@ -190,10 +225,18 @@
                                   created_at: new Date().toISOString() }
            /* a deliberately punishing name, so the shrink-to-fit can be judged rather than
               assumed — this is the case the owner asked about */
-           /* ONE long token on purpose: firstName() takes the text up to the first space, so a
-              long FULL name proves nothing — only a long FIRST name reaches the line. */
+           /* ONE long token on purpose: a PROVIDER name is greeted by its first word, so a long
+              full name would prove nothing about the fit — only a long first name reaches the
+              line. (A name the user TYPED reaches it whole, but updateDisplayName caps that at
+              20 characters, which is shorter than this.) */
            : forced === 'long' ? { username: 'Bartholomewicz-Wolfeschlegelstein', email: 'b@example.com' }
            : { username: 'toby', email: 'toby@example.com' };
+      /* ⚠ EVERY MOCK ABOVE IS A PROVIDER ACCOUNT, so each carries the provider's own copy of its
+         name. Without it greetName() reads them as names the user had TYPED — the two fields
+         disagreeing is exactly what marks an edit — and the mock would preview a whole-name
+         greeting that no real provider account produces. Set providerName explicitly on a mock
+         to model an edited name instead. */
+      if (user && user.username && user.providerName === undefined) user.providerName = user.username;
     } else if (a && a.isReady) {
       user = (a.getUser && a.getUser()) || null;        // authoritative
     } else {
@@ -205,7 +248,7 @@
       user = g.state === 'in' ? g.user : null;
     }
     if (!user) return '<a class="cta-btn" href="join.html?next=%2F">Create a free account</a>';
-    var n = firstName(user);
+    var n = greetName(user);
     var d = (forced && forced !== 'new') ? 8 : streakFor(user);
     var hello = firstVisit(user) ? 'Welcome' : 'Welcome back';
     return greetingHtml(hello + (n ? ', ' + esc(n) : ''),
@@ -370,6 +413,8 @@
     var greeting = !!el.querySelector('.cta-welcome');
     el.classList.toggle('has-welcome', greeting && !PILL);
     el.classList.toggle('has-pill', greeting && PILL);
+    /* Only once we are actually greeting someone: a signed-out visitor has no stats to fetch. */
+    if (greeting) ensurePlays();
     fitName();
     /* Same task as the innerHTML above, so the ribbon is already the right shape on the
        frame the greeting first appears — there is no rectangle to see first. */

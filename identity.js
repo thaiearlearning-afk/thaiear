@@ -47,7 +47,62 @@
   function hasRealName(u) {
     if (!u) return false;
     var prefix = (u.email || '').split('@')[0];
-    return usernameOf(u) !== prefix;
+    /* nameParts() first so the SLIM shape is answered too (it has no user_metadata for
+       usernameOf() to read); usernameOf() behind it so the raw shape answers exactly as it
+       always did, 'Member' fallback included. */
+    var n = nameParts(u).full || usernameOf(u);
+    return !!n && n !== prefix;
+  }
+
+  /* ── WHAT DO WE CALL THIS PERSON? ──────────────────────────────────────────────────────
+     TWO SHAPES REACH THIS FILE and normalising them here is the point: guess() returns the RAW
+     supabase user (a `user_metadata` bag), while auth.js's userFromSession() publishes a slim
+     object carrying `username` + `providerName`. Every caller used to know which one it held —
+     home-cta.js literally built a fake `{user_metadata:{full_name:u.username}}` to ask a
+     question — and that is the drift this file exists to stop. */
+  /* The provider's own copy of the name, for callers that RESHAPE the raw user into the slim
+     form (home-cta.js does, to paint before auth answers). Reading `user_metadata.name` in those
+     callers would put the rule back in the files this one exists to consolidate — and a slim
+     object that loses this field is indistinguishable from an edited name. */
+  function providerNameOf(u) {
+    var meta = (u && u.user_metadata) || {};
+    return meta.name || (u && u.providerName) || '';
+  }
+
+  function nameParts(u) {
+    var meta = (u && u.user_metadata) || {};
+    return {
+      full: meta.full_name || meta.name || (u && u.username) || '',
+      /* The provider's OWN copy of the name, which updateDisplayName never writes to. */
+      provider: meta.name || (u && u.providerName) || '',
+      email: (u && u.email) || ''
+    };
+  }
+
+  /* Did this person CHOOSE their name, or is it the one Google handed us at signup?
+     ⚠ NO FLAG, NO MIGRATION — the answer is already in the data. updateDisplayName() writes
+     `user_metadata.full_name` and leaves `user_metadata.name` exactly as the provider set it,
+     so the two fields disagreeing IS the record of an edit, retroactively and on every device.
+     Measured across every live account (2026-08-23), counts only: of the Google accounts, all
+     but one carried the two fields identical, and the single exception was an account whose name
+     had been edited. Zero false positives.
+     A magic-link signup carries no provider name at all — nine accounts had no name fields
+     whatsoever — so there a full_name can only ever have been typed in. */
+  function isCustomName(u) {
+    var p = nameParts(u);
+    if (!p.full) return false;
+    if (p.provider) return p.full !== p.provider;
+    return true;
+  }
+
+  /* The name to greet someone by: their FIRST name when it is the provider's, the WHOLE name
+     when they chose it themselves (owner, 2026-08-23 — a chosen name cut at its first space
+     loses the point of choosing it). '' when we have no real name for them, which the greeting
+     treats as "no name in the message", not as "no greeting". */
+  function greetingName(u) {
+    if (!hasRealName(u)) return '';
+    var full = nameParts(u).full;
+    return isCustomName(u) ? full : String(full).split(' ')[0];
   }
 
   /* 'in' with a user, 'out', or null when storage itself is unavailable and we genuinely cannot
@@ -88,6 +143,9 @@
     guess: guess,
     state: state,
     usernameOf: usernameOf,
-    hasRealName: hasRealName
+    providerNameOf: providerNameOf,
+    hasRealName: hasRealName,
+    isCustomName: isCustomName,
+    greetingName: greetingName
   };
 })();

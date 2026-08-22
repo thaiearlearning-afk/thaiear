@@ -129,6 +129,11 @@
          Do not slim this object back down. */
       created_at: u.created_at || '',
       username: meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member'),
+      /* The provider's OWN copy of the name, untouched by updateDisplayName. Carried on the slim
+         user so identity.js can tell a name the person CHOSE from the one Google supplied —
+         `full_name` differing from `name` is the only record that an edit ever happened. Without
+         it every reader holding this object would have to greet by first name or guess. */
+      providerName: meta.name || '',
       avatar: meta.avatar_url || ''
     };
   }
