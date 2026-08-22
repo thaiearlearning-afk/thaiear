@@ -473,6 +473,37 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   transition:background .15s, transform .15s;
 }
 .te-hero-cta .cta-btn:hover{ background:var(--accent-mid); transform:translateY(-1px); }
+/* ── THE GREETING AS A PILL (owner, 2026-08-22) ───────────────────────────────────────
+   Every value here is the signed-out `.cta-btn`'s: same type, same white on var(--accent),
+   same 22px radius, same 10px/22px padding, same shadow. That is the point — the two states
+   occupy the same slot on the same page, and the button already "looks right in place", so
+   the signed-in state borrows it rather than inventing a shape of its own.
+
+   ⚠ IF YOU CHANGE `.cta-btn`, CHANGE THIS WITH IT. They are deliberately identical and
+   nothing enforces it: the button is an <a> and this is a <span>, so they cannot share a
+   class without the greeting inheriting link behaviour it must not have (the block is not a
+   link, and a pointer/hover state would promise a navigation that never happens).
+
+   ⚠ THE PILL SHRINK-WRAPS, so the block stays the centred min(420px, 86vw) box and the pill
+   sizes to the name inside it. That is why the full-bleed override lives on `.has-welcome`
+   and not here — in pill mode it must not apply at all. */
+.te-hero-cta.has-pill .cta-pill{
+  display:inline-block; max-width:100%;
+  font-family:var(--font-ui); font-weight:600;
+  color:#fff; background:var(--accent); border:0.5px solid var(--accent);
+  border-radius:22px; padding:10px 22px;
+  box-shadow:0 4px 14px rgba(28,18,78,.18);
+}
+.te-hero-cta.has-pill .cta-welcome{
+  display:block;
+  font-size:calc(var(--cta-fs, 14px) * var(--te-ui, 1));
+  color:#fff;
+}
+.te-hero-cta.has-pill .cta-streak{
+  display:block;
+  font-size:calc(11px * var(--te-ui, 1)); color:rgba(255,255,255,.82); margin-top:1px;
+}
+
 .te-hero-cta .cta-welcome{
   /* ⚠ ONE LINE, ALWAYS (owner). "Welcome back, <name>" wrapping onto two lines reads as a
      paragraph rather than a greeting, and at 17px two lines is bulky enough to crowd the Read

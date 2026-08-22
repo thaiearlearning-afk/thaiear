@@ -33,6 +33,21 @@
   if (!stage || !el) return;
 
   var PHONE = '(max-width: 700px)';
+
+  /* ⚠ ONE FLAG, AND THE OTHER BRANCH IS NOT DEAD CODE — IT IS THE REVERT (owner,
+     2026-08-22: "keep the code with the cycler and the shape in case we revert, don't just
+     bin it"). Flip PILL to false and the greeting goes back to the tapered, colour-cycling
+     banner: roundedShape(), shapeBand(), THEMES, the tap-to-cycle listener, the six grounds
+     in the CSS and the pre-paint stamp are all still here and still wired together. Nothing
+     below has been hollowed out, so the flip is genuinely one word rather than an
+     archaeology exercise.
+
+     What PILL:true does instead is take the signed-out "Create a free account" button's
+     styling — its type, its white on accent, its 22px radius and padding, its shadow — and
+     put the greeting inside the same pill. The owner's reason is worth keeping: that button
+     "looks right in place", and the two states are the same slot on the same page, so
+     matching them is a stronger idea than giving the signed-in state a shape of its own. */
+  var PILL = true;
   var forced = null;                  // mock-only override, see __ctaState below
 
   /* A first name, but ONLY when the account actually has one. auth.js falls back to the email
@@ -136,9 +151,18 @@
     var n = firstName(user);
     var d = (forced && forced !== 'new') ? 8 : streakDays();
     var hello = firstVisit(user) ? 'Welcome' : 'Welcome back';
-    return '<div class="cta-welcome">' + hello + (n ? ', ' + esc(n) : '') + '</div>' +
-           (d > 1 ? '<div class="cta-streak">You’re on a ' + d + ' day streak</div>' : '');
+    return greetingHtml(hello + (n ? ', ' + esc(n) : ''),
+                        d > 1 ? 'You’re on a ' + d + ' day streak' : '');
   }
+  /* The two modes differ only in whether the lines are wrapped in a pill, so the wrapper is
+     the single place that knows — tallestHeight() measures through here too, which is what
+     stops the fit test measuring one shape while the page renders the other. */
+  function greetingHtml(line, streak) {
+    var inner = '<span class="cta-welcome">' + line + '</span>' +
+                (streak ? '<span class="cta-streak">' + streak + '</span>' : '');
+    return PILL ? '<span class="cta-pill">' + inner + '</span>' : inner;
+  }
+
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
@@ -150,8 +174,7 @@
     var probe = el.cloneNode(false);
     probe.id = '';
     probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;display:block';
-    probe.innerHTML = '<div class="cta-welcome">Welcome back, Wwwwwwww</div>' +
-                      '<div class="cta-streak">You’re on a 88 day streak</div>';
+    probe.innerHTML = greetingHtml('Welcome back, Wwwwwwww', 'You’re on a 88 day streak');
     stage.appendChild(probe);
     var h = probe.getBoundingClientRect().height;
     var btn = el.cloneNode(false);
@@ -207,11 +230,13 @@
     /* The gold ground belongs to the SIGNED-IN greeting only; the signed-out state is a button,
        which needs no panel behind it. Set here rather than with :has() so the CSS has no
        dependency on selector support at first paint. */
-    el.classList.toggle('has-welcome', !!el.querySelector('.cta-welcome'));
+    var greeting = !!el.querySelector('.cta-welcome');
+    el.classList.toggle('has-welcome', greeting && !PILL);
+    el.classList.toggle('has-pill', greeting && PILL);
     fitName();
     /* Same task as the innerHTML above, so the ribbon is already the right shape on the
        frame the greeting first appears — there is no rectangle to see first. */
-    shapeBand();
+    if (!PILL) shapeBand();
   }
 
   /* ⚠ SHRINK THE GREETING UNTIL A LONG NAME FITS ITS ONE LINE — do not truncate it.
@@ -225,7 +250,9 @@
     var line = el.querySelector('.cta-welcome');
     if (!line) return;
     el.style.removeProperty('--cta-fs');
-    for (var px = 17; px > 12; px--) {
+    /* The pill's type is the BUTTON's 14px, not the banner's 17px, so the shrink has to
+       start where the design actually starts or the first step is a size nobody chose. */
+    for (var px = PILL ? 14 : 17; px > 12; px--) {
       /* Measured against the LINE's own box, not the block's. They are the same thing until
          shapeBand() caps the line to keep the writing out of the banner's taper — after
          which `el.clientWidth` is the wrong question, and would let a long name run into
@@ -431,6 +458,7 @@
   var THEMES = ['sand', 'olive', 'indigo', 'yellow',   // light ground, dark text
                 'purple', 'black'];                      // dark ground, LIGHT text
   el.addEventListener('click', function () {
+    if (PILL) return;                                     // pill mode: one colour, nothing to cycle
     if (!el.classList.contains('has-welcome')) return;    // signed out: it is a link, leave it
     var root = document.documentElement;
     var now = root.getAttribute('data-gt') || 'sand';
