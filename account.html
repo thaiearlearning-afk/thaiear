@@ -118,7 +118,19 @@
      border: it sat in a wrapping flex ROW whose height came out fractional, and the 0.5px
      border landed on a half-device-pixel and was dropped by the compositor. A column of
      full-width blocks has no fractional row height to land on. */
+  /* ⚠ THE THINGS THAT TAKE SOMETHING AWAY LIVE IN THEIR OWN CARD (owner, 2026-08-22). Not
+     decoration: the gap between two cards is a stronger boundary than any gap inside one, and
+     it is the boundary that matters here — everything above it is reversible, everything in
+     here ends a membership or deletes data. A wider margin AND a separate ground say the same
+     thing twice, which is what makes it read at a glance rather than needing to be read.
+     :empty keeps it from drawing an empty box for a signed-out visitor, who has none of these
+     actions. */
+  .acct-danger { margin-top: 1.75rem; }
+  #account-danger:empty { display: none; }
+
   .acct-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  /* In the danger card the stack IS the card, so it needs no top offset of its own. */
+  .acct-danger .acct-stack { margin-top: 0; }
   .acct-stack .btn { margin: 0; }
   /* ⚠⚠ AN EMPTY STATUS PARAGRAPH IS STILL A FLEX ITEM, AND STILL TAKES A GAP. This is what
      made the spacing uneven (owner, 2026-08-22: "the spacing between them is uneven!!!!"):
@@ -184,18 +196,23 @@
      ⚠ MEASURED, NOT GUESSED, AND RE-MEASURED AFTER THE 2026-08-22 RESTRUCTURE — which is
      exactly why the numbers are worth stating: the first set (656/632/609 signed in) went
      stale the moment the card became a button stack, and a stale reserve holds a gap open
-     just as surely as no reserve lets a jump through. Re-measured again after the even-spacing
-     pass. Now: signed in 439 under 400px and 415 above; signed out 507 and 445. Note the signed-in card is now the SHORTER of the two,
-     the reverse of before. The signed-in figure covers the PREMIUM card (452), the tallest
-     of the tiers, since a free card is ~60px shorter and over-reserving only ever costs a
-     moment before render, whereas under-reserving costs a jump. Re-measure whenever the copy
+     just as surely as no reserve lets a jump through. Re-measured after the even-spacing pass, and
+     AGAIN after the danger card took three buttons out of this one — three times in three
+     commits, which is the whole argument for writing them down rather than trusting them.
+     Now: signed in 353 under 400px and 329 above; signed out 507 and 445, so the signed-in
+     card is now much the SHORTER of the two. The signed-in figure covers the FREE card,
+     which is the taller tier HERE: free shows "Upgrade to Premium" in this card, while
+     premium's Cancel button has moved out to the danger card. Over-reserving costs a moment
+     before render; under-reserving costs a jump.
+     ⚠ The danger card needs NO reserve of its own — it is filled in the same synchronous
+     pass as the body, so it has never not been there when the page paints. Re-measure whenever the copy
      or the button list changes.
      ⚠ AND IT IS min-height, SO AN UNDER-ESTIMATE STILL DEGRADES TO TODAY'S BEHAVIOUR rather
      than clipping anything. */
-  #account-body.acct-wait-in  { min-height: 439px; }
+  #account-body.acct-wait-in  { min-height: 353px; }
   #account-body.acct-wait-out { min-height: 507px; }
   @media (min-width: 400px) {
-    #account-body.acct-wait-in  { min-height: 415px; }
+    #account-body.acct-wait-in  { min-height: 329px; }
     #account-body.acct-wait-out { min-height: 445px; }
   }
 
@@ -269,6 +286,7 @@
     <div class="fluency-text">In safe hands<span class="dots" aria-hidden="true"></span></div>
   </div>
   <div class="acct-card" id="account-body"><p class="acct-muted">Loading…</p></div>
+  <div class="acct-card acct-danger" id="account-danger"></div>
 </div>
 <script>
 /* Inline and immediately after the element, on purpose: it has to run before the browser
@@ -575,7 +593,12 @@ function saveDisplayName() {
 function renderMembershipBox(s) {
   var line = document.getElementById('membership-line');
   var acts = document.getElementById('membership-actions');
+  var cancelSlot = document.getElementById('membership-cancel');
   if (!line || !acts) return;
+  /* Three destinations now: the fact line at the top, the keep-it-going actions in the main
+     card, and cancelling down in the danger card with the other endings. All three are
+     rewritten on every refine, so they cannot disagree about your tier. */
+  function setCancel(html) { if (cancelSlot) cancelSlot.innerHTML = html || ''; }
   /* ⚠ ONE FUNCTION, TWO DESTINATIONS, AND THAT IS THE POINT. The statement of what you have
      belongs with "Signed in as …" at the top; the buttons belong in the one action stack with
      everything else. Splitting them at the render is what keeps both true when the Stripe
@@ -605,16 +628,18 @@ function renderMembershipBox(s) {
          belongs with the other endings at the foot of the stack. */
       : (s.cancel_at_period_end
           ? '<button class="btn btn-gold btn-wide" onclick="resumeMembership()">Resume membership</button>'
-          : '<button class="btn btn-primary btn-wide" onclick="openPortal()">Update payment method</button>' +
-            '<button class="btn btn-destructive btn-wide" onclick="cancelMembership()">Cancel membership</button>') +
+          : '<button class="btn btn-primary btn-wide" onclick="openPortal()">Update payment method</button>') +
       /* ⚠ <p>, NOT <span>. Every status line in the stack is a <p> so ONE `p:empty` rule
          retires all of them when they have nothing to say. As a span this one was an empty
          flex item nobody could see, quietly adding a second 10px to the gap under Cancel
          membership — measured at 20px against 10px everywhere else, and it was the last
          uneven gap on the card. */
-      '<p id="cancel-status" class="acct-muted" style="margin:0"></p>' +
       '<p id="portal-status" class="acct-muted" style="margin:0"></p>';
+    setCancel(native || s.cancel_at_period_end ? '' :
+      '<button class="btn btn-destructive btn-wide" onclick="cancelMembership()">Cancel membership</button>' +
+      '<p id="cancel-status" class="acct-muted" style="margin:0"></p>');
   } else if (s && s.needsPayment) {
+    setCancel('');
     line.innerHTML = 'Membership: <strong style="color:#B00020">Payment problem</strong> — your last payment didn\u2019t go through. Update your card to keep it; access resumes once it clears.';
     acts.innerHTML = native
       ? noteBox('To update your payment details, use a web browser.')
@@ -623,6 +648,7 @@ function renderMembershipBox(s) {
   } else {
     // "Free", not "Free member" — the member tier was retired 2026-08-10 and the word would
     // now name a tier that doesn't exist. Two tiers: Free and Premium.
+    setCancel('');
     line.innerHTML = 'Membership: <strong>Free</strong>';
     acts.innerHTML = native ? '' :
       '<a class="btn btn-gold btn-wide" href="subscribe.html" style="text-decoration:none">Upgrade to Premium</a>';
@@ -1029,6 +1055,10 @@ function renderAccount() {
   _acctRenderedUid = uid;
   _acctConsentSig = consentSig();
   if (!user) {
+    /* A signed-out visitor has nothing to cancel, remove or delete — and an empty bordered box
+       under the sign-in form would read as something failing to load. */
+    var dzOut = document.getElementById('account-danger');
+    if (dzOut) dzOut.innerHTML = '';
     el.innerHTML =
       '<div class="login-box">' +
         '<p style="margin-bottom:1.2rem">Sign in or create your account to manage your membership and unlock premium topics.</p>' +
@@ -1085,12 +1115,6 @@ function renderAccount() {
       consentHtml +
       '<button class="btn btn-primary btn-wide" onclick="confirmLogout()">Log out</button>' +
       '<div id="membership-actions"></div>' +
-      offlineDlHtml() +
-      /* ⚠ RED, BUT THE SAME SIZE AS EVERYTHING ELSE (owner: "keep its red styling but change
-         font size and box size to match the others"). They were 12px on a page of 14px
-         buttons, which made the most consequential actions the smallest targets on it. */
-      '<button class="btn btn-destructive btn-wide" onclick="deleteAccount()">Delete my account</button>' +
-      '<p id="delete-status" class="acct-muted" style="margin:0;min-height:0"></p>' +
     '</div>' +
     resetHtml +
     /* ⚠ LAST ON THE PAGE, AND THAT IS THE FIX (owner, 2026-08-21: "every time I go into my
@@ -1101,6 +1125,22 @@ function renderAccount() {
        reserving would give every other user a blank gap. At the end, the only thing its
        arrival changes is the page's total height, which shifts nothing. */
     '<div id="desktop-dl-admin"></div>';
+
+  /* ⚠ FILLED IN THE SAME SYNCHRONOUS PASS AS THE BODY, so the two cards arrive together and
+     neither shifts the other. Cancel membership is written in later by renderMembershipBox
+     (it depends on the Stripe answer), which is why its slot is reserved here rather than the
+     button being built here. */
+  var dz = document.getElementById('account-danger');
+  if (dz) dz.innerHTML =
+    '<div class="acct-stack">' +
+      '<div id="membership-cancel"></div>' +
+      offlineDlHtml() +
+      /* ⚠ RED, BUT THE SAME SIZE AS EVERYTHING ELSE (owner: "keep its red styling but change
+         font size and box size to match the others"). They were 12px on a page of 14px
+         buttons, which made the most consequential actions the smallest targets on it. */
+      '<button class="btn btn-destructive btn-wide" onclick="deleteAccount()">Delete my account</button>' +
+      '<p id="delete-status" class="acct-muted" style="margin:0"></p>' +
+    '</div>';
   renderMembershipBox(cacheSub()); // instant from the cached Supabase state
   _acctRenderedSubSig = subSig();
   loadMembership();                // then refine with the authoritative Stripe state
