@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v423';   // v423: sw answers te-version, so the owner panel can say which build is ACTIVE
+const VERSION = 'v424';   // v424: account card restructure (faa01ed) - account.html is precached
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
