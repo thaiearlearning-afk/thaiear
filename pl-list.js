@@ -1094,7 +1094,7 @@
         if (!durs) return '';                       // still in flight — say nothing rather than "0 mins"
         var nums = p.items.map(function (it) { return it.num; });
         var secs = T.listenSeconds(nums, A.getPlayReps(), durs);
-        return '<span class="pl-box-plays">Time listened (Thai): ' +
+        return '<span class="pl-box-plays">Thai listening time: ' +
                T.humanListenTime(secs) + '</span>';
       }
 

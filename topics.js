@@ -586,7 +586,7 @@
     if (!map || !durs) return '';
     const nums = map[bare(page)];
     if (!nums || !nums.length) return '';
-    return 'Time listened (Thai): ' +
+    return 'Thai listening time: ' +
            humanListenTime(listenSeconds(nums, reps || A.getPlayReps(), durs));
   }
 
