@@ -118,8 +118,16 @@
      border: it sat in a wrapping flex ROW whose height came out fractional, and the 0.5px
      border landed on a half-device-pixel and was dropped by the compositor. A column of
      full-width blocks has no fractional row height to land on. */
-  .acct-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 1.15rem; }
+  .acct-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
   .acct-stack .btn { margin: 0; }
+  /* ⚠⚠ AN EMPTY STATUS PARAGRAPH IS STILL A FLEX ITEM, AND STILL TAKES A GAP. This is what
+     made the spacing uneven (owner, 2026-08-22: "the spacing between them is uneven!!!!"):
+     four of the buttons are followed by a status <p> that is empty almost always, so those
+     four gaps were 20px while the rest were 10px. Zero height is not zero space in a gapped
+     column — the ITEM has to go, not just its content. Every status line on this card is
+     inside the stack, so one descendant rule covers all of them, and they reappear the
+     instant they have text. */
+  .acct-stack p:empty { display: none; }
   /* Membership's buttons are written into the stack by renderMembershipBox, which runs late.
      :empty keeps it from contributing a phantom 10px gap before it does. */
   #membership-actions { display: flex; flex-direction: column; gap: 10px; }
@@ -133,14 +141,18 @@
      same KIND of statement as "Signed in as …" — a fact about the account, not an action —
      so it reads at the same size directly under it instead of heading a block of buttons
      halfway down (owner, 2026-08-22: "it's disrupting the flow of the buttons"). */
-  .acct-line { color: var(--text-secondary); margin: 0 0 0.35rem; }
-  .acct-line:last-of-type { margin-bottom: 0; }
+  /* ⚠ `.acct-card p` SETS margin-bottom: 1rem AND BEATS A BARE `.acct-line` ON SPECIFICITY
+     (0,1,1 against 0,1,0). That is why the fact lines sat a whole rem apart while this rule
+     claimed 0.35 — the rule never applied. Scoped to the card so it wins, and the spacing
+     between the three lines is now the SAME number in one place. */
+  .acct-card p.acct-line { color: var(--text-secondary); margin: 0 0 7px; }
+  .acct-card p.acct-line:last-child { margin-bottom: 0; }
+  .acct-lines { margin-bottom: 0; }
 
-  /* One line: the name on the left, the button on the right. No heading — "Change display
-     name" on the button already says what the name is. */
-  .dispname-row { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
-  .dispname-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  .dispname-row .btn { flex-shrink: 0; }
+  /* The name is a FACT, so it lives with the other two fact lines; changing it is an ACTION,
+     so that lives in the stack with the other actions. Splitting them that way is what let
+     both halves become evenly spaced — as one row it had to be a special case in both. */
+  .acct-line .val { font-weight: 600; color: var(--text-primary); }
 
   /* ⚠ 16px IS NOT A TYPE CHOICE, IT IS THE iOS ZOOM THRESHOLD. Safari auto-zooms the whole
      page when a focused input's text is under 16px, and there is no way to decline it short
@@ -172,18 +184,18 @@
      ⚠ MEASURED, NOT GUESSED, AND RE-MEASURED AFTER THE 2026-08-22 RESTRUCTURE — which is
      exactly why the numbers are worth stating: the first set (656/632/609 signed in) went
      stale the moment the card became a button stack, and a stale reserve holds a gap open
-     just as surely as no reserve lets a jump through. Now: signed in 452 under 400px and 428
-     above; signed out 507 and 445. Note the signed-in card is now the SHORTER of the two,
+     just as surely as no reserve lets a jump through. Re-measured again after the even-spacing
+     pass. Now: signed in 439 under 400px and 415 above; signed out 507 and 445. Note the signed-in card is now the SHORTER of the two,
      the reverse of before. The signed-in figure covers the PREMIUM card (452), the tallest
      of the tiers, since a free card is ~60px shorter and over-reserving only ever costs a
      moment before render, whereas under-reserving costs a jump. Re-measure whenever the copy
      or the button list changes.
      ⚠ AND IT IS min-height, SO AN UNDER-ESTIMATE STILL DEGRADES TO TODAY'S BEHAVIOUR rather
      than clipping anything. */
-  #account-body.acct-wait-in  { min-height: 452px; }
+  #account-body.acct-wait-in  { min-height: 439px; }
   #account-body.acct-wait-out { min-height: 507px; }
   @media (min-width: 400px) {
-    #account-body.acct-wait-in  { min-height: 428px; }
+    #account-body.acct-wait-in  { min-height: 415px; }
     #account-body.acct-wait-out { min-height: 445px; }
   }
 
@@ -462,21 +474,23 @@ function postCancel(resume) {
    holds empty space open for every visitor for a control almost nobody opens. */
 var DISPLAY_NAME_MAX = 20;
 
-function displayNameHtml(user) {
+function displayNameLine(user) {
   var name = (user && user.username) || '';
   /* auth.js falls back to the email prefix when the account has no name — a magic-link
-     signup. Showing that as their display name would present a fallback as a fact, and they
-     would then "change" something they never set. */
+     signup. Showing that as their display name would present a fallback as a fact. */
   var prefix = ((user && user.email) || '').split('@')[0];
   var real = name && name !== prefix;
+  return '<p class="acct-line">Display name: <span class="val" id="dispname-current">' +
+    (real ? esc(name) : '<span style="font-weight:400;color:var(--text-tertiary)">not set</span>') +
+    '</span></p>';
+}
+
+function displayNameHtml() {
+  /* One stack item that swaps between the button and the editor in place, so the action sits
+     with the other actions and the editor opens exactly where the button was. */
   return '' +
     '<div id="dispname">' +
-      '<div id="dispname-read" class="dispname-row">' +
-        '<span class="dispname-name" id="dispname-current">' +
-          (real ? esc(name) : '<span style="font-weight:400;color:var(--text-tertiary)">No display name set</span>') +
-        '</span>' +
-        '<button class="btn btn-ghost" onclick="startEditName()">Change display name</button>' +
-      '</div>' +
+      '<button class="btn btn-primary btn-wide" id="dispname-btn" onclick="startEditName()">Change display name</button>' +
       '<div id="dispname-edit" style="display:none">' +
         '<input id="dispname-input" class="login-input no-zoom" type="text" autocomplete="name" ' +
           'maxlength="' + DISPLAY_NAME_MAX + '" placeholder="Your name" style="margin-bottom:10px">' +
@@ -485,12 +499,12 @@ function displayNameHtml(user) {
           '<button class="btn btn-ghost btn-wide" onclick="cancelEditName()">Cancel</button>' +
         '</div>' +
       '</div>' +
-      '<p id="dispname-status" class="acct-muted" style="margin-top:8px;min-height:0"></p>' +
+      '<p id="dispname-status" class="acct-muted" style="margin:0"></p>' +
     '</div>';
 }
 
 function startEditName() {
-  var read = document.getElementById('dispname-read');
+  var read = document.getElementById('dispname-btn');
   var edit = document.getElementById('dispname-edit');
   var input = document.getElementById('dispname-input');
   if (!read || !edit || !input) return;
@@ -517,7 +531,7 @@ function startEditName() {
 }
 
 function cancelEditName() {
-  var read = document.getElementById('dispname-read');
+  var read = document.getElementById('dispname-btn');
   var edit = document.getElementById('dispname-edit');
   if (read) read.style.display = '';
   if (edit) edit.style.display = 'none';
@@ -533,8 +547,6 @@ function setStatus(msg, err) {
      2026-08-22: "a lot of unnecessary space under Toby Ralph | Change"). It is empty almost
      always, so it takes no room until it has something to say — and it only ever appears
      while the row is already expanded, so nothing shifts under a reader. */
-  st.style.marginTop = msg ? '8px' : '0';
-  st.style.minHeight = msg ? '1em' : '0';
 }
 
 function saveDisplayName() {
@@ -548,7 +560,7 @@ function saveDisplayName() {
   setStatus('Saving…');
   a.updateDisplayName(input.value).then(function (clean) {
     var cur = document.getElementById('dispname-current');
-    if (cur) cur.textContent = clean;
+    if (cur) cur.textContent = clean;    // the fact line above, not the button
     cancelEditName();
     setStatus('Saved.');
   }).catch(function (e) {
@@ -588,18 +600,26 @@ function renderMembershipBox(s) {
       : 'Membership: <strong style="color:#B29234">Premium</strong> (active)';
     acts.innerHTML = native
       ? noteBox('To manage your premium membership, use a web browser.')
+      /* ⚠ UPDATE PAYMENT METHOD SITS ABOVE CANCEL MEMBERSHIP (owner, 2026-08-22). The two
+         are not peers: one keeps the thing going, one ends it, and the one that ends it
+         belongs with the other endings at the foot of the stack. */
       : (s.cancel_at_period_end
           ? '<button class="btn btn-gold btn-wide" onclick="resumeMembership()">Resume membership</button>'
-          : '<button class="btn btn-ghost btn-wide" onclick="cancelMembership()">Cancel membership</button>' +
-            '<button class="btn btn-ghost btn-wide" onclick="openPortal()">Update payment method</button>') +
-      '<p id="cancel-status" class="acct-muted" style="margin:0;min-height:0"></p>' +
-      '<span id="portal-status" class="acct-muted"></span>';
+          : '<button class="btn btn-primary btn-wide" onclick="openPortal()">Update payment method</button>' +
+            '<button class="btn btn-destructive btn-wide" onclick="cancelMembership()">Cancel membership</button>') +
+      /* ⚠ <p>, NOT <span>. Every status line in the stack is a <p> so ONE `p:empty` rule
+         retires all of them when they have nothing to say. As a span this one was an empty
+         flex item nobody could see, quietly adding a second 10px to the gap under Cancel
+         membership — measured at 20px against 10px everywhere else, and it was the last
+         uneven gap on the card. */
+      '<p id="cancel-status" class="acct-muted" style="margin:0"></p>' +
+      '<p id="portal-status" class="acct-muted" style="margin:0"></p>';
   } else if (s && s.needsPayment) {
     line.innerHTML = 'Membership: <strong style="color:#B00020">Payment problem</strong> — your last payment didn\u2019t go through. Update your card to keep it; access resumes once it clears.';
     acts.innerHTML = native
       ? noteBox('To update your payment details, use a web browser.')
       : '<button class="btn btn-primary btn-wide" onclick="openPortal()">Update payment method</button>' +
-        '<span id="portal-status" class="acct-muted"></span>';
+        '<p id="portal-status" class="acct-muted" style="margin:0"></p>';   // payment-problem branch
   } else {
     // "Free", not "Free member" — the member tier was retired 2026-08-10 and the word would
     // now name a tier that doesn't exist. Two tiers: Free and Premium.
@@ -702,8 +722,6 @@ function setEmailConsent(optIn, btnId) {
       /* Only the thing the BUTTON cannot say. The tick on the button is the confirmation;
          repeating "Subscribed" underneath it was the sentence the owner asked to remove. */
       st.textContent = optIn ? 'Check your inbox for a welcome email.' : '';
-      st.style.minHeight = st.textContent ? '1em' : '0';
-      st.style.marginTop = st.textContent ? '8px' : '0';
     }
     // brief confirmation, then swap just the consent block to the opposite action
     // (updateConsentArea, not renderAccount — so the membership box doesn't reload).
@@ -971,9 +989,9 @@ function consentInner() {
      un-subscribed reads "Subscribe to email list". The tick IS the confirmation, which is
      why the old success sentence went with the explainer — it said the same thing twice. */
   return (consent
-    ? '<button class="btn btn-ghost btn-wide" id="unsub-btn" onclick="unsubscribeEmail()">' +
+    ? '<button class="btn btn-primary btn-wide" id="unsub-btn" onclick="unsubscribeEmail()">' +
         'Subscribed to email list <span class="tick-anim" aria-hidden="true">\u2713</span></button>'
-    : '<button class="btn btn-ghost btn-wide" id="sub-btn" onclick="subscribeEmail()">' +
+    : '<button class="btn btn-primary btn-wide" id="sub-btn" onclick="subscribeEmail()">' +
         'Subscribe to email list</button>'
   ) + '<p id="consent-status" class="acct-muted" style="margin:0;min-height:0"></p>';
 }
@@ -1050,21 +1068,27 @@ function renderAccount() {
        heading a pair of buttons halfway down, a log out marooned beside email updates — so
        the eye had to re-sort them on every visit.
 
-       ⚠ THE STACK'S ORDER IS DELIBERATE AND NOT ALPHABETICAL OR CHRONOLOGICAL: everyday
-       first (email list, log out), then money (cancel / update card / upgrade), then the two
-       that destroy data, last and red. Adding a button means deciding which of those three
-       it is, not appending it. */
-    '<p class="acct-line">Signed in as <span class="email">' + escEmail(user.email || user.username) + '</span></p>' +
-    '<p class="acct-line" id="membership-line"></p>' +
-    displayNameHtml(user) +
+       ⚠ ORDER AND COLOUR BOTH CARRY MEANING, AND THEY AGREE WITH EACH OTHER. Order: the
+       things you might do any day (name, email list, log out), then the money (update card,
+       upgrade), then everything that takes something away, last. Colour says the same thing
+       a second time — accent for ordinary actions, red for the four that end something you
+       are paying for or delete something you have. Cancel membership is red for that reason
+       and not because it is dangerous: it takes your premium away (owner, 2026-08-22).
+       Adding a button means deciding which of those two groups it is in, not appending it. */
+    '<div class="acct-lines">' +
+      '<p class="acct-line">Signed in as <span class="email">' + escEmail(user.email || user.username) + '</span></p>' +
+      '<p class="acct-line" id="membership-line"></p>' +
+      displayNameLine(user) +
+    '</div>' +
     '<div class="acct-stack">' +
+      displayNameHtml() +
       consentHtml +
-      '<button class="btn btn-ghost btn-wide" onclick="confirmLogout()">Log out</button>' +
+      '<button class="btn btn-primary btn-wide" onclick="confirmLogout()">Log out</button>' +
       '<div id="membership-actions"></div>' +
       offlineDlHtml() +
       /* ⚠ RED, BUT THE SAME SIZE AS EVERYTHING ELSE (owner: "keep its red styling but change
-         font size and box size to match the others"). The old pair were 12px on a page of
-         14px buttons, which made the two most dangerous actions the smallest targets on it. */
+         font size and box size to match the others"). They were 12px on a page of 14px
+         buttons, which made the most consequential actions the smallest targets on it. */
       '<button class="btn btn-destructive btn-wide" onclick="deleteAccount()">Delete my account</button>' +
       '<p id="delete-status" class="acct-muted" style="margin:0;min-height:0"></p>' +
     '</div>' +
