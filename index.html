@@ -408,7 +408,24 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
      bottom band takes a little more than a third on a phone — the "roughly equal"
      caveat that already applies at this size. */
   :root{ --split-n:72; --line-w:2.5px; }
-  .s1 .s-label,.s2 .s-label{ top:26%; width:44vw; }
+  /* ⚠ THE `--s12-lift` NUDGE (owner, 2026-08-23: "the 2000+ sentences line and the online or
+     offline lines are very close to the central logo - moving them up a touch would be nice ...
+     maybe just move them up by however many pixels tall the ONLINE OR OFFLINE line is").
+
+     He first asked for browser-only and then withdrew that himself — the crowding is not a
+     browser artefact, it is simply more obvious there, so this applies to every phone: browser,
+     installed PWA and the Android app all take the same rule. That is the simpler thing to
+     reason about, and it keeps one layout across the three.
+
+     17px, MEASURED: `.s-meta` renders 17px tall at the default text size. It carries no
+     margin of its own here (only `.s3 .s-meta` adds one), which is why this is 17 and the Read
+     Thai drop below is 19.
+
+     ⚠ IT MOVES AWAY FROM THE MARK, SO IT CANNOT CREATE A COLLISION — the labels sit ABOVE the
+     centre disc and this raises them. What it could do is run them into the nav on a very short
+     stage, which is what the measurement below the `.s-sub` rule guards. */
+  .s1 .s-label,.s2 .s-label{ top:calc(26% - var(--s12-lift, 0px)); width:44vw; }
+  .s1 .s-label,.s2 .s-label{ --s12-lift:17px; }
   /* ⚠ THE `--s3-drop` NUDGE (owner, 2026-08-23: "lower the Read Thai block a touch, just by
      the height of 12 steps ... this makes it closer to the welcome back block, that block can
      stay exactly where it is"). 19px is MEASURED: `.s-meta` is 17px tall plus a 2.4px
@@ -462,6 +479,28 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
    is what the owner asked for. One declaration, two readers; do not hard-code 19 in the JS. */
 @media (max-width:700px) and (min-height:740px){ .tri{ --s3-drop: 19px; } }
 
+/* ⚠ A BROWSER TAB GETS TWICE THE LIFT (owner, 2026-08-23: "what moves up for PWA and android
+   app, you move it up 2x that for mobile browsers"). 17px → 34px below 740.
+
+   ⚠⚠ GATED ON HEIGHT, NOT ON "IS THIS A BROWSER", AND THE DIFFERENCE MATTERS. The obvious
+   reading is `@media (display-mode: browser)` — and it would be WRONG for the Android app,
+   which is a Capacitor WebView, not an installed PWA, and reports as a browser to CSS. The
+   site's own check (nav.js, app-cta.js, dl-core.js) is `window.Capacitor || display-mode:
+   standalone || navigator.standalone`, and the Capacitor half exists only in JS. JS cannot move
+   these labels: they are SSR text, on screen from the first frame, so a script nudge lands after
+   paint and judders (§3e).
+
+   Height is the causal variable anyway — the reason a tab needs more lift is that the URL bar
+   costs it ~100px — and it classifies every device the owner named correctly: iPhone Chrome
+   (~660-700) gets 34, the installed PWA (~760+) and the Android app (full screen) get 17. It
+   reuses the SAME 740 boundary as `--s3-drop` above, so the page has one height threshold to
+   reason about rather than two.
+
+   The one case it reads differently from a literal browser/app test is a PWA on a very small
+   phone, which gets 34 — the most cramped screen getting the most lift, which is the behaviour
+   the rule is for. */
+@media (max-width:700px) and (max-height:739px){ .s1 .s-label,.s2 .s-label{ --s12-lift:34px; } }
+
 
 /* ── MOCK ONLY: the welcome / create-account block ────────────────────────────────
    Owner idea (2026-08-21): use the empty space under "Read Thai" for a Create account
@@ -506,6 +545,24 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   display:block;
   position:absolute; left:50%; bottom:var(--cta-bottom, 14px); transform:translateX(-50%);
   z-index:4; text-align:center; width:min(420px, 86vw);
+  /* ⚠⚠ THE BLOCK RESERVES ITS TALLEST STATE, AND IT MUST (owner, 2026-08-23: "on chrome I
+     don't see the streak line - but the welcome back line could go wayyy up, there's a big gap
+     between welcome back and the read thai block").
+
+     Those were ONE fault, not two. The block is anchored by `bottom`, so a SHORTER state hangs
+     from the same floor and its top sits lower — a greeting with no streak line is ~41px against
+     the ~64px the lift already reserved for it, so the missing 23px reappeared as a hole ABOVE
+     the pill. The lift had already spent that space; it was simply spending it on the wrong side.
+
+     Reserving the tallest height puts the pill in the SAME PLACE in every state — signed out,
+     greeting, greeting with streak — and the slack falls inside the box beneath it instead.
+
+     ⚠ THIS ALSO RETIRES THE REASON §3d LATCHED THE STREAK. That note rejected reserving because
+     "the block is bottom-anchored, so reserving means the pill sits a line higher permanently for
+     everyone with no streak". True then; the lift did not exist yet. Now the tallest height is
+     reserved by the lift regardless, so reserving inside the box costs nothing new — and a streak
+     that arrives late drops into space that is already held open, moving nothing. */
+  min-height:var(--cta-tallest, 0px);
 }
 .te-hero-cta .cta-btn{
   display:inline-block; text-decoration:none;

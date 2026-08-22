@@ -113,8 +113,21 @@
      is the price of never jolting. */
   var streakLatched = null;
   function streakFor(user) {
-    if (streakLatched === null) streakLatched = streakDays(user);
-    return streakLatched;
+    /* ⚠ THE LATCH NOW ONLY STOPS THE LINE DISAPPEARING, NOT APPEARING (owner, 2026-08-23).
+       §3d froze the value outright because a streak arriving late RESHAPED a painted block and
+       shoved the pill up 26px. The block now reserves its tallest state in CSS, so the line
+       drops into space that is already held open and nothing moves — which means the one case
+       §3d knowingly sacrificed can be won back: a browser that has never held the stats.
+
+       That case is not rare. localStorage is per-browser, so the installed app, Safari and
+       Chrome each keep their own copy; opening the site in a NEW browser is always a cold
+       cache, and under §3d that visit showed no streak at all however long the run was.
+
+       Still monotonic on the way down: once a number has been shown, a later zero (an offline
+       reader, a failed /api/plays) must not silently retract it. */
+    var d = streakDays(user);
+    if (d > (streakLatched || 0)) streakLatched = d;
+    return streakLatched || 0;
   }
 
   /* ⚠ ONE READER FOR THE WHOLE SITE — identity.js, a synchronous head script. This was a
@@ -344,6 +357,11 @@
     var rest = lastFit ? Math.max(0, lastFit.below + drop - lastFit.tallest) : 0;
     stage.style.setProperty('--cta-bottom',
       Math.min(LIFT_MAX, Math.max(FLOOR, Math.round(rest / 2))) + 'px');
+    /* The height the lift already reserved, handed to the CSS so the box actually HOLDS it.
+       Without this the reserve is notional: a streakless greeting hangs from the same floor
+       and leaves the difference as a hole above the pill. See the note on the rule. */
+    stage.style.setProperty('--cta-tallest',
+      (lastFit ? Math.ceil(lastFit.tallest) : 0) + 'px');
     var next = html();
     if (el.innerHTML !== next) el.innerHTML = next;   // never rewrite an identical node
     /* The gold ground belongs to the SIGNED-IN greeting only; the signed-out state is a button,
