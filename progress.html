@@ -179,18 +179,22 @@
   /* ── formatting ─────────────────────────────────────────────────────────────────────────── */
 
   /* COMPACT: "10 min", "2h 5min", "1d 3h 6min". Rounded to the nearest minute.
-     ⚠ Changed from the spelled-out "0 days, 0 hours, 10 minutes" (owner, 2026-08-20). That form
-     read the same every time, which was the point of it, but it is three times the width of the
-     other three figures and forced this card to span the row. Dropping leading zero units lets it
-     sit in the same square as the rest, and a unit that is zero carries no information anyway. */
+     ⚠ THE FORMATTER MOVED TO topics.js (owner, 2026-08-22) and this is now a thin alias.
+     It was local here while this was the only page showing a time; the topic cards and playlist
+     rows now show one too, and for a few hours they carried a SECOND, spelled-out formatter
+     ("2 hrs 5 mins") — so a row on this page and a card two clicks away disagreed about what an
+     hour looks like. Owner: compact is better, make them uniform. One implementation, in the file
+     both surfaces already load.
+     The original reason for compactness still holds and is why the shared one is this shape: the
+     spelled-out "0 days, 0 hours, 10 minutes" is three times the width of the other three stat
+     figures and forced this card to span the row. Dropping leading zero units lets it sit in the
+     same square as the rest, and a unit that is zero carries no information anyway.
+     ⚠ Guarded: falls back to a plain minute count if topics.js somehow is not in yet, so a
+     missing script can never render "undefined" where a number belongs. */
   function humanTime(seconds) {
-    var mins = Math.round((seconds || 0) / 60);
-    var d = Math.floor(mins / 1440);
-    var h = Math.floor((mins - d * 1440) / 60);
-    var m = mins - d * 1440 - h * 60;
-    if (d) return d + 'd ' + h + 'h ' + m + 'min';
-    if (h) return h + 'h ' + m + 'min';
-    return m + ' min';
+    var t = T();
+    if (t && t.humanListenTime) return t.humanListenTime(seconds);
+    return Math.round((seconds || 0) / 60) + ' min';
   }
 
   /* topic-sentences.json is keyed on the page name WITHOUT the .html, the same normalisation
@@ -321,13 +325,13 @@
       }
       /* The SAME sum the topic cards use — topics.js owns it, so the figure here and the figure
          on the card cannot drift apart. The row shows the bare time: the section heading and its
-         note already say what is being measured, and "Total time listened to Thai: 12 mins" on
+         note already say what is being measured, and "Time listened (Thai): 2h 5min" on
          every one of 93 rows would not fit beside the topic name anyway. */
       var secs = (sentNums && sentNums[bareOf(u.page)])
         ? t.listenSeconds(sentNums[bareOf(u.page)], reps, durations) : 0;
       rows += '<a class="prog-row" href="' + esc(t.hrefFor ? t.hrefFor(u.page) : u.page) + '">' +
                 '<span class="prog-row-name">' + esc(u.name) + '</span>' +
-                '<span class="prog-row-plays">' + esc(t.humanListenTime(secs)) + '</span>' +
+                '<span class="prog-row-plays">' + esc(humanTime(secs)) + '</span>' +
               '</a>';
     }
     return '<h2 class="prog-h2">Every topic</h2>' +
@@ -359,7 +363,7 @@
         ? t.listenSeconds(p.items.map(function (it) { return it.num; }), reps, durations) : 0;
       return '<a class="prog-row" href="playlists.html?pl=' + encodeURIComponent(p.id) + '">' +
                '<span class="prog-row-name">' + esc(p.name) + '</span>' +
-               '<span class="prog-row-plays">' + esc(t.humanListenTime(secs)) + '</span>' +
+               '<span class="prog-row-plays">' + esc(humanTime(secs)) + '</span>' +
              '</a>';
     }).join('');
 

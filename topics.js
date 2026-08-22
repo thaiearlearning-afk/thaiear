@@ -549,17 +549,30 @@
     return s;
   }
 
-  /* "12 mins" · "1 hr 5 mins" — ALWAYS minutes below the hour, never a decimal (owner: "never
-     1.86 minutes; it would read 2 minutes"). Rounded, so a 1.86-minute total reads "2 mins" and
-     a 20-second one reads "0 mins" — which is right on a card, where 0 is the "not started yet"
+  /* "10 min" · "2h 5min" · "1d 3h 6min" — ALWAYS minutes below the hour, never a decimal (owner:
+     "never 1.86 minutes; it would read 2 minutes"). Rounded, so a 1.86-minute total reads "2 min"
+     and a 20-second one reads "0 min" — which is right on a card, where 0 is the "not started yet"
      signal rather than an absence.
-     Deliberately NOT progress.html's humanTime(): that one is compact ("2h 5min") because it
-     shares a row with three other stat cards. This is a full sentence on its own line. */
+
+     ⚠ THE COMPACT FORM IS THE ONLY FORM (owner, 2026-08-22). This started life as progress.html's
+     local humanTime(), where compactness was forced — the figure shares a row with three other
+     stat cards and the spelled-out "0 days, 0 hours, 10 minutes" was three times their width and
+     made that card span the row. It was briefly duplicated here in a spelled-out variant for the
+     topic cards, which have more room; the owner's call is that compact is simply better and the
+     two must not differ. So there is now ONE formatter and progress.html imports it from here.
+     Do not reintroduce a second one "because this surface has space" — that is exactly how two
+     places on the same page came to disagree about what an hour looks like.
+
+     A unit that is zero is dropped rather than padded: it carries no information, and "0h 5min"
+     reads as though the zero meant something. */
   function humanListenTime(seconds) {
     const mins = Math.round((seconds || 0) / 60);
-    if (mins < 60) return mins + (mins === 1 ? ' min' : ' mins');
-    const h = Math.floor(mins / 60), m = mins - h * 60;
-    return h + (h === 1 ? ' hr ' : ' hrs ') + m + (m === 1 ? ' min' : ' mins');
+    const d = Math.floor(mins / 1440);
+    const h = Math.floor((mins - d * 1440) / 60);
+    const m = mins - d * 1440 - h * 60;
+    if (d) return d + 'd ' + h + 'h ' + m + 'min';
+    if (h) return h + 'h ' + m + 'min';
+    return m + ' min';
   }
 
   /* The finished caption, or '' when there is nothing honest to show — signed out, or either
@@ -573,7 +586,7 @@
     if (!map || !durs) return '';
     const nums = map[bare(page)];
     if (!nums || !nums.length) return '';
-    return 'Total time listened to Thai: ' +
+    return 'Time listened (Thai): ' +
            humanListenTime(listenSeconds(nums, reps || A.getPlayReps(), durs));
   }
 
