@@ -70,7 +70,7 @@
       keywords: ['survival','understand','repeat','slowly','dont understand','ไม่เข้าใจ','help me','speak','พูด','translate','confused','again'] },
     { id: 11, part: 1, name: "Shopping & money 1", levels: ['beg'], sentences: 22, page: "topic-11a.html", audio: "ShoppingAndMoney_BEG",
       keywords: ['shopping','money','price','buy','cost','เท่าไหร่','how much','บาท','baht','cheap','expensive','pay','แพง'] },   // re-badged by the 2026-07-17 length audit
-    { id: 4, part: 1, name: "Colours & descriptions 1", levels: ['beg'], sentences: 21, page: "topic-04a.html", audio: "ColoursAndDescriptions_BEG",
+    { id: 4, part: 1, name: "Colours & descriptions 1", levels: ['beg'], sentences: 21, page: "topic-04a.html", audio: "ColoursAndDescriptions_BEG", access: "premium",
       keywords: ['colour','color','red','blue','green','สี','describe','description','adjective','big','small','แดง'] },
     { id: 4, part: 2, name: "Colours & descriptions 2", levels: ['beg'], sentences: 22, page: "topic-04b.html", audio: "ColoursAndDescriptions2_BEG", access: "premium",
       keywords: ['colour','color','shade','describe','description','adjective','pattern','dark','light','สี','bright'] },
@@ -114,8 +114,6 @@
       keywords: ['tone','tone twister','tongue twister','pronunciation','drill','practice','เสียง','vowel','minimal pair','ear training','accent'] },
 
     // ── BEGINNER → LOWER INTERMEDIATE ───────────────
-    { id: 14, part: 1, name: "Feelings & emotions 1", levels: ['beg','li1'], sentences: 35, page: "topic-14a.html", audio: "Feelings_BEG",
-      keywords: ['feeling','emotion','อารมณ์','happy','ดีใจ','sad','เสียใจ','angry','โกรธ','tired','เหนื่อย','mood','รู้สึก','scared','worried'] },
     { id: 42, part: 1, name: "Occupations 1", levels: ['beg','li1'], sentences: 30, page: "topic-42a.html", audio: "Occupations_BEG",
       keywords: ['job','occupation','อาชีพ','work','งาน','teacher','ครู','doctor','หมอ','farmer','ชาวนา','profession','police','nurse','engineer'] },
     { id: 9, part: 2, name: "Food & drink 2", levels: ['beg','li1'], sentences: 27, page: "topic-09b.html", audio: "Food_LI1", access: "premium",
@@ -128,6 +126,8 @@
       keywords: ['help','emergency','ช่วย','ฉุกเฉิน','police','ตำรวจ','ambulance','accident','อุบัติเหตุ','fire','ไฟไหม้','danger','hospital','lost','urgent','สายด่วน'] },
     { id: 37, part: 2, name: "Asking for help & emergencies 2", levels: ['beg','li1'], sentences: 19, page: "topic-37b.html", audio: "Emergency2_BEG", access: "premium",
       keywords: ['help','emergency','ช่วย','ฉุกเฉิน','police','ตำรวจ','ambulance','accident','อุบัติเหตุ','fire','ไฟไหม้','danger','hospital','lost','urgent','สายด่วน'] },
+    { id: 14, part: 1, name: "Feelings & emotions 1", levels: ['beg','li1'], sentences: 35, page: "topic-14a.html", audio: "Feelings_BEG", access: "premium",
+      keywords: ['feeling','emotion','อารมณ์','happy','ดีใจ','sad','เสียใจ','angry','โกรธ','tired','เหนื่อย','mood','รู้สึก','scared','worried'] },
     { id: 11, part: 2, name: "Shopping & money 2", levels: ['beg','li1'], sentences: 30, page: "topic-11b.html", audio: "ShoppingAndMoney2_BEG", access: "premium",
       keywords: ['shopping','money','เงิน','bargain','ต่อรอง','discount','ลด','change','ทอน','market','ตลาด','receipt','pay','จ่าย','cash'] },
     { id: 19, part: 2, name: "Cooking & recipes 2", levels: ['beg','li1'], sentences: 28, page: "topic-19b.html", audio: "Recipes_LI1", access: "premium",

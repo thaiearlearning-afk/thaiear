@@ -23,13 +23,13 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Days & months in Thai](https://thaiear.com/topic-07): Beginner, 37 sentences
 - [Idioms in Thai](https://thaiear.com/topic-38): Beginner, 27 sentences
 - [Tongue twisters in Thai](https://thaiear.com/topic-39): Beginner, 19 sentences
-- [Feelings & emotions 1 in Thai](https://thaiear.com/topic-14a): Beginner → Lower intermediate, 35 sentences
 - [Occupations 1 in Thai](https://thaiear.com/topic-42a): Beginner → Lower intermediate, 30 sentences
 - [Food & drink 2 in Thai](https://thaiear.com/topic-09b): Beginner → Lower intermediate, 27 sentences
 - [Cooking & recipes 1 in Thai](https://thaiear.com/topic-19a): Beginner → Lower intermediate, 34 sentences
 - [Getting around & transport 1 in Thai](https://thaiear.com/topic-12a): Beginner → Lower intermediate, 27 sentences
 - [Asking for help & emergencies 1 in Thai](https://thaiear.com/topic-37): Beginner → Lower intermediate, 21 sentences
 - [Asking for help & emergencies 2 in Thai](https://thaiear.com/topic-37b): Beginner → Lower intermediate, 19 sentences
+- [Feelings & emotions 1 in Thai](https://thaiear.com/topic-14a): Beginner → Lower intermediate, 35 sentences
 - [Shopping & money 2 in Thai](https://thaiear.com/topic-11b): Beginner → Lower intermediate, 30 sentences
 - [Cooking & recipes 2 in Thai](https://thaiear.com/topic-19b): Beginner → Lower intermediate, 28 sentences
 - [Clothing & appearance 1 in Thai](https://thaiear.com/topic-18a): Beginner → Lower intermediate, 26 sentences
