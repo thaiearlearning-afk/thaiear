@@ -44,7 +44,7 @@
    by tapping, so it should work offline, cost no round trip, and not become a stored personal
    record. Unknown or absent falls back to sand, the shipped default. */
 (function () {
-  var T = ['sand','olive','indigo','purple','navy','graphite','black'], t = 'sand';
+  var T = ['sand','olive','indigo','yellow','purple','black'], t = 'sand';
   try { var v = localStorage.getItem('thaiear_greet_theme'); if (T.indexOf(v) > -1) t = v; } catch (e) {}
   document.documentElement.setAttribute('data-gt', t);
 })();
@@ -500,7 +500,7 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
    B — the progress page's stat card (.stat-card + .stat-val): white ground with a hairline
        border, and the greeting in var(--accent), the blue "3 mins" is set in.
    Whichever wins, the losing rules and the switcher come out and it becomes plain CSS. */
-/* ── the greeting: a FULL-BLEED BAND, and seven grounds to cycle through ──────────────
+/* ── the greeting: a FULL-BLEED TAPERED BANNER, and six grounds to cycle through ─────
    Owner, 2026-08-21: bound vertically only, so it spans the whole width of the screen, and
    tapping it cycles the colour. The choice is remembered in localStorage (see home-cta.js for
    why that rather than a Supabase column).
@@ -519,9 +519,10 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
    single load, which is worse than the flash it replaced. The attribute is set while the head is
    parsing, so the very first frame is already the chosen colour.
 
-   The seven grounds are the site's own palette — sand is the /topics Beginner→Lower Intermediate
-   strip and indigo is the accent — plus olive, and four dark grounds that carry LIGHT text.
-   See the note over the palette itself for why the pale end was cut back to three. */
+   The six grounds are the site's own palette — sand is the /topics Beginner→Lower Intermediate
+   strip, indigo is the accent, yellow and purple are the Playlists and Topics regions of this
+   very page — plus olive and a near-black. See the note over the palette itself for what came
+   out, and why the pale three were deepened. */
 /* ⚠ THE BAND IS TWO RULES, AND THE SPLIT IS DELIBERATE. Everything that is only ever set
    here — ground, borders, padding, the tap behaviour — stays on the shallow selector, so it
    also reaches the OFF-SCREEN PROBE home-cta.js measures the fit with (that probe is measured
@@ -536,15 +537,90 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   -webkit-touch-callout:none;
   user-select:none; -webkit-user-select:none;
   padding:.6rem 1.05rem; border-radius:0;
-  /* ⚠ BOTH EDGES, ALWAYS. The band floats 14px above the stage floor, so it has a strip of
-     the Read Thai region under it as well as over it - and on the light grounds that strip is
-     near enough the band's own colour that an un-ruled bottom edge simply dissolves (owner,
-     2026-08-22: "there seems to be an outline on the top of the box, but not the bottom").
-     The dark grounds do not need it, but they are not harmed by it, so it is unconditional. */
-  border-top:0.5px solid var(--gt-line, transparent);
-  border-bottom:0.5px solid var(--gt-line, transparent);
-  background:var(--gt-bg, var(--gold-light));
   cursor:pointer;
+
+  /* ── THE BANNER SHAPE (owner, 2026-08-22) ─────────────────────────────────────────
+     Full height across the writing, then the two long edges converge until the bar is
+     35% as thick, and run on at that thickness to both screen edges. A ribbon, not a
+     band. The shoulder angle echoes the page's own dividing diagonals at the size they
+     take on a typical phone — see SHOULDER_DEG in home-cta.js for why that is one fixed
+     number and not a per-device measurement.
+
+     ⚠ THE THREE NUMBERS ARE MEASURED IN JS, NOT AUTHORED HERE. `--gt-flat` is half the
+     width of the full-height middle and comes from the rendered width of the greeting
+     itself, because the owner's brief is "slightly beyond where the writing is" — a
+     constant would hug a short name and clip a long one. `--gt-drop` is how far each
+     edge travels vertically, which for a 35% waist is (1 − 0.35)/2 = 0.325 of the
+     band's own height. `--gt-run` is how far it travels horizontally in doing so, and
+     THE RATIO OF THE TWO IS THE SHOULDER ANGLE — equal makes 45°, a LARGER run makes it
+     shallower, which is the direction the page's own diagonals sit in. Both are px for
+     that reason: a percentage would resolve against the WIDTH, so the angle would drift
+     off the diagonals it is supposed to match on every phone but one.
+     The values below are only a sane pre-measurement default; home-cta.js overwrites
+     them in the same task that writes the greeting, so nothing paints twice.
+
+     ⚠ AND THE POLYGON BELOW IS THE SHARP-CORNERED FALLBACK, NOT WHAT SHIPS. roundedShape()
+     in home-cta.js replaces `--gt-shape` inline with the same outline carrying rounded
+     shoulders — the corners cannot be expressed here because clip-path has no corner
+     radius, so they have to be emitted as sampled points. This one stays as the shape to
+     fall back to if that never runs: right outline, hard corners, never a broken box.
+
+     ⚠ AND THE SHAPE IS A VARIABLE BECAUSE TWO ELEMENTS NEED IT — see the rim below. */
+  --gt-drop:20px;
+  --gt-run:13px;
+  --gt-flat:130px;
+  --gt-shape:polygon(
+    0 var(--gt-drop),
+    calc(50% - var(--gt-flat) - var(--gt-run)) var(--gt-drop),
+    calc(50% - var(--gt-flat)) 0,
+    calc(50% + var(--gt-flat)) 0,
+    calc(50% + var(--gt-flat) + var(--gt-run)) var(--gt-drop),
+    100% var(--gt-drop),
+    100% calc(100% - var(--gt-drop)),
+    calc(50% + var(--gt-flat) + var(--gt-run)) calc(100% - var(--gt-drop)),
+    calc(50% + var(--gt-flat)) 100%,
+    calc(50% - var(--gt-flat)) 100%,
+    calc(50% - var(--gt-flat) - var(--gt-run)) calc(100% - var(--gt-drop)),
+    0 calc(100% - var(--gt-drop))
+  );
+  -webkit-clip-path:var(--gt-shape);
+  clip-path:var(--gt-shape);
+
+  /* ⚠ THE OUTLINE IS A LAYER, NOT A BORDER, AND IT HAS TO BE: `clip-path` clips the
+     border along with everything else, so the border-top/border-bottom pair this
+     replaces would have been sliced off at both diagonals and left the ribbon's most
+     visible edges unruled. Instead the element's own background IS the outline colour
+     and the ::before lays the ground on top of it, inset by 1px — so what shows is a
+     1px rim that follows every side of the shape, diagonals included.
+
+     ⚠ `z-index:-1` IS LOAD-BEARING AND IS NOT "BEHIND EVERYTHING". The band is
+     positioned with a z-index, so it forms a stacking context, and inside one a
+     negative-z child paints AFTER the element's own background and BEFORE any content.
+     That is exactly the slot the ground needs. Remove the z-index and the ::before
+     paints as a positioned descendant instead — i.e. last, over the greeting. */
+  background:var(--gt-line, transparent);
+}
+.te-hero-cta.has-welcome::before{
+  content:''; position:absolute; inset:1px; z-index:-1;
+  background:var(--gt-bg, var(--gold-light));
+  -webkit-clip-path:var(--gt-shape);
+  clip-path:var(--gt-shape);
+}
+/* ⚠ THE GROUND IS FLAT, AND THAT IS A DECISION RATHER THAN AN OMISSION (owner,
+   2026-08-22). A 150° sheen matching the three regions, plus a fold shadow on each arm so
+   the ribbon read as passing behind itself, were both built and both rejected on sight:
+   "it looks like 2000s word art". The lesson is worth keeping, because the reasoning for
+   them was sound and the result still was not — shading and highlights are a different
+   visual language from a splash made of three flat colour fields, and adding depth to one
+   element in a flat composition makes that element look pasted on, which is the fault they
+   were meant to fix. The shape carries the interest here; the surface stays flat.
+   Do not re-add a gradient, an inner keyline, a badge or a fold. */
+/* The writing may never reach the taper, or the clip would cut it. home-cta.js sizes
+   `--gt-flat` from the text so this is normally slack; it only bites when a very long
+   name has been clamped to keep the arms from vanishing. */
+.te-hero-cta.has-welcome .cta-welcome,
+.te-hero-cta.has-welcome .cta-streak{
+  max-width:var(--gt-textmax, 100%); margin-left:auto; margin-right:auto;
 }
 /* ⚠ THIS SELECTOR CARRIES `.tri.cta-fits` FOR A REASON, AND IT IS NOT DECORATION.
    `.tri.cta-fits .te-hero-cta` above is three classes; a bare `.te-hero-cta.has-welcome` is
@@ -559,37 +635,39 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 .te-hero-cta.has-welcome .cta-welcome{ color:var(--gt-fg, #6E5410); }
 .te-hero-cta.has-welcome .cta-streak{ color:var(--gt-sub, #8a6b1c); }
 
-/* ── THE SEVEN GROUNDS ─────────────────────────────────────────────
+/* ── THE SIX GROUNDS ──────────────────────────────────────────────────────────────────
    ⚠ CYCLED, SO THE TEST IS "CAN YOU TELL THIS ONE FROM THE LAST ONE?", NOT "IS IT A NICE
-   COLOUR?". The first nine were nice colours and five of them were the same pale tint: the
-   owner read stone, indigo and lilac as three light blues, two of which he could not tell
-   apart at all (2026-08-22). Five came out - stone, lilac, rose, ink and forest - and three
-   went in that invert the relationship instead of re-tinting it: LIGHT TEXT ON A DARK GROUND.
-   A saved value that is no longer in the list is not recognised by the pre-paint stamp and
-   falls back to sand, so nobody is stranded on a theme that no longer exists.
+   COLOUR?". The original nine were nice colours and five of them were the same pale tint;
+   stone, lilac, rose, ink and forest came out on 2026-08-22. Later the same day navy and
+   graphite went too — both dark grounds carrying gold/yellow text, which put three of seven
+   in the same register — and yellow came in. Six now.
+
+   ⚠ AND THE THREE PALE ONES WERE DEEPENED IN THE SAME PASS (owner: "ever so slightly washed
+   out"). A tint that reads as a tint on a designer's screen reads as *nothing* on a phone
+   held at arm's length in daylight, which is where this band actually lives. Only the ground
+   moved; the writing is unchanged, so each is a straight intensification rather than a new
+   colour. Cost: sand and olive give up about 0.65 of contrast — from ~6.5:1 to ~5.9:1, still
+   comfortably over AA — and their sub-line colours were deepened to hold theirs above 4.5:1.
 
    The order runs light → dark on purpose, so a tap always moves somewhere obviously
    different from where it was.
 
-   Measured contrast, greeting against ground: sand 6.53, olive 6.51, indigo 8.94,
-   purple 7.90, navy 9.74, graphite 9.06, black 19.67 - every one clears WCAG AA large
-   comfortably and five clear AAA (7:1). */
-/* sand — the shipped default, and the /topics Beginner→Lower Intermediate strip */
-[data-gt="sand"] .te-hero-cta.has-welcome{ --gt-bg:#FBF5DC; --gt-fg:#6E5410; --gt-sub:#8a6b1c; --gt-line:rgba(200,160,48,.45); }
+   Measured contrast, greeting against ground: sand 5.87, olive 5.86, indigo 7.42,
+   yellow 10.73, purple 7.90, black 19.67. */
+/* sand — the shipped default, and the /topics Beginner→Lower Intermediate strip, deepened */
+[data-gt="sand"] .te-hero-cta.has-welcome{ --gt-bg:#F5E9BC; --gt-fg:#6E5410; --gt-sub:#7A5C15; --gt-line:rgba(180,140,40,.55); }
 /* olive */
-[data-gt="olive"] .te-hero-cta.has-welcome{ --gt-bg:#EEF1E4; --gt-fg:#4F5A22; --gt-sub:#6d7a37; --gt-line:rgba(79,90,34,.25); }
-/* indigo — the accent family, and the only pale blue left of the three that used to be here */
-[data-gt="indigo"] .te-hero-cta.has-welcome{ --gt-bg:#EEEDFE; --gt-fg:#3B3488; --gt-sub:#5a51b8; --gt-line:rgba(75,65,173,.25); }
-/* ── the four inverted grounds: the text is LIGHTER than what it sits on ──────── */
+[data-gt="olive"] .te-hero-cta.has-welcome{ --gt-bg:#DFE8C7; --gt-fg:#4F5A22; --gt-sub:#5C6A2C; --gt-line:rgba(79,90,34,.35); }
+/* indigo — the accent family */
+[data-gt="indigo"] .te-hero-cta.has-welcome{ --gt-bg:#DAD7FA; --gt-fg:#3B3488; --gt-sub:#5049AE; --gt-line:rgba(75,65,173,.35); }
+/* yellow — the Playlists region's own gold, with the Playlists title's navy on it. Both
+   colours are lifted from `.c-gold` / `var(--navy)` rather than re-picked, so the band cannot
+   drift away from the third of the page it is quoting. */
+[data-gt="yellow"] .te-hero-cta.has-welcome{ --gt-bg:#EFCB5E; --gt-fg:#1C124E; --gt-sub:#4A3A7A; --gt-line:rgba(28,18,78,.35); }
+/* ── the two inverted grounds: the text is LIGHTER than what it sits on ──────────── */
 /* purple — the Topics region's own blue-purple (var(--accent), the mid stop of .c-purple's
    gradient), so the band reads as a piece of the same page rather than a new colour */
 [data-gt="purple"] .te-hero-cta.has-welcome{ --gt-bg:#4B41AD; --gt-fg:#FFFFFF; --gt-sub:rgba(255,255,255,.78); --gt-line:rgba(255,255,255,.28); }
-/* navy — a TRUE navy carrying the mark's own gold (#F0CC5C — the GRAPHIC gold of the two-tone
-   premium palette, not the #B29234 TEXT gold, which is tuned for white and goes muddy here) */
-[data-gt="navy"] .te-hero-cta.has-welcome{ --gt-bg:#10254A; --gt-fg:#F0CC5C; --gt-sub:rgba(240,204,92,.72); --gt-line:rgba(240,204,92,.32); }
-/* graphite — dark grey with yellow writing. A warmer, plainer yellow than the brand gold on
-   purpose: on a neutral grey the gold reads as a slightly dirty cream. */
-[data-gt="graphite"] .te-hero-cta.has-welcome{ --gt-bg:#33333A; --gt-fg:#FFD84D; --gt-sub:rgba(255,216,77,.74); --gt-line:rgba(255,216,77,.3); }
 /* black — white on near-black. Not #000: a true black band against the cream page is a hole
    in it, and on an OLED phone the edge against the white region shimmers. */
 [data-gt="black"] .te-hero-cta.has-welcome{ --gt-bg:#0B0B0C; --gt-fg:#FFFFFF; --gt-sub:rgba(255,255,255,.72); --gt-line:rgba(255,255,255,.25); }

@@ -209,6 +209,9 @@
        dependency on selector support at first paint. */
     el.classList.toggle('has-welcome', !!el.querySelector('.cta-welcome'));
     fitName();
+    /* Same task as the innerHTML above, so the ribbon is already the right shape on the
+       frame the greeting first appears — there is no rectangle to see first. */
+    shapeBand();
   }
 
   /* ⚠ SHRINK THE GREETING UNTIL A LONG NAME FITS ITS ONE LINE — do not truncate it.
@@ -223,8 +226,181 @@
     if (!line) return;
     el.style.removeProperty('--cta-fs');
     for (var px = 17; px > 12; px--) {
-      if (line.scrollWidth <= el.clientWidth) break;
+      /* Measured against the LINE's own box, not the block's. They are the same thing until
+         shapeBand() caps the line to keep the writing out of the banner's taper — after
+         which `el.clientWidth` is the wrong question, and would let a long name run into
+         the diagonal and be clipped by it. */
+      if (line.scrollWidth <= line.clientWidth) break;
       el.style.setProperty('--cta-fs', (px - 1) + 'px');
+    }
+  }
+
+  /* ── the banner's three measurements ──────────────────────────────────────────────
+     The CSS draws the ribbon; these numbers say where its shoulders are.
+
+       --gt-drop   how far each long edge travels VERTICALLY. For a waist 35% of the band's
+                   thickness that is (1 − 0.35)/2 = 0.325 of the height.
+       --gt-run    how far it travels HORIZONTALLY doing it. drop/run IS the angle, and both
+                   are px for that reason — a percentage resolves against the WIDTH, so the
+                   shoulders would sit at a different angle on every phone.
+       --gt-flat   half the width of the full-height middle: the writing, plus SHOULDER.
+
+     ⚠ THE ANGLE ECHOES THE PAGE'S OWN DIAGONALS, at the size they take on a typical phone.
+     45° and 57° were both tried first and 57° read as "far too steep" (owner, 2026-08-22).
+     See SHOULDER_DEG below for why it settled on one number rather than tracking the
+     divider per device — the reasoning matters more than the value.
+
+     ⚠ CLAMPED, BECAUSE A LONG NAME WOULD OTHERWISE EAT THE BANNER. Left alone, a name wide
+     enough pushes the shoulders past the screen edge, the arms disappear and the ribbon is
+     a rectangle again — the shape silently degrading into the thing it replaced. So the
+     middle is capped to leave both arms alive, and when that cap bites the writing is capped
+     with it (--gt-textmax) and re-fitted, so it shrinks rather than getting sliced by the
+     diagonal. */
+  var WAIST = 0.35;          // the arms' thickness as a fraction of the band's
+  var SHOULDER = 18;         // "slightly beyond where the writing is", in px
+  var MIN_ARM = 0.12;        // the shortest arm worth drawing, as a fraction of the width
+  /* ── THE SHOULDER ANGLE: ONE NUMBER, AND HERE IS WHY IT IS NOT MEASURED ────────────
+     It was, for a while. The shoulders read the angle off `.s3`'s own rendered clip-path,
+     so they were parallel to the Read Thai divider on every device — which is exactly what
+     was asked for, and it is worth writing down why the answer changed.
+
+     Shown three phones side by side, the owner picked the middle one (2026-08-22). The
+     catch is that "parallel" is not one look: the diagonals run from the stage's CENTRE to
+     its edges, so their angle is a function of the stage's aspect ratio, and the stage is
+     whatever the nav and footer leave behind. Measured across real geometries it spans
+     29° on a short 375×667 handset to 39° on a tall iPhone in the installed PWA, and 46°
+     at 2× Android text. The banner therefore looked materially different phone to phone —
+     the shape was consistent with the PAGE but not with ITSELF, and it is the shape people
+     will remember, not its relationship to a diagonal they are not looking at.
+
+     36° is the mid-phone divider angle — the one the owner picked — so on a typical modern
+     handset the shoulders still land parallel to the page's lines. It simply stops chasing
+     them onto phones where that would look like a different design.
+
+     ⚠ SO: 36 IS NOT ARBITRARY AND IS NOT A TASTE VALUE TO NUDGE. It is the measured
+     divider angle of a 390×650 stage, which is what a 390×844 phone leaves after the nav
+     and footer. If the nav or footer changes height enough to move that stage, this number
+     is stale — test_greet_banner.js asserts the relationship so it fails rather than drifts.
+     The measured-per-device version is one line (`Math.tan(dividerDeg() …)`) and is in the
+     git history at the commit before this one, if it is ever wanted back. */
+  var SHOULDER_DEG = 36;
+  var CORNER = 6;            // how much of each shoulder corner is curve, in px
+
+  /* ── ROUNDED SHOULDERS ────────────────────────────────────────────────────────────────
+     The sharp version read as unfinished (owner, 2026-08-22: "round out the corners so it
+     just looks smoother"), and `clip-path` has no corner radius — polygon() is corners by
+     definition. So the curve is sampled: each shoulder vertex is replaced by a short
+     quadratic Bézier that leaves the incoming edge CORNER px early, uses the old vertex as
+     its control point, and rejoins the outgoing edge CORNER px along. Five samples per
+     corner is enough that no phone shows a facet, and it costs one string.
+
+     ⚠ THE FOUR VERTICES AT THE SCREEN EDGES ARE LEFT SHARP ON PURPOSE. They are where the
+     arms are cut off by the viewport, not corners of the shape — rounding them would draw
+     two little tongues at the edges of the screen and turn a ribbon that runs off the page
+     into a lozenge floating on it.
+
+     ⚠ 6px, NOT 12. Both were rendered side by side and 12 was wrong — the diagonal is only
+     ~34px long at a 62px band, so two 12px corners leave barely 10px of straight edge and
+     the taper stops reading as a taper at all: it becomes a soft S, a different shape rather
+     than the same one smoothed. 6 softens the corner and leaves the angle legible, which is
+     what "round it out a bit" asked for. The 40% cap in step() is the same concern from the
+     other direction, for a short greeting.
+
+     ⚠ AND IT EMITS `calc(50% ± Npx)` FOR X AND `calc(100% − Npx)` FOR THE LOWER Y, NOT
+     ABSOLUTE PIXELS. The same string clips BOTH the band and its ::before, and the ::before
+     is inset 1px — so absolute coordinates would put the rim 1px out of true along the
+     whole bottom and right. Percentages resolve against each box in turn, which is what
+     keeps the 1px rim even the whole way round. */
+  function roundedShape(w, h, flat, run, drop) {
+    var EDGE = 1e9;   // marks a vertex pinned to the viewport edge rather than offset from centre
+    var V = [
+      [-EDGE, drop], [-(flat + run), drop], [-flat, 0],
+      [flat, 0], [flat + run, drop], [EDGE, drop],
+      [EDGE, h - drop], [flat + run, h - drop], [flat, h],
+      [-flat, h], [-(flat + run), h - drop], [-EDGE, h - drop]
+    ];
+    function xy(p) {
+      var x = p[0] <= -EDGE ? '0%' : p[0] >= EDGE ? '100%'
+            : 'calc(50% + ' + p[0].toFixed(1) + 'px)';
+      var y = p[1] > h / 2 ? 'calc(100% - ' + (h - p[1]).toFixed(1) + 'px)'
+                           : p[1].toFixed(1) + 'px';
+      return x + ' ' + y;
+    }
+    var out = [];
+    for (var i = 0; i < V.length; i++) {
+      var v = V[i];
+      if (Math.abs(v[0]) >= EDGE) { out.push(xy(v)); continue; }
+      var a = V[(i + V.length - 1) % V.length], c = V[(i + 1) % V.length];
+      /* An edge-pinned neighbour is off at ±1e9; take its direction only, so the trim
+         length stays governed by CORNER and the real edges rather than by that sentinel. */
+      var p0 = step(v, a), p2 = step(v, c), q = [];
+      for (var k = 0; k <= 4; k++) {
+        var t = k / 4, m = 1 - t;
+        q.push([m * m * p0[0] + 2 * m * t * v[0] + t * t * p2[0],
+                m * m * p0[1] + 2 * m * t * v[1] + t * t * p2[1]]);
+      }
+      for (var j = 0; j < q.length; j++) out.push(xy(q[j]));
+    }
+    return 'polygon(' + out.join(', ') + ')';
+
+    function step(from, to) {
+      var dx = to[0] - from[0], dy = to[1] - from[1];
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
+      /* Never eat more than 40% of an edge: on a very short greeting the middle is narrow,
+         and two corners each claiming 12px would meet and pinch the top edge to a point. */
+      var t = Math.min(CORNER, len * 0.4);
+      return [from[0] + dx / len * t, from[1] + dy / len * t];
+    }
+  }
+
+  /* ⚠ HOW WIDE IS THE WRITING? NOT `scrollWidth`. Both lines are full-width BLOCKS, so
+     their scrollWidth is the block's width — 356 px on a 390 px phone whether the name is
+     "Jo" or not. Sizing the banner's middle off that made every shoulder land in the same
+     place regardless of the greeting, i.e. exactly the constant the measurement exists to
+     avoid, and on a phone it pinned the middle to the clamp so the arms never appeared.
+     A Range over the node's contents measures the INLINE content, which is the question
+     being asked. Measured: range 171 px vs scrollWidth 356 px for "Welcome back, Toby". */
+  function inkWidth(node) {
+    try {
+      var r = document.createRange();
+      r.selectNodeContents(node);
+      var w = r.getBoundingClientRect().width;
+      if (w) return w;
+    } catch (e) {}
+    return node.scrollWidth;
+  }
+
+  function shapeBand() {
+    var line = el.querySelector('.cta-welcome');
+    if (!line) { el.style.removeProperty('--gt-textmax'); return; }
+    var h = el.getBoundingClientRect().height;
+    var w = stage.getBoundingClientRect().width;
+    if (!h || !w) return;
+
+    var drop = Math.round(h * (1 - WAIST) / 2);
+    var run = Math.max(1, Math.round(drop / Math.tan(SHOULDER_DEG * Math.PI / 180)));
+    var maxFlat = Math.max(40, w / 2 - run - Math.max(40, Math.round(w * MIN_ARM)));
+
+    var textW = 0;
+    var lines = el.querySelectorAll('.cta-welcome, .cta-streak');
+    for (var i = 0; i < lines.length; i++) textW = Math.max(textW, inkWidth(lines[i]));
+
+    var want = Math.ceil(textW / 2) + SHOULDER;
+    var flat = Math.min(want, maxFlat);
+    el.style.setProperty('--gt-drop', drop + 'px');
+    el.style.setProperty('--gt-run', run + 'px');
+    el.style.setProperty('--gt-flat', Math.round(flat) + 'px');
+    /* Set LAST, and as a whole polygon: the three above are what the CSS fallback is built
+       from, and this supersedes it with the same outline plus rounded shoulders. */
+    el.style.setProperty('--gt-shape', roundedShape(w, h, Math.round(flat), run, drop));
+
+    /* Only cap the writing when the clamp actually bit — otherwise a cap equal to the text's
+       own width is a rounding error away from forcing an ellipsis onto a name that fits. */
+    if (flat < want) {
+      el.style.setProperty('--gt-textmax', Math.max(0, 2 * flat - 2 * SHOULDER) + 'px');
+      fitName();
+    } else {
+      el.style.removeProperty('--gt-textmax');
     }
   }
 
@@ -252,8 +428,8 @@
      honours a saved value it recognises, so a theme added here and not there would be applied
      on the tap that set it and silently fall back to sand on the next load. Both come from
      home-mock.html and gen_home_splash.js copies the stamp verbatim — so edit the MOCK. */
-  var THEMES = ['sand', 'olive', 'indigo',           // light ground, dark text
-                'purple', 'navy', 'graphite', 'black'];  // dark ground, LIGHT text
+  var THEMES = ['sand', 'olive', 'indigo', 'yellow',   // light ground, dark text
+                'purple', 'black'];                      // dark ground, LIGHT text
   el.addEventListener('click', function () {
     if (!el.classList.contains('has-welcome')) return;    // signed out: it is a link, leave it
     var root = document.documentElement;
