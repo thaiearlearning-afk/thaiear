@@ -225,8 +225,12 @@
     for (var i = 0; i < cards.length; i++) {
       var el = cards[i].querySelector('.topic-plays');
       var cap = ready ? T.listenCaptionFor(cards[i].getAttribute('data-page'), reps) : '';
+      /* ⚠ EMPTY IT, NEVER REMOVE IT. The slot is what keeps every card the same height;
+         removing it made a row holding one captioned card ~16px taller than the rest
+         (99px vs 83px, measured 2026-08-22). Same reason as HYDRATE-NEVER-REBUILD above:
+         the node stays, only its text changes. */
       if (!cap) {                       // signed out, or a lookup still in flight
-        if (el) el.parentNode.removeChild(el);
+        if (el) el.textContent = '';
         continue;
       }
       if (!el) {
@@ -298,7 +302,9 @@
            '" data-tier="' + access + '">' +
       '<div class="topic-card-top">' + pill + '</div>' +
       '<div class="topic-name">' + u.name + '</div>' +
-      '<div class="topic-meta-row"><span class="topic-sent-count">' + n + '</span></div></a>';
+      '<div class="topic-meta-row"><span class="topic-sent-count">' + n + '</span></div>' +
+      /* the same empty caption slot the band cards ship — see gen_topics_pages.js card() */
+      '<div class="topic-plays"></div></a>';
   }
 
   function run() {

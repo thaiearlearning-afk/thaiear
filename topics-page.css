@@ -524,6 +524,20 @@
     color: #1F5D3A;
     line-height: 1.3;
   }
+  /* ⚠ RESERVE THE CAPTION LINE, so a card's height never depends on whether THIS visitor has
+     listened to THIS topic. The slot ships empty on every card (gen_topics_pages.js) and is
+     filled at runtime; without a reserve, a grid row holding one captioned card stretched
+     ~16px taller than every row without one — measured 99px against 83px on the
+     Beg->Lower-Int grid, and obvious once the free units were pinned to the top of each band
+     (owner, 2026-08-22).
+     Reserved only under html.te-plays — stamped by a head script from identity.js BEFORE
+     first paint — so a signed-out visitor, who can never have a caption, keeps the original
+     shorter card rather than a blank line under every one. Stamping it pre-paint is what
+     stops the reserve itself becoming a layout shift.
+     1.3em, not a px constant, so it tracks font-size (and any --te-ui inflation) by itself. */
+  html.te-plays .topic-plays {
+    min-height: 1.3em;
+  }
 
   /* ── PREMIUM (locked) CARD ── */
   .topic-card.premium:hover {
