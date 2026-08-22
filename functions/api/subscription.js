@@ -36,8 +36,31 @@ export async function onRequestGet({ request, env }) {
     return json({ subscribed: false }, 200); // simulate=free / anything else
   }
 
-  if (!env.STRIPE_SECRET_KEY) return json({ subscribed: false }, 200);
   const debug = params.get('debug');
+
+  /* ⚠⚠ A COMPED MEMBERSHIP HAS NO STRIPE SUBSCRIPTION, AND THIS ENDPOINT USED TO BE
+     STRIPE-ONLY. Testers, and anyone granted lifetime access, get a row in Supabase
+     `subscriptions` with status='active' and lifetime=true and NOTHING in Stripe. auth.js
+     reads that row, so the nav, subscribe.html and the audio gate all correctly said
+     "member" — while this endpoint asked Stripe, got nothing, and answered
+     {subscribed:false}. The account page renders instantly from cache and then refines from
+     here, so the visible symptom was a granted account flashing "Premium" and settling on
+     "Free", with subscribe.html insisting "You're a member" on the very next page. The grant
+     was never broken; this was.
+
+     ⚠ IT IS CHECKED FIRST, AND IT WINS. A comped row is a deliberate act by the owner; a
+     missing Stripe subscription is the expected state for one, not evidence against it.
+     ⚠ AND IT IS REPORTED AS `comped` SO THE UI KNOWS NOT TO OFFER STRIPE ACTIONS. There is
+     no subscription to cancel and no card to update — showing those buttons would hand
+     someone a control that can only fail. */
+  const comped = await compedRow(env, token, user.id);
+  if (comped) {
+    return json({ subscribed: true, status: 'active', comped: true,
+                  lifetime: !!comped.lifetime, cancel_at_period_end: false,
+                  current_period_end: comped.current_period_end || null }, 200);
+  }
+
+  if (!env.STRIPE_SECRET_KEY) return json({ subscribed: false }, 200);
 
   try {
     // Gather EVERY customer for this user (stored + all email matches) — there may
@@ -105,6 +128,26 @@ function periodEnd(s) {
   if (s && s.current_period_end) return s.current_period_end;
   const it = s && s.items && s.items.data && s.items.data[0];
   return (it && it.current_period_end) || null;
+}
+
+/* The user's own subscriptions row, read under THEIR token so RLS applies exactly as it does
+   for auth.js — this endpoint must not be able to see more than the client already can.
+   A row only counts as comped when it is active AND carries no Stripe subscription: a real
+   paying member also has a row here, and for them Stripe stays the authority on dates,
+   cancellation and card state. */
+async function compedRow(env, token, uid) {
+  try {
+    const r = await fetch(env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + uid +
+      '&select=status,lifetime,current_period_end,stripe_subscription_id',
+      { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token } });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    const row = rows && rows[0];
+    if (!row) return null;
+    if (row.status !== 'active' && row.status !== 'trialing') return null;
+    if (row.stripe_subscription_id) return null;      // a real Stripe sub — let Stripe answer
+    return row;
+  } catch (_) { return null; }
 }
 
 async function storedCustomerId(env, token, uid) {

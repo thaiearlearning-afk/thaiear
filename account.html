@@ -161,6 +161,14 @@
      (owner, 2026-08-22). Written as `> div:empty` rather than another id so the next slot
      added to this stack is covered without anyone having to remember this. */
   .acct-stack > div:empty { display: none; }
+  /* ⚠ ONE EXCEPTION, AND IT IS THE OPPOSITE TREATMENT. #consent-area is empty only because
+     its answer has not come back from Supabase yet, and for a signed-in user it ALWAYS
+     resolves to exactly one button. Hiding it means it pops in late and shoves everything
+     below it down — which is the last render jump the owner could still see (2026-08-22).
+     The other slots are hidden because they may legitimately stay empty forever: a free
+     account never gets a Cancel button. This one is merely LATE.
+     Reserve what is coming; hide what may never come. */
+  .acct-stack > #consent-area:empty { display: block; min-height: 36px; }
   /* Membership's buttons are written into the stack by renderMembershipBox, which runs late.
      :empty keeps it from contributing a phantom 10px gap before it does. */
   #membership-actions { display: flex; flex-direction: column; gap: 10px; }
@@ -655,11 +663,17 @@ function renderMembershipBox(s) {
   if (s && s.subscribed) {
     var endStr = '';
     if (s.current_period_end) { try { endStr = new Date(s.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) {} }
-    line.innerHTML = s.cancel_at_period_end
+    /* ⚠ A COMPED MEMBERSHIP IS PREMIUM WITH NO STRIPE BEHIND IT. It cannot be cancelled
+       or re-carded here, so it says what it is rather than offering controls that would
+       only ever fail. */
+    if (s.comped) {
+      line.innerHTML = 'Membership: <strong style="color:#B29234">Premium</strong>' +
+        (s.lifetime ? ' (lifetime)' : ' (complimentary)');
+    } else line.innerHTML = s.cancel_at_period_end
       ? 'Membership: <strong style="color:#B29234">Premium</strong> — active until ' + endStr + ', won\u2019t renew'
       : 'Membership: <strong style="color:#B29234">Premium</strong> (active)';
-    acts.innerHTML = native
-      ? noteBox('To manage your premium membership, use a web browser.')
+    acts.innerHTML = (native || s.comped)
+      ? (s.comped ? '' : noteBox('To manage your premium membership, use a web browser.'))
       /* ⚠ UPDATE PAYMENT METHOD SITS ABOVE CANCEL MEMBERSHIP (owner, 2026-08-22). The two
          are not peers: one keeps the thing going, one ends it, and the one that ends it
          belongs with the other endings at the foot of the stack. */
@@ -672,13 +686,13 @@ function renderMembershipBox(s) {
          membership — measured at 20px against 10px everywhere else, and it was the last
          uneven gap on the card. */
       '<p id="portal-status" class="acct-muted" style="margin:0"></p>';
-    setCancel(native || s.cancel_at_period_end ? '' :
+    setCancel(native || s.comped || s.cancel_at_period_end ? '' :
       '<button class="btn btn-destructive btn-wide" onclick="cancelMembership()">Cancel membership</button>' +
       '<p id="cancel-status" class="acct-muted" style="margin:0"></p>');
     /* Already cancelled → the only membership action left is to start paying again, so it
        goes back to the middle island in gold. Still running → there is nothing to start, and
        the island disappears rather than showing a disabled or redundant control. */
-    setIsland(native || !s.cancel_at_period_end ? '' :
+    setIsland(native || s.comped || !s.cancel_at_period_end ? '' :
       '<button class="btn btn-gold btn-wide" onclick="resumeMembership()">Resume membership</button>' +
       '<p id="cancel-status" class="acct-muted" style="margin:0"></p>');
   } else if (s && s.needsPayment) {
