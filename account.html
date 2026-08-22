@@ -250,6 +250,11 @@
   .login-terms { font-size: 12px; margin-top: 1rem; }
   @keyframes tick-pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .tick-anim { display: inline-block; color: var(--accent); font-weight: 700; animation: tick-pop 0.45s cubic-bezier(0.2,0.8,0.3,1.3) both; }
+  /* ⚠ INSIDE A BUTTON THE TICK TAKES THE BUTTON'S COLOUR. It was authored as accent-on-white
+     for a status line; on the accent-filled "Subscribed to email list" button that is purple
+     on purple, i.e. invisible. `inherit` rather than #fff so it stays right if the button ever
+     changes colour again. */
+  .btn .tick-anim { color: inherit; }
   /* ── modal ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(20,16,48,0.45); display: flex; align-items: center; justify-content: center; padding: 1.25rem; z-index: 1000; }
   .modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 400px; width: 100%; padding: 1.5rem 1.5rem 1.35rem; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
@@ -580,7 +585,10 @@ function saveDisplayName() {
     var cur = document.getElementById('dispname-current');
     if (cur) cur.textContent = clean;    // the fact line above, not the button
     cancelEditName();
-    setStatus('Saved.');
+    /* No "Saved." (owner, 2026-08-22: "i can see it has changed"). The fact line above updates
+       in the same tick, so a status word underneath states what the page already shows.
+       Errors still speak — those are the case the user CANNOT see. */
+    setStatus('');
   }).catch(function (e) {
     setStatus((e && e.message) || 'Could not save that name.', true);
   }).then(function () {
@@ -745,9 +753,11 @@ function setEmailConsent(optIn, btnId) {
   a.setMarketingConsent(optIn).then(function () {
     if (st) {
       st.style.color = 'var(--accent)';
-      /* Only the thing the BUTTON cannot say. The tick on the button is the confirmation;
-         repeating "Subscribed" underneath it was the sentence the owner asked to remove. */
-      st.textContent = optIn ? 'Check your inbox for a welcome email.' : '';
+      /* Nothing. The button relabels itself to "Subscribed to email list ✓" in the same
+         breath, which is the confirmation; a line underneath it was one more thing appearing
+         and then vanishing under the reader (owner, 2026-08-22). Errors still speak below —
+         those are the case the button cannot show. */
+      st.textContent = '';
     }
     // brief confirmation, then swap just the consent block to the opposite action
     // (updateConsentArea, not renderAccount — so the membership box doesn't reload).
