@@ -499,9 +499,12 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   font-size:calc(var(--cta-fs, 14px) * var(--te-ui, 1));
   color:#fff;
 }
+/* Under the pill, not in it. var(--navy) is the colour "Playlists" is set in on this very
+   page (`.c-gold .s-title`), asked for by name — taken from the token rather than re-typed
+   as #1C124E so the two cannot drift apart. */
 .te-hero-cta.has-pill .cta-streak{
   display:block;
-  font-size:calc(11px * var(--te-ui, 1)); color:rgba(255,255,255,.82); margin-top:1px;
+  font-size:calc(12px * var(--te-ui, 1)); color:var(--navy); margin-top:7px;
 }
 
 .te-hero-cta .cta-welcome{

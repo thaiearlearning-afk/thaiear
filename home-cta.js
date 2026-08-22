@@ -158,9 +158,15 @@
      the single place that knows — tallestHeight() measures through here too, which is what
      stops the fit test measuring one shape while the page renders the other. */
   function greetingHtml(line, streak) {
-    var inner = '<span class="cta-welcome">' + line + '</span>' +
-                (streak ? '<span class="cta-streak">' + streak + '</span>' : '');
-    return PILL ? '<span class="cta-pill">' + inner + '</span>' : inner;
+    var hello = '<span class="cta-welcome">' + line + '</span>';
+    var days = streak ? '<span class="cta-streak">' + streak + '</span>' : '';
+    /* ⚠ IN PILL MODE THE STREAK SITS OUTSIDE THE PILL, not in it (owner, 2026-08-22:
+       "it makes it fat"). Two lines inside a 22px-radius pill turn a button into a slab,
+       and the pill only reads as the signup button's twin while it is one line tall.
+       It stays INSIDE #te-hero-cta, though, which is what keeps it part of the box
+       tallestHeight() measures — see the fit note below. */
+    return PILL ? '<span class="cta-pill">' + hello + '</span>' + days
+                : hello + days;
   }
 
   function esc(s) {
