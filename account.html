@@ -47,9 +47,14 @@
      Reserved ONLY while the request is outstanding, then released — so a free member never carries
      69px of dead space around, and nothing can drop when the real answer lands. The .98 offsets
      are the same fractional-devicePixelRatio guard as the progress card (r139). */
-  #membership.mb-wait { min-height: 163px; }
-  @media (min-width: 480px) { #membership.mb-wait { min-height: 127px; } }
-  @media (min-width: 601px) { #membership.mb-wait { min-height: 106px; } }
+  /* ⚠ THE OLD #membership RESERVE IS GONE ON PURPOSE, NOT BY ACCIDENT. It held the tallest
+     membership height (163/127/106px by width) while the Stripe refine was in flight, because
+     that block was a sentence PLUS a variable number of buttons and could change height twice.
+     It is now two fixed slots — one line of text at the top, and buttons in the stack whose
+     count changes only between tiers — and the card as a whole is reserved before first paint
+     by .acct-wait-in/-out below, which covers the same gap more honestly. Reinstating this
+     would double-reserve and open a hole. */
+  #membership-line:empty { display: none; }
 </style>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -96,12 +101,56 @@
      ⚠ .btn-destructive REPLACES A STYLE THAT WAS INLINED TWICE — "Remove all downloads" and
      "Delete my account" each carried their own copy of the same four declarations, which is
      how they drift. They are the same KIND of action and must keep reading as one. */
-  .btn-destructive { font-size: 12px; color: #B00020; background: none; border-color: rgba(176,0,32,0.35); }
+  /* ⚠ COLOUR ONLY — NO font-size HERE. It used to carry 12px, which made the two most
+     dangerous buttons on the page the SMALLEST targets on it. Owner, 2026-08-22: "keep its
+     red styling but change font size and box size to match the others." Being red is what
+     marks it out; being small was never the signal, only an accident of how it was written. */
+  .btn-destructive { color: #B00020; background: none; border-color: rgba(176,0,32,0.35); }
   .btn-destructive:hover:not([disabled]) { border-color: #B00020; background: rgba(176,0,32,0.05); }
-  /* For buttons that sit INSIDE a bordered box, where the full-size button looks oversized. */
-  .btn-sm { font-size: 13px; padding: 6px 14px; }
-  /* Full width — for an action that belongs to the whole account rather than to one box. */
+  /* Full width — every action on this card is one of these now (owner, 2026-08-22: "this will
+     all look much neater"). One width, one height, one type size; the only thing that varies
+     between them is COLOUR, which is what tells you a destructive one apart. */
   .btn-wide { display: block; width: 100%; text-align: center; }
+
+  /* ⚠ THE ACTIONS ARE A COLUMN WITH A GAP, NOT BUTTONS CARRYING THEIR OWN MARGINS. The old
+     page spaced them with a margin-top typed at each call site, which is why the gaps were
+     all slightly different and why "Update payment method" appeared to lose its bottom
+     border: it sat in a wrapping flex ROW whose height came out fractional, and the 0.5px
+     border landed on a half-device-pixel and was dropped by the compositor. A column of
+     full-width blocks has no fractional row height to land on. */
+  .acct-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 1.15rem; }
+  .acct-stack .btn { margin: 0; }
+  /* Membership's buttons are written into the stack by renderMembershipBox, which runs late.
+     :empty keeps it from contributing a phantom 10px gap before it does. */
+  #membership-actions { display: flex; flex-direction: column; gap: 10px; }
+  #membership-actions:empty { display: none; }
+  /* Same reason: the consent answer arrives from Supabase after first paint, and an empty
+     wrapper in a gap:10px column is a visible 10px of nothing until it does. */
+  #consent-area { display: flex; flex-direction: column; gap: 10px; }
+  #consent-area:empty { display: none; }
+
+  /* ⚠ THE TWO IDENTITY LINES MATCH, AND SIT TOGETHER. "Membership: Premium (active)" is the
+     same KIND of statement as "Signed in as …" — a fact about the account, not an action —
+     so it reads at the same size directly under it instead of heading a block of buttons
+     halfway down (owner, 2026-08-22: "it's disrupting the flow of the buttons"). */
+  .acct-line { color: var(--text-secondary); margin: 0 0 0.35rem; }
+  .acct-line:last-of-type { margin-bottom: 0; }
+
+  /* One line: the name on the left, the button on the right. No heading — "Change display
+     name" on the button already says what the name is. */
+  .dispname-row { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+  .dispname-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .dispname-row .btn { flex-shrink: 0; }
+
+  /* ⚠ 16px IS NOT A TYPE CHOICE, IT IS THE iOS ZOOM THRESHOLD. Safari auto-zooms the whole
+     page when a focused input's text is under 16px, and there is no way to decline it short
+     of meeting the threshold — a maximum-scale viewport would also stop the user pinching,
+     which is a WCAG failure. The owner hit this on the iPhone PWA: tapping Change display
+     name zoomed the page. Any input added to this page must be 16px for the same reason. */
+  /* Typed as `input.no-zoom` on purpose: `.login-input` sets 14px and is a single class, so a
+     single-class .no-zoom TIES with it and loses on source order — measured, the input came
+     out at 14px and still zoomed. The element selector breaks the tie. */
+  input.no-zoom { font-size: 16px; }
 
   /* ⚠ SECTION RHYTHM IS ONE RULE, NOT A MARGIN TYPED AT EACH CALL SITE. The blocks on this
      page had picked up 1.25rem/1.5rem tops and 1rem/1.25rem padding in whatever combination
@@ -120,21 +169,22 @@
      nav and the home greeting paint from. The head script below stamps the answer on the card
      and the right reserve applies from the first frame.
 
-     ⚠ MEASURED, NOT GUESSED, at three widths — and they do not move in the same direction,
-     which is why they are separate: the signed-in card grows as it narrows (656 at 360px,
-     632 at 420, 609 at 700) because the membership and consent copy rewrap, while the
-     sign-in box is 445 at everything above ~400px and 507 below. Re-measure if the copy in
-     either changes; a stale reserve is a gap rather than a jump, but it is still wrong.
+     ⚠ MEASURED, NOT GUESSED, AND RE-MEASURED AFTER THE 2026-08-22 RESTRUCTURE — which is
+     exactly why the numbers are worth stating: the first set (656/632/609 signed in) went
+     stale the moment the card became a button stack, and a stale reserve holds a gap open
+     just as surely as no reserve lets a jump through. Now: signed in 452 under 400px and 428
+     above; signed out 507 and 445. Note the signed-in card is now the SHORTER of the two,
+     the reverse of before. The signed-in figure covers the PREMIUM card (452), the tallest
+     of the tiers, since a free card is ~60px shorter and over-reserving only ever costs a
+     moment before render, whereas under-reserving costs a jump. Re-measure whenever the copy
+     or the button list changes.
      ⚠ AND IT IS min-height, SO AN UNDER-ESTIMATE STILL DEGRADES TO TODAY'S BEHAVIOUR rather
      than clipping anything. */
-  #account-body.acct-wait-in  { min-height: 656px; }
+  #account-body.acct-wait-in  { min-height: 452px; }
   #account-body.acct-wait-out { min-height: 507px; }
   @media (min-width: 400px) {
-    #account-body.acct-wait-in  { min-height: 632px; }
+    #account-body.acct-wait-in  { min-height: 428px; }
     #account-body.acct-wait-out { min-height: 445px; }
-  }
-  @media (min-width: 601px) {
-    #account-body.acct-wait-in  { min-height: 609px; }
   }
 
   .acct-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 0.5px solid var(--border); }
@@ -181,8 +231,8 @@
   @media (max-width: 600px) {
     .page-wrap { padding: 2rem 1rem 3rem; }
     .acct-title { font-size: 22px; }
-    /* Stack the membership buttons full-width so they stay aligned in the
-       narrower space instead of squishing side by side. */
+    /* .btn-row is only the modal's action row now; the account's own buttons are all
+       .btn-wide in a column, at every width. */
     .btn-row .btn { width: 100%; }
   }
 </style>
@@ -400,43 +450,42 @@ function postCancel(resume) {
    This one's content is the user object we already have. Adding a reserve for it would be
    cargo-culting the pattern and would just add a gap.
 
-   ⚠ THE EDIT STATE IS ~90px TALLER THAN THE READ STATE, AND THAT IS FINE — but only
-   because it is USER-INITIATED. Measured: 124px reading, 217px editing. Everything below
-   (membership, consent, delete) moves down when someone taps Change. That is an expansion
-   they asked for, not layout shifting under a reader, which is the thing this page's
-   reserves exist to prevent. Do NOT "fix" it with a min-height of 217px: that would hold
-   90px of empty space open permanently, for every visitor, for a control almost nobody
-   opens — paying the cost the reserves were meant to avoid, in order to solve a problem
-   nobody has. */
+   ⚠ THE READ STATE IS ONE LINE, AND IT HAS TO STAY ONE LINE (owner, 2026-08-22: "a lot of
+   unnecessary space under Toby Ralph | Change"). What made it tall was not the layout but
+   two things reserving space they were not using: a "Display name" heading above a name that
+   needs no label, and an always-on status paragraph with min-height:1em. Both are gone —
+   setStatus() now takes its height only while it has something to say.
+
+   ⚠ The edit state is still taller than the read state, and that is fine: it is an expansion
+   the user asked for by tapping, not layout shifting under a reader, which is what this
+   page's reserves exist to prevent. Do NOT "fix" it by reserving the edit height — that
+   holds empty space open for every visitor for a control almost nobody opens. */
 var DISPLAY_NAME_MAX = 20;
 
 function displayNameHtml(user) {
   var name = (user && user.username) || '';
   /* auth.js falls back to the email prefix when the account has no name — a magic-link
-     signup. Showing that as "your display name" would present a fallback as a fact, and the
-     person would then "change" something they never set. Say it is not set. */
+     signup. Showing that as their display name would present a fallback as a fact, and they
+     would then "change" something they never set. */
   var prefix = ((user && user.email) || '').split('@')[0];
   var real = name && name !== prefix;
   return '' +
-    '<div id="dispname" style="margin-top:1rem;padding:0.85rem 1rem;background:var(--surface);' +
-      'border:0.5px solid var(--border);border-radius:var(--radius-md)">' +
-      '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">Display name</div>' +
-      '<div id="dispname-read" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-        '<span id="dispname-current" style="font-weight:600;overflow-wrap:anywhere">' +
-          (real ? esc(name) : '<span style="font-weight:400;color:var(--text-tertiary)">Not set</span>') +
+    '<div id="dispname">' +
+      '<div id="dispname-read" class="dispname-row">' +
+        '<span class="dispname-name" id="dispname-current">' +
+          (real ? esc(name) : '<span style="font-weight:400;color:var(--text-tertiary)">No display name set</span>') +
         '</span>' +
-        '<button class="btn btn-ghost btn-sm" onclick="startEditName()">Change</button>' +
+        '<button class="btn btn-ghost" onclick="startEditName()">Change display name</button>' +
       '</div>' +
       '<div id="dispname-edit" style="display:none">' +
-        '<input id="dispname-input" class="login-input" type="text" autocomplete="name" ' +
-          'maxlength="' + DISPLAY_NAME_MAX + '" placeholder="Your name" ' +
-          'style="margin-bottom:8px">' +
-        '<div class="btn-row">' +
-          '<button class="btn btn-primary btn-sm" onclick="saveDisplayName()" id="dispname-save">Confirm</button>' +
-          '<button class="btn btn-ghost btn-sm" onclick="cancelEditName()">Cancel</button>' +
+        '<input id="dispname-input" class="login-input no-zoom" type="text" autocomplete="name" ' +
+          'maxlength="' + DISPLAY_NAME_MAX + '" placeholder="Your name" style="margin-bottom:10px">' +
+        '<div class="acct-stack" style="margin-top:0">' +
+          '<button class="btn btn-primary btn-wide" onclick="saveDisplayName()" id="dispname-save">Confirm</button>' +
+          '<button class="btn btn-ghost btn-wide" onclick="cancelEditName()">Cancel</button>' +
         '</div>' +
       '</div>' +
-      '<p id="dispname-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
+      '<p id="dispname-status" class="acct-muted" style="margin-top:8px;min-height:0"></p>' +
     '</div>';
 }
 
@@ -480,6 +529,12 @@ function setStatus(msg, err) {
   if (!st) return;
   st.textContent = msg || '';
   st.style.color = err ? '#B00020' : '';
+  /* A permanently reserved status line is what made this box tall for no reason (owner,
+     2026-08-22: "a lot of unnecessary space under Toby Ralph | Change"). It is empty almost
+     always, so it takes no room until it has something to say — and it only ever appears
+     while the row is already expanded, so nothing shifts under a reader. */
+  st.style.marginTop = msg ? '8px' : '0';
+  st.style.minHeight = msg ? '1em' : '0';
 }
 
 function saveDisplayName() {
@@ -506,59 +561,51 @@ function saveDisplayName() {
 // Render the membership box from a subscription-state object. Shared by the instant
 // cache render and the Stripe refine, so both paths produce identical markup.
 function renderMembershipBox(s) {
-  var box = document.getElementById('membership');
-  if (!box) return;
-  // In the app, hide every payment/management CTA (Google Play reader-app rule: no in-app purchase or
-  // steering to web payment). Subscribers manage their membership (cancel / update card / resume) on
-  // the WEBSITE; the app just shows a neutral pointer box. Web keeps the full controls.
+  var line = document.getElementById('membership-line');
+  var acts = document.getElementById('membership-actions');
+  if (!line || !acts) return;
+  /* ⚠ ONE FUNCTION, TWO DESTINATIONS, AND THAT IS THE POINT. The statement of what you have
+     belongs with "Signed in as …" at the top; the buttons belong in the one action stack with
+     everything else. Splitting them at the render is what keeps both true when the Stripe
+     refine re-runs — it rewrites both halves, so they can never disagree about your tier. */
   var native = !!(window.ThaiEarAuth && window.ThaiEarAuth.isNative && window.ThaiEarAuth.isNative());
   /* ⚠ NO DESTINATION IS NAMED (2026-08-15). These used to read "visit thaiear.com in your web
-     browser". Saying where the thing CAN be done turns a statement of fact into a signpost, which
-     is the shape Google Play's anti-steering rule is about; "use a web browser" gives the user
-     exactly the same practical help without pointing anywhere. Do not put the domain back.
-     ⚠ Still shown ONLY to people who have already paid — the Free branch below deliberately
-     renders nothing in the app. That is the branch that would be steering; keep it empty. */
+     browser". Saying where the thing CAN be done turns a statement of fact into a signpost,
+     which is the shape Google Play's anti-steering rule is about; "use a web browser" gives
+     the same practical help without pointing anywhere. Do not put the domain back.
+     ⚠ Still shown ONLY to people who have already paid — the Free branch deliberately renders
+     nothing in the app. That is the branch that would be steering; keep it empty. */
   function noteBox(text) {
-    return '<div style="margin-top:1rem;padding:0.85rem 1rem;background:var(--surface);' +
+    return '<div style="padding:0.85rem 1rem;background:var(--surface);' +
       'border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:13.5px;' +
       'color:var(--text-secondary);line-height:1.5">' + text + '</div>';
   }
-  var manageBox = noteBox('To manage your premium membership, use a web browser.');
-  // Lapsed/failed payment: same rule, but "manage your membership" is not what this person needs
-  // to hear — they are trying to fix a card.
-  var payBox = noteBox('To update your payment details, use a web browser.');
-  {
-      if (s && s.subscribed) {
-        var endStr = '';
-        if (s.current_period_end) { try { endStr = new Date(s.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) {} }
-        var line = s.cancel_at_period_end
-          ? 'Membership: <strong style="color:#B29234">Premium</strong> — active until ' + endStr + ', won’t renew'
-          : 'Membership: <strong style="color:#B29234">Premium</strong> (active)';
-        // App → neutral "manage on the website" box (no in-app cancel/update/resume).
-        // Web → full controls: cancelling offers Resume; active offers Cancel + Update payment method.
-        var action = native
-          ? manageBox
-          : (s.cancel_at_period_end
-              ? '<div class="btn-row"><button class="btn btn-gold" onclick="resumeMembership()">Resume membership</button></div>'
-              : '<div class="btn-row"><button class="btn btn-ghost" onclick="cancelMembership()">Cancel membership</button>' +
-                '<button class="btn btn-ghost" onclick="openPortal()">Update payment method</button></div>');
-        box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">' + line + '</p>' +
-          action +
-          '<p id="cancel-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
-          '<span id="portal-status" class="acct-muted"></span>';
-      } else if (s && s.needsPayment) {
-        box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong style="color:#B00020">Payment problem</strong> — your last payment didn’t go through.</p>' +
-          '<p class="acct-muted" style="font-size:13px;margin-bottom:0.6rem">Update your card to keep your membership — access resumes automatically once it clears. No need to sign up again.</p>' +
-          (native
-            ? payBox
-            : '<button class="btn btn-primary" onclick="openPortal()">Update payment method</button>' +
-              '<span id="portal-status" class="acct-muted" style="margin-left:10px"></span>');
-      } else {
-        // "Free", not "Free member" — the member tier was retired 2026-08-10 and the word would
-        // now name a tier that doesn't exist. Two tiers: Free and Premium.
-        box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership: <strong>Free</strong></p>' +
-          (native ? '' : '<a class="btn btn-gold" href="subscribe.html" style="display:inline-block;text-decoration:none">Upgrade to Premium</a>');
-      }
+  if (s && s.subscribed) {
+    var endStr = '';
+    if (s.current_period_end) { try { endStr = new Date(s.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) {} }
+    line.innerHTML = s.cancel_at_period_end
+      ? 'Membership: <strong style="color:#B29234">Premium</strong> — active until ' + endStr + ', won\u2019t renew'
+      : 'Membership: <strong style="color:#B29234">Premium</strong> (active)';
+    acts.innerHTML = native
+      ? noteBox('To manage your premium membership, use a web browser.')
+      : (s.cancel_at_period_end
+          ? '<button class="btn btn-gold btn-wide" onclick="resumeMembership()">Resume membership</button>'
+          : '<button class="btn btn-ghost btn-wide" onclick="cancelMembership()">Cancel membership</button>' +
+            '<button class="btn btn-ghost btn-wide" onclick="openPortal()">Update payment method</button>') +
+      '<p id="cancel-status" class="acct-muted" style="margin:0;min-height:0"></p>' +
+      '<span id="portal-status" class="acct-muted"></span>';
+  } else if (s && s.needsPayment) {
+    line.innerHTML = 'Membership: <strong style="color:#B00020">Payment problem</strong> — your last payment didn\u2019t go through. Update your card to keep it; access resumes once it clears.';
+    acts.innerHTML = native
+      ? noteBox('To update your payment details, use a web browser.')
+      : '<button class="btn btn-primary btn-wide" onclick="openPortal()">Update payment method</button>' +
+        '<span id="portal-status" class="acct-muted"></span>';
+  } else {
+    // "Free", not "Free member" — the member tier was retired 2026-08-10 and the word would
+    // now name a tier that doesn't exist. Two tiers: Free and Premium.
+    line.innerHTML = 'Membership: <strong>Free</strong>';
+    acts.innerHTML = native ? '' :
+      '<a class="btn btn-gold btn-wide" href="subscribe.html" style="text-decoration:none">Upgrade to Premium</a>';
   }
 }
 // Build a membership-state object from the cached Supabase subscription (instant).
@@ -598,17 +645,16 @@ function subSig() {
 function loadMembership() {
   var a = window.ThaiEarAuth;
   var token = a && a.getAccessToken && a.getAccessToken();
-  if (!document.getElementById('membership') || !token) return;
+  if (!document.getElementById('membership-line') || !token) return;
   var sim = '';
   try { var s2 = new URLSearchParams(location.search).get('simulate'); if (s2) sim = '?simulate=' + encodeURIComponent(s2); } catch (_) {}
-  var mb = document.getElementById('membership');
-  if (mb) mb.classList.add('mb-wait');                 // r144: hold the tallest height until we know
-  var done = function () { if (mb) mb.classList.remove('mb-wait'); };
+  /* r144's mb-wait class is retired with the block it reserved — see the note by the CSS. */
+  var done = function () {};
   fetch('/api/subscription' + sim, { headers: { Authorization: 'Bearer ' + token } })
     .then(function (r) { return r.json(); })
     .then(function (s) { renderMembershipBox(s); persistMembership(s); done(); }, done)
     .catch(function () {
-      var box = document.getElementById('membership');
+      var box = document.getElementById('membership-line');
       // keep the cached display if we already have one; only message if it's empty
       if (box && !box.innerHTML.trim()) box.innerHTML = '<p class="acct-muted" style="margin-top:1rem">Membership status unavailable — refresh to retry.</p>';
     });
@@ -653,8 +699,11 @@ function setEmailConsent(optIn, btnId) {
   a.setMarketingConsent(optIn).then(function () {
     if (st) {
       st.style.color = 'var(--accent)';
-      if (optIn) st.innerHTML = '<span class="tick-anim">✓</span> Subscribed — check your inbox for a welcome email.';
-      else st.textContent = 'You’ve been unsubscribed.';
+      /* Only the thing the BUTTON cannot say. The tick on the button is the confirmation;
+         repeating "Subscribed" underneath it was the sentence the owner asked to remove. */
+      st.textContent = optIn ? 'Check your inbox for a welcome email.' : '';
+      st.style.minHeight = st.textContent ? '1em' : '0';
+      st.style.marginTop = st.textContent ? '8px' : '0';
     }
     // brief confirmation, then swap just the consent block to the opposite action
     // (updateConsentArea, not renderAccount — so the membership box doesn't reload).
@@ -915,16 +964,18 @@ function consentSig() {
 }
 function consentInner() {
   var a = window.ThaiEarAuth;
-  // Until the consent flag has loaded from the profiles row, render nothing (the area
-  // reserves its height) — so we never flash the unsubscribed state before we know.
   if (!(a && a.isMarketingConsentLoaded && a.isMarketingConsentLoaded())) return '';
   var consent = !!(a.getMarketingConsent && a.getMarketingConsent());
+  /* ⚠ ONE BUTTON THAT STATES ITS OWN STATE, no explanatory sentence above it (owner,
+     2026-08-22). Subscribed reads "Subscribed to email list ✓" and un-subscribes on tap;
+     un-subscribed reads "Subscribe to email list". The tick IS the confirmation, which is
+     why the old success sentence went with the explainer — it said the same thing twice. */
   return (consent
-    ? '<p style="margin-bottom:0.7rem;font-size:14px;color:var(--text-secondary)"><span style="color:var(--accent);font-weight:700">✓</span> You’re subscribed to email updates — we’ll let you know when new topics go live.</p>' +
-      '<button class="btn btn-ghost" id="unsub-btn" onclick="unsubscribeEmail()" style="font-size:13px">Unsubscribe</button>'
-    : '<p style="margin-bottom:0.7rem;font-size:14px;color:var(--text-secondary)">Get an email when new topics go live. No spam, unsubscribe anytime.</p>' +
-      '<button class="btn btn-primary" id="sub-btn" onclick="subscribeEmail()">Subscribe to email updates</button>'
-  ) + '<p id="consent-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>';
+    ? '<button class="btn btn-ghost btn-wide" id="unsub-btn" onclick="unsubscribeEmail()">' +
+        'Subscribed to email list <span class="tick-anim" aria-hidden="true">\u2713</span></button>'
+    : '<button class="btn btn-ghost btn-wide" id="sub-btn" onclick="subscribeEmail()">' +
+        'Subscribe to email list</button>'
+  ) + '<p id="consent-status" class="acct-muted" style="margin:0;min-height:0"></p>';
 }
 var _acctRenderedUid = false, _acctConsentSig = null, _acctRenderedSubSig = null;
 function updateConsentArea() {
@@ -976,10 +1027,10 @@ function renderAccount() {
       '</div>';
     return;
   }
-  var consentHtml =
-    '<div id="consent-area" class="acct-section" style="min-height:96px">' +
-      consentInner() +
-    '</div>';
+  /* ⚠ NO .acct-section AND NO min-height ANY MORE. It is one button in the stack, so the
+     border-top and the 96px reserve would draw a rule across the middle of the stack and hold
+     a gap open above it. The stack's own gap does the spacing. */
+  var consentHtml = '<div id="consent-area">' + consentInner() + '</div>';
   // Hidden maintenance control — only when the page is opened as /account?reset=1.
   var doReset = false;
   try { doReset = !!new URLSearchParams(location.search).get('reset'); } catch (_) {}
@@ -991,35 +1042,40 @@ function renderAccount() {
       '</div>'
     : '';
   el.innerHTML =
-    '<p>Signed in as <span class="email">' + escEmail(user.email || user.username) + '</span></p>' +
+    /* ── TWO FACTS, THEN ONE STACK OF ACTIONS ────────────────────────────────────────────
+       The order is the owner's (2026-08-22) and the grouping is the reason it reads better:
+       everything above the stack is a STATEMENT about the account, everything in the stack
+       is something you can DO to it, and the only thing distinguishing one button from
+       another is colour. Previously the two kinds were interleaved — a membership sentence
+       heading a pair of buttons halfway down, a log out marooned beside email updates — so
+       the eye had to re-sort them on every visit.
+
+       ⚠ THE STACK'S ORDER IS DELIBERATE AND NOT ALPHABETICAL OR CHRONOLOGICAL: everyday
+       first (email list, log out), then money (cancel / update card / upgrade), then the two
+       that destroy data, last and red. Adding a button means deciding which of those three
+       it is, not appending it. */
+    '<p class="acct-line">Signed in as <span class="email">' + escEmail(user.email || user.username) + '</span></p>' +
+    '<p class="acct-line" id="membership-line"></p>' +
     displayNameHtml(user) +
-    /* ⚠ LOG OUT SITS WITH THE OTHER ACCOUNT ACTIONS, NOT AT THE BOTTOM OF THE PAGE (owner,
-       2026-08-22: "the log out button is v far below the subscribe to email updates button,
-       but also why is it even there?"). It was stranded between the consent block and the
-       offline downloads, which made it read as belonging to email updates. It belongs to the
-       account as a whole, which is why it is full width rather than sitting in a row with
-       buttons that act on one box. */
-    '<p style="margin-top:1rem"><button class="btn btn-ghost btn-wide" onclick="confirmLogout()">Log out</button></p>' +
-    '<div id="membership" style="min-height:80px"></div>' +
-    consentHtml +
-    resetHtml +
-    /* Between Log out and Delete my account (owner, 2026-08-21). Above the email-updates block
-       it read as a headline feature; it is housekeeping, and it belongs with the other
-       destructive housekeeping at the foot of the page. */
-    offlineDlHtml() +
-    '<div class="acct-section">' +
-      '<button class="btn btn-destructive" onclick="deleteAccount()">Delete my account</button>' +
-      '<p id="delete-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
+    '<div class="acct-stack">' +
+      consentHtml +
+      '<button class="btn btn-ghost btn-wide" onclick="confirmLogout()">Log out</button>' +
+      '<div id="membership-actions"></div>' +
+      offlineDlHtml() +
+      /* ⚠ RED, BUT THE SAME SIZE AS EVERYTHING ELSE (owner: "keep its red styling but change
+         font size and box size to match the others"). The old pair were 12px on a page of
+         14px buttons, which made the two most dangerous actions the smallest targets on it. */
+      '<button class="btn btn-destructive btn-wide" onclick="deleteAccount()">Delete my account</button>' +
+      '<p id="delete-status" class="acct-muted" style="margin:0;min-height:0"></p>' +
     '</div>' +
+    resetHtml +
     /* ⚠ LAST ON THE PAGE, AND THAT IS THE FIX (owner, 2026-08-21: "every time I go into my
        account it renders as I'm mid scroll"). It is admin-only and its answer comes from the
-       SERVER (/api/desktop-dl), so it can only ever arrive late — it is never rendered
-       optimistically, deliberately. While it sat above the reset/logout/delete blocks, its
-       arrival pushed all of them down under whoever was reading them.
-       A min-height reserve would have been the wrong tool: it is empty for everyone except two
-       accounts, so reserving would give every other user a blank gap. Putting it at the end
-       means the only thing its arrival changes is the page's total height, which shifts nothing.
-       It stays an empty div for everyone else. */
+       SERVER (/api/desktop-dl), so it can only ever arrive late. While it sat above the other
+       blocks its arrival pushed all of them down under whoever was reading them. A min-height
+       reserve would be the wrong tool: it is empty for everyone except two accounts, so
+       reserving would give every other user a blank gap. At the end, the only thing its
+       arrival changes is the page's total height, which shifts nothing. */
     '<div id="desktop-dl-admin"></div>';
   renderMembershipBox(cacheSub()); // instant from the cached Supabase state
   _acctRenderedSubSig = subSig();
@@ -1055,22 +1111,15 @@ function offlineDlHtml() {
   // Download UI is app + installed-PWA only, so in a plain browser tab there is nothing to
   // remove and no control to show.
   if (!dlAvailable()) return '';
+  /* ⚠ NO HEADING AND NO COUNT LINE (owner, 2026-08-22: "not needed"). The button names the
+     action and disables itself when there is nothing to remove, which says "nothing stored"
+     more economically than a sentence — and the count was the only thing on this card that
+     needed re-rendering when a download finished. */
   var n = dlCount();
-  return '<div id="offline-dl" class="acct-section">' +
-    '<h2>Offline downloads</h2>' +
-    '<p class="acct-muted" id="offline-dl-count">' +
-      (n ? n + ' item' + (n === 1 ? '' : 's') + ' stored on this device.'
-         : 'Nothing downloaded on this device.') +
-    '</p>' +
-    /* Same treatment as "Delete my account": both remove data, both are typed-confirmation
-       actions, so they read as the same KIND of button (owner, 2026-08-21). Since 2026-08-22
-       that is a shared CLASS rather than two copies of the same four declarations. */
-    '<p style="margin-top:8px"><button class="btn btn-destructive" id="offline-dl-btn" ' +
-      'onclick="removeAllDownloads()"' +
-      (n ? '' : ' disabled') +
-      '>Remove all downloads</button></p>' +
-    '<p id="offline-dl-status" class="acct-muted" style="margin-top:6px;min-height:1em"></p>' +
-  '</div>';
+  return '<button class="btn btn-destructive btn-wide" id="offline-dl-btn" ' +
+      'onclick="removeAllDownloads()"' + (n ? '' : ' disabled') +
+      '>Remove all downloads</button>' +
+    '<p id="offline-dl-status" class="acct-muted" style="margin:0;min-height:0"></p>';
 }
 /* The same call the index's batch bar made, including the typed-REMOVE modal — dl-core owns
    both, so the dialog a user sees is word for word the one they saw before. The cache name
