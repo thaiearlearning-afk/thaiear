@@ -147,7 +147,29 @@
     '.pl-box-head { position: relative; }' +
     '.pl-box-head .dl-select, .pl-box-head .dl-badge { position: absolute; top: 50%; right: 1.15rem; transform: translateY(-50%); margin: 0; cursor: default; pointer-events: none; }' +
     '.pl-box-head .dl-select::before, .pl-box-head .dl-badge::before { display: none; }' +
-    '.pl-box-name { padding-right: 34px; }' +
+    /* ⚠ THE RESERVE GOES ON EVERY ROW, AND THE NAME MUST BE ABLE TO SHRINK — both only bite
+       under OS text scaling (found 2026-08-22 with live/_ui-harness.html, the TEXT_SCALING.md
+       matrix; clean at 390@1×, broken at 360@1.4× and 320@2.0×).
+       Measured at 320@2.0× before this: the badge sat at x=197 with the head's content box
+       ending at x=227, and BOTH faults showed.
+         · .pl-box-meta ("12 sentences · downloaded") reached x=223 with NO padding-right, so it
+           ran 26px under the tick. .pl-box-plays is the same shape and is reserved with it.
+       ⚠ THE PADDING ALONE WAS NOT ENOUGH, and this is the part worth remembering: with the
+       reserve applied, .pl-box-meta was still 30px WIDER than the head's content box, so its
+       text sat exactly on its own padding edge and still under the tick. A flex item is floored
+       at its min-content width, and at 2× one word of "12 sentences · downloaded" exceeded the
+       line. `min-width: 0` is what actually lets it shrink; the padding only positions the text
+       once it can. Every row here needs BOTH.
+         · .pl-box-name reached x=259 — past the content box entirely. A flex item will not
+           shrink below its min-content width without `min-width: 0`, so a long name pushed into
+           the padding and, when it wrapped level with the tick, under it. `.pl-box` is
+           overflow:hidden so it never reached the page (no side-scroll at any size), but it is
+           still the title overspilling its box.
+       34px = the 30px control + 4px. px, not rem, deliberately: the control is a fixed-size
+       graphic that does not grow with the text, so a reserve that grew would only waste width
+       (TEXT_SCALING.md §2 — lengths that must not track the text stay px). */
+    '.pl-box-name { padding-right: 34px; min-width: 0; overflow-wrap: break-word; }' +
+    '.pl-box-meta, .pl-box-plays { padding-right: 34px; min-width: 0; overflow-wrap: break-word; }' +
     '.dl-dot { width: 23px; height: 23px; border-radius: 50%; background: var(--accent-light); border: 1.5px solid var(--accent-light); transition: background .15s, border-color .15s, transform .1s; }' +
     '.dl-select:hover .dl-dot { border-color: var(--accent); }' +
     '.dl-select.selected .dl-dot { background: var(--accent); border-color: var(--accent); }' +

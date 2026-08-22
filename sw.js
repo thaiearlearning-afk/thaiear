@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v439';   // v439: the Read Thai label stops moving when the greeting block lands
+const VERSION = 'v440';   // v440: band cards equalise; playlist rows hold up under OS text scaling
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5

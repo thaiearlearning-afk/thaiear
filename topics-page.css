@@ -929,7 +929,20 @@
 .tp-clear:hover { color: var(--text-primary); }
 
 /* ── the five band rows ─────────────────────────────────────────────────── */
-.tp-bands { display: grid; gap: 10px; }
+/* ⚠ grid-auto-rows: 1fr MAKES ALL FIVE BAND CARDS THE HEIGHT OF THE TALLEST (owner,
+   2026-08-22). Their names wrap to different line counts — at 390px only "Beginner" fits on one
+   line, on the owner's phone "Upper Intermediate → Advanced" and "Beginner → Lower Intermediate"
+   do too — so the short ones rendered 55.7px against 81.3px.
+   ⚠ THIS REPLACES A min-height RESERVE ON .tp-band-name, WHICH WAS WRONG TWICE. It has to encode
+   a line count, so (a) it only equalised at the widths where the split really was 1-vs-2 lines —
+   at 360@1.4× the names take 1/3/4/3/3 lines and at 320@2.0× they take 3/12/14/13/10, and a
+   2-line floor equalises neither — and (b) at >=900px every name already fits on ONE line and the
+   set was already uniform, so a 2-line floor grew every card by 29px for nothing.
+   1fr asks the grid the question directly: make every row as tall as the tallest. No line count,
+   no breakpoint, nothing to keep in sync with the font. Measured uniform at 320@2.0×, 360@1.4×,
+   390@1×, 900@1× and 1200@1×, and byte-identical to before at the widths that were already
+   uniform. */
+.tp-bands { display: grid; gap: 10px; grid-auto-rows: 1fr; }
 .tp-band {
   display: flex; align-items: center; gap: 1rem; text-decoration: none; position: relative;
   background: var(--surface); border: 0.5px solid var(--border);
