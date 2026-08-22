@@ -119,6 +119,18 @@
     '.modal-input:focus { outline: none; border-color: var(--accent); }' +
     '.dl-select, .dl-badge { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-left: 6px; flex-shrink: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }' +
     '.dl-select::before, .dl-badge::before { content: \'\'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 52px; height: 52px; border-radius: 50%; }' +
+    /* ⚠ THE CONTROL MUST NOT SET THE ROW'S HEIGHT (owner, 2026-08-22 — the same fault as the
+       tick on a topic card, reported separately here because it is a different stylesheet).
+       The box is 30px and it shares the head's first flex line with .pl-box-name, which is
+       18px — so a downloaded playlist measured 110.92px against 98.92px for an identical one
+       without a download. Negative BLOCK margins pull the 30px box back to an 18px footprint
+       in flow while leaving it drawn full size, so nothing shrinks visually and, crucially,
+       the 52px ::before hit area above is untouched — it is absolutely positioned and takes
+       no part in layout. That is why this is not the topic card's fix: there the badge is
+       inert reported state and could simply be made smaller; here it is a real control and
+       the tap target has to survive. Verified: the badge still sits inside the box and clears
+       both the name and the meta row. */
+    '.pl-box-head .dl-select, .pl-box-head .dl-badge { margin-top: -6px; margin-bottom: -6px; }' +
     '.dl-dot { width: 23px; height: 23px; border-radius: 50%; background: var(--accent-light); border: 1.5px solid var(--accent-light); transition: background .15s, border-color .15s, transform .1s; }' +
     '.dl-select:hover .dl-dot { border-color: var(--accent); }' +
     '.dl-select.selected .dl-dot { background: var(--accent); border-color: var(--accent); }' +
