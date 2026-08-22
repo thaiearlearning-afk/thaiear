@@ -249,8 +249,25 @@
 
   /* Does the tallest state fit under the Read Thai label without crowding it or the mark?
      Everything here is a measured box, so text inflation is already in the numbers. */
-  var GAP = 12;          // between the label and the block
-  var FLOOR = 14;        // between the block and the bottom edge
+  /* ⚠ GAP AND FLOOR ARE NOT NEGOTIABLE TO WIN A DEVICE (owner, 2026-08-22: "if it doesnt fit
+     it doesnt fit - dont want it ever looking cramped/forced"). A 320x568 phone misses the
+     block by 14px and shaving these would buy it — and the block would then touch the label
+     and the screen edge. That is the same all-or-nothing rule as the fit test itself. */
+  var GAP = 12;          // the LEAST that may sit between the label and the block
+  var FLOOR = 14;        // the LEAST that may sit between the block and the bottom edge
+  /* ⚠ THE BLOCK IS CENTRED IN THE SPACE IT IS GIVEN, NOT PINNED TO THE FLOOR (owner,
+     2026-08-22: "raise the welcome back user block a bit"). Once the Read Thai label stopped
+     being dragged 33px down (§3e), the block was left sitting 14px off the bottom with 58px of
+     nothing above it — the slack had all collected on one side.
+
+     ⚠⚠ AND IT IS ADAPTIVE FOR A REASON: A FLAT RAISE WOULD COST DEVICES. The floor is a
+     TERM IN THE FIT TEST (`need = tallest + GAP + FLOOR`), so raising the block by a constant
+     raises the bar every phone has to clear, and the smallest ones stop showing the block at
+     all. Splitting the LEFTOVER instead spends only what a given phone actually has: a roomy
+     phone gets a balanced gap, a tight one falls back to exactly today's 14px, and the fit
+     decision is bit-for-bit unchanged everywhere. */
+  var LIFT_MAX = 44;     // past this it stops reading as "above the bottom edge" and floats
+  var lastFit = null;    // the numbers fits() worked from, so apply() need not re-measure
   function fits() {
     if (window.matchMedia && !window.matchMedia(PHONE).matches) return false;
     var label = stage.querySelector('.s3 .s-label');
@@ -268,13 +285,15 @@
     var lr = label.getBoundingClientRect();
     var mark = stage.querySelector('.medal-disc');
     var markBottom = mark ? mark.getBoundingClientRect().bottom : sr.top;
-    var need = tallestHeight() + GAP + FLOOR;
+    var tallest = tallestHeight();
+    var need = tallest + GAP + FLOOR;
     /* Space below the label, and the label itself must still clear the mark. Both matter: on a
        very short stage the label is already tight under the mark, and stealing more would push
        it into the swirl. */
     var below = sr.bottom - lr.bottom;
     var labelClear = lr.top - markBottom;
     var ok = below >= need && labelClear >= 8;
+    lastFit = { below: below, tallest: tallest };
     if (had) stage.classList.add('cta-fits');
     return ok;
   }
@@ -283,13 +302,21 @@
     var ok = fits();
     stage.classList.toggle('cta-fits', ok);
     if (!ok) { el.innerHTML = ''; return; }
-    /* ⚠ NOTHING IS WRITTEN BACK TO THE STAGE, AND THAT IS THE POINT (owner, 2026-08-22).
-       This used to set `--cta-h`, which the CSS fed into a second offset on the Read Thai
-       label — so the label's position depended on a measurement taken by a `defer`red script,
-       and moved one frame after paint. The label now keeps its authored place whether the
-       block is shown or not; the clearance is guaranteed by fits() refusing the class unless
-       the room is genuinely there, which is a decision, not a nudge. See the note over the
-       rule in home-mock.html before adding an offset here again. */
+    /* ⚠ THIS MAY POSITION THE BLOCK. IT MAY NEVER POSITION ANYTHING ELSE. That is the line
+       §3e was really about: home-cta.js is `defer`, so a measurement it writes lands one frame
+       after paint. For the block that is harmless — it is `display:none` until the class on the
+       line above, so its first painted frame is this one, already in the right place. For the
+       Read Thai label it was the judder, because the label is on screen from the very first
+       frame. `--cta-h` used to cross that line by feeding a second offset into the label's own
+       rule; it is gone, and nothing should replace it. Read the note over the rule in
+       home-mock.html before writing anything the label can see.
+
+       Split the slack: half above the block, half below, never tighter than FLOOR and never
+       looser than LIFT_MAX. fits() has already guaranteed there is at least GAP + FLOOR to
+       divide, so the clamp is a floor on taste, not on safety. */
+    var rest = lastFit ? Math.max(0, lastFit.below - lastFit.tallest) : 0;
+    stage.style.setProperty('--cta-bottom',
+      Math.min(LIFT_MAX, Math.max(FLOOR, Math.round(rest / 2))) + 'px');
     var next = html();
     if (el.innerHTML !== next) el.innerHTML = next;   // never rewrite an identical node
     /* The gold ground belongs to the SIGNED-IN greeting only; the signed-out state is a button,
