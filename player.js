@@ -6635,7 +6635,7 @@
        "Played 12 times" is ~3x the width and the pill already carries a number, a play button, an
        exclude button and the hint — at 320px with OS text scaling it squeezes the hint out.
        Topic cards and playlist rows, which have the room, carry the listening-time caption
-       instead ("Time listened (Thai): 2h 5min" — topics.js listenCaptionFor).
+       instead ("Thai listening time: 2h 5min" — topics.js listenCaptionFor).
        ⚠ flex-shrink:0 + tabular-nums: the chip must not compress or jitter between 1 and 2
        digits, or every pill on the page reflows as counts tick over. */
     '.te-plays{display:none;align-items:center;gap:4px;flex-shrink:0;font-family:var(--font-ui);'
