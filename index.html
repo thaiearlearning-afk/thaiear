@@ -125,7 +125,6 @@
     align-items: center;
     gap: 1rem;
   }
-  .footer-thai { justify-self: end; }
   /* ⚠ THIS FOOTER WAS THE SIDE-SCROLL. Six links in a `display: flex` row with no wrap, and
      on mobile the grid switches to one centred column, where `justify-items: center` sizes
      each item to MAX-CONTENT — so both the link row and the copyright line could exceed the
@@ -149,12 +148,6 @@
     font-weight: 500;
   }
   .footer-links a:hover { color: var(--accent); }
-  .footer-thai {
-    font-family: var(--font-thai);
-    font-size: calc(13px * var(--te-ui, 1));
-    color: var(--gold-dark);
-    opacity: 0.7;
-  }
 
 
   @media (max-width: 600px) {
@@ -162,8 +155,9 @@
       grid-template-columns: 1fr;
       justify-items: center;
       text-align: center;
+      padding: 0.8rem 1.25rem;
+      gap: 0.3rem;
     }
-    .footer-thai { justify-self: center; }
   }
 
 
@@ -415,7 +409,23 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
      caveat that already applies at this size. */
   :root{ --split-n:72; --line-w:2.5px; }
   .s1 .s-label,.s2 .s-label{ top:26%; width:44vw; }
-  .s3 .s-label{ top:74%; width:88vw; }
+  /* ⚠ THE `--s3-drop` NUDGE (owner, 2026-08-23: "lower the Read Thai block a touch, just by
+     the height of 12 steps ... this makes it closer to the welcome back block, that block can
+     stay exactly where it is"). 19px is MEASURED: `.s-meta` is 17px tall plus a 2.4px
+     margin-top.
+
+     ⚠⚠ IT IS IN CSS, NOT JS, AND THAT IS NOT A STYLE CHOICE. The label is SSR text, on
+     screen from the very first frame, and `home-cta.js` is `defer`red — so a nudge applied
+     from script would land after paint and judder, which is exactly §3e. CSS moves it before
+     anything is drawn.
+
+     ⚠ GATED ON HEIGHT BECAUSE IT IS NOT ALWAYS AFFORDABLE. Measured with the trimmed footer,
+     the gap between the label and the greeting block runs 18px at a 640 viewport, 23 at 667,
+     26 at 700, 34 at 760, 46 at 844 — it only grows large on a TALL screen, which is where the
+     owner was looking (the installed app) and where the nudge has room. Applied flat it took
+     the greeting block away entirely at 640 and 667, because `fits()` correctly refused a gap
+     under GAP(12). 740 is the lowest viewport that still clears 12 after the drop. */
+  .s3 .s-label{ top:calc(74% + var(--s3-drop, 0px)); width:88vw; }
   .s-title{ font-size:calc(clamp(20px,6vw,26px) * var(--te-ui, 1)); }
   .s3 .s-title{ font-size:calc(clamp(20px,6vw,26px) * var(--te-ui, 1)); }
   .s-sub{ font-size:calc(12px * var(--te-ui, 1)); }
@@ -428,8 +438,29 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   .s-go{ display:none; }
 }
 /* A short phone (an SE at 568px, or any phone in landscape) cannot carry the
-   descriptions at all — three titles plus the mark already fill it. */
-@media (max-width:700px) and (max-height:720px){ .s-sub{ display:none; } }
+   descriptions at all — three titles plus the mark already fill it.
+
+   ⚠ 720 → 639 (owner, 2026-08-23: on iPhone Chrome the descriptions were missing, because a
+   browser tab pays ~100px of URL bar that the installed app does not — so the SAME phone falls
+   the wrong side of this line in the browser and the right side in the app). The threshold was
+   only affordable after the footer lost its Thai line and its mobile padding: at 393px wide the
+   footer went 140px → 69px, and the stage gained all of it.
+
+   ⚠⚠ 639 IS MEASURED, NOT PICKED. What actually collides is `.s-meta` — the description
+   pushes "2,000+ SENTENCES" down into the centre mark. With the trimmed footer, rendered and
+   looked at: 540 and 568 have the disc sitting ON the meta line, 600 has its ring clipping it,
+   and 640 upwards is clean. So the last safe height is 640 and the rule hides below it. Change
+   the footer's height or the mark's size and this number is stale — re-render, do not re-reason.
+
+   ⚠ A media query cannot see TEXT SCALING, and this one is the last place on the splash that
+   still guesses. At 2x Android text the descriptions wrap further and would collide at heights
+   this rule calls safe. The honest fix is the one `home-cta.js` already uses — measure the
+   collision and hide on the answer. Not built; see §3h. */
+@media (max-width:700px) and (max-height:639px){ .s-sub{ display:none; } }
+/* The other half of the nudge above. `home-cta.js` reads this SAME property and adds it back
+   when it sizes the greeting block's lift, so the label moves and the block does not — which
+   is what the owner asked for. One declaration, two readers; do not hard-code 19 in the JS. */
+@media (max-width:700px) and (min-height:740px){ .tri{ --s3-drop: 19px; } }
 
 
 /* ── MOCK ONLY: the welcome / create-account block ────────────────────────────────
@@ -899,7 +930,6 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
     <a href="terms.html">Terms</a>
     <a href="refunds.html">Refunds</a>
   </nav>
-  <span class="footer-thai">หูภาษาไทย</span>
 </footer>
 
 <script>

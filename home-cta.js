@@ -330,7 +330,18 @@
        Split the slack: half above the block, half below, never tighter than FLOOR and never
        looser than LIFT_MAX. fits() has already guaranteed there is at least GAP + FLOOR to
        divide, so the clamp is a floor on taste, not on safety. */
-    var rest = lastFit ? Math.max(0, lastFit.below - lastFit.tallest) : 0;
+    /* ⚠ THE `--s3-drop` NUDGE IS ADDED BACK BEFORE THE SPLIT (owner, 2026-08-23: the Read
+       Thai label moves down, "that block can stay exactly where it is"). The CSS lowers the
+       label, which shrinks `below` — and an even split of a smaller leftover would carry the
+       block down with it by half the nudge. Measured: 8-9px, on a block the owner asked not to
+       move. Splitting the UN-nudged leftover keeps the block exactly where it was and spends
+       the whole nudge on closing the gap above it, which is the point of the nudge.
+
+       ⚠ `fits()` still uses the REAL, nudged geometry, so safety is unaffected: if the drop
+       leaves less than GAP above the block, the block is withheld rather than crowded. That is
+       why the nudge is gated to tall viewports in the CSS — see the note there. */
+    var drop = parseFloat(getComputedStyle(stage).getPropertyValue('--s3-drop')) || 0;
+    var rest = lastFit ? Math.max(0, lastFit.below + drop - lastFit.tallest) : 0;
     stage.style.setProperty('--cta-bottom',
       Math.min(LIFT_MAX, Math.max(FLOOR, Math.round(rest / 2))) + 'px');
     var next = html();

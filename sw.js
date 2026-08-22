@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v443';   // v443: the email-list button paints from a cached consent flag, not a round trip
+const VERSION = 'v444';   // v444: the footer sheds its Thai line and its mobile padding; splash text returns on phone browsers
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
                           // sentence of a page load and every 30s after, not every 5
