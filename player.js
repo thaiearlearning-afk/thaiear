@@ -2739,14 +2739,20 @@
      connection: free clip off the CDN 0.44 s median with `cf-cache-status: HIT`; the same-sized
      premium clip 0.80 s from the S3 endpoint, which returns NO cf-cache-status and NO
      cache-control at all — an origin read, always.)
-     The server signs for URL_TTL (3600 s), so holding the URL for 45 minutes is safe with a wide
-     margin, and it makes the URL STABLE — which is what lets the browser's own HTTP cache serve
-     the replay. In-flight requests are shared, so the dynamic build's pool of 6 asking for the
+     The server signs for URL_TTL (21600 s since 2026-08-23), so holding the URL for 5 hours is
+     safe with an hour to spare, and it makes the URL STABLE — which is what lets the browser's own
+     HTTP cache serve the replay.
+     ⚠ RAISED 45m -> 5h IN TANDEM WITH URL_TTL (1h -> 6h). Not a latency change — it is what stops
+     a listener who stays on one topic re-minting its whole URL set every 45 minutes, which was
+     generating thousands of issuances a day against a corpus they had barely touched and drowning
+     the signal the issuance counter exists to read. ANTI_THEFT_PLAN.md §14b.7.
+     ⚠ NEVER SET THIS ABOVE URL_TTL. The Math.min below is the guard; if it is ever removed, a
+     cached URL outlives the signature and every gated clip 403s until the cache is dropped. In-flight requests are shared, so the dynamic build's pool of 6 asking for the
      same file mints once, not six times.
      ⚠ Memory only, never localStorage: a signed URL is a bearer token for that object. It is
      dropped wholesale on any auth change (see the listener at the bottom of this block) so a
      sign-out cannot leave one usable. */
-  var MINT_TTL_MS = 45 * 60 * 1000;
+  var MINT_TTL_MS = 5 * 60 * 60 * 1000;
   var mintCache = {};        // file -> { url, exp }
   var mintInflight = {};     // file -> Promise<url>, so concurrent asks share one mint
   function mintGet(file) {

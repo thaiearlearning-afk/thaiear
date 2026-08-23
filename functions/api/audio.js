@@ -35,7 +35,22 @@
      SUPABASE_SERVICE_ROLE_KEY  SECRET — writes the issuance counter (already set; used by plays/seen)
    ============================================================ */
 
-const URL_TTL = 3600; // seconds the signed URL stays valid (covers full-file streaming + seeking)
+/* Seconds a signed URL stays valid. 3600 originally, and that figure was a FLOOR — it had to
+   cover streaming and seeking a ~15 minute combined track. Raised to 6h on 2026-08-23, in tandem
+   with player.js MINT_TTL_MS (45m -> 5h), for one reason: the client re-mints a whole topic every
+   time its cached URLs age out, so a listener parked on a topic all day generated thousands of
+   issuances having downloaded nothing new. That noise is the difference between a counter that can
+   separate a heavy listener from an extractor and one that cannot — see ANTI_THEFT_PLAN.md §14b.7.
+   It also removes round trips, which is the same direction as the r192 latency work.
+   ⚠ THE TWO CONSTANTS MOVE TOGETHER, AND MINT_TTL_MS MUST STAY BELOW THIS ONE, or the client
+   serves URLs that R2 has already stopped accepting. player.js's Math.min(serverMs, MINT_TTL_MS)
+   clamp is what enforces it — keep it.
+   ⚠ The cost, stated plainly: a URL copied out of devtools works for 6h instead of 1h, and a
+   revoked account's ALREADY-MINTED urls keep working that much longer. Both are minor — it is a
+   bearer token for one ~7 KB clip, anyone able to grab one could sign in and mint their own, and
+   an extraction completes in minutes, so revocation was never going to interrupt one mid-flight.
+   R2/SigV4 permits up to 7 days, so 6h is nowhere near a limit. */
+const URL_TTL = 21600;
 
 /* BATCH MINTING (2026-08-19). `?files=a.mp3,b.mp3,…` signs many keys in ONE request.
    Why: every signed URL used to cost a full round trip — page → this Function → Supabase →
