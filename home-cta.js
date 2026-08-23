@@ -180,6 +180,7 @@
          provider name reads as "they typed this", which would greet every visitor by their full
          name a second before auth.js corrects it. */
       ? { state: 'in', user: { id: g.user.id || '', username: I.usernameOf(g.user),
+                               chosenName: I.chosenNameOf(g.user),
                                providerName: I.providerNameOf(g.user),
                                email: g.user.email || '', created_at: g.user.created_at || '' } }
       : { state: 'out' };

@@ -37,7 +37,10 @@
      the fix trades a jump for a wrong name. */
   function usernameOf(u) {
     var meta = (u && u.user_metadata) || {};
-    return meta.full_name || meta.name ||
+    /* ⚠ `display_name` FIRST. It is the name the person chose on the account page, and the only
+       one that survives an OAuth sign-in — `full_name` is a Google claim and is overwritten by
+       every sign-in (see updateDisplayName() in auth.js). */
+    return meta.display_name || meta.full_name || meta.name ||
            ((u && u.email) ? u.email.split('@')[0] : 'Member');
   }
 
@@ -69,10 +72,21 @@
     return meta.name || (u && u.providerName) || '';
   }
 
+  /* The name the person typed on the account page, if any. Same job as providerNameOf(): callers
+     that reshape the raw user into the slim form must carry it, or the reshaped object cannot be
+     told apart from one that was never edited. */
+  function chosenNameOf(u) {
+    var meta = (u && u.user_metadata) || {};
+    return meta.display_name || (u && u.chosenName) || '';
+  }
+
   function nameParts(u) {
     var meta = (u && u.user_metadata) || {};
     return {
-      full: meta.full_name || meta.name || (u && u.username) || '',
+      full: meta.display_name || meta.full_name || meta.name || (u && u.username) || '',
+      /* The name the person typed. Its PRESENCE is the whole answer to "did they choose this?" —
+         nothing has to be inferred from a comparison any more. */
+      chosen: chosenNameOf(u),
       /* The provider's OWN copy of the name, which updateDisplayName never writes to. */
       provider: meta.name || (u && u.providerName) || '',
       email: (u && u.email) || ''
@@ -91,7 +105,15 @@
   function isCustomName(u) {
     var p = nameParts(u);
     if (!p.full) return false;
+    /* The name is sitting in the field only this site writes. Nothing to infer. */
+    if (p.chosen) return true;
+    /* ⚠ LEGACY PATH, and it is all but dead. Before 2026-08-23 a chosen name went to `full_name`
+       alone, and the ONLY record of an edit was that field disagreeing with the provider's `name`.
+       Every such name has since been overwritten by an OAuth sign-in, so this can still fire only
+       for an account that has not signed in since. Kept because it costs one line and answers
+       correctly for such an account; do not build anything new on it. */
     if (p.provider) return p.full !== p.provider;
+    /* No provider name at all (a magic-link signup), so a name can only have been typed. */
     return true;
   }
 
@@ -144,6 +166,7 @@
     state: state,
     usernameOf: usernameOf,
     providerNameOf: providerNameOf,
+    chosenNameOf: chosenNameOf,
     hasRealName: hasRealName,
     isCustomName: isCustomName,
     greetingName: greetingName

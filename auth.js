@@ -128,11 +128,14 @@
          exactly what happened between the file shipping and 2026-08-18 (zero rows, ever).
          Do not slim this object back down. */
       created_at: u.created_at || '',
-      username: meta.full_name || meta.name || (u.email ? u.email.split('@')[0] : 'Member'),
-      /* The provider's OWN copy of the name, untouched by updateDisplayName. Carried on the slim
-         user so identity.js can tell a name the person CHOSE from the one Google supplied —
-         `full_name` differing from `name` is the only record that an edit ever happened. Without
-         it every reader holding this object would have to greet by first name or guess. */
+      /* ⚠ `display_name` FIRST, AND IT IS NOT A PREFERENCE — IT IS THE ONLY FIELD THE PROVIDER
+         CANNOT REACH. See updateDisplayName() for why a chosen name may not live in `full_name`. */
+      username: meta.display_name || meta.full_name || meta.name ||
+                (u.email ? u.email.split('@')[0] : 'Member'),
+      /* The name the person CHOSE, and the provider's OWN copy of the name they were given. Both
+         travel on the slim user because a reshaped user that has lost them is indistinguishable
+         from an unedited one — identity.js decides first-name vs whole-name from these. */
+      chosenName: meta.display_name || '',
       providerName: meta.name || '',
       avatar: meta.avatar_url || ''
     };
@@ -1334,10 +1337,26 @@
        would vanish when they cleared site data. (Contrast the greeting's colour, which IS
        localStorage on purpose: cosmetic, per-device, and nobody else ever sees it.)
 
-       It needs NO schema, NO migration and NO table: `full_name` already lives in
-       `user_metadata`, which is where Google puts it at signup and where userFromSession()
-       and identity.js's usernameOf() already read from. One write and the nav, the greeting
-       and the account page all follow, because they all derive from the same field.
+       It needs NO schema, NO migration and NO table: `user_metadata` is where Google puts the
+       name at signup and where userFromSession() and identity.js's usernameOf() already read
+       from. One write and the nav, the greeting and the account page all follow.
+
+       ⚠⚠ BUT IT MUST NOT BE WRITTEN TO `full_name` ALONE, AND THIS COST A SIGN-IN CYCLE TO
+       LEARN (owner, 2026-08-23: "when I log out and log back in with google I lose my chosen
+       display name"). EVERY OAuth SIGN-IN MERGES GOOGLE'S CLAIMS BACK INTO `user_metadata` —
+       `full_name`, `name`, `avatar_url`, `picture`, `email`, `iss`, `sub`. `full_name` is one of
+       GOOGLE'S OWN claims, so a name written there goes into a field the provider reclaims at the
+       next sign-in. Measured: the day it shipped exactly one account had `full_name` differing
+       from `name`; after one sign-out and back in, 61 of 61 accounts matched again.
+
+       So the chosen name lives in **`display_name`, a key Google never sends** — the merge only
+       overwrites the provider's own claims, it does not clear the bag. `full_name` is written TOO,
+       so the Supabase dashboard and any external reader still show the right name until the next
+       sign-in reclaims it; nothing depends on that copy surviving.
+       ⚠ A `profiles` COLUMN WAS REJECTED for this: identity.js must answer "who is this?"
+       SYNCHRONOUSLY before auth resolves, and a column is a network read — the name would land
+       late and the nav would paint the wrong one for a frame. user_metadata rides inside the
+       session, so it is there pre-auth and offline.
 
        ⚠ THE LOCAL COPIES MUST BE UPDATED IN THE SAME BREATH. There are three: currentUser,
        currentSession.user, and the durable `thaiear_identity` mirror that identity.js reads
@@ -1349,14 +1368,16 @@
       var clean = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
       if (!clean) return Promise.reject(new Error('Please enter a name.'));
       if (clean.length > 20) return Promise.reject(new Error('Please use 20 characters or fewer.'));
-      return client.auth.updateUser({ data: { full_name: clean } }).then(function (res) {
+      return client.auth.updateUser({ data: { display_name: clean, full_name: clean } })
+        .then(function (res) {
         if (res && res.error) throw res.error;
         var u = res && res.data && res.data.user;
         if (currentSession) {
           if (u) currentSession.user = u;
           else if (currentSession.user) {
             currentSession.user.user_metadata =
-              Object.assign({}, currentSession.user.user_metadata || {}, { full_name: clean });
+              Object.assign({}, currentSession.user.user_metadata || {},
+                            { display_name: clean, full_name: clean });
           }
           writeIdentity(currentSession);
           currentUser = userFromSession(currentSession);
