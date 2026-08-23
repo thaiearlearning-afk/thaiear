@@ -3352,7 +3352,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r198';   // r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r199';   // r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -3533,6 +3533,32 @@
      What is skipped is the tail of the session's final 3-second gap pause, i.e. silence. */
   var DYN_PREADVANCE_S = 0.45;
   var dynPreAdvanced = false;
+  /* ⚠⚠ AND REPEAT NEEDS THE SAME TREATMENT, FOR THE SAME REASON (owner, 2026-08-23: on the
+     Android app with the screen locked "the topic actually just came to a stop instead of
+     repeating"). Read the r26a note above and the fault is already described there: waiting for
+     `ended` means the element has ALREADY STOPPED, and a JS handler then has to seek and press
+     play into a stopped audio session from a backgrounded WebView. Autoplay was given a hop that
+     happens WHILE THE ELEMENT IS STILL PLAYING; repeat was left on `ended` and was explicitly
+     excluded from the pre-advance (`!repeatOn`), so it kept the bug autoplay had been cured of.
+     Looping is the easier half — the source does not change, so all that is needed is a seek to 0
+     a fraction before the end, which never lets the session go inactive at all. */
+  var dynPreLooped = false;
+  /* What, if anything, should happen because we are in the last fraction of the track? Pure and
+     named so it can be tested without a media element — the old form was four lines of condition
+     inline in the timeupdate handler, which is why the repeat case could sit wrong in it unseen.
+     ⚠ REPEAT WINS OVER AUTOPLAY, matching the `ended` handler and r136's mutual-exclusion rule.
+     ⚠ THE GUARDS ARE TIGHT ON PURPOSE. While a new source loads, iOS can report a transient or
+     tiny duration, so a loose "near the end" test fires straight after a MANUAL hop and skids on
+     to the next unit — which reads as prev/next being broken. A real session runs minutes. */
+  function mainTailAction(t, dur, paused, opts) {
+    opts = opts || {};
+    if (paused || !dur || !isFinite(dur) || dur <= 20) return null;
+    if (!(t > dur * 0.9)) return null;
+    if ((dur - t) > DYN_PREADVANCE_S) return null;
+    if (opts.repeat) return 'loop';
+    if (opts.dyn && opts.autoplay) return 'advance';
+    return null;
+  }
   var dynSessionIsLocal = true; // does dynSession belong to THIS page's sentences? (card highlight guard)
   var dynAdopted = null;      // the CHAIN entry the top player is currently on when it isn't home (null = home)
   // ── round-11: the CHAIN replaces the pairwise dynNav adopt/navigate model ──
@@ -7247,17 +7273,23 @@
     }
     setMiniFill(pct);   // mirror onto the floating mini bar
     if (DYN && !dynPosStale && (mainAudio.currentTime || 0) > 0) dynLastPos = mainAudio.currentTime;   // remember position (resume guard)
-    /* The guard has to be tight. While a new source loads, iOS can report a transient or tiny
-       duration — so a loose "near the end" test fires the instant after a MANUAL hop and skids
-       straight on to the next unit, which reads as prev/next being broken. A real session runs
-       minutes, so require a substantial duration AND genuinely being in its last stretch. */
-    if (DYN && autoplayOn && !repeatOn && !dynPreAdvanced && !mainAudio.paused &&
-        mainAudio.duration && isFinite(mainAudio.duration) && mainAudio.duration > 20 &&
-        (mainAudio.currentTime || 0) > mainAudio.duration * 0.9 &&
-        (mainAudio.duration - mainAudio.currentTime) <= DYN_PREADVANCE_S) {
+    var tailAct = mainTailAction(mainAudio.currentTime || 0, mainAudio.duration, mainAudio.paused,
+                                 { repeat: repeatOn, autoplay: autoplayOn, dyn: DYN });
+    if (tailAct === 'advance' && !dynPreAdvanced) {
       dynPreAdvanced = true;   // once per track; cleared whenever a new source is set
       dynLog('AUTO pre-advance at ' + mainAudio.currentTime.toFixed(1) + '/' + mainAudio.duration.toFixed(1));
       advanceTopic(1);
+    } else if (tailAct === 'loop' && !dynPreLooped) {
+      /* ⚠ SEEK, DO NOT STOP AND RESTART. The element keeps playing across a seek, so the audio
+         session never goes inactive and nothing has to be re-prepared — which is the whole reason
+         this works with the screen locked where the `ended` path did not. What is skipped is the
+         tail of the final gap, i.e. silence. */
+      dynPreLooped = true;
+      dynLog('REPEAT pre-loop at ' + mainAudio.currentTime.toFixed(1) + '/' + mainAudio.duration.toFixed(1));
+      if (DYN) { dynPreAdvanced = false; dynLastPos = 0; }
+      mainAudio.currentTime = 0;
+    } else if (dynPreLooped && mainAudio.duration && (mainAudio.currentTime || 0) < mainAudio.duration * 0.5) {
+      dynPreLooped = false;    // back at the top — arm it for the next time round
     }
     if (DYN && dynSession && dynSessionIsLocal) dynHighlight(mainAudio.currentTime);   // dyn: highlight the playing card (this page's session only)
     writeWebResume();   // keep the cross-page resume position fresh while playing (web only, throttled)
@@ -7269,8 +7301,13 @@
     if (mainOnSilence()) return;
     if (DYN) dynLastPos = 0;   // track finished — a later play starts over, not at the end
     setMainIcon(false);
-    // repeat-one wins over autoplay: loop the current topic.
+    /* ⚠ THIS IS NOW THE FALLBACK, NOT THE MECHANISM. Repeat loops from the timeupdate handler a
+       fraction before the end (see mainTailAction) precisely so that it never has to restart a
+       STOPPED element from a backgrounded WebView — which is what failed with the screen locked.
+       This branch still matters for the cases the pre-loop guards exclude: a track of 20 s or
+       less, and any engine whose timeupdate is too sparse to land inside the last 0.45 s. */
     if (repeatOn) {
+      dynPreLooped = false;
       mainAudio.currentTime = 0;
       mainAudio.play().then(function () { setMainIcon(true); }).catch(function () {});
       return;
