@@ -33,7 +33,10 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v449';   // v449: terms.html rewritten to match the live access model (audio needs
+const VERSION = 'v450';   // v450: a leftover version cache can no longer answer a fallback
+                          // (scopedMatch), and nothing upstream of activate()'s sweep can
+                          // cost it or the claim. Previous:
+                          // v449: terms.html rewritten to match the live access model (audio needs
                           // an account on every tier; the member tier is gone; downloads are
                           // permitted, not forbidden). terms.html is precached, so this bump is
                           // what delivers it.
@@ -581,17 +584,59 @@ function offlinePage() {
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
+/* ⚠⚠ THE CACHES A FALLBACK IS ALLOWED TO ANSWER FROM, IN PRIORITY ORDER (2026-08-23).
+   The two helpers below used to call the bare caches.match(), which searches EVERY cache on this
+   origin in CREATION ORDER — OLDEST FIRST. That is the 2026-08-12 `thaiear-dl` shadowing bug one
+   level up: while a leftover thaiear-v<N> exists (an activate() that never reached its sweep, see
+   SW_ACTIVATE_FIX_PLAN.md), it is consulted BEFORE the current version cache on every fallback
+   path — any navigation slower than NET_TIMEOUT_MS, anything at all while netLooksDown(), and any
+   failed fetch of a precached asset. A stale build then surfaces in exactly the conditions nobody
+   can reproduce, which is why a lingering cache is NOT merely wasted storage today.
+   Naming the caches makes a leftover unreachable, so it costs storage and nothing else.
+   ⚠ ORDER IS LOAD-BEARING: CACHE first, so the current version always beats a downloaded copy of
+   the same page (`thaiear-dl` holds topic pages under their clean /topic-NN key and is never
+   version-wiped). Today's creation-order search gets this backwards on a device that downloaded a
+   topic before the current release.
+   ⚠ THE TRADE, MADE DELIBERATELY (owner-approved 2026-08-23): on a device whose current cache has
+   HOLES, a file that exists only in a leftover becomes a clean miss offline instead of a stale hit.
+   Online is unaffected — a miss just goes to the network — and migrateGaps() exists to fill those
+   holes during activation.
+   ⚠ Keep in step with the keep-list in activate() below, minus VENDOR_CACHE: that one is
+   cross-origin (esm.sh) and is served by its own branch at the top of the fetch handler, so it
+   never reaches these helpers. */
+const FALLBACK_CACHES = [CACHE, 'thaiear-dl', 'thaiear-audio-dl'];
+
+/* caches.match() over a NAMED list rather than every cache. Sequential and short-circuiting, so a
+   hit in CACHE — the overwhelmingly common case — costs one lookup.
+   ⚠ Never opens a cache that does not exist: caches.open() CREATES one, which would leave empty
+   thaiear-dl / thaiear-audio-dl entries on devices that have never downloaded anything and make
+   the owner panel's cache list harder to read — our only readout on the iPhone PWA.
+   Any failure resolves to null; a fallback lookup must never reject. */
+function scopedMatch(what, opts) {
+  return caches.keys().then(function (names) {
+    var list = FALLBACK_CACHES.filter(function (n) { return names.indexOf(n) !== -1; });
+    function step(i) {
+      if (i >= list.length) return null;
+      return caches.open(list[i])
+        .then(function (c) { return c.match(what, opts); })
+        .catch(function () { return null; })
+        .then(function (hit) { return hit || step(i + 1); });
+    }
+    return step(0);
+  }).catch(function () { return null; });
+}
+
 // Positive cache lookup (returns a Response or null — NEVER the offline page), used by the timeout
 // fast-path so we only short-circuit to cache when we genuinely have the resource. Ignores the query
 // string (member links carry ?next/?feature) and tries the .html<->clean variant for downloaded
 // topic pages (persisted under their clean /topic-NN key).
 function positiveCacheMatch(req, url) {
-  return caches.match(req, { ignoreSearch: true }).then(function (hit) {
+  return scopedMatch(req, { ignoreSearch: true }).then(function (hit) {
     if (hit) return hit;
     if (req.mode === 'navigate') {
       var p = url.pathname;
       var alt = p.slice(-5) === '.html' ? p.slice(0, -5) : p + '.html';
-      return caches.match(alt, { ignoreSearch: true });
+      return scopedMatch(alt, { ignoreSearch: true });
     }
     return null;
   });
@@ -600,22 +645,22 @@ function positiveCacheMatch(req, url) {
 // Thorough offline fallback, used when the network actually fails: exact match, then the home-grid
 // and pathname/.html<->clean variants, finally the friendly offline page.
 function cacheFallback(req, url) {
-  return caches.match(req).then(function (hit) {
+  return scopedMatch(req).then(function (hit) {
     if (hit) return cleanRedirect(hit);   // never hand the browser a redirected response for a nav
     if (req.mode === 'navigate') {
       // Home/index: serve the cached grid from either key so the logo/Home link always works.
       var p = url.pathname;
       if (p === '/' || p === '/index.html' || p === '/index') {
-        return caches.match('/index.html').then(function (i) {
-          return i ? cleanRedirect(i) : caches.match('/').then(function (r) { return r ? cleanRedirect(r) : offlinePage(); });
+        return scopedMatch('/index.html').then(function (i) {
+          return i ? cleanRedirect(i) : scopedMatch('/').then(function (r) { return r ? cleanRedirect(r) : offlinePage(); });
         });
       }
       // Match by PATHNAME, ignoring any query string (?next=, ?feature=1, ?sub=success…), then the
       // .html<->clean variant (downloaded topic pages live under their clean /topic-NN key).
       var alt = p.slice(-5) === '.html' ? p.slice(0, -5) : p + '.html';
-      return caches.match(p, { ignoreSearch: true }).then(function (h1) {
+      return scopedMatch(p, { ignoreSearch: true }).then(function (h1) {
         if (h1) return cleanRedirect(h1);
-        return caches.match(alt, { ignoreSearch: true }).then(function (h2) {
+        return scopedMatch(alt, { ignoreSearch: true }).then(function (h2) {
           return h2 ? cleanRedirect(h2) : offlinePage();
         });
       });
@@ -848,6 +893,14 @@ self.addEventListener('activate', function (e) {
           return precacheGaps(c)
             // 1. rescue what the install missed from the cache we are about to delete (no network)
             .then(function (gaps) { return migrateGaps(c, gaps, doomed); })
+            /* ⚠ THE RESCUE MUST NEVER GATE THE SWEEP (2026-08-23). precacheGaps/migrateGaps sit
+               UPSTREAM of the deletes in one chain, so a rejection in either skipped every delete
+               below AND everything after this block. Resolve to an empty gap list instead: a
+               rescue that failed is worth nothing, while a sweep that never runs leaves a leftover
+               cache that only the NEXT deploy can clear — days or weeks on a real user's cadence.
+               ⚠ This does NOT address the other suspect, a worker TERMINATED mid-copy: nothing
+               rejects there, execution simply stops. See SW_ACTIVATE_FIX_PLAN.md §6. */
+            .catch(function () { return []; })
             // 2. only now is it safe to drop the old versions
             .then(function (gaps) {
               /* ⚠ PER-ITEM catch (2026-08-22). This was a bare Promise.all, so ONE rejecting
@@ -878,6 +931,14 @@ self.addEventListener('activate', function (e) {
             });
         });
       })
+      /* ⚠ NOTHING UPSTREAM MAY COST THE CLAIM (2026-08-23). v425 added a per-item catch to
+         caches.delete() for exactly this reason, but left the same hole one step higher: a
+         rejection from caches.keys() or caches.open(CACHE) still skipped the sweep, the thaiear-dl
+         poison repair, navigationPreload.enable() AND clients.claim() below.
+         ⚠ A rejected activate waitUntil still marks the worker ACTIVATED, so that failure presents
+         as the exact state observed on 2026-08-22: newest version active and controlling, nothing
+         deleted. Swallow it — every step downstream is independent of this one. */
+      .catch(function () {})
       /* ⚠ REPAIR THE POISONED `thaiear-dl` (2026-08-12). See the long note in the fetch handler:
          cachePage() used to copy the shared SCRIPTS into this never-version-wiped cache, where
          they then shadowed every fresh copy forever. Fixing the lookup stops the bleeding for new
