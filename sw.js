@@ -33,10 +33,11 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v448';   // v448: a chosen display name survives an OAuth sign-in
+const VERSION = 'v449';   // v449: terms.html rewritten to match the live access model (audio needs
                           // an account on every tier; the member tier is gone; downloads are
                           // permitted, not forbidden). terms.html is precached, so this bump is
                           // what delivers it.
+                          // v448: a chosen display name survives an OAuth sign-in
                           // v446: an edited display name is greeted in full, not cut at the first space
                           // operator are no longer collected, and privacy.html says so.
                           // privacy.html is precached, so this bump is what delivers it.
