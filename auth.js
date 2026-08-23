@@ -59,6 +59,7 @@
   var currentSub = null;         // {status, cancel_at_period_end, current_period_end}
   var currentConsent = false;    // opted in to marketing email? (profiles row)
   var consentLoaded = false;     // has that consent flag been read from profiles yet?
+  var chosenName = '';           // the name typed on the account page (profiles.display_name)
   var currentProgress = null;    // { goal:int, topics:{ key:count } } — lazy-loaded from `progress`
   var progressLoaded = false;    // has the progress row been read yet?
   var currentFlags = null;       // map "topicKey:num" -> {topic_key,num,sentence} — lazy from `sentence_flags`
@@ -128,14 +129,16 @@
          exactly what happened between the file shipping and 2026-08-18 (zero rows, ever).
          Do not slim this object back down. */
       created_at: u.created_at || '',
-      /* ⚠ `display_name` FIRST, AND IT IS NOT A PREFERENCE — IT IS THE ONLY FIELD THE PROVIDER
-         CANNOT REACH. See updateDisplayName() for why a chosen name may not live in `full_name`. */
-      username: meta.display_name || meta.full_name || meta.name ||
+      /* ⚠ THE CHOSEN NAME WINS, AND IT DOES NOT COME FROM `user_metadata` — see
+         updateDisplayName() for the two failed attempts to keep it there. `dispNameFor()` reads
+         the local mirror of `profiles.display_name`, which is synchronous and available before
+         any network answer; refreshProfile() corrects it from the server a moment later. */
+      username: dispNameFor(u.id) || meta.full_name || meta.name ||
                 (u.email ? u.email.split('@')[0] : 'Member'),
       /* The name the person CHOSE, and the provider's OWN copy of the name they were given. Both
          travel on the slim user because a reshaped user that has lost them is indistinguishable
          from an unedited one — identity.js decides first-name vs whole-name from these. */
-      chosenName: meta.display_name || '',
+      chosenName: dispNameFor(u.id),
       providerName: meta.name || '',
       avatar: meta.avatar_url || ''
     };
@@ -425,7 +428,39 @@
      it in place. Same "instant from cache, reconcile with the server" shape as cacheSub() on
      account.html — and no flash when they agree, because renderAccount() only touches the DOM when
      consentSig() actually changes. */
+  /* ── THE CHOSEN DISPLAY NAME ────────────────────────────────────────────────────────────
+     Authoritative copy: `profiles.display_name`, a column WE own. ⚠ It is not in `user_metadata`
+     and must never be moved back there — see updateDisplayName().
+
+     The mirror below is what makes it fast. `profiles` is a network read, and the name is painted
+     by the nav on every page and by the home greeting before auth resolves, so a server-only name
+     would arrive late and repaint — the pop-in fixed for the consent flag hours earlier. Keyed by
+     uid, so another account on the same browser can never read it. */
+  function dispKey(id) { return 'thaiear_dispname'; }
+  function dispNameFor(id) {
+    if (!id) return '';
+    var c = lsGet(dispKey(id));
+    return (c && c.uid === id && typeof c.v === 'string') ? c.v : '';
+  }
+  function persistDispName(id, v) {
+    if (!id) return;
+    if (v) lsSet(dispKey(id), { uid: id, v: String(v) });
+    else { try { localStorage.removeItem(dispKey(id)); } catch (_) {} }
+  }
+  /* Re-derive the slim user after the name changes, so `getUser().username` is right immediately
+     rather than at the next session event. */
+  function applyChosenName(v) {
+    chosenName = v || '';
+    persistDispName(uid(), chosenName);
+    if (currentSession) currentUser = userFromSession(currentSession);
+  }
+
   function persistConsent() { if (uid()) lsSet('thaiear_consent', { uid: uid(), v: !!currentConsent }); }
+  /* Read the mirror into memory at boot. userFromSession() reads the same store directly, so the
+     first painted name is already right; this keeps the module's own copy in step. */
+  function hydrateChosenName() {
+    chosenName = dispNameFor(uid());
+  }
   function hydrateConsent() {
     if (consentLoaded || !currentUser) return false;
     var c = lsGet('thaiear_consent');
@@ -441,11 +476,20 @@
     if (hydrateConsent()) notify();
     // Deduped: init and the onAuthStateChange that follows it both call this, ~6 ms apart.
     once('profile', function () {
-      return client.from('profiles').select('marketing_opt_in').maybeSingle()
+      /* ⚠ ONE SELECT, TWO ANSWERS. The display name rides along with the consent flag because
+         this row is already being read on every load and the query is in-flight-deduped — moving
+         the name out of `user_metadata` and into `profiles` therefore costs ZERO extra round
+         trips. Add anything else the app needs from this row here, not in a second query. */
+      return client.from('profiles').select('marketing_opt_in, display_name').maybeSingle()
         .then(function (res) {
           if (res && res.error) throw res.error;
-          currentConsent = !!(res && res.data && res.data.marketing_opt_in);
+          var row = (res && res.data) || {};
+          currentConsent = !!row.marketing_opt_in;
           persistConsent();
+          /* The server is authoritative, INCLUDING when it says there is no name: a name cleared
+             on another device must clear here too, which is why this is not `if (row.display_name)`. */
+          var name = row.display_name || '';
+          if (name !== chosenName) { applyChosenName(name); }
         })
         /* ⚠ A FAILED READ MUST KEEP THE CACHED ANSWER, not fall back to false. With no cache
            false was the only safe resting state; now, un-ticking a subscribed user's button
@@ -1368,20 +1412,14 @@
       var clean = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
       if (!clean) return Promise.reject(new Error('Please enter a name.'));
       if (clean.length > 20) return Promise.reject(new Error('Please use 20 characters or fewer.'));
-      return client.auth.updateUser({ data: { display_name: clean, full_name: clean } })
-        .then(function (res) {
+      var row = { user_id: currentUser.id, email: currentUser.email || null,
+                  display_name: clean, updated_at: new Date().toISOString() };
+      return client.from('profiles').upsert(row).then(function (res) {
         if (res && res.error) throw res.error;
-        var u = res && res.data && res.data.user;
-        if (currentSession) {
-          if (u) currentSession.user = u;
-          else if (currentSession.user) {
-            currentSession.user.user_metadata =
-              Object.assign({}, currentSession.user.user_metadata || {},
-                            { display_name: clean, full_name: clean });
-          }
-          writeIdentity(currentSession);
-          currentUser = userFromSession(currentSession);
-        }
+        /* Local first, so the name is on screen in this tick: the mirror, the module copy, the
+           slim user, and the durable identity the next page load paints from. */
+        applyChosenName(clean);
+        if (currentSession) writeIdentity(currentSession);
         notify();
         return clean;
       });
@@ -2214,6 +2252,7 @@
       /* Before the first notify, not after: account.html renders its whole card on this one, and
          a consent answer that arrives a tick later costs a second render of the email-list slot. */
       hydrateConsent();
+      hydrateChosenName();
       notify();
       refreshSubscription(); // async; fires another notify when it resolves
       refreshProfile();      // marketing-consent flag

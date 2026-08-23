@@ -31,16 +31,18 @@
 
   var ID_KEY = 'thaiear_identity';
   var SIGNED_OUT_KEY = 'thaiear_signed_out';
+  /* The local mirror of `profiles.display_name`, written by auth.js. ⚠ THE NAME IS NOT IN
+     `user_metadata` and must not be read from there: every OAuth sign-in merges the provider's
+     claims back over that bag, which cost two shipped attempts to learn (2026-08-23). */
+  var DISP_KEY = 'thaiear_dispname';
 
   /* The username auth.js's userFromSession() would produce for this user. Kept identical to it
      on purpose: whatever the nav paints before auth resolves must be what auth resolves TO, or
      the fix trades a jump for a wrong name. */
   function usernameOf(u) {
     var meta = (u && u.user_metadata) || {};
-    /* ⚠ `display_name` FIRST. It is the name the person chose on the account page, and the only
-       one that survives an OAuth sign-in — `full_name` is a Google claim and is overwritten by
-       every sign-in (see updateDisplayName() in auth.js). */
-    return meta.display_name || meta.full_name || meta.name ||
+    /* ⚠ THE CHOSEN NAME FIRST, and it comes from the mirror rather than from `user_metadata`. */
+    return chosenNameOf(u) || meta.full_name || meta.name ||
            ((u && u.email) ? u.email.split('@')[0] : 'Member');
   }
 
@@ -72,18 +74,24 @@
     return meta.name || (u && u.providerName) || '';
   }
 
-  /* The name the person typed on the account page, if any. Same job as providerNameOf(): callers
-     that reshape the raw user into the slim form must carry it, or the reshaped object cannot be
-     told apart from one that was never edited. */
+  /* The name the person typed on the account page, if any — from the uid-keyed mirror of
+     `profiles.display_name`. Same job as providerNameOf(): callers that reshape the raw user into
+     the slim form must carry it, or the reshaped object cannot be told apart from one that was
+     never edited. The `u.chosenName` branch is that reshaped case. */
   function chosenNameOf(u) {
-    var meta = (u && u.user_metadata) || {};
-    return meta.display_name || (u && u.chosenName) || '';
+    if (u && typeof u.chosenName === 'string' && u.chosenName) return u.chosenName;
+    var id = u && u.id;
+    if (!id) return '';
+    try {
+      var c = JSON.parse(localStorage.getItem(DISP_KEY) || 'null');
+      return (c && c.uid === id && typeof c.v === 'string') ? c.v : '';
+    } catch (_) { return ''; }
   }
 
   function nameParts(u) {
     var meta = (u && u.user_metadata) || {};
     return {
-      full: meta.display_name || meta.full_name || meta.name || (u && u.username) || '',
+      full: chosenNameOf(u) || meta.full_name || meta.name || (u && u.username) || '',
       /* The name the person typed. Its PRESENCE is the whole answer to "did they choose this?" —
          nothing has to be inferred from a comparison any more. */
       chosen: chosenNameOf(u),
