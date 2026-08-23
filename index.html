@@ -472,7 +472,8 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
    ⚠ A media query cannot see TEXT SCALING, and this one is the last place on the splash that
    still guesses. At 2x Android text the descriptions wrap further and would collide at heights
    this rule calls safe. The honest fix is the one `home-cta.js` already uses — measure the
-   collision and hide on the answer. Not built; see §3h. */
+   collision and hide on the answer. NOT BUILT — logged as an open item in
+   HOMEPAGE_REDESIGN_2026-08-21.md §12. */
 @media (max-width:700px) and (max-height:639px){ .s-sub{ display:none; } }
 /* The other half of the nudge above. `home-cta.js` reads this SAME property and adds it back
    when it sizes the greeting block's lift, so the label moves and the block does not — which
