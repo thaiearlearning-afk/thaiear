@@ -167,8 +167,43 @@
 
   var ID_KEY = 'thaiear_identity';                  // auth.js:179 — keep in step
 
-  function accessToken() {
+  /* ⭐ 3. auth.js's IN-MEMORY session, tried FIRST (added 2026-08-23).
+     ------------------------------------------------------------------
+     Sources 1 and 2 both go to localStorage for a token that auth.js is already
+     holding in RAM (`currentSession.access_token`, exposed as getAccessToken()
+     at auth.js:969). That indirection is what lost two signups outright.
+
+     THE FAILURE IT FIXES. onAuth() fires both writes this file makes -- the
+     retention ping AND the signup attribution -- and BOTH begin by calling this
+     function. When it returns null they both `return` silently: no row, no
+     error, no retry marker, nothing recorded anywhere that it happened. Measured
+     2026-08-23 across every confirmed post-deploy signup: 17 accounts have BOTH
+     an ad_attribution and a user_activity row, 2 accounts have NEITHER. Perfect
+     separation, which is what a single shared dependency looks like. Two known
+     ways for the storage read to come back empty while the session is perfectly
+     valid: (a) storage blocked or partitioned -- an in-app WebView, private
+     mode, a privacy browser; (b) supabase-js has not yet persisted the session
+     at the instant auth.js fires `thaiear:auth`.
+
+     ⚠ THE localStorage SCAN BELOW STAYS, AS THE FALLBACK. attrib.js loads BEFORE
+     auth.js on /start (and via nav.js elsewhere), so on an early call
+     window.ThaiEarAuth may not exist yet, and auth.js resolves its session
+     asynchronously in any case -- getAccessToken() legitimately returns null for
+     the first moments of a page load. Removing the scan would trade one silent
+     hole for another. Try memory, then disk, then give up.
+
+     ⚠ Do NOT reach into auth.js's private `currentSession` directly. The public
+     getter is the contract; the closure variable is not (same reasoning as the
+     ownersim note in auth.js -- reading privates is what silently breaks it). */
+  function memToken() {
     return ls(function () {
+      var A = window.ThaiEarAuth;
+      return (A && typeof A.getAccessToken === 'function' && A.getAccessToken()) || null;
+    }, null);
+  }
+
+  function accessToken() {
+    return memToken() || ls(function () {
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
         if (!/^sb-.*-auth-token$/.test(k || '')) continue;
@@ -440,6 +475,48 @@
 
   capture();
   window.addEventListener('thaiear:auth', onAuth);
+
+  /* ⭐ ON-LOAD RECONCILIATION (added 2026-08-23) --------------------------
+     Everything this file writes hangs off ONE `thaiear:auth` event. Miss it and
+     the page records nothing at all -- and there is no second chance, because the
+     only retry is another page load: measured 2026-08-23, 13 of the 17 signups
+     that DID record never returned to the site either. A one-shot success is the
+     normal case here, not the lucky one, so the one shot has to be reliable.
+
+     This is the backstop: if identity.js -- the synchronous pre-auth reader that
+     every page already loads in <head> -- can see a signed-in user, drive onAuth
+     once from that, without waiting to be told. `thaiear_identity` holds the FULL
+     supabase user object (auth.js writeIdentity), so `created_at` is present and
+     the attribution path is reachable, not just the retention ping.
+
+     ⚠ SAFE TO DOUBLE-FIRE, BY CONSTRUCTION, AND THAT IS WHY IT NEEDS NO GUARD OF
+     ITS OWN. If the real event also arrives, `inFlight` suppresses the duplicate
+     signup POST and `seenSent` suppresses the duplicate load ping. Should one
+     still get through, /api/attrib is keyed on user_id and treats 409 as success.
+     Do NOT "tidy" this into a fired-once flag -- the existing guards are the ones
+     that have to work anyway, and a second flag would only hide it when they stop.
+
+     ⚠ It runs on a TIMEOUT, not inline. auth.js is deferred and resolves its
+     session asynchronously, so at this point in the load memToken() is usually
+     still null; firing immediately would mean the fallback races the very thing
+     it is backing up and loses. One turn of the event loop after the page settles
+     is enough for the normal path to have won, in which case the guards above
+     make this a no-op.
+
+     ⚠ This still reads localStorage (via identity.js), so it does NOT rescue a
+     browser with storage genuinely blocked -- the in-memory token in
+     accessToken() is the half that covers that. The two fixes are complementary
+     and neither replaces the other. */
+  setTimeout(function () {
+    ls(function () {
+      var I = window.ThaiEarIdentity;
+      if (!I || typeof I.guess !== 'function') return;
+      var g = I.guess();
+      if (!g || g.state !== 'in' || !g.user || !g.user.id) return;
+      onAuth({ detail: g.user });
+    });
+  }, 1500);
+
   document.addEventListener('play', onPlay, true);  // capture: media events don't bubble
   window.addEventListener('pagehide', flushSeen);
   document.addEventListener('visibilitychange', function () {

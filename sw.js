@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v451';   // v451: the chosen display name moves to profiles, a table the provider cannot touch
+const VERSION = 'v452';   // v452: attrib.js takes the access token from auth.js's IN-MEMORY session
+                          // before scanning localStorage, and reconciles from identity.js on load if
+                          // the `thaiear:auth` event never arrives. Both writes it makes -- the signup
+                          // attribution AND the retention ping -- hung off one event plus one storage
+                          // read, and two accounts recorded NEITHER. attrib.js is precached, so this
+                          // bump is what delivers it. Previous:
+                          // v451: the chosen display name moves to profiles, a table the provider cannot touch
                           // (scopedMatch), and nothing upstream of activate()'s sweep can
                           // cost it or the claim. Previous:
                           // v449: terms.html rewritten to match the live access model (audio needs
