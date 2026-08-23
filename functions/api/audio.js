@@ -32,6 +32,7 @@
      PREMIUM_PREFIXES        comma list, default "CommSurvival_BEG,Colours_BEG"
      MEMBER_PREFIXES         comma list of login-only audio prefixes (default none)
      ENFORCE_SUBSCRIPTION    "true" to require an active subscription for premium
+     SUPABASE_SERVICE_ROLE_KEY  SECRET — writes the issuance counter (already set; used by plays/seen)
    ============================================================ */
 
 const URL_TTL = 3600; // seconds the signed URL stays valid (covers full-file streaming + seeking)
@@ -54,7 +55,7 @@ export async function onRequestGet(context) {
   const file = params.get('file') || '';
   const filesParam = params.get('files') || '';
 
-  if (filesParam) return batch(filesParam, request, env);
+  if (filesParam) return batch(filesParam, request, env, context);
 
   // Flat filenames only — no slashes / traversal. The premium bucket holds only these.
   if (!/^[A-Za-z0-9_]+\.mp3$/.test(file)) return json({ error: 'bad_request' }, 400);
@@ -90,13 +91,14 @@ export async function onRequestGet(context) {
   } catch (_) {
     return json({ error: 'sign_failed' }, 500);
   }
+  countIssued(context, user.id, 1);
   return json({ url, expiresIn: URL_TTL }, 200);
 }
 
 /* One auth check, N signatures. Mirrors the single-file path decision for decision — the tier
    lists, the login requirement and the subscription requirement are the SAME code below — so the
    two routes can never drift into disagreeing about who may have what. */
-async function batch(filesParam, request, env) {
+async function batch(filesParam, request, env, context) {
   const names = filesParam.split(',').map(s => s.trim()).filter(Boolean);
   if (!names.length || names.length > MAX_BATCH) return json({ error: 'bad_request' }, 400);
   if (names.some(n => !/^[A-Za-z0-9_]+\.mp3$/.test(n))) return json({ error: 'bad_request' }, 400);
@@ -134,7 +136,62 @@ async function batch(filesParam, request, env) {
       denied[name] = 'sign_failed';
     }
   }
+  countIssued(context, user.id, Object.keys(urls).length);
   return json({ urls, denied, expiresIn: URL_TTL }, 200);
+}
+
+/* ── ISSUANCE COUNTER (2026-08-23) ─────────────────────────────────────────────
+   Records HOW MANY gated audio addresses we handed this account today, and nothing else.
+   Owning doc: ANTI_THEFT_PLAN.md. Assessment: DATA_PROTECTION.md LIA D (ROPA row 12).
+
+   ⚠⚠ WHY IT EXISTS. The whole gated corpus can be taken by anyone who signs in, copies their
+   access token out of localStorage and calls this endpoint ~36 times with ?files=. That cannot be
+   PREVENTED — to play a clip the browser must fetch the bytes — and no download-button change
+   touches it, because the attack never uses the UI. What it CAN be is detected, and the account
+   revoked. Nothing else on the site can see it: every other metric measures ENGAGEMENT, and an
+   extractor mints addresses and never plays anything, so user_activity and sentence_plays both
+   read zero throughout. Issuance is the only event that sees the attack.
+
+   ⚠ MEASURE-ONLY. There is deliberately NO refusal path here, no threshold and no exemption list.
+   The number is being collected to find out what heavy legitimate use looks like, because a
+   threshold picked from arithmetic rather than data would refuse a real subscriber's audio. Do
+   not add enforcement without that baseline — and note a refusal is a decision about a person,
+   so LIA D has to be rewritten before one ships.
+
+   ⚠ FIRE-AND-FORGET, VIA waitUntil — THIS IS THE WHOLE SAFETY ARGUMENT, DO NOT AWAIT IT.
+   The response has already been built by the time this runs, so the counter cannot add latency to
+   a call that r192 spent real effort making fast, and it cannot fail a request: a Supabase blip,
+   a missing key, a timeout, all end the same way — the URLs were already sent. That is "fail
+   open" achieved structurally rather than by remembering to catch. It costs an at-most-one-batch
+   lag against a DAILY figure, which is nothing.
+   ⚠ If `context` is ever unavailable (a caller that forgot to pass it), the ping is skipped
+   silently rather than awaited. Never make this path throw.
+
+   ⚠ CONTENT-FREE. `n` is a COUNT. Never pass, log or store the filenames — the moment this knows
+   WHICH files were signed it is a behavioural record, LIA D breaks, and it needs a fresh
+   assessment plus a privacy-policy change. That is the wall.
+
+   Every file reaching this endpoint is gated by construction (free audio is served straight from
+   the public CDN and never touches the Worker), so this counts exactly the gated issuance and
+   needs no tier check of its own. */
+function countIssued(context, uid, n) {
+  try {
+    if (!context || typeof context.waitUntil !== 'function') return;
+    if (!uid || !(n > 0)) return;
+    const env = context.env;
+    if (!env || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return;
+    context.waitUntil(
+      fetch(env.SUPABASE_URL + '/rest/v1/rpc/bump_audio_quota', {
+        method: 'POST',
+        headers: {
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ p_user: uid, p_n: n }),
+      }).catch(() => {})
+    );
+  } catch (_) { /* never let instrumentation affect the response */ }
 }
 
 /* The tier decision, shared by the single-file and batch routes so they cannot drift apart.

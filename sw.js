@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v455';   // v455: terms.html — the minimum age is 18, not 13
+const VERSION = 'v456';   // v456: privacy.html — the gated-audio issuance counter (ANTI_THEFT_PLAN)
                           // v454: repeat loops before the end, so a locked screen no longer stops it
                           // before scanning localStorage, and reconciles from identity.js on load if
                           // the `thaiear:auth` event never arrives. Both writes it makes -- the signup
