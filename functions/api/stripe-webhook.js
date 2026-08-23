@@ -49,9 +49,9 @@ export async function onRequestPost({ request, env }) {
   return new Response('ok', { status: 200 });
 }
 
-// A "lifetime" member = effectively free FOREVER: a forever coupon that zeroes the price, or a £0
-// recurring price. Detected server-side from Stripe (can't be spoofed, needs no manual step) so a
-// trusted monk can pass the forever-comp coupon to another monk and lifetime offline access just works.
+// A "lifetime" member = effectively free FOREVER: a discount that zeroes the price for good, or a £0
+// recurring price. Detected server-side from Stripe (can't be spoofed, needs no manual step), so a
+// comped account gets lifetime offline access with no extra step at our end.
 // We only ever auto-SET lifetime=true (sticky) — never write false — so a transient/odd event can't
 // strip a genuine lifetime member; ordinary revocation still works via subscription status (canceled →
 // the app denies access regardless of this flag). A normal paying user never matches → never flagged.
