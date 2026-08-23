@@ -435,7 +435,14 @@
     }).catch(function () {});
   }
   // capture the exact spot at the moment we navigate away (web)
-  window.addEventListener('pagehide', function () { writeWebResume(true); });
+  window.addEventListener('pagehide', function () {
+    writeWebResume(true);
+    /* ⚠ AN EXIT PATH FOR THE PLAY COUNT TOO. The repetitions heard in the block that is playing
+       are banked, not yet reported — closing the tab mid-sentence would otherwise lose them.
+       auth.js queues into a durable store, so it survives even if its own pagehide flush has
+       already run and this credit rides the next one. */
+    try { plysDwellReset(); } catch (_) {}
+  });
 
   /* ---- offline downloads (Capacitor app only) ----
      A topic can be downloaded for offline listening: the two combined files (_TE/_ET) plus every
@@ -3345,7 +3352,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r197';   // r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r198';   // r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4464,19 +4471,26 @@
         var start = pos / DYN_SR;
         var r;
         var th0;   // absolute seconds at which the THAI first begins in this block
+        /* ⚠ WHERE EVERY REPETITION STARTS, not just the first. Play counting credits ONE listen per
+           repetition ACTUALLY HEARD, so it needs to know when each one begins; the alternative —
+           dividing the block by the repeat count — misplaces them as soon as the English is
+           inserted between two repeats, which is exactly what TE mode does. Cheap: `rp` numbers
+           per block, and the block map is already persisted with the session. */
+        var ths = [];
+        var thLen = th.length / DYN_SR;
         if (mode === 'et') {
           pushBuf(en); pushSil(recall);
           th0 = pos / DYN_SR;          // ⚠ captured HERE — after the English and the recall gap
-          pushBuf(th);
-          for (r = 1; r < st.rp; r++) { pushSil(repeat); pushBuf(th); }
+          ths.push(th0); pushBuf(th);
+          for (r = 1; r < st.rp; r++) { pushSil(repeat); ths.push(pos / DYN_SR); pushBuf(th); }
         } else {
           // TE: English lands after the ep-th Thai repeat (round-15 item 4); ep === repeats
           // reproduces the original TH…TH,EN order exactly.
           var ep = st.en ? stEp : 0;
-          pushBuf(th);
+          ths.push(pos / DYN_SR); pushBuf(th);
           if (ep === 1) { pushSil(repeat); pushBuf(en); }
           for (r = 1; r < st.rp; r++) {
-            pushSil(repeat); pushBuf(th);
+            pushSil(repeat); ths.push(pos / DYN_SR); pushBuf(th);
             if (ep === r + 1) { pushSil(repeat); pushBuf(en); }
           }
         }
@@ -4488,7 +4502,8 @@
            ⚠ A session built BEFORE this change has no th0 in its stored map and falls back to
            `start`, i.e. the old behaviour, until it is rebuilt (any settings change does it).
            Degrades, does not break. */
-        map.push({ num: s.num, start: start, end: pos / DYN_SR, th0: (mode === 'et' ? th0 : start) });
+        map.push({ num: s.num, start: start, end: pos / DYN_SR, th0: (mode === 'et' ? th0 : start),
+                   ths: ths, thLen: thLen });
       });
       var out = new Float32Array(pos);   // silence = the zero-filled default
       var o = 0;
@@ -5408,15 +5423,20 @@
      Implemented as `need = min(2000ms, 90% of this clip's length)`, which satisfies both without
      a special case.
 
-     ⚠ THAI REPEATS ARE ONE LISTEN, NOT FOUR. The dyn block already contains its repeats, so
-     entering the block counts once and the repeat setting is invisible here. Do not "fix" this by
-     counting per repetition.
+     ⚠⚠ ONE PASS, BUT ONE LISTEN PER REPETITION ACTUALLY HEARD (owner, 2026-08-23). This used to
+     award the whole repeat setting the instant the dwell elapsed: at repeats=4, three seconds of a
+     block credited FOUR listens, so skipping after a moment recorded a sentence as heard four
+     times. The repetitions are now credited one at a time, each when its own audio has played —
+     which is what the setting means. The PASS is still one per trip through the block.
+     ⚠ An earlier version of this comment said "repeats are one listen, not four — do not fix this
+     by counting per repetition". That was the rule before the 2026-08-22 roll-up change made
+     repetitions the number on the pill; it is retired, not merely reworded.
 
      ⚠ WALL-CLOCK DWELL, NOT `currentTime - block.start`. Seeking into the middle of a block makes
      the latter instantly large, so a scrub would count every block it crossed — the exact thing
      the dwell exists to prevent. Time is accumulated only from timeupdate ticks, which fire only
      while audio is running, so a paused player accrues nothing. */
-  var plysDwell = null;   // { num, ms, last, need, counted }
+  var plysDwell = null;   // { num, ms, last, need, ths, rp, heard, sent }
 
   /* Report ONE sentence heard. This is the single choke point for both counters, and that is
      deliberate (owner, 2026-08-20):
@@ -5442,7 +5462,7 @@
   function globalNumOf(s, fallback) {
     return (s && s.clipNum != null) ? s.clipNum : fallback;
   }
-  function notePlaySentence(num, reps) {
+  function notePlaySentence(num, reps) {   // reps = repetitions HEARD, not the repeat setting
     var g = globalNumOf(sentById(num), num);
     /* ⚠ ONE PASS, `reps` REPETITIONS. The dyn player repeats the Thai inside a single block, so
        one trip through a card at repeats=4 is ONE pass and FOUR listens. Both go in the same call
@@ -5455,13 +5475,42 @@
        what makes it the sum of sentence_plays.reps by construction. */
     if (at && at.noteListen) { try { at.noteListen(reps); } catch (_) {} }
   }
-  function plysDwellReset() { plysDwell = null; }
-  /* Advance the dwell for whichever block is live. `dur` is that block's length in seconds. */
-  function plysDwellTick(num, dur) {
+  /* ⚠⚠ THE CREDIT IS EMITTED WHEN THE BLOCK IS LEFT, NOT WHEN THE FIRST REPETITION LANDS, AND
+     THAT IS FORCED BY THE SERVER CONTRACT. `/api/plays` reads `reps[k]` only for keys that carry a
+     POSITIVE `deltas[k]` (a pass) and silently drops the rest, so there is no way to say "one more
+     repetition, no additional pass" in a second call. One trip through a block is one pass, so it
+     gets exactly one call — carrying however many repetitions were actually heard.
+     The visible consequence is that the pill ticks up as you LEAVE a sentence rather than two
+     seconds into it. Every exit path must therefore reach this: a change of block, the end of the
+     session, a teardown, and the page being hidden. */
+  function plysDwellFlush() {
+    if (plysDwell && plysDwell.heard > plysDwell.sent) {
+      notePlaySentence(plysDwell.num, plysDwell.heard - plysDwell.sent);
+      plysDwell.sent = plysDwell.heard;
+    }
+  }
+  function plysDwellReset() { plysDwellFlush(); plysDwell = null; }
+  /* Advance the dwell for whichever block is live. `t` is the playhead, `b` that block's map
+     entry. */
+  function plysDwellTick(num, b, t) {
     var now = Date.now();
+    var th0 = (b && b.th0 != null) ? b.th0 : (b ? b.start : 0);
     if (!plysDwell || plysDwell.num !== num) {
-      plysDwell = { num: num, ms: 0, last: now, counted: false,
-                    need: Math.min(2000, Math.max(250, (dur || 0) * 900)) };
+      plysDwellFlush();                       // the block we are leaving gets its credit first
+      /* The repeat count of the SESSION actually playing, not the live control: a session built at
+         repeats=4 keeps playing four repeats even if the slider is moved afterwards, and what the
+         listener heard is what counts. dynParseKey is the one place that decoding lives. */
+      var pk = (dynSession && dynSession.key) ? dynParseKey(dynSession.key) : null;
+      var rp = Math.max(1, (pk && pk.rp) || dynRepeats || 1);
+      /* ⚠ PER REPETITION, NOT PER BLOCK. `need` is the old dwell rule — 2s, or 90% of the audio
+         for the 140 clips shorter than that — applied to ONE repetition. Where the session
+         predates `ths` the clip length is unknown, so the block is divided by the repeat count;
+         that is an approximation, and it is why the exact starts are now stored. */
+      var thLen = (b && b.thLen) || ((b ? (b.end - th0) : 0) / rp);
+      plysDwell = { num: num, ms: 0, last: now, heard: 0, sent: 0, rp: rp,
+                    ths: (b && b.ths && b.ths.length === rp) ? b.ths : null,
+                    span: Math.max(0.001, (b ? (b.end - th0) : 0) / rp), th0: th0,
+                    need: Math.min(2000, Math.max(250, thLen * 900)) };
       return;
     }
     /* ⚠ CLAMP THE INCREMENT. timeupdate fires roughly every 250ms while playing; a gap larger
@@ -5470,17 +5519,22 @@
     var d = now - plysDwell.last;
     plysDwell.last = now;
     if (d > 0 && d <= 600) plysDwell.ms += d;
-    if (!plysDwell.counted && plysDwell.ms >= plysDwell.need) {
-      plysDwell.counted = true;
-      /* The repeat count of the session actually playing, not the current control value — a
-         session built at repeats=4 keeps playing four repeats even if the slider is moved
-         afterwards, and it is what the listener heard that counts. */
-      /* From the SESSION'S OWN KEY, not the live control. A session built at repeats=4 keeps
-         playing four repeats even if the slider is moved afterwards, and what the listener
-         actually heard is what counts. dynParseKey is the one place that decoding lives. */
-      var pk = (dynSession && dynSession.key) ? dynParseKey(dynSession.key) : null;
-      notePlaySentence(num, (pk && pk.rp) || dynRepeats || 1);
+
+    /* How many repetitions has the PLAYHEAD carried us through? Exact when the session stores the
+       repetition starts; proportional otherwise. */
+    var needSec = plysDwell.need / 1000, byPos = 0, i;
+    if (plysDwell.ths) {
+      for (i = 0; i < plysDwell.ths.length; i++) { if (t >= plysDwell.ths[i] + needSec) byPos++; }
+    } else {
+      byPos = Math.floor((t - plysDwell.th0) / plysDwell.span + (1 - 0.9));
+      byPos = Math.max(0, Math.min(plysDwell.rp, byPos));
     }
+    /* ⚠ AND THE WALL CLOCK STILL GATES IT, which is what stops a scrub crediting anything. Seeking
+       to the end of a block makes the position test pass instantly; `ms` only accumulates from
+       timeupdate ticks, so a scrub arrives with nothing banked and credits nothing. */
+    var byTime = Math.floor(plysDwell.ms / plysDwell.need);
+    var heard = Math.max(0, Math.min(plysDwell.rp, Math.min(byPos, byTime)));
+    if (heard > plysDwell.heard) plysDwell.heard = heard;
   }
 
   /* The individual ▶ button's half of the dwell rule. A single clip has no pause control — tapping
@@ -5547,7 +5601,7 @@
 
   // Highlight the card whose block is playing (called from the timeupdate handler when DYN).
   function dynHighlight(t) {
-    var map = dynSession.map, num = null, dur = 0, counting = false;
+    var map = dynSession.map, num = null, counting = false;
     var i = dynBlockAt(t);
     if (i >= 0) {
       num = map[i].num;
@@ -5556,11 +5610,10 @@
          Thai had played. th0 is where the Thai begins (=== start in Thai-first). A session built
          before 2026-08-20 has no th0 and falls back to start — the old behaviour — until rebuilt. */
       var th0 = (map[i].th0 != null) ? map[i].th0 : map[i].start;
-      dur = map[i].end - th0;
       counting = t >= th0;
     }
     // Runs on EVERY timeupdate, not only on a change of card — the dwell has to accumulate.
-    if (num != null && counting) plysDwellTick(num, dur);
+    if (num != null && counting) plysDwellTick(num, map[i], t);
     else if (num == null) plysDwellReset();
     if (num === dynLastLive) return;
     if (dynLastLive != null) { var prev = document.getElementById('sc-' + dynLastLive); if (prev) prev.classList.remove('dyn-live'); }

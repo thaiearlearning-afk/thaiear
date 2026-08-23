@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v452';   // v452: attrib.js takes the access token from auth.js's IN-MEMORY session
+const VERSION = 'v453';   // v453: one listen per repetition actually heard
                           // before scanning localStorage, and reconciles from identity.js on load if
                           // the `thaiear:auth` event never arrives. Both writes it makes -- the signup
                           // attribution AND the retention ping -- hung off one event plus one storage
