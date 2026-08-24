@@ -69,6 +69,8 @@
   }
   @keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
 
+  /* Same eyebrow every other menu page carries above its title (about, socials, app). */
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   h1.prog-title { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 0.15rem; }
   .prog-sub { font-size: 13.5px; color: var(--text-tertiary); margin-bottom: 1.25rem; }
 
@@ -278,6 +280,7 @@
       : 'Sign in to track progress';
 
     var html =
+      '<div class="eyebrow">Progress</div>' +
       '<h1 class="prog-title">' + heading + '</h1>' +
       '<p class="prog-sub">' + (user
         ? 'Everything here is measured automatically as you listen.'

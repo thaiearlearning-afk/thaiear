@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v460';   // v460: progress.html — title + intro line moved above the yak
+const VERSION = 'v461';   // v461: PROGRESS eyebrow on progress.html; app.html eyebrow -> "App"
                           // v454: repeat loops before the end, so a locked screen no longer stops it
                           // before scanning localStorage, and reconciles from identity.js on load if
                           // the `thaiear:auth` event never arrives. Both writes it makes -- the signup
