@@ -341,7 +341,7 @@
                 '<span class="prog-row-plays">' + esc(humanTime(secs)) + '</span>' +
               '</a>';
     }
-    return '<h2 class="prog-h2">Every topic</h2>' +
+    return '<h2 class="prog-h2">Your listening time</h2>' +
            '<p class="prog-h2-note">Every time a Thai sentence is played in a topic or a ' +
            'playlist, this contributes to your Total Thai listening time and your per topic ' +
            'or playlist Thai listening time. Time spent within pauses or listening to ' +
@@ -376,8 +376,6 @@
     }).join('');
 
     return '<h2 class="prog-h2" style="margin-top:2rem">Playlists</h2>' +
-           '<p class="prog-h2-note">Measured the same way — Thai audio heard across the ' +
-           'playlist’s sentences.</p>' +
            '<div class="prog-list">' + rows + '</div>';
   }
 
