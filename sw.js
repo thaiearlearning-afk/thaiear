@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v457';   // v457: player.js — mint cache 45m -> 5h, in tandem with URL_TTL 1h -> 6h
+const VERSION = 'v458';   // v458: progress.html — rewrite the listening-time explainer note
                           // v454: repeat loops before the end, so a locked screen no longer stops it
                           // before scanning localStorage, and reconciles from identity.js on load if
                           // the `thaiear:auth` event never arrives. Both writes it makes -- the signup
