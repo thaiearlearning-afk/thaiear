@@ -56,7 +56,7 @@
 
   /* ── the yak + "Fluency loading…" (carried over from the retired page, 2026-08-20) ────────
      Pure CSS dot cycle, no JS. */
-  .fluency-block { text-align: center; margin: 0.25rem 0 1.5rem; }
+  .fluency-block { text-align: center; margin: 0 0 1.5rem; }
   .fluency-img { width: 195px; max-width: 55%; height: auto; display: block; margin: 0 auto 0.4rem; }
   .fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }
   /* fixed-width dots so the text never jitters as they cycle */
@@ -70,7 +70,7 @@
   @keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
 
   h1.prog-title { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 0.15rem; }
-  .prog-sub { font-size: 13.5px; color: var(--text-tertiary); margin-bottom: 1.5rem; }
+  .prog-sub { font-size: 13.5px; color: var(--text-tertiary); margin-bottom: 1.25rem; }
 
   /* ── the four headline figures ───────────────────────────────────────────────────────── */
   .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.75rem; }
@@ -278,16 +278,16 @@
       : 'Sign in to track progress';
 
     var html =
-      '<div class="fluency-block">' +
-        '<img class="fluency-img" src="yak.png" alt="" width="195" height="195">' +
-        '<div class="fluency-text">Fluency loading<span class="dots" aria-hidden="true"></span></div>' +
-      '</div>' +
       '<h1 class="prog-title">' + heading + '</h1>' +
       '<p class="prog-sub">' + (user
         ? 'Everything here is measured automatically as you listen.'
         : '<a href="' + (t.hrefFor ? t.hrefFor('join.html') : 'join.html') +
           '?feature=1&amp;next=progress.html">Create a free account</a> and your listening is tracked from then on.')
       + '</p>' +
+      '<div class="fluency-block">' +
+        '<img class="fluency-img" src="yak.png" alt="" width="195" height="195">' +
+        '<div class="fluency-text">Fluency loading<span class="dots" aria-hidden="true"></span></div>' +
+      '</div>' +
 
       '<div class="stat-grid">' +
         card(tot.listens.toLocaleString(), 'sentences listened to') +
