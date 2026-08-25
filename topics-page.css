@@ -661,8 +661,17 @@
      14px SVG fits exactly — while fitting inside the row, so height stops depending on
      whether THIS visitor has downloaded THIS topic. Scoped to .topic-card so the playlist
      control keeps its tap target. */
-  .topic-card .dl-badge { width: 18px; height: 18px; }
+  .topic-card .dl-badge,
+  .topic-card .dl-select { width: 18px; height: 18px; }
   .topic-card .dl-tick  { width: 18px; height: 18px; }
+  /* The update dot is the SAME kind of reported state as the tick, so it gets the same box and
+     the same centring below. Before this it kept the 30px control box and stayed in flow, so it
+     sat off-centre in .topic-meta-row and set the row's height — the exact fault the tick was
+     fixed for on 2026-08-22, reintroduced by a second marker that the two rules did not name.
+     16px keeps the 30px control's dot:box proportion (23/30) inside the smaller box; ::before is
+     dropped because nothing here is tappable. */
+  .topic-card .dl-dot { width: 16px; height: 16px; }
+  .topic-card .dl-select::before { display: none; }
   /* ⚠ CENTRED IN THE CARD, NOT ALIGNED TO A TEXT LINE (owner, 2026-08-22: "dont align with
      text in the box — literally just have it in the middle"). It is appended into
      .topic-meta-row, the LAST text line, so in flow it measured 14px below the card's centre.
@@ -673,7 +682,9 @@
      The padding-right reserve is not decoration: out of flow the badge no longer displaces
      anything, so a long topic name or a "· update available" count would run underneath it.
      22px clears the 18px badge plus the gap. */
-  .topic-card .dl-badge { position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); }
+  .topic-card .dl-badge,
+  .topic-card .dl-select { position: absolute; top: 50%; right: 1rem; transform: translateY(-50%);
+    margin: 0; cursor: inherit; pointer-events: none; }
   .topic-card .topic-name,
   .topic-card .topic-meta-row { padding-right: 22px; }
   /* Working (downloading) row: an animated ellipsis in place of the circle/tick. */

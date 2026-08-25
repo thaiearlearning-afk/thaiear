@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v462';   // v462: dyn auto-rebuild + resume on the same sentence (r197)
+const VERSION = 'v463';   // v463: topic-card update dot centred like the tick (topics-page.css)
                           // v454: repeat loops before the end, so a locked screen no longer stops it
                           // before scanning localStorage, and reconciles from identity.js on load if
                           // the `thaiear:auth` event never arrives. Both writes it makes -- the signup
