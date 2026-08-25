@@ -3531,6 +3531,21 @@
      shim emits no trailing events) correctly started at 0. This flag makes the intent explicit
      rather than relying on event ordering: while set, nothing may record or restore a position. */
   var dynPosStale = false;
+  /* ── r197 (2026-08-25): CARRY THE SENTENCE ACROSS A RECONSTRUCT ──────────────────────
+     dynLastPos is a TIME, and a rebuilt session has a different timeline, so it is correctly
+     thrown away by dynInvalidate(). But the thing the listener cares about survives the
+     rebuild perfectly well: WHICH SENTENCE they were on. The block map is keyed by `num`, so
+     the anchor is just that num, re-resolved to a time against the NEW map once it exists.
+     Owner, 2026-08-25: "It shouldn't always send you right back to 0:00 so then you have to
+     nav 12 sentences forward or whatever."
+     Set on every invalidation that had a live position; consumed exactly once, by
+     dynEnsureMainSrc(); cleared by anything that makes it meaningless (a mode switch is a
+     different TRACK, a chain hop is a different UNIT, and the end of a session is a deliberate
+     start-over). */
+  var dynResumeNum = null;
+  var dynRebuildTimer = null;   // debounce: three ticks in a row are ONE rebuild, not three
+  var dynAutoResume = false;    // an auto-rebuild is pending or in flight: keep the intent to play
+  var dynAutoSeq = 0;           // only the NEWEST auto-rebuild may assign mainAudio.src
   /* r26a: AUTOPLAY has to hop BEFORE the track ends. The lock-screen hop works now because the
      element is still playing when we swap, which keeps the audio session active and lets
      WebKit load the next source in the background. Waiting for 'ended' throws that away: the
@@ -4677,6 +4692,18 @@
       mainSrcReady = true;
       dynPreAdvanced = false;
       dynPosStale = false;      // new timeline in place; positions may be tracked again
+      /* r197: re-resolve the sentence anchor against the NEW map. This is the ONE consumer, so
+         it serves both routes into a rebuild — the automatic one (dynAutoRebuild) and the manual
+         one (a change made while paused, picked up on the next play press, where togglePlay's
+         existing resume logic reads dynLastPos and seeks for us). Consumed once, then cleared:
+         a later play must start where the playhead actually is, not where it was two rebuilds
+         ago. dynCue() applies the standard 150 ms lead, so the resume lands short of the block
+         exactly like a ① skip does. */
+      if (dynResumeNum != null) {
+        var ri = dynResumeIndex(sess.map, dynResumeNum);
+        dynResumeNum = null;
+        if (ri >= 0) dynLastPos = dynCue(ri);
+      }
       /* SAY THAT IT IS A SUBSET (owner, 2026-08-08 decision 7). Silently playing 12 of 15
          sentences reads as a bug — the session is shorter than the list and nothing explains why.
          Only when some are actually missing; a fully-downloaded playlist clears the line as before.
@@ -4771,7 +4798,14 @@
   }
   // A setting changed (pause factor / exclusions): drop the session, keep the decoded clip
   // cache, and let the next play rebuild.
-  function dynInvalidate() {
+  /* `fromControl` (r197) — this invalidation came from a control the visitor just touched (a
+     card's ± button, or one of the player's own settings), so if audio is running we rebuild
+     and carry on IMMEDIATELY instead of stopping and waiting for a play press.
+     ⚠ It is opt-IN, and the two callers that do not pass it are the reason why: the account-prefs
+     sync (dynPrefsApply) and the cross-tab settings re-read (dynRefreshSettingsUI) both fire with
+     no user gesture anywhere near them, and an autoplay off the back of a background sync is both
+     startling and, on iOS, likely to be refused outright. Those keep the old wait-for-play. */
+  function dynInvalidate(fromControl) {
     var key = dynKey();
     // Round-12 item 1: if the change lands back ON the built session's key (a revert, or a
     // no-effect toggle like English in ET), nothing is stale — keep playing, clear any nag.
@@ -4781,6 +4815,18 @@
     }
     var meta = dynReadMeta(DYN_KEY_NS, currentMode);
     var revertHit = !!(meta && meta.key === key);   // persisted copy matches → strict restore hits on next play
+    /* ⚠ ORDER: capture the anchor BEFORE anything touches the element or the session. The map
+       that can answer "which sentence is this?" is about to be thrown away, and currentTime is
+       about to be zeroed. */
+    dynCaptureResume();
+    /* "Already playing" excludes the priming silence — that is a 20 ms data: URI standing in for
+       a track, and treating it as playback would auto-resume a session the visitor had paused.
+       ⚠ ...WHICH IS EXACTLY WHY `dynAutoResume` HAS TO BE PART OF THE TEST. Change a second
+       sentence while the first rebuild is still running and the element IS on that silence, so
+       the plain reading says "not playing" and the whole thing drops back to wait-for-play —
+       mid-flight, with the visitor having done nothing but tick a second box. The intent to keep
+       playing outlives the audio it was formed from, so it is tracked explicitly. */
+    var wasPlaying = (!mainAudio.paused && !mainOnSilence()) || dynAutoResume;
     if (!mainAudio.paused) { mainAudio.pause(); setMainIcon(false); }
     dynLastPos = 0;   // the rebuilt session has a different timeline
     dynPosStale = true;   // and no late pause/timeupdate may resurrect the old one
@@ -4788,9 +4834,98 @@
     mainSrcReady = false;
     if (dynSession && dynSession.url && dynSessionIsLocal) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
     dynSession = null;
+    /* The block we were on gets its play credit against the map that measured it. plysDwellTick
+       holds a reference to the OLD map entry, and the rebuild changes every timing in it, so
+       flushing after the swap would credit the listen against the wrong geometry. */
+    try { plysDwellReset(); } catch (_) {}
     dynSyncSentBtns();   // no map until the rebuild → ① buttons grey out
+    if (fromControl && wasPlaying) { dynAutoRebuild(); return; }
     if (revertHit) dynStatus(null);
     else dynStatus('Changes saved — your session will reconstruct on next play.', false);
+  }
+  /* ── r197: rebuild NOW and carry on from the same sentence ────────────────────────────
+     Owner, 2026-08-25: "if a topic is playing, it KEEPs playing without user having to press
+     play themselves. Obviously if a topic is NOT playing / is paused, then toggling settings
+     should not prompt an autoplay."
+
+     ⚠ TWO THINGS HERE ARE LOAD-BEARING AND NEITHER IS OBVIOUS.
+
+     1. primeMainAudio() RUNS SYNCHRONOUSLY, INSIDE THE CLICK. The rebuild is seconds of fetch +
+        stitch + encode, so the play() that follows it lands nowhere near the gesture that caused
+        it. iOS deactivates the page's audio session on every pause, and a play() on a freshly
+        load()ed element outside a gesture is refused — which would leave the visitor stopped
+        dead with no way back but the play button, i.e. exactly the slog this feature removes.
+        The 20 ms silence keeps the session alive across the wait. This is the same trick
+        switchAudio() has used for the TE/ET swap since it shipped; it is not new machinery.
+     2. THE DEBOUNCE IS NOT COSMETIC. Ticking three sentences off in a row would otherwise start
+        three builds, each decoding and re-encoding the whole topic, with only the last one's
+        result wanted. dynEnsureSession keys in-flight builds by session key, so three different
+        keys means three real builds racing to assign mainAudio.src. */
+  var DYN_REBUILD_DEBOUNCE_MS = 600;
+  /* A manual transport tap, or a direction switch, DURING the debounce window overrides the
+     pending auto-resume — the same principle as togglePlay's `resumeMainAfter = false`. Nothing
+     is lost by cancelling: dynResumeNum is still set, so whichever path reaches the rebuild first
+     lands on the same sentence. */
+  function dynCancelRebuild() {
+    if (dynRebuildTimer) { clearTimeout(dynRebuildTimer); dynRebuildTimer = null; }
+    dynAutoResume = false;
+    dynAutoSeq++;            // any build still in flight is now nobody's business
+    dynToast(null);
+  }
+  function dynAutoRebuild() {
+    dynStatus('Re-constructing dynamic mp3', true);
+    if (!dynStatusVisible()) dynToast('Re-constructing dynamic mp3...');
+    primeMainAudio();   // ⚠ inside the gesture — see note 2 above
+    dynAutoResume = true;
+    /* ⚠ ONE MORE CHANGE MEANS THE BUILD BEFORE IT IS STALE. The debounce only collapses changes
+       made within 600 ms of each other; a change made LATER, while the previous build is still
+       fetching and encoding, leaves that build running with nothing to cancel it — and its
+       `.then` would happily assign its now-wrong session to mainAudio.src, whichever order the
+       two promises happen to settle in. The sequence number is the arbiter: only the newest
+       request may touch the element. */
+    var seq = ++dynAutoSeq;
+    if (dynRebuildTimer) clearTimeout(dynRebuildTimer);
+    dynRebuildTimer = setTimeout(function () {
+      dynRebuildTimer = null;
+      ensureMainSrc().then(function () {
+        if (seq !== dynAutoSeq) return;   // superseded mid-build — let the newer one land
+        /* dynEnsureMainSrc has re-pointed the element and resolved the anchor into dynLastPos.
+           Seek before play, and again after it resolves: a native prepare always restarts at 0,
+           which is the same correction togglePlay makes. */
+        var want = (dynLastPos > 0.5 &&
+          (!mainAudio.duration || !isFinite(mainAudio.duration) || dynLastPos < mainAudio.duration - 0.5)) ? dynLastPos : null;
+        if (want != null) { try { mainAudio.currentTime = want; } catch (_) {} }
+        var pp = mainAudio.play();
+        setMainIcon(true); setupMediaSession();
+        dynAutoResume = false;
+        dynToast(null);
+        if (pp && pp.then) {
+          pp.then(function () {
+            if (want != null && (mainAudio.currentTime || 0) < 0.5) { try { mainAudio.currentTime = want; } catch (_) {} }
+          }, function (e) {
+            /* The rebuild worked, the resume did not — say so where the visitor is looking, and
+               leave the transport telling the truth. One tap on play picks up where they were,
+               because dynLastPos is already parked on the anchor. */
+            dynLog('auto-rebuild play FAIL ' + ((e && e.name) || e));
+            setMainIcon(!mainAudio.paused);
+            if (mainAudio.paused) {
+              dynStatus('Tap play to continue', false);
+              if (!dynStatusVisible()) dynToast('Tap play to continue');
+              var seq = dynStatusSeq;
+              setTimeout(function () { if (seq === dynStatusSeq) { dynStatus(null); dynToast(null); } }, 4000);
+            }
+          });
+        }
+      }).catch(function (e) {
+        // dynEnsureMainSrc has already put the reason on the status line (offline, denied,
+        // nothing playable). The toast must not outlive the attempt either way.
+        if (seq !== dynAutoSeq) return;
+        dynAutoResume = false;
+        setMainIcon(false);
+        dynToast(null);
+        handleDenied(e, mainTier);
+      });
+    }, DYN_REBUILD_DEBOUNCE_MS);
   }
   /* ── round-14: account-level settings sync (auth.js dynPrefs / public.dyn_prefs) ──
      Boot stays instant on the local mirror; once auth resolves the server copy is written
@@ -5336,7 +5471,7 @@
         dynEngPos = v;
         dynSaveSettings();
         dynEpRender();
-        dynInvalidate();
+        dynInvalidate(true);
       });
     });
   }
@@ -5350,6 +5485,48 @@
     if (text == null) { el.hidden = true; el.innerHTML = ''; return; }
     el.hidden = false;
     el.innerHTML = escapeHtml(text) + (dots ? '<span class="dyn-dots"></span> <span id="dyn-status-count"></span>' : '');
+  }
+  /* ── r197: the rebuild toast ─────────────────────────────────────────────────────────
+     The auto-rebuild exists so you can exclude a sentence from the bottom of a long topic
+     without walking back up to the player — which means the status line saying what is
+     happening is, by construction, exactly the thing you cannot see. So mirror it, but ONLY
+     when it is genuinely off-screen: a one-shot rect read at the moment of the change, not an
+     observer, because the answer is only ever needed once per rebuild.
+     It never carries a timer: it is cleared by whatever ends the rebuild (success OR failure),
+     and by a tap. Owner: "no need for that to ever linger". */
+  /* ⚠ MEASURE THE TRANSPORT, NOT THE STATUS LINE ITSELF. #dyn-status is `hidden` whenever it has
+     nothing to say — which is precisely the moment this is asked — so a rect read on it returns
+     0×0 and would report "off-screen" at the very top of the page, popping a toast over a status
+     line the reader is looking straight at. The audio row is always laid out, sits immediately
+     above the status line, and is the same element the mini player observes, so the toast appears
+     exactly when the mini player does. */
+  function dynStatusVisible() {
+    var el = document.querySelector('#player-root .audio-row') || $('dyn-status') || $('player-root');
+    if (!el || !el.getBoundingClientRect) return true;   // can't tell → don't nag
+    var r = el.getBoundingClientRect();
+    if (!r.width && !r.height) return true;
+    var top = 56;   // the sticky nav covers this much — under it is not "visible"
+    return r.bottom > top && r.top < (window.innerHeight || document.documentElement.clientHeight);
+  }
+  function dynToast(text) {
+    var el = $('dyn-toast');
+    if (text == null) { if (el) el.classList.remove('show'); return; }
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'dyn-toast';
+      el.className = 'dyn-toast';
+      el.setAttribute('role', 'status');
+      el.addEventListener('click', function () { dynToast(null); });
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    /* ⚠ REFLOW, NOT requestAnimationFrame. The transition needs the element to have been laid out
+       at opacity:0 before `show` flips it, and the obvious way to get that is a double rAF — but
+       rAF DOES NOT FIRE IN A BACKGROUNDED TAB, so a rebuild kicked off just before the user
+       switched away would leave a permanently invisible toast that then never cleared. Reading
+       offsetWidth forces the same layout synchronously and cannot be throttled. */
+    void el.offsetWidth;
+    el.classList.add('show');
   }
   /* ⚠ LAND SHORT OF A BLOCK, NEVER ON IT (2026-08-20, r196).
      Every seek that targets a sentence — the ① skip buttons and the scrubber's snap — used to go
@@ -5387,6 +5564,34 @@
       var edge = (i === map.length - 1) ? map[i].end : map[i].end - DYN_SEEK_LEAD;
       if (t < edge) return i;
     }
+    return -1;
+  }
+  /* ── r197: the sentence anchor (see dynResumeNum) ────────────────────────────────────
+     dynCaptureResume() — remember WHICH SENTENCE is governing playback right now, before the
+     session that knows the timings is dropped. Only ever called while a LOCAL map is live: an
+     adopted neighbour's map describes a different unit, and its nums would resolve against the
+     wrong page. */
+  function dynCaptureResume() {
+    if (!(dynSession && dynSessionIsLocal && dynSession.map && dynSession.map.length)) return;
+    var i = dynBlockAt(mainAudio.currentTime || 0);
+    if (i >= 0) dynResumeNum = dynSession.map[i].num;
+  }
+  /* Where does that anchor land in the NEW map? Exact hit if the sentence survived the change.
+     If it did NOT — you excluded the very sentence you were listening to — carry on from the
+     next INCLUDED sentence in page order, falling back to the previous one, then to the start
+     (owner, 2026-08-25). Page order comes from `sentences`, not from the map, because the map
+     only holds the survivors and the answer depends on where the missing one sat among them. */
+  function dynResumeIndex(map, num) {
+    if (!map || !map.length || num == null) return -1;
+    var i;
+    for (i = 0; i < map.length; i++) { if (map[i].num === num) return i; }
+    var at = -1;
+    for (i = 0; i < sentences.length; i++) { if (sentences[i].num === num) { at = i; break; } }
+    if (at < 0) return -1;
+    var pos = {};
+    for (i = 0; i < map.length; i++) pos[map[i].num] = i;
+    for (i = at + 1; i < sentences.length; i++) { if (pos[sentences[i].num] != null) return pos[sentences[i].num]; }
+    for (i = at - 1; i >= 0; i--) { if (pos[sentences[i].num] != null) return pos[sentences[i].num]; }
     return -1;
   }
   // Round-8: snap an in-page scrub commit to the nearest sentence-block start, so a seek
@@ -5831,6 +6036,7 @@
     dynAttached = false;
     dynStdRemote = false;
     dynLastPos = 0;
+    dynResumeNum = null;   // r197: different unit — its map's nums mean nothing here
     mainPage = PAGE_HREF; mainPrefix = PREFIX; mainGated = GATED; mainTier = TIER;
     currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
     mainSrcReady = false;
@@ -5850,6 +6056,7 @@
   function dynApplyAdoptState(t) {
     if (dynSession && dynSession.url && dynSessionIsLocal) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
     dynLastPos = 0;                 // new track — resume guard must not drag the old position over
+    dynResumeNum = null;            // r197: ditto for the sentence anchor
     dynAttached = false;            // we're deliberately re-sourcing the player
     dynSession = null;              // the resolve step lands the target's session (if it has one)
     dynSessionIsLocal = false;
@@ -6513,6 +6720,19 @@
     '@keyframes dyn-dots{from{width:0}to{width:1.05em}}' +
     '.dyn-sent-btn{width:34px;height:34px}' +
     '.dyn-sent-off{opacity:.35;pointer-events:none}' +
+    /* r197 rebuild toast — the status line lives at the top of the player, and the whole point of
+       the auto-rebuild is that you no longer have to be up there. `position:fixed` + `transform`
+       centring so it is OUT of flow and cannot displace the mini player (owner: "it will push
+       mini player down which will be unsightly"). Deliberately small. */
+    '.dyn-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.96);z-index:9998;' +
+      'max-width:calc(100vw - 48px);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;' +
+      'line-height:1.3;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
+      'background:rgba(24,22,40,.92);color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.28);cursor:pointer;' +
+      'opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}' +
+    '.dyn-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}' +
+    'body.premium-topic .dyn-toast{background:#3D2E00;color:#F0CC5C}' +
+    '@media (prefers-reduced-motion: reduce){.dyn-toast{transition:opacity .18s ease}' +
+      '.dyn-toast,.dyn-toast.show{transform:translate(-50%,-50%)}}' +
     /* owner 2026-07-27: the ±10 buttons are clutter in dyn mode (sentence skip covers it) */
     '.audio-row button[onclick="skip(-10)"],.audio-row button[onclick="skip(10)"]{display:none}' +
     /* owner 2026-07-27: emphasis swap — the playback scrubber gets BIG, the pauses slider small */
@@ -6883,7 +7103,7 @@
           var card = document.getElementById('sc-' + s.num);
           if (card) card.classList.toggle('dyn-off', !!dynExcluded[s.num]);
           xPaint();
-          dynInvalidate();
+          dynInvalidate(true);
           dynPrefsQueue('excl');
         });
         /* Appended, not inserted before the flag button (which no longer exists). Position is
@@ -6944,7 +7164,7 @@
         dynFactor = parseFloat(pf.value) || 1;
         dynSaveSettings();
         pv.textContent = dynFactor + '×';
-        dynInvalidate();
+        dynInvalidate(true);
       });
       // Thai repeat count: 1–4 segmented mini-buttons
       var reps = sl.querySelector('#dyn-reps');
@@ -6959,7 +7179,7 @@
           dynRepeats = n;
           dynSaveSettings();
           reps.querySelectorAll('.dyn-rep-btn').forEach(function (x) { x.classList.toggle('on', x.textContent === String(n)); });
-          dynInvalidate();
+          dynInvalidate(true);
           dynEpRender();   // box count follows the repeat count (and ep clamps to it)
         });
         reps.appendChild(b);
@@ -6970,7 +7190,7 @@
       enCb.addEventListener('change', function () {
         dynEnglish = enCb.checked;
         dynSaveSettings();
-        dynInvalidate();
+        dynInvalidate(true);
         dynEpRender();
       });
       // English-position line (round-15 item 4) — its own non-wrapping group under the row.
@@ -7292,7 +7512,7 @@
          tail of the final gap, i.e. silence. */
       dynPreLooped = true;
       dynLog('REPEAT pre-loop at ' + mainAudio.currentTime.toFixed(1) + '/' + mainAudio.duration.toFixed(1));
-      if (DYN) { dynPreAdvanced = false; dynLastPos = 0; }
+      if (DYN) { dynPreAdvanced = false; dynLastPos = 0; dynResumeNum = null; }
       mainAudio.currentTime = 0;
     } else if (dynPreLooped && mainAudio.duration && (mainAudio.currentTime || 0) < mainAudio.duration * 0.5) {
       dynPreLooped = false;    // back at the top — arm it for the next time round
@@ -7305,7 +7525,7 @@
        as "the topic finished" and advanceTopic(1) would hop to the next unit before the audio the
        user asked for had even been stitched. */
     if (mainOnSilence()) return;
-    if (DYN) dynLastPos = 0;   // track finished — a later play starts over, not at the end
+    if (DYN) { dynLastPos = 0; dynResumeNum = null; }   // track finished — a later play starts over, not at the end
     setMainIcon(false);
     /* ⚠ THIS IS NOW THE FALLBACK, NOT THE MECHANISM. Repeat loops from the timeupdate handler a
        fraction before the end (see mainTailAction) precisely so that it never has to restart a
@@ -7336,6 +7556,7 @@
   }
 
   function togglePlay() {
+    if (DYN) dynCancelRebuild();   // r197: a manual tap overrides a pending auto-resume
     if (mainAudio.paused) {
       if (!mayListen()) { gate(mainTier); return; }   // no account, or not entitled → no playback
       userStartedHere = true;   // this page's player is now user-driven → sync must not adopt a stale label
@@ -7486,7 +7707,10 @@
     $('btn-et').classList.toggle('active', mode === 'et');
     // dyn: new direction = new track; settings are PER MODE so they reload here (r16); the
     // English checkbox is TE-only; re-resolve neighbour placeholders.
-    if (DYN) { dynLastPos = 0; dynAttached = false; dynLoadSettings(); dynPrefsRepaintControls(); dynSyncEnToggle(); dynPrefetchNeighbours(); }
+    /* r197: a TE/ET switch is a different TRACK, so the sentence anchor is deliberately NOT
+       carried across — owner: "that is different and playback progress need not be preserved as
+       they are separate tracks." */
+    if (DYN) { dynCancelRebuild(); dynLastPos = 0; dynResumeNum = null; dynAttached = false; dynLoadSettings(); dynPrefsRepaintControls(); dynSyncEnToggle(); dynPrefetchNeighbours(); }
     applyDirClass();                      // flip the accordion reveal order to match the new direction
     /* Same gesture problem as togglePlay: in dyn mode this rebuilds the session for the new
        direction, which takes seconds, and the pause two lines up has already deactivated the iOS
