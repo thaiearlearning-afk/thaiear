@@ -3543,7 +3543,6 @@
      different TRACK, a chain hop is a different UNIT, and the end of a session is a deliberate
      start-over). */
   var dynResumeNum = null;
-  var dynRebuildTimer = null;   // debounce: three ticks in a row are ONE rebuild, not three
   var dynAutoResume = false;    // an auto-rebuild is pending or in flight: keep the intent to play
   var dynAutoSeq = 0;           // only the NEWEST auto-rebuild may assign mainAudio.src
   /* r26a: AUTOPLAY has to hop BEFORE the track ends. The lock-screen hop works now because the
@@ -4857,17 +4856,26 @@
         dead with no way back but the play button, i.e. exactly the slog this feature removes.
         The 20 ms silence keeps the session alive across the wait. This is the same trick
         switchAudio() has used for the TE/ET swap since it shipped; it is not new machinery.
-     2. THE DEBOUNCE IS NOT COSMETIC. Ticking three sentences off in a row would otherwise start
-        three builds, each decoding and re-encoding the whole topic, with only the last one's
-        result wanted. dynEnsureSession keys in-flight builds by session key, so three different
-        keys means three real builds racing to assign mainAudio.src. */
-  var DYN_REBUILD_DEBOUNCE_MS = 600;
-  /* A manual transport tap, or a direction switch, DURING the debounce window overrides the
-     pending auto-resume — the same principle as togglePlay's `resumeMainAfter = false`. Nothing
-     is lost by cancelling: dynResumeNum is still set, so whichever path reaches the rebuild first
-     lands on the same sentence. */
+     2. 🚨 THE BUILD MUST START INSIDE THE GESTURE TOO — DO NOT PUT A setTimeout IN FRONT OF IT.
+        It shipped once with a 600 ms debounce here, to collapse three quick ticks into one build.
+        It made every control need TWO taps (owner, 2026-08-25: "first is a primer somehow"), and
+        the mechanism is worth knowing because nothing about it says "gesture":
+
+          deferred build → the build REJECTS → dynEnsureMainSrc's offline fallback runs
+          dynRevertToStored() → which puts the SETTINGS AND THE EXCLUSIONS back to whatever the
+          stored session was built with → the slider visibly snaps back and the sentence
+          un-excludes → that fallback then restores the old session and this function's .then
+          plays it → so audio is running again, which is exactly why the SECOND tap works.
+
+        A failed rebuild undoing the user's edit is by design (r18e: don't strand someone offline
+        with no audio), so the revert is not the bug — starting the build outside the gesture is.
+        Rapid ticks are handled by `seq` instead: each change starts its own build and only the
+        newest may touch the element. It costs a redundant stitch, which dynClipCache makes cheap,
+        and correctness beats that optimisation. */
+  /* A manual transport tap, or a direction switch, overrides a pending auto-resume — the same
+     principle as togglePlay's `resumeMainAfter = false`. Nothing is lost: dynResumeNum is still
+     set, so whichever path reaches the rebuild first lands on the same sentence. */
   function dynCancelRebuild() {
-    if (dynRebuildTimer) { clearTimeout(dynRebuildTimer); dynRebuildTimer = null; }
     dynAutoResume = false;
     dynAutoSeq++;            // any build still in flight is now nobody's business
     dynToast(null);
@@ -4875,18 +4883,16 @@
   function dynAutoRebuild() {
     dynStatus('Re-constructing dynamic mp3', true);
     if (!dynStatusVisible()) dynToast('Re-constructing dynamic mp3...');
-    primeMainAudio();   // ⚠ inside the gesture — see note 2 above
+    primeMainAudio();   // ⚠ inside the gesture — see note 1 above
     dynAutoResume = true;
-    /* ⚠ ONE MORE CHANGE MEANS THE BUILD BEFORE IT IS STALE. The debounce only collapses changes
-       made within 600 ms of each other; a change made LATER, while the previous build is still
-       fetching and encoding, leaves that build running with nothing to cancel it — and its
-       `.then` would happily assign its now-wrong session to mainAudio.src, whichever order the
-       two promises happen to settle in. The sequence number is the arbiter: only the newest
-       request may touch the element. */
+    /* ⚠ ONE MORE CHANGE MEANS THE BUILD BEFORE IT IS STALE. A change made while the previous
+       build is still fetching and encoding leaves that build running with nothing to cancel it —
+       and its `.then` would happily assign its now-wrong session to mainAudio.src, whichever
+       order the two promises happen to settle in. The sequence number is the arbiter: only the
+       newest request may touch the element. */
     var seq = ++dynAutoSeq;
-    if (dynRebuildTimer) clearTimeout(dynRebuildTimer);
-    dynRebuildTimer = setTimeout(function () {
-      dynRebuildTimer = null;
+    dynLog('auto-rebuild start seq=' + seq);
+    (function () {
       ensureMainSrc().then(function () {
         if (seq !== dynAutoSeq) return;   // superseded mid-build — let the newer one land
         /* dynEnsureMainSrc has re-pointed the element and resolved the anchor into dynLastPos.
@@ -4925,7 +4931,7 @@
         dynToast(null);
         handleDenied(e, mainTier);
       });
-    }, DYN_REBUILD_DEBOUNCE_MS);
+    })();
   }
   /* ── round-14: account-level settings sync (auth.js dynPrefs / public.dyn_prefs) ──
      Boot stays instant on the local mirror; once auth resolves the server copy is written
