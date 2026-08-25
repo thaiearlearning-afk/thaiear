@@ -4856,22 +4856,21 @@
         dead with no way back but the play button, i.e. exactly the slog this feature removes.
         The 20 ms silence keeps the session alive across the wait. This is the same trick
         switchAudio() has used for the TE/ET swap since it shipped; it is not new machinery.
-     2. 🚨 THE BUILD MUST START INSIDE THE GESTURE TOO — DO NOT PUT A setTimeout IN FRONT OF IT.
-        It shipped once with a 600 ms debounce here, to collapse three quick ticks into one build.
-        It made every control need TWO taps (owner, 2026-08-25: "first is a primer somehow"), and
-        the mechanism is worth knowing because nothing about it says "gesture":
+     2. The build starts SYNCHRONOUSLY, in the same turn as the prime — no timer in front of it.
+        That keeps this path the same shape as togglePlay() and switchAudio(), which is the shape
+        known to work on the owner's devices, and it keeps the gap the prime has to cover as short
+        as it can be. Rapid ticks are coalesced by `seq` rather than by a debounce: each change
+        starts its own build and only the newest may touch the element. It costs a redundant
+        stitch, which dynClipCache makes cheap.
 
-          deferred build → the build REJECTS → dynEnsureMainSrc's offline fallback runs
-          dynRevertToStored() → which puts the SETTINGS AND THE EXCLUSIONS back to whatever the
-          stored session was built with → the slider visibly snaps back and the sentence
-          un-excludes → that fallback then restores the old session and this function's .then
-          plays it → so audio is running again, which is exactly why the SECOND tap works.
-
-        A failed rebuild undoing the user's edit is by design (r18e: don't strand someone offline
-        with no audio), so the revert is not the bug — starting the build outside the gesture is.
-        Rapid ticks are handled by `seq` instead: each change starts its own build and only the
-        newest may touch the element. It costs a redundant stitch, which dynClipCache makes cheap,
-        and correctness beats that optimisation. */
+        ⚠ HISTORY, BECAUSE IT WILL LOOK LIKE THE OBVIOUS OPTIMISATION TO RE-ADD: a 600 ms debounce
+        did sit here (v462-v465). It was removed while chasing the "every control needs two taps"
+        report, on the theory that a deferred build fell outside the user gesture, failed, and
+        triggered dynRevertToStored(). **That theory was WRONG and the debounce was not the
+        cause** — the real one was the account-prefs sync clobbering the unpushed local change;
+        see the guard at the top of dynPrefsApply(). Removing the debounce changed nothing for
+        the owner. It is left out because the simpler shape is worth having, not because a timer
+        here is known to be harmful. */
   /* A manual transport tap, or a direction switch, overrides a pending auto-resume — the same
      principle as togglePlay's `resumeMainAfter = false`. Nothing is lost: dynResumeNum is still
      set, so whichever path reaches the rebuild first lands on the same sentence. */
@@ -5006,21 +5005,54 @@
   function dynPrefsApply() {
     var a = window.ThaiEarAuth;
     if (!a || !a.dynPrefs || !(a.getUser && a.getUser())) return;
+    /* 🚨🚨 A LOCAL CHANGE THAT HAS NOT BEEN PUSHED YET ALWAYS WINS. THIS IS THE DOUBLE-TAP BUG
+       (owner, 2026-08-25 — twice; the first fix was aimed at the wrong thing entirely).
+
+       `dynPrefs.load()` answers from `dpCache`, a PAGE-LIFETIME cache in auth.js, and
+       `dynPrefsQueue` debounces the push of a local change by 1000 ms. So for a full second after
+       every change, the account copy this function applies is STALE BY CONSTRUCTION — it is the
+       value the user just replaced. It then mirrors that over localStorage, re-resolves, and
+       repaints: the slider snaps back to where it was and an excluded sentence un-excludes.
+
+       That window used to be hard to hit. r197 made it the normal case: every control change now
+       starts a rebuild immediately, the rebuild mints signed clip URLs, a mint can refresh the
+       token, and a token refresh fires `thaiear:auth` — which is what calls this. Auth also
+       notifies ~5 times during startup, so the first change of a session lands in it almost every
+       time. The second tap works only because the first push has landed by then, so dpCache
+       finally agrees.
+
+       ⚠ Guarding on `dynPrefsTimer` specifically, NOT on the dynPush* flags: those are set even
+       when signed out (dynPrefsQueue sets them before its early return), so they can be stuck
+       true forever and would wedge the sign-in merge shut. The timer is only ever armed while
+       signed in and always clears itself — and by the time it fires, `dynPrefs.set()` has already
+       written the new value into dpCache synchronously, so there is no gap on the far side. */
+    if (dynPrefsTimer) { dynLog('prefs: skipped — local change not pushed yet'); return; }
     a.dynPrefs.load().then(function (map) {
       if (!map) return;
+      if (dynPrefsTimer) return;   // a change landed while the (cached) read was resolving
       var exclChanged = false;
       var before = JSON.stringify(dynCurrentSet());
       // r16: mirror the account copy into the local stores, then RE-RESOLVE — the winner
       // between a unit override and the global default is decided by ts, not by arrival order.
       // A pre-r16 'global' row is flat {pf,rp,en,ep} with no v: deliberately ignored, so every
       // unit starts from the classic default instead of inheriting the old player-global set.
+      /* ⚠ AND NEVER LET AN OLDER ROW OVERWRITE A NEWER LOCAL ONE. The timer guard above closes
+         the ordinary 1000 ms window; this closes the one it cannot see — a push that FAILED
+         (offline: auth.js marks it dirty and retries on reconnect), where the timer has long
+         since cleared while local is still ahead of the server. Every settings row carries the
+         `ts` that dynSettingsFor already arbitrates on, so this is the same rule applied one
+         level earlier. */
+      var newer = function (incoming, key) {
+        var cur = dynReadJson(key);
+        return !(cur && (+cur.ts || 0) > (+incoming.ts || 0));
+      };
       var g = map.global;
       if (g && g.v === 2) {
-        ['te', 'et'].forEach(function (m) { if (g[m]) dynWriteJson(dynGdefKey(m), g[m]); });
+        ['te', 'et'].forEach(function (m) { if (g[m] && newer(g[m], dynGdefKey(m))) dynWriteJson(dynGdefKey(m), g[m]); });
       }
       var u = map[DYN_KEY_NS];
       if (u) {
-        ['te', 'et'].forEach(function (m) { if (u[m]) dynWriteJson(dynSetKey(DYN_KEY_NS, m), u[m]); });
+        ['te', 'et'].forEach(function (m) { if (u[m] && newer(u[m], dynSetKey(DYN_KEY_NS, m))) dynWriteJson(dynSetKey(DYN_KEY_NS, m), u[m]); });
         if (!PLMODE && Array.isArray(u.excl)) {
           var byNum = function (x, y) { return x - y; };
           var cur = [];
