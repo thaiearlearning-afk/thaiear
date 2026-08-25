@@ -446,10 +446,30 @@
   fetch('clip-durations.json').then(function (r) { return r.ok ? r.json() : null; })
     .then(function (d) { if (d) { durations = d; painted = ''; render(); } })
     .catch(function () {});
-  if (T() && T().loadSentenceNums) {
-    T().loadSentenceNums().then(function (m) { if (m) { sentNums = m; painted = ''; render(); } })
+  /* ⚠⚠ ASK AGAIN UNTIL topics.js IS ACTUALLY IN. This script is INLINE and topics.js is
+     DEFERRED, so at parse time T() is undefined — always, on every load. It was a one-shot
+     `if (T() && T().loadSentenceNums)` guard, so the question was asked once, of a helper that
+     was not there yet, and never asked again: sentNums stayed null for the life of the page and
+     EVERY topic row read "0 min" (since 2026-08-20, when this page replaced the form). The headline card and the playlist rows were
+     unaffected and hid it — neither needs this lookup, because a playlist carries its own item
+     numbers and the total is not grouped by topic.
+     ⚠ The band pages get this right by LOAD ORDER (topics.js blocking, before topics-page.js).
+     This page cannot: the script is inline. So it retries instead — DOMContentLoaded fires after
+     every deferred script has run, and the auth event is a second chance behind it.
+     loadSentenceNums() memoises itself and `sentNums ? 1 : 0` is in the repaint signature, so a
+     late arrival costs one repaint and a re-ask costs nothing. */
+  var numsAsked = false;
+  function askSentenceNums() {
+    if (numsAsked) return;
+    var t = T();
+    if (!t || !t.loadSentenceNums) return;
+    numsAsked = true;
+    t.loadSentenceNums().then(function (m) { if (m) { sentNums = m; painted = ''; render(); } })
       .catch(function () {});
   }
+  askSentenceNums();
+  document.addEventListener('DOMContentLoaded', askSentenceNums);
+  window.addEventListener('thaiear:auth', askSentenceNums);
   function pullAll() {
     var a = A();
     if (!(a && a.getUser && a.getUser())) return;

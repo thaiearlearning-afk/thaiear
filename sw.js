@@ -33,7 +33,10 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v467';   // v467: dyn settings no longer revert -- the account sync must not
+const VERSION = 'v468';   // v468: progress page topic rows show real listening time -- the
+                          // sentence-numbers lookup was asked for once, before topics.js
+                          // had loaded, so it was never fetched (progress.html)
+                          // v467: dyn settings no longer revert -- the account sync must not
                           // clobber a local change that has not been pushed yet (player.js)
                           // v466: playlist tick/update dot sized like a topic card's (pl-list.js)
                           // v465: dyn auto-rebuild must start inside the gesture (double-tap fix)
