@@ -146,6 +146,18 @@
        nothing, and a long playlist name was measured running underneath it. */
     '.pl-box-head { position: relative; }' +
     '.pl-box-head .dl-select, .pl-box-head .dl-badge { position: absolute; top: 50%; right: 1.15rem; transform: translateY(-50%); margin: 0; cursor: default; pointer-events: none; }' +
+    /* ⚠ THE SAME SIZE AS A TOPIC CARD'S (owner, 2026-08-25: "way smaller than on the playlist
+       pill — make the playlist pill smaller so it matches"). The two menus show the SAME two
+       states about the same audio, so a 30px box here against 18px on a topic card read as two
+       different marks. 18px box / 16px dot / 18px tick around a 14px glyph, matching
+       topics-page.css exactly.
+       Nothing is lost by shrinking: the 30px box and the 52px ::before were a TAP TARGET, and
+       the rule above already made this inert — it stopped being a control when the download
+       button left the playlists menu. Scoped to .pl-box-head so any future control elsewhere
+       keeps the full-size box. */
+    '.pl-box-head .dl-select, .pl-box-head .dl-badge { width: 18px; height: 18px; }' +
+    '.pl-box-head .dl-dot { width: 16px; height: 16px; }' +
+    '.pl-box-head .dl-tick { width: 18px; height: 18px; }' +
     '.pl-box-head .dl-select::before, .pl-box-head .dl-badge::before { display: none; }' +
     /* ⚠ THE RESERVE GOES ON EVERY ROW, AND THE NAME MUST BE ABLE TO SHRINK — both only bite
        under OS text scaling (found 2026-08-22 with live/_ui-harness.html, the TEXT_SCALING.md
@@ -165,11 +177,14 @@
            the padding and, when it wrapped level with the tick, under it. `.pl-box` is
            overflow:hidden so it never reached the page (no side-scroll at any size), but it is
            still the title overspilling its box.
-       34px = the 30px control + 4px. px, not rem, deliberately: the control is a fixed-size
-       graphic that does not grow with the text, so a reserve that grew would only waste width
-       (TEXT_SCALING.md §2 — lengths that must not track the text stay px). */
-    '.pl-box-name { padding-right: 34px; min-width: 0; overflow-wrap: break-word; }' +
-    '.pl-box-meta, .pl-box-plays { padding-right: 34px; min-width: 0; overflow-wrap: break-word; }' +
+       22px = the 18px control + 4px (was 34px for a 30px one, shrunk with it above — the same
+       figure topics-page.css reserves for the same mark). px, not rem, deliberately: the
+       control is a fixed-size graphic that does not grow with the text, so a reserve that grew
+       would only waste width (TEXT_SCALING.md §2 — lengths that must not track the text stay
+       px). The measurements quoted above were taken against the 30px control; the fault they
+       describe is unchanged, the clearance is simply 12px wider now. */
+    '.pl-box-name { padding-right: 22px; min-width: 0; overflow-wrap: break-word; }' +
+    '.pl-box-meta, .pl-box-plays { padding-right: 22px; min-width: 0; overflow-wrap: break-word; }' +
     '.dl-dot { width: 23px; height: 23px; border-radius: 50%; background: var(--accent-light); border: 1.5px solid var(--accent-light); transition: background .15s, border-color .15s, transform .1s; }' +
     '.dl-select:hover .dl-dot { border-color: var(--accent); }' +
     '.dl-select.selected .dl-dot { background: var(--accent); border-color: var(--accent); }' +
@@ -602,7 +617,7 @@
       }
       if (st === 'downloaded') {
         return '<span class="dl-badge" title="Downloaded" aria-label="Downloaded">' +
-          '<span class="dl-tick"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
+          '<span class="dl-tick"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" ' +
           'stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></span>';
       }
       return '';
