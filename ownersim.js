@@ -233,6 +233,55 @@
     ver.innerHTML = 'service worker: checking…';
     d.appendChild(ver);
     swReport(ver);
+
+    /* ── AUDIO LATENCY PROBE (2026-08-26) ───────────────────────────────────────────────────
+       player.js records when the prewarm ran, whether the clip you tapped was already warm, and
+       how long the tap took to make a sound. It is armed with ?lat=1 — WHICH DOES NOT EXIST IN
+       THE APP OR AN INSTALLED PWA, neither of which has an address bar. Same trap as ?ownersim=1
+       and layoutdbg's re-arm flag; this panel is the answer to it, because it is reachable on
+       every device that actually needs measuring.
+       ⚠ player.js reads te_lat ONCE, at parse time, so a change only takes effect on the NEXT
+       page opened. The button says so — a switch that appears to do nothing gets pressed twice.
+       ⚠ THE TEXTAREA IS THE DELIVERY, NOT THE CLIPBOARD. A WebView clipboard write can be refused
+       or silently no-op, and a trace the owner cannot get out of the device is not a measurement. */
+    var lat = document.createElement('div');
+    lat.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px dashed #d8c8c8;' +
+      'font-size:12px;line-height:1.65';
+    function latOn() { return get('te_lat') === '1'; }
+    function paintLat() {
+      lat.innerHTML = '<strong style="color:#7A1F1F">Audio latency probe</strong><br>' +
+        '<span>' + (latOn()
+          ? 'ON. Open a topic — the trace appears top-right. Play a sentence, then come back and Copy trace.'
+          : 'Off. Turning it on takes effect on the NEXT page you open.') + '</span>' +
+        '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
+          '<button type="button" id="ownersim-lat-toggle" style="' + SWBTN + '">' +
+            (latOn() ? 'Turn probe off' : 'Turn probe on') + '</button>' +
+          '<button type="button" id="ownersim-lat-copy" style="' + SWBTN + '">Copy trace</button>' +
+        '</div><div id="ownersim-lat-out"></div>';
+      lat.querySelector('#ownersim-lat-toggle').addEventListener('click', function () {
+        set('te_lat', latOn() ? null : '1');
+        paintLat();
+      });
+      lat.querySelector('#ownersim-lat-copy').addEventListener('click', function () {
+        var out = lat.querySelector('#ownersim-lat-out');
+        if (typeof window.__teLat !== 'function') {
+          out.innerHTML = '<span style="color:#7A1F1F">No trace on this page. The probe only runs on a ' +
+            'TOPIC or PLAYLIST page — open one, play a sentence, then press this there.</span>';
+          return;
+        }
+        var s = '';
+        try { s = JSON.stringify(window.__teLat(), null, 1); }
+        catch (_) { out.textContent = 'could not read the trace'; return; }
+        try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(s); } catch (_) {}
+        out.innerHTML = '<textarea readonly style="width:100%;height:170px;margin-top:8px;' +
+          'font:11px/1.4 ui-monospace,monospace;-webkit-user-select:text;user-select:text"></textarea>';
+        var ta = out.querySelector('textarea');
+        ta.value = s;
+        try { ta.focus(); ta.select(); } catch (_) {}
+      });
+    }
+    paintLat();
+    d.appendChild(lat);
     /* A collapsed handle by default — the panel is a diagnostic, not furniture. The choice is
        remembered so a testing session does not mean re-opening it on every navigation. */
     var t = document.createElement('button');
