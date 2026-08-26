@@ -977,6 +977,26 @@
     if (sentBlobs[file]) {
       try { return Promise.resolve(URL.createObjectURL(sentBlobs[file])); } catch (_) {}
     }
+    /* ⚠ ADOPT A DOWNLOAD ALREADY IN FLIGHT rather than starting a second one for the same bytes.
+       prewarmYield() now spares the tapped clip, so on a fresh topic this is the common case: the
+       head pass is mid-fetch exactly when the first tap lands.
+       ⚠⚠ BOUNDED, AND THAT IS NOT OPTIONAL. Adopting means inheriting the other fetch's stall,
+       and armSentStall() is only armed AFTER this promise resolves — so an unbounded await would
+       leave the button lit with no watchdog behind it at all. Past the budget, fall through to
+       the ordinary path, which is exactly the behaviour this replaces. */
+    if (warmInflight[file]) {
+      var waited = false;
+      return Promise.race([
+        warmInflight[file].then(function () { waited = true; }),
+        new Promise(function (r) { setTimeout(r, SENT_ADOPT_MS); })
+      ]).then(function () {
+        if (sentBlobs[file]) {
+          try { return URL.createObjectURL(sentBlobs[file]); } catch (_) {}
+        }
+        if (!waited) latMark('adopt:timeout', file);
+        return buildUrl(file, gated);
+      });
+    }
     return buildUrl(file, gated);
   }
 
@@ -1002,6 +1022,10 @@
   var PREWARM_WAIT_TRIES = 5;
   var PREWARM_YIELD_MS = 10000;   // hard cap: a tap that never settles must not stall the prewarm for ever
   var PREWARM_MAX_ATTEMPTS = 2;   // a clip dropped for a tap gets one more go, then it is left to the tap path
+  /* How long a tap will wait for a prewarm fetch of the SAME clip that is already running.
+     Generous enough to be worth adopting (the clips that matter land in well under a second
+     on the owner's phone) and short enough that a stalled one cannot hold the button. */
+  var SENT_ADOPT_MS = 2000;
   /* ⚠ THE HEAD PASS (2026-08-26). The bulk prewarm runs at idle, which is correct for 40 clips
      and wrong for the two or three a visitor actually taps first: measured on the live site, the
      batch mint did not even START until 3.4s (topic-08) / 7.8s (topic-06), so the first clip was
@@ -1025,12 +1049,27 @@
   /* Called the moment a tap begins. Aborts the prewarm fetches in flight and holds the queue,
      so the clip the user is actually waiting for is not queued behind three they are not. The
      aborted clips go back on the queue; nothing is lost but a few kilobytes of progress. */
-  function prewarmYield() {
-    if (prewarmCtrls.length) latMark('yield', 'aborted ' + prewarmCtrls.length + ' in-flight prewarm fetches');
+  /* ⚠⚠ SPARE THE CLIP THE USER ACTUALLY ASKED FOR. Aborting everything in flight is right for
+     the clips they did not tap and precisely wrong for the one they did: with a 4-clip head pass
+     and a tap near the top of the list, the download being thrown away is very often the tapped
+     one, and the tap then re-fetches the same bytes from zero. Measured on the owner's phone:
+       2031  yield  aborted 4 in-flight prewarm fetches
+       2034  TAP    s395 … -> mint-cached + net
+       3204  PLAYING  1170ms after tap
+     `keepFile` is the file the tap is about to want. Its controller stays live and stays in
+     prewarmCtrls, so its own done() still removes it. */
+  function prewarmYield(keepFile) {
     sentBusyUntil = Date.now() + PREWARM_YIELD_MS;
-    var live = prewarmCtrls;
-    prewarmCtrls = [];
-    for (var i = 0; i < live.length; i++) { try { live[i].abort(); } catch (_) {} }
+    var live = prewarmCtrls, kept = [], killed = 0;
+    for (var i = 0; i < live.length; i++) {
+      if (keepFile && live[i].teFile === keepFile) { kept.push(live[i]); continue; }
+      try { live[i].abort(); killed++; } catch (_) {}
+    }
+    prewarmCtrls = kept;
+    if (killed || kept.length) {
+      latMark('yield', 'aborted ' + killed + ' in-flight prewarm fetches' +
+        (kept.length ? ' — KEPT the tapped clip' : ''));
+    }
   }
 
   // The clip filename for a sentence. Topic pages fall back to the page prefix and the sentence's
@@ -1131,16 +1170,16 @@
     if (sentBlobs[ref.file]) return Promise.resolve(false);
     if (warmInflight[ref.file]) return Promise.resolve(false);   // the other pass has it
     if (sentBusy()) return Promise.resolve(true);
-    warmInflight[ref.file] = true;
     var ctrl = null;
     try { ctrl = new AbortController(); } catch (_) { ctrl = null; }
-    if (ctrl) prewarmCtrls.push(ctrl);
+    // The controller carries its filename so prewarmYield can tell the tapped clip apart.
+    if (ctrl) { ctrl.teFile = ref.file; prewarmCtrls.push(ctrl); }
     function done(v) {
       delete warmInflight[ref.file];
       if (ctrl) { var i = prewarmCtrls.indexOf(ctrl); if (i > -1) prewarmCtrls.splice(i, 1); }
       return v;
     }
-    return buildUrl(ref.file, ref.gated)
+    var run = buildUrl(ref.file, ref.gated)
       .then(function (u) {
         return fetch(u, ctrl ? { signal: ctrl.signal } : undefined)
           .then(function (r) { return r.ok ? r.blob() : null; });
@@ -1158,6 +1197,11 @@
         var aborted = !!(e && (e.name === 'AbortError' || e.code === 20));
         return done(aborted);
       });
+    /* Hold the PROMISE, not a flag: a tap arriving mid-download has to be able to wait for
+       these exact bytes instead of asking for them again. Assigned after the chain is built
+       and before any of it can run, since every link is asynchronous. */
+    warmInflight[ref.file] = run;
+    return run;
   }
 
   // A native downloadFile has no built-in deadline, so a stalled connection (slow network, or
@@ -3720,7 +3764,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r207';   // r207: a SHARE button on the probe panel, where navigator.share exists. The clipboard is not a reliable way off a phone -- execCommand needs user activation and the async clipboard API can be refused outright in a WebView -- and when both fail the owner is hand-selecting 1,600 characters on a handset. r206: the probe's copy button actually copies on a phone -- .select() on a READ-ONLY textarea is refused on iOS and leaves an empty selection in an Android WebView, so the field is made writable for the duration and selected with setSelectionRange, then execCommand('copy') runs synchronously inside the gesture (the async clipboard API can be a silent no-op in a WebView). The button now reports 'copied' vs 'select all + copy'. r205: the probe panel repaints on setTimeout, not requestAnimationFrame -- rAF does not fire in a backgrounded tab or app, and latQueued had already latched true, so the panel never appeared and never recovered. r204: the latency probe is usable ON A PHONE -- copy renders a selectable textarea as well as trying the clipboard (a WebView clipboard write can be refused or a silent no-op, and there is no console in the app), and the panel is 92vw on a handset instead of a 46vw ribbon. r203: a RESTORED signed-URL cache no longer waits for auth. The prewarm asked for a token whenever the topic was gated, not whenever it still had something to mint -- so a second visit, with every url already in the persisted cache, stopped at 789ms and did not start until 1245ms for an /api/audio call it was never going to make. r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r208';   // r208: a tap no longer aborts the download of the clip it is asking for. prewarmYield() spared nothing, so with a 4-clip head pass and a tap near the top of the list the cancelled download was very often the tapped one -- measured on the owner's phone: yield aborted 4, TAP s395, PLAYING 1170ms later. It now spares that file and ADOPTS the fetch already in flight instead of asking for the same bytes again, bounded by SENT_ADOPT_MS so a stalled one cannot hold the button (armSentStall only arms AFTER the src resolves). r207: a SHARE button on the probe panel, where navigator.share exists. The clipboard is not a reliable way off a phone -- execCommand needs user activation and the async clipboard API can be refused outright in a WebView -- and when both fail the owner is hand-selecting 1,600 characters on a handset. r206: the probe's copy button actually copies on a phone -- .select() on a READ-ONLY textarea is refused on iOS and leaves an empty selection in an Android WebView, so the field is made writable for the duration and selected with setSelectionRange, then execCommand('copy') runs synchronously inside the gesture (the async clipboard API can be a silent no-op in a WebView). The button now reports 'copied' vs 'select all + copy'. r205: the probe panel repaints on setTimeout, not requestAnimationFrame -- rAF does not fire in a backgrounded tab or app, and latQueued had already latched true, so the panel never appeared and never recovered. r204: the latency probe is usable ON A PHONE -- copy renders a selectable textarea as well as trying the clipboard (a WebView clipboard write can be refused or a silent no-op, and there is no console in the app), and the panel is 92vw on a handset instead of a 46vw ribbon. r203: a RESTORED signed-URL cache no longer waits for auth. The prewarm asked for a token whenever the topic was gated, not whenever it still had something to mint -- so a second visit, with every url already in the persisted cache, stopped at 789ms and did not start until 1245ms for an /api/audio call it was never going to make. r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -8636,7 +8680,12 @@
        minutes before DYN_POOL existed), so a tap arriving mid-prewarm could queue behind them
        and look like a dead button. This is why the owner's stalls clustered on a just-opened
        topic: that is exactly when the prewarm is running. */
-    prewarmYield();
+    /* Resolve the filename BEFORE yielding — prewarmYield() needs to know which clip to spare,
+       and the sObj lookup below is pure, so hoisting it changes nothing else. */
+    var sObj = null;
+    for (var si = 0; si < sentences.length; si++) { if (sentences[si].num === num) { sObj = sentences[si]; break; } }
+    var file = sentFileFor(sObj, num);   // shared with prewarmSentences
+    prewarmYield(file);
 
     // tapping the playing sentence again stops it
     if (sentPlaying === num) {
@@ -8665,9 +8714,7 @@
 
     // Playlist sentences carry their own prefix/tier/clipNum (a playlist mixes topics);
     // topic pages resolve exactly as before (sObj fields absent → PREFIX/GATED defaults).
-    var sObj = null;
-    for (var si = 0; si < sentences.length; si++) { if (sentences[si].num === num) { sObj = sentences[si]; break; } }
-    var file = sentFileFor(sObj, num);   // shared with prewarmSentences
+    // sObj / file were resolved above, before prewarmYield().
     sentCurFile = file;
     if (LAT) {
       latTapT = performance.now();
