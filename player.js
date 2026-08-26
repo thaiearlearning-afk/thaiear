@@ -953,8 +953,7 @@
       return;
     }
     var refs = [];
-    var cap = head ? PREWARM_HEAD : PREWARM_MAX_FILES;
-    for (var i = 0; i < sentences.length && refs.length < cap; i++) {
+    for (var i = 0; i < sentences.length && refs.length < PREWARM_MAX_FILES; i++) {
       var s = sentences[i];
       if (sentLocked(s)) continue;
       var pfx = s.prefix || PREFIX;
@@ -964,9 +963,21 @@
     }
     if (!refs.length) return;
 
-    // One batch mint for every gated clip, then the fetches — so the whole topic costs ONE
-    // /api/audio round trip instead of one per clip.
+    /* One batch mint for every gated clip, then the fetches — so the whole topic costs ONE
+       /api/audio round trip instead of one per clip.
+       ⚠⚠ THE HEAD PASS MINTS THE WHOLE TOPIC, NOT JUST ITS OWN FOUR CLIPS, AND THE ORDER OF
+       THESE TWO LINES IS THE REASON. gatedFiles is taken from the FULL ref list; only then is
+       `refs` narrowed to the head. The mint's cost is per USER, not per file — that is the
+       premise batch minting rests on, and it measures out: 907ms for 4 files vs 495ms for 38
+       on the same page load, so the count is noise. Minting only the head's four therefore
+       bought nothing and cost a second round trip, because mintMany() dedupes against
+       mintCache and a batch does not populate that until it RESOLVES — so the bulk pass,
+       starting 168ms later, could not see them and re-issued all four.
+       ⛔ Do not 'optimise' this back to `gatedFiles` after the slice. Signed-URL ISSUANCE is
+       the counter audio_quota reads as an extraction signal; four spurious issuances on every
+       page view is a constant added to a number whose whole job is to look unusual. */
     var gatedFiles = refs.filter(function (r) { return r.gated; }).map(function (r) { return r.file; });
+    if (head) refs = refs.slice(0, PREWARM_HEAD);
     /* ⚠ WAIT FOR THE TOKEN — DO NOT LATCH WITHOUT ONE. This runs at idle (~2.5–4 s), and auth.js
        only resolves after a dynamic esm.sh import, so on a cold load the token can easily arrive
        later. mintMany() and buildUrl() both no-op silently on a null token, so latching here left
@@ -2920,26 +2931,55 @@
      per USER, not per file, so one call replaces N round trips — the dynamic build mints one per
      clip. Never rejects: anything unexpected just leaves the cache unfilled and every caller
      falls back to the single-file path, which is unchanged. */
+  /* file -> the in-flight batch that will mint it. ⚠⚠ WITHOUT THIS, TWO CALLERS A FEW HUNDRED
+     MS APART BOTH MINT THE SAME FILES. mintCache is only populated when a batch RESOLVES, so
+     everyone arriving during that window sees an empty cache and asks again. buildUrl() has had
+     the same guard since it was written (mintInflight); the batch path never did, and nothing
+     overlapped closely enough to show it until the head pass started minting a few hundred ms
+     ahead of the bulk pass — live, on topic-08: batch(4) at 1252ms, batch(38) at 1420ms, the
+     second re-issuing all four of the first's urls.
+     ⚠ THIS IS NOT MERELY WASTE. A signed URL handed out is what audio_quota counts as an
+     extraction signal (ANTI_THEFT_PLAN.md §14b.7), so duplicate issuance is a constant added to
+     a number whose entire job is to look unusual when someone is scraping. */
+  var mintBatchInflight = {};
   function mintMany(files) {
-    var want = [];
-    for (var i = 0; i < files.length; i++) {
-      if (files[i] && !mintGet(files[i]) && want.indexOf(files[i]) < 0) want.push(files[i]);
+    var want = [], waitOn = [], i, f;
+    for (i = 0; i < files.length; i++) {
+      f = files[i];
+      if (!f || mintGet(f)) continue;
+      if (mintBatchInflight[f]) {
+        if (waitOn.indexOf(mintBatchInflight[f]) < 0) waitOn.push(mintBatchInflight[f]);
+        continue;
+      }
+      if (want.indexOf(f) < 0) want.push(f);
     }
-    if (!want.length) return Promise.resolve();
+    // Everything we need is already on its way — wait for it rather than asking again.
+    if (!want.length) return waitOn.length ? Promise.all(waitOn).then(function () {}) : Promise.resolve();
     var token = authToken();
     if (!token) return Promise.resolve();
     var chunks = [];
     for (var c = 0; c < want.length; c += 100) chunks.push(want.slice(c, c + 100));
-    return chunks.reduce(function (chain, chunk) {
+    var run = chunks.reduce(function (chain, chunk) {
       return chain.then(function () {
         return fetch(AUDIO_API + '?files=' + encodeURIComponent(chunk.join(',')), {
           headers: { Authorization: 'Bearer ' + token }
         }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
           if (!j || !j.urls) return;
-          Object.keys(j.urls).forEach(function (f) { if (j.urls[f]) mintPut(f, j.urls[f], j.expiresIn); });
+          Object.keys(j.urls).forEach(function (f2) { if (j.urls[f2]) mintPut(f2, j.urls[f2], j.expiresIn); });
         }).catch(function () {});
       });
     }, Promise.resolve());
+    /* Claim these files for `run`, and release them however it ends. A failed batch must not
+       leave its files claimed for ever, or one blip would stop them being minted for the life of
+       the page — the same reasoning as buildUrl()'s mintInflight cleanup. */
+    for (i = 0; i < want.length; i++) mintBatchInflight[want[i]] = run;
+    var release = function () {
+      for (var k = 0; k < want.length; k++) {
+        if (mintBatchInflight[want[k]] === run) delete mintBatchInflight[want[k]];
+      }
+    };
+    run.then(release, release);
+    return waitOn.length ? Promise.all([run].concat(waitOn)).then(function () {}) : run;
   }
 
   function buildUrl(file, gated) {
@@ -3483,7 +3523,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r200';   // r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r201';   // r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -8896,7 +8936,12 @@
     var head = function () { try { prewarmSentences(0, true); } catch (_) {} };
     setTimeout(head, 0);          // after mount's own render, before anything waits for idle
     schedulePrewarmBulk();
-    window.addEventListener('thaiear:auth', function () { head(); schedulePrewarmBulk(); });
+    /* ⚠ `thaiear:auth` fires ~15 times during startup (measured), so this must not queue an
+       idle callback each time — the latches make repeats harmless but not free. */
+    window.addEventListener('thaiear:auth', function () {
+      if (prewarmStarted) return;
+      head(); schedulePrewarmBulk();
+    });
   }
 
   /* ---- mount ---- */
