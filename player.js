@@ -163,6 +163,99 @@
   // carries its OWN audio prefix/tier (a playlist mixes topics).
   var PLMODE = cfg.playlistMode === true;
 
+  /* ══ ?lat=1 — THE SENTENCE-AUDIO LATENCY PROBE (2026-08-26, diagnostic) ═══════════════════
+     WHY IT EXISTS. "The first sentence takes 3-4 seconds, the rest are instant" is a claim
+     about WHEN the idle prewarm has bytes, not about how fast a fetch is — and the two are
+     indistinguishable from the outside. Resource Timing can show that /api/audio ran at
+     3423ms, but not whether the clip the user tapped was warm at the moment they tapped it,
+     which is the only number that decides anything. This records that.
+
+     ARMED BY URL, REMEMBERED IN localStorage — the same reasoning as ownersim.js: the iPhone
+     PWA and the Android app have NO ADDRESS BAR, so a query-string-only switch does not exist
+     in the two places the measurement is most needed. `?lat=0` disarms.
+
+     ⚠ EVERY CALL SITE MUST BE A STRICT NO-OP WHEN DISARMED. latMark() returns on its first
+     line; nothing else in this file may branch on LAT. If a probe call ever changes what the
+     player DOES, the measurement is measuring itself.
+
+     Read it off the panel (top-right), or window.__teLat() for the raw JSON. */
+  var LAT = (function () {
+    var on = /[?&]lat=1(&|$)/.test(location.search);
+    var off = /[?&]lat=0(&|$)/.test(location.search);
+    try {
+      if (off) { localStorage.removeItem('te_lat'); return false; }
+      if (on) localStorage.setItem('te_lat', '1');
+      return on || localStorage.getItem('te_lat') === '1';
+    } catch (_) { return on; }
+  })();
+  var latLog = [];
+  var latWarm = 0, latWant = 0, latTapT = null;
+  var latEl = null, latBody = null, latQueued = false;
+  /* t is ms since NAVIGATION START (performance.now()'s origin), so every number in the panel
+     is directly comparable with a Resource Timing entry and with "how long after I tapped the
+     link did I tap the sentence". */
+  function latMark(name, extra) {
+    if (!LAT) return;
+    latLog.push({ t: Math.round(performance.now()), n: name, x: (extra == null ? null : extra) });
+    if (!latQueued) {
+      latQueued = true;
+      (window.requestAnimationFrame || setTimeout)(function () { latQueued = false; latPaint(); });
+    }
+  }
+  // ms since the tap being timed — the number the owner actually feels.
+  function latSinceTap() { return latTapT == null ? null : Math.round(performance.now() - latTapT); }
+  function latPaint() {
+    if (!LAT) return;
+    try {
+      if (!latEl) {
+        latEl = document.createElement('div');
+        latEl.id = 'te-lat';
+        latEl.style.cssText = 'position:fixed;right:6px;top:6px;z-index:99999;width:min(46vw,340px);' +
+          'max-height:60vh;overflow:auto;background:rgba(8,10,22,.9);color:#cfe;' +
+          'font:10px/1.35 ui-monospace,monospace;padding:6px 8px;border-radius:7px;' +
+          'white-space:pre-wrap;word-break:break-word;box-shadow:0 2px 12px rgba(0,0,0,.4)';
+        var h = document.createElement('div');
+        h.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:4px;color:#ffd76a;font-weight:700';
+        h.innerHTML = '<span style="flex:1">lat probe</span>';
+        var cp = document.createElement('button');
+        cp.textContent = 'copy';
+        cp.style.cssText = 'font:10px monospace;cursor:pointer;background:#ffd76a;border:0;border-radius:4px;padding:1px 6px';
+        cp.onclick = function () {
+          var s = JSON.stringify(window.__teLat(), null, 1);
+          try { navigator.clipboard.writeText(s); cp.textContent = 'copied'; } catch (_) {}
+          try { console.log(s); } catch (_) {}
+        };
+        var off = document.createElement('button');
+        off.textContent = 'off';
+        off.style.cssText = cp.style.cssText;
+        off.onclick = function () { try { localStorage.removeItem('te_lat'); } catch (_) {} latEl.remove(); };
+        h.appendChild(cp); h.appendChild(off);
+        latBody = document.createElement('div');
+        latEl.appendChild(h); latEl.appendChild(latBody);
+        (document.body || document.documentElement).appendChild(latEl);
+      }
+      var out = '';
+      for (var i = 0; i < latLog.length; i++) {
+        var e = latLog[i];
+        out += String(e.t).padStart(6) + ' ' + e.n + (e.x == null ? '' : '  ' + e.x) + '\n';
+      }
+      latBody.textContent = out;
+      latEl.scrollTop = latEl.scrollHeight;
+    } catch (_) {}
+  }
+  window.__teLat = function () {
+    return {
+      page: location.pathname, tier: TIER || 'free', prefix: PREFIX || '(playlist)',
+      sentences: sentences.length, warmed: latWarm, wanted: latWant,
+      nav: (function () {
+        var n = performance.getEntriesByType('navigation')[0];
+        return n ? { ttfb: Math.round(n.responseStart), dcl: Math.round(n.domContentLoadedEventEnd), load: Math.round(n.loadEventEnd) } : null;
+      })(),
+      marks: latLog
+    };
+  };
+  if (LAT) latMark('boot', 'player.js');
+
   /* ---- native (Capacitor app) audio engine ----
      In a browser the TOP player is an HTML5 <audio>. Inside the app that won't play with
      the screen locked, so audio is routed to a native ExoPlayer plugin (NativeAudio) that
@@ -808,10 +901,23 @@
   var PREWARM_WAIT_TRIES = 5;
   var PREWARM_YIELD_MS = 10000;   // hard cap: a tap that never settles must not stall the prewarm for ever
   var PREWARM_MAX_ATTEMPTS = 2;   // a clip dropped for a tap gets one more go, then it is left to the tap path
+  /* ⚠ THE HEAD PASS (2026-08-26). The bulk prewarm runs at idle, which is correct for 40 clips
+     and wrong for the two or three a visitor actually taps first: measured on the live site, the
+     batch mint did not even START until 3.4s (topic-08) / 7.8s (topic-06), so the first clip was
+     not in memory until ~5.0s / ~9.4s. Nobody reads a topic intro for nine seconds. These few are
+     warmed as soon as we are ALLOWED to, with no idle wait — ~32 KB, less than one of the fonts.
+     ⚠ Keep it small. The reason the bulk pass waits for idle is that it must never compete with
+     first paint, and that reasoning still applies to everything past the head. */
+  var PREWARM_HEAD = 4;
+  var prewarmHeadDone = false;
   var sentBlobs = {};       // file -> Blob of the raw mp3
   var sentBlobBytes = 0;
   var prewarmStarted = false;
   var prewarmCtrls = [];    // AbortControllers for the fetches currently in flight
+  /* file -> true while its bytes are on the wire. `sentBlobs` only answers "already warm",
+     which is not the same question once TWO passes are running: the head pass and the bulk
+     pass overlap by design, so without this each head clip is fetched twice. */
+  var warmInflight = {};
   var sentBusyUntil = 0;    // while in the future, a tap owns the network and the prewarm waits
 
   function sentBusy() { return Date.now() < sentBusyUntil; }
@@ -819,6 +925,7 @@
      so the clip the user is actually waiting for is not queued behind three they are not. The
      aborted clips go back on the queue; nothing is lost but a few kilobytes of progress. */
   function prewarmYield() {
+    if (prewarmCtrls.length) latMark('yield', 'aborted ' + prewarmCtrls.length + ' in-flight prewarm fetches');
     sentBusyUntil = Date.now() + PREWARM_YIELD_MS;
     var live = prewarmCtrls;
     prewarmCtrls = [];
@@ -832,19 +939,22 @@
     return ((s && s.prefix) ? s.prefix : PREFIX) + '_S' + String(clipN).padStart(2, '0') + '_TH.mp3';
   }
 
-  function prewarmSentences(tries) {
-    if (prewarmStarted) return;
-    if (!sentences || !sentences.length) return;
-    if (!navigator.onLine || !mayListen()) return;   // no account → nothing to prewarm
+  function prewarmSentences(tries, head) {
+    if (prewarmStarted) return;              // the bulk pass covers the head too
+    if (head && prewarmHeadDone) return;
+    if (!sentences || !sentences.length) { latMark('prewarm:SKIP', 'no sentences yet'); return; }
+    if (!navigator.onLine || !mayListen()) { latMark('prewarm:SKIP', 'offline or may not listen'); return; }   // no account → nothing to prewarm
     var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    if (conn && (conn.saveData || /2g/.test(conn.effectiveType || ''))) return;
+    if (conn && (conn.saveData || /2g/.test(conn.effectiveType || ''))) { latMark('prewarm:SKIP', 'save-data/2g'); return; }
     if (dynBuilding) {   // let the build have the network to itself
+      latMark('prewarm:wait', 'dyn build in flight, try ' + (tries || 0));
       if ((tries || 0) >= PREWARM_WAIT_TRIES) return;
       setTimeout(function () { prewarmSentences((tries || 0) + 1); }, PREWARM_WAIT_MS);
       return;
     }
     var refs = [];
-    for (var i = 0; i < sentences.length && refs.length < PREWARM_MAX_FILES; i++) {
+    var cap = head ? PREWARM_HEAD : PREWARM_MAX_FILES;
+    for (var i = 0; i < sentences.length && refs.length < cap; i++) {
       var s = sentences[i];
       if (sentLocked(s)) continue;
       var pfx = s.prefix || PREFIX;
@@ -864,13 +974,18 @@
        puts every first tap on the slow, ASYNCHRONOUS path, and that is the path the stale-event
        race and the user-gesture rule both live on. Same wait as the dynBuilding case above. */
     if (gatedFiles.length && !authToken()) {
+      latMark('prewarm:NO-TOKEN', 'try ' + (tries || 0) + ' — retry in ' + PREWARM_WAIT_MS + 'ms');
       if ((tries || 0) >= PREWARM_WAIT_TRIES) return;
       setTimeout(function () { prewarmSentences((tries || 0) + 1); }, PREWARM_WAIT_MS);
       return;
     }
-    prewarmStarted = true;
+    if (head) prewarmHeadDone = true; else prewarmStarted = true;
+    if (!head) latWant = sentences.length;
+    latMark(head ? 'HEAD:start' : 'prewarm:start', refs.length + ' clips, ' + gatedFiles.length + ' gated');
 
+    var latMintT = performance.now();
     (gatedFiles.length ? mintMany(gatedFiles) : Promise.resolve()).then(function () {
+      if (gatedFiles.length) latMark('mint:done', Math.round(performance.now() - latMintT) + 'ms for ' + gatedFiles.length + ' files');
       var queue = refs.slice();
       function lane() {
         if (!queue.length || sentBlobBytes > PREWARM_MAX_BYTES) return Promise.resolve();
@@ -884,7 +999,9 @@
         });
       }
       var lanes = [];
-      for (var l = 0; l < Math.min(PREWARM_POOL, refs.length); l++) lanes.push(lane());
+      // The head is small and it is what the user is waiting for: run it all at once.
+      var pool = head ? refs.length : PREWARM_POOL;
+      for (var l = 0; l < Math.min(pool, refs.length); l++) lanes.push(lane());
       return Promise.all(lanes);
     }).catch(function () {});
   }
@@ -894,11 +1011,14 @@
      to the normal tap path. */
   function warmClip(ref) {
     if (sentBlobs[ref.file]) return Promise.resolve(false);
+    if (warmInflight[ref.file]) return Promise.resolve(false);   // the other pass has it
     if (sentBusy()) return Promise.resolve(true);
+    warmInflight[ref.file] = true;
     var ctrl = null;
     try { ctrl = new AbortController(); } catch (_) { ctrl = null; }
     if (ctrl) prewarmCtrls.push(ctrl);
     function done(v) {
+      delete warmInflight[ref.file];
       if (ctrl) { var i = prewarmCtrls.indexOf(ctrl); if (i > -1) prewarmCtrls.splice(i, 1); }
       return v;
     }
@@ -908,7 +1028,12 @@
           .then(function (r) { return r.ok ? r.blob() : null; });
       })
       .then(function (b) {
-        if (b && b.size && !sentBlobs[ref.file]) { sentBlobs[ref.file] = b; sentBlobBytes += b.size; }
+        if (b && b.size && !sentBlobs[ref.file]) {
+          sentBlobs[ref.file] = b; sentBlobBytes += b.size;
+          latWarm++;
+          if (latWarm === 1) latMark('warm:FIRST', ref.file);
+          if (latWarm === latWant) latMark('warm:ALL', latWarm + ' clips');
+        }
         return done(false);
       })
       .catch(function (e) {
@@ -3358,7 +3483,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r199';   // r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r200';   // r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -8159,6 +8284,7 @@
      pressed play and nothing happened) and both want the same cure, so they must not drift. */
   function failSentLoad(num, file, why, gen) {
     if (gen != null && gen !== sentGen) return;       // this attempt was superseded - it owns nothing
+    latMark('FAIL', why + '  ' + latSinceTap() + 'ms after tap');
     clearSentStall();
     if (num == null || sentPlaying !== num) return;   // superseded by a later tap - leave it alone
     if (file && !sentRetried[file]) {
@@ -8185,6 +8311,7 @@
     // All three of these un-light the button, so all three must belong to the attempt that owns
     // the element — see the note above sentSrcGen.
     el.addEventListener('ended', function () { if (sentEvtMine()) resetSentBtn(); });
+    if (LAT) el.addEventListener('playing', function () { if (!sentOnSilence()) latMark('PLAYING', latSinceTap() + 'ms after tap'); });
     /* ⚠ A REUSED SIGNED URL FAILS HERE, NOT IN A REJECTED PROMISE. buildUrl() has already
        resolved by the time the media element goes to R2, so an R2 token rotation — or a clock
        skew wider than mintPut()'s 10-minute margin — arrives as a plain media error. Drop what
@@ -8305,6 +8432,12 @@
     for (var si = 0; si < sentences.length; si++) { if (sentences[si].num === num) { sObj = sentences[si]; break; } }
     var file = sentFileFor(sObj, num);   // shared with prewarmSentences
     sentCurFile = file;
+    if (LAT) {
+      latTapT = performance.now();
+      var latPath = sentBlobs[file] ? 'WARM-BLOB' : (hasLocalFile((sObj && sObj.prefix) || PREFIX, file) ? 'downloaded'
+        : (mintGet(file) ? 'mint-cached + net' : (GATED || (sObj && (sObj.tier === 'member' || sObj.tier === 'premium')) ? 'COLD: mint + net' : 'COLD: net')));
+      latMark('TAP', 's' + num + '  ' + file + '  warm ' + latWarm + '/' + latWant + '  → ' + latPath);
+    }
     var sentGated = (sObj && sObj.tier != null) ? (sObj.tier === 'member' || sObj.tier === 'premium') : undefined;
     sentPlaying = num;
     updateSentBtn(num, true);
@@ -8320,10 +8453,12 @@
       sentSrcGen = gen;                                    // …and the attempt that owns it
       if (u && u.indexOf('blob:') === 0) sentBlobUrl = u;  // track for revocation on next swap/stop
       sa.load();
+      latMark('src', latSinceTap() + 'ms after tap  ' + (String(u).indexOf('blob:') === 0 ? 'blob:' : 'remote'));
       armSentStall(num, file, gen);   // nothing else un-lights the button if this load simply hangs
       sa.addEventListener('loadedmetadata', function onMeta() {
         sa.removeEventListener('loadedmetadata', onMeta);
         if (gen !== sentGen) return;   // a later tap owns the element now
+        latMark('meta', latSinceTap() + 'ms after tap');
         var duration = sa.duration || 5;
         if (sentResetTimer) clearTimeout(sentResetTimer);
         sentResetTimer = setTimeout(function () { resetSentBtn(); sentResetTimer = null; }, (duration + 0.5) * 1000);
@@ -8739,10 +8874,29 @@
   /* Idle, and never in front of anything the user is waiting for. requestIdleCallback is absent
      on WebKit, so the timeout fallback is the iPhone path — which is the one that needed this
      most. */
+  function schedulePrewarmBulk() {
+    var go = function () { latMark('prewarm:fire'); try { prewarmSentences(0); } catch (_) {} };
+    if (window.requestIdleCallback) { latMark('prewarm:sched', 'requestIdleCallback timeout 4000'); window.requestIdleCallback(go, { timeout: 4000 }); }
+    else { latMark('prewarm:sched', 'setTimeout 2500 (no rIC)'); setTimeout(go, 2500); }
+  }
+  /* ⚠⚠ THE PREWARM'S REAL TRIGGER IS `thaiear:auth`, NOT IDLE — AND THAT IS WHY THE FIRST TAP
+     WAS SLOW ON A GATED TOPIC (2026-08-26, and 90 of 93 units are gated).
+     A gated clip needs a token before it can be minted, and auth resolves LAST in the boot
+     chain: nav.js appends auth.js, which dynamic-imports Supabase from esm.sh, which then
+     resolves the session. The idle callback nearly always wins that race, so the prewarm found
+     no token and rescheduled itself SIX SECONDS later — measured, on a real load: first attempt
+     2946ms, next attempt 9262ms. Every tap in that window paid the full cold path (a ~865ms
+     mint, then a ~700ms fetch from the S3 endpoint), which is the reported 3-4 seconds.
+     auth.js broadcasts the event we were polling for, so listen for it. The 6s timer stays as a
+     backstop for the case where the event fired before this listener existed.
+     ⚠ `thaiear:auth` legitimately fires ~5 times during startup — every path here must be
+     idempotent. prewarmStarted / prewarmHeadDone are what make repeats free; do not remove
+     them, and do not add work here that is not latched. */
   function schedulePrewarm() {
-    var go = function () { try { prewarmSentences(0); } catch (_) {} };
-    if (window.requestIdleCallback) window.requestIdleCallback(go, { timeout: 4000 });
-    else setTimeout(go, 2500);
+    var head = function () { try { prewarmSentences(0, true); } catch (_) {} };
+    setTimeout(head, 0);          // after mount's own render, before anything waits for idle
+    schedulePrewarmBulk();
+    window.addEventListener('thaiear:auth', function () { head(); schedulePrewarmBulk(); });
   }
 
   /* ---- mount ---- */
@@ -8771,6 +8925,7 @@
        visitor's first load after a deploy pairs new markup with the OLD cached stylesheet, and
        without the inline copy that load would keep the gap. */
     document.body.classList.add('te-player-mounted');
+    latMark('mount', sentences.length + ' sentences, tier ' + (TIER || 'free'));
     // sync the transport bar if metadata already arrived before mount
     if (mainAudio.duration) { var t = $('time-total'); if (t) t.textContent = formatTime(mainAudio.duration); }
     render();
