@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v474';   // v469: the first individual-sentence tap -- the idle prewarm now
+const VERSION = 'v475';   // v469: the first individual-sentence tap -- the idle prewarm now
                           // re-arms on thaiear:auth instead of polling every 6s for a token, and a
                           // HEAD pass warms the first 4 clips with no idle wait. Measured before:
                           // first clip not in memory until ~5.0s (topic-08) / ~9.4s (topic-06).   // v468: progress page topic rows show real listening time -- the

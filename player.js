@@ -228,6 +228,7 @@
         h.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:4px;color:#ffd76a;font-weight:700';
         h.innerHTML = '<span style="flex:1">lat probe</span>';
         var cp = document.createElement('button');
+        cp.id = 'te-lat-copy';
         cp.textContent = 'copy';
         cp.style.cssText = 'font:10px monospace;cursor:pointer;background:#ffd76a;border:0;border-radius:4px;padding:1px 6px';
         /* ⚠⚠ THE TEXTAREA IS THE DELIVERY; THE CLIPBOARD IS A CONVENIENCE. In the Android app
@@ -257,11 +258,41 @@
   }
   /* Put the trace on screen in something a finger can select, and opportunistically on the
      clipboard. Exposed as __teLatDump so the owner panel can trigger it too. */
+  /* ⚠⚠ SELECTING A READ-ONLY TEXTAREA DOES NOT WORK ON A PHONE. iOS refuses .select() on one
+     outright, and an Android WebView focuses the field while leaving the selection empty — which
+     is exactly what the owner saw: a box full of trace and nothing selected. The field must be
+     made writable for the duration and selected with setSelectionRange (NOT .select(), which iOS
+     ignores here); the contentEditable/Range dance is the long-standing iOS recipe and is inert
+     elsewhere. Everything is restored afterwards so the box stays read-only to a stray tap. */
+  function latSelectAll(box) {
+    try {
+      var ce = box.contentEditable, ro = box.readOnly, r = document.createRange();
+      box.contentEditable = 'true';
+      box.readOnly = false;
+      r.selectNodeContents(box);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+      if (box.setSelectionRange) box.setSelectionRange(0, box.value.length);
+      box.contentEditable = ce;
+      box.readOnly = ro;
+      /* Restoring readOnly can drop the selection on some engines, so reassert it last — the
+         selection has to still be live when execCommand runs, and has to still be visible
+         afterwards for the manual route. */
+      if (box.setSelectionRange) box.setSelectionRange(0, box.value.length);
+      return true;
+    } catch (_) { return false; }
+  }
+
+  /* Put the trace on screen, select all of it, and get it onto the clipboard.
+     ⚠ execCommand('copy') is what works in a WebView, and it needs BOTH a live selection and the
+     user's gesture — so this whole function runs synchronously inside the click. Do not make it
+     async, and do not await the clipboard promise before copying. */
   function latDump() {
     var s;
     try { s = JSON.stringify(window.__teLat(), null, 1); } catch (_) { return; }
-    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(s); } catch (_) {}
     try { console.log(s); } catch (_) {}
+    var copied = false;
     try {
       latPaint();
       var box = document.getElementById('te-lat-dump');
@@ -274,8 +305,25 @@
         latEl.appendChild(box);
       }
       box.value = s;
-      box.focus(); box.select();
+      box.focus();
+      latSelectAll(box);
+      try { copied = document.execCommand && document.execCommand('copy'); } catch (_) { copied = false; }
+      // Bonus path, and the only one on browsers that have dropped execCommand. Async, so it can
+      // never be what the button reports — it may resolve long after this returns.
+      try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(s); } catch (_) {}
+      // Leave it selected either way: if the copy failed, the manual route is all he has.
+      latSelectAll(box);
     } catch (_) {}
+    /* Say which happened. "copied" and "select all + copy" are the difference between pasting a
+       trace and fighting a text box, and the owner cannot tell them apart by looking. */
+    try {
+      var btn = document.getElementById('te-lat-copy');
+      if (btn) {
+        btn.textContent = copied ? 'copied ✓' : 'select all + copy';
+        setTimeout(function () { try { btn.textContent = 'copy'; } catch (_) {} }, 2500);
+      }
+    } catch (_) {}
+    return copied;
   }
   window.__teLatDump = latDump;
   window.__teLat = function () {
@@ -3654,7 +3702,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r205';   // r205: the probe panel repaints on setTimeout, not requestAnimationFrame -- rAF does not fire in a backgrounded tab or app, and latQueued had already latched true, so the panel never appeared and never recovered. r204: the latency probe is usable ON A PHONE -- copy renders a selectable textarea as well as trying the clipboard (a WebView clipboard write can be refused or a silent no-op, and there is no console in the app), and the panel is 92vw on a handset instead of a 46vw ribbon. r203: a RESTORED signed-URL cache no longer waits for auth. The prewarm asked for a token whenever the topic was gated, not whenever it still had something to mint -- so a second visit, with every url already in the persisted cache, stopped at 789ms and did not start until 1245ms for an /api/audio call it was never going to make. r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r206';   // r206: the probe's copy button actually copies on a phone -- .select() on a READ-ONLY textarea is refused on iOS and leaves an empty selection in an Android WebView, so the field is made writable for the duration and selected with setSelectionRange, then execCommand('copy') runs synchronously inside the gesture (the async clipboard API can be a silent no-op in a WebView). The button now reports 'copied' vs 'select all + copy'. r205: the probe panel repaints on setTimeout, not requestAnimationFrame -- rAF does not fire in a backgrounded tab or app, and latQueued had already latched true, so the panel never appeared and never recovered. r204: the latency probe is usable ON A PHONE -- copy renders a selectable textarea as well as trying the clipboard (a WebView clipboard write can be refused or a silent no-op, and there is no console in the app), and the panel is 92vw on a handset instead of a 46vw ribbon. r203: a RESTORED signed-URL cache no longer waits for auth. The prewarm asked for a token whenever the topic was gated, not whenever it still had something to mint -- so a second visit, with every url already in the persisted cache, stopped at 789ms and did not start until 1245ms for an /api/audio call it was never going to make. r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
