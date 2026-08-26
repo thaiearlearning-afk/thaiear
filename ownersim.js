@@ -251,33 +251,18 @@
     function paintLat() {
       lat.innerHTML = '<strong style="color:#7A1F1F">Audio latency probe</strong><br>' +
         '<span>' + (latOn()
-          ? 'ON. Open a topic — the trace appears top-right. Play a sentence, then come back and Copy trace.'
+          ? 'ON. Open a topic — the trace panel appears top-right. Play a sentence, then press copy IN THAT PANEL.'
           : 'Off. Turning it on takes effect on the NEXT page you open.') + '</span>' +
         '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
           '<button type="button" id="ownersim-lat-toggle" style="' + SWBTN + '">' +
             (latOn() ? 'Turn probe off' : 'Turn probe on') + '</button>' +
-          '<button type="button" id="ownersim-lat-copy" style="' + SWBTN + '">Copy trace</button>' +
-        '</div><div id="ownersim-lat-out"></div>';
+        '</div>' +
+        '<span style="display:block;margin-top:6px;color:#7A1F1F">The trace is copied from the probe' +
+        ' panel on the topic page itself — this panel only exists on the home page, so it can never' +
+        ' see it.</span>';
       lat.querySelector('#ownersim-lat-toggle').addEventListener('click', function () {
         set('te_lat', latOn() ? null : '1');
         paintLat();
-      });
-      lat.querySelector('#ownersim-lat-copy').addEventListener('click', function () {
-        var out = lat.querySelector('#ownersim-lat-out');
-        if (typeof window.__teLat !== 'function') {
-          out.innerHTML = '<span style="color:#7A1F1F">No trace on this page. The probe only runs on a ' +
-            'TOPIC or PLAYLIST page — open one, play a sentence, then press this there.</span>';
-          return;
-        }
-        var s = '';
-        try { s = JSON.stringify(window.__teLat(), null, 1); }
-        catch (_) { out.textContent = 'could not read the trace'; return; }
-        try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(s); } catch (_) {}
-        out.innerHTML = '<textarea readonly style="width:100%;height:170px;margin-top:8px;' +
-          'font:11px/1.4 ui-monospace,monospace;-webkit-user-select:text;user-select:text"></textarea>';
-        var ta = out.querySelector('textarea');
-        ta.value = s;
-        try { ta.focus(); ta.select(); } catch (_) {}
       });
     }
     paintLat();
