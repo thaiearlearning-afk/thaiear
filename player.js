@@ -2900,14 +2900,94 @@
   function mintPut(file, url, expiresIn) {
     var serverMs = ((expiresIn || 3600) - 600) * 1000;   // stop trusting it 10 min before it dies
     mintCache[file] = { url: url, exp: Date.now() + Math.max(Math.min(serverMs, MINT_TTL_MS), 60000) };
+    mintStoreSave();
   }
   /* Drop a mint we have reason to distrust. Called with a filename when playback fails on a
      cached URL (an R2 token rotation, or a clock skew wide enough to beat the 10-minute margin),
      and with nothing on an auth change. */
   function mintDrop(file) {
     if (file) { delete mintCache[file]; delete mintInflight[file]; }
-    else { mintCache = {}; mintInflight = {}; }
+    else { mintCache = {}; mintInflight = {}; mintStoreClear(); }
   }
+
+  /* ---- the signed-URL cache SURVIVES NAVIGATION (2026-08-26) ----
+     R2 signs for 6h (URL_TTL) and mintPut clamps to 5h (MINT_TTL_MS) — but mintCache lived in
+     memory only, so it died on every navigation. Every topic open therefore paid a fresh
+     /api/audio round trip (measured live: 495ms, 878ms, 1558ms — it is the Worker verifying the
+     JWT against Supabase, so the cost is the auth check, not the file count) for urls it had
+     minted and thrown away minutes earlier. Persisting it means a topic opened twice in an
+     afternoon mints ONCE, and the second open starts fetching audio immediately.
+     It also cuts issuance, which makes audio_quota a better extraction signal rather than a
+     noisier one (ANTI_THEFT_PLAN.md §14b.7).
+
+     ⚠⚠ KEYED ON THE USER, AND THAT IS NOT TIDINESS — IT IS THE WHOLE SAFETY ARGUMENT. A signed
+     url is a bearer token for its clip. Sign out, sign in as someone else, and an unkeyed store
+     would hand the new visitor the previous one's PREMIUM urls for up to five hours: an
+     entitlement bypass that no padlock anywhere would catch. identity.js answers "who is this"
+     SYNCHRONOUSLY, before auth.js has even been appended, which is exactly what a cache read at
+     parse time needs — and it is already the one sanctioned pre-auth reader.
+
+     ⚠ The identity.js guess can be STALE (it reads a marker, not a live session), so the first
+     real `thaiear:auth` also re-checks it below and drops the store if the resolved user is not
+     the one we loaded under. Loading optimistically and correcting on the real answer is the
+     same shape nav.js uses to avoid a signed-out flash.
+
+     ⚠ CAPPED. A signed url is ~400 bytes and the corpus is 2,175 gated clips, so an unbounded
+     store would eventually throw QuotaExceededError on every write. Keep the ones that live
+     longest; the rest were closest to expiring anyway. */
+  var MINT_STORE = 'te_mint_v1';
+  var MINT_STORE_MAX = 400;
+  var MINT_SAVE_DEBOUNCE_MS = 1500;   // mintPut fires 30-40 times in a burst; write once
+  var mintLoadedUid = null;
+  var mintSaveTimer = null;
+
+  function mintUid() {
+    try {
+      var I = window.ThaiEarIdentity;
+      var g = (I && I.guess) ? I.guess() : null;
+      return (g && g.state === 'in' && g.user && g.user.id) ? g.user.id : null;
+    } catch (_) { return null; }
+  }
+  function mintStoreClear() {
+    mintLoadedUid = null;
+    try { localStorage.removeItem(MINT_STORE); } catch (_) {}
+  }
+  function mintStoreLoad() {
+    try {
+      var uid = mintUid();
+      if (!uid) return;                       // signed out, or storage unreadable
+      var o = JSON.parse(localStorage.getItem(MINT_STORE) || 'null');
+      if (!o || o.u !== uid || !o.m) return;  // somebody else's urls - see the note above
+      var now = Date.now(), n = 0;
+      /* A minute of headroom: a url that expires while the page is opening is worse than no url
+         at all, because it fails as a media error rather than a rejected promise. */
+      for (var f in o.m) {
+        var e = o.m[f];
+        if (e && e[1] > now + 60000) { mintCache[f] = { url: e[0], exp: e[1] }; n++; }
+      }
+      mintLoadedUid = uid;
+      if (n) latMark('mint:restored', n + ' urls survived the navigation');
+    } catch (_) {}
+  }
+  function mintStoreSave() {
+    if (mintSaveTimer) return;
+    mintSaveTimer = setTimeout(function () {
+      mintSaveTimer = null;
+      try {
+        var uid = mintUid();
+        if (!uid) return;
+        var now = Date.now(), keys = Object.keys(mintCache), m = {}, kept = 0;
+        keys.sort(function (a, b) { return mintCache[b].exp - mintCache[a].exp; });
+        for (var i = 0; i < keys.length && kept < MINT_STORE_MAX; i++) {
+          var e = mintCache[keys[i]];
+          if (e && e.exp > now) { m[keys[i]] = [e.url, e.exp]; kept++; }
+        }
+        localStorage.setItem(MINT_STORE, JSON.stringify({ u: uid, m: m }));
+        mintLoadedUid = uid;
+      } catch (_) {}   // quota, private mode, storage disabled: the cache just stops persisting
+    }, MINT_SAVE_DEBOUNCE_MS);
+  }
+  mintStoreLoad();
 
   /* A signed URL outlives a sign-out, so the caches are dropped whenever the identity CHANGES.
      Deliberately keyed on the user id rather than on the event alone: `thaiear:auth` also fires
@@ -2917,6 +2997,16 @@
   window.addEventListener('thaiear:auth', function (e) {
     var id = (e && e.detail && e.detail.id) || null;
     if (mintUserSeen && id !== mintUser) { mintDrop(); sentBlobs = {}; sentBlobBytes = 0; }
+    /* ⚠ THE FIRST EVENT MATTERS TOO, NOW THAT THE CACHE OUTLIVES THE PAGE. mintUserSeen is
+       false on it, so the branch above deliberately does nothing — correct when the cache
+       could only have been built by THIS page, and unsafe once it is restored from disk under
+       identity.js's guess. If the real answer names a different user, those urls are not
+       theirs. Only ever fires on a genuine mismatch, so the ordinary sign-in that resolves at
+       load still keeps its freshly warmed cache. */
+    else if (!mintUserSeen && mintLoadedUid && id !== mintLoadedUid) {
+      mintDrop(); sentBlobs = {}; sentBlobBytes = 0;
+      latMark('mint:DROPPED', 'restored urls belong to another user');
+    }
     mintUser = id; mintUserSeen = true;
   });
 
@@ -3523,7 +3613,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r201';   // r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r202';   // r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
