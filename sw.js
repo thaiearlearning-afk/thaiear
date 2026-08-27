@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v497';   // v497: FAVOURITES IS ITS OWN NAVIGATION CIRCUIT. A topic opened from
+const VERSION = 'v498';   // v498: Grammar by Ear is 19 units, not 20. "But & however" was
+                          // merged into the concession unit -- its three exx of a plain
+                          // but+gaw against one each for everything else -- so
+                          // sentence-hints.json, topic-sentences.json and
+                          // clip-durations.json all shrank by two sentences and one page.
+                          // All three are PRECACHED; without the bump, cache-first keeps
+                          // serving lookups that still name grammar-11.
+                          // v497: FAVOURITES IS ITS OWN NAVIGATION CIRCUIT. A topic opened from
                           // the Favourites view walks the favourites list with prev/next -- both
                           // arms in view order, wrapping at each end into one circle -- so a
                           // listener can just play their favourites. Offline it narrows to the

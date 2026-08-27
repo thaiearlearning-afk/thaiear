@@ -319,10 +319,15 @@
       keywords: ["serial verbs","verb stacking","ลองคิดดู","เผลอ","ว่า","accidentally"] },
     { id: 9, name: "Already, just & first", levels: ['li1'], sentences: 11, page: "grammar-09.html", audio: "GramTime_LI1", access: "premium",
       keywords: ["laaeo","phoeng","sia gawn","แล้ว","เพิ่ง","เสียก่อน","already","just","first"] },
-    { id: 10, name: "Even though & no matter", levels: ['li1'], sentences: 13, page: "grammar-10.html", audio: "GramEvenThough_LI1", access: "premium",
-      keywords: ["maae waa","tang thii","mai waa ja","แม้ว่า","ทั้งที่","ไม่ว่าจะ","แม้แต่","even though","no matter","despite"] },
-    { id: 11, name: "But & however", levels: ['li1'], sentences: 7, page: "grammar-11.html", audio: "GramBut_LI1", access: "premium",
-      keywords: ["dtaae","yang rai gaw dtaam","แต่","อย่างไรก็ตาม","แต่ทว่า","but","however","nevertheless"] },
+    /* ⚠ G11 "But & however" was MERGED INTO THIS UNIT on 2026-08-27 and no longer exists.
+       Its แต่…ก็ group carried three examples of what is, in the owner's words, "literally
+       just แต่ with ก็ after it", while every other structure in the unit had one — so two
+       went to SENTENCES_PENDING_A_HOME.md and the surviving five joined the concession set
+       they were always adjacent to. ⛔ There is no id 11 and no grammar-11.html; the gap is
+       deliberate and ids are frozen, exactly as topic ids are (CLAUDE.md). Display position
+       comes from array order, so the eyebrow still counts 1..19 with no hole. */
+    { id: 10, name: "Even though, but & however", levels: ['li1'], sentences: 18, page: "grammar-10.html", audio: "GramEvenThough_LI1", access: "premium",
+      keywords: ["maae waa","tang thii","mai waa ja","dtaae","yang rai gaw dtaam","แม้ว่า","ทั้งที่","ไม่ว่าจะ","แม้แต่","แต่","อย่างไรก็ตาม","แต่ทว่า","even though","no matter","despite","but","however","nevertheless"] },
     { id: 12, name: "Dan / ùt-sàa (ดัน / อุตส่าห์)", levels: ['li1'], sentences: 9, page: "grammar-12.html", audio: "GramDan_LI1", access: "premium",
       keywords: ["dan","utsaa","ดัน","อุตส่าห์","went and","annoyed","trouble"] },
     { id: 13, name: "Gwàa (กว่า)", levels: ['li1'], sentences: 8, page: "grammar-13.html", audio: "GramGwaa_LI1", access: "premium",
