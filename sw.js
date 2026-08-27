@@ -33,7 +33,21 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v492';   // v492: the offline-staleness stamp gains a SECOND scheme. The map
+const VERSION = 'v493';   // v493: Favourites covers the Grammar by Ear arm, and a restored page
+                          // no longer paints a stale list. The heart is on the 20 grammar cards,
+                          // and topics-fav.js now walks BOTH arrays — a favourited grammar unit
+                          // was being dropped by the unknown-page rule and vanishing silently.
+                          // Grammar gets its own group pinned above the difficulty bands (every
+                          // structure unit is li1, so merging would scatter them through
+                          // Lower-intermediate interleaved with topics).
+                          // ⚠ Also the iOS back-swipe fix: a bfcache restore re-runs no script,
+                          // so the tile count stayed frozen at whatever it last painted. pageshow
+                          // (persisted) and visibilitychange now resync from the localStorage
+                          // mirror BEFORE repainting — repainting alone would re-render the same
+                          // stale in-memory cache. topics-fav.js and auth.js are precached.
+                          // Derived from `git log origin/main -1 -- sw.js` (v492), not the disk
+                          // constant.
+                          // v492:   // v492: the offline-staleness stamp gains a SECOND scheme. The map
                           // now carries a clip-derived "<Prefix>#c" alongside the legacy
                           // combined-file "<Prefix>", and the three readers prefer it while
                           // refusing to read a SCHEME change as an audio change. Inert until

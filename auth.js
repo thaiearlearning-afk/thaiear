@@ -2149,6 +2149,16 @@
     },
     // Synchronous best-effort, for painting before the network answers.
     peek: function () { return fvCache || fvLocal() || {}; },
+    /* Drop the in-memory copy and re-read the mirror. Synchronous, no network.
+       ⚠ THIS EXISTS FOR THE BFCACHE (owner, 2026-08-27, iOS back-swipe). Favourites are toggled
+       on /topics-favourites, which is a DIFFERENT DOCUMENT from /topics — so /topics keeps its
+       own fvCache, and an iOS back-swipe restores that document from the back/forward cache
+       WITHOUT re-running any script. Nothing invalidates fvCache, so the tile count stayed on
+       whatever it read when the page was last painted: stuck on "0 topics" or "4 topics"
+       regardless of what the user had just done. A reload fixed it, which is the tell.
+       The localStorage mirror is written on EVERY toggle, so it is already correct across
+       documents; the only thing wrong is the in-memory cache sitting in front of it. */
+    resync: function () { fvCache = fvLocal() || {}; return fvCache; },
     has: function (page) { return !!(fvCache || fvLocal() || {})[page]; },
     /* Optimistic: the cache and mirror move synchronously so the heart fills on the tap, and
        the row op follows. A failure re-marks it pending rather than reverting the UI — the

@@ -71,17 +71,37 @@
     el.textContent = n === 1 ? '1 topic' : n + ' topics';
   }
 
-  /* Favourited units, in GRID ORDER. Order comes from topics.js array position, which IS the
-     display order — so a favourites list re-sorts itself for free whenever the grid is
-     re-ordered (as 93 units were on 2026-08-27) with nothing to maintain here.
-     ⚠ Unknown pages are DROPPED: a favourite whose topic has since been retired must not
-     render as a broken card. This is the client-side referential integrity the table cannot
-     enforce, because topics.js is a JS file and not a foreign key. */
-  function liveFavourites() {
+  /* Favourited units, in GRID ORDER, split by ARM.
+     Order comes from array position, which IS the display order in both arrays — so a
+     favourites list re-sorts itself for free whenever the grid is re-ordered (as 93 units were
+     on 2026-08-27) with nothing to maintain here.
+
+     ⚠ BOTH ARRAYS. This walked `topics` alone until 2026-08-27, which was not merely
+     incomplete: a favourited GRAMMAR unit would have hit the drop-unknown rule below and
+     vanished silently — heart filled, nothing in the view, no error. Any future arm must be
+     added here too, and that is what the ARMS list is for.
+
+     ⚠ Unknown pages are DROPPED: a favourite whose unit has since been retired must not render
+     as a broken card. This is the client-side referential integrity the table cannot enforce,
+     because topics.js is a JS file and not a foreign key — favourites_schema.sql says the same
+     from the other side. */
+  function favUnits() {
     var t = T(), a = A();
-    if (!t || !a || !a.favourites) return [];
+    var out = { grammar: [], topics: [] };
+    if (!t || !a || !a.favourites) return out;
     var favs = a.favourites.peek();
-    return t.topics.filter(function (u) { return u.page && favs[u.page]; });
+    var pick = function (arr) {
+      return (arr || []).filter(function (u) { return u && u.page && favs[u.page]; });
+    };
+    out.grammar = pick(t.structures);
+    out.topics = pick(t.topics);
+    return out;
+  }
+  /* Flat, grammar first — the same order the view renders, so the tile count and the page
+     can never disagree about what "a favourite" is. */
+  function liveFavourites() {
+    var g = favUnits();
+    return g.grammar.concat(g.topics);
   }
 
   /* ── the heart ──────────────────────────────────────────────────────────────────────── */
@@ -113,17 +133,31 @@
       root.innerHTML = '<p class="tp-fav-empty">Sign in to keep a list of favourite topics.</p>';
       return;
     }
-    var units = liveFavourites();
-    if (!units.length) {
+    var groups = favUnits();
+    if (!groups.grammar.length && !groups.topics.length) {
       root.innerHTML = '<p class="tp-fav-empty">You haven’t added any favourite topics yet ' +
                        '— select the heart on any topic to add it here.</p>';
       return;
     }
-    /* Grouped by band, bands in grid order, units in grid order within each band. Only bands
-       that actually have a favourite get a heading — an empty "Advanced" header above nothing
-       would read as a loading failure. */
-    var html = '', curBand = null, open = false;
-    units.forEach(function (u) {
+    var html = '';
+
+    /* GRAMMAR FIRST, under one heading of its own (owner, 2026-08-27). Not merged into the
+       difficulty bands: every structure unit is `li1`, so merging would scatter them through
+       the Lower-intermediate band interleaved with topics — "Dâi (ได้)" between two topic
+       cards. They are a different KIND of unit, not a difficulty peer, and the go-live plan
+       for /topics groups them the same way (STRUCTURES_SECTION_PLAN.md §12.4). One heading,
+       no band subdivision, units in `structures` order. */
+    if (groups.grammar.length) {
+      html += '<h2 class="tp-fav-band">Grammar by Ear</h2><div class="topic-grid">';
+      groups.grammar.forEach(function (u) { html += t.cardHtml(u); });
+      html += '</div>';
+    }
+
+    /* Then the topic arm, grouped by band, bands in grid order, units in grid order within
+       each band. Only bands that actually have a favourite get a heading — an empty
+       "Advanced" header above nothing would read as a loading failure. */
+    var curBand = null, open = false;
+    groups.topics.forEach(function (u) {
       var b = t.levelBounds(u.levels);
       var key = b[0] === b[1] ? b[0] : b[0] + '-' + b[1];
       if (key !== curBand) {
@@ -154,6 +188,36 @@
   }
 
   window.addEventListener('thaiear:auth', refresh);
+
+  /* ── returning to a page that was never re-run ────────────────────────────────────────
+     ⚠ iOS BACK-SWIPE DOES NOT RE-EXECUTE THE PAGE (owner, 2026-08-27). It restores the
+     document from the back/forward cache: no DOMContentLoaded, no script re-run, no
+     thaiear:auth. So favouriting on /topics-favourites and swiping back to /topics left the
+     tile count frozen at whatever it said when the page was last painted — "0 topics" after
+     adding four, and a manual reload was the only cure. The hearts on a band page had the
+     same fault for the same reason.
+
+     Two signals, because they cover different restores:
+       pageshow + event.persisted  the bfcache restore itself (back-swipe, back button)
+       visibilitychange            returning to a backgrounded tab or a re-foregrounded PWA,
+                                   which on iOS is where the worker runs at all
+     resync() first, always: the in-memory cache belongs to THIS document and is stale by
+     construction after time spent in another one. The localStorage mirror is written on every
+     toggle, so it is already right — the cache in front of it is the only thing that is not.
+     Then unlatch so the next auth event re-reads the server; the repaint below is instant and
+     does not wait for it. */
+  function restored() {
+    var a = A();
+    if (a && a.favourites && a.favourites.resync) a.favourites.resync();
+    loaded = false;                     // let the next refresh() re-read the account copy
+    paint();
+    renderFavPage();
+    refresh();
+  }
+  window.addEventListener('pageshow', function (e) { if (e && e.persisted) restored(); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') restored();
+  });
   /* Repaint cards that appear after load (search results, and this page's own grid). Scoped to
      childList+subtree on body; the callback is cheap and only touches .topic-fav nodes. */
   if (window.MutationObserver) {
