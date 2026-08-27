@@ -39,3 +39,14 @@
 # page entirely — _redirects is applied before a file is served, so the file would never be reached.
 /sentences       /account   301
 /sentences.html  /account   301
+# 2026-08-27 Grammar by Ear: two units retired, and DELETING THE PAGE IS NOT ENOUGH.
+# Pages kept serving both from its edge after the deploy — /grammar-08 returned the full old
+# 15-card Serial verbs page, whose audio had already been deleted from R2, so every clip on it
+# 404s. Verified live before adding these: 200, cf-cache-status DYNAMIC, real content.
+# grammar-11 "But & however" was MERGED into grammar-10, so it points there — the sentences
+# really are on that page. grammar-08 "Serial verbs" was dropped with no successor: only 2 of
+# its 15 sentences survive, in grammar-12, so the hub is the honest destination.
+/grammar-08       /grammar     301
+/grammar-08.html  /grammar     301
+/grammar-11       /grammar-10  301
+/grammar-11.html  /grammar-10  301
