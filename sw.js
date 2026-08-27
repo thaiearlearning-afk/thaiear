@@ -33,7 +33,20 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v484';   // v484: prev/next on a dyn page works OFFLINE. The adopt path
+const VERSION = 'v485';   // v485: DELIVERS the length re-order, which shipped under v484 and so
+                          // reached nobody. v484 was already PUSHED (82bc2af, the dyn offline fix)
+                          // before the re-order commit landed, so devices had already installed it
+                          // and cached the OLD topics.js + band pages under `thaiear-v484`. The
+                          // re-order then changed those precached files WITHOUT a version change --
+                          // and precached sub-resources are cache-first, so there was nothing to
+                          // trigger a reinstall and every returning client kept serving the old
+                          // grid indefinitely. Origin was correct throughout; only the cache was
+                          // stale. ⚠ THE RULE THIS BROKE: "one bump can cover two changes" holds
+                          // ONLY while neither has been pushed. Once a version is DEPLOYED it is
+                          // spent -- a later change to any precached file needs its own bump, even
+                          // if the constant on disk already looks higher than what you started
+                          // from. Check `git log origin/main` for the version, not just the file.
+                          // v484: prev/next on a dyn page works OFFLINE. The adopt path
                           // resolved its source with buildUrl() directly -- always a remote
                           // audio.thaiear.com URL, never the downloaded copy -- and a dyn
                           // download deletes the combined track anyway, so a downloaded
