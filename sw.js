@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v480';   // v480: a download's first tap survives the auth storm -- renderOfflineBar
+const VERSION = 'v481';   // v481: replaying a sentence block credits the repetitions you
+                          // actually heard again -- the play count was a running max capped
+                          // at the repeat setting for the whole VISIT to a block, so back-to-
+                          // start (and the loop button) could not push it past that ceiling.
+                          // player.js is precached, hence the bump.
+                          // v480: a download's first tap survives the auth storm -- renderOfflineBar
                           // re-derives from what is ON DISK and runs on every thaiear:auth (~25 per
                           // page), so it painted "Download for offline" over the progress line of a
                           // download that had just started, on topic pages AND playlists alike.
