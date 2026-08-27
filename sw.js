@@ -33,7 +33,19 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v482';   // v482: Read Thai results -- "Clear my reading progress" is red
+const VERSION = 'v484';   // v484: prev/next on a dyn page works OFFLINE. The adopt path
+                          // resolved its source with buildUrl() directly -- always a remote
+                          // audio.thaiear.com URL, never the downloaded copy -- and a dyn
+                          // download deletes the combined track anyway, so a downloaded
+                          // neighbour could only ever be built from its clips, which topics
+                          // were not allowed to do. player.js is precached, hence the bump.
+                          // v483: the 93 units are re-ordered by mean Thai sentence length, both
+                          // WITHIN each band and ACROSS them -- 24 units changed band, so 22 cards
+                          // moved to a different band PAGE. Free units are still pinned to the top
+                          // of their band; Idioms + Tongue twisters are pinned to the END of
+                          // Beginner (character count is an inverted difficulty proxy for those
+                          // two). topics.js and all six band pages are precached, hence the bump.
+                          // v482: Read Thai results -- "Clear my reading progress" is red
                           // again (its rules sat ABOVE .rd-ghost-pill and lost the cascade, so
                           // the button had been rendering as a plain grey ghost pill), and its
                           // confirm is now the site's own modal instead of window.confirm.

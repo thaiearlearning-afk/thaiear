@@ -3826,7 +3826,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r211';   // r211: a REPLAY of a sentence block is more listening, not the same listening. plysDwell.heard was a running max capped at the session's repeat count and held for the whole VISIT to a block -- and back-to-start (dynSentSkip(-1) when already 1.5s in) seeks backwards WITHOUT changing num, so the same dwell record survived and rp was the ceiling for the visit rather than for the pass through it. Owner, 2026-08-27, on 3 repeats: two heard, back to start, three more heard, count went up by 3 instead of 5. The loop button was the same shape (ten loops at rp=1 credited one). A backwards jump now BANKS the run and starts a fresh one, with the wall clock reset alongside it -- which is the anti-inflation half, because each new run must bank its own dwell out of real timeupdate ticks, so tapping back repeatedly with nothing played still credits nothing. That reset also closes a leak in the other direction: after a full listen, dragging to the end of the block used to credit an extra repetition for free (ms already banked, byPos jumps). Still ONE pass carrying N repetitions -- /api/plays reads reps[k] only where deltas[k] > 0, so passes stay <= reps and the topic roll-up's complete-listens figure does not move on a replay. The proportional fallback (PLAYS_COUNTER.md 2b addendum) is deliberately untouched. // r210: the FIRST download tap now shows its own progress. renderOfflineBar() re-derives the bar from what is on disk and is wired to thaiear:auth, which fires ~25x per page on a real device -- so a download that had just started was not on disk yet, resolved to 'idle', and had "Download for offline" painted straight over its progress line; the owner tapped again, the storm had settled by then, and only the second tap appeared to work. Reported on the iPhone PWA on a topic page and on a playlist, which is the tell: one function, both surfaces (the playlists LIST is unaffected -- its render() compares markup and dlWorking makes a busy row differ). setOfflineState()'s idempotence guard could not catch it: it stops a repeat paint, not a wrong one. The same event also erased offlineBarFlash's transient 'offline'/'error' message within milliseconds, which is why a download failing for a REAL reason presented as "nothing happened" -- offBarHoldUntil now holds the bar for the message's own 4-6s, released by any genuine state change. ?lat=1 gains dl:start / dl:first / dl:done / dl:FAIL, with a count of the repaints suppressed, because the PWA has no console. // r209: the bulk prewarm starts when the HEAD pass finishes instead of on a fixed 2500ms timer -- measured on a free topic, head done at 242ms and bulk not until 2541ms, so a tap at 1828ms on the 11th sentence found 26 of 30 clips still cold. Head raised 4 -> 8 (a phone shows more than four), and thaiear:auth no longer queues a bulk timer per event (~25 of them per page). r208: a tap no longer aborts the download of the clip it is asking for. prewarmYield() spared nothing, so with a 4-clip head pass and a tap near the top of the list the cancelled download was very often the tapped one -- measured on the owner's phone: yield aborted 4, TAP s395, PLAYING 1170ms later. It now spares that file and ADOPTS the fetch already in flight instead of asking for the same bytes again, bounded by SENT_ADOPT_MS so a stalled one cannot hold the button (armSentStall only arms AFTER the src resolves). r207: a SHARE button on the probe panel, where navigator.share exists. The clipboard is not a reliable way off a phone -- execCommand needs user activation and the async clipboard API can be refused outright in a WebView -- and when both fail the owner is hand-selecting 1,600 characters on a handset. r206: the probe's copy button actually copies on a phone -- .select() on a READ-ONLY textarea is refused on iOS and leaves an empty selection in an Android WebView, so the field is made writable for the duration and selected with setSelectionRange, then execCommand('copy') runs synchronously inside the gesture (the async clipboard API can be a silent no-op in a WebView). The button now reports 'copied' vs 'select all + copy'. r205: the probe panel repaints on setTimeout, not requestAnimationFrame -- rAF does not fire in a backgrounded tab or app, and latQueued had already latched true, so the panel never appeared and never recovered. r204: the latency probe is usable ON A PHONE -- copy renders a selectable textarea as well as trying the clipboard (a WebView clipboard write can be refused or a silent no-op, and there is no console in the app), and the panel is 92vw on a handset instead of a 46vw ribbon. r203: a RESTORED signed-URL cache no longer waits for auth. The prewarm asked for a token whenever the topic was gated, not whenever it still had something to mint -- so a second visit, with every url already in the persisted cache, stopped at 789ms and did not start until 1245ms for an /api/audio call it was never going to make. r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r212';   // r212: PREV/NEXT WORKS OFFLINE ON A DOWNLOADED TOPIC. Owner, 2026-08-27, iPhone PWA in airplane mode: the next topic flashed up as "Now playing:..." and the page then stayed where it was -- that flash was dynApplyAdoptState painting and the snap-back was dynAdvance's catch reverting. Three faults, all in the adopt path. (1) dynAdoptPlaceholder() and dynPrefetchNeighbours() called buildUrl() DIRECTLY, so the source was always a remote URL with no hasLocalFile() check -- a divergent copy of resolution logic that mainSrcFor/sentSrcFor/dynClipUrl all do local-first, and sw.js does not handle audio at all (other origin), so offline that URL cannot resolve however much is downloaded. (2) Even resolved locally there is nothing to find: D0c deletes _TE/_ET on a dyn topic download. (3) dynAdoptBuild/dynChainSentences were playlist-only on the premise that "topic units always have a placeholder" -- false offline -- so the ONE unit type that can always be rebuilt from disk was the one type never allowed to try. Now: the placeholder resolves local-first, dynStdUsable() asks whether a remote source can work at all, a topic's sentence list comes from the PRECACHED topic-sentences.json, and dynChainPlayable() stops claiming every topic is playable. One local-build retry in the catch covers navigator.onLine lying. isGateCode() hoisted to module scope rather than copied. ONLINE IS UNCHANGED BY CONSTRUCTION: dynStdUsable() is true for every topic with a connection. test_dyn_chain.js (25) is the first harness this surface has ever had -- its 20 online assertions were written and run against the pre-fix source FIRST, and they pass identically before and after. // r211: a REPLAY of a sentence block is more listening, not the same listening. plysDwell.heard was a running max capped at the session's repeat count and held for the whole VISIT to a block -- and back-to-start (dynSentSkip(-1) when already 1.5s in) seeks backwards WITHOUT changing num, so the same dwell record survived and rp was the ceiling for the visit rather than for the pass through it. Owner, 2026-08-27, on 3 repeats: two heard, back to start, three more heard, count went up by 3 instead of 5. The loop button was the same shape (ten loops at rp=1 credited one). A backwards jump now BANKS the run and starts a fresh one, with the wall clock reset alongside it -- which is the anti-inflation half, because each new run must bank its own dwell out of real timeupdate ticks, so tapping back repeatedly with nothing played still credits nothing. That reset also closes a leak in the other direction: after a full listen, dragging to the end of the block used to credit an extra repetition for free (ms already banked, byPos jumps). Still ONE pass carrying N repetitions -- /api/plays reads reps[k] only where deltas[k] > 0, so passes stay <= reps and the topic roll-up's complete-listens figure does not move on a replay. The proportional fallback (PLAYS_COUNTER.md 2b addendum) is deliberately untouched. // r210: the FIRST download tap now shows its own progress. renderOfflineBar() re-derives the bar from what is on disk and is wired to thaiear:auth, which fires ~25x per page on a real device -- so a download that had just started was not on disk yet, resolved to 'idle', and had "Download for offline" painted straight over its progress line; the owner tapped again, the storm had settled by then, and only the second tap appeared to work. Reported on the iPhone PWA on a topic page and on a playlist, which is the tell: one function, both surfaces (the playlists LIST is unaffected -- its render() compares markup and dlWorking makes a busy row differ). setOfflineState()'s idempotence guard could not catch it: it stops a repeat paint, not a wrong one. The same event also erased offlineBarFlash's transient 'offline'/'error' message within milliseconds, which is why a download failing for a REAL reason presented as "nothing happened" -- offBarHoldUntil now holds the bar for the message's own 4-6s, released by any genuine state change. ?lat=1 gains dl:start / dl:first / dl:done / dl:FAIL, with a count of the repaints suppressed, because the PWA has no console. // r209: the bulk prewarm starts when the HEAD pass finishes instead of on a fixed 2500ms timer -- measured on a free topic, head done at 242ms and bulk not until 2541ms, so a tap at 1828ms on the 11th sentence found 26 of 30 clips still cold. Head raised 4 -> 8 (a phone shows more than four), and thaiear:auth no longer queues a bulk timer per event (~25 of them per page). r208: a tap no longer aborts the download of the clip it is asking for. prewarmYield() spared nothing, so with a 4-clip head pass and a tap near the top of the list the cancelled download was very often the tapped one -- measured on the owner's phone: yield aborted 4, TAP s395, PLAYING 1170ms later. It now spares that file and ADOPTS the fetch already in flight instead of asking for the same bytes again, bounded by SENT_ADOPT_MS so a stalled one cannot hold the button (armSentStall only arms AFTER the src resolves). r207: a SHARE button on the probe panel, where navigator.share exists. The clipboard is not a reliable way off a phone -- execCommand needs user activation and the async clipboard API can be refused outright in a WebView -- and when both fail the owner is hand-selecting 1,600 characters on a handset. r206: the probe's copy button actually copies on a phone -- .select() on a READ-ONLY textarea is refused on iOS and leaves an empty selection in an Android WebView, so the field is made writable for the duration and selected with setSelectionRange, then execCommand('copy') runs synchronously inside the gesture (the async clipboard API can be a silent no-op in a WebView). The button now reports 'copied' vs 'select all + copy'. r205: the probe panel repaints on setTimeout, not requestAnimationFrame -- rAF does not fire in a backgrounded tab or app, and latQueued had already latched true, so the panel never appeared and never recovered. r204: the latency probe is usable ON A PHONE -- copy renders a selectable textarea as well as trying the clipboard (a WebView clipboard write can be refused or a silent no-op, and there is no console in the app), and the panel is 92vw on a handset instead of a 46vw ribbon. r203: a RESTORED signed-URL cache no longer waits for auth. The prewarm asked for a token whenever the topic was gated, not whenever it still had something to mint -- so a second visit, with every url already in the persisted cache, stopped at 789ms and did not start until 1245ms for an /api/audio call it was never going to make. r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4886,7 +4886,6 @@
        code so the visitor still gets the paywall/sheet rather than silence. */
     dynTallyReset();          // count where this build's clips come from (see dynSrcTally)
     var denied = {}, lastGate = null, missedOffline = 0;
-    function isGateCode(c) { return c === 401 || c === 402 || c === 403 || c === 'noauth' || c === 'licence'; }
     /* LAYER 2 of the not-downloaded handling (Part B, 2026-08-09). dynIncluded() already drops the
        rows we KNOW are absent, but it can only act when navigator.onLine admits to being offline —
        and in this WebView it reports *online* in airplane mode. So a clip can still fail here as a
@@ -6409,7 +6408,13 @@
   // iPhone fix: the lock-screen/media-session next-track handler can't afford network
   // round-trips, so both neighbours' placeholder URLs are pre-resolved at init (and on mode
   // switch) into this cache, and the persisted-session meta is pre-checked synchronously.
+  /* ⚠ MODULE SCOPE, ONE COPY. This was declared inside dynBuildSessionFor; the adopt retry
+     (dynAdvance's catch) needs the same question answered, and a second copy of the tier codes is
+     exactly the divergence that produced bug #7 and §B4. Moved, not duplicated. */
+  function isGateCode(c) { return c === 401 || c === 402 || c === 403 || c === 'noauth' || c === 'licence'; }
   var dynAdoptCache = {};   // t.page → { mode, src (placeholder URL), sess (restored persisted session) }
+  // One local-build retry per hop (see dynAdvance's catch). Reset on every hop, never latched.
+  var dynAdoptRetried = false;
   function dynPrefetchNeighbours() {
     resolveDynChain();   // D4 first-use lazy retry — see resolveDynChain's own note
     if (!dynChain) return;
@@ -6422,11 +6427,18 @@
       if (old && old.sess && old.sess.url && old.sess !== dynSession) { try { URL.revokeObjectURL(old.sess.url); } catch (_) {} }
       var entry = { mode: mode, src: null, sess: null };
       dynAdoptCache[t.page] = entry;
+      /* ⚠ DO NOT PIN A REMOTE URL WHEN A DOWNLOADED COPY EXISTS. This cache is consulted before
+         anything else resolves, so pre-filling it with a remote URL made the local copy
+         unreachable. Left null in that case, so dynAdoptPlaceholder() resolves it properly at
+         hop time — which is also where the blob URL should be minted, since minting one here for
+         two neighbours on every hop would leak an object URL per prefetch. */
       if (t.prefix) {
         var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
-        buildUrl(file, t.tier === 'member' || t.tier === 'premium')
-          .then(function (u) { entry.src = u; })
-          .catch(function () {});   // signed-out on a gated neighbour etc. — adopt falls back to a live mint
+        if (!hasLocalFile(t.prefix, file)) {
+          buildUrl(file, t.tier === 'member' || t.tier === 'premium')
+            .then(function (u) { entry.src = u; })
+            .catch(function () {});   // signed-out on a gated neighbour etc. — adopt falls back to a live mint
+        }
       }
       // Round-7 (item 10): restore the neighbour's PERSISTED session eagerly too, so a
       // lock-screen hop resolves synchronously (same shape as classic advanceTopic).
@@ -6434,14 +6446,43 @@
       if (meta) dynRestoreSession(t.dynKey, mode, meta).then(function (sess) { if (sess) entry.sess = sess; }).catch(function () {});
     });
   }
+  /* CAN the prefab combined track actually be a source right now? (2026-08-27.)
+     ⚠⚠ THE SERVICE WORKER DOES NOT HANDLE AUDIO AT ALL — clips live on audio.thaiear.com, out
+     of its scope (sw.js's own header says so). So a remote combined-file URL is playable exactly
+     when there is a network, and the only offline copy is one this device downloaded. Asking the
+     question explicitly is what lets the adopt route to a local build instead of handing the
+     element a URL that cannot resolve.
+     ⚠ ONLINE THIS IS TRUE FOR EVERY TOPIC, so every online path below behaves exactly as it did
+     before this existed. That is deliberate: prev/next online was not broken. */
+  function dynStdUsable(t, mode) {
+    if (!t.prefix) return false;
+    if (hasLocalFile(t.prefix, t.prefix + '_' + mode.toUpperCase() + '.mp3') && canUseOffline(t.tier)) return true;
+    return navigator.onLine;
+  }
+  /* The combined track for a NEIGHBOUR, resolved the way mainSrcFor() resolves this page's own:
+     downloaded copy first, remote second.
+     ⚠⚠ THIS WAS THE BUG. dynAdoptPlaceholder() called buildUrl() DIRECTLY, so the adopt source
+     was always remote — no hasLocalFile() check — while every other source resolver in this file
+     (mainSrcFor, sentSrcFor, dynClipUrl) checks local first. A divergent copy that dropped the
+     offline half, which is the exact failure mode the tier-rule note further down warns about.
+     Parameterised by the TARGET's prefix/tier rather than reading the module's main* state,
+     because the prefetch runs while those still point at this page — same treatment sentSrcFor
+     already got for playlists. */
+  function dynAdoptStdSrc(t, file) {
+    var gated = (t.tier === 'member' || t.tier === 'premium');
+    if (hasLocalFile(t.prefix, file) && canUseOffline(t.tier)) {
+      if (OFFLINE) return localUri(t.prefix, file).then(function (u) { return u || buildUrl(file, gated); });
+      if (WEB_DL) return cachedBlobUrl(t.prefix, file).then(function (u) { return u || buildUrl(file, gated); });
+    }
+    return buildUrl(file, gated);
+  }
   function dynAdoptPlaceholder(t, mode) {
     var c = dynAdoptCache[t.page];
     if (c && c.mode === mode && c.src) return Promise.resolve({ src: c.src, std: true, sess: null });
     // Playlists have no pre-rendered combined file — nothing to fall back on without a session.
     if (!t.prefix) return Promise.reject({ code: 'nosess' });
     var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
-    return buildUrl(file, t.tier === 'member' || t.tier === 'premium')
-      .then(function (u) { return { src: u, std: true, sess: null }; });
+    return dynAdoptStdSrc(t, file).then(function (u) { return { src: u, std: true, sess: null }; });
   }
   // Chain-walk helpers (round-11).
   function dynChainStep(dir, fromIdx) {
@@ -6476,7 +6517,12 @@
       if (c && c.sess) return true;
       if (dynReadMeta(t.dynKey, currentMode)) return true;   // best sync guess (restore may still miss)
     }
-    return !!t.prefix;
+    /* ⚠ "has a prefix" USED TO MEAN "has a placeholder, so it can always play". Offline it
+       cannot: the combined track is network-only unless this device downloaded it. A downloaded
+       topic still counts — its clips can be built — which is what keeps a lock-screen walk from
+       skipping past perfectly playable downloads. Online dynStdUsable() is true for every topic,
+       so this is byte-identical to the old `return !!t.prefix` with a connection. */
+    return dynStdUsable(t, currentMode) || (!!t.prefix && isDownloaded(t.prefix));
   }
   // Sentence source for building a FOREIGN playlist unit in place (foreground only): the
   // local playlist cache. Topic units never need this (they always have a placeholder).
@@ -6490,6 +6536,36 @@
       return { num: 100001 + idx, clipNum: it.num, thai: it.thai, prefix: it.prefix, tier: it.tier || 'free' };
     });
   }
+  /* A TOPIC unit's sentence list, for building it in place. (2026-08-27.)
+     ⚠⚠ dynChainSentences() answers this for PLAYLISTS only, and its comment said topic units
+     never need it "(they always have a placeholder)". That premise is false the moment the
+     device is offline: the placeholder is a network-only combined track, and a dyn topic
+     download deliberately deletes the local copy of it (D0c). So the one unit type that CAN
+     always be rebuilt from what is on disk was the one type that was never allowed to try.
+     `topic-sentences.json` is the source: page -> ordered global sentence numbers, generated by
+     gen_sentence_hints.js and PRECACHED (sw.js), so it resolves offline from the version-keyed
+     cache with no network. topics.js memoises it on window after the first read.
+     Tier is passed PER SENTENCE, which makes dynClipRef() resolve it live (liveTierFor) rather
+     than trusting a snapshot — the 2026-08-13 wrong-bucket 404 in reverse. */
+  function dynTopicSentences(t) {
+    if (!t || !t.prefix) return Promise.resolve(null);
+    if (t.dynKey && String(t.dynKey).indexOf('pl-') === 0) return Promise.resolve(null);
+    var T = window.ThaiEarTopics;
+    if (!T || !T.loadSentenceNums) return Promise.resolve(null);   // stale topics.js — degrade, never throw
+    return T.loadSentenceNums().then(function (map) {
+      var nums = map && (map[bareKey(t.page)] || (t.dynKey ? map[String(t.dynKey)] : null));
+      if (!nums || !nums.length) return null;
+      return nums.map(function (n) {
+        return { num: n, clipNum: n, prefix: t.prefix, tier: t.tier || 'free' };
+      });
+    }).catch(function () { return null; });
+  }
+  // Playlist first (its cached items are authoritative), then the topic map.
+  function dynAdoptSentences(t) {
+    var pl = dynChainSentences(t);
+    if (pl) return Promise.resolve(pl);
+    return dynTopicSentences(t);
+  }
   function dynResolveAdopt(t) {
     /* BACKSTOP for the entitlement skip above (r50, §B7). The chain WALK now refuses to hop onto a
        locked unit, but that is not the only way to get here: the now-playing restore (line ~193)
@@ -6500,10 +6576,30 @@
     if (dynUnitLocked(t)) { dynLog('adopt: REFUSED (not entitled)'); return Promise.reject({ code: 'licence' }); }
     var mode = currentMode;
     var c = dynAdoptCache[t.page];
-    if (c && c.mode === mode) {   // fully pre-resolved (session or placeholder) → synchronous resolve
-      if (c.sess) { dynLog('adopt: cached session'); return Promise.resolve({ src: (NATIVE && c.sess.fileUri) ? c.sess.fileUri : c.sess.url, std: false, sess: c.sess }); }
-      if (c.src) { dynLog('adopt: cached placeholder'); return Promise.resolve({ src: c.src, std: true, sess: null }); }
+    /* ⚠ A CACHED SESSION STILL WINS OUTRIGHT — it is real audio, already built, and it works
+       offline. Only the cached PLACEHOLDER half moved below the usability check, because that is
+       the half that can be a URL nothing can load. */
+    if (c && c.mode === mode && c.sess) {
+      dynLog('adopt: cached session');
+      return Promise.resolve({ src: (NATIVE && c.sess.fileUri) ? c.sess.fileUri : c.sess.url, std: false, sess: c.sess });
     }
+    /* ⚠⚠ THE PLACEHOLDER CANNOT WORK OFFLINE, SO DO NOT REACH FOR IT (2026-08-27, owner on the
+       iPhone PWA in airplane mode: the strip flashed "Now playing: <next topic>" and snapped
+       back). With no persisted session, the adopt handed the element a remote combined-file URL
+       — on an origin the SW does not handle, for a file the dyn download had deleted — so the
+       load failed and dynAdvance's catch reverted the pointer. What the device DOES have is
+       every per-sentence clip, which is exactly what a build needs.
+       Gated on isDownloaded() so an undownloaded neighbour does not show "Constructing…" for a
+       build that must fail; that case still falls through and is reported honestly. */
+    if (!dynStdUsable(t, mode) && isDownloaded(t.prefix)) {
+      dynLog('adopt: build (no network source)');
+      return dynAdoptBuild(t).catch(function (e) {
+        // A build that cannot run (backgrounded, no sentence list) still gets the old behaviour.
+        if (e && e.code === 'nosess') return dynAdoptPlaceholder(t, mode);
+        return Promise.reject(e);
+      });
+    }
+    if (c && c.mode === mode && c.src) { dynLog('adopt: cached placeholder'); return Promise.resolve({ src: c.src, std: true, sess: null }); }
     var meta = t.dynKey ? dynReadMeta(t.dynKey, mode) : null;   // synchronous pre-check (stale-lenient by design)
     /* WHICH BRANCH did the adopt take? To the BOOT TRACE, because this is the difference between
        "restored a real session from disk" (works offline) and "fell back to the prefab TE/ET file"
@@ -6530,8 +6626,10 @@
   // but only in the foreground (never from the lock screen; the chain walk skips it there).
   function dynAdoptBuild(t) {
     if (document.visibilityState !== 'visible') return Promise.reject({ code: 'nosess' });
-    var sents = dynChainSentences(t);
-    if (!sents) return Promise.reject({ code: 'nosess' });
+    // The topic list arrives from a precached JSON, so this is now a promise. Everything below
+    // is unchanged and simply moved inside it.
+    return dynAdoptSentences(t).then(function (sents) {
+    if (!sents || !sents.length) return Promise.reject({ code: 'nosess' });
     dynLog('adopt: building ' + t.dynKey);
     dynStatus('Constructing dynamic mp3 file', true);
     var mode = currentMode;
@@ -6546,6 +6644,7 @@
       if (entry && entry.mode === mode) entry.sess = sess;   // future hops resolve synchronously
       return { src: (NATIVE && sess.fileUri) ? sess.fileUri : sess.url, std: false, sess: sess };
     }).catch(function (e) { dynStatus(null); return Promise.reject(e); });
+    });
   }
   // Now-playing strip, set directly — topics.js can't resolve test pages. The name is a LINK
   // to the playing topic's page (round-7 item 9); the strip's existing `a` styling (accent,
@@ -6630,6 +6729,7 @@
        nicer behaviour. */
     if (!mainAudio.paused && document.visibilityState === 'visible') mainAudio.pause();
     setMainIcon(false);
+    dynAdoptRetried = false;        // this hop gets its own retry budget
     dynApplyAdoptState(t);
     var f = $('scrubber-fill'); if (f) f.style.width = '0%';
     var c = $('time-cur'); if (c) c.textContent = '0:00';
@@ -6670,6 +6770,39 @@
       if (dynAdopted === t) { setMainIcon(true); setupMediaSession(); dynPrefetchNeighbours(); }
     }).catch(function (e) {
       dynLog('adopt FAIL ' + ((e && (e.name || e.code)) || '') + ' ' + ((e && e.message) || ''));
+      /* ⚠⚠ ONE LAST HONEST ATTEMPT BEFORE REVERTING (2026-08-27). navigator.onLine LIES in the
+         WebView — it reports online in airplane mode, which this file says in three other places
+         — so dynStdUsable() can wave a remote URL through and the load then fails here. Rather
+         than revert on that, rebuild from what is on the device, which is the same recovery the
+         offline path takes deliberately. Bounded to ONE retry, to a unit that is actually
+         downloaded, in the FOREGROUND, and never for an entitlement refusal (a paywall is not a
+         load failure and must not turn into a build). If the retry fails too, the revert below
+         happens exactly as it always did.
+         ⚠ STILL NEVER location.href — Round-11's rule stands: a navigation from the transport or
+         the lock screen kills playback on iOS. */
+      if (!dynAdoptRetried && dynAdopted === t && document.visibilityState === 'visible' &&
+          !isGateCode(e && e.code) && !(e && (e.code === 'licence' || e.code === 'nosess')) &&
+          t.prefix && isDownloaded(t.prefix)) {
+        dynAdoptRetried = true;
+        dynLog('adopt: retry via local build');
+        return dynAdoptBuild(t).then(function (r) {
+          if (dynAdopted !== t) return;
+          dynSession = r.sess; dynStdRemote = r.std;
+          dynSyncSentBtns();
+          if (!r.std) dynStripPaint(t, false);
+          mainAudio.src = r.src; mainAudio.load(); mainSrcReady = true;
+          return mainAudio.play();
+        }).then(function () {
+          if (dynAdopted === t) { setMainIcon(true); setupMediaSession(); dynPrefetchNeighbours(); }
+        }).catch(function (e2) { dynAdoptFallback(t, revertIdx, e2); });
+      }
+      dynAdoptFallback(t, revertIdx, e);
+    });
+  }
+  /* The revert, lifted out so the retry above and the original failure share one exit. Byte-for
+     byte what the catch used to do. */
+  function dynAdoptFallback(t, revertIdx, e) {
+    {
       /* ⚠ ALSO to the BOOT TRACE. dynLog does not reach it, so this failure was invisible on a
          phone — and it is the one the owner hit on iPhone in airplane mode (strip flashes, then
          the page snaps back to 0:00 paused: that is this revert). The error NAME is the whole
@@ -6683,7 +6816,7 @@
         if (!dynAdopted) { var rnp = $('now-playing'); if (rnp) rnp.classList.remove('show'); }
       }
       if (!(e && e.code === 'nosess')) handleDenied(e, (t.tier === 'member' || t.tier === 'premium') ? t.tier : null);
-    });
+    }
   }
   /* -- batch add-to-playlist (select mode) --
      dyn-addpl-btn → playlist chooser modal → SELECT MODE: card taps toggle a tick instead of
