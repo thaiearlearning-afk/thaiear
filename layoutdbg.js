@@ -36,9 +36,12 @@
   if (window.__teAuthDbg) return;
   window.__teAuthDbg = true;
 
+  /* ⚠ ONE ACCOUNT ONLY (owner, 2026-08-27). The second address was removed so that the
+     other account sees the site exactly as a normal member does — no owner card, no panel,
+     no unlisted section. Adding an account back means adding its SHA-256 here; the plain
+     address must never appear in the file (Golden Rule 0 covers the owner's own too). */
   var OWNER_SHA = [
-    'f158e8ba0177149ebd33d06f08ac400709d39133f9f366f7bdb3ac17bcb1c171',
-    'b923407d6637d0f83f9eaa4b5cf324523a265685ae444805e0422ea85c2b142e'
+    'f158e8ba0177149ebd33d06f08ac400709d39133f9f366f7bdb3ac17bcb1c171'
   ];
   function realEmail() {
     try {
