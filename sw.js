@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v485';   // v485: DELIVERS the length re-order, which shipped under v484 and so
+const VERSION = 'v486';   // v486: a foreground prev/next hop now BUILDS the neighbour
+                          // instead of playing its prefab combined track, so the hop honours
+                          // the listener's dyn settings the way opening the page does. The
+                          // prefab survives for LOCK-SCREEN hops, which cannot build.
+                          // Topic 1 also gains its audio-versions.json stamp (93/93).
+                          // player.js is precached, hence the bump. Its OWN bump, because
+                          // v485 is already deployed and a deployed version is SPENT.
+                          // v485: DELIVERS the length re-order, which shipped under v484 and so
                           // reached nobody. v484 was already PUSHED (82bc2af, the dyn offline fix)
                           // before the re-order commit landed, so devices had already installed it
                           // and cached the OLD topics.js + band pages under `thaiear-v484`. The
