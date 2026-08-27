@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v501';   // v501: the sign-in fields stop zooming on iPhone. .login-input is
+const VERSION = 'v502';   // v502: changing a dyn setting on an ADOPTED unit, offline, had no
+                          // fallback -- r18e's revert lives in the local session path and the
+                          // adopted branch never had one, so a rebuild that cannot run left the
+                          // listener with nothing while a playable session sat in the cache.
+                          // player.js is precached, hence the bump.
+                          // v501:   // v501: the sign-in fields stop zooming on iPhone. .login-input is
                           // 14px on join.html and account.html, so the EMAIL and CODE boxes
                           // force-zoomed on every tap -- on the signup funnel, which costs more
                           // than a search box. account.html already had an input.no-zoom rule but
