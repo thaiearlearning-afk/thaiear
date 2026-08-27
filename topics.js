@@ -26,10 +26,32 @@
        audio handle). NEVER renumber it. Reordering the array is free precisely
        BECAUSE ids/filenames/audio prefixes are position-independent.
      • A part NEVER precedes a lower-numbered part of the same id. Parts may be
-       far apart, but part 1 always comes first. (Body & health and Romantic
-       relationships were both kept contiguous for narrative reasons — their
-       vocabulary/arc depends on the earlier part.)
-     • The first three units are the free tier. Don't displace them.
+       far apart, but part 1 always comes first. ⚠ The narrative-contiguity
+       exception for Body & health and Romantic relationships was RETIRED
+       2026-08-27: it was doing no work (in both, part 1 was the LONGER half, so
+       the invariant above already held them in order), and the owner ruled that
+       length order outranks narrative order. Where length now disagrees with the
+       part numbering, the PARTS ARE RENAMED rather than reordered — see below.
+     • Order WITHIN a band is by mean Thai sentence length, ascending. Three
+       deliberate exceptions, all of them pins:
+         – The first three units (Greetings / Getting to know you /
+           Communication survival) are frozen at 1-3. Don't displace them.
+         – Free units are pinned to the TOP of their band, so a first-time
+           visitor sees what is open to them without touching the tier filter.
+           This is why a band's first card is often not its shortest.
+         – Idioms (topic-38) and Tongue twisters (topic-39) are pinned to the
+           END of Beginner. They are the two units where character count is an
+           actively MISLEADING difficulty proxy: idioms are non-compositional
+           (knowing every word in ไก่เห็นตีนงู gets you nowhere) and tongue
+           twisters are phonological drills. On raw length Idioms (15.5 chars)
+           would be the shortest unit on the site and sort 4th overall.
+     • Parts renamed 2026-08-27 to follow length order: Body & health (13b/13a
+       swapped to 1/2), Romantic relationships & dating (36b/36a/36d/36c = 1/2/3/4),
+       Buddhism (35f→3, 35g→4, 35c→6). ⚠ Colours & descriptions and School and
+       University were deliberately NOT renamed — their parts differ by 2.1 and
+       0.2 chars, which is noise, so they are simply kept ADJACENT in part order
+       at the pair's mean length. Renaming costs edits to the h1, title, meta,
+       JSON-LD and TOPIC_ORDER.md; it is not worth spending on 0.2 chars.
 
    ── LEVEL DISPLAY — difficulty is a RANGE, not a single badge ──
    A unit's label shows a RANGE from its lowest level present (floor) to its
@@ -61,7 +83,7 @@
   // A unit = one page. `part` present only for split topics. `keywords` = authored
   // search synonyms (DRAFT 2026-07-17 — pending an owner review pass).
   const topics = [
-    // ── BEGINNER ────────────────────────────────────
+    // ── BEGINNER ──────────────────────────────────────────
     { id: 1, name: "Greetings & farewells", levels: ['beg'], sentences: 23, page: "topic-01.html", audio: "Greetings_BEG",
       keywords: ['hello','hi','goodbye','greeting','sawasdee','สวัสดี','polite','thanks','ขอบคุณ','sorry','bye','wai','introduction'] },
     { id: 2, name: "Getting to know you", levels: ['beg'], sentences: 29, page: "topic-02.html", audio: "GettingToKnow_BEG",
@@ -70,204 +92,186 @@
       keywords: ['survival','understand','repeat','slowly','dont understand','ไม่เข้าใจ','help me','speak','พูด','translate','confused','again'] },
     { id: 11, part: 1, name: "Shopping & money 1", levels: ['beg'], sentences: 22, page: "topic-11a.html", audio: "ShoppingAndMoney_BEG",
       keywords: ['shopping','money','price','buy','cost','เท่าไหร่','how much','บาท','baht','cheap','expensive','pay','แพง'] },   // re-badged by the 2026-07-17 length audit
+    { id: 40, name: "Animals", levels: ['beg'], sentences: 37, page: "topic-40.html", audio: "Animals_BEG", access: "premium",
+      keywords: ['animal','สัตว์','dog','หมา','cat','แมว','pet','elephant','ช้าง','bird','นก','fish','zoo','wildlife','buffalo','ควาย'] },
     { id: 4, part: 1, name: "Colours & descriptions 1", levels: ['beg'], sentences: 21, page: "topic-04a.html", audio: "ColoursAndDescriptions_BEG", access: "premium",
       keywords: ['colour','color','red','blue','green','สี','describe','description','adjective','big','small','แดง'] },
     { id: 4, part: 2, name: "Colours & descriptions 2", levels: ['beg'], sentences: 22, page: "topic-04b.html", audio: "ColoursAndDescriptions2_BEG", access: "premium",
       keywords: ['colour','color','shade','describe','description','adjective','pattern','dark','light','สี','bright'] },
-    { id: 40, name: "Animals", levels: ['beg'], sentences: 37, page: "topic-40.html", audio: "Animals_BEG", access: "premium",
-      keywords: ['animal','สัตว์','dog','หมา','cat','แมว','pet','elephant','ช้าง','bird','นก','fish','zoo','wildlife','buffalo','ควาย'] },
     { id: 6, name: "Time & numbers", levels: ['beg'], sentences: 30, page: "topic-06.html", audio: "Time_BEG", access: "premium",
       keywords: ['time','number','clock','hour','นาฬิกา','เวลา','count','counting','นับ','oclock','minute','how many','เลข'] },
     { id: 9, part: 1, name: "Food & drink 1", levels: ['beg'], sentences: 42, page: "topic-09a.html", audio: "Food_BEG", access: "premium",
       keywords: ['food','eat','drink','กิน','อาหาร','rice','ข้าว','water','น้ำ','hungry','หิว','delicious','อร่อย','meal','restaurant'] },   // re-badged by the 2026-07-17 length audit
+    { id: 37, part: 1, name: "Asking for help & emergencies 1", levels: ['beg'], sentences: 21, page: "topic-37.html", audio: "Emergency_BEG", access: "premium",
+      keywords: ['help','emergency','ช่วย','ฉุกเฉิน','police','ตำรวจ','ambulance','accident','อุบัติเหตุ','fire','ไฟไหม้','danger','hospital','lost','urgent','สายด่วน'] },
     { id: 41, part: 1, name: "Places around town 1", levels: ['beg'], sentences: 28, page: "topic-41a.html", audio: "Places_BEG", access: "premium",
       keywords: ['place','town','city','เมือง','where','bank','post office','market','ตลาด','shop','ร้าน','location','directions','around town'] },
+    { id: 9, part: 2, name: "Food & drink 2", levels: ['beg'], sentences: 27, page: "topic-09b.html", audio: "Food_LI1", access: "premium",
+      keywords: ['food','drink','อาหาร','order','ordering','menu','เมนู','taste','รสชาติ','spicy','เผ็ด','sweet','หวาน','snack','fruit'] },
+    { id: 19, part: 1, name: "Cooking & recipes 1", levels: ['beg'], sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG", access: "premium",
+      keywords: ['cook','cooking','ทำอาหาร','kitchen','ครัว','fry','ผัด','boil','ต้ม','ingredient','pan','pot','chop','recipe','stove'] },
     { id: 46, name: "Groceries", levels: ['beg'], sentences: 38, page: "topic-46.html", audio: "Groceries_BEG", access: "premium",
       keywords: ['grocery','groceries','supermarket','market','ตลาด','shopping list','vegetable','ผัก','fruit','ผลไม้','meat','เนื้อ','egg','ไข่','milk'] },
     { id: 8, name: "Family & relationships", levels: ['beg'], sentences: 38, page: "topic-08.html", audio: "Family_BEG", access: "premium",
       keywords: ['family','ครอบครัว','mother','แม่','father','พ่อ','brother','sister','พี่','น้อง','relative','parents','children','ลูก','relationship'] },
-    { id: 41, part: 2, name: "Places around town 2", levels: ['beg'], sentences: 29, page: "topic-41b.html", audio: "Places2_BEG", access: "premium",
-      keywords: ['place','town','city','เมือง','building','directions','ทาง','landmark','hospital','โรงพยาบาล','school','โรงเรียน','temple','วัด','around town'] },
-    { id: 5, name: "Weather & seasons", levels: ['beg'], sentences: 32, page: "topic-05.html", audio: "Weather_BEG", access: "premium",
-      keywords: ['weather','อากาศ','rain','ฝน','hot','ร้อน','cold','หนาว','season','ฤดู','sun','แดด','storm','cool','humid','climate'] },
-    { id: 7, name: "Days & months", levels: ['beg'], sentences: 37, page: "topic-07.html", audio: "Dates_BEG", access: "premium",
-      keywords: ['day','month','วัน','เดือน','date','calendar','week','อาทิตย์','year','ปี','today','วันนี้','tomorrow','พรุ่งนี้','yesterday','birthday'] },
-
-    // The two SPECIALS close the Beginner band. Length is the wrong instrument for both — an idiom
-    // and a tone twister are short strings that are hard for reasons character count can't see — so
-    // they are NOT length-sorted like everything else. They sit at the END of the beginner run: early
-    // enough to be the fun, inviting thing they are, but never fronting the corpus as if they were the
-    // easiest pages on the site. Owner decision 2026-07-17. Keep them here and keep them adjacent;
-    // Idioms first (they were one topic, ID 38, before the 38/39 split).
-    // BOTH were also re-badged to ['beg'] (from beg/li1 and li1/li2) so they group into this band —
-    // that makes 10 re-badges in total, not the 8 you get by counting the inline markers below.
-    // ⚠ Tongue twisters' AUDIO stays `ToneTwister_LI1` and its JSON stays `level: LI1`. That is CORRECT
-    // and must not be "fixed" to match this badge: the level in an audio handle is a frozen filename
-    // component, not a difficulty claim. Renaming it 404s every R2 URL. Same for Idioms (`Idiom_BEG`).
-    // ⚠⚠ RENAMED FOR DISPLAY 2026-08-13: "Tone twisters" -> "Tongue twisters" (owner). DISPLAY ONLY.
-    // The audio handle `ToneTwister_LI1`, the page filename `topic-39.html` and the id 39 are ALL
-    // unchanged and must stay that way — the handle is what every R2 URL and every offline download
-    // is keyed off. `tone twister` is deliberately KEPT in the keywords so search still finds it.
+    { id: 12, part: 1, name: "Getting around & transport 1", levels: ['beg'], sentences: 27, page: "topic-12a.html", audio: "Transport_BEG", access: "premium",
+      keywords: ['transport','travel','getting around','bus','รถเมล์','taxi','แท็กซี่','train','รถไฟ','motorbike','มอเตอร์ไซค์','tuk tuk','ride','fare','bts','mrt'] },
     { id: 38, name: "Idioms", levels: ['beg'], sentences: 27, page: "topic-38.html", audio: "Idiom_BEG", access: "premium",
       keywords: ['idiom','สำนวน','saying','expression','proverb','figure of speech','phrase','metaphor','สุภาษิต','colloquial'] },
     { id: 39, name: "Tongue twisters", levels: ['beg'], sentences: 19, page: "topic-39.html", audio: "ToneTwister_LI1", access: "premium",
       keywords: ['tone','tone twister','tongue twister','pronunciation','drill','practice','เสียง','vowel','minimal pair','ear training','accent'] },
-
-    // ── BEGINNER → LOWER INTERMEDIATE ───────────────
+    // ── BEGINNER → LOWER INTERMEDIATE ─────────────────────
     { id: 42, part: 1, name: "Occupations 1", levels: ['beg','li1'], sentences: 30, page: "topic-42a.html", audio: "Occupations_BEG",
       keywords: ['job','occupation','อาชีพ','work','งาน','teacher','ครู','doctor','หมอ','farmer','ชาวนา','profession','police','nurse','engineer'] },
-    { id: 9, part: 2, name: "Food & drink 2", levels: ['beg','li1'], sentences: 27, page: "topic-09b.html", audio: "Food_LI1", access: "premium",
-      keywords: ['food','drink','อาหาร','order','ordering','menu','เมนู','taste','รสชาติ','spicy','เผ็ด','sweet','หวาน','snack','fruit'] },
-    { id: 19, part: 1, name: "Cooking & recipes 1", levels: ['beg','li1'], sentences: 34, page: "topic-19a.html", audio: "Cooking_BEG", access: "premium",
-      keywords: ['cook','cooking','ทำอาหาร','kitchen','ครัว','fry','ผัด','boil','ต้ม','ingredient','pan','pot','chop','recipe','stove'] },
-    { id: 12, part: 1, name: "Getting around & transport 1", levels: ['beg','li1'], sentences: 27, page: "topic-12a.html", audio: "Transport_BEG", access: "premium",
-      keywords: ['transport','travel','getting around','bus','รถเมล์','taxi','แท็กซี่','train','รถไฟ','motorbike','มอเตอร์ไซค์','tuk tuk','ride','fare','bts','mrt'] },
-    { id: 37, part: 1, name: "Asking for help & emergencies 1", levels: ['beg','li1'], sentences: 21, page: "topic-37.html", audio: "Emergency_BEG", access: "premium",
-      keywords: ['help','emergency','ช่วย','ฉุกเฉิน','police','ตำรวจ','ambulance','accident','อุบัติเหตุ','fire','ไฟไหม้','danger','hospital','lost','urgent','สายด่วน'] },
-    { id: 37, part: 2, name: "Asking for help & emergencies 2", levels: ['beg','li1'], sentences: 19, page: "topic-37b.html", audio: "Emergency2_BEG", access: "premium",
-      keywords: ['help','emergency','ช่วย','ฉุกเฉิน','police','ตำรวจ','ambulance','accident','อุบัติเหตุ','fire','ไฟไหม้','danger','hospital','lost','urgent','สายด่วน'] },
+    { id: 13, part: 1, name: "Body & health 1", levels: ['beg','li1'], sentences: 30, page: "topic-13b.html", audio: "Health_BEG", access: "premium",
+      keywords: ['sick','ill','illness','ป่วย','symptom','อาการ','headache','ปวดหัว','fever','ไข้','cold','หวัด','pharmacy','ยา','medicine','sore throat','pain','ปวด'] },
+    { id: 41, part: 2, name: "Places around town 2", levels: ['beg','li1'], sentences: 29, page: "topic-41b.html", audio: "Places2_BEG", access: "premium",
+      keywords: ['place','town','city','เมือง','building','directions','ทาง','landmark','hospital','โรงพยาบาล','school','โรงเรียน','temple','วัด','around town'] },
+    { id: 5, name: "Weather & seasons", levels: ['beg','li1'], sentences: 32, page: "topic-05.html", audio: "Weather_BEG", access: "premium",
+      keywords: ['weather','อากาศ','rain','ฝน','hot','ร้อน','cold','หนาว','season','ฤดู','sun','แดด','storm','cool','humid','climate'] },
+    { id: 36, part: 1, name: "Romantic relationships & dating 1", levels: ['beg','li1'], sentences: 29, page: "topic-36b.html", audio: "Romance2_LI1", access: "premium",
+      keywords: ['crush','แอบชอบ','flirt','จีบ','love','รัก','confess','บอกรัก','relationship','แฟน','girlfriend','boyfriend','fall in love','romance'] },
     { id: 14, part: 1, name: "Feelings & emotions 1", levels: ['beg','li1'], sentences: 35, page: "topic-14a.html", audio: "Feelings_BEG", access: "premium",
       keywords: ['feeling','emotion','อารมณ์','happy','ดีใจ','sad','เสียใจ','angry','โกรธ','tired','เหนื่อย','mood','รู้สึก','scared','worried'] },
+    { id: 18, part: 1, name: "Clothing & appearance 1", levels: ['beg','li1'], sentences: 26, page: "topic-18a.html", audio: "Clothing_BEG", access: "premium",
+      keywords: ['clothes','clothing','เสื้อผ้า','shirt','เสื้อ','trousers','กางเกง','shoes','รองเท้า','wear','ใส่','dress','size','fashion'] },
+    { id: 7, name: "Days & months", levels: ['beg','li1'], sentences: 37, page: "topic-07.html", audio: "Dates_BEG", access: "premium",
+      keywords: ['day','month','วัน','เดือน','date','calendar','week','อาทิตย์','year','ปี','today','วันนี้','tomorrow','พรุ่งนี้','yesterday','birthday'] },
+    { id: 49, part: 1, name: "Compliments & opinions 1", levels: ['beg','li1'], sentences: 33, page: "topic-49a.html", audio: "Compliments_LI1", access: "premium",
+      keywords: ['compliment','ชม','praise','nice','good','เก่ง','well done','flatter','admire','kind words','ชมเชย'] },
     { id: 11, part: 2, name: "Shopping & money 2", levels: ['beg','li1'], sentences: 30, page: "topic-11b.html", audio: "ShoppingAndMoney2_BEG", access: "premium",
       keywords: ['shopping','money','เงิน','bargain','ต่อรอง','discount','ลด','change','ทอน','market','ตลาด','receipt','pay','จ่าย','cash'] },
     { id: 19, part: 2, name: "Cooking & recipes 2", levels: ['beg','li1'], sentences: 28, page: "topic-19b.html", audio: "Recipes_LI1", access: "premium",
       keywords: ['recipe','สูตร','cooking','ingredient','ส่วนผสม','step','measure','instructions','dish','เมนู','prepare','mix','season'] },
-    { id: 18, part: 1, name: "Clothing & appearance 1", levels: ['beg','li1'], sentences: 26, page: "topic-18a.html", audio: "Clothing_BEG", access: "premium",
-      keywords: ['clothes','clothing','เสื้อผ้า','shirt','เสื้อ','trousers','กางเกง','shoes','รองเท้า','wear','ใส่','dress','size','fashion'] },
-    { id: 18, part: 2, name: "Clothing & appearance 2", levels: ['beg','li1'], sentences: 23, page: "topic-18c.html", audio: "Clothing2_BEG", access: "premium",
-      keywords: ['clothes','clothing','เสื้อผ้า','shirt','เสื้อ','trousers','กางเกง','shoes','รองเท้า','wear','ใส่','dress','size','fashion'] },
-    { id: 42, part: 2, name: "Occupations 2", levels: ['beg','li1'], sentences: 32, page: "topic-42b.html", audio: "Occupations_LI1", access: "premium",
-      keywords: ['job','occupation','อาชีพ','work','career','งาน','skill','profession','employ','duties','role','workplace'] },
+    { id: 37, part: 2, name: "Asking for help & emergencies 2", levels: ['beg','li1'], sentences: 19, page: "topic-37b.html", audio: "Emergency2_BEG", access: "premium",
+      keywords: ['help','emergency','ช่วย','ฉุกเฉิน','police','ตำรวจ','ambulance','accident','อุบัติเหตุ','fire','ไฟไหม้','danger','hospital','lost','urgent','สายด่วน'] },
     { id: 10, part: 1, name: "Home & daily routine 1", levels: ['beg','li1'], sentences: 32, page: "topic-10a.html", audio: "HomeAndDailyRoutine_BEG", access: "premium",
       keywords: ['home','house','บ้าน','daily routine','wake up','ตื่นนอน','shower','อาบน้ำ','bedroom','ห้องนอน','kitchen','bathroom','ห้องน้ำ','morning','sleep','นอน'] },
+    { id: 13, part: 2, name: "Body & health 2", levels: ['beg','li1'], sentences: 26, page: "topic-13a.html", audio: "BodyHealth_BEG", access: "premium",
+      keywords: ['body','ร่างกาย','body parts','head','หัว','eye','ตา','ear','หู','hand','มือ','leg','ขา','anatomy','knee','เข่า'] },
     { id: 17, part: 1, name: "Plans & future 1", levels: ['beg','li1'], sentences: 28, page: "topic-17a.html", audio: "Plans_BEG", access: "premium",
       keywords: ['plan','แผน','future','อนาคต','will','จะ','intend','tomorrow','schedule','appointment','นัด','arrange','soon'] },
-    { id: 18, part: 3, name: "Clothing & appearance 3", levels: ['beg','li1'], sentences: 21, page: "topic-18b.html", audio: "Appearance_LI1", access: "premium",
-      keywords: ['appearance','หน้าตา','look','describe','handsome','หล่อ','beautiful','สวย','hair','ผม','tall','สูง','style','face'] },
-    { id: 14, part: 2, name: "Feelings & emotions 2", levels: ['beg','li1'], sentences: 30, page: "topic-14b.html", audio: "Feelings_LI1", access: "premium",
-      keywords: ['feeling','emotion','อารมณ์','stress','เครียด','lonely','เหงา','excited','ตื่นเต้น','disappointed','ผิดหวัง','mood','express','empathy'] },
-    { id: 10, part: 2, name: "Home & daily routine 2", levels: ['beg','li1'], sentences: 32, page: "topic-10b.html", audio: "HomeAndDailyRoutine2_BEG", access: "premium",
-      keywords: ['home','house','บ้าน','housework','chores','งานบ้าน','clean','ทำความสะอาด','laundry','ซักผ้า','wash','routine','tidy','evening'] },
-    { id: 16, part: 1, name: "Social life & events 1", levels: ['beg','li1'], sentences: 21, page: "topic-16.html", audio: "SocialLife_BEG", access: "premium",
-      keywords: ['social','party','ปาร์ตี้','event','งาน','invite','ชวน','friends','เพื่อน','meet','นัด','celebrate','ฉลอง','birthday','wedding','งานแต่ง'] },
-
-    // ── LOWER → UPPER INTERMEDIATE ──────────────────
-    { id: 36, part: 1, name: "Romantic relationships & dating 1", levels: ['li1','int'], sentences: 24, page: "topic-36a.html", audio: "Romance_LI1",
-      keywords: ['dating','เดท','single','โสด','dating app','แอปหาคู่','swipe','ปัดขวา','match','romance','meet someone','love life'] },
-    { id: 49, part: 1, name: "Compliments & opinions 1", levels: ['li1','int'], sentences: 33, page: "topic-49a.html", audio: "Compliments_LI1", access: "premium",
-      keywords: ['compliment','ชม','praise','nice','good','เก่ง','well done','flatter','admire','kind words','ชมเชย'] },
-    { id: 13, part: 1, name: "Body & health 1", levels: ['li1','int'], sentences: 26, page: "topic-13a.html", audio: "BodyHealth_BEG", access: "premium",
-      keywords: ['body','ร่างกาย','body parts','head','หัว','eye','ตา','ear','หู','hand','มือ','leg','ขา','anatomy','knee','เข่า'] },
-    { id: 13, part: 2, name: "Body & health 2", levels: ['li1','int'], sentences: 30, page: "topic-13b.html", audio: "Health_BEG", access: "premium",
-      keywords: ['sick','ill','illness','ป่วย','symptom','อาการ','headache','ปวดหัว','fever','ไข้','cold','หวัด','pharmacy','ยา','medicine','sore throat','pain','ปวด'] },
-    { id: 13, part: 3, name: "Body & health 3", levels: ['li1','int'], sentences: 15, page: "topic-13d.html", audio: "BodyHealth2_BEG", access: "premium",
-      keywords: ['body','ร่างกาย','body parts','head','หัว','eye','ตา','ear','หู','hand','มือ','leg','ขา','anatomy','knee','เข่า'] },
-    { id: 13, part: 4, name: "Body & health 4", levels: ['li1','int'], sentences: 27, page: "topic-13c.html", audio: "Health_LI1", access: "premium",
-      keywords: ['doctor','หมอ','hospital','โรงพยาบาล','clinic','check up','ตรวจสุขภาพ','appointment','test results','allergy','แพ้ยา','health','wellbeing','treatment'] },
-    { id: 49, part: 2, name: "Compliments & opinions 2", levels: ['li1','int'], sentences: 34, page: "topic-49b.html", audio: "Opinions_LI1", access: "premium",
+    { id: 42, part: 2, name: "Occupations 2", levels: ['beg','li1'], sentences: 32, page: "topic-42b.html", audio: "Occupations_LI1", access: "premium",
+      keywords: ['job','occupation','อาชีพ','work','career','งาน','skill','profession','employ','duties','role','workplace'] },
+    { id: 18, part: 2, name: "Clothing & appearance 2", levels: ['beg','li1'], sentences: 23, page: "topic-18c.html", audio: "Clothing2_BEG", access: "premium",
+      keywords: ['clothes','clothing','เสื้อผ้า','shirt','เสื้อ','trousers','กางเกง','shoes','รองเท้า','wear','ใส่','dress','size','fashion'] },
+    { id: 49, part: 2, name: "Compliments & opinions 2", levels: ['beg','li1'], sentences: 34, page: "topic-49b.html", audio: "Opinions_LI1", access: "premium",
       keywords: ['opinion','ความเห็น','think','คิด','agree','เห็นด้วย','disagree','argue','view','believe','เชื่อ','discuss','debate'] },
-    { id: 36, part: 2, name: "Romantic relationships & dating 2", levels: ['li1','int'], sentences: 29, page: "topic-36b.html", audio: "Romance2_LI1", access: "premium",
-      keywords: ['crush','แอบชอบ','flirt','จีบ','love','รัก','confess','บอกรัก','relationship','แฟน','girlfriend','boyfriend','fall in love','romance'] },
-    { id: 36, part: 3, name: "Romantic relationships & dating 3", levels: ['li1','int'], sentences: 27, page: "topic-36c.html", audio: "Romance3_LI1", access: "premium",
-      keywords: ['love','รัก','commitment','soulmate','เนื้อคู่','in laws','marriage','แต่งงาน','devotion','milestone','partner','romance'] },
-    { id: 36, part: 4, name: "Romantic relationships & dating 4", levels: ['li1','int'], sentences: 29, page: "topic-36d.html", audio: "Romance4_LI1", access: "premium",
-      keywords: ['jealousy','หึง','trust','ไว้ใจ','argue','ทะเลาะ','fight','เถียง','breakup','เลิก','unfaithful','นอกใจ','conflict','sulk','งอน','romance'] },
-    { id: 20, part: 1, name: "Working life 1", levels: ['li1','int'], sentences: 24, page: "topic-20a.html", audio: "Job_LI1", access: "premium",
+    { id: 20, part: 1, name: "Working life 1", levels: ['beg','li1'], sentences: 24, page: "topic-20a.html", audio: "Job_LI1", access: "premium",
       keywords: ['job','work','งาน','apply','สมัคร','interview','สัมภาษณ์','employer','salary','เงินเดือน','hire','resume','working life'] },
+    // ── LOWER INTERMEDIATE → INTERMEDIATE ─────────────────
+    { id: 22, part: 1, name: "Food culture & eating out 1", levels: ['li1','int'], sentences: 29, page: "topic-22a.html", audio: "FoodSocial_LI1",
+      keywords: ['restaurant','ร้านอาหาร','eating out','order','สั่ง','menu','เมนู','waiter','bill','เช็คบิล','table','จอง','food culture','dining'] },
     { id: 21, part: 1, name: "Education system 1", levels: ['li1','int'], sentences: 28, page: "topic-21a.html", audio: "Schooling_LI1", access: "premium",
       keywords: ['education','การศึกษา','school','โรงเรียน','study','เรียน','teacher','ครู','student','นักเรียน','class','subject','วิชา','schooling'] },
-    { id: 22, part: 1, name: "Food culture & eating out 1", levels: ['li1','int'], sentences: 29, page: "topic-22a.html", audio: "FoodSocial_LI1", access: "premium",
-      keywords: ['restaurant','ร้านอาหาร','eating out','order','สั่ง','menu','เมนู','waiter','bill','เช็คบิล','table','จอง','food culture','dining'] },
-    { id: 24, part: 1, name: "Technology & communication 1", levels: ['li1','int'], sentences: 24, page: "topic-24a.html", audio: "Tech_LI1", access: "premium",
-      keywords: ['technology','เทคโนโลยี','phone','โทรศัพท์','internet','อินเทอร์เน็ต','app','แอป','computer','คอมพิวเตอร์','online','message','ข้อความ','digital'] },
+    { id: 16, part: 1, name: "Social life & events 1", levels: ['li1','int'], sentences: 21, page: "topic-16.html", audio: "SocialLife_BEG", access: "premium",
+      keywords: ['social','party','ปาร์ตี้','event','งาน','invite','ชวน','friends','เพื่อน','meet','นัด','celebrate','ฉลอง','birthday','wedding','งานแต่ง'] },
+    { id: 10, part: 2, name: "Home & daily routine 2", levels: ['li1','int'], sentences: 32, page: "topic-10b.html", audio: "HomeAndDailyRoutine2_BEG", access: "premium",
+      keywords: ['home','house','บ้าน','housework','chores','งานบ้าน','clean','ทำความสะอาด','laundry','ซักผ้า','wash','routine','tidy','evening'] },
+    { id: 36, part: 2, name: "Romantic relationships & dating 2", levels: ['li1','int'], sentences: 24, page: "topic-36a.html", audio: "Romance_LI1", access: "premium",
+      keywords: ['dating','เดท','single','โสด','dating app','แอปหาคู่','swipe','ปัดขวา','match','romance','meet someone','love life'] },
+    { id: 15, part: 1, name: "Hobbies & free time 1", levels: ['li1','int'], sentences: 19, page: "topic-15.html", audio: "Hobbies_BEG", access: "premium",
+      keywords: ['hobby','งานอดิเรก','free time','ว่าง','pastime','interest','relax','พักผ่อน','music','เพลง','read','อ่าน','game','เกม','leisure','weekend'] },   // re-badged by the 2026-07-17 length audit
+    { id: 14, part: 2, name: "Feelings & emotions 2", levels: ['li1','int'], sentences: 30, page: "topic-14b.html", audio: "Feelings_LI1", access: "premium",
+      keywords: ['feeling','emotion','อารมณ์','stress','เครียด','lonely','เหงา','excited','ตื่นเต้น','disappointed','ผิดหวัง','mood','express','empathy'] },
+    { id: 36, part: 3, name: "Romantic relationships & dating 3", levels: ['li1','int'], sentences: 29, page: "topic-36d.html", audio: "Romance4_LI1", access: "premium",
+      keywords: ['jealousy','หึง','trust','ไว้ใจ','argue','ทะเลาะ','fight','เถียง','breakup','เลิก','unfaithful','นอกใจ','conflict','sulk','งอน','romance'] },
+    { id: 13, part: 3, name: "Body & health 3", levels: ['li1','int'], sentences: 15, page: "topic-13d.html", audio: "BodyHealth2_BEG", access: "premium",
+      keywords: ['body','ร่างกาย','body parts','head','หัว','eye','ตา','ear','หู','hand','มือ','leg','ขา','anatomy','knee','เข่า'] },
+    { id: 18, part: 3, name: "Clothing & appearance 3", levels: ['li1','int'], sentences: 21, page: "topic-18b.html", audio: "Appearance_LI1", access: "premium",
+      keywords: ['appearance','หน้าตา','look','describe','handsome','หล่อ','beautiful','สวย','hair','ผม','tall','สูง','style','face'] },
     { id: 23, part: 1, name: "Nature, environment & conservation 1", levels: ['li1','int'], sentences: 25, page: "topic-23a.html", audio: "Nature_LI1", access: "premium",
       keywords: ['nature','ธรรมชาติ','environment','สิ่งแวดล้อม','tree','ต้นไม้','forest','ป่า','river','แม่น้ำ','mountain','ภูเขา','sea','ทะเล','outdoors'] },
+    { id: 24, part: 1, name: "Technology & communication 1", levels: ['li1','int'], sentences: 24, page: "topic-24a.html", audio: "Tech_LI1", access: "premium",
+      keywords: ['technology','เทคโนโลยี','phone','โทรศัพท์','internet','อินเทอร์เน็ต','app','แอป','computer','คอมพิวเตอร์','online','message','ข้อความ','digital'] },
     { id: 45, part: 1, name: "School and University 1", levels: ['li1','int'], sentences: 28, page: "topic-45a.html", audio: "School_LI1", access: "premium",
       keywords: ['school','โรงเรียน','university','มหาวิทยาลัย','study','เรียน','exam','สอบ','homework','การบ้าน','student','นักศึกษา','class','lecture'] },
     { id: 45, part: 2, name: "School and University 2", levels: ['li1','int'], sentences: 30, page: "topic-45b.html", audio: "Campus_LI1", access: "premium",
       keywords: ['university','มหาวิทยาลัย','campus','แคมปัส','student life','faculty','คณะ','degree','ปริญญา','dorm','graduate','จบ','lecture'] },
+    { id: 13, part: 4, name: "Body & health 4", levels: ['li1','int'], sentences: 27, page: "topic-13c.html", audio: "Health_LI1", access: "premium",
+      keywords: ['doctor','หมอ','hospital','โรงพยาบาล','clinic','check up','ตรวจสุขภาพ','appointment','test results','allergy','แพ้ยา','health','wellbeing','treatment'] },
+    { id: 48, part: 1, name: "Household supplies 1", levels: ['li1','int'], sentences: 18, page: "topic-48.html", audio: "HouseholdSupplies_BEG", access: "premium",
+      keywords: ['household','supplies','ของใช้','soap','สบู่','detergent','ผงซักฟอก','tissue','cleaning','shop','ร้าน','home goods','toiletries','แชมพู'] },
     { id: 27, part: 1, name: "Travel & tourism 1", levels: ['li1','int'], sentences: 27, page: "topic-27a.html", audio: "Travel_LI1", access: "premium",
       keywords: ['travel','เที่ยว','tourism','ท่องเที่ยว','trip','ทริป','holiday','วันหยุด','hotel','โรงแรม','book','จอง','flight','เครื่องบิน','sightseeing'] },
     { id: 27, part: 2, name: "Travel & tourism 2", levels: ['li1','int'], sentences: 27, page: "topic-27b.html", audio: "Travel2_LI1", access: "premium",
       keywords: ['travel','เที่ยว','tourism','sightseeing','attraction','สถานที่','beach','ทะเล','island','เกาะ','tour','ทัวร์','guide','itinerary','holiday'] },
-    { id: 16, part: 2, name: "Social life & events 2", levels: ['li1','int'], sentences: 19, page: "topic-16b.html", audio: "SocialLife2_BEG", access: "premium",
-      keywords: ['social','party','ปาร์ตี้','event','งาน','invite','ชวน','friends','เพื่อน','meet','นัด','celebrate','ฉลอง','birthday','wedding','งานแต่ง'] },
-    { id: 15, part: 1, name: "Hobbies & free time 1", levels: ['li1','int'], sentences: 19, page: "topic-15.html", audio: "Hobbies_BEG", access: "premium",
-      keywords: ['hobby','งานอดิเรก','free time','ว่าง','pastime','interest','relax','พักผ่อน','music','เพลง','read','อ่าน','game','เกม','leisure','weekend'] },   // re-badged by the 2026-07-17 length audit
-    { id: 15, part: 2, name: "Hobbies & free time 2", levels: ['li1','int'], sentences: 18, page: "topic-15b.html", audio: "Hobbies2_BEG", access: "premium",
-      keywords: ['hobby','งานอดิเรก','free time','ว่าง','pastime','interest','relax','พักผ่อน','music','เพลง','read','อ่าน','game','เกม','leisure','weekend'] },
-    { id: 21, part: 2, name: "Education system 2", levels: ['li1','int'], sentences: 24, page: "topic-21b.html", audio: "System_LI2", access: "premium",
-      keywords: ['education','การศึกษา','system','ระบบ','curriculum','หลักสูตร','exam','สอบ','policy','university','degree','ปริญญา','schooling','reform'] },
+    { id: 36, part: 4, name: "Romantic relationships & dating 4", levels: ['li1','int'], sentences: 27, page: "topic-36c.html", audio: "Romance3_LI1", access: "premium",
+      keywords: ['love','รัก','commitment','soulmate','เนื้อคู่','in laws','marriage','แต่งงาน','devotion','milestone','partner','romance'] },
+    // ── INTERMEDIATE → UPPER INTERMEDIATE ─────────────────
     { id: 34, part: 1, name: "Thai culture & customs 1", levels: ['int','li2'], sentences: 22, page: "topic-34a.html", audio: "ThaiCulture_LI1",
       keywords: ['thai culture','วัฒนธรรม','custom','ประเพณี','tradition','wai','ไหว้','respect','เคารพ','etiquette','มารยาท','manners','face','เกรงใจ'] },
-    { id: 12, part: 2, name: "Getting around & transport 2", levels: ['int','li2'], sentences: 26, page: "topic-12b.html", audio: "Transport_LI1", access: "premium",
-      keywords: ['transport','travel','getting around','traffic','รถติด','directions','ทาง','route','journey','เดินทาง','driving','ขับรถ','station','สถานี','commute'] },   // re-badged by the 2026-07-17 length audit
     { id: 20, part: 2, name: "Working life 2", levels: ['int','li2'], sentences: 24, page: "topic-20b.html", audio: "Workplace_LI1", access: "premium",
       keywords: ['workplace','ที่ทำงาน','office','ออฟฟิศ','colleague','เพื่อนร่วมงาน','meeting','ประชุม','boss','เจ้านาย','deadline','email','work'] },
+    { id: 12, part: 2, name: "Getting around & transport 2", levels: ['int','li2'], sentences: 26, page: "topic-12b.html", audio: "Transport_LI1", access: "premium",
+      keywords: ['transport','travel','getting around','traffic','รถติด','directions','ทาง','route','journey','เดินทาง','driving','ขับรถ','station','สถานี','commute'] },   // re-badged by the 2026-07-17 length audit
+    { id: 16, part: 2, name: "Social life & events 2", levels: ['int','li2'], sentences: 19, page: "topic-16b.html", audio: "SocialLife2_BEG", access: "premium",
+      keywords: ['social','party','ปาร์ตี้','event','งาน','invite','ชวน','friends','เพื่อน','meet','นัด','celebrate','ฉลอง','birthday','wedding','งานแต่ง'] },
     { id: 17, part: 2, name: "Plans & future 2", levels: ['int','li2'], sentences: 17, page: "topic-17b.html", audio: "Plans_LI1", access: "premium",
       keywords: ['plan','แผน','future','อนาคต','goal','เป้าหมาย','ambition','dream','ฝัน','long term','intend','prospect','career plan'] },   // re-badged by the 2026-07-17 length audit
-    { id: 24, part: 2, name: "Technology & communication 2", levels: ['int','li2'], sentences: 25, page: "topic-24b.html", audio: "Tech2_LI1", access: "premium",
-      keywords: ['technology','เทคโนโลยี','social media','โซเชียล','post','โพสต์','account','บัญชี','password','รหัสผ่าน','wifi','ไวไฟ','device','digital'] },
-    { id: 24, part: 3, name: "Technology & communication 3", levels: ['int','li2'], sentences: 24, page: "topic-24c.html", audio: "Tech3_LI1", access: "premium",
-      keywords: ['technology','เทคโนโลยี','ai','online','scam','หลอกลวง','privacy','ความเป็นส่วนตัว','data','ข้อมูล','software','update','digital','future tech'] },
+    { id: 21, part: 2, name: "Education system 2", levels: ['int','li2'], sentences: 24, page: "topic-21b.html", audio: "System_LI2", access: "premium",
+      keywords: ['education','การศึกษา','system','ระบบ','curriculum','หลักสูตร','exam','สอบ','policy','university','degree','ปริญญา','schooling','reform'] },
     { id: 26, part: 1, name: "Sport & exercise 1", levels: ['int','li2'], sentences: 26, page: "topic-26a.html", audio: "Sport_LI1", access: "premium",
       keywords: ['sport','กีฬา','exercise','ออกกำลังกาย','football','ฟุตบอล','run','วิ่ง','gym','ยิม','play','เล่น','fitness','swim','ว่ายน้ำ'] },
     { id: 47, part: 1, name: "Homes & housing 1", levels: ['int','li2'], sentences: 16, page: "topic-47.html", audio: "HomesAndHousing_LI1", access: "premium",
       keywords: ['house','บ้าน','housing','rent','เช่า','condo','คอนโด','apartment','อพาร์ตเมนต์','landlord','เจ้าของบ้าน','move','ย้าย','property','lease','deposit'] },
-    { id: 48, part: 1, name: "Household supplies 1", levels: ['int','li2'], sentences: 18, page: "topic-48.html", audio: "HouseholdSupplies_BEG", access: "premium",
-      keywords: ['household','supplies','ของใช้','soap','สบู่','detergent','ผงซักฟอก','tissue','cleaning','shop','ร้าน','home goods','toiletries','แชมพู'] },
-    { id: 48, part: 2, name: "Household supplies 2", levels: ['int','li2'], sentences: 19, page: "topic-48b.html", audio: "HouseholdSupplies2_BEG", access: "premium",
-      keywords: ['household','supplies','ของใช้','soap','สบู่','detergent','ผงซักฟอก','tissue','cleaning','shop','ร้าน','home goods','toiletries','แชมพู'] },
-    { id: 26, part: 2, name: "Sport & exercise 2", levels: ['int','li2'], sentences: 26, page: "topic-26b.html", audio: "Sport_LI2", access: "premium",
-      keywords: ['sport','กีฬา','exercise','competition','แข่ง','team','ทีม','match','training','ฝึก','muay thai','มวยไทย','athlete','นักกีฬา','fitness'] },
-    { id: 23, part: 2, name: "Nature, environment & conservation 2", levels: ['int','li2'], sentences: 18, page: "topic-23c.html", audio: "Nature2_LI1", access: "premium",
-      keywords: ['nature','ธรรมชาติ','environment','สิ่งแวดล้อม','tree','ต้นไม้','forest','ป่า','river','แม่น้ำ','mountain','ภูเขา','sea','ทะเล','outdoors'] },
+    { id: 24, part: 2, name: "Technology & communication 2", levels: ['int','li2'], sentences: 25, page: "topic-24b.html", audio: "Tech2_LI1", access: "premium",
+      keywords: ['technology','เทคโนโลยี','social media','โซเชียล','post','โพสต์','account','บัญชี','password','รหัสผ่าน','wifi','ไวไฟ','device','digital'] },
+    { id: 24, part: 3, name: "Technology & communication 3", levels: ['int','li2'], sentences: 24, page: "topic-24c.html", audio: "Tech3_LI1", access: "premium",
+      keywords: ['technology','เทคโนโลยี','ai','online','scam','หลอกลวง','privacy','ความเป็นส่วนตัว','data','ข้อมูล','software','update','digital','future tech'] },
     { id: 29, part: 1, name: "Community & society 1", levels: ['int','li2'], sentences: 21, page: "topic-29a.html", audio: "Community_LI1", access: "premium",
       keywords: ['community','ชุมชน','society','สังคม','neighbour','เพื่อนบ้าน','village','หมู่บ้าน','local','volunteer','อาสา','help','public'] },
-    { id: 29, part: 2, name: "Community & society 2", levels: ['int','li2'], sentences: 20, page: "topic-29c.html", audio: "Community2_LI1", access: "premium",
-      keywords: ['community','ชุมชน','society','สังคม','neighbour','เพื่อนบ้าน','village','หมู่บ้าน','local','volunteer','อาสา','help','public'] },
+    { id: 26, part: 2, name: "Sport & exercise 2", levels: ['int','li2'], sentences: 26, page: "topic-26b.html", audio: "Sport_LI2", access: "premium",
+      keywords: ['sport','กีฬา','exercise','competition','แข่ง','team','ทีม','match','training','ฝึก','muay thai','มวยไทย','athlete','นักกีฬา','fitness'] },
+    { id: 15, part: 2, name: "Hobbies & free time 2", levels: ['int','li2'], sentences: 18, page: "topic-15b.html", audio: "Hobbies2_BEG", access: "premium",
+      keywords: ['hobby','งานอดิเรก','free time','ว่าง','pastime','interest','relax','พักผ่อน','music','เพลง','read','อ่าน','game','เกม','leisure','weekend'] },
+    { id: 23, part: 2, name: "Nature, environment & conservation 2", levels: ['int','li2'], sentences: 18, page: "topic-23c.html", audio: "Nature2_LI1", access: "premium",
+      keywords: ['nature','ธรรมชาติ','environment','สิ่งแวดล้อม','tree','ต้นไม้','forest','ป่า','river','แม่น้ำ','mountain','ภูเขา','sea','ทะเล','outdoors'] },
     { id: 20, part: 3, name: "Working life 3", levels: ['int','li2'], sentences: 24, page: "topic-20c.html", audio: "Career_LI2", access: "premium",
       keywords: ['career','อาชีพ','promotion','เลื่อนตำแหน่ง','ambition','resign','ลาออก','experience','ประสบการณ์','professional','work','development'] },
     { id: 27, part: 3, name: "Travel & tourism 3", levels: ['int','li2'], sentences: 25, page: "topic-27c.html", audio: "Travel_LI2", access: "premium",
       keywords: ['travel','เที่ยว','tourism','ท่องเที่ยว','abroad','ต่างประเทศ','visa','วีซ่า','culture shock','backpack','trip','airport','สนามบิน','journey'] },
-    { id: 23, part: 3, name: "Nature, environment & conservation 3", levels: ['int','li2'], sentences: 21, page: "topic-23b.html", audio: "Nature_LI2", access: "premium",
-      keywords: ['environment','สิ่งแวดล้อม','conservation','อนุรักษ์','pollution','มลพิษ','recycle','รีไซเคิล','climate','โลกร้อน','waste','ขยะ','nature','sustainability','wildlife'] },
+    { id: 35, part: 1, name: "Buddhism 1", levels: ['int','li2'], sentences: 21, page: "topic-35a.html", audio: "Temple_LI1", access: "premium",
+      keywords: ['buddhism','พุทธ','temple','วัด','monk','พระ','merit','ทำบุญ','offering','ใส่บาตร','pray','religion','ศาสนา','shrine'] },
+    { id: 48, part: 2, name: "Household supplies 2", levels: ['int','li2'], sentences: 19, page: "topic-48b.html", audio: "HouseholdSupplies2_BEG", access: "premium",
+      keywords: ['household','supplies','ของใช้','soap','สบู่','detergent','ผงซักฟอก','tissue','cleaning','shop','ร้าน','home goods','toiletries','แชมพู'] },
     { id: 34, part: 2, name: "Thai culture & customs 2", levels: ['int','li2'], sentences: 23, page: "topic-34b.html", audio: "ThaiCulture_LI2", access: "premium",
       keywords: ['thai culture','วัฒนธรรม','custom','ประเพณี','tradition','festival','เทศกาล','songkran','สงกรานต์','loy krathong','ลอยกระทง','belief','ความเชื่อ','superstition'] },
-    { id: 35, part: 1, name: "Buddhism 1", levels: ['li2','adv'], sentences: 21, page: "topic-35a.html", audio: "Temple_LI1",
-      keywords: ['buddhism','พุทธ','temple','วัด','monk','พระ','merit','ทำบุญ','offering','ใส่บาตร','pray','religion','ศาสนา','shrine'] },
+    // ── UPPER INTERMEDIATE → ADVANCED ─────────────────────
+    { id: 32, part: 1, name: "Thai geography & regions 1", levels: ['li2','adv'], sentences: 21, page: "topic-32a.html", audio: "GeoRegions_LI1",
+      keywords: ['geography','ภูมิศาสตร์','region','ภาค','province','จังหวัด','thailand','ประเทศไทย','north','เหนือ','south','ใต้','map','area','isaan','อีสาน'] },
+    { id: 23, part: 3, name: "Nature, environment & conservation 3", levels: ['li2','adv'], sentences: 21, page: "topic-23b.html", audio: "Nature_LI2", access: "premium",
+      keywords: ['environment','สิ่งแวดล้อม','conservation','อนุรักษ์','pollution','มลพิษ','recycle','รีไซเคิล','climate','โลกร้อน','waste','ขยะ','nature','sustainability','wildlife'] },
+    { id: 35, part: 2, name: "Buddhism 2", levels: ['li2','adv'], sentences: 18, page: "topic-35b.html", audio: "HolyDays_LI1", access: "premium",
+      keywords: ['buddhism','พุทธ','holy day','วันพระ','festival','เทศกาล','ceremony','พิธี','vesak','วิสาขบูชา','religion','ศาสนา','observance','lent','เข้าพรรษา'] },
+    { id: 29, part: 2, name: "Community & society 2", levels: ['li2','adv'], sentences: 20, page: "topic-29c.html", audio: "Community2_LI1", access: "premium",
+      keywords: ['community','ชุมชน','society','สังคม','neighbour','เพื่อนบ้าน','village','หมู่บ้าน','local','volunteer','อาสา','help','public'] },
     { id: 22, part: 2, name: "Food culture & eating out 2", levels: ['li2','adv'], sentences: 23, page: "topic-22b.html", audio: "FoodCulture_LI2", access: "premium",
       keywords: ['food culture','อาหาร','cuisine','regional','ภาค','street food','สตรีทฟู้ด','dish','เมนู','flavour','รสชาติ','eating out','tradition','isaan','อีสาน'] },
-    { id: 32, part: 1, name: "Thai geography & regions 1", levels: ['li2','adv'], sentences: 21, page: "topic-32a.html", audio: "GeoRegions_LI1", access: "premium",
-      keywords: ['geography','ภูมิศาสตร์','region','ภาค','province','จังหวัด','thailand','ประเทศไทย','north','เหนือ','south','ใต้','map','area','isaan','อีสาน'] },
     { id: 25, part: 1, name: "Media & entertainment 1", levels: ['li2','adv'], sentences: 17, page: "topic-25a.html", audio: "Media_LI1", access: "premium",
       keywords: ['media','สื่อ','entertainment','บันเทิง','tv','ทีวี','film','หนัง','movie','music','เพลง','series','ละคร','watch','ดู','show'] },
     { id: 25, part: 2, name: "Media & entertainment 2", levels: ['li2','adv'], sentences: 20, page: "topic-25c.html", audio: "Media3_LI1", access: "premium",
       keywords: ['media','สื่อ','entertainment','บันเทิง','tv','ทีวี','film','หนัง','movie','music','เพลง','series','ละคร','watch','ดู','show'] },
     { id: 47, part: 2, name: "Homes & housing 2", levels: ['li2','adv'], sentences: 13, page: "topic-47b.html", audio: "HomesAndHousing2_LI1", access: "premium",
       keywords: ['house','บ้าน','housing','rent','เช่า','condo','คอนโด','apartment','อพาร์ตเมนต์','landlord','เจ้าของบ้าน','move','ย้าย','property','lease','deposit'] },
-
-    // ── UPPER INTERMEDIATE → ADVANCED ───────────────
-    { id: 35, part: 2, name: "Buddhism 2", levels: ['li2','adv'], sentences: 18, page: "topic-35b.html", audio: "HolyDays_LI1", access: "premium",
-      keywords: ['buddhism','พุทธ','holy day','วันพระ','festival','เทศกาล','ceremony','พิธี','vesak','วิสาขบูชา','religion','ศาสนา','observance','lent','เข้าพรรษา'] },
+    { id: 35, part: 3, name: "Buddhism 3", levels: ['li2','adv'], sentences: 13, page: "topic-35f.html", audio: "Meditation2_LI2", access: "premium",
+      keywords: ['meditation','สมาธิ','buddhism','พุทธ','mindfulness','สติ','vipassana','วิปัสสนา','retreat','breathe','calm','สงบ','practice','religion'] },
+    { id: 35, part: 4, name: "Buddhism 4", levels: ['li2','adv'], sentences: 15, page: "topic-35g.html", audio: "Monastic2_LI2", access: "premium",
+      keywords: ['monastic','สงฆ์','monk','พระ','ordination','บวช','temple','วัด','monastery','robe','จีวร','buddhism','พุทธ','religion','novice','เณร'] },
     { id: 29, part: 3, name: "Community & society 3", levels: ['li2','adv'], sentences: 19, page: "topic-29b.html", audio: "Community_LI2", access: "premium",
       keywords: ['society','สังคม','community','ชุมชน','inequality','เหลื่อมล้ำ','social issue','ปัญหาสังคม','welfare','public','politics','การเมือง','citizen','civic'] },   // re-badged by the 2026-07-17 length audit
-    { id: 35, part: 3, name: "Buddhism 3", levels: ['li2','adv'], sentences: 19, page: "topic-35c.html", audio: "Dhamma_LI2", access: "premium",
-      keywords: ['buddhism','พุทธ','dhamma','ธรรมะ','teaching','คำสอน','karma','กรรม','precept','ศีล','philosophy','ปรัชญา','religion','doctrine'] },
-    { id: 35, part: 4, name: "Buddhism 4", levels: ['li2','adv'], sentences: 13, page: "topic-35f.html", audio: "Meditation2_LI2", access: "premium",
-      keywords: ['meditation','สมาธิ','buddhism','พุทธ','mindfulness','สติ','vipassana','วิปัสสนา','retreat','breathe','calm','สงบ','practice','religion'] },
-    { id: 35, part: 5, name: "Buddhism 5", levels: ['li2','adv'], sentences: 15, page: "topic-35e.html", audio: "Monastic_LI2", access: "premium",
-      keywords: ['monastic','สงฆ์','monk','พระ','ordination','บวช','temple','วัด','monastery','robe','จีวร','buddhism','พุทธ','religion','novice','เณร'] },
-    { id: 35, part: 6, name: "Buddhism 6", levels: ['li2','adv'], sentences: 15, page: "topic-35g.html", audio: "Monastic2_LI2", access: "premium",
-      keywords: ['monastic','สงฆ์','monk','พระ','ordination','บวช','temple','วัด','monastery','robe','จีวร','buddhism','พุทธ','religion','novice','เณร'] },
     { id: 32, part: 2, name: "Thai geography & regions 2", levels: ['li2','adv'], sentences: 16, page: "topic-32c.html", audio: "GeoRegions2_LI1", access: "premium",
       keywords: ['geography','ภูมิศาสตร์','region','ภาค','province','จังหวัด','thailand','ประเทศไทย','north','เหนือ','south','ใต้','map','area','isaan','อีสาน'] },
+    { id: 35, part: 5, name: "Buddhism 5", levels: ['li2','adv'], sentences: 15, page: "topic-35e.html", audio: "Monastic_LI2", access: "premium",
+      keywords: ['monastic','สงฆ์','monk','พระ','ordination','บวช','temple','วัด','monastery','robe','จีวร','buddhism','พุทธ','religion','novice','เณร'] },
     { id: 25, part: 3, name: "Media & entertainment 3", levels: ['li2','adv'], sentences: 15, page: "topic-25b.html", audio: "Media2_LI1", access: "premium",
       keywords: ['media','สื่อ','entertainment','บันเทิง','news','ข่าว','celebrity','ดารา','journalism','นักข่าว','critique','review','วิจารณ์','industry'] },   // re-badged by the 2026-07-17 length audit
-    { id: 35, part: 7, name: "Buddhism 7", levels: ['li2','adv'], sentences: 10, page: "topic-35d.html", audio: "Meditation_LI2", access: "premium",
-      keywords: ['meditation','สมาธิ','buddhism','พุทธ','mindfulness','สติ','vipassana','วิปัสสนา','retreat','breathe','calm','สงบ','practice','religion'] },
+    { id: 35, part: 6, name: "Buddhism 6", levels: ['li2','adv'], sentences: 19, page: "topic-35c.html", audio: "Dhamma_LI2", access: "premium",
+      keywords: ['buddhism','พุทธ','dhamma','ธรรมะ','teaching','คำสอน','karma','กรรม','precept','ศีล','philosophy','ปรัชญา','religion','doctrine'] },
     { id: 32, part: 3, name: "Thai geography & regions 3", levels: ['li2','adv'], sentences: 16, page: "topic-32b.html", audio: "GeoRegions_LI2", access: "premium",
       keywords: ['geography','ภูมิศาสตร์','region','ภาค','province','จังหวัด','landscape','climate','ภูมิอากาศ','terrain','border','ชายแดน','thailand','economy','resources'] },   // re-badged by the 2026-07-17 length audit
+    { id: 35, part: 7, name: "Buddhism 7", levels: ['li2','adv'], sentences: 10, page: "topic-35d.html", audio: "Meditation_LI2", access: "premium",
+      keywords: ['meditation','สมาธิ','buddhism','พุทธ','mindfulness','สติ','vipassana','วิปัสสนา','retreat','breathe','calm','สงบ','practice','religion'] },
     { id: 25, part: 4, name: "Media & entertainment 4", levels: ['li2','adv'], sentences: 14, page: "topic-25d.html", audio: "Media4_LI1", access: "premium",
       keywords: ['media','สื่อ','entertainment','บันเทิง','news','ข่าว','celebrity','ดารา','journalism','นักข่าว','critique','review','วิจารณ์','industry'] },
 

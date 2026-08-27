@@ -228,6 +228,11 @@ function tierFor(file, env) {
   // is the stricter and correct answer.
   //   Retired from memberList → now FREE (moved to the public bucket by r2_demote_to_public.py):
   //   ShoppingAndMoney_BEG, Occupations_BEG, Temple_LI1, Romance_LI1, ThaiCulture_LI1.
+  //   ⚠ 2026-08-27 (length re-order): Temple_LI1 (Buddhism 1) and Romance_LI1 went free →
+  //   PREMIUM, and GeoRegions_LI1 (Thai geography & regions 1) + FoodSocial_LI1 (Food culture
+  //   & eating out 1) went premium → FREE, so each band keeps exactly one free unit pinned to
+  //   its top. 202 objects copied both ways before any flag moved; the public-side delete +
+  //   edge purge for Temple_LI1/Romance_LI1 is what actually locks them.
   //   ⚠ FOUR of those went BACK to premium on 2026-08-22 (owner: trim the free tier towards one
   //   free unit per difficulty band): Food_BEG, Tech_LI1, ColoursAndDescriptions_BEG, Feelings_BEG.
   //   None is just a flag: their objects (86 + 50 + 44 + 72 = 252) had to be copied PUBLIC → PRIVATE first, because this endpoint presigns
@@ -241,7 +246,7 @@ function tierFor(file, env) {
   // premium 2026-06-23; Places_BEG, Clothing_BEG, Plans_BEG, Schooling_LI1, GeoRegions_LI1,
   // Community_LI1, Sport_LI1, Nature_LI1, FoodSocial_LI1, Job_LI1 promoted member → premium
   // 2026-07-01; the 9 above retired member → free 2026-08-10.)
-  const premiumList = listEnv(env.PREMIUM_PREFIXES, ['ColoursAndDescriptions2_BEG', 'ShoppingAndMoney2_BEG', 'HomeAndDailyRoutine_BEG', 'HomeAndDailyRoutine2_BEG', 'Weather_BEG', 'Time_BEG', 'Dates_BEG', 'Family_BEG', 'Food_BEG', 'Tech_LI1', 'ColoursAndDescriptions_BEG', 'Feelings_BEG', 'Food_LI1', 'Transport_BEG', 'Transport_LI1', 'Emergency_BEG', 'BodyHealth_BEG', 'Health_BEG', 'Health_LI1', 'Feelings_LI1', 'Hobbies_BEG', 'SocialLife_BEG', 'Idiom_BEG', 'Plans_LI1', 'Appearance_LI1', 'Cooking_BEG', 'Recipes_LI1', 'Workplace_LI1', 'Career_LI2', 'Study_LI1', 'System_LI2', 'School_LI1', 'Campus_LI1', 'FoodCulture_LI2', 'ToneTwister_LI1', 'Animals_BEG', 'Groceries_BEG', 'Places2_BEG', 'Occupations_LI1', 'Dhamma_LI2', 'Monastic_LI2', 'Sport_LI2', 'Nature_LI2', 'Travel_LI1', 'Travel2_LI1', 'Travel_LI2', 'HolyDays_LI1', 'Meditation_LI2', 'Romance2_LI1', 'Romance3_LI1', 'Romance4_LI1', 'ThaiCulture_LI2', 'Tech2_LI1', 'Tech3_LI1', 'GeoRegions_LI2', 'Community_LI2', 'Compliments_LI1', 'Opinions_LI1', 'Places_BEG', 'Clothing_BEG', 'Plans_BEG', 'Schooling_LI1', 'GeoRegions_LI1', 'Community_LI1', 'Sport_LI1', 'Nature_LI1', 'FoodSocial_LI1', 'Job_LI1']);
+  const premiumList = listEnv(env.PREMIUM_PREFIXES, ['ColoursAndDescriptions2_BEG', 'ShoppingAndMoney2_BEG', 'HomeAndDailyRoutine_BEG', 'HomeAndDailyRoutine2_BEG', 'Weather_BEG', 'Time_BEG', 'Dates_BEG', 'Family_BEG', 'Food_BEG', 'Tech_LI1', 'ColoursAndDescriptions_BEG', 'Feelings_BEG', 'Food_LI1', 'Transport_BEG', 'Transport_LI1', 'Emergency_BEG', 'BodyHealth_BEG', 'Health_BEG', 'Health_LI1', 'Feelings_LI1', 'Hobbies_BEG', 'SocialLife_BEG', 'Idiom_BEG', 'Plans_LI1', 'Appearance_LI1', 'Cooking_BEG', 'Recipes_LI1', 'Workplace_LI1', 'Career_LI2', 'Study_LI1', 'System_LI2', 'School_LI1', 'Campus_LI1', 'FoodCulture_LI2', 'ToneTwister_LI1', 'Animals_BEG', 'Groceries_BEG', 'Places2_BEG', 'Occupations_LI1', 'Dhamma_LI2', 'Monastic_LI2', 'Sport_LI2', 'Nature_LI2', 'Travel_LI1', 'Travel2_LI1', 'Travel_LI2', 'HolyDays_LI1', 'Meditation_LI2', 'Romance2_LI1', 'Romance3_LI1', 'Romance4_LI1', 'ThaiCulture_LI2', 'Tech2_LI1', 'Tech3_LI1', 'GeoRegions_LI2', 'Community_LI2', 'Compliments_LI1', 'Opinions_LI1', 'Places_BEG', 'Clothing_BEG', 'Plans_BEG', 'Schooling_LI1', 'Community_LI1', 'Sport_LI1', 'Nature_LI1', 'Job_LI1', 'Temple_LI1', 'Romance_LI1']);
   const memberList = listEnv(env.MEMBER_PREFIXES, []);   // member tier retired 2026-08-10 — see above
   // Member only if explicitly listed (and not premium); unknown private files default to premium.
   return (memberList.includes(prefix) && !premiumList.includes(prefix)) ? 'member' : 'premium';

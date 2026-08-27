@@ -21,15 +21,15 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://thaiear.com/topic-40</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thaiear.com/topic-04a</loc>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://thaiear.com/topic-04b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-40</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -41,7 +41,19 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://thaiear.com/topic-37</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thaiear.com/topic-41a</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-09b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-19a</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -53,15 +65,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-41b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-05</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-07</loc>
+    <loc>https://thaiear.com/topic-12a</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -77,27 +81,35 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-09b</loc>
+    <loc>https://thaiear.com/topic-13b</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-19a</loc>
+    <loc>https://thaiear.com/topic-41b</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-12a</loc>
+    <loc>https://thaiear.com/topic-05</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-37</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-37b</loc>
+    <loc>https://thaiear.com/topic-36b</loc>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://thaiear.com/topic-14a</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-18a</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-07</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-49a</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -109,15 +121,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-18a</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-18c</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-42b</loc>
+    <loc>https://thaiear.com/topic-37b</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -125,47 +129,19 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-17a</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-18b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-14b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-10b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-16</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-36a</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-49a</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://thaiear.com/topic-13a</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-13b</loc>
+    <loc>https://thaiear.com/topic-17a</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-13d</loc>
+    <loc>https://thaiear.com/topic-42b</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-13c</loc>
+    <loc>https://thaiear.com/topic-18c</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -173,23 +149,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-36b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-36c</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-36d</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://thaiear.com/topic-20a</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-21a</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -197,11 +157,47 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-24a</loc>
+    <loc>https://thaiear.com/topic-21a</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-16</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-10b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-36a</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-15</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-14b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-36d</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-13d</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-18b</loc>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://thaiear.com/topic-23a</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-24a</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -213,6 +209,14 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://thaiear.com/topic-13c</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-48</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thaiear.com/topic-27a</loc>
     <priority>0.8</priority>
   </url>
@@ -221,19 +225,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-16b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-15</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-15b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-21b</loc>
+    <loc>https://thaiear.com/topic-36c</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -241,11 +233,15 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://thaiear.com/topic-20b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thaiear.com/topic-12b</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-20b</loc>
+    <loc>https://thaiear.com/topic-16b</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -253,11 +249,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-24b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-24c</loc>
+    <loc>https://thaiear.com/topic-21b</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -269,19 +261,11 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-48</loc>
+    <loc>https://thaiear.com/topic-24b</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-48b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-26b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-23c</loc>
+    <loc>https://thaiear.com/topic-24c</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -289,7 +273,15 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-29c</loc>
+    <loc>https://thaiear.com/topic-26b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-15b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-23c</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -301,7 +293,11 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-23b</loc>
+    <loc>https://thaiear.com/topic-35a</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-48b</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -309,15 +305,23 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-35a</loc>
+    <loc>https://thaiear.com/topic-32a</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-23b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-35b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-29c</loc>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://thaiear.com/topic-22b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-32a</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -333,23 +337,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-35b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-29b</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-35c</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://thaiear.com/topic-35f</loc>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://thaiear.com/topic-35e</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -357,7 +345,15 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://thaiear.com/topic-29b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thaiear.com/topic-32c</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-35e</loc>
     <priority>0.8</priority>
   </url>
   <url>
@@ -365,11 +361,15 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://thaiear.com/topic-35d</loc>
+    <loc>https://thaiear.com/topic-35c</loc>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://thaiear.com/topic-32b</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/topic-35d</loc>
     <priority>0.8</priority>
   </url>
   <url>
