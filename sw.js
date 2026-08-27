@@ -33,7 +33,18 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v500';   // v500: the iPhone search-field zoom, ACTUALLY fixed. v496 claimed
+const VERSION = 'v501';   // v501: the sign-in fields stop zooming on iPhone. .login-input is
+                          // 14px on join.html and account.html, so the EMAIL and CODE boxes
+                          // force-zoomed on every tap -- on the signup funnel, which costs more
+                          // than a search box. account.html already had an input.no-zoom rule but
+                          // it only ever covered #dispname-input.
+                          // ⚠ Typed as input.login-input, not a bare class: a bare one TIES with
+                          // the base rule and wins only on source order. account.html's own
+                          // no-zoom comment records that this was measured, not assumed.
+                          // ⛔ Never user-scalable=no -- that kills pinch-zoom sitewide to fix one
+                          // field. test_login_code_box.js now asserts all three.
+                          // join.html and account.html are precached.
+                          // v500:   // v500: the iPhone search-field zoom, ACTUALLY fixed. v496 claimed
                           // this and did not deliver: it set 16px on .topic-search, a class the
                           // search input does not carry. The element is <input id="tp-q"> with no
                           // class at all, styled by #tp-q at 14px -- and an ID beats a class

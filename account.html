@@ -278,6 +278,14 @@
   .login-sep::before, .login-sep::after { content: ""; flex: 1; height: 1px; background: var(--border); }
   .login-input { width: 100%; text-align: left; font-family: var(--font-ui); font-size: 14px; padding: 10px 12px; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 0.7rem; }
   .login-input:focus { outline: none; border-color: var(--accent); }
+  /* ⚠ The same iOS zoom fix as join.html, and it belongs here too: `input.no-zoom` above only ever
+     covered #dispname-input. The EMAIL and CODE fields are plain `.login-input` at 14px, so they
+     zoomed on every tap (owner, 2026-08-27). Typed as `input.login-input` for the reason the
+     no-zoom comment above already gives — a bare class ties and wins only on source order.
+     ⛔ Never maximum-scale / user-scalable=no. Scoped to touch; desktop is unchanged. */
+  @media (pointer: coarse) {
+    input.login-input { font-size: 16px; }
+  }
   .login-terms { font-size: 12px; margin-top: 1rem; }
   @keyframes tick-pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
   .tick-anim { display: inline-block; color: var(--accent); font-weight: 700; animation: tick-pop 0.45s cubic-bezier(0.2,0.8,0.3,1.3) both; }

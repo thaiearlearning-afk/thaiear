@@ -113,6 +113,20 @@
     border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 0.7rem;
     background: var(--surface); color: var(--text-primary); }
   .login-input:focus { outline: none; border-color: var(--accent); }
+  /* ⚠ iOS force-zooms the page whenever a focused input's COMPUTED font-size is under 16px, and
+     there is no per-field opt-out. At 14px the email and code fields zoomed on every tap — on the
+     SIGNUP funnel, which costs more than a search box. Owner, 2026-08-27.
+     ⛔ NOT fixed with maximum-scale / user-scalable=no on the viewport: that kills pinch-zoom for
+     the whole site to fix one field, which is an accessibility regression far worse than the bug.
+     ⚠ TYPED AS `input.login-input` ON PURPOSE, exactly like account.html's `input.no-zoom` and for
+     the same measured reason: a bare `.login-input` inside the media query TIES with the rule
+     above on specificity and would win only by source order — fragile the moment anything is
+     re-ordered. element+class (0,1,1) beats a bare class (0,1,0) outright.
+     ⚠ Scoped to (pointer: coarse) so desktop keeps the smaller field; the zoom only exists on
+     touch. This IS a visible size change on a phone, accepted deliberately to kill the zoom. */
+  @media (pointer: coarse) {
+    input.login-input { font-size: 16px; }
+  }
   .sub-status { font-size: 13px; color: var(--text-secondary); text-align: center; margin-top: 0.9rem; min-height: 1.2em; }
   .sub-note { font-size: 13px; color: var(--text-tertiary); text-align: center; margin-top: 1rem; }
   .sub-note a { color: var(--accent); text-decoration: none; font-weight: 500; }
