@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v505';   // v505: the Grammar arm drops "Serial verbs" -- 19 units to 18.
+const VERSION = 'v506';   // v506: a Favourites pill leads the sliding band row, and the
+                          // Favourites TILE loses its heart (owner: "a bit garish"). The
+                          // row is now built by ONE tabRow() shared by bandPage and
+                          // favPage -- it was two separate maps, neither carrying a
+                          // Favourites pill, so the tile led somewhere the row could not
+                          // get you back from. topics.html, all five band pages,
+                          // topics-favourites.html and topics-page.css are ALL PRECACHED,
+                          // which is why this bump exists.
+                          // v505: the Grammar arm drops "Serial verbs" -- 19 units to 18.
                           // Serialisation is how Thai works rather than a structure you can
                           // drill, and it is already everywhere in the topic corpus. Only
                           // the two เผลอ sentences moved (to the ดัน/อุตส่าห์ unit, which is
