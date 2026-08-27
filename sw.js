@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v498';   // v498: Grammar by Ear is 19 units, not 20. "But & however" was
+const VERSION = 'v499';   // v499: two offline dyn-chain faults. The foreground walk skipped
+                          // nothing, so offline it hopped onto a unit with no clips and no
+                          // session and stalled; and a FAILED forward navigation (the offline
+                          // notice for an uncached page) dropped the adoption on the way back,
+                          // because r214 could not tell it from a real one. Both hit all four
+                          // loops. player.js is precached, hence the bump. Its OWN bump: v497
+                          // is deployed and v498 is claimed by a change still in the tree.
+                          // v498: Grammar by Ear is 19 units, not 20. "But & however" was
                           // merged into the concession unit -- its three exx of a plain
                           // but+gaw against one each for everything else -- so
                           // sentence-hints.json, topic-sentences.json and
