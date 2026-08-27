@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v503';   // v503: Grammar by Ear drops 10 more sentences -- an over-example
+const VERSION = 'v504';   // v504: the PLAYLISTS loop gets the offline settings-revert too. Two
+                          // guards at the top of dynEnsureMainSrc ask whether THIS PAGE's own
+                          // playlist has anything playable, and fired before the adopted branch
+                          // could run -- so on a playlist page they answered about a playlist
+                          // nobody was listening to. They stand down while adopted.
+                          // player.js is precached, hence the bump.
+                          // v503:   // v503: Grammar by Ear drops 10 more sentences -- an over-example
                           // trim, not a content change. sentence-hints.json,
                           // topic-sentences.json and clip-durations.json all shrank and
                           // all three are PRECACHED, so without this bump cache-first
