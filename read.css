@@ -250,10 +250,8 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
 .signin-gate p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 420px; margin: 0 auto 1rem; }
 .signin-gate .sg-btn { font-size: 14px; padding: 9px 22px; text-decoration: none; }
 
-/* clear-progress (results page) */
+/* clear-progress (results page) — the BUTTON rules live below .rd-ghost-pill, see there */
 .clear-progress-wrap { text-align: center; margin-top: 1.75rem; }
-.clear-progress-btn { color: #C0392B; border-color: rgba(192,57,43,0.4); }
-.clear-progress-btn:hover { color: #fff; background: #C0392B; border-color: #C0392B; }
 
 /* ── results page ── */
 .results-hero h2 { font-size: 18px; }
@@ -289,6 +287,31 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
 .rd-play-pill svg { width: 12px; height: 12px; }
 .rd-ghost-pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--text-secondary); background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: 18px; padding: 6px 14px; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
 .rd-ghost-pill:hover { border-color: var(--accent); color: var(--accent); }
+/* The destructive variant of the ghost pill. MUST stay AFTER .rd-ghost-pill: both are
+   single-class selectors, so source order decides, and .rd-ghost-pill's `border` SHORTHAND
+   beats a bare `border-color` wherever it sits. These two rules used to sit ~35 lines above it
+   with the results-page CSS and were therefore DEAD -- the button rendered as an ordinary grey
+   ghost pill (owner, 2026-08-27). Colours match progress.html's .reset-btn, the same action on
+   the topic side: red text, faint red outline, faint wash on hover -- never a solid red fill,
+   a destructive control is outlined on this site, not filled. */
+.clear-progress-btn { color: #C0392B; border: 0.5px solid #E3B5AE; }
+.clear-progress-btn:hover { color: #C0392B; border-color: #C0392B; background: #FDF1F0; }
+
+/* ── confirm modal (results page) ───────────────────────────────────────────── */
+/* The site's own modal idiom, copied verbatim from progress.html's reset dialog (which is the
+   same action on the topic side) so the two read identically. Deliberately NOT window.confirm,
+   which is the plain grey browser box this replaced. */
+.te-modal { position: fixed; inset: 0; z-index: 1000; background: rgba(20,16,40,0.55);
+  display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
+.te-modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 360px;
+  width: 100%; padding: 1.8rem 1.5rem; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+.te-modal-card p { font-size: 14px; line-height: 1.6; margin-bottom: 1.2rem; }
+.te-modal-card strong { font-weight: 600; }
+.te-modal-actions { display: flex; gap: 10px; }
+.te-modal-actions button { flex: 1; font-family: var(--font-ui); font-size: 13.5px; font-weight: 500;
+  border-radius: var(--radius-md); padding: 10px 12px; cursor: pointer; }
+.te-modal-cancel { background: var(--surface); color: var(--text-secondary); border: 0.5px solid var(--border-strong); }
+.te-modal-confirm { background: #C0392B; color: #fff; border: none; }
 
 /* ── prev / next footer nav (mirrors topic pages) ── */
 .read-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }

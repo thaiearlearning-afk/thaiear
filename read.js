@@ -1582,10 +1582,29 @@
       '<button class="rd-ghost-pill clear-progress-btn" id="clear-progress" type="button">Clear my reading progress</button>' +
       '</div>';
     var clearBtn = root.querySelector('#clear-progress');
+    /* ⚠ The site's own modal, never window.confirm — that is the plain grey browser box, and this
+       was the last place on the site still using it (owner, 2026-08-27). Markup, classes and
+       behaviour are progress.html's reset dialog verbatim (the same action on the topic side);
+       the CSS lives in read.css, next to .clear-progress-btn. */
     if (clearBtn) clearBtn.addEventListener('click', function () {
-      if (!confirm('This permanently deletes ALL your Read Thai test history — every attempt, best score and average, across every section. It cannot be undone.\n\nClear everything?')) return;
-      try { localStorage.removeItem(LS_KEY); } catch (_) {}
-      location.reload();
+      var ov = document.createElement('div');
+      ov.className = 'te-modal';
+      ov.innerHTML = '<div class="te-modal-card" role="dialog" aria-modal="true">' +
+        '<p>This permanently deletes <strong>all</strong> your Read Thai test history — every ' +
+        'attempt, best score and average, across every section.<br>' +
+        '<strong>This cannot be undone.</strong></p>' +
+        '<div class="te-modal-actions">' +
+          '<button type="button" class="te-modal-cancel">Cancel</button>' +
+          '<button type="button" class="te-modal-confirm">Delete</button>' +
+        '</div></div>';
+      document.body.appendChild(ov);
+      var close = function () { try { ov.remove(); } catch (_) {} };
+      ov.querySelector('.te-modal-cancel').addEventListener('click', close);
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      ov.querySelector('.te-modal-confirm').addEventListener('click', function () {
+        try { localStorage.removeItem(LS_KEY); } catch (_) {}
+        location.reload();
+      });
     });
   }
 

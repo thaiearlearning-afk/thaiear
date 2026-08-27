@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v481';   // v481: replaying a sentence block credits the repetitions you
+const VERSION = 'v482';   // v482: Read Thai results -- "Clear my reading progress" is red
+                          // again (its rules sat ABOVE .rd-ghost-pill and lost the cascade, so
+                          // the button had been rendering as a plain grey ghost pill), and its
+                          // confirm is now the site's own modal instead of window.confirm.
+                          // read.css + read.js are precached, hence the bump.
+                          // v481: replaying a sentence block credits the repetitions you
                           // actually heard again -- the play count was a running max capped
                           // at the repeat setting for the whole VISIT to a block, so back-to-
                           // start (and the loop button) could not push it past that ceiling.
