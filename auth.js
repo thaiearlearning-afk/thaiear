@@ -832,7 +832,7 @@
      declaration, and this listener only runs on an event, so the ordering is safe. It matters
      more than the others: until the playlist outbox drains, playlists.authoritative() stays false
      and dlReconcileRefs() cannot reap ghost download claims. */
-  window.addEventListener('online', function () { flushProgress(); flushFlags(); dpFlush(); plFlush(); plysFlush(); });
+  window.addEventListener('online', function () { flushProgress(); flushFlags(); dpFlush(); fvFlush(); plFlush(); plysFlush(); });
 
   // ---- listening progress (own `progress` row, RLS) ----------------------
   // One jsonb row per user: { goal, topics:{ topicKey:count } }. Read on demand
@@ -2076,6 +2076,94 @@
     flush: function () { return dpFlush(); }
   };
 
+  /* ── Favourites (public.favourites — see favourites_schema.sql) ─────────────────────────
+     ONE ROW PER (user, topic), and the shape is the whole design. dyn_prefs above stores a
+     jsonb blob per scope, and on 2026-08-25 that cost two wrong deploys: a background sync
+     wrote the whole settings object back over a local change that had not been pushed yet,
+     so a control the owner had just changed silently snapped back. It was diagnosed by
+     LATENCY — an immediate revert is dynPrefsApply(), a ~1200ms one is dynRevertToStored().
+
+     Favourites cannot reproduce that, because there is no "whole list" value anywhere:
+       * two devices toggling two different topics touch two different ROWS;
+       * insert-on-conflict-do-nothing and delete are idempotent, so a retry or a duplicated
+         event cannot corrupt anything;
+       * a stale read has nothing to clobber — it can only be missing a row, which the next
+         load repairs.
+     The local mirror is an optimistic cache for instant paint, never the source of truth.
+
+     ⚠ Keyed on topics.js `page` ('topic-13a.html'), never the display name: the 2026-08-27
+     re-order renamed nine units while every `page` stayed put. Unknown pages are dropped on
+     read so a retired topic cannot leave a ghost card. */
+  var fvCache = null;   // { page: 1 }
+  function fvStore() { try { localStorage.setItem('thaiear_favourites', JSON.stringify(fvCache)); } catch (_) {} }
+  function fvLocal() { try { return JSON.parse(localStorage.getItem('thaiear_favourites') || 'null'); } catch (_) { return null; } }
+  /* Rows whose write failed (offline, or auth not resolved yet) with the INTENT recorded, so a
+     toggle made on a plane still reaches the server. Only ever written while signed in —
+     pushing a signed-out device's list into whatever account signs in next would be wrong. */
+  function fvPending() { try { return JSON.parse(localStorage.getItem('thaiear_favourites_dirty') || '{}'); } catch (_) { return {}; } }
+  function fvSetPending(m) { try { localStorage.setItem('thaiear_favourites_dirty', JSON.stringify(m)); } catch (_) {} }
+  function fvMark(page, on) { var m = fvPending(); m[page] = on ? 1 : 0; fvSetPending(m); }
+  function fvClear(page) { var m = fvPending(); delete m[page]; fvSetPending(m); }
+  function fvWrite(page, on) {
+    if (!client || !currentUser) { fvMark(page, on); return Promise.resolve(); }
+    var q = on
+      ? client.from('favourites').upsert({ user_id: currentUser.id, page: page },
+          { onConflict: 'user_id,page', ignoreDuplicates: true })
+      : client.from('favourites').delete().eq('user_id', currentUser.id).eq('page', page);
+    return q.then(function (r) { if (r && r.error) throw r.error; fvClear(page); })
+            .catch(function () { fvMark(page, on); });
+  }
+  function fvFlush() {
+    if (!client || !currentUser) return Promise.resolve();
+    var m = fvPending(), pages = Object.keys(m);
+    if (!pages.length) return Promise.resolve();
+    var chain = Promise.resolve();
+    pages.forEach(function (page) {
+      chain = chain.then(function () { return fvWrite(page, !!m[page]); });
+    });
+    return chain;
+  }
+  window.ThaiEarAuth.favourites = {
+    /* Resolves { page: 1 }. Signed out it resolves EMPTY, not the local mirror: favourites are
+       an account feature and the heart is not offered signed-out, so showing a previous user's
+       list to whoever is on this browser now would be wrong. */
+    load: function (force) {
+      if (fvCache && !force) return Promise.resolve(fvCache);
+      if (!client || !currentUser) { fvCache = {}; return Promise.resolve(fvCache); }
+      return once('favourites', function () {
+        return client.from('favourites').select('page')
+          .then(function (r) {
+            if (r.error) throw r.error;
+            var map = {};
+            (r.data || []).forEach(function (row) { if (row && row.page) map[row.page] = 1; });
+            /* ⚠ A pending local toggle WINS over the server answer. This is the guard the dyn
+               bug lacked: without it, a load resolving just after a toggle would paint the
+               pre-toggle state and the heart would visibly un-fill. */
+            var pend = fvPending();
+            Object.keys(pend).forEach(function (p) { if (pend[p]) map[p] = 1; else delete map[p]; });
+            fvCache = map; fvStore();
+            return fvCache;
+          })
+          .catch(function () { fvCache = fvLocal() || {}; return fvCache; });
+      }, force);
+    },
+    // Synchronous best-effort, for painting before the network answers.
+    peek: function () { return fvCache || fvLocal() || {}; },
+    has: function (page) { return !!(fvCache || fvLocal() || {})[page]; },
+    /* Optimistic: the cache and mirror move synchronously so the heart fills on the tap, and
+       the row op follows. A failure re-marks it pending rather than reverting the UI — the
+       user's intent is not lost just because the network was. */
+    toggle: function (page) {
+      fvCache = fvCache || fvLocal() || {};
+      var on = !fvCache[page];
+      if (on) fvCache[page] = 1; else delete fvCache[page];
+      fvStore();
+      fvWrite(page, on);
+      return on;
+    },
+    flush: function () { return fvFlush(); }
+  };
+
   /* ══ OAUTH / MAGIC-LINK FAILURE SURFACING (2026-08-17) ══════════════════════════════════════
      Until today a FAILED sign-in was completely silent. startGoogleSignIn() hands off to Google
      and the return trip is handled by supabase-js's detectSessionInUrl — which only ever looks
@@ -2258,6 +2346,7 @@
       refreshProfile();      // marketing-consent flag
       refreshDesktopDl();    // desktop MP3 download entitlement (server-derived, not cached to disk)
       dpFlush();             // push any dyn settings changed while offline
+      fvFlush();             // ...and any favourite toggled while offline (same reasoning)
       /* ⚠ AND THE PLAYLIST OUTBOX — on AUTH RESOLUTION, not just the 'online' event. That event
          only fires on a TRANSITION, so an app queued-offline, closed, and later reopened while
          already connected would never have replayed: the queue would sit there until the user
@@ -2299,6 +2388,7 @@
         refreshProfile();
         refreshDesktopDl();
         dpFlush();
+        fvFlush();
       });
       /* Back online → if supabase lost its session while we were away, hand our tokens back so
          the user is silently restored instead of facing a sign-in screen. Also runs once at

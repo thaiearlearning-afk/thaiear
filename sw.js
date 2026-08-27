@@ -33,7 +33,19 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v489';   // v489: a settings change made while the dyn player is on a
+const VERSION = 'v490';   // v490: FAVOURITES. A heart on every topic card, and /topics-favourites
+                          // — the favourited units grouped by band, in grid order. New precache
+                          // entries: /topics-favourites.html and /topics-fav.js (the latter paints
+                          // hearts on EVERY band page, so an un-precached copy would leave every
+                          // card's heart missing offline while the rest of the card looked fine).
+                          // topics.js, topics-page.css/js and all six band pages changed too — the
+                          // topic card is now a <div> wrapper with a stretched inner link so the
+                          // heart can be a real <button> rather than interactive content nested
+                          // inside an anchor. All precached, hence the bump.
+                          // Derived from `git log origin/main -1 -- sw.js` (v489 deployed), not
+                          // from the constant on disk — a shared tree makes those different
+                          // questions, which is how v483 shipped to nobody earlier today.
+                          // v489: a settings change made while the dyn player is on a
                           // NEIGHBOUR now rebuilds that neighbour, under its own namespace and
                           // at the new settings -- it used to ask every question about the
                           // page you were standing on, hand back the session built moments
@@ -775,6 +787,16 @@ const PRECACHE = [
   '/topics-lower-intermediate-to-intermediate.html',
   '/topics-intermediate-to-upper-intermediate.html',
   '/topics-upper-intermediate-to-advanced.html',
+  /* Favourites (2026-08-27). The PAGE is precached like the five bands — it is a navigation
+     route in the same family, and offline it must render its own empty/prompt state rather
+     than the generic offline notice. Its CONTENTS are per-user and come from the account, so
+     offline it shows whatever the local mirror holds; that is correct, not a gap.
+     ⚠ topics-fav.js is precached because it paints the hearts on EVERY band page, not just
+     this one — an un-precached copy would leave every card's heart unrendered offline while
+     the rest of the card looked fine, which reads as "favourites are broken" rather than
+     "you are offline". */
+  '/topics-favourites.html',
+  '/topics-fav.js',
   /* The one identity reader. Blocking in every page's head, so it must be on disk. */
   '/identity.js',
   '/topics-page.css', '/topics-page.js',

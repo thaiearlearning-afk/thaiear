@@ -495,15 +495,77 @@
     flex-wrap: wrap;
     justify-content: flex-end;
   }
+  /* ── the stretched link ──────────────────────────────────────────────────────────────
+     The card became a <div> on 2026-08-27 so the favourites heart could be a real <button>.
+     A <button> inside an <a> is invalid HTML with unusable keyboard behaviour, and the
+     download tick only got away with living inside the old anchor because on a card it is
+     REPORTED STATE, never actioned — the heart is the first genuinely interactive control
+     here. The anchor now wraps only the title (so it still carries real link text for a
+     crawler) and its ::after covers the whole card, which keeps every part of the card
+     clickable exactly as before. .topic-card is already position:relative, so ::after needs
+     no extra scaffolding. The heart is a LATER sibling with a higher z-index, so it sits
+     above this overlay and receives its own taps. */
+  .topic-card-link {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    text-decoration: none;
+    color: inherit;
+  }
+  .topic-card-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    z-index: 0;
+  }
   .topic-name {
+    display: block;
     min-width: 0;
     overflow-wrap: break-word;   /* only bites when a word genuinely cannot fit */
     font-size: 14px;
     font-weight: 500;
     color: var(--text-primary);
     line-height: 1.28;
-    flex: 1;
   }
+
+  /* ── favourites heart ────────────────────────────────────────────────────────────────
+     Positioned EXACTLY like the download tick (.topic-card .dl-badge below): absolute,
+     vertically centred on the card, out of flow. That is deliberate and load-bearing:
+       * it cannot change card height whether present or absent — the 2026-08-22 fault
+         where a downloaded card measured 110.23px against 99.43px was caused by a 30px
+         mark sitting IN FLOW in .topic-meta-row, and the fix was to take it out;
+       * it cannot be pushed sideways when the tick paints in later, because neither mark
+         is in flow and the heart's position does not reference the tick at all. The hearts
+         therefore land in one vertical line on first paint and never move.
+     Sits 26px left of the tick's 1rem inset, so the two marks read as one column. */
+  .topic-fav {
+    position: absolute;
+    top: 50%;
+    right: calc(1rem + 26px);
+    transform: translateY(-50%);
+    z-index: 1;                      /* above .topic-card-link::after, so taps reach it */
+    width: 18px; height: 18px;       /* the tick's box on a card — see .topic-card .dl-badge */
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0; border: 0; background: none; cursor: pointer;
+    color: var(--accent);
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Invisible enlarged hit area, the same trick .dl-badge::before uses. That one is disabled
+     on cards (nothing there is tappable); this one must NOT be. 44px is the platform minimum
+     touch target and is >2x the 18px glyph. */
+  .topic-fav::before {
+    content: '';
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 44px; height: 44px; border-radius: 50%;
+  }
+  .topic-fav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; }
+  .topic-fav[aria-pressed="true"] svg { fill: currentColor; }
+  .topic-fav:active { transform: translateY(-50%) scale(0.9); }
+  /* Premium cards use the GRAPHIC gold, matching .dl-badge[data-tier="premium"] .dl-tick —
+     the heart is the same kind of mark as the tick, so it must not read as a different
+     system. (Graphic gold #F0CC5C, not the text gold — see the premium palette.) */
+  .topic-card[data-tier="premium"] .topic-fav { color: #F0CC5C; }
   .topic-meta-row {
     display: flex;
     align-items: center;
@@ -686,7 +748,11 @@
   .topic-card .dl-select { position: absolute; top: 50%; right: 1rem; transform: translateY(-50%);
     margin: 0; cursor: inherit; pointer-events: none; }
   .topic-card .topic-name,
-  .topic-card .topic-meta-row { padding-right: 22px; }
+  /* Clears BOTH right-hand marks so the sentence count can never run under them: the tick
+     occupies 16-34px from the right edge, the heart 42-60px. Was 22px when the tick was the
+     only one. The gutter is reserved unconditionally — that is what keeps the hearts in a
+     straight line whether or not this visitor has downloaded anything. */
+  .topic-card .topic-meta-row { padding-right: 64px; }
   /* Working (downloading) row: an animated ellipsis in place of the circle/tick. */
   .dl-working-dots { display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px; margin-left: 4px; vertical-align: middle; }
@@ -982,6 +1048,24 @@
 .bc-int { --bc: #4A5578; --bc-soft: #EEF0F6; }
 .bc-li2 { --bc: #7F77DD; --bc-soft: #F0EFFD; }
 .bc-adv { --bc: #A23A3A; --bc-soft: #FBECEC; }
+/* Favourites is a ROUTE, not a difficulty band, so it deliberately does not borrow any band's
+   colour — it takes the site accent. Same tile shape and same grid row, so it cannot drift in
+   height (.tp-bands is grid-auto-rows: 1fr). */
+.bc-fav { --bc: #6C5CE7; --bc-soft: #EFEDFE; }
+/* The heart in the tile is the SAME glyph the cards carry, at the same stroke weight. That is
+   the whole mechanism by which the tile explains itself: nothing on it says "press the heart on
+   a topic", the shape does. Filled, because the tile is the destination rather than a toggle. */
+.tp-fav-glyph { width: 14px; height: 14px; margin-left: 7px; vertical-align: -2px;
+  fill: var(--bc); stroke: var(--bc); stroke-width: 1.9; }
+
+/* ── the Favourites view ────────────────────────────────────────────────────────────────── */
+/* One heading per band that actually HAS a favourite — an empty band heading above nothing
+   reads as a loading failure. topics-fav.js emits these; see renderFavPage(). */
+.tp-fav-band { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-secondary); margin: 1.6rem 0 0.7rem; }
+.tp-fav-band:first-child { margin-top: 0; }
+.tp-fav-empty { font-size: 14px; line-height: 1.6; color: var(--text-secondary);
+  text-align: center; max-width: 34ch; margin: 2.5rem auto; }
 
 /* ── a band page's own header ────────────────────────────────────────────── */
 .tp-head { display: flex; align-items: baseline; gap: 1rem; justify-content: space-between;
@@ -1056,3 +1140,26 @@
   vertical-align: bottom; animation: fluency-dots 1.5s steps(3, start) infinite;
 }
 @keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
+
+/* ── iOS: stop the search field force-zooming the page on focus (2026-08-27) ────────────
+   Mobile Safari zooms the viewport whenever a focused form control's COMPUTED font-size is
+   under 16px, and there is no way to opt out of that per-field. The search input was
+   calc(13.5px * var(--te-ui,1)) at desktop widths and calc(12.5px * …) below 700px, so it
+   zoomed on every tap and the visitor was left panned in with no way back except pinching.
+
+   ⛔ The fix is NOT `maximum-scale=1` / `user-scalable=no` on the viewport. That stops the
+   zoom by disabling pinch-zoom for the whole site, which is an accessibility regression far
+   worse than the bug — and it would apply on every page, not just this field.
+
+   ⚠ 16px is a HARD FLOOR and is deliberately NOT wrapped in var(--te-ui). --te-ui is a
+   COUNTER-multiplier capped at 1 (TEXT_SCALING.md §2: `--te-ui = min(1, CAP / raw)`), so
+   calc(16px * var(--te-ui,1)) can only ever resolve to 16px or LESS — which would put us
+   straight back under the threshold on any device reporting text inflation. Multiplying here
+   would silently undo the fix on exactly the phones most likely to need it.
+
+   Scoped to (pointer: coarse) so desktop keeps the smaller field: the zoom behaviour only
+   exists on touch, and this is a real visual change (the input is noticeably larger on a
+   phone) that the owner accepted specifically to kill the zoom. */
+@media (pointer: coarse) {
+  .topic-search { font-size: 16px; }
+}

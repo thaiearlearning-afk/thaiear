@@ -287,25 +287,16 @@
   var head = document.getElementById('tp-res-head');
   var timer = null;
 
-  function cardHtml(u) {
-    var access = T.accessFor(u);
-    var premium = access === 'premium';
-    var open = premium && T.canAccess('premium');
-    var pill = !premium ? '<span class="topic-nonmember">Free</span>'
-             : open ? '<span class="topic-premium unlocked">Premium</span>'
-                    : '<span class="topic-premium">' + LOCK_SVG + 'Premium</span>';
-    var n = (typeof u.sentences === 'number' && u.sentences > 0) ? u.sentences + ' sentences' : '';
-    /* data-page mirrors gen_topics_pages.js's card(): it is what applyListenTime() keys the
-       topic-sentences.json lookup off, so a search hit gets the same caption as a band card. */
-    return '<a class="topic-card' + (premium ? ' premium' : '') + '" href="' + T.hrefFor(u.page) +
-           '" data-audio="' + (u.audio || '') + '" data-page="' + u.page +
-           '" data-tier="' + access + '">' +
-      '<div class="topic-card-top">' + pill + '</div>' +
-      '<div class="topic-name">' + u.name + '</div>' +
-      '<div class="topic-meta-row"><span class="topic-sent-count">' + n + '</span></div>' +
-      /* the same empty caption slot the band cards ship — see gen_topics_pages.js card() */
-      '<div class="topic-plays"></div></a>';
-  }
+  /* ⚠ DELEGATED to ThaiEarTopics.cardHtml() (2026-08-27). This was the second of three copies
+     of the topic-card markup, and the reason unifying them mattered: a search result is a
+     topic card on a DIFFERENT surface, so any control added to the band cards alone silently
+     disappeared the moment the visitor typed. The favourites heart would have done exactly
+     that. One definition now, in topics.js, shared with the generator.
+
+     `eq: false` preserves this surface's existing output — search results have never carried
+     the .te-eq now-playing bars. No `static`, because unlike a generated band page this runs
+     in the visitor's own browser, so the "unlocked" premium pill is correct here. */
+  function cardHtml(u) { return T.cardHtml(u, { eq: false }); }
 
   function run() {
     var v = q.value.trim();

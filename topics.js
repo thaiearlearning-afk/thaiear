@@ -717,8 +717,86 @@
   }
 
   // Shared surface for index.html (grid render) and anything else that needs the data.
+  /* ── THE topic-card renderer — ONE definition, every surface ───────────────────────────
+     Until 2026-08-27 this markup existed three times: gen_topics_pages.js card() (the static
+     band cards), the search-results renderer in topics-page.js, and a one-off script that had
+     generated grammar.html. Three copies is not a tidiness complaint — a control added to two
+     of them is a control that VANISHES the moment you search, which is precisely what the
+     favourites heart would have done. gen_topics_pages.js already loads this file through
+     `vm`, so the generator and the browser now call the same function and cannot drift.
+
+     u    any unit: {id, name, levels, sentences, page, audio, access, keywords}. Deliberately
+          array-agnostic — it reads the unit and never asks which array it came from, so a
+          `structures` (grammar) unit renders through the identical path.
+     opts { fav: false }    omit the heart entirely (default: include it)
+          { plays: false }  omit the empty listening-time slot
+          { eq: false }     omit the .te-eq now-playing bars (search results never had them)
+          { static: true }  never emit the "unlocked" pill — a generated page is shared by
+                            every visitor, so it must not bake one visitor's entitlement in.
+
+     ⚠ STRUCTURE: the card is a <div>, NOT an <a>. The heart is a real <button> and a button
+     inside an anchor is invalid HTML with unusable keyboard behaviour, so the link is an inner
+     <a class="topic-card-link"> whose ::after stretches over the whole card. The download tick
+     got away with living inside the old anchor only because on a card it is REPORTED STATE,
+     never actioned (topics-page.js applyDownloadState) — the heart is the first genuinely
+     interactive control here, which is what forced the change.
+     ⚠ data-page / data-audio / data-tier move to the WRAPPER. applyDownloadState(),
+     applyListenTime() and dl-core all key off them; keep them on the outermost element. */
+  const HEART_SVG =
+    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+    '<path d="M12 20.7C10.4 19.3 3.8 14.9 3.8 10.1a4.4 4.4 0 0 1 8.2-2.3 4.4 4.4 0 0 1 8.2 2.3' +
+    'c0 4.8-6.6 9.2-8.2 10.6z"/></svg>';
+  const CARD_LOCK_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  function cardEsc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function cardHtml(u, opts) {
+    opts = opts || {};
+    const access = accessFor(u);
+    const premium = access === 'premium';
+    /* A subscriber sees "Premium" without the padlock. Never in static output: the band pages
+       are one shared document, so baking an entitlement into them would show every visitor the
+       first one's state. topics-page.js re-decorates at runtime instead. */
+    const open = !opts.static && premium && canAccess('premium');
+    const pill = !premium ? '<span class="topic-nonmember">Free</span>'
+               : open    ? '<span class="topic-premium unlocked">Premium</span>'
+                         : '<span class="topic-premium">' + CARD_LOCK_SVG + 'Premium</span>';
+    const count = (typeof u.sentences === 'number' && u.sentences > 0)
+      ? u.sentences + ' sentences' : '';
+    return '<div class="topic-card' + (premium ? ' premium' : '') + '"' +
+             ' data-audio="' + cardEsc(u.audio || '') + '"' +
+             ' data-page="' + cardEsc(u.page) + '"' +
+             ' data-tier="' + access + '">' +
+      (opts.eq === false ? ''
+        : '<span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>') +
+      '<div class="topic-card-top">' + pill + '</div>' +
+      /* The stretched link. Its text is the topic name, so the anchor still carries real link
+         text for a crawler — the SSR property the old <a>-wrapped card had. */
+      '<a class="topic-card-link" href="' + cardEsc(hrefFor(u.page)) + '">' +
+        '<span class="topic-name">' + cardEsc(u.name) + '</span></a>' +
+      '<div class="topic-meta-row"><span class="topic-sent-count">' + count + '</span></div>' +
+      /* Ships EMPTY on every card and is filled at runtime — see gen_topics_pages.js's note.
+         Creating it on demand made a row with one captioned card ~16px taller than its
+         neighbours (99px vs 83px, measured). */
+      (opts.plays === false ? '' : '<div class="topic-plays"></div>') +
+      /* The heart sits OUTSIDE the link, absolutely positioned like the download tick, so it
+         can never be pushed around by the tick painting in later and never changes card
+         height. Signed-out visitors get no heart at all (favourites are account-backed), which
+         topics-fav.js decides at runtime — the markup is always emitted so the static page
+         stays one shared document. */
+      (opts.fav === false ? ''
+        : '<button class="topic-fav" type="button" aria-pressed="false" hidden' +
+          ' aria-label="Add ' + cardEsc(u.name) + ' to favourites">' + HEART_SVG + '</button>') +
+    '</div>';
+  }
+
   window.ThaiEarTopics = {
     topics, liveTopics, total: topics.length,
+    cardHtml,   // ⚠ the ONE topic-card renderer — generator and browser both call this
     isLive, liveTopicCount,
     LEVEL_ORDER, LEVEL_CLASS, LEVEL_FULL, LEVEL_SHORT,
     levelBounds, levelText, levelBadge, matchesFilter, findByPage,
