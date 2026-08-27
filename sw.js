@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v478';   // v469: the first individual-sentence tap -- the idle prewarm now
+const VERSION = 'v480';   // v480: a download's first tap survives the auth storm -- renderOfflineBar
+                          // re-derives from what is ON DISK and runs on every thaiear:auth (~25 per
+                          // page), so it painted "Download for offline" over the progress line of a
+                          // download that had just started, on topic pages AND playlists alike.
+                          // player.js is precached, hence the bump.
+                          // v479: Read Thai results page -- "Clear my reading progress" is red
+                          // again (its rules sat above .rd-ghost-pill and lost the cascade), and
+                          // its confirm is now the site's own modal, not window.confirm.
+                          // read.css + read.js are precached, hence the bump.   // v469: the first individual-sentence tap -- the idle prewarm now
                           // re-arms on thaiear:auth instead of polling every 6s for a token, and a
                           // HEAD pass warms the first 4 clips with no idle wait. Measured before:
                           // first clip not in memory until ~5.0s (topic-08) / ~9.4s (topic-06).   // v468: progress page topic rows show real listening time -- the

@@ -1736,12 +1736,20 @@
     /* Transient (2026-08-09): this used to replace the bar PERMANENTLY, so on an already-downloaded
        unit one tap on Download hid Update and Delete behind a dead "You're offline" line with no
        way back short of a reload. Flash it, then restore the real state. */
-    if (!navigator.onLine) { offlineBarFlash('offline'); return; }   // don't grind through retries
+    if (!navigator.onLine) { latMark('dl:SKIP', 'navigator.onLine false'); offlineBarFlash('offline'); return; }   // don't grind through retries
     var by = dynDlGroups(), prefixes = Object.keys(by), total = 0, done = 0;
     prefixes.forEach(function (k) { total += by[k].files.length; });
-    if (!total) return;
-    function step() { done++; setOfflineState('downloading', done, total); }
+    if (!total) { latMark('dl:SKIP', 'nothing to fetch'); return; }
+    /* The tap reached here, so anything the owner reports as "it did nothing" is downstream of
+       this line. ?lat=1 is the only way to see that on the phone — the PWA has no console. */
+    function step() {
+      done++;
+      if (done === 1) latMark('dl:first', 'first clip landed');
+      setOfflineState('downloading', done, total);
+    }
     downloadingNow = true;
+    offBarHeld = 0;
+    latMark('dl:start', total + ' clips, ' + prefixes.length + ' prefix(es)');
     setOfflineState('downloading', 0, total);
     if (DYN_WEB_DL) { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {} }
     /* ⚠⚠ r137 — "DOWNLOAD AUDIO UPDATE?" DID NOT DOWNLOAD THE AUDIO UPDATE.
@@ -1877,10 +1885,12 @@
       stampVerified();
       cachePage();
       downloadingNow = false;
+      latMark('dl:done', total + ' clips, ' + offBarHeld + ' repaints suppressed');
       setOfflineState('downloaded');
       dynPaintOfflineSize();
     }).catch(function (err) {
       downloadingNow = false;
+      latMark('dl:FAIL', done + '/' + total + ' done, ' + offBarHeld + ' repaints suppressed');
       console.warn('player.js: dyn download failed', err);
       // navigator.onLine lies in the WebView (often "online" in airplane mode), so treat a
       // network-shaped failure as offline too — "Download failed: load failed" is not an
@@ -2124,13 +2134,28 @@
      any newer state (a download starting, a delete finishing) cancels a pending revert instead of
      being stomped by it a few seconds later. */
   var offBarSeq = 0;
+  /* While this is in the future the bar is showing a MESSAGE and renderOfflineBar() stands off.
+     The sequence guard alone was not enough: it only stops the pending REVERT from firing late,
+     it does not stop an unrelated caller — thaiear:auth, ~25 per page — from re-deriving over the
+     message a few milliseconds after it goes up. Cleared by setOfflineState() so a real state
+     change is never held back, and by the revert timer itself. */
+  var offBarHoldUntil = 0;
+  /* How many times a repaint was suppressed during the CURRENT download. Reported with the
+     download's own outcome mark rather than logged per hit: on the owner's phone this is the
+     number that says whether the clobber is still happening, and ~25 identical trace lines
+     would bury the very sequence they were added to show (the r209 lesson, verbatim). */
+  var offBarHeld = 0;
   function offlineBarFlash(state, arg, ms) {
     setOfflineState(state, arg);
+    offBarHoldUntil = Date.now() + (ms || 4000);   // ← AFTER the paint: setOfflineState clears it
     var seq = offBarSeq;
-    setTimeout(function () { if (seq === offBarSeq) renderOfflineBar(); }, ms || 4000);
+    setTimeout(function () {
+      if (seq === offBarSeq) { offBarHoldUntil = 0; renderOfflineBar(); }
+    }, ms || 4000);
   }
   function setOfflineState(state, done, total) {
     offBarSeq++;                 // invalidates any pending flash revert — see offlineBarFlash
+    offBarHoldUntil = 0;         // …and releases the message hold: a real state change always wins
     var bar = $('offline-bar'); if (!bar) return;
     /* ⚠ IDEMPOTENCE GUARD — this branch owns the DOWNLOAD BUTTON, and renderOfflineBar() runs on
        every thaiear:auth (auth.js legitimately notifies ~5 times during startup). Rebuilding it
@@ -2249,6 +2274,29 @@
   }
   function renderOfflineBar() {
     var bar = $('offline-bar'); if (!bar) return;
+    /* ⚠⚠ THE BAR IS NOT OURS TO REPAINT WHILE A DOWNLOAD IS RUNNING (2026-08-27, owner-reported
+       on the iPhone PWA: *"the first click fails, the box flashes as if its going to start
+       downloading - but then it returns and you see the static 'download for offline'"* — and the
+       same on a playlist, which is the tell: one function, both surfaces).
+       This function re-derives the state from WHAT IS ON DISK, and a download that has just
+       started is not on disk yet — so it resolves to 'idle' and paints "Download for offline"
+       straight over the live progress line. It runs on every thaiear:auth, which fires ~25 times
+       per page on a real device (measured r209: the initial session resolve, refreshSubscription,
+       refreshProfile, refreshDesktopDl, consent, playlists, plays, and every onAuthStateChange),
+       and they cluster in the first seconds after a page opens — exactly when the first tap lands.
+       By the second tap the storm has settled, nothing repaints, and the download is visible.
+       ⚠ setOfflineState()'s own idempotence guard could not catch this: it stops a REPEAT paint,
+       not a WRONG one, and 'idle' over 'downloading' is a real state change by its signature.
+       downloadingNow is cleared on BOTH exits of every download path (dynDownloadHere,
+       downloadTopic native, webDownloadTopic), and each one repaints the true state on the way
+       out, so this can never leave the bar frozen. */
+    if (downloadingNow) { offBarHeld++; return; }
+    /* ⚠ AND A TRANSIENT MESSAGE MUST OUTLIVE THE SAME EVENT. offlineBarFlash() puts up
+       "You’re offline — reconnect" or "Download failed: …" for 4–6s and then re-derives; the
+       auth storm above erased it in milliseconds, so a download failing for a REAL reason
+       presented as "nothing happened" and the diagnosis went with it. A genuine state change
+       still wins — setOfflineState() clears the hold before it paints. */
+    if (Date.now() < offBarHoldUntil) return;
     /* §1f: plain browser tab (not app, not installed PWA). No download is possible here, so the
        bar used to be display:none and normal flow closed over it. It now carries the app card
        instead (app-cta.js) — the visitors who cannot download are precisely the ones who have not
@@ -3778,7 +3826,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r209';   // r209: the bulk prewarm starts when the HEAD pass finishes instead of on a fixed 2500ms timer -- measured on a free topic, head done at 242ms and bulk not until 2541ms, so a tap at 1828ms on the 11th sentence found 26 of 30 clips still cold. Head raised 4 -> 8 (a phone shows more than four), and thaiear:auth no longer queues a bulk timer per event (~25 of them per page). r208: a tap no longer aborts the download of the clip it is asking for. prewarmYield() spared nothing, so with a 4-clip head pass and a tap near the top of the list the cancelled download was very often the tapped one -- measured on the owner's phone: yield aborted 4, TAP s395, PLAYING 1170ms later. It now spares that file and ADOPTS the fetch already in flight instead of asking for the same bytes again, bounded by SENT_ADOPT_MS so a stalled one cannot hold the button (armSentStall only arms AFTER the src resolves). r207: a SHARE button on the probe panel, where navigator.share exists. The clipboard is not a reliable way off a phone -- execCommand needs user activation and the async clipboard API can be refused outright in a WebView -- and when both fail the owner is hand-selecting 1,600 characters on a handset. r206: the probe's copy button actually copies on a phone -- .select() on a READ-ONLY textarea is refused on iOS and leaves an empty selection in an Android WebView, so the field is made writable for the duration and selected with setSelectionRange, then execCommand('copy') runs synchronously inside the gesture (the async clipboard API can be a silent no-op in a WebView). The button now reports 'copied' vs 'select all + copy'. r205: the probe panel repaints on setTimeout, not requestAnimationFrame -- rAF does not fire in a backgrounded tab or app, and latQueued had already latched true, so the panel never appeared and never recovered. r204: the latency probe is usable ON A PHONE -- copy renders a selectable textarea as well as trying the clipboard (a WebView clipboard write can be refused or a silent no-op, and there is no console in the app), and the panel is 92vw on a handset instead of a 46vw ribbon. r203: a RESTORED signed-URL cache no longer waits for auth. The prewarm asked for a token whenever the topic was gated, not whenever it still had something to mint -- so a second visit, with every url already in the persisted cache, stopped at 789ms and did not start until 1245ms for an /api/audio call it was never going to make. r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r210';   // r210: the FIRST download tap now shows its own progress. renderOfflineBar() re-derives the bar from what is on disk and is wired to thaiear:auth, which fires ~25x per page on a real device -- so a download that had just started was not on disk yet, resolved to 'idle', and had "Download for offline" painted straight over its progress line; the owner tapped again, the storm had settled by then, and only the second tap appeared to work. Reported on the iPhone PWA on a topic page and on a playlist, which is the tell: one function, both surfaces (the playlists LIST is unaffected -- its render() compares markup and dlWorking makes a busy row differ). setOfflineState()'s idempotence guard could not catch it: it stops a repeat paint, not a wrong one. The same event also erased offlineBarFlash's transient 'offline'/'error' message within milliseconds, which is why a download failing for a REAL reason presented as "nothing happened" -- offBarHoldUntil now holds the bar for the message's own 4-6s, released by any genuine state change. ?lat=1 gains dl:start / dl:first / dl:done / dl:FAIL, with a count of the repaints suppressed, because the PWA has no console. // r209: the bulk prewarm starts when the HEAD pass finishes instead of on a fixed 2500ms timer -- measured on a free topic, head done at 242ms and bulk not until 2541ms, so a tap at 1828ms on the 11th sentence found 26 of 30 clips still cold. Head raised 4 -> 8 (a phone shows more than four), and thaiear:auth no longer queues a bulk timer per event (~25 of them per page). r208: a tap no longer aborts the download of the clip it is asking for. prewarmYield() spared nothing, so with a 4-clip head pass and a tap near the top of the list the cancelled download was very often the tapped one -- measured on the owner's phone: yield aborted 4, TAP s395, PLAYING 1170ms later. It now spares that file and ADOPTS the fetch already in flight instead of asking for the same bytes again, bounded by SENT_ADOPT_MS so a stalled one cannot hold the button (armSentStall only arms AFTER the src resolves). r207: a SHARE button on the probe panel, where navigator.share exists. The clipboard is not a reliable way off a phone -- execCommand needs user activation and the async clipboard API can be refused outright in a WebView -- and when both fail the owner is hand-selecting 1,600 characters on a handset. r206: the probe's copy button actually copies on a phone -- .select() on a READ-ONLY textarea is refused on iOS and leaves an empty selection in an Android WebView, so the field is made writable for the duration and selected with setSelectionRange, then execCommand('copy') runs synchronously inside the gesture (the async clipboard API can be a silent no-op in a WebView). The button now reports 'copied' vs 'select all + copy'. r205: the probe panel repaints on setTimeout, not requestAnimationFrame -- rAF does not fire in a backgrounded tab or app, and latQueued had already latched true, so the panel never appeared and never recovered. r204: the latency probe is usable ON A PHONE -- copy renders a selectable textarea as well as trying the clipboard (a WebView clipboard write can be refused or a silent no-op, and there is no console in the app), and the panel is 92vw on a handset instead of a 46vw ribbon. r203: a RESTORED signed-URL cache no longer waits for auth. The prewarm asked for a token whenever the topic was gated, not whenever it still had something to mint -- so a second visit, with every url already in the persisted cache, stopped at 789ms and did not start until 1245ms for an /api/audio call it was never going to make. r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
