@@ -33,7 +33,18 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v499';   // v499: two offline dyn-chain faults. The foreground walk skipped
+const VERSION = 'v500';   // v500: the iPhone search-field zoom, ACTUALLY fixed. v496 claimed
+                          // this and did not deliver: it set 16px on .topic-search, a class the
+                          // search input does not carry. The element is <input id="tp-q"> with no
+                          // class at all, styled by #tp-q at 14px -- and an ID beats a class
+                          // anyway. .topic-search survives only on app-offline-mock.html, so the
+                          // rule read correctly and matched nothing. Caught only because the owner
+                          // reported the zoom a second time.
+                          // ⚠ A RULE THAT EXISTS IS NOT A RULE THAT APPLIES -- the same miss as
+                          // .topic-fav[hidden] earlier today, twice in one day. Check the selector
+                          // matches the real node (getComputedStyle on it), not just that the rule
+                          // is in the file. topics-page.css is precached.
+                          // v499:   // v499: two offline dyn-chain faults. The foreground walk skipped
                           // nothing, so offline it hopped onto a unit with no clips and no
                           // session and stalled; and a FAILED forward navigation (the offline
                           // notice for an uncached page) dropped the adoption on the way back,

@@ -1183,5 +1183,16 @@
    exists on touch, and this is a real visual change (the input is noticeably larger on a
    phone) that the owner accepted specifically to kill the zoom. */
 @media (pointer: coarse) {
+  /* ⚠⚠ #tp-q IS THE REAL SEARCH INPUT, and the first attempt at this fix missed it entirely.
+     The element is `<input id="tp-q" type="search">` with NO CLASS — so every `.topic-search`
+     rule in this file, including the one that was supposed to fix the zoom, never matched it.
+     `.topic-search` survives only on app-offline-mock.html. The live styling is `#tp-q` at ~1024
+     (font-size: 14px), and being an ID it would have beaten a class rule even had the class been
+     present. The owner reported the zoom still happening, which is the only reason it was caught.
+     ⚠ THE LESSON IS THE SAME ONE AS .topic-fav[hidden]: a rule that exists is not a rule that
+     APPLIES. Confirm the selector matches the element — getComputedStyle on the real node —
+     before believing a CSS fix. Two of these in one day.
+     Both selectors are listed so the mock behaves the same and neither can drift. */
+  #tp-q,
   .topic-search { font-size: 16px; }
 }
