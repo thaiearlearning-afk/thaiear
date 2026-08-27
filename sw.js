@@ -33,7 +33,22 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v495';   // v495: the Favourites view keeps its decoration. It rebuilt itself on
+const VERSION = 'v496';   // v496: two faults in the favourites heart, both reported by the owner.
+                          // (1) IT WAS VISIBLE SIGNED OUT. The markup shipped it hidden, but
+                          // .topic-fav sets display:inline-flex and the UA rule [hidden]{display:none}
+                          // has the SAME specificity -- an author sheet wins ties, so the attribute
+                          // was inert on desktop and mobile web. Favourites are account-backed, so
+                          // that was a control nobody signed out could use. .topic-fav[hidden] now
+                          // states it explicitly.
+                          // (2) IT RESERVED A GUTTER FOR A TICK THAT CANNOT EXIST. Download UI is
+                          // app + installed-PWA only, so a plain browser tab was holding 43px at
+                          // the card edge for a mark that never appears. The heart now takes the
+                          // tick's own slot there, and only shifts left on devices that can
+                          // download -- decided ONCE PER PAGE by a te-dl stamp in the head before
+                          // first paint, never per card, because a per-card rule would move every
+                          // heart the moment the download manifest resolved.
+                          // topics-page.css and all seven generated pages changed; precached.
+                          // v495:   // v495: the Favourites view keeps its decoration. It rebuilt itself on
                           // EVERY thaiear:auth (~25 per page) and topics-page.js decorates first,
                           // so the listening caption was thrown away microseconds after it landed
                           // and the download tick — which arrives later, with the manifest — never

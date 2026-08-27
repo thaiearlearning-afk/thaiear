@@ -542,7 +542,11 @@
   .topic-fav {
     position: absolute;
     top: 50%;
-    right: calc(1rem + 26px);
+    /* DEFAULT = the download tick's own slot. Download UI is app + installed-PWA only, so on a
+       plain browser tab no tick can ever appear and reserving room for one leaves a dead 43px
+       gutter at the card's right edge (measured live, 2026-08-27). Here the heart simply takes
+       that position. html.te-dl below shifts it left where a tick IS possible. */
+    right: 1rem;
     transform: translateY(-50%);
     z-index: 1;                      /* above .topic-card-link::after, so taps reach it */
     width: 18px; height: 18px;       /* the tick's box on a card — see .topic-card .dl-badge */
@@ -559,6 +563,17 @@
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: 44px; height: 44px; border-radius: 50%;
   }
+  /* ⚠⚠ THE hidden ATTRIBUTE NEEDS THIS RULE TO WORK AT ALL. The browser hides [hidden] via a UA
+     rule of the same specificity as any class selector, and an AUTHOR sheet wins ties — so the
+     "display: inline-flex" above silently defeated it, and every signed-out visitor saw hearts on
+     desktop and mobile web (owner, 2026-08-27). Favourites are account-backed, so a signed-out
+     heart is a control that cannot do anything.
+     ⚠ Any future "display" declaration on .topic-fav must keep this rule below it.
+     ⚠⚠ AND NOTE THE TRAP IN VERIFYING IT: reading el.hasAttribute("hidden") reports the
+     ATTRIBUTE, not whether the element renders. That is precisely how this shipped — the check
+     said "0 visible" while 18 hearts were on screen. Assert getComputedStyle().display, or a
+     bounding box, never the attribute. */
+  .topic-fav[hidden] { display: none; }
   .topic-fav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; }
   .topic-fav[aria-pressed="true"] svg { fill: currentColor; }
   .topic-fav:active { transform: translateY(-50%) scale(0.9); }
@@ -566,6 +581,12 @@
      the heart is the same kind of mark as the tick, so it must not read as a different
      system. (Graphic gold #F0CC5C, not the text gold — see the premium palette.) */
   .topic-card[data-tier="premium"] .topic-fav { color: #F0CC5C; }
+  /* Devices that CAN download: the tick owns , so the heart sits 26px left of it and
+     the two read as one column. Stamped on <html> in the page head before first paint (see
+     gen_topics_pages.js), so this is settled per DEVICE, never per card — a per-card rule would
+     shift every heart the moment the download manifest resolved, which is the movement the
+     reserve exists to prevent. */
+  html.te-dl .topic-fav { right: calc(1rem + 26px); }
   .topic-meta-row {
     display: flex;
     align-items: center;
@@ -752,7 +773,8 @@
      occupies 16-34px from the right edge, the heart 42-60px. Was 22px when the tick was the
      only one. The gutter is reserved unconditionally — that is what keeps the hearts in a
      straight line whether or not this visitor has downloaded anything. */
-  .topic-card .topic-meta-row { padding-right: 64px; }
+  .topic-card .topic-meta-row { padding-right: 22px; }
+  html.te-dl .topic-card .topic-meta-row { padding-right: 64px; }
   /* Working (downloading) row: an animated ellipsis in place of the circle/tick. */
   .dl-working-dots { display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px; margin-left: 4px; vertical-align: middle; }
