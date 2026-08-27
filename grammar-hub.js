@@ -109,7 +109,8 @@
     a.href = href();
     a.innerHTML =
       '<span class="tp-band-name">Grammar by Ear</span>' +
-      '<span class="tp-band-count">' + n + ' units</span>' +
+      // "topics", matching every other tile in this row (owner, 2026-08-27).
+      '<span class="tp-band-count">' + n + ' topics</span>' +
       '<span class="tp-band-go" aria-hidden="true">&rsaquo;</span>';
     bands.insertBefore(a, bands.firstChild);
   }
