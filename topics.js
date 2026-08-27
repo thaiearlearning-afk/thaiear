@@ -290,6 +290,59 @@
       keywords: ['humour','humor','ตลก','joke','มุก','funny','ขำ','laugh','หัวเราะ','comedy','pun','เล่นคำ','wit','banter'] },
   ];
 
+  /* ── GRAMMAR BY EAR (the structures arm) ────────────────────────────────────
+     ⛔ A SEPARATE ARRAY ON PURPOSE. `topics[]` is read directly by gen_home_splash,
+     gen_sitemap, gen_llms, gen_topic_order, gen_topics_pages, topics-page.js and
+     mock-bands.js. Putting these units in it would mean SEVEN places that each have to
+     remember to filter them out, and the failure mode of a missed filter is the hidden
+     section appearing publicly. Nothing that reads `.topics` can see this array — the
+     isolation is structural, not a filter someone has to remember.
+     ⚠ At go-live, gen_sitemap.js and gen_llms.js must be EXTENDED to read this too;
+     re-running them is not the fix. STRUCTURES_SECTION_PLAN.md §12.1.
+     Units 1-2 are free (signed-in), 3-20 premium. Real enforcement is the R2 bucket. */
+  const structures = [
+    { id: 1, name: "Dâi (ได้)", levels: ['li1'], sentences: 17, page: "grammar-01.html", audio: "GramDai_LI1",
+      keywords: ["dai","ได้","can","able","ability","permission","got to","past"] },
+    { id: 2, name: "Maa (มา)", levels: ['li1'], sentences: 13, page: "grammar-02.html", audio: "GramMaa_LI1",
+      keywords: ["maa","มา","come","direction","toward","โทรมา","from"] },
+    { id: 3, name: "Yùu & thîi (อยู่ / ที่)", levels: ['li1'], sentences: 13, page: "grammar-03.html", audio: "GramYuu_LI1", access: "premium",
+      keywords: ["yuu","thii","อยู่","ที่","at","located","still","right now","progressive"] },
+    { id: 4, name: "Ao (เอา)", levels: ['li1'], sentences: 10, page: "grammar-04.html", audio: "GramAo_LI1", access: "premium",
+      keywords: ["ao","เอา","take","bring","want","order","ไว้"] },
+    { id: 5, name: "Gâw (ก็)", levels: ['li1'], sentences: 13, page: "grammar-05.html", audio: "GramGaw_LI1", access: "premium",
+      keywords: ["gaw","ก็","if then","also","too","even so","well","ถ้า"] },
+    { id: 6, name: "Hâi (ให้)", levels: ['li1'], sentences: 14, page: "grammar-06.html", audio: "GramHai_LI1", access: "premium",
+      keywords: ["hai","ให้","give","for","so that","let","make","tell"] },
+    { id: 7, name: "Wái (ไว้)", levels: ['li1'], sentences: 8, page: "grammar-07.html", audio: "GramWai_LI1", access: "premium",
+      keywords: ["wai","ไว้","keep","leave","in advance","for later"] },
+    { id: 8, name: "Serial verbs", levels: ['li1'], sentences: 15, page: "grammar-08.html", audio: "GramSerial_LI1", access: "premium",
+      keywords: ["serial verbs","verb stacking","ลองคิดดู","เผลอ","ว่า","accidentally"] },
+    { id: 9, name: "Already, just & first", levels: ['li1'], sentences: 11, page: "grammar-09.html", audio: "GramTime_LI1", access: "premium",
+      keywords: ["laaeo","phoeng","sia gawn","แล้ว","เพิ่ง","เสียก่อน","already","just","first"] },
+    { id: 10, name: "Even though & no matter", levels: ['li1'], sentences: 13, page: "grammar-10.html", audio: "GramEvenThough_LI1", access: "premium",
+      keywords: ["maae waa","tang thii","mai waa ja","แม้ว่า","ทั้งที่","ไม่ว่าจะ","แม้แต่","even though","no matter","despite"] },
+    { id: 11, name: "But & however", levels: ['li1'], sentences: 7, page: "grammar-11.html", audio: "GramBut_LI1", access: "premium",
+      keywords: ["dtaae","yang rai gaw dtaam","แต่","อย่างไรก็ตาม","แต่ทว่า","but","however","nevertheless"] },
+    { id: 12, name: "Dan / ùt-sàa (ดัน / อุตส่าห์)", levels: ['li1'], sentences: 9, page: "grammar-12.html", audio: "GramDan_LI1", access: "premium",
+      keywords: ["dan","utsaa","ดัน","อุตส่าห์","went and","annoyed","trouble"] },
+    { id: 13, name: "Gwàa (กว่า)", levels: ['li1'], sentences: 8, page: "grammar-13.html", audio: "GramGwaa_LI1", access: "premium",
+      keywords: ["gwaa","กว่า","than","comparison","by the time","ยิ่งกว่านั้น"] },
+    { id: 14, name: "Gâw dâi / mâi gâw (ก็ได้ / ไม่ก็)", levels: ['li1'], sentences: 8, page: "grammar-14.html", audio: "GramGawDai_LI1", access: "premium",
+      keywords: ["gaw dai","mai gaw","ก็ได้","ไม่ก็","either way","whatever","anyone","or"] },
+    { id: 15, name: "Rǔe bplào / châi mǎi (หรือเปล่า / ใช่ไหม)", levels: ['li1'], sentences: 6, page: "grammar-15.html", audio: "GramAsk_LI1", access: "premium",
+      keywords: ["rue plao","chai mai","หรือเปล่า","ใช่ไหม","question","right","yes no"] },
+    { id: 16, name: "Nàwy / làawk (หน่อย / หรอก)", levels: ['li1'], sentences: 6, page: "grammar-16.html", audio: "GramSoften_LI1", access: "premium",
+      keywords: ["nawy","laawk","หน่อย","หรอก","softening","polite","request","refusal"] },
+    { id: 17, name: "Moving the conversation on", levels: ['li1'], sentences: 10, page: "grammar-17.html", audio: "GramMoveOn_LI1", access: "premium",
+      keywords: ["chang thoe","laaeo gan","waa dtaae","ช่างเถอะ","แล้วกัน","ว่าแต่","never mind","anyway","by the way"] },
+    { id: 18, name: "Phráw / nûeang jàak (เพราะ / เนื่องจาก)", levels: ['li1'], sentences: 7, page: "grammar-18.html", audio: "GramPhraw_LI1", access: "premium",
+      keywords: ["phraw","nueang jaak","เพราะ","เนื่องจาก","because","reason","จึง","เลย"] },
+    { id: 19, name: "Mâak khûen / náwy long (มากขึ้น / น้อยลง)", levels: ['li1'], sentences: 5, page: "grammar-19.html", audio: "GramMaakKhuen_LI1", access: "premium",
+      keywords: ["maak khuen","nawy long","มากขึ้น","น้อยลง","more","less","ขึ้น","ลง"] },
+    { id: 20, name: "Fàak (ฝาก)", levels: ['li1'], sentences: 6, page: "grammar-20.html", audio: "GramFaak_LI1", access: "premium",
+      keywords: ["faak","ฝาก","leave in care","pass on a message","ฝากบอก","ฝากซื้อ"] },
+  ];
+
   // ---- back-compat: a derived {id: page} map for NON-split units --------------------
   // The old hand-maintained liveTopics map is gone (it had stale entries pointing at
   // files that never existed, e.g. topic-04/10/11.html). "Live" is now simply: the unit
@@ -369,13 +422,27 @@
     return (LOCAL_HOST && s) ? s + '.html' : s;
   }
 
+  /* ⚠ SECTION-AWARE (2026-08-27). Searches topics first, then the structures arm, so a
+     grammar page can resolve its own unit for the eyebrow, the tier and prev/next. The
+     returned `section` is what scopes liveSequence()/nextAccessible() — without it, next
+     on the last grammar unit would walk into the topic corpus. */
   function findByPage(file) {
     file = bare(file);
     for (let i = 0; i < topics.length; i++) {
       const u = topics[i];
-      if (u.page && bare(u.page) === file) return { pos: i + 1, topic: u, unit: u, part: null };
+      if (u.page && bare(u.page) === file) return { pos: i + 1, topic: u, unit: u, part: null, section: 'topics' };
+    }
+    for (let i = 0; i < structures.length; i++) {
+      const u = structures[i];
+      if (u.page && bare(u.page) === file) return { pos: i + 1, topic: u, unit: u, part: null, section: 'structures' };
     }
     return null;
+  }
+  // Which arm a page belongs to. Defaults to 'topics' for anything unknown.
+  function sectionOf(page) {
+    const f = bare(page);
+    for (let i = 0; i < structures.length; i++) if (bare(structures[i].page) === f) return 'structures';
+    return 'topics';
   }
 
   // ---- access tiers (free / member / premium) ----------------------------------
@@ -486,6 +553,46 @@
       .then(m => { if (m) window.ThaiEarSentenceNums = m; return m || null; })
       .catch(() => null);
     return sentenceNumsPromise;
+  }
+
+  /* ── OFFLINE-STALENESS STAMP ── audio-versions.json, read by THREE surfaces ─────────────
+     player.js (the topic page's bar + the dyn update prompt), topics-page.js (the card's update
+     dot) and pl-list.js (the playlist row) all ask the same two questions of that map. They lived
+     as three separate open-coded comparisons; these are the one implementation, in the file all
+     three already load — same treatment loadClipDurations/listenSeconds got.
+
+     ⚠⚠ THE MAP CARRIES TWO SCHEMES AT ONCE, ON PURPOSE (2026-08-27, AUDIO_VERSIONS_MIGRATION_PLAN.md).
+       "<Prefix>"    → the ORIGINAL value: md5 of the two combined _TE/_ET files.
+       "<Prefix>#c"  → "c1:<hex>", derived from the per-sentence CLIPS that are actually played.
+     The clip-derived stamp is the real answer — the combined pair is reached only by a lock-screen
+     hop — but the old key must stay and must keep its value, because a client that predates this
+     is still reading it. An ADDITIONAL key is invisible to such a client; a changed value would
+     tell it that every downloaded topic had changed at once. */
+  function avPick(map, prefix) {
+    if (!map || !prefix) return null;
+    const c = map[prefix + '#c'];
+    return c != null ? c : (map[prefix] != null ? map[prefix] : null);
+  }
+  // '' for a bare legacy hash, 'c1' for a clip-derived one. The tag is the part before the colon.
+  function avScheme(v) {
+    const s = String(v == null ? '' : v);
+    const i = s.indexOf(':');
+    return i > 0 ? s.slice(0, i) : '';
+  }
+  /* Has this prefix's audio ACTUALLY moved since the device recorded `base`?
+
+     ⚠⚠ A SCHEME CHANGE IS NOT AN AUDIO CHANGE, and this is the single line that stops the
+     migration nagging the entire user base. A device that downloaded a topic last month holds a
+     legacy baseline; the day the clip-derived key is published, `base !== cur` becomes true for
+     every downloaded topic it has — not because a byte of audio moved, but because the question
+     changed. Different schemes therefore mean "re-baseline silently", exactly as a missing
+     baseline already does.
+     Conservative on every unknown, like the code it replaces: no published value, or no recorded
+     baseline, means NOT stale. Nagging on missing information is worse than a late prompt. */
+  function avMoved(base, cur) {
+    if (base == null || cur == null) return false;
+    if (avScheme(base) !== avScheme(cur)) return false;
+    return base !== cur;
   }
 
   /* The finished caption for a topic card. Returns '' when there is nothing to show — signed
@@ -683,10 +790,14 @@
     };
   }
   // All live, playable units in DISPLAY order.
-  function liveSequence() {
+  /* ⚠ `section` defaults to 'topics' so every existing caller is unchanged. The two arms
+     are CLOSED LOOPS: next on the last grammar unit wraps to the first grammar unit and
+     never leaks into the topic corpus. Joining them is a go-live item (plan §12.2 l). */
+  function liveSequence(section) {
+    const list = section === 'structures' ? structures : topics;
     const seq = [];
-    for (let i = 0; i < topics.length; i++) {
-      const u = topics[i];
+    for (let i = 0; i < list.length; i++) {
+      const u = list[i];
       if (u.page && u.audio) seq.push(unitOf(u, i + 1));
     }
     return seq;
@@ -694,14 +805,14 @@
   // The unit for a given page (null if the page isn't a live, playable unit).
   function pageUnit(page) {
     page = bare(page);
-    const seq = liveSequence();
+    const seq = liveSequence(sectionOf(page));
     for (let i = 0; i < seq.length; i++) if (bare(seq[i].page) === page) return seq[i];
     return null;
   }
   // Walk the sequence from `page` in `dir` (+1 next / -1 prev), wrapping last<->first,
   // skipping any unit the current visitor can't access.
   function nextAccessible(page, dir) {
-    const seq = liveSequence();
+    const seq = liveSequence(sectionOf(page));
     if (!seq.length) return null;
     const p = bare(page);
     let idx = -1;
@@ -795,13 +906,15 @@
   }
 
   window.ThaiEarTopics = {
-    topics, liveTopics, total: topics.length,
+    topics, structures, liveTopics, total: topics.length,
+    sectionOf,
     cardHtml,   // ⚠ the ONE topic-card renderer — generator and browser both call this
     isLive, liveTopicCount,
     LEVEL_ORDER, LEVEL_CLASS, LEVEL_FULL, LEVEL_SHORT,
     levelBounds, levelText, levelBadge, matchesFilter, findByPage,
     canAccess, accessFor, tierForPrefix, authState, ENFORCE_SUBSCRIPTION,
     playsMin, exclFor, playsCaptionFor, loadSentenceNums,   // play-count roll-up — ONE implementation, three call sites
+    avPick, avMoved, avScheme,   // offline-staleness stamp — ONE implementation, three surfaces
     loadClipDurations, listenSeconds, humanListenTime, listenCaptionFor,   // listening time — the topic-card caption
     liveSequence, pageUnit, nextAccessible,
     searchUnits, tokenize,
@@ -817,7 +930,10 @@
     if (!el) return; // not a topic page (e.g. index) — nothing to fill
     const found = findByPage(currentPage());
     if (!found) return; // page not in the list yet — leave the element as-is
-    el.textContent = levelText(found.unit.levels);
+    // A grammar unit says where it sits in its own arm; a topic keeps the difficulty band.
+    el.textContent = found.section === 'structures'
+      ? ('STRUCTURE ' + found.pos + ' OF ' + structures.length)
+      : levelText(found.unit.levels);
   }
 
   // ---- prev/next nav: normalise each button's destination (no padlocks — gating is object-level) ----

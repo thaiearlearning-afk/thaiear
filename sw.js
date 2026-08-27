@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v490';   // v490: FAVOURITES. A heart on every topic card, and /topics-favourites
+const VERSION = 'v491';   // v491: sentence-hints.json now covers the Grammar by Ear arm.
+                          // gen_sentence_hints.js filtered /^topic-/ only, so every structure
+                          // sentence saved to a playlist would have fallen back to a derived
+                          // Thai pill -- silent, not an error. The hints file is PRECACHED,
+                          // which is why this bump exists: without it, cache-first (v292)
+                          // means clients keep serving the old copy indefinitely.
+                          // v490: FAVOURITES. A heart on every topic card, and /topics-favourites
                           // — the favourited units grouped by band, in grid order. New precache
                           // entries: /topics-favourites.html and /topics-fav.js (the latter paints
                           // hearts on EVERY band page, so an un-precached copy would leave every
