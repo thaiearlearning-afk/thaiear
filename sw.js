@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v502';   // v502: changing a dyn setting on an ADOPTED unit, offline, had no
+const VERSION = 'v503';   // v503: Grammar by Ear drops 10 more sentences -- an over-example
+                          // trim, not a content change. sentence-hints.json,
+                          // topic-sentences.json and clip-durations.json all shrank and
+                          // all three are PRECACHED, so without this bump cache-first
+                          // keeps serving lookups that still name the removed clips.
+                          // v502: changing a dyn setting on an ADOPTED unit, offline, had no
                           // fallback -- r18e's revert lives in the local session path and the
                           // adopted branch never had one, so a rebuild that cannot run left the
                           // listener with nothing while a playable session sat in the cache.
