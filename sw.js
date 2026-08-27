@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v486';   // v486: a foreground prev/next hop now BUILDS the neighbour
+const VERSION = 'v487';   // v487: a dyn unit OWNS its settings, and the session built for a
+                          // neighbour is now stored where that neighbour's own page looks for
+                          // it -- a topic page namespaces on its PREFIX, not on the bare page
+                          // id the chain synthesises, so every adopt-path lookup had been
+                          // reading and writing a namespace nobody uses. Also: a bfcache
+                          // restore no longer resumes the topic you navigated away to.
+                          // player.js is precached, hence the bump.
+                          // v486: a foreground prev/next hop now BUILDS the neighbour
                           // instead of playing its prefab combined track, so the hop honours
                           // the listener's dyn settings the way opening the page does. The
                           // prefab survives for LOCK-SCREEN hops, which cannot build.
