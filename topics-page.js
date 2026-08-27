@@ -156,7 +156,18 @@
     if (!AV) return false;
     var e = offlineManifest()[prefix];
     if (!e || e.av == null) return false;
-    var cur = AV[prefix];
+    /* ⚠ audio-versions.json carries two schemes at once: the legacy "<Prefix>" (md5 of the
+       combined _TE/_ET pair) and "<Prefix>#c" (derived from the clips actually played). avPick
+       prefers the latter; avMoved refuses to read a SCHEME change as an audio change, which is
+       what stops the migration lighting an update dot on every downloaded card at once. ONE
+       implementation, in topics.js — this file, player.js and pl-list.js all ask the same
+       question and used to answer it three separate ways.
+       ⚠ The inline fallback is for the window where a new topics-page.js is paired with an older
+       cached topics.js: degrade to the legacy key rather than throw. See
+       AUDIO_VERSIONS_MIGRATION_PLAN.md. */
+    var T = window.ThaiEarTopics;
+    var cur = (T && T.avPick) ? T.avPick(AV, prefix) : AV[prefix];
+    if (T && T.avMoved) return T.avMoved(e.av, cur);
     return cur != null && e.av !== cur;
   }
 

@@ -809,8 +809,38 @@
       .then(function (m) { _audioVers = (m && typeof m === 'object') ? m : {}; return _audioVers; })
       .catch(function () { _audioVers = null; return null; });
   }
+  /* ── the stamp accessors ── ONE implementation, in topics.js, which every surface loads ─────
+     ⚠ audio-versions.json now carries TWO schemes: the legacy "<Prefix>" (md5 of the combined
+     _TE/_ET pair) and "<Prefix>#c" (derived from the per-sentence clips that are actually played).
+     avPick prefers the clip-derived one; avMoved refuses to call a SCHEME change an audio change,
+     which is what stops the migration nagging every device at once. See
+     AUDIO_VERSIONS_MIGRATION_PLAN.md.
+     ⚠ The fallbacks matter: topics.js is precached and player.js is precached, but a device can
+     briefly pair a new player.js with an older topics.js. Without them a stale topics.js would
+     make every staleness check throw rather than degrade, and the offline bar would die with it. */
+  function avPick(map, pfx) {
+    var T = window.ThaiEarTopics;
+    if (T && T.avPick) return T.avPick(map, pfx);
+    if (!map || !pfx) return null;
+    var c = map[pfx + '#c'];
+    return c != null ? c : (map[pfx] != null ? map[pfx] : null);
+  }
+  function avScheme(v) {
+    var T = window.ThaiEarTopics;
+    if (T && T.avScheme) return T.avScheme(v);
+    var str = String(v == null ? '' : v), i = str.indexOf(':');
+    return i > 0 ? str.slice(0, i) : '';
+  }
+  function avMoved(base, cur) {
+    var T = window.ThaiEarTopics;
+    if (T && T.avMoved) return T.avMoved(base, cur);
+    if (base == null || cur == null) return false;
+    var sb = String(base), sc = String(cur), ib = sb.indexOf(':'), ic = sc.indexOf(':');
+    if ((ib > 0 ? sb.slice(0, ib) : '') !== (ic > 0 ? sc.slice(0, ic) : '')) return false;
+    return base !== cur;
+  }
   // '' = loaded but no stamp for this topic yet · null = map unavailable (→ skip the audio check).
-  function currentAv() { return _audioVers ? (_audioVers[PREFIX] || '') : null; }
+  function currentAv() { return _audioVers ? (avPick(_audioVers, PREFIX) || '') : null; }
 
   function parseExpiry(v) {
     if (!v) return 0;
@@ -1420,11 +1450,15 @@
         if (force && cur != null) cur = String(cur) + '#avtest';
         if (cur == null) return;                                  // nothing published for it
         var base = PLMODE ? plAv[pfx] : e.av;
-        if (base == null) {                                       // baseline, don't nag
+        /* ⚠ A BASELINE FROM THE OTHER SCHEME IS RE-BASELINED, NOT REPORTED. Same branch as a
+           MISSING baseline, and for the same reason: we cannot compare it to this value, so the
+           honest move is to adopt and start watching from here. Without this, publishing the
+           clip-derived key would light up every downloaded topic on every device at once. */
+        if (base == null || avScheme(base) !== avScheme(cur)) {    // baseline, don't nag
           if (PLMODE) plAv[pfx] = cur; else e.av = cur;
           adopted = true; return;
         }
-        if (base !== cur) stale = true;
+        if (avMoved(base, cur)) stale = true;
       });
       /* ⚠ Do NOT persist an adopted baseline while the flag is on — it would write the perturbed
          value into the manifest and the topic would stay "stale" after the flag came off. */
@@ -1780,8 +1814,10 @@
         if (!avMap || !e) return;
         var base = PLMODE ? plBase[pfx] : e.av;
         if (base == null) return;
-        var cur = avMap[pfx];
-        if (cur != null && base !== cur) { forceAll[pfx] = true; anyForced = true; }
+        /* ⚠ avMoved, NOT `!==`. A scheme change must not force a re-fetch of every clip in the
+           topic — that is the same phantom update as above, only more expensive. */
+        var cur = avPick(avMap, pfx);
+        if (avMoved(base, cur)) { forceAll[pfx] = true; anyForced = true; }
       });
       // The stitched session was built from the clips we are about to replace, and its key encodes
       // settings rather than clip content — so it cannot notice. Drop it here as well as in
@@ -1840,7 +1876,7 @@
            subset, and writing it here would claim the whole topic is current — silencing a real
            update prompt on the index card and the topic page. A playlist records its own baseline
            in its own download record instead (dynPlAvSet, below). */
-        if (!PLMODE && avMap && avMap[pfx] != null) e.av = avMap[pfx];   // baseline for "audio update?"
+        if (!PLMODE && avMap && avPick(avMap, pfx) != null) e.av = avPick(avMap, pfx);   // baseline for "audio update?"
         /* r137 — record the complete-download file count for the INDEX's benefit (dl-core
            hasNeeded / index isDownloaded). Only for a topic's own download: a playlist needs just
            a SUBSET of a prefix's clips, so stamping its count would tell the index grid that a
@@ -1883,7 +1919,7 @@
           // so a playlist downloaded from the player and one downloaded from the list are
           // indistinguishable afterwards.
           var snap = {};
-          if (avMap) prefixes.forEach(function (pfx) { if (avMap[pfx] != null) snap[pfx] = avMap[pfx]; });
+          if (avMap) prefixes.forEach(function (pfx) { var v = avPick(avMap, pfx); if (v != null) snap[pfx] = v; });
           var pm = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}');
           pm[String(DYN_KEY_NS).replace(/^pl-/, '')] = { prefixes: prefixes, at: Date.now(), av: snap };
           localStorage.setItem('thaiear_offline_pl', JSON.stringify(pm));
@@ -2496,9 +2532,10 @@
       var av = currentAv();            // string, or null if the map couldn't be loaded
       var changed = false;
       if (!e.ver) { e.ver = curHash; changed = true; }                 // adopt text baseline
-      if (e.av == null && av != null) { e.av = av; changed = true; }   // adopt/backfill audio baseline
+      // ⚠ Adopt when there is no baseline OR when the one on record answers a different question.
+      if (av != null && (e.av == null || avScheme(e.av) !== avScheme(av))) { e.av = av; changed = true; }
       if (changed) { m[PREFIX] = e; setManifest(m); return; }          // just established a baseline → no nag
-      if (av != null && e.av != null && av !== e.av) setOfflineState('stale');
+      if (avMoved(e.av, av)) setOfflineState('stale');
     });
   }
   // In-page message shown when a downloaded premium topic is played offline after the licence

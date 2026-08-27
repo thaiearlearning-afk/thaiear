@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v491';   // v491: sentence-hints.json now covers the Grammar by Ear arm.
+const VERSION = 'v492';   // v492: the offline-staleness stamp gains a SECOND scheme. The map
+                          // now carries a clip-derived "<Prefix>#c" alongside the legacy
+                          // combined-file "<Prefix>", and the three readers prefer it while
+                          // refusing to read a SCHEME change as an audio change. Inert until
+                          // the keys are published -- no #c key exists yet. player.js,
+                          // topics.js, topics-page.js and pl-list.js are all precached.
+                          // v491: sentence-hints.json now covers the Grammar by Ear arm.
                           // gen_sentence_hints.js filtered /^topic-/ only, so every structure
                           // sentence saved to a playlist would have fallen back to a derived
                           // Thai pill -- silent, not an error. The hints file is PRECACHED,

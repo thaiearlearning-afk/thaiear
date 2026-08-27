@@ -454,6 +454,21 @@
        changes, which may not be one this playlist uses, so it can offer an update that turns out
        to re-fetch identical bytes. Re-fetching a few clips we didn't need beats missing one we
        did — the same trade the topic side already makes. */
+    /* ONE implementation, in topics.js, which this page loads — player.js and topics-page.js ask
+       the same two questions of the same map. The inline fallbacks cover a new pl-list.js paired
+       with an older cached topics.js: degrade to the legacy key, never throw. */
+    function avPick(map, pfx) {
+      var T = window.ThaiEarTopics;
+      if (T && T.avPick) return T.avPick(map, pfx);
+      if (!map || !pfx) return null;
+      var c = map[pfx + '#c'];
+      return c != null ? c : (map[pfx] != null ? map[pfx] : null);
+    }
+    function avMoved(base, cur) {
+      var T = window.ThaiEarTopics;
+      if (T && T.avMoved) return T.avMoved(base, cur);
+      return base != null && cur != null && base !== cur;
+    }
     var DL_AV = null, dlAvLoaded = false;
     function dlAvLoad() {
       if (dlAvLoaded) return Promise.resolve(DL_AV);
@@ -467,7 +482,9 @@
     function dlAvSnapshot(prefixes) {
       var out = {};
       if (!DL_AV) return out;
-      prefixes.forEach(function (pfx) { if (DL_AV[pfx] != null) out[pfx] = DL_AV[pfx]; });
+      /* ⚠ avPick: prefer the clip-derived "<Prefix>#c" stamp over the legacy combined-file one.
+         A baseline recorded under one scheme is never compared against the other (dlAvStale). */
+      prefixes.forEach(function (pfx) { var v = avPick(DL_AV, pfx); if (v != null) out[pfx] = v; });
       return out;
     }
     /* Has any prefix this playlist uses been re-rendered since it was downloaded? Conservative on
@@ -480,9 +497,12 @@
       if (!base) return false;
       var by = dlGroup(p), pfx;
       for (pfx in by) {
-        var was = base[pfx], cur = DL_AV[pfx];
+        var was = base[pfx], cur = avPick(DL_AV, pfx);
         if (was == null || cur == null) continue;
-        if (was !== cur) return true;
+        /* ⚠ avMoved, not `!==`. A baseline recorded under the legacy combined-file scheme cannot
+           be compared to a clip-derived value — treating the difference as an audio change would
+           offer an update on every downloaded playlist the day the new key is published. */
+        if (avMoved(was, cur)) return true;
       }
       return false;
     }
