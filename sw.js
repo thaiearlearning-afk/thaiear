@@ -33,7 +33,20 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v494';   // v494: the Grammar by Ear arm reaches the activity tracker.
+const VERSION = 'v495';   // v495: the Favourites view keeps its decoration. It rebuilt itself on
+                          // EVERY thaiear:auth (~25 per page) and topics-page.js decorates first,
+                          // so the listening caption was thrown away microseconds after it landed
+                          // and the download tick — which arrives later, with the manifest — never
+                          // survived at all. Now it rebuilds only when the favourites set really
+                          // changed, and asks topics-page.js (new ThaiEarTopicsPage.decorate) for
+                          // the tick/pill/caption rather than re-implementing them, so a
+                          // favourites card is byte-identical to a band card. topics-fav.js and
+                          // topics-page.js are precached.
+                          // ⚠ v494 was SPENT: committed locally (ac3c6b8) and not yet pushed, so
+                          // origin still read v493 while disk read v494. On a shared tree the
+                          // authority is max(origin, local HEAD) — origin alone would have had me
+                          // take v494 twice.
+                          // v494:   // v494: the Grammar by Ear arm reaches the activity tracker.
                           // topic-sentences.json (93 -> 113 pages) and clip-durations.json
                           // (2271 -> 2470 clips) now cover its 199 sentences. Both are
                           // PRECACHED, and both feed listenCaptionFor() -- without them a

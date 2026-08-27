@@ -276,6 +276,19 @@
 
   function refresh() { applyEntitlement(); applyDownloadState(); applyListenTime(); loadListenInputs(); }
 
+  /* ── the re-decorate hook ────────────────────────────────────────────────────────────────
+     Everything above decorates `.topic-card[data-page]` wherever it finds it, so a surface that
+     CREATES cards after load has to ask for the decoration again — the search results already
+     do exactly that (applyDownloadState + applyListenTime at the end of run()).
+     topics-fav.js is the second such surface and lives in another file, so it needs a way in.
+     Exposing refresh() rather than letting it re-implement the tick is the whole point: the
+     download tick, the entitlement pill and the listening caption then come from ONE
+     implementation, and a favourites card cannot drift from a band card. Re-implementing the
+     tick "just for this view" is how the four playlist download-state bugs happened.
+     ⚠ Safe to call at any time and cheap to call often: every apply is a no-op once the DOM
+     already says the right thing. It does NOT fire thaiear:auth, so there is no loop. */
+  window.ThaiEarTopicsPage = { decorate: refresh };
+
   /* auth.js fires this several times during startup — cheap here, because every apply is
      a no-op once the DOM already says the right thing. */
   window.addEventListener('thaiear:auth', refresh);
