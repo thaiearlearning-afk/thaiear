@@ -33,7 +33,21 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v487';   // v487: a dyn unit OWNS its settings, and the session built for a
+const VERSION = 'v489';   // v489: a settings change made while the dyn player is on a
+                          // NEIGHBOUR now rebuilds that neighbour, under its own namespace and
+                          // at the new settings -- it used to ask every question about the
+                          // page you were standing on, hand back the session built moments
+                          // earlier at the old settings, and leave 'Re-constructing dynamic
+                          // mp3' on screen for ever. player.js is precached, hence the bump.
+                          // Its OWN bump: v487 is deployed and v488 is claimed by another
+                          // change still in the tree.
+                          // v488: sentence-hints.json now covers the Grammar by Ear arm
+                          // (gen_sentence_hints.js read /^topic-/ only, so every structure
+                          // sentence saved to a playlist would have fallen back to a derived
+                          // Thai pill -- silent, not an error). The hints file is PRECACHED,
+                          // which is the whole reason this bump exists: without it clients
+                          // keep serving the old copy indefinitely (cache-first, sw v292).
+                          // v487: a dyn unit OWNS its settings, and the session built for a
                           // neighbour is now stored where that neighbour's own page looks for
                           // it -- a topic page namespaces on its PREFIX, not on the bare page
                           // id the chain synthesises, so every adopt-path lookup had been
