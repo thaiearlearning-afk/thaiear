@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v493';   // v493: Favourites covers the Grammar by Ear arm, and a restored page
+const VERSION = 'v494';   // v494: the Grammar by Ear arm reaches the activity tracker.
+                          // topic-sentences.json (93 -> 113 pages) and clip-durations.json
+                          // (2271 -> 2470 clips) now cover its 199 sentences. Both are
+                          // PRECACHED, and both feed listenCaptionFor() -- without them a
+                          // grammar unit resolved to no sentence numbers and its "Thai
+                          // listening time" caption returned '' and never rendered. Silent,
+                          // like the Progress page reading 0 min for five days.
+                          // v493: Favourites covers the Grammar by Ear arm, and a restored page
                           // no longer paints a stale list. The heart is on the 20 grammar cards,
                           // and topics-fav.js now walks BOTH arrays — a favourited grammar unit
                           // was being dropped by the unknown-page rule and vanishing silently.
