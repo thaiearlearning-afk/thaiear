@@ -315,8 +315,12 @@
       keywords: ["hai","ให้","give","for","so that","let","make","tell"] },
     { id: 7, name: "Wái (ไว้)", levels: ['li1'], sentences: 8, page: "grammar-07.html", audio: "GramWai_LI1", access: "premium",
       keywords: ["wai","ไว้","keep","leave","in advance","for later"] },
-    { id: 8, name: "Serial verbs", levels: ['li1'], sentences: 15, page: "grammar-08.html", audio: "GramSerial_LI1", access: "premium",
-      keywords: ["serial verbs","verb stacking","ลองคิดดู","เผลอ","ว่า","accidentally"] },
+    /* ⚠ id 8 "Serial verbs" was DROPPED on 2026-08-27 and there is no grammar-08.html.
+       Owner: the sentences "dont actually serialise verbs" in two cases, and
+       serialisation "occurs throughout the topic sentences corpus because its so
+       common in thai" — it is how Thai works, not a structure you can drill. Only the
+       two เผลอ sentences had a real home; the other 13 are in
+       SENTENCES_PENDING_A_HOME.md. ⛔ Another deliberate id gap — do not renumber. */
     { id: 9, name: "Already, just & first", levels: ['li1'], sentences: 9, page: "grammar-09.html", audio: "GramTime_LI1", access: "premium",
       keywords: ["laaeo","phoeng","sia gawn","แล้ว","เพิ่ง","เสียก่อน","already","just","first"] },
     /* ⚠ G11 "But & however" was MERGED INTO THIS UNIT on 2026-08-27 and no longer exists.
@@ -328,8 +332,8 @@
        comes from array order, so the eyebrow still counts 1..19 with no hole. */
     { id: 10, name: "Even though, but & however", levels: ['li1'], sentences: 18, page: "grammar-10.html", audio: "GramEvenThough_LI1", access: "premium",
       keywords: ["maae waa","tang thii","mai waa ja","dtaae","yang rai gaw dtaam","แม้ว่า","ทั้งที่","ไม่ว่าจะ","แม้แต่","แต่","อย่างไรก็ตาม","แต่ทว่า","even though","no matter","despite","but","however","nevertheless"] },
-    { id: 12, name: "Dan / ùt-sàa (ดัน / อุตส่าห์)", levels: ['li1'], sentences: 9, page: "grammar-12.html", audio: "GramDan_LI1", access: "premium",
-      keywords: ["dan","utsaa","ดัน","อุตส่าห์","went and","annoyed","trouble"] },
+    { id: 12, name: "Went and, in vain, by accident", levels: ['li1'], sentences: 11, page: "grammar-12.html", audio: "GramDan_LI1", access: "premium",
+      keywords: ["dan","utsaa","phloe","ดัน","อุตส่าห์","เผลอ","went and","annoyed","trouble","accidentally","by accident","in vain"] },
     { id: 13, name: "Gwàa (กว่า)", levels: ['li1'], sentences: 7, page: "grammar-13.html", audio: "GramGwaa_LI1", access: "premium",
       keywords: ["gwaa","กว่า","than","comparison","by the time","ยิ่งกว่านั้น"] },
     { id: 14, name: "Gâw dâi / mâi gâw (ก็ได้ / ไม่ก็)", levels: ['li1'], sentences: 7, page: "grammar-14.html", audio: "GramGawDai_LI1", access: "premium",

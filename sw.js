@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v504';   // v504: the PLAYLISTS loop gets the offline settings-revert too. Two
+const VERSION = 'v505';   // v505: the Grammar arm drops "Serial verbs" -- 19 units to 18.
+                          // Serialisation is how Thai works rather than a structure you can
+                          // drill, and it is already everywhere in the topic corpus. Only
+                          // the two เผลอ sentences moved (to the ดัน/อุตส่าห์ unit, which is
+                          // pre-verb attitude words); the other 13 are parked.
+                          // sentence-hints.json, topic-sentences.json and clip-durations.json
+                          // all shrank -- all three PRECACHED, so without this bump
+                          // cache-first keeps serving lookups that still name grammar-08.
+                          // v504: the PLAYLISTS loop gets the offline settings-revert too. Two
                           // guards at the top of dynEnsureMainSrc ask whether THIS PAGE's own
                           // playlist has anything playable, and fired before the adopted branch
                           // could run -- so on a playlist page they answered about a playlist
