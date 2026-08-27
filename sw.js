@@ -33,7 +33,21 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v496';   // v496: two faults in the favourites heart, both reported by the owner.
+const VERSION = 'v497';   // v497: FAVOURITES IS ITS OWN NAVIGATION CIRCUIT. A topic opened from
+                          // the Favourites view walks the favourites list with prev/next -- both
+                          // arms in view order, wrapping at each end into one circle -- so a
+                          // listener can just play their favourites. Offline it narrows to the
+                          // units that can actually play, which nextAccessible() already did.
+                          // ⚠ ALSO FIXES A LIVE FAULT: player.js derived its dyn chain from a bare
+                          // liveSequence(), which defaults to the TOPICS array, while its
+                          // pageUnit() guard is section-aware -- so a grammar page passed the
+                          // guard and was handed the topic list, dynHomeIdx fell back to 0, and
+                          // prev/next on a grammar unit walked into Greetings with the lock-screen
+                          // title to match. Live since the structures arm landed. One resolver,
+                          // ThaiEarTopics.sequenceFor(), now answers for both the buttons and the
+                          // chain, so they cannot disagree.
+                          // topics.js, topics-fav.js and player.js are precached.
+                          // v496:   // v496: two faults in the favourites heart, both reported by the owner.
                           // (1) IT WAS VISIBLE SIGNED OUT. The markup shipped it hidden, but
                           // .topic-fav sets display:inline-flex and the UA rule [hidden]{display:none}
                           // has the SAME specificity -- an author sheet wins ties, so the attribute

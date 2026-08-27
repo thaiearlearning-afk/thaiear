@@ -811,8 +811,73 @@
   }
   // Walk the sequence from `page` in `dir` (+1 next / -1 prev), wrapping last<->first,
   // skipping any unit the current visitor can't access.
+  /* ── favourites-scoped navigation ────────────────────────────────────────────────────────
+     A topic opened FROM the Favourites view navigates the favourites list rather than its own
+     difficulty band: next walks to the next favourite, prev to the previous, and it wraps at
+     both ends into one circle. That is the whole feature — "someone can just play their
+     favourites" (owner, 2026-08-27).
+
+     ⚠ THE MODE MARKER IS sessionStorage, NOT A QUERY PARAM. A `?from=fav` would create a second
+     URL for identical content: another service-worker cache entry, a canonical to manage, and it
+     would destroy the property the owner specifically asked me to confirm — that a topic reached
+     from Favourites IS the same topic, same route, so play tracking, sentence exclusions and dyn
+     settings cannot diverge. sessionStorage is tab-scoped, never shared, never bookmarked, and
+     costs the URL nothing.
+
+     ⚠ IT STORES PAGES, NOT UNITS. The favourites list can change while you are inside it (you
+     unfavourite the topic you are on), and a stale snapshot of unit OBJECTS would keep a retired
+     or renamed unit alive. Pages are resolved against topics.js on every read, so an entry that
+     no longer exists simply drops out of the circle — the same drop-unknown rule the Favourites
+     view itself applies.
+
+     ⚠ OFFLINE THIS SHRINKS TO THE DOWNLOADED SUBSET, and that is correct rather than a
+     limitation: nextAccessible() below already treats a downloaded unit as accessible offline and
+     skips the rest, so the circle offline is exactly the favourites you can actually play. */
+  const FAV_NAV_KEY = 'thaiear_fav_nav';
+  function favNavPages() {
+    try {
+      const raw = sessionStorage.getItem(FAV_NAV_KEY);
+      if (!raw) return null;
+      const arr = JSON.parse(raw);
+      return (Array.isArray(arr) && arr.length) ? arr : null;
+    } catch (_) { return null; }
+  }
+  /* The favourites circle as a sequence, or null when there is no circle to walk. Spans BOTH
+     arms via findByPage, so a grammar unit and a topic sit in one list exactly as the Favourites
+     view renders them. */
+  function favSequence() {
+    const pages = favNavPages();
+    if (!pages) return null;
+    const seq = [];
+    for (let i = 0; i < pages.length; i++) {
+      const f = findByPage(pages[i]);
+      if (f && f.unit && f.unit.page && f.unit.audio) seq.push(unitOf(f.unit, seq.length + 1));
+    }
+    /* One unit is not a circle: next and prev would both return the page you are already on, so
+       fall through to the band sequence and let the ordinary neighbours apply. */
+    return seq.length > 1 ? seq : null;
+  }
+  /* THE one resolver. Both consumers ask this — nextAccessible() below for the prev/next buttons,
+     and player.js's resolveDynChain() for the dyn chain — so the two can never disagree about
+     which circle is in force. Off the favourites path it returns exactly what it always did. */
+  function sequenceFor(page) {
+    const fav = favSequence();
+    if (fav) {
+      const p = bare(page);
+      for (let i = 0; i < fav.length; i++) if (bare(fav[i].page) === p) return fav;
+    }
+    return liveSequence(sectionOf(page));
+  }
+  function inFavCircuit(page) {
+    const fav = favSequence();
+    if (!fav) return false;
+    const p = bare(page);
+    for (let i = 0; i < fav.length; i++) if (bare(fav[i].page) === p) return true;
+    return false;
+  }
+
   function nextAccessible(page, dir) {
-    const seq = liveSequence(sectionOf(page));
+    const seq = sequenceFor(page);
     if (!seq.length) return null;
     const p = bare(page);
     let idx = -1;
@@ -917,6 +982,13 @@
     avPick, avMoved, avScheme,   // offline-staleness stamp — ONE implementation, three surfaces
     loadClipDurations, listenSeconds, humanListenTime, listenCaptionFor,   // listening time — the topic-card caption
     liveSequence, pageUnit, nextAccessible,
+    /* ⚠ sequenceFor(page) is THE resolver both consumers must use — the prev/next buttons via
+       nextAccessible() and player.js's resolveDynChain(). It returns the favourites circle when
+       favourites mode is on and the page is in it, and otherwise the page's OWN SECTION sequence.
+       It always returns a sequence CONTAINING the page: player.js finds dynHomeIdx by scanning
+       the chain for the current page and silently falls back to index 0 when it is absent, which
+       would give the wrong lock-screen title and make ↩ Return play the wrong unit. */
+    sequenceFor, inFavCircuit, favSequence,
     searchUnits, tokenize,
     hrefFor   // ⚠ every emitted topic link goes through this — see the note above hrefFor()
   };
@@ -990,7 +1062,83 @@
     // r98: no padlock icon on prev/next — any user can open any page; gating is object-level
     // (audio/reveal/flag on the page itself), so the buttons carry no tier signal (owner, 2026-08-01).
   }
+  /* ── re-point prev/next onto the favourites circle ───────────────────────────────────────
+     The buttons are STATIC HTML (gen_topicnav.js bakes each page's band neighbours in, name and
+     all), which is right: they are real internal links and a crawler must see them. In favourites
+     mode they have to point somewhere else, so they are re-targeted here — href, the visible
+     name, and data-target, which is what decorateNavBtn() reads afterwards.
+
+     ⚠ A MISSING BUTTON IS CREATED, and it has to be. The first unit of a band ships no Previous
+     (the slot is a bare <span></span>) and the last ships no Next — but in a circle every unit has
+     both, so without this the circuit silently breaks at exactly the two places wrapping matters.
+     topic-01 is the case that caught it: favourites-prev should wrap to the last favourite and
+     there was no button to re-point.
+     This does NOT make a crawler and a visitor see different pages: creation happens only when the
+     sessionStorage circuit marker is present, and a crawler has no session. The static link graph
+     every indexer sees is exactly what gen_topicnav.js emitted.
+
+     ⚠ topics.js is DEFERRED on a topic page, so this can land after first paint and the label
+     would visibly change from the band neighbour to the favourites one. `te-favnav-on` is stamped
+     on <html> so that swap can be measured and, if it is visible, hidden behind a CSS reserve
+     without another round of plumbing. Do not assume it is invisible — measure it in a browser
+     before deciding, the way the tick and heart positions were measured. */
+  function favNavRepoint() {
+    const page = currentPage();
+    if (!inFavCircuit(page)) return false;
+    const seq = sequenceFor(page);
+    let idx = -1;
+    const p = bare(page);
+    for (let i = 0; i < seq.length; i++) if (bare(seq[i].page) === p) { idx = i; break; }
+    if (idx === -1 || seq.length < 2) return false;
+    const n = seq.length;
+    const around = { '-1': seq[((idx - 1) % n + n) % n], '1': seq[(idx + 1) % n] };
+    const nav = document.querySelector('nav.topic-nav');
+    if (!nav) return false;
+
+    /* Build the button the page never shipped. Markup mirrors gen_topicnav.js's exactly — arrow
+       OUTSIDE the text span, on the leading edge for Previous and the trailing edge for Next —
+       so the flex layout and the 46% cap behave identically to a static one. */
+    function makeBtn(dir) {
+      const a = document.createElement('a');
+      a.className = 'topic-nav-btn' + (dir === 1 ? ' topic-nav-right' : '');
+      const text = document.createElement('span');
+      const label = document.createElement('span');
+      label.className = 'topic-nav-label';
+      label.textContent = dir === 1 ? 'Next' : 'Previous';
+      const name = document.createElement('span');
+      name.className = 'topic-nav-name';
+      text.appendChild(label); text.appendChild(document.createElement('br')); text.appendChild(name);
+      const arrow = document.createElement('span');
+      arrow.textContent = dir === 1 ? '→' : '←';
+      if (dir === 1) { a.appendChild(text); a.appendChild(arrow); }
+      else { a.appendChild(arrow); a.appendChild(text); }
+      /* Replace the empty placeholder span on that side if there is one, so the nav keeps its
+         two-child space-between layout and the button lands on the correct edge. */
+      const kids = Array.prototype.slice.call(nav.children);
+      const slot = dir === 1 ? kids[kids.length - 1] : kids[0];
+      if (slot && slot.tagName === 'SPAN' && !slot.textContent.trim()) nav.replaceChild(a, slot);
+      else if (dir === 1) nav.appendChild(a); else nav.insertBefore(a, nav.firstChild);
+      return a;
+    }
+
+    [-1, 1].forEach(function (dir) {
+      const to = around[String(dir)];
+      if (!to) return;
+      let a = nav.querySelector(dir === 1 ? 'a.topic-nav-btn.topic-nav-right'
+                                         : 'a.topic-nav-btn:not(.topic-nav-right)');
+      if (a && a.classList.contains('disabled')) return;
+      if (!a) a = makeBtn(dir);
+      a.setAttribute('data-target', to.page);
+      a.setAttribute('href', hrefFor(to.page));
+      const nameEl = a.querySelector('.topic-nav-name');
+      if (nameEl && nameEl.textContent !== to.name) nameEl.textContent = to.name;
+    });
+    try { document.documentElement.classList.add('te-favnav-on'); } catch (_) {}
+    return true;
+  }
+
   function decorateTopicNav() {
+    favNavRepoint();          // must run BEFORE decorateNavBtn — it reads data-target
     document.querySelectorAll('a.topic-nav-btn').forEach(function (a) {
       if (!a.classList.contains('disabled')) decorateNavBtn(a);
     });

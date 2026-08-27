@@ -4173,7 +4173,20 @@
                window.ThaiEarTopics.pageUnit && window.ThaiEarTopics.accessFor) {
       try {
         if (window.ThaiEarTopics.pageUnit(PAGE_FILE)) {   // this page IS a live, playable unit
-          var _seq = window.ThaiEarTopics.liveSequence();
+          /* ⚠ sequenceFor(), NOT liveSequence() — and this fixes a live fault as well as adding a
+             feature (a7 + 2026-08-27). Two things were wrong with the bare call:
+             (1) liveSequence() defaults to the TOPICS array, while pageUnit() above is
+                 section-aware — so a grammar-NN page PASSED the guard and was then handed the
+                 topic list. dynHomeIdx found nothing, fell back to 0, and prev/next on a grammar
+                 unit walked into Greetings with the lock-screen title to match.
+             (2) A topic opened from the Favourites view has to walk the FAVOURITES circle.
+             sequenceFor() answers both, and is the same resolver nextAccessible() uses for the
+             prev/next buttons, so the chain and the buttons cannot disagree.
+             ⚠ It always returns a sequence CONTAINING this page — dynHomeIdx's fallback to 0 is
+             silent, so a chain without the current page would mis-title the lock screen and make
+             Return play the wrong unit. */
+          var _T = window.ThaiEarTopics;
+          var _seq = _T.sequenceFor ? _T.sequenceFor(PAGE_FILE) : _T.liveSequence();
           var _derived = _seq.map(function (u) {
             return { page: u.page, prefix: u.audio, tier: window.ThaiEarTopics.accessFor(u), name: u.name,
               dynKey: String(u.page || '').replace(/\.html$/i, '') };
