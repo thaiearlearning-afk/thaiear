@@ -315,6 +315,10 @@
       keywords: ["hai","ให้","give","for","so that","let","make","tell"] },
     { id: 7, name: "Wái (ไว้)", levels: ['li1'], sentences: 8, page: "grammar-07.html", audio: "GramWai_LI1", access: "premium",
       keywords: ["wai","ไว้","keep","leave","in advance","for later"] },
+    { id: 21, name: "Loei (เลย)", levels: ['li1'], sentences: 7, page: "grammar-21.html", audio: "GramLoei_LI1", access: "premium",
+      keywords: ["loei","เลย","go ahead","not at all","ไม่เลย","straight on","past","beyond","right away"] },
+    { id: 22, name: "Bpai (ไป)", levels: ['li1'], sentences: 7, page: "grammar-22.html", audio: "GramBpai_LI1", access: "premium",
+      keywords: ["bpai","ไป","go","away","direction","ไปมา","round trip","completive","too","เกินไป"] },
     /* ⚠ id 8 "Serial verbs" was DROPPED on 2026-08-27 and there is no grammar-08.html.
        Owner: the sentences "dont actually serialise verbs" in two cases, and
        serialisation "occurs throughout the topic sentences corpus because its so
@@ -338,13 +342,8 @@
       keywords: ["gwaa","กว่า","than","comparison","by the time","ยิ่งกว่านั้น"] },
     { id: 14, name: "Gâw dâi & mâi gâw (ก็ได้ & ไม่ก็)", levels: ['li1'], sentences: 7, page: "grammar-14.html", audio: "GramGawDai_LI1", access: "premium",
       keywords: ["gaw dai","mai gaw","ก็ได้","ไม่ก็","either way","whatever","anyone","or"] },
-    /* ⚠ id 15 "Rǔe bplào & châi mǎi" was DROPPED on 2026-08-28 and there is no
-       grammar-15.html. It was two question tags with ONE use each, drilled three times apiece —
-       vocabulary presented as grammar. The decisive point: the unit existed to separate Thai's
-       yes/no enders and it never showed ไหม at all, so the contrast it was FOR was never made.
-       ⚠ Its 6 sentences are good Thai and are recorded in SENTENCES_PENDING_A_HOME.md — a rebuild
-       as the real four-way ไหม / หรือเปล่า / ใช่ไหม / หรือยัง contrast would keep all six and add to them.
-       ⛔ A THIRD deliberate id gap, after 8 and 11 — do not renumber. */
+    { id: 15, name: "Asking yes or no", levels: ['li1'], sentences: 10, page: "grammar-15.html", audio: "GramAsk_LI1", access: "premium",
+      keywords: ["mai","rue plao","chai mai","rue yang","rer","ไหม","มั้ย","หรือเปล่า","ใช่ไหม","หรือยัง","เหรอ","question","yes no","right","yet"] },
     /* ⚠ id 16 "Nàwy & làawk (หน่อย & หรอก)" was DROPPED on 2026-08-28, the same call as 15.
        Owner: "its just vocab really … better to have fewer more solid units, than just a load of
        stuff." Two softening particles with one use each — the same shape that sank 15, which is
@@ -357,6 +356,8 @@
       keywords: ["phraw","nueang jaak","เพราะ","เนื่องจาก","because","reason","จึง","เลย"] },
     { id: 19, name: "Khûen & long (ขึ้น & ลง)", levels: ['li1'], sentences: 5, page: "grammar-19.html", audio: "GramMaakKhuen_LI1", access: "premium",
       keywords: ["khuen","long","khuen maa","ขึ้น","ลง","ขึ้นมา","มากขึ้น","น้อยลง","more","less","better","suddenly","came to mind"] },
+    { id: 23, name: "Thùuk & doon (ถูก & โดน)", levels: ['li1'], sentences: 6, page: "grammar-23.html", audio: "GramThuuk_LI1", access: "premium",
+      keywords: ["thuuk","doon","ถูก","โดน","passive","got","was","adversative","arrested","fined"] },
     { id: 20, name: "Fàak (ฝาก)", levels: ['li1'], sentences: 6, page: "grammar-20.html", audio: "GramFaak_LI1", access: "premium",
       keywords: ["faak","ฝาก","leave in care","pass on a message","ฝากบอก","ฝากซื้อ"] },
   ];

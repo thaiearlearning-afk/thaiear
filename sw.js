@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v507';   // v507: Grammar by Ear 18 units/174 sentences -> 16/157. Units 15
+const VERSION = 'v508';   // v508: Grammar by Ear 16 units/157 -> 20/187. Three new units
+                          // (Loei, Bpai, Thuuk & doon) plus G15 rebuilt as the five-ender
+                          // question unit, so id 15 reclaims its own gap. The hub also gains
+                          // a one-line explainer, the only listing page with one. topics.js,
+                          // topics-page.css, sentence-hints.json, topic-sentences.json and
+                          // clip-durations.json all changed and are ALL PRECACHED.
+                          // v507: Grammar by Ear 18 units/174 sentences -> 16/157. Units 15
                           // (Rue bplao & chai mai) and 16 (Nawy & lawk) dropped as vocabulary
                           // rather than structure; 5 example sentences trimmed; the three
                           // khuen-maa sentences moved from unit 2 into 19, which is why three

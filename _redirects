@@ -50,8 +50,9 @@
 /grammar-08.html  /grammar     301
 /grammar-11       /grammar-10  301
 /grammar-11.html  /grammar-10  301
-# grammar-15 "Rue bplao & chai mai" dropped 2026-08-28: two question tags with one use
-# each, and the unit never showed ไหม, so the contrast it existed for was never made.
-# No successor unit — the hub is the honest destination, as with grammar-08.
-/grammar-15       /grammar     301
-/grammar-15.html  /grammar     301
+# grammar-16 "Nawy & lawk" dropped 2026-08-28: two softening particles with one use
+# each. Owner: "its just vocab really". No successor unit, so the hub it is.
+# ⚠ grammar-15 came BACK (rebuilt as the five-ender question unit), so its redirect
+# was removed — a live page behind a 301 is unreachable.
+/grammar-16       /grammar     301
+/grammar-16.html  /grammar     301
