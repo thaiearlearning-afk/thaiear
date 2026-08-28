@@ -303,7 +303,7 @@
   const structures = [
     { id: 1, name: "Dâi (ได้)", levels: ['li1'], sentences: 16, page: "grammar-01.html", audio: "GramDai_LI1",
       keywords: ["dai","ได้","can","able","ability","permission","got to","past"] },
-    { id: 2, name: "Maa (มา)", levels: ['li1'], sentences: 13, page: "grammar-02.html", audio: "GramMaa_LI1",
+    { id: 2, name: "Maa (มา)", levels: ['li1'], sentences: 10, page: "grammar-02.html", audio: "GramMaa_LI1",
       keywords: ["maa","มา","come","direction","toward","โทรมา","from"] },
     { id: 3, name: "Yùu & thîi (อยู่ & ที่)", levels: ['li1'], sentences: 13, page: "grammar-03.html", audio: "GramYuu_LI1", access: "premium",
       keywords: ["yuu","thii","อยู่","ที่","at","located","still","right now","progressive"] },
@@ -330,7 +330,7 @@
        they were always adjacent to. ⛔ There is no id 11 and no grammar-11.html; the gap is
        deliberate and ids are frozen, exactly as topic ids are (CLAUDE.md). Display position
        comes from array order, so the eyebrow still counts 1..19 with no hole. */
-    { id: 10, name: "Even though, but & however", levels: ['li1'], sentences: 18, page: "grammar-10.html", audio: "GramEvenThough_LI1", access: "premium",
+    { id: 10, name: "Even though, but & however", levels: ['li1'], sentences: 16, page: "grammar-10.html", audio: "GramEvenThough_LI1", access: "premium",
       keywords: ["maae waa","tang thii","mai waa ja","dtaae","yang rai gaw dtaam","แม้ว่า","ทั้งที่","ไม่ว่าจะ","แม้แต่","แต่","อย่างไรก็ตาม","แต่ทว่า","even though","no matter","despite","but","however","nevertheless"] },
     { id: 12, name: "Went and, in vain, by accident", levels: ['li1'], sentences: 11, page: "grammar-12.html", audio: "GramDan_LI1", access: "premium",
       keywords: ["dan","utsaa","phloe","ดัน","อุตส่าห์","เผลอ","went and","annoyed","trouble","accidentally","by accident","in vain"] },
@@ -338,16 +338,25 @@
       keywords: ["gwaa","กว่า","than","comparison","by the time","ยิ่งกว่านั้น"] },
     { id: 14, name: "Gâw dâi & mâi gâw (ก็ได้ & ไม่ก็)", levels: ['li1'], sentences: 7, page: "grammar-14.html", audio: "GramGawDai_LI1", access: "premium",
       keywords: ["gaw dai","mai gaw","ก็ได้","ไม่ก็","either way","whatever","anyone","or"] },
-    { id: 15, name: "Rǔe bplào & châi mǎi (หรือเปล่า & ใช่ไหม)", levels: ['li1'], sentences: 6, page: "grammar-15.html", audio: "GramAsk_LI1", access: "premium",
-      keywords: ["rue plao","chai mai","หรือเปล่า","ใช่ไหม","question","right","yes no"] },
-    { id: 16, name: "Nàwy & làawk (หน่อย & หรอก)", levels: ['li1'], sentences: 6, page: "grammar-16.html", audio: "GramSoften_LI1", access: "premium",
-      keywords: ["nawy","laawk","หน่อย","หรอก","softening","polite","request","refusal"] },
+    /* ⚠ id 15 "Rǔe bplào & châi mǎi" was DROPPED on 2026-08-28 and there is no
+       grammar-15.html. It was two question tags with ONE use each, drilled three times apiece —
+       vocabulary presented as grammar. The decisive point: the unit existed to separate Thai's
+       yes/no enders and it never showed ไหม at all, so the contrast it was FOR was never made.
+       ⚠ Its 6 sentences are good Thai and are recorded in SENTENCES_PENDING_A_HOME.md — a rebuild
+       as the real four-way ไหม / หรือเปล่า / ใช่ไหม / หรือยัง contrast would keep all six and add to them.
+       ⛔ A THIRD deliberate id gap, after 8 and 11 — do not renumber. */
+    /* ⚠ id 16 "Nàwy & làawk (หน่อย & หรอก)" was DROPPED on 2026-08-28, the same call as 15.
+       Owner: "its just vocab really … better to have fewer more solid units, than just a load of
+       stuff." Two softening particles with one use each — the same shape that sank 15, which is
+       why keeping this one for symmetry was not an option. ⚠ Its 6 sentences are recorded in
+       SENTENCES_PENDING_A_HOME.md.
+       ⛔ A FOURTH deliberate id gap (8, 11, 15, 16) — ids are frozen, never renumber. */
     { id: 17, name: "Moving the conversation on", levels: ['li1'], sentences: 8, page: "grammar-17.html", audio: "GramMoveOn_LI1", access: "premium",
       keywords: ["chang thoe","laaeo gan","waa dtaae","ช่างเถอะ","แล้วกัน","ว่าแต่","never mind","anyway","by the way"] },
-    { id: 18, name: "Phráw & nûeang jàak (เพราะ & เนื่องจาก)", levels: ['li1'], sentences: 6, page: "grammar-18.html", audio: "GramPhraw_LI1", access: "premium",
+    { id: 18, name: "Because & so (เพราะ…เลย & เนื่องจาก…จึง)", levels: ['li1'], sentences: 6, page: "grammar-18.html", audio: "GramPhraw_LI1", access: "premium",
       keywords: ["phraw","nueang jaak","เพราะ","เนื่องจาก","because","reason","จึง","เลย"] },
-    { id: 19, name: "Mâak khûen & náwy long (มากขึ้น & น้อยลง)", levels: ['li1'], sentences: 5, page: "grammar-19.html", audio: "GramMaakKhuen_LI1", access: "premium",
-      keywords: ["maak khuen","nawy long","มากขึ้น","น้อยลง","more","less","ขึ้น","ลง"] },
+    { id: 19, name: "Khûen & long (ขึ้น & ลง)", levels: ['li1'], sentences: 5, page: "grammar-19.html", audio: "GramMaakKhuen_LI1", access: "premium",
+      keywords: ["khuen","long","khuen maa","ขึ้น","ลง","ขึ้นมา","มากขึ้น","น้อยลง","more","less","better","suddenly","came to mind"] },
     { id: 20, name: "Fàak (ฝาก)", levels: ['li1'], sentences: 6, page: "grammar-20.html", audio: "GramFaak_LI1", access: "premium",
       keywords: ["faak","ฝาก","leave in care","pass on a message","ฝากบอก","ฝากซื้อ"] },
   ];

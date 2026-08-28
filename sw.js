@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v506';   // v506: a Favourites pill leads the sliding band row, and the
+const VERSION = 'v507';   // v507: Grammar by Ear 18 units/174 sentences -> 16/157. Units 15
+                          // (Rue bplao & chai mai) and 16 (Nawy & lawk) dropped as vocabulary
+                          // rather than structure; 5 example sentences trimmed; the three
+                          // khuen-maa sentences moved from unit 2 into 19, which is why three
+                          // clips changed bucket. topics.js, sentence-hints.json,
+                          // topic-sentences.json and clip-durations.json all changed and are
+                          // ALL PRECACHED, which is why this bump exists.
+                          // v506: a Favourites pill leads the sliding band row, and the
                           // Favourites TILE loses its heart (owner: "a bit garish"). The
                           // row is now built by ONE tabRow() shared by bandPage and
                           // favPage -- it was two separate maps, neither carrying a
