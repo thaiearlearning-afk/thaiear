@@ -768,11 +768,28 @@
   .topic-card .dl-badge,
   .topic-card .dl-select { position: absolute; top: 50%; right: 1rem; transform: translateY(-50%);
     margin: 0; cursor: inherit; pointer-events: none; }
-  .topic-card .topic-name,
-  /* Clears BOTH right-hand marks so the sentence count can never run under them: the tick
-     occupies 16-34px from the right edge, the heart 42-60px. Was 22px when the tick was the
-     only one. The gutter is reserved unconditionally — that is what keeps the hearts in a
-     straight line whether or not this visitor has downloaded anything. */
+  /* ⚠⚠ THE NAME AND THE META-ROW NEED DIFFERENT GUTTERS, AND SHARING ONE WAS A BUG
+     (fixed 2026-08-28). These two used to sit in one selector at 22px, and only the meta-row
+     got the te-dl widening — so a long unit name reserved 22px while the heart sat at 43-61px
+     and ran straight underneath it. Measured on /grammar at 1280px with the heart forced
+     visible: 2 of 20 cards collided at normal size and 3 of 20 at 200% text, all of them ONLY
+     in te-dl. That is why it reached the owner from the app and not from a desktop tab.
+
+     THE ARITHMETIC, measured rather than assumed — distances from the card's right edge:
+       default : heart 17-35px  (it takes the tick's own slot; no tick can appear here)
+       te-dl   : tick 17-35px, heart 43-61px
+     So the name needs 38px and 64px. Both clear the furthest mark by 3px.
+     ⚠ These are viewport-independent: no media query touches .topic-fav's `right`, its 18px
+     box, or these paddings, so the same two numbers hold at 320px and at 1280px. A narrow
+     screen wraps the name more; it does not move the heart.
+     ⛔ Do NOT "fix" a future collision by shortening unit names — the layout holds the name.
+     ⛔ And do not merge these selectors back together. */
+  .topic-card .topic-name { padding-right: 38px; }
+  html.te-dl .topic-card .topic-name { padding-right: 64px; }
+  /* The meta-row keeps 22px in the default state on purpose: its right-hand item is the tiny
+     plays count, and 22px has never collided there. ⚠ Strictly it under-reserves by the same
+     13px the name did — if a longer right-hand item is ever added to this row, it needs 38px
+     too, and this comment is the reason it was left rather than missed. */
   .topic-card .topic-meta-row { padding-right: 22px; }
   html.te-dl .topic-card .topic-meta-row { padding-right: 64px; }
   /* Working (downloading) row: an animated ellipsis in place of the circle/tick. */

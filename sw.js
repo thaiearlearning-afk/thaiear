@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v510';   // v510: the stadium sentence comes out of Dai (it was ordinary
+const VERSION = 'v511';   // v511: a long unit name no longer runs under the favourites
+                          // heart. .topic-name and .topic-meta-row shared one 22px gutter
+                          // and only the meta-row got the te-dl widening, so on a
+                          // download-capable device the name reserved 22px while the heart
+                          // sat at 43-61px. Measured: 2/20 cards collided at normal size,
+                          // 3/20 at 200% text, te-dl only. topics-page.css is PRECACHED.
+                          // v510: the stadium sentence comes out of Dai (it was ordinary
                           // ability dai; the 'up to' reading came from the number beside it),
                           // so 186 -> 185 and Dai holds 14. topics.js, sentence-hints.json,
                           // topic-sentences.json and clip-durations.json all changed and are
