@@ -301,9 +301,9 @@
      re-running them is not the fix. STRUCTURES_SECTION_PLAN.md §12.1.
      Units 1-2 are free (signed-in), 3-20 premium. Real enforcement is the R2 bucket. */
   const structures = [
-    { id: 1, name: "Dâi (ได้)", levels: ['li1'], sentences: 16, page: "grammar-01.html", audio: "GramDai_LI1",
+    { id: 1, name: "Dâi (ได้)", levels: ['li1'], sentences: 15, page: "grammar-01.html", audio: "GramDai_LI1",
       keywords: ["dai","ได้","can","able","ability","permission","got to","past"] },
-    { id: 2, name: "Maa (มา)", levels: ['li1'], sentences: 10, page: "grammar-02.html", audio: "GramMaa_LI1",
+    { id: 2, name: "Maa (มา)", levels: ['li1'], sentences: 9, page: "grammar-02.html", audio: "GramMaa_LI1",
       keywords: ["maa","มา","come","direction","toward","โทรมา","from"] },
     { id: 3, name: "Yùu & thîi (อยู่ & ที่)", levels: ['li1'], sentences: 13, page: "grammar-03.html", audio: "GramYuu_LI1", access: "premium",
       keywords: ["yuu","thii","อยู่","ที่","at","located","still","right now","progressive"] },
@@ -317,7 +317,7 @@
       keywords: ["wai","ไว้","keep","leave","in advance","for later"] },
     { id: 21, name: "Loei (เลย)", levels: ['li1'], sentences: 7, page: "grammar-21.html", audio: "GramLoei_LI1", access: "premium",
       keywords: ["loei","เลย","go ahead","not at all","ไม่เลย","straight on","past","beyond","right away"] },
-    { id: 22, name: "Bpai (ไป)", levels: ['li1'], sentences: 7, page: "grammar-22.html", audio: "GramBpai_LI1", access: "premium",
+    { id: 22, name: "Bpai (ไป)", levels: ['li1'], sentences: 8, page: "grammar-22.html", audio: "GramBpai_LI1", access: "premium",
       keywords: ["bpai","ไป","go","away","direction","ไปมา","round trip","completive","too","เกินไป"] },
     /* ⚠ id 8 "Serial verbs" was DROPPED on 2026-08-27 and there is no grammar-08.html.
        Owner: the sentences "dont actually serialise verbs" in two cases, and
