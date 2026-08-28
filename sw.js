@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v509';   // v509: Grammar by Ear 187 -> 186. The Maa unit was thinned (three
+const VERSION = 'v510';   // v510: the stadium sentence comes out of Dai (it was ordinary
+                          // ability dai; the 'up to' reading came from the number beside it),
+                          // so 186 -> 185 and Dai holds 14. topics.js, sentence-hints.json,
+                          // topic-sentences.json and clip-durations.json all changed and are
+                          // ALL PRECACHED.
+                          // v509: Grammar by Ear 187 -> 186. The Maa unit was thinned (three
                           // duration examples down to one, two come-from down to one) and gains
                           // four BORROWED sentences from the topic corpus; Dai gains one and
                           // loses the dai-yin one, which is a fossilised word rather than the

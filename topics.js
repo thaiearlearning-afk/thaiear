@@ -301,7 +301,7 @@
      re-running them is not the fix. STRUCTURES_SECTION_PLAN.md §12.1.
      Units 1-2 are free (signed-in), 3-20 premium. Real enforcement is the R2 bucket. */
   const structures = [
-    { id: 1, name: "Dâi (ได้)", levels: ['li1'], sentences: 15, page: "grammar-01.html", audio: "GramDai_LI1",
+    { id: 1, name: "Dâi (ได้)", levels: ['li1'], sentences: 14, page: "grammar-01.html", audio: "GramDai_LI1",
       keywords: ["dai","ได้","can","able","ability","permission","got to","past"] },
     { id: 2, name: "Maa (มา)", levels: ['li1'], sentences: 9, page: "grammar-02.html", audio: "GramMaa_LI1",
       keywords: ["maa","มา","come","direction","toward","โทรมา","from"] },
