@@ -325,8 +325,16 @@
   function run() {
     var v = q.value.trim();
     if (clear) clear.hidden = !v;
-    var live = T.topics.filter(function (u) { return !!u.page; })
-                       .map(function (u) { return { u: u }; });
+    /* ⚠ BOTH ARRAYS (2026-08-29). Grammar by Ear lives in T.structures, which T.topics cannot
+       see — the isolation that kept the arm out of every public surface while it was hidden
+       (STRUCTURES_SECTION_PLAN.md §4.1). Now that it is public, a search for "ก็" or "grammar"
+       that returned nothing would be the same silent omission as a sitemap missing 21 URLs.
+       Grammar units come FIRST, the order they hold in the menu, the pill row and on the
+       Progress page. searchUnits() already takes its pool as an argument, so this is the whole
+       change — no second ranking implementation. */
+    var pool = (T.structures || []).concat(T.topics);
+    var live = pool.filter(function (u) { return !!u.page; })
+                   .map(function (u) { return { u: u }; });
     var hits = T.searchUnits ? T.searchUnits(v, live) : null;
     if (!hits) {                       // null = not searching
       results.hidden = true;

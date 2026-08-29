@@ -317,15 +317,56 @@
     '</div>';
   }
 
-  /* Every live unit, in the site's own display order, grouped by difficulty band — the same
-     ordering the index uses, taken from topics.js so the two can never disagree. */
+  /* ONE ROW, used for a grammar unit and a topic unit alike — same class, same figure, same
+     shared listenSeconds(). The owner's requirement for the grammar rows was "same format /
+     appearance as other topics", and the only way to guarantee that is for there to be one
+     function rather than two that look alike today.
+
+     The SAME sum the topic cards use — topics.js owns it, so the figure here and the figure on
+     the card cannot drift apart. The row shows the bare time: the section heading and its note
+     already say what is being measured, and "Thai listening time: 2h 5min" on every one of 113
+     rows would not fit beside the unit name anyway. */
+  function unitRow(t, u, reps) {
+    var secs = (sentNums && sentNums[bareOf(u.page)])
+      ? t.listenSeconds(sentNums[bareOf(u.page)], reps, durations) : 0;
+    return '<a class="prog-row" href="' + esc(t.hrefFor ? t.hrefFor(u.page) : u.page) + '">' +
+             '<span class="prog-row-name">' + esc(u.name) + '</span>' +
+             '<span class="prog-row-plays">' + esc(humanTime(secs)) + '</span>' +
+           '</a>';
+  }
+
+  /* Every live unit, in the site's own display order — the Grammar by Ear units first, then the
+     topic units grouped by difficulty band. Both orders are taken from topics.js so this page
+     and the menus can never disagree. */
   function topicList(reps) {
     var t = T();
     if (!t || !t.liveSequence) return '';
     var units = t.liveSequence();
     if (!units || !units.length) return '';
 
-    var rows = '', lastBand = null;
+    var rows = '';
+
+    /* ⚠⚠ GRAMMAR BY EAR SITS ABOVE THE TOPICS, mirroring where it sits in the /topics menu and
+       in the sliding pill row (owner, 2026-08-29). ⛔ DO NOT HARDCODE THAT ORDER: it is derived
+       from the same source those surfaces use — topics.js's `structures` array, read through
+       liveSequence('structures') — so re-ordering either arm moves both together. A hardcoded
+       list drifts the first time either is re-ordered and nothing reports it.
+
+       ⚠ ONE heading, not the per-band headings the topic loop below emits. Every grammar unit is
+       levels:['li1'], so band logic would put a single "Lower intermediate" over the lot, which
+       says nothing about what the group IS.
+
+       ⚠ THIS SECTION WAS DELIBERATELY ABSENT UNTIL 2026-08-29, and not for sequencing: the
+       Progress page is PUBLIC, and listing the units here while the arm was owner-gated and
+       noindex would have shown every visitor that a hidden section existed and named all 20 of
+       its units (plan §12.6). It went in the same release that made the section public. */
+    var gram = t.liveSequence('structures');
+    if (gram && gram.length) {
+      rows += '<div class="prog-band">Grammar by Ear</div>';
+      for (var g = 0; g < gram.length; g++) rows += unitRow(t, gram[g], reps);
+    }
+
+    var lastBand = null;
     for (var i = 0; i < units.length; i++) {
       var u = units[i];
       var band = t.levelText ? t.levelText(u.levels) : '';
@@ -333,16 +374,7 @@
         rows += '<div class="prog-band">' + esc(band) + '</div>';
         lastBand = band;
       }
-      /* The SAME sum the topic cards use — topics.js owns it, so the figure here and the figure
-         on the card cannot drift apart. The row shows the bare time: the section heading and its
-         note already say what is being measured, and "Thai listening time: 2h 5min" on
-         every one of 93 rows would not fit beside the topic name anyway. */
-      var secs = (sentNums && sentNums[bareOf(u.page)])
-        ? t.listenSeconds(sentNums[bareOf(u.page)], reps, durations) : 0;
-      rows += '<a class="prog-row" href="' + esc(t.hrefFor ? t.hrefFor(u.page) : u.page) + '">' +
-                '<span class="prog-row-name">' + esc(u.name) + '</span>' +
-                '<span class="prog-row-plays">' + esc(humanTime(secs)) + '</span>' +
-              '</a>';
+      rows += unitRow(t, u, reps);
     }
     return '<h2 class="prog-h2">Your listening time</h2>' +
            '<p class="prog-h2-note">Every time a Thai sentence is played in a topic or a ' +

@@ -1063,6 +1063,16 @@
    no breakpoint, nothing to keep in sync with the font. Measured uniform at 320@2.0×, 360@1.4×,
    390@1×, 900@1× and 1200@1×, and byte-identical to before at the widths that were already
    uniform. */
+/* ⚠⚠ /topics NAMES ITS ROWS EXPLICITLY, AND THAT IS LOAD-BEARING (2026-08-29). Since the three
+   headings (Favourites / Grammar by Ear / Sentences by Topic) went in, .tp-bands holds heading
+   elements as well as tiles — and an `1fr` track sizes to the tallest fr track, so a heading
+   sitting on grid-auto-rows would be given a whole tile's height. gen_topics_pages.js emits an
+   inline `grid-template-rows: auto 1fr auto 1fr auto repeat(N, 1fr)`, which gives the headings
+   `auto` and leaves every tile on 1fr — one grid, so all seven tiles stay equal.
+   ⛔ Do not replace that with a wrapper per heading or a subgrid: either splits the tiles across
+   formatting contexts and the equal-height guarantee goes with it, visibly at the narrow widths
+   where the names wrap to different line counts. The rule below is the fallback for any row the
+   template does not name. */
 .tp-bands { display: grid; gap: 10px; grid-auto-rows: 1fr; }
 .tp-band {
   display: flex; align-items: center; gap: 1rem; text-decoration: none; position: relative;
@@ -1098,6 +1108,9 @@
 /* ── the Favourites view ────────────────────────────────────────────────────────────────── */
 /* One heading per band that actually HAS a favourite — an empty band heading above nothing
    reads as a loading failure. topics-fav.js emits these; see renderFavPage(). */
+/* ⚠ ALSO USED ON /topics for the three group headings (owner, 2026-08-27: "the headings would
+   be the same style as the headings that appear within the favourites menu"). Reused, not
+   re-declared — two heading rules with identical values look fine until someone edits one. */
 .tp-fav-band { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--text-secondary); margin: 1.6rem 0 0.7rem; }
 .tp-fav-band:first-child { margin-top: 0; }

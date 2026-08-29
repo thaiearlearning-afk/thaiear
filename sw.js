@@ -33,7 +33,16 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v511';   // v511: a long unit name no longer runs under the favourites
+const VERSION = 'v512';   // v512: GRAMMAR BY EAR IS PUBLIC. The hidden-section scaffolding is
+                          // gone: grammar-hub.js (the owner-gated card injected after an async
+                          // SHA-256 check) is DELETED, the tile and three headings on /topics are
+                          // static HTML, a Grammar pill joined the tab row on all six band pages,
+                          // and the 21 grammar pages lost their noindex. The Progress page now
+                          // lists the 20 units above the topics. Precached and changed:
+                          // topics.html, all five band pages, topics-favourites.html,
+                          // topics-page.css, topics-page.js, progress.html, index.html — and
+                          // /grammar.html is precached for the first time.
+                          // v511: a long unit name no longer runs under the favourites
                           // heart. .topic-name and .topic-meta-row shared one 22px gutter
                           // and only the meta-row got the te-dl widening, so on a
                           // download-capable device the name reserved 22px while the heart
@@ -972,6 +981,14 @@ const PRECACHE = [
      "you are offline". */
   '/topics-favourites.html',
   '/topics-fav.js',
+  /* The Grammar by Ear hub (2026-08-29, at go-live). Precached for the same reason as /topics
+     and the five bands: it is the catalogue for its arm and the only route to the 20 unit pages,
+     and its cards are static HTML, so offline it renders in full.
+     ⛔ THE 20 UNIT PAGES STAY OUT, exactly like the 93 topic pages — too heavy to seed on
+     install, and already cached two ways (network-first on first online visit, and the durable
+     thaiear-dl cache for a downloaded unit). CLAUDE.md states the topic-page exception; this arm
+     is the same shape and inherits it. */
+  '/grammar.html',
   /* The one identity reader. Blocking in every page's head, so it must be on disk. */
   '/identity.js',
   '/topics-page.css', '/topics-page.js',

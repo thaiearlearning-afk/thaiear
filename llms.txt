@@ -100,9 +100,36 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Buddhism 7 in Thai](https://thaiear.com/topic-35d): Upper intermediate → Advanced, 10 sentences
 - [Media & entertainment 4 in Thai](https://thaiear.com/topic-25d): Upper intermediate → Advanced, 14 sentences
 
+## Grammar by Ear
+
+Each unit drills one Thai structure — a word with several uses, or a set of forms that are
+easily confused — through complete sentences with audio.
+
+- [Dâi (ได้) — Thai grammar by ear](https://thaiear.com/grammar-01): Lower intermediate, 14 sentences
+- [Maa (มา) — Thai grammar by ear](https://thaiear.com/grammar-02): Lower intermediate, 9 sentences
+- [Yùu & thîi (อยู่ & ที่) — Thai grammar by ear](https://thaiear.com/grammar-03): Lower intermediate, 13 sentences
+- [Ao (เอา) — Thai grammar by ear](https://thaiear.com/grammar-04): Lower intermediate, 9 sentences
+- [Gâw (ก็) — Thai grammar by ear](https://thaiear.com/grammar-05): Lower intermediate, 13 sentences
+- [Hâi (ให้) — Thai grammar by ear](https://thaiear.com/grammar-06): Lower intermediate, 13 sentences
+- [Wái (ไว้) — Thai grammar by ear](https://thaiear.com/grammar-07): Lower intermediate, 8 sentences
+- [Loei (เลย) — Thai grammar by ear](https://thaiear.com/grammar-21): Lower intermediate, 7 sentences
+- [Bpai (ไป) — Thai grammar by ear](https://thaiear.com/grammar-22): Lower intermediate, 8 sentences
+- [Already, just & first — Thai grammar by ear](https://thaiear.com/grammar-09): Lower intermediate, 9 sentences
+- [Even though, but & however — Thai grammar by ear](https://thaiear.com/grammar-10): Lower intermediate, 16 sentences
+- [Went and, in vain, by accident — Thai grammar by ear](https://thaiear.com/grammar-12): Lower intermediate, 11 sentences
+- [Gwàa (กว่า) — Thai grammar by ear](https://thaiear.com/grammar-13): Lower intermediate, 7 sentences
+- [Gâw dâi & mâi gâw (ก็ได้ & ไม่ก็) — Thai grammar by ear](https://thaiear.com/grammar-14): Lower intermediate, 7 sentences
+- [Asking yes or no — Thai grammar by ear](https://thaiear.com/grammar-15): Lower intermediate, 10 sentences
+- [Moving the conversation on — Thai grammar by ear](https://thaiear.com/grammar-17): Lower intermediate, 8 sentences
+- [Because & so (เพราะ…เลย & เนื่องจาก…จึง) — Thai grammar by ear](https://thaiear.com/grammar-18): Lower intermediate, 6 sentences
+- [Khûen & long (ขึ้น & ลง) — Thai grammar by ear](https://thaiear.com/grammar-19): Lower intermediate, 5 sentences
+- [Thùuk & doon (ถูก & โดน) — Thai grammar by ear](https://thaiear.com/grammar-23): Lower intermediate, 6 sentences
+- [Fàak (ฝาก) — Thai grammar by ear](https://thaiear.com/grammar-20): Lower intermediate, 6 sentences
+
 ## Pages
 
 - [Topics by level](https://thaiear.com/topics): Every topic grouped into five difficulty bands, beginner to advanced
+- [Grammar by Ear](https://thaiear.com/grammar): 20 units, each drilling one Thai structure by ear
 - [Read Thai](https://thaiear.com/read): Learn to read Thai script from zero — the consonant classes, vowels and tone rules, with audio and self-tests
 - [About](https://thaiear.com/about): What ThaiEar is and who it's for
 - [Guide](https://thaiear.com/guide): How to use ThaiEar to learn Thai by listening

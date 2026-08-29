@@ -377,6 +377,86 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://thaiear.com/grammar-01</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-02</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-03</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-04</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-05</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-06</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-07</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-21</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-22</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-09</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-10</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-12</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-13</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-14</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-15</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-17</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-18</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-19</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-23</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar-20</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://thaiear.com/topics</loc>
     <priority>0.9</priority>
   </url>
@@ -399,6 +479,10 @@
   <url>
     <loc>https://thaiear.com/topics-upper-intermediate-to-advanced</loc>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thaiear.com/grammar</loc>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://thaiear.com/read</loc>
