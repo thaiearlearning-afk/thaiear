@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v519';   // v519: guide.html gains a "Shadowing and active recall" section,
+const VERSION = 'v520';   // v520: guide.html - the Dynamic mp3 Player section MOVES to the end,
+                          // after Spaced repetition, and its intro is replaced by two plain
+                          // sentences. The old one carried three links and a lot of scaffolding
+                          // in a page that is otherwise continuous prose; the owner's call is
+                          // that it read as jarring, and those links live on /about anyway.
+                          // about.html gains a (see Guide) after "English-first is a must", so a
+                          // reader can reach the shadowing/active-recall section that explains it.
+                          // Both pages are PRECACHED.
+                          // v519: guide.html gains a "Shadowing and active recall" section,
                           // above Spaced repetition and below the dyn-player mock-up. It names
                           // what each playback direction actually trains and tells the reader
                           // which one to pick - Thai-first to shadow, English-first to retrieve.
