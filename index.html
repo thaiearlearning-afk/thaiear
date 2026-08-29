@@ -986,13 +986,18 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 <!-- Hand-built rather than left to footer.js, which stands down when it finds a .site-footer.
      The splash is a flex column filling exactly one screen, so anything appended after first
      paint steals height from the stage and reflows all three regions. -->
+<!-- ⚠ CLEAN URLS, NOT .html (2026-08-29). Cloudflare Pages 308-redirects /x.html to
+     /x, and that redirect is cf-cache-status: DYNAMIC - an uncached origin round trip
+     measured at 127-1315 ms, landing BEFORE the service worker starts, so Navigation
+     Preload cannot cover it. Every internal href on the site is extensionless for that
+     reason (CLAUDE.md, the SSR section). -->
 <footer class="site-footer">
   <span class="footer-note">thaiear.com &middot; &copy; <span id="copyright-year">2026</span> ThaiEar. All rights reserved.</span>
   <nav class="footer-links">
-    <a href="socials.html">Socials</a>
-    <a href="privacy.html">Privacy</a>
-    <a href="terms.html">Terms</a>
-    <a href="refunds.html">Refunds</a>
+    <a href="socials">Socials</a>
+    <a href="privacy">Privacy</a>
+    <a href="terms">Terms</a>
+    <a href="refunds">Refunds</a>
   </nav>
 </footer>
 

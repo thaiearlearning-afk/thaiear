@@ -28,6 +28,18 @@
 (function () {
   'use strict';
 
+  /* ⚠ CLEAN URLS. Cloudflare Pages 308-redirects /x.html -> /x; the redirect is
+     `cf-cache-status: DYNAMIC` (an uncached origin round trip, 127-1315 ms measured) and it
+     happens BEFORE the service worker starts, so Navigation Preload cannot cover it. Mirrors
+     hrefFor() in topics.js; kept local so this file never depends on topics.js load order.
+     ⚠ Only strips a TRAILING .html - build a query string by concatenation, not inside it. */
+  var LOCAL_HOST = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
+  function pageHref(p) {
+    var s = String(p || '').replace(/\.html$/i, '');
+    return (LOCAL_HOST && s) ? s + '.html' : s;   // localhost has no clean-URL resolution
+  }
+
+
   var stage = document.querySelector('.tri');
   var el = document.getElementById('te-hero-cta');
   if (!stage || !el) return;
@@ -220,9 +232,9 @@
     var user;
     if (forced) {
       user = forced === 'out' ? null
-           : forced === 'named' ? { username: 'Toby Ralph', email: 'toby@example.com' }
+           : forced === 'named' ? { username: 'Alex Rivers', email: 'alex@example.com' }
            /* the first-signup wording, for the mock harness */
-           : forced === 'new' ? { username: 'Toby Ralph', email: 'toby@example.com',
+           : forced === 'new' ? { username: 'Alex Rivers', email: 'alex@example.com',
                                   created_at: new Date().toISOString() }
            /* a deliberately punishing name, so the shrink-to-fit can be judged rather than
               assumed — this is the case the owner asked about */
@@ -231,7 +243,7 @@
               line. (A name the user TYPED reaches it whole, but updateDisplayName caps that at
               20 characters, which is shorter than this.) */
            : forced === 'long' ? { username: 'Bartholomewicz-Wolfeschlegelstein', email: 'b@example.com' }
-           : { username: 'toby', email: 'toby@example.com' };
+           : { username: 'alex', email: 'alex@example.com' };
       /* ⚠ EVERY MOCK ABOVE IS A PROVIDER ACCOUNT, so each carries the provider's own copy of its
          name. Without it greetName() reads them as names the user had TYPED — the two fields
          disagreeing is exactly what marks an edit — and the mock would preview a whole-name
@@ -248,7 +260,7 @@
       if (!g) return '';
       user = g.state === 'in' ? g.user : null;
     }
-    if (!user) return '<a class="cta-btn" href="join.html?next=%2F">Create a free account</a>';
+    if (!user) return '<a class="cta-btn" href="' + pageHref('join.html') + '?next=%2F">Create a free account</a>';
     var n = greetName(user);
     var d = (forced && forced !== 'new') ? 8 : streakFor(user);
     var hello = firstVisit(user) ? 'Welcome' : 'Welcome back';

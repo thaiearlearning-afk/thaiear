@@ -33,7 +33,25 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v517';   // v517: about.html - the listening-resources paragraph splits in two,
+const VERSION = 'v518';   // v518: THE CLEAN-URL SWEEP. Every remaining internal href that still
+                          // said .html now goes through a pageHref()/pageLinkHref() helper or is
+                          // written extensionless: the 34 hand-written links on the static pages,
+                          // both generator footers, and 20 JS navigation targets across nav,
+                          // player, auth, read, pl-list and home-cta. Each one was an uncached
+                          // 308 at the origin (127-1315 ms) landing BEFORE the worker starts, so
+                          // Navigation Preload could not cover it. Precached and changed: index,
+                          // about, guide, account, join, privacy, refunds, subscribe, terms,
+                          // deleted, topics + the five band pages, nav.js, player.js, auth.js,
+                          // pl-list.js, home-cta.js, read.js.
+                          // ⛔ sw.js's OWN .html strings are cache keys, not links - leave them.
+                          // Also in v518: footer.js routes its links through the same helper
+                          // (it is on nearly every page, so it was the most-served copy of
+                          // the slow form); the Grammar hub says "20 topics" not
+                          // "20 topics · 185 sentences"; and .tp-intro lost its 62ch cap,
+                          // which on a 3-column desktop grid stopped the explainer two
+                          // columns short and read as a layout fault. topics-page.css,
+                          // footer.js and grammar.html are all PRECACHED.
+                          // v517: about.html - the listening-resources paragraph splits in two,
                           // and the two playback directions are now named for the techniques they
                           // are: Thai-first is shadowing, English-first is active recall /
                           // retrieval practice. Owner's wording. about.html is PRECACHED.

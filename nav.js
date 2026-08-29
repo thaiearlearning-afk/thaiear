@@ -480,7 +480,7 @@
       if (guess && guess.state === 'in') {
         return `<span class="nav-username">${escapeHtml(guess.user.username)}</span>` + personMenuHtml();
       }
-      if (guess && guess.state === 'out') return `<a class="nav-auth" href="account.html">Log in</a>`;
+      if (guess && guess.state === 'out') return `<a class="nav-auth" href="${pageHref('account.html')}">Log in</a>`;
       return '<span class="nav-auth nav-auth-pending" aria-hidden="true" ' +
         'style="display:inline-block;min-width:48px;opacity:0"></span>';
     }
@@ -494,7 +494,7 @@
     }
     // Logged out: send to the account page, which shows the Terms/Privacy notice next
     // to the "Sign in with Google" button (rather than firing OAuth silently from the nav).
-    return `<a class="nav-auth" href="account.html">Log in</a>`;
+    return `<a class="nav-auth" href="${pageHref('account.html')}">Log in</a>`;
   }
 
   function navHtml() {

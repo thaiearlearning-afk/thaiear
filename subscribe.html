@@ -164,14 +164,14 @@
     <button class="btn btn-primary" id="subscribe-btn">Subscribe</button>
     <p class="sub-status" id="sub-status"></p>
     <p style="font-size:12px;color:var(--text-tertiary);text-align:center;margin-top:0.9rem;line-height:1.6">
-      By subscribing you agree to our <a href="terms.html" style="color:var(--accent);text-decoration:none">Terms</a>
-      and <a href="refunds.html" style="color:var(--accent);text-decoration:none">Refund Policy</a>, and ask us to
+      By subscribing you agree to our <a href="terms" style="color:var(--accent);text-decoration:none">Terms</a>
+      and <a href="refunds" style="color:var(--accent);text-decoration:none">Refund Policy</a>, and ask us to
       start your access immediately — so the 14-day cancellation right no longer applies once it begins.
-      See our <a href="privacy.html" style="color:var(--accent);text-decoration:none">Privacy Policy</a>.
+      See our <a href="privacy" style="color:var(--accent);text-decoration:none">Privacy Policy</a>.
     </p>
   </div>
 
-  <a class="sub-back" href="index.html">← Back to all topics</a>
+  <a class="sub-back" href="/">← Back to all topics</a>
 </div>
 
 <script>
@@ -223,7 +223,7 @@ function startCheckout() {
       }
       btn.disabled = false; btn.textContent = 'Subscribe';
       if (code === 409 || (j && j.error === 'already_subscribed')) {
-        st.innerHTML = 'You already have an active membership — <a href="account.html" style="color:var(--accent);font-weight:500;text-decoration:none">manage it here</a>.';
+        st.innerHTML = 'You already have an active membership — <a href="account" style="color:var(--accent);font-weight:500;text-decoration:none">manage it here</a>.';
         return;
       }
       st.textContent = 'Checkout error [' + code + ']: ' + (j.detail || j.error || (t || '').slice(0, 180) || 'unknown');
@@ -248,7 +248,7 @@ function renderSub() {
   var user = a.getUser();
   if (user && a.isSubscribed && a.isSubscribed()) {
     btn.textContent = 'You’re a member ✓'; btn.disabled = true;
-    el.innerHTML = 'You already have an active membership — <a href="account.html" style="color:var(--accent);font-weight:500;text-decoration:none">manage it here</a>.';
+    el.innerHTML = 'You already have an active membership — <a href="account" style="color:var(--accent);font-weight:500;text-decoration:none">manage it here</a>.';
   } else {
     btn.disabled = false;
     btn.textContent = user ? 'Subscribe — ' + PRICE : 'Sign in to subscribe';

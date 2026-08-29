@@ -693,7 +693,7 @@
     return '<div class="signin-gate">' +
       '<div class="sg-title">Sign in to test yourself</div>' +
       '<p>The tests are free — signing in means every attempt, best score and average is saved to your results page.</p>' +
-      '<a class="rd-play-pill sg-btn" href="join.html?feature=1&next=' + encodeURIComponent(here) + '">Sign in — it\'s free</a>' +
+      '<a class="rd-play-pill sg-btn" href="' + pageHref('join.html') + '?feature=1&next=' + encodeURIComponent(here) + '">Sign in — it\'s free</a>' +
       '</div>';
   }
   // Returns true (and renders the gate) when the visitor must sign in first.
@@ -1529,7 +1529,7 @@
       recordResult('quiz', 'part' + part, got, order.length);
       attemptRecorded = true;
       submitMsg.innerHTML = 'Score: <strong>' + got + ' / ' + order.length + '</strong> (' +
-        Math.round(100 * got / order.length) + '%) — saved to <a href="read-results.html">Your results</a>.';
+        Math.round(100 * got / order.length) + '%) — saved to <a href="' + pageHref('read-results.html') + '">Your results</a>.';
     });
 
     root.querySelector('#quiz-shuffle').addEventListener('click', function () { renderQuizPart(root, part); });

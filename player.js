@@ -1485,7 +1485,7 @@
        can't pull new audio without signing back in. */
     if (!entitledForPage()) { gate(TIER); return; }
     if (downloadNeedsSignIn()) {
-      window.location.href = 'join.html?feature=1&next=' +
+      window.location.href = pageLinkHref('join.html') + '?feature=1&next=' +
         encodeURIComponent(PAGE_FILE + location.search);
       return;
     }
@@ -2067,7 +2067,7 @@
     // gets the premium message rather than a sign-in prompt that wouldn't actually unlock it.
     if (!entitledForPage()) { gate(TIER); return; }
     if (downloadNeedsSignIn()) {
-      window.location.href = 'join.html?feature=1&next=' +
+      window.location.href = pageLinkHref('join.html') + '?feature=1&next=' +
         encodeURIComponent(PAGE_FILE + location.search);
       return;
     }
@@ -3099,7 +3099,7 @@
     '<div class="offline-bar" id="offline-bar" style="display:none"></div>' +
     '<p class="orientation-text">' +
       '<strong>How to use:</strong> Listen to the <strong>Thai-first</strong> audio a few times to get familiar, then switch to <strong>English-first</strong> to test your recall — try to say the Thai before it plays. Pause anytime. ' +
-      '<a href="guide.html">New to ThaiEar? Read the full guide →</a>' +
+      '<a href="' + pageLinkHref('guide.html') + '">New to ThaiEar? Read the full guide →</a>' +
     '</p>' +
     '<div class="controls-row">' +
       '<div class="controls-left">' +
@@ -3410,7 +3410,7 @@
      tier that no longer exists. Same behaviour, honest name — nothing here was ever about the
      member TIER, only about needing a login. */
   function gateSignIn() {
-    window.location.href = 'join.html?feature=1&next=' + encodeURIComponent(PAGE_FILE);
+    window.location.href = pageLinkHref('join.html') + '?feature=1&next=' + encodeURIComponent(PAGE_FILE);
   }
   // gate(): what a non-entitled tap does. Premium → the paywall on the WEBSITE, but in the APP an
   // informational sheet instead (Google Play forbids steering to outside payment). A tier that only
@@ -3435,7 +3435,7 @@
       if (lastKnownSubbed && !canUseOffline('premium')) { showLicenceOverlay(); return; }
     }
     if (NATIVE) { premiumInfoSheet(); return; }
-    window.location.href = 'subscribe.html';
+    window.location.href = pageLinkHref('subscribe.html');
   }
   /* ══ PLAYLISTS: PER-SENTENCE ENTITLEMENT ═══════════════════════════════════════════════
      A playlist MIXES TOPICS, so entitlement is a property of each sentence, not of the page —
@@ -3639,7 +3639,7 @@
       ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
       var c = ov.querySelector('#te-ps-close'); if (c) c.addEventListener('click', close);
       var s = ov.querySelector('#te-ps-signin');
-      if (s) s.addEventListener('click', function () { window.location.href = 'account.html'; });
+      if (s) s.addEventListener('click', function () { window.location.href = pageLinkHref('account.html'); });
     } catch (_) {}
   }
 
@@ -5810,7 +5810,7 @@
     player: 'ThaiEar’s Dynamic mp3 Player constructs mp3 audio to your specification. ' +
       'Press play to construct this one — it is then stored on your device and replaced each ' +
       'time you generate a new dynamic mp3. Learn more about the Dynamic Player in our ' +
-      '<a href="guide.html">guide</a>.',
+      '<a href="' + pageLinkHref('guide.html') + '">guide</a>.',
     reps: 'This decides how many times a Thai sentence is spoken.',
     // r151 (owner-authored, verbatim). The last sentence is the one that earns its place: after
     // r147 the floor no longer scales, so 0.25x really does bottom out at a couple of seconds
@@ -7613,12 +7613,12 @@
   function dynPlselBack() {
     if (!dynSel || !dynSel.plsel) return;
     dynPlselStash();
-    location.href = 'playlists.html?plsel=' + encodeURIComponent(dynSel.id) +
+    location.href = pageLinkHref('playlists.html') + '?plsel=' + encodeURIComponent(dynSel.id) +
       '&pln=' + encodeURIComponent(dynSel.name) + '&k=cu38961y';
   }
   function dynPlselCancel() {
     dynPendClear();
-    location.href = 'playlists.html';
+    location.href = pageLinkHref('playlists.html');
   }
   // Auto-entry for the plsel flow: wait for auth + playlists, then open select mode.
   function dynPlselBoot() {
@@ -7632,7 +7632,7 @@
       if (!(a.getUser && a.getUser())) {
         dynPendClear();
         dynMsg('Sign in to use playlists', 'Playlists are saved to your account.', 'OK',
-          function () { location.href = 'playlists.html'; });
+          function () { location.href = pageLinkHref('playlists.html'); });
         return;
       }
       var PL = a.playlists;
@@ -7643,7 +7643,7 @@
         if (!p) {
           dynPendClear();
           dynMsg('Playlist not found', 'It may have been deleted on another device.', 'OK',
-            function () { location.href = 'playlists.html'; });
+            function () { location.href = pageLinkHref('playlists.html'); });
           return;
         }
         var pend = dynPendRead();
@@ -7698,7 +7698,7 @@
       });
     });
     chain.then(function () {
-      if (plsel) { dynPendClear(); location.href = 'playlists.html'; return; }
+      if (plsel) { dynPendClear(); location.href = pageLinkHref('playlists.html'); return; }
       dynExitSelect();
       /* ⚠ Only the FALSE case is trusted — navigator.onLine reports *online* in airplane mode in
          this WebView, so `true` proves nothing. That asymmetry is fine here: a genuinely offline
@@ -9629,7 +9629,7 @@
       '<span class="te-endcta-title">That’s all ' + sentences.length + ' sentences.</span>' +
       '<span class="te-endcta-desc">Save what you’ve done — a free account keeps your progress ' +
         'and lets you build playlists with any sentences on the site.</span>' +
-      '<a class="te-endcta-cta" href="join.html?feature=1&next=' +
+      '<a class="te-endcta-cta" href="' + pageLinkHref('join.html') + '?feature=1&next=' +
         encodeURIComponent(PAGE_FILE) + '">Create a free account →</a>';
     nav.parentNode.insertBefore(d, nav);
   }

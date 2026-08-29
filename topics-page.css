@@ -1227,6 +1227,11 @@
 
 /* The Grammar by Ear hub is the ONLY listing page with a standing explainer — see the
    note in gen_grammar_page.js for why the other listing pages deliberately have none. */
-.tp-intro { max-width: 62ch; margin: 0.15rem 0 1.1rem; font-size: 15px; line-height: 1.6;
+/* ⛔ NO max-width (owner, 2026-08-29). It was 62ch - a readability measure - and on a desktop
+   three-column grid that stopped the line two columns short of the cards below it, which read as
+   a layout fault rather than a typographic choice. The container (.tp-wrap.tp-wide) sets the
+   width now, so the explainer spans the same span as the grid it introduces. Unchanged on
+   mobile, where 62ch was never the constraint. */
+.tp-intro { margin: 0.15rem 0 1.1rem; font-size: 15px; line-height: 1.6;
   color: var(--text-secondary); }
 @media (max-width: 800px) { .tp-intro { font-size: 14px; margin-bottom: 0.9rem; } }

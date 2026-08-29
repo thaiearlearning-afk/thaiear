@@ -18,6 +18,18 @@
 
 (function () {
   'use strict';
+
+  /* ⚠ CLEAN URLS. Cloudflare Pages 308-redirects /x.html -> /x; the redirect is
+     `cf-cache-status: DYNAMIC` (an uncached origin round trip, 127-1315 ms measured) and it
+     happens BEFORE the service worker starts, so Navigation Preload cannot cover it. Mirrors
+     hrefFor() in topics.js; kept local so this file never depends on topics.js load order.
+     ⚠ Only strips a TRAILING .html - build a query string by concatenation, not inside it. */
+  var LOCAL_HOST = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
+  function pageHref(p) {
+    var s = String(p || '').replace(/\.html$/i, '');
+    return (LOCAL_HOST && s) ? s + '.html' : s;   // localhost has no clean-URL resolution
+  }
+
   if (window.ThaiEarAuth) return; // load once
 
   // Custom auth domain (Supabase custom-domain add-on) so the Google OAuth consent
@@ -959,9 +971,9 @@
     try { if (Browser && Browser.close) Browser.close(); } catch (_) {}
     var status = 'success';
     try { status = (new URLSearchParams(url.split('?')[1] || '')).get('status') || 'success'; } catch (_) {}
-    if (status === 'cancel') { try { window.location.href = '/subscribe.html'; } catch (_) {} return; }
+    if (status === 'cancel') { try { window.location.href = '/' + pageHref('subscribe.html'); } catch (_) {} return; }
     refreshSubscription();   // re-read the (now active) subscription, then show the success page
-    try { window.location.href = '/account.html?sub=success'; } catch (_) {}
+    try { window.location.href = '/' + pageHref('account.html') + '?sub=success'; } catch (_) {}
   }
   function nativeGoogleSignIn() {
     var Browser = capPlugin('Browser');
@@ -2245,7 +2257,7 @@
     if (blob.indexOf('otp') !== -1 || blob.indexOf('link') !== -1) {
       msg = 'That sign-in link has already been used or has expired.';
       label = 'Get a new link';
-      action = function () { location.href = '/join.html'; };
+      action = function () { location.href = '/' + pageHref('join.html'); };
     } else if (blob.indexOf('access_denied') !== -1 || blob.indexOf('cancel') !== -1) {
       msg = 'Sign-in was cancelled.';
       label = 'Try again';

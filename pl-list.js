@@ -42,6 +42,18 @@
 */
 (function () {
   'use strict';
+
+  /* ⚠ CLEAN URLS. Cloudflare Pages 308-redirects /x.html -> /x; the redirect is
+     `cf-cache-status: DYNAMIC` (an uncached origin round trip, 127-1315 ms measured) and it
+     happens BEFORE the service worker starts, so Navigation Preload cannot cover it. Mirrors
+     hrefFor() in topics.js; kept local so this file never depends on topics.js load order.
+     ⚠ Only strips a TRAILING .html - build a query string by concatenation, not inside it. */
+  var LOCAL_HOST = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
+  function pageHref(p) {
+    var s = String(p || '').replace(/\.html$/i, '');
+    return (LOCAL_HOST && s) ? s + '.html' : s;   // localhost has no clean-URL resolution
+  }
+
   if (window.ThaiEarPlList) return;   // script tag included twice — the export is already there
 
   var STYLE_ID = 'pl-list-styles';
@@ -1214,7 +1226,7 @@
           '<div class="pl-box-body">' +
             (p.items.length
               // Open playlist → the ?pl= PLAYER, which stays its own top-level page. Not the panel.
-              ? '<a class="pl-open" href="playlists.html?pl=' + encodeURIComponent(p.id) + '">▶ Open player</a>'
+              ? '<a class="pl-open" href="' + pageHref('playlists.html') + '?pl=' + encodeURIComponent(p.id) + '">▶ Open player</a>'
               : '<p class="pl-note">This playlist is empty.</p>') +
             (p.items.length ? '<button class="pl-remsent" type="button">Remove sentences</button>' : '') +
             '<button class="pl-rename" type="button">Rename playlist</button>' +

@@ -526,7 +526,7 @@ function postCancel(resume) {
    cargo-culting the pattern and would just add a gap.
 
    ⚠ THE READ STATE IS ONE LINE, AND IT HAS TO STAY ONE LINE (owner, 2026-08-22: "a lot of
-   unnecessary space under Toby Ralph | Change"). What made it tall was not the layout but
+   unnecessary space under [the display name] | Change"). What made it tall was not the layout but
    two things reserving space they were not using: a "Display name" heading above a name that
    needs no label, and an always-on status paragraph with min-height:1em. Both are gone —
    setStatus() now takes its height only while it has something to say.
@@ -607,7 +607,7 @@ function setStatus(msg, err) {
   st.textContent = msg || '';
   st.style.color = err ? '#B00020' : '';
   /* A permanently reserved status line is what made this box tall for no reason (owner,
-     2026-08-22: "a lot of unnecessary space under Toby Ralph | Change"). It is empty almost
+     2026-08-22: "a lot of unnecessary space under [the display name] | Change"). It is empty almost
      always, so it takes no room until it has something to say — and it only ever appears
      while the row is already expanded, so nothing shifts under a reader. */
 }
@@ -720,7 +720,7 @@ function renderMembershipBox(s) {
     line.innerHTML = 'Membership: <strong style="color:var(--accent)">Free</strong>';
     acts.innerHTML = '';
     setIsland(native ? '' :
-      '<a class="btn btn-gold btn-wide" href="subscribe.html" style="text-decoration:none">Upgrade to Premium</a>');
+      '<a class="btn btn-gold btn-wide" href="subscribe" style="text-decoration:none">Upgrade to Premium</a>');
   }
 }
 // Build a membership-state object from the cached Supabase subscription (instant).
@@ -1143,8 +1143,8 @@ function renderAccount() {
         '<p id="login-email-status" class="acct-muted" style="margin-top:8px;min-height:1em"></p>' +
         '<div id="login-code-wrap" style="display:none;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)"><p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">Link not working, or the email opening in the wrong browser? Enter the code from that email instead.</p><input id="login-code-input" class="login-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code from your email"><button class="btn btn-ghost" id="login-code-btn" onclick="signInWithCode()">Sign in with the code</button><p id="login-code-status" style="margin-top:8px;min-height:1em;font-size:13px;color:var(--text-tertiary)"></p></div>' +
         '<p class="acct-muted login-terms">By continuing you agree to our ' +
-          '<a href="terms.html" style="color:var(--accent);text-decoration:none">Terms</a> and ' +
-          '<a href="privacy.html" style="color:var(--accent);text-decoration:none">Privacy Policy</a>.</p>' +
+          '<a href="terms" style="color:var(--accent);text-decoration:none">Terms</a> and ' +
+          '<a href="privacy" style="color:var(--accent);text-decoration:none">Privacy Policy</a>.</p>' +
       '</div>';
     return;
   }
