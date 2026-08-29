@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v518';   // v518: THE CLEAN-URL SWEEP. Every remaining internal href that still
+const VERSION = 'v519';   // v519: guide.html gains a "Shadowing and active recall" section,
+                          // above Spaced repetition and below the dyn-player mock-up. It names
+                          // what each playback direction actually trains and tells the reader
+                          // which one to pick - Thai-first to shadow, English-first to retrieve.
+                          // Owner's edit to the shadowing sentence. guide.html is PRECACHED.
+                          // v518: THE CLEAN-URL SWEEP. Every remaining internal href that still
                           // said .html now goes through a pageHref()/pageLinkHref() helper or is
                           // written extensionless: the 34 hand-written links on the static pages,
                           // both generator footers, and 20 JS navigation targets across nav,
