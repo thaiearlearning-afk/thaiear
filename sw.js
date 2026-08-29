@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v523';   // v523: guide.html - the spaced-repetition paragraph splits after
+const VERSION = 'v524';   // v524: about.html - the feature paragraph is the owner's rewrite:
+                          // audio leads, the two playback directions are hyphenated
+                          // (Thai-to-English), and the reading course joins on an em dash rather
+                          // than a trailing clause about producing spoken Thai. Plus the closing
+                          // comma the "also known as retrieval practice" appositive was missing.
+                          // about.html is PRECACHED.
+                          // v523: guide.html - the spaced-repetition paragraph splits after
                           // "over the course of a week or more", so the method and what it buys
                           // you are two paragraphs rather than one long one. guide.html is
                           // PRECACHED.
