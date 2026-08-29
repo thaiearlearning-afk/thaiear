@@ -33,7 +33,10 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v525';   // v525: the count claim reaches the HOMEPAGE meta description, which
+const VERSION = 'v526';   // v526: the last "real sentences" - the homepage's Organization
+                          // JSON-LD, the one copy not visible on any page and the easiest to
+                          // leave behind. index.html is PRECACHED.
+                          // v525: the count claim reaches the HOMEPAGE meta description, which
                           // had carried none - "2,400+ whole Thai sentences by topic". And "real
                           // sentences" becomes "whole sentences" on /topics and the five band
                           // pages, matching about.html. ⚠ Google's ad-copy autofill reads these
