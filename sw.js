@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v514';   // v514: guide.html opening line - ThaiEar takes complete beginners and
+const VERSION = 'v515';   // v515: about.html loses the "ThaiEar works best once you can already
+                          // read Thai script" paragraph (owner) - Read Thai is already on the
+                          // home splash and named at the top of the guide, and the paragraph
+                          // gated the site on a skill transliterations removed the need for.
+                          // about.html is PRECACHED. The 48 topic-page gloss fixes in the same
+                          // commit are NOT precached and need no bump of their own.
+                          // v514: guide.html opening line - ThaiEar takes complete beginners and
                           // experienced learners alike to an advanced level of speaking AND
                           // listening. The old line promised only an intermediate level and
                           // required the reader to know the Thai script already, which stopped
