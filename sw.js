@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v512';   // v512: GRAMMAR BY EAR IS PUBLIC. The hidden-section scaffolding is
+const VERSION = 'v513';   // v513: progress.html changed and IS PRECACHED - the Playlists heading
+                          // is now the same .prog-band as every other group, in the one list.
+                          // Shipped a few minutes behind v512 because the gloss/heading fix went
+                          // out without this bump: grammar-*.html are not precached and the eye
+                          // stopped there, but progress.html is. Cache-first would have served
+                          // every returning device the old page indefinitely.
+                          // v512: GRAMMAR BY EAR IS PUBLIC. The hidden-section scaffolding is
                           // gone: grammar-hub.js (the owner-gated card injected after an async
                           // SHA-256 check) is DELETED, the tile and three headings on /topics are
                           // static HTML, a Grammar pill joined the tab row on all six band pages,
