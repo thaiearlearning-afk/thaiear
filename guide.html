@@ -84,6 +84,13 @@
   /* Read Thai callout — a deliberate aside from the article flow */
   .readthai-box { background: var(--accent-light); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; margin-bottom: 0.95rem; }
   .readthai-box p { margin: 0; color: #3B3488; }
+    /* ⚠ UNDERLINED ON PURPOSE (owner, 2026-08-29: "so its obvious it is a link"). The site's
+       base rule is `a { text-decoration: none }`, and inside this box the link is ALSO bold and
+       sitting on the accent-tinted background, so colour alone was doing all the work of saying
+       "this is a link" — and it was not doing it. The offset keeps the rule clear of the
+       descenders in "Read Thai" rather than cutting through them. */
+    .readthai-box a { text-decoration: underline; text-underline-offset: 2px;
+      text-decoration-thickness: 1px; }
   strong { color: var(--text-primary); font-weight: 600; }
   em { font-style: italic; }
   .signoff { margin-top: 1.8rem; }

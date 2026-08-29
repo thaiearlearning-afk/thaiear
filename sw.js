@@ -33,7 +33,11 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v515';   // v515: about.html loses the "ThaiEar works best once you can already
+const VERSION = 'v516';   // v516: the Read Thai link in guide.html's blue box is underlined.
+                          // The base rule is `a { text-decoration: none }` and the link is bold
+                          // on the accent-tinted background, so colour alone was carrying "this
+                          // is a link" and was not carrying it. guide.html is PRECACHED.
+                          // v515: about.html loses the "ThaiEar works best once you can already
                           // read Thai script" paragraph (owner) - Read Thai is already on the
                           // home splash and named at the top of the guide, and the paragraph
                           // gated the site on a skill transliterations removed the need for.
