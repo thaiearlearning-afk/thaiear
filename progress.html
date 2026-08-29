@@ -300,8 +300,8 @@
         card(humanTime(tot.seconds), 'Thai listening time') +
       '</div>' +
 
+      /* playlistRows() is folded into topicList()'s single list — see the note there. */
       topicList(repsMap) +
-      playlistList(repsMap) +
 
       (user ? resetBlock() : '');
 
@@ -376,6 +376,16 @@
       }
       rows += unitRow(t, u, reps);
     }
+    /* ⚠ THE PLAYLIST ROWS JOIN THIS LIST — they are not a second one (owner, 2026-08-29:
+       "Playlists is a different font size/style and a larger gap separates playlists than the
+       gap between grammar by ear or other topics"). Playlists used to be its own <h2> with a
+       2rem top margin above its own .prog-list, so it read as a different KIND of thing from
+       "Grammar by Ear" and "Beginner" when it is the same kind: another group of rows.
+       ⚠ One .prog-list matters beyond the heading style: `.prog-row:first-child` and
+       `:last-child` round the ends of a list, so two lists means two rounded blocks with a gap.
+       Appending here keeps one continuous list, and the group heading is the same .prog-band the
+       arms and bands already use. */
+    rows += playlistRows(reps);
     return '<h2 class="prog-h2">Your listening time</h2>' +
            '<p class="prog-h2-note">Every time a Thai sentence is played in a topic or a ' +
            'playlist, this contributes to your Total Thai listening time and your per topic ' +
@@ -394,7 +404,7 @@
      pinned the row at 0 for ever) and then un-skip them when everything was locked. A sum needs
      neither: a sentence never played contributes zero on its own. Same shared listenSeconds() as
      pl-list.js and the topic cards — never a second implementation. */
-  function playlistList(reps) {
+  function playlistRows(reps) {
     var t = T(), a = A();
     if (!t || !t.listenSeconds) return '';
     if (!(a && a.getUser && a.getUser())) return '';       // signed out: nothing to list
@@ -410,8 +420,9 @@
              '</a>';
     }).join('');
 
-    return '<h2 class="prog-h2" style="margin-top:2rem">Playlists</h2>' +
-           '<div class="prog-list">' + rows + '</div>';
+    /* The same .prog-band heading, and the rows are returned bare so they land inside the one
+       list topicList() opens. No <h2>, no margin override. */
+    return '<div class="prog-band">Playlists</div>' + rows;
   }
 
   /* The local playlist cache, read the same way pl-list.js reads it: the API first, then the
