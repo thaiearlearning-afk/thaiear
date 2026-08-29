@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v520';   // v520: guide.html - the Dynamic mp3 Player section MOVES to the end,
+const VERSION = 'v521';   // v521: about.html says "whole sentences", not "real"/"complete" -
+                          // body copy and the meta/og/twitter descriptions, propagated with
+                          // gen_static_seo.js. guide.html drops the Thai sign-off and wordmark:
+                          // with the Dynamic mp3 Player section moved to the end, a farewell
+                          // underneath an interactive mock-up read as an afterthought. Its four
+                          // CSS rules went with it - .signoff was the only user of .thai and
+                          // .wordmark on that page. Both pages are PRECACHED.
+                          // v520: guide.html - the Dynamic mp3 Player section MOVES to the end,
                           // after Spaced repetition, and its intro is replaced by two plain
                           // sentences. The old one carried three links and a lot of scaffolding
                           // in a page that is otherwise continuous prose; the owner's call is
