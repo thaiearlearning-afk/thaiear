@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v526';   // v526: the last "real sentences" - the homepage's Organization
+const VERSION = 'v527';   // v527: about.html - the line introducing the three principles'
+                          // implementation no longer opens on "ThaiEar is designed around",
+                          // which repeated the "ThaiEar's design follows..." lead-in two
+                          // paragraphs above it. Now "Here's how it's implemented:".
+                          // about.html is PRECACHED.
+                          // v526: the last "real sentences" - the homepage's Organization
                           // JSON-LD, the one copy not visible on any page and the easiest to
                           // leave behind. index.html is PRECACHED.
                           // v525: the count claim reaches the HOMEPAGE meta description, which
