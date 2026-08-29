@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v524';   // v524: about.html - the feature paragraph is the owner's rewrite:
+const VERSION = 'v525';   // v525: the count claim reaches the HOMEPAGE meta description, which
+                          // had carried none - "2,400+ whole Thai sentences by topic". And "real
+                          // sentences" becomes "whole sentences" on /topics and the five band
+                          // pages, matching about.html. ⚠ Google's ad-copy autofill reads these
+                          // tags, so a stale figure here comes back later as a proposed headline.
+                          // index.html, topics.html and the five band pages are all PRECACHED.
+                          // v524: about.html - the feature paragraph is the owner's rewrite:
                           // audio leads, the two playback directions are hyphenated
                           // (Thai-to-English), and the reading course joins on an em dash rather
                           // than a trailing clause about producing spoken Thai. Plus the closing
