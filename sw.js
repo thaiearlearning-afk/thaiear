@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v513';   // v513: progress.html changed and IS PRECACHED - the Playlists heading
+const VERSION = 'v514';   // v514: guide.html opening line - ThaiEar takes complete beginners and
+                          // experienced learners alike to an advanced level of speaking AND
+                          // listening. The old line promised only an intermediate level and
+                          // required the reader to know the Thai script already, which stopped
+                          // being true when transliterations shipped. guide.html is PRECACHED.
+                          // v513: progress.html changed and IS PRECACHED - the Playlists heading
                           // is now the same .prog-band as every other group, in the one list.
                           // Shipped a few minutes behind v512 because the gloss/heading fix went
                           // out without this bump: grammar-*.html are not precached and the eye
