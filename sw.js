@@ -33,7 +33,11 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v516';   // v516: the Read Thai link in guide.html's blue box is underlined.
+const VERSION = 'v517';   // v517: about.html - the listening-resources paragraph splits in two,
+                          // and the two playback directions are now named for the techniques they
+                          // are: Thai-first is shadowing, English-first is active recall /
+                          // retrieval practice. Owner's wording. about.html is PRECACHED.
+                          // v516: the Read Thai link in guide.html's blue box is underlined.
                           // The base rule is `a { text-decoration: none }` and the link is bold
                           // on the accent-tinted background, so colour alone was carrying "this
                           // is a link" and was not carrying it. guide.html is PRECACHED.
