@@ -33,7 +33,11 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v521';   // v521: about.html says "whole sentences", not "real"/"complete" -
+const VERSION = 'v522';   // v522: about.html - the opening claim ends at "word glosses"; the
+                          // trailing "and the training of active recall" is dropped, since the
+                          // techniques now have their own paragraph and a bullet of their own.
+                          // "retrieval practice" bolded in that bullet. about.html is PRECACHED.
+                          // v521: about.html says "whole sentences", not "real"/"complete" -
                           // body copy and the meta/og/twitter descriptions, propagated with
                           // gen_static_seo.js. guide.html drops the Thai sign-off and wordmark:
                           // with the Dynamic mp3 Player section moved to the end, a farewell
