@@ -33,7 +33,14 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v527';   // v527: about.html - the line introducing the three principles'
+const VERSION = 'v528';   // v528: the Android app resumes a dyn reconstruct on the sentence
+                          // it was on, instead of restarting at 0:00. The shim that stands in
+                          // for <audio> inside the app kept the REPLACED track's currentTime
+                          // and duration, so the resume was bounded by the old session's
+                          // length, seeked the outgoing item, and then read its own write as
+                          // proof it had worked. Web-only fix -- no APK change. player.js is
+                          // precached, hence the bump. player.js r219.
+                          // v527: about.html - the line introducing the three principles'
                           // implementation no longer opens on "ThaiEar is designed around",
                           // which repeated the "ThaiEar's design follows..." lead-in two
                           // paragraphs above it. Now "Here's how it's implemented:".
