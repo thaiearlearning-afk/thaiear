@@ -776,6 +776,16 @@
 
   // A JS-driven download stops if the page unloads, so warn before leaving mid-download.
   var downloadingNow = false;
+  /* ⚠⚠ THE OFFLINE-BAR LOCK. downloadingNow is read by half a dozen places and cleared on every
+     exit of three different download paths, so guarding a paint on it means trusting all of them.
+     This is narrower and blunter: it is set the moment "Update" is pressed and released ONLY when
+     that download truly ends, and while it is held setOfflineState() will paint nothing except
+     'downloading'. Because setOfflineState() is the single painter for every state that carries a
+     button, that closes the whole class — including whichever Android-specific repaint survived
+     v532 on the app while the iPhone PWA was already clean (owner, 2026-09-16).
+     Held state is a liability, so it is released in FOUR places: both of dynDownloadHere's
+     never-started exits, its success handler and its catch. */
+  var offBarLock = false;
   window.addEventListener('beforeunload', function (e) { if (downloadingNow) { e.preventDefault(); e.returnValue = ''; } });
 
   function offlineDir(prefix) { return 'offline/' + prefix; }
@@ -1549,6 +1559,7 @@
        exits of every path (success and failure). That is what makes a second press impossible
        rather than merely unlikely: the button is gone, not just ignored. */
     downloadingNow = true;
+    offBarLock = true;
     offBarHeld = 0;
     setOfflineState('downloading', 0, 0);   // "0 of …" immediately; the real total lands below
     // The stored mp3 was built from the OLD clips, and its key encodes settings, not clip
@@ -1847,10 +1858,10 @@
     /* ⚠ Both of these exits must clear downloadingNow: dynUpdateAudio() now LATCHES it before
        calling us, so a "we never started" return would otherwise freeze the bar at
        "Downloading 0/?" with no way back — worse than the flicker it was added to stop. */
-    if (!navigator.onLine) { downloadingNow = false; latMark('dl:SKIP', 'navigator.onLine false'); offlineBarFlash('offline'); return; }   // don't grind through retries
+    if (!navigator.onLine) { downloadingNow = false; offBarLock = false; latMark('dl:SKIP', 'navigator.onLine false'); offlineBarFlash('offline'); return; }   // don't grind through retries
     var by = dynDlGroups(), prefixes = Object.keys(by), total = 0, done = 0;
     prefixes.forEach(function (k) { total += by[k].files.length; });
-    if (!total) { downloadingNow = false; latMark('dl:SKIP', 'nothing to fetch'); renderOfflineBar(); return; }
+    if (!total) { downloadingNow = false; offBarLock = false; latMark('dl:SKIP', 'nothing to fetch'); renderOfflineBar(); return; }
     /* The tap reached here, so anything the owner reports as "it did nothing" is downstream of
        this line. ?lat=1 is the only way to see that on the phone — the PWA has no console. */
     function step() {
@@ -2017,11 +2028,13 @@
       stampVerified();
       cachePage();
       downloadingNow = false;
+      offBarLock = false;
       latMark('dl:done', total + ' clips, ' + offBarHeld + ' repaints suppressed');
       setOfflineState('downloaded');
       dynPaintOfflineSize();
     }).catch(function (err) {
       downloadingNow = false;
+      offBarLock = false;
       latMark('dl:FAIL', done + '/' + total + ' done, ' + offBarHeld + ' repaints suppressed');
       console.warn('player.js: dyn download failed', err);
       // navigator.onLine lies in the WebView (often "online" in airplane mode), so treat a
@@ -2286,6 +2299,8 @@
     }, ms || 4000);
   }
   function setOfflineState(state, done, total) {
+    // While the bar is locked to a running download, only progress may paint. See offBarLock.
+    if (offBarLock && state !== 'downloading') { offBarHeld++; return; }
     offBarSeq++;                 // invalidates any pending flash revert — see offlineBarFlash
     offBarHoldUntil = 0;         // …and releases the message hold: a real state change always wins
     var bar = $('offline-bar'); if (!bar) return;
