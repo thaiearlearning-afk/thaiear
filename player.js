@@ -873,6 +873,20 @@
     if ((ib > 0 ? sb.slice(0, ib) : '') !== (ic > 0 ? sc.slice(0, ic) : '')) return false;
     return base !== cur;
   }
+  /* The published value to measure THIS baseline against, in the baseline's own scheme.
+     Mirrored from topics.js for the same reason avPick/avMoved are: a new player.js can briefly
+     pair with an older precached topics.js, and a staleness check must degrade rather than throw. */
+  function avFor(map, prefix, base) {
+    var T = window.ThaiEarTopics;
+    if (T && T.avFor) return T.avFor(map, prefix, base);
+    if (!map || !prefix) return null;
+    if (base == null) return avPick(map, prefix);
+    function sch(v) { var s = String(v == null ? '' : v), i = s.indexOf(':'); return i > 0 ? s.slice(0, i) : ''; }
+    var want = sch(base), c = map[prefix + '#c'], l = map[prefix];
+    if (c != null && sch(c) === want) return c;
+    if (l != null && sch(l) === want) return l;
+    return avPick(map, prefix);
+  }
   // '' = loaded but no stamp for this topic yet · null = map unavailable (→ skip the audio check).
   function currentAv() { return _audioVers ? (avPick(_audioVers, PREFIX) || '') : null; }
 
@@ -1472,7 +1486,11 @@
       var plAv = PLMODE ? (dynPlAv() || {}) : null;
       Object.keys(by).forEach(function (pfx) {
         var e = m[pfx]; if (!e) return;
-        var cur = map[pfx];
+        /* ⚠ Read the baseline FIRST: the published value has to be chosen in the baseline's own
+           scheme, or this surface and dynDownloadHere's force check disagree. They did, and the
+           prompt offered an update the download then skipped entirely — see avFor(). */
+        var base0 = PLMODE ? plAv[pfx] : e.av;
+        var cur = avFor(map, pfx, base0);
         /* ⚠ r84 — THE FLAG PERTURBS THE PUBLISHED STAMP, IT DOES NOT SHORT-CIRCUIT THE CHECK.
            Owner's challenge, 2026-08-01: is this an actual TEST or a dumb UI switcher? It was the
            latter — `if (force) stale = true` sat AFTER this loop and skipped every real question.
@@ -1483,7 +1501,7 @@
            existed, correctly stays quiet under the flag — a dumb switch would light those up. */
         if (force && cur != null) cur = String(cur) + '#avtest';
         if (cur == null) return;                                  // nothing published for it
-        var base = PLMODE ? plAv[pfx] : e.av;
+        var base = base0;
         /* ⚠ A BASELINE FROM THE OTHER SCHEME IS RE-BASELINED, NOT REPORTED. Same branch as a
            MISSING baseline, and for the same reason: we cannot compare it to this value, so the
            honest move is to adopt and start watching from here. Without this, publishing the
@@ -1850,7 +1868,7 @@
         if (base == null) return;
         /* ⚠ avMoved, NOT `!==`. A scheme change must not force a re-fetch of every clip in the
            topic — that is the same phantom update as above, only more expensive. */
-        var cur = avPick(avMap, pfx);
+        var cur = avFor(avMap, pfx, base);   // same scheme as the baseline — see avFor()
         if (avMoved(base, cur)) { forceAll[pfx] = true; anyForced = true; }
       });
       // The stitched session was built from the clips we are about to replace, and its key encodes

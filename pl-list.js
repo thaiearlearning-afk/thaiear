@@ -476,6 +476,18 @@
       var c = map[pfx + '#c'];
       return c != null ? c : (map[pfx] != null ? map[pfx] : null);
     }
+    // The published value in the BASELINE's scheme — see topics.js avFor().
+    function avFor(map, pfx, base) {
+      var T = window.ThaiEarTopics;
+      if (T && T.avFor) return T.avFor(map, pfx, base);
+      if (!map || !pfx) return null;
+      if (base == null) return avPick(map, pfx);
+      function sch(v) { var s = String(v == null ? '' : v), i = s.indexOf(':'); return i > 0 ? s.slice(0, i) : ''; }
+      var want = sch(base), c = map[pfx + '#c'], l = map[pfx];
+      if (c != null && sch(c) === want) return c;
+      if (l != null && sch(l) === want) return l;
+      return avPick(map, pfx);
+    }
     function avMoved(base, cur) {
       var T = window.ThaiEarTopics;
       if (T && T.avMoved) return T.avMoved(base, cur);
@@ -509,7 +521,10 @@
       if (!base) return false;
       var by = dlGroup(p), pfx;
       for (pfx in by) {
-        var was = base[pfx], cur = avPick(DL_AV, pfx);
+        /* ⚠ avFor, not avPick: measure the baseline against its OWN scheme, or a legacy
+           baseline is compared to a `#c` value, avMoved reads it as "not moved", and the row
+           shows a tick for a playlist whose audio has genuinely changed (2026-09-16). */
+        var was = base[pfx], cur = avFor(DL_AV, pfx, was);
         if (was == null || cur == null) continue;
         /* ⚠ avMoved, not `!==`. A baseline recorded under the legacy combined-file scheme cannot
            be compared to a clip-derived value — treating the difference as an audio change would

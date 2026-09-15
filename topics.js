@@ -592,6 +592,31 @@
     const c = map[prefix + '#c'];
     return c != null ? c : (map[prefix] != null ? map[prefix] : null);
   }
+  /* The published value to compare a GIVEN BASELINE against — same scheme as the baseline.
+
+     ⚠⚠ WHY avPick IS THE WRONG ANSWER HERE, and it cost a real "update" that did nothing
+     (owner, 2026-09-16, on the Andovar switchover). avPick always prefers `#c`. A device whose
+     baseline is still legacy-scheme therefore gets a `#c` value back, avMoved() sees a scheme
+     change and returns false — correct in isolation, but it meant the two surfaces asked
+     DIFFERENT questions: dynCheckAudioUpdate compared against the raw legacy key and offered the
+     update, while dynDownloadHere's force check compared against avPick and concluded nothing had
+     moved. Result: the prompt appeared, the download skipped every file as "already present", and
+     the topic went on playing superseded audio.
+
+     Comparing like with like fixes both at once, and works for either generation of device:
+     a legacy baseline is measured against the legacy key, a `#c` baseline against the `#c` key.
+     Falls back to avPick when no value in the baseline's scheme is published, which leaves the
+     silent re-baseline path intact for exactly the case it was built for. */
+  function avFor(map, prefix, base) {
+    if (!map || !prefix) return null;
+    if (base == null) return avPick(map, prefix);   // no baseline — nothing to match
+    const want = avScheme(base);
+    const c = map[prefix + '#c'];
+    if (c != null && avScheme(c) === want) return c;
+    const l = map[prefix];
+    if (l != null && avScheme(l) === want) return l;
+    return avPick(map, prefix);
+  }
   // '' for a bare legacy hash, 'c1' for a clip-derived one. The tag is the part before the colon.
   function avScheme(v) {
     const s = String(v == null ? '' : v);
@@ -998,7 +1023,7 @@
     levelBounds, levelText, levelBadge, matchesFilter, findByPage,
     canAccess, accessFor, tierForPrefix, authState, ENFORCE_SUBSCRIPTION,
     playsMin, exclFor, playsCaptionFor, loadSentenceNums,   // play-count roll-up — ONE implementation, three call sites
-    avPick, avMoved, avScheme,   // offline-staleness stamp — ONE implementation, three surfaces
+    avPick, avMoved, avScheme, avFor,   // offline-staleness stamp — ONE implementation, three surfaces
     loadClipDurations, listenSeconds, humanListenTime, listenCaptionFor,   // listening time — the topic-card caption
     liveSequence, pageUnit, nextAccessible,
     /* ⚠ sequenceFor(page) is THE resolver both consumers must use — the prev/next buttons via

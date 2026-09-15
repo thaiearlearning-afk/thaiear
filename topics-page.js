@@ -165,8 +165,14 @@
        ⚠ The inline fallback is for the window where a new topics-page.js is paired with an older
        cached topics.js: degrade to the legacy key rather than throw. See
        AUDIO_VERSIONS_MIGRATION_PLAN.md. */
+    /* ⚠ avFor, NOT avPick. avPick always prefers `#c`, so a device whose baseline is still
+       legacy-scheme got a `#c` value back, avMoved read the scheme change as "not moved", and the
+       card kept showing the TICK while the topic page itself offered the update — the three
+       surfaces disagreeing again, which is exactly what one implementation was meant to stop
+       (owner, 2026-09-16). avFor measures a baseline against its OWN scheme. */
     var T = window.ThaiEarTopics;
-    var cur = (T && T.avPick) ? T.avPick(AV, prefix) : AV[prefix];
+    var cur = (T && T.avFor) ? T.avFor(AV, prefix, e.av)
+            : ((T && T.avPick) ? T.avPick(AV, prefix) : AV[prefix]);
     if (T && T.avMoved) return T.avMoved(e.av, cur);
     return cur != null && e.av !== cur;
   }
