@@ -1858,6 +1858,10 @@
        them may have been re-rendered.
        Deliberately conservative: no published map, no recorded baseline, or a matching stamp all
        mean "not stale" and leave the resume behaviour untouched. */
+    /* Captured for the finalize block below, which does not receive `st`. It has to know
+       whether we ACTUALLY re-fetched a prefix before it is allowed to stamp that prefix as
+       current -- see the guard on e.av. */
+    var forcedPfx = {};
     var chain = loadAudioVers().catch(function () { return null; }).then(function (avMap) {
       var forceAll = {}, anyForced = false, mNow = getManifest();
       var plBase = PLMODE ? (dynPlAv() || {}) : null;   // r137: playlists compare their own baseline
@@ -1876,6 +1880,7 @@
       // dynUpdateAudio(), which covers the routes that reach this function without going through
       // that button (the !dynDlHasAll 'update' branch calls downloadTopic() directly).
       if (anyForced) dynDropSessions();
+      forcedPfx = forceAll;
       return { force: forceAll, cache: null };
     }).then(function (st) {
       return (DYN_WEB_DL ? caches.open(AUDIO_DL_CACHE) : Promise.resolve(null))
@@ -1928,7 +1933,21 @@
            subset, and writing it here would claim the whole topic is current — silencing a real
            update prompt on the index card and the topic page. A playlist records its own baseline
            in its own download record instead (dynPlAvSet, below). */
-        if (!PLMODE && avMap && avPick(avMap, pfx) != null) e.av = avPick(avMap, pfx);   // baseline for "audio update?"
+        /* ⚠⚠ NEVER LET THE STAMP SILENCE A DIFFERENCE WE DID NOT ACT ON. This line runs at
+           finalize whether or not a single byte moved, and that is what turned the v530 bug into
+           PERMANENT silence rather than a retry: the skip left the old clips in place, this wrote
+           the current version over the baseline, and afterwards no surface would ever offer the
+           update again. Only delete-and-redownload cleared it (owner, 2026-09-16, two topics).
+           So: stamp on a first download, or when this prefix was genuinely re-fetched, or when the
+           baseline did not say anything had moved anyway (an ordinary top-up). Otherwise leave the
+           baseline alone and let it keep prompting -- a repeated prompt is recoverable, a false
+           "you are current" is not. */
+        if (!PLMODE && avMap && avPick(avMap, pfx) != null) {
+          var prior = e.av;
+          if (prior == null || forcedPfx[pfx] || !avMoved(prior, avFor(avMap, pfx, prior))) {
+            e.av = avPick(avMap, pfx);   // baseline for "audio update?"
+          }
+        }
         /* r137 — record the complete-download file count for the INDEX's benefit (dl-core
            hasNeeded / index isDownloaded). Only for a topic's own download: a playlist needs just
            a SUBSET of a prefix's clips, so stamping its count would tell the index grid that a
