@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v528';   // v528: the Android app resumes a dyn reconstruct on the sentence
+const VERSION = 'v529';   // v529: app-cta.js stops emitting bare `.html` links. Its three
+                          // hrefs -- the app card (x2) and "Create a free account" -- were
+                          // raw, so every click paid a Cloudflare Pages 308 (127-1315 ms,
+                          // cf-cache-status DYNAMIC) before the target began loading. It was
+                          // the one link-emitting module with no clean-URL helper. Found in a
+                          // GSC coverage drilldown. app-cta.js is precached, hence the bump.
+                          // v528: the Android app resumes a dyn reconstruct on the sentence
                           // it was on, instead of restarting at 0:00. The shim that stands in
                           // for <audio> inside the app kept the REPLACED track's currentTime
                           // and duration, so the resume was bounded by the old session's

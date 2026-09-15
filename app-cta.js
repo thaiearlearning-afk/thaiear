@@ -27,7 +27,26 @@
   if (window.ThaiEarAppCTA) return;        // script included twice — the export is already there
 
   var STYLE_ID = 'te-appcta-css';
-  var HREF = 'app.html';
+
+  /* ⚠⚠ THIS FILE EMITS LINKS, SO IT NEEDS THE CLEAN-URL HELPER — AND IT WAS THE ONE EMITTER
+     WITHOUT ONE (2026-09-15). All three hrefs below were bare `.html`, so every click on the app
+     card and on "Create a free account →" paid a Cloudflare Pages 308 (`/x.html` → `/x`) before
+     the page it wanted even started loading: cf-cache-status DYNAMIC, an uncached origin round
+     trip, 127–1315 ms measured, and workerStart lands AFTER redirectEnd so the service worker
+     cannot cover it. Found in a GSC coverage drilldown, which showed
+     `/join.html?feature=1&next=read-quiz` crawled 2026-09-04 alongside its clean twin.
+     Mirrored locally (the same four lines as home-cta.js, nav.js, read.js, footer.js …) rather
+     than read off ThaiEarTopics, so this file never depends on topics.js having loaded first.
+     ⚠ The helper strips only a TRAILING `.html`, so a query string is built by CONCATENATION —
+     `pageHref('join.html') + '?feature=1…'`. Handed the whole string it silently does nothing
+     and looks fixed. */
+  var LOCAL_HOST = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
+  function pageHref(p) {
+    var s = String(p || '').replace(/\.html$/i, '');
+    return (LOCAL_HOST && s) ? s + '.html' : s;   // localhost has no clean-URL resolution
+  }
+
+  var HREF = pageHref('app.html');
 
   /* Title + platform line are shared; only the first clause changes, naming what THIS surface
      would have let the visitor download. */
@@ -183,7 +202,7 @@
      do not introduce a second one. */
   function signupHtml(surface, next, opts) {
     injectCss();
-    var href = 'join.html?feature=1' + (next ? '&next=' + encodeURIComponent(next) : '');
+    var href = pageHref('join.html') + '?feature=1' + (next ? '&next=' + encodeURIComponent(next) : '');
     var withApp = (opts && typeof opts.app === 'boolean') ? opts.app : noDownloadUi();
     var desc = SIGNUP_DESC[surface] || SIGNUP_DESC.topic;
     var appT = SIGNUP_APP_TITLE[surface] || SIGNUP_APP_TITLE.topic;
