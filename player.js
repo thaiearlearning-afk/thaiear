@@ -1516,6 +1516,13 @@
          value into the manifest and the topic would stay "stale" after the flag came off. */
       if (adopted && !force) { if (PLMODE) dynPlAvSet(plAv); else setManifest(m); }
       if (!stale) return;
+      /* ⚠⚠ THIS PAINT IS ASYNC AND WRITES bar.innerHTML DIRECTLY, so it answers to neither
+         setOfflineState()'s idempotence guard nor renderOfflineBar()'s downloadingNow hold. A
+         check that started BEFORE the tap therefore landed after it and painted Update/Delete
+         straight over "5 of 50" — the bar flickered back to buttons mid-download and Update could
+         be pressed a second time (owner, 2026-09-16, Android app). Same class as r210, reached by
+         the one path that does not go through the shared painter. */
+      if (downloadingNow) return;
       var bar = $('offline-bar'); if (!bar) return;
       bar.innerHTML = '<span class="offline-status">⟳ Download audio update?</span>' +
         '<button class="offline-btn" onclick="dynUpdateAudio()">Update</button>' +
@@ -1536,6 +1543,14 @@
         encodeURIComponent(PAGE_FILE + location.search);
       return;
     }
+    /* Latch BEFORE any other work. Every guard above has already returned, so from here the
+       download is definitely starting — and holding the bar from this line means it can never
+       show Update/Delete again until dynDownloadHere() clears the flag, which it does on BOTH
+       exits of every path (success and failure). That is what makes a second press impossible
+       rather than merely unlikely: the button is gone, not just ignored. */
+    downloadingNow = true;
+    offBarHeld = 0;
+    setOfflineState('downloading', 0, 0);   // "0 of …" immediately; the real total lands below
     // The stored mp3 was built from the OLD clips, and its key encodes settings, not clip
     // content — so it would NOT rebuild by itself and would keep playing superseded audio.
     dynDropSessions();
@@ -1829,10 +1844,13 @@
     /* Transient (2026-08-09): this used to replace the bar PERMANENTLY, so on an already-downloaded
        unit one tap on Download hid Update and Delete behind a dead "You're offline" line with no
        way back short of a reload. Flash it, then restore the real state. */
-    if (!navigator.onLine) { latMark('dl:SKIP', 'navigator.onLine false'); offlineBarFlash('offline'); return; }   // don't grind through retries
+    /* ⚠ Both of these exits must clear downloadingNow: dynUpdateAudio() now LATCHES it before
+       calling us, so a "we never started" return would otherwise freeze the bar at
+       "Downloading 0/?" with no way back — worse than the flicker it was added to stop. */
+    if (!navigator.onLine) { downloadingNow = false; latMark('dl:SKIP', 'navigator.onLine false'); offlineBarFlash('offline'); return; }   // don't grind through retries
     var by = dynDlGroups(), prefixes = Object.keys(by), total = 0, done = 0;
     prefixes.forEach(function (k) { total += by[k].files.length; });
-    if (!total) { latMark('dl:SKIP', 'nothing to fetch'); return; }
+    if (!total) { downloadingNow = false; latMark('dl:SKIP', 'nothing to fetch'); renderOfflineBar(); return; }
     /* The tap reached here, so anything the owner reports as "it did nothing" is downstream of
        this line. ?lat=1 is the only way to see that on the phone — the PWA has no console. */
     function step() {
