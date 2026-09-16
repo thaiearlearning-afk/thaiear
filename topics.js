@@ -270,7 +270,7 @@
       keywords: ['buddhism','พุทธ','dhamma','ธรรมะ','teaching','คำสอน','karma','กรรม','precept','ศีล','philosophy','ปรัชญา','religion','doctrine'] },
     { id: 32, part: 3, name: "Thai geography & regions 3", levels: ['li2','adv'], sentences: 16, page: "topic-32b.html", audio: "GeoRegions_LI2", access: "premium",
       keywords: ['geography','ภูมิศาสตร์','region','ภาค','province','จังหวัด','landscape','climate','ภูมิอากาศ','terrain','border','ชายแดน','thailand','economy','resources'] },   // re-badged by the 2026-07-17 length audit
-    { id: 35, part: 7, name: "Buddhism 7", levels: ['li2','adv'], sentences: 10, page: "topic-35d.html", audio: "Meditation_LI2", access: "premium",
+    { id: 35, part: 7, name: "Buddhism 7", levels: ['li2','adv'], sentences: 9, page: "topic-35d.html", audio: "Meditation_LI2", access: "premium",
       keywords: ['meditation','สมาธิ','buddhism','พุทธ','mindfulness','สติ','vipassana','วิปัสสนา','retreat','breathe','calm','สงบ','practice','religion'] },
     { id: 25, part: 4, name: "Media & entertainment 4", levels: ['li2','adv'], sentences: 14, page: "topic-25d.html", audio: "Media4_LI1", access: "premium",
       keywords: ['media','สื่อ','entertainment','บันเทิง','news','ข่าว','celebrity','ดารา','journalism','นักข่าว','critique','review','วิจารณ์','industry'] },
