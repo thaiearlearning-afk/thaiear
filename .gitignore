@@ -161,3 +161,8 @@ latlab.html
 # gaw-gai interior-gap trim (2026-09-16) — review page + candidate clips, local only
 gap-review.html
 gap-review/
+
+# Andovar pickup round 1 (2026-09-16) — mispronunciation listen pass.
+# PREMIUM clips copied from the local working set; local review only, never deploy.
+pickup-review.html
+pickup-clips/
