@@ -48,7 +48,15 @@
   // BUMP ON EVERY AUDIO RELEASE: the zone's 4h Browser Cache TTL means replaced
   // same-name clips play stale from users' browsers — a new query string is a
   // new URL, so every cache (edge + browser) misses and fetches fresh.
-  var AUDIO_VER = '?v=3';
+  /* v4 = the Andovar switchover (2026-09-15). All 210 reading clips are now studio
+     recordings, and this line is the ONLY thing that tells a device so: dlDownload stores
+     AUDIO_VER in its manifest and the hub card offers an update when they differ, so
+     leaving it at v3 meant the new audio shipped and NOBODY was told (owner, 2026-09-16:
+     "didn't get an audio update available message... was serving old TTS audio").
+     It also fixes the edge: an upload purges `read/x.mp3`, but Cloudflare keys its cache on
+     the query string, so `read/x.mp3?v=3` kept serving the old bytes. A new query string is
+     a new URL and misses every cache at once. */
+  var AUDIO_VER = '?v=4';
 
   /* ── audio ─────────────────────────────────────────────── */
   var player = new Audio();
@@ -186,6 +194,43 @@
   function dlManifest() {
     try { return JSON.parse(localStorage.getItem(DL_KEY) || 'null'); } catch (_) { return null; }
   }
+  /* ⚠⚠ A FETCH THAT NEVER SETTLES FREEZES THE WHOLE DOWNLOAD, ONE SHORT. The pump loop below
+     is otherwise correct -- every path does `active--; pump()` -- but a request that neither
+     resolves nor rejects reaches none of them, so `active` never returns to 0 and the counter
+     stops forever at 207 of 208 with no error anywhere. Reported on the Android app on a failing
+     hotspot (owner, 2026-09-16); every clip was present on R2 and returned a clean 200 when
+     probed, which is what ruled the server out.
+     The topic downloader has guarded against exactly this since r44 (`Promise.race([dl, backstop])`
+     in player.js's dynDlFile) -- this path simply never got the same treatment. Same shape here:
+     race the fetch against a timeout, retry a few times with a rising delay, and let a genuine
+     failure REJECT so the loop can count it and move on.
+     ⚠ `!r.ok` still throws, so a 4xx/5xx is a failure rather than a cached error page. */
+  var DL_FETCH_TIMEOUT_MS = 20000;
+  var DL_FETCH_TRIES = 3;
+  function dlFetchWithRetry(url, tryNo) {
+    tryNo = tryNo || 1;
+    var ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
+    var timer;
+    var dl = fetch(url, ctrl ? { signal: ctrl.signal } : undefined).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r;
+    });
+    var backstop = new Promise(function (_, reject) {
+      timer = setTimeout(function () {
+        if (ctrl) { try { ctrl.abort(); } catch (_) {} }   // free the socket, not just the promise
+        reject(new Error('read clip timed out: ' + url));
+      }, DL_FETCH_TIMEOUT_MS);
+    });
+    return Promise.race([dl, backstop])
+      .then(function (r) { clearTimeout(timer); return r; })
+      .catch(function (err) {
+        clearTimeout(timer);
+        if (tryNo >= DL_FETCH_TRIES) throw err;
+        return new Promise(function (r) { setTimeout(r, 600 * tryNo); })
+          .then(function () { return dlFetchWithRetry(url, tryNo + 1); });
+      });
+  }
+
   function dlDownload(onProgress) {
     var ids = allCourseAudioIds();
     var done = 0, failed = 0;
@@ -201,8 +246,7 @@
               cache.match(url)
                 .then(function (hit) {
                   if (hit) return true;
-                  return fetch(url).then(function (r) {
-                    if (!r.ok) throw 0;
+                  return dlFetchWithRetry(url).then(function (r) {
                     return cache.put(url, r).then(function () { return true; });
                   });
                 })
