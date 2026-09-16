@@ -5153,16 +5153,86 @@
 
      ⚠ Returns the input untouched at rate >= 1 (nothing to do) and for anything too short to
      window, so a caller never has to special-case either. */
-  var DYN_STRETCH_WIN = 1024;          // ~43ms at 24kHz — comfortably longer than a pitch period
-  var DYN_STRETCH_HOP = 256;           // OUTPUT hop; 4x overlap
-  var DYN_STRETCH_SEEK = 256;          // +/- search for the best-matching continuation
-  var DYN_STRETCH_OV = 256;            // how much of the join we correlate over
-  function dynStretch(buf, rate) {
+  /* ── THAI-ONLY TIME STRETCH, PITCH-SYNCHRONOUS (WSOLA) ──────────────────────────────────
+     Slow a mono speech buffer without moving its pitch. Resampling — the obvious one-liner —
+     lowers the pitch with the rate, which is the "drunken" sound the owner ruled out; this
+     overlaps and adds short windows instead, so only the timing moves.
+
+     ⚠⚠ EVERY SIZE IS DERIVED FROM THE CLIP'S OWN PITCH PERIOD, and that is not a refinement —
+     it is the fix for a fault the owner heard. A FIXED 256-sample hop is 93.8 Hz. Our male
+     talent sits at 139-162 Hz and the female at 222-229, so the fixed hop put the artefact
+     period right next to a male voice's own pitch, where it beats against it, while for a
+     female voice it was far below and masked. Same code, audibly worse on one voice:
+     "sounds a bit robotic at 80%... not really noticeable on female voice" (2026-09-16).
+     A period-derived hop is period-ALIGNED by construction, so consecutive windows continue
+     each other, and it moves the hop rate away from f0 (69 Hz for the lowest clip we have).
+     The search also scales: at a fixed +/-256 a male voice had only +/-1.5 pitch periods to
+     choose a join from, against +/-2.4 for a female.
+
+     ⚠ Returns the input untouched at rate >= 1 and for anything too short to window, so no
+     caller has to special-case either. */
+  var DYN_PERIOD_MIN = 60;             // samples — ~400 Hz, above any speaking voice
+  var DYN_PERIOD_MAX = 400;            // samples — ~60 Hz, below any speaking voice
+  var dynPeriodCache = {};             // per clip filename; a rebuild must not re-measure
+
+  /* Median pitch period, in samples, over the clip's VOICED frames.
+
+     ⛔ DO NOT "OPTIMISE" THIS BY DECIMATING OR BY SAMPLING FEWER FRAMES. Both were tried on
+     2026-09-16 and both changed the answer — a decimated version returned 170/200/126 where this
+     returns 148/173/105, and a normalised-cross-correlation variant returned 146/190/120. Those
+     are not equivalent: every window size below is a MULTIPLE of this number, so a wrong period
+     means the hop is no longer period-aligned and the artefact the pitch-adaptive sizing exists
+     to remove comes straight back. This is the estimator whose output the owner listened to and
+     approved, so it is the estimator that ships.
+     ⚠ It is affordable because it is CACHED PER CLIP: ~2.3 s once for a 30-clip topic, and only
+     when the speed is not Normal. A rebuild for any other setting reuses it.
+     (The bias is real but load-bearing: dividing by the overlap length favours the fundamental
+     over its octave here. An "unbiased" NCC picked 2x the period on two of four real clips.) */
+  function dynPeriod(pcm, cacheKey) {
+    if (cacheKey && dynPeriodCache[cacheKey] != null) return dynPeriodCache[cacheKey];
+    var W = 2048, lo = Math.floor(24000 / 400), hi = Math.floor(24000 / 60), found = [];
+    for (var s = 0; s + W < pcm.length; s += W) {
+      var e = 0;
+      for (var i = 0; i < W; i++) e += pcm[s + i] * pcm[s + i];
+      if (e / W < 1e-4) continue;                 // unvoiced or silent — no pitch to find
+      var bestC = -Infinity, bestT = 0, r = new Float64Array(hi + 1);
+      for (var t = lo; t <= hi; t++) {
+        var c = 0, n = 0;
+        for (var k = 0; k + t < W; k++) { c += pcm[s + k] * pcm[s + k + t]; n++; }
+        r[t] = c / n;
+        if (r[t] > bestC) { bestC = r[t]; bestT = t; }
+      }
+      /* SUB-HARMONIC GUARD. The /n normalisation favours the fundamental on real speech (which is
+         why it ships), but on a cleanly periodic signal it happily returns 2x or 3x the period —
+         measured: 400 for a 120 Hz probe, 300 for a 240 Hz one. A wrong period by an octave means
+         every window size is wrong by an octave and the pitch-alignment this whole mechanism
+         exists for is lost. So if half (or a third) of the winning lag scores nearly as well, that
+         shorter lag is the real fundamental.
+         ⚠ VERIFIED NOT TO CHANGE THE APPROVED SOUND: all four reference clips still measure
+         148 / 173 / 105 / 108, exactly as the renders the owner signed off. It only bites where
+         the estimator was already wrong. */
+      if (bestT) {
+        for (var d = 2; d <= 3; d++) {
+          var half = Math.round(bestT / d);
+          if (half >= lo && r[half] >= 0.85 * bestC) { bestT = half; break; }
+        }
+        found.push(bestT);
+      }
+    }
+    found.sort(function (x, y) { return x - y; });
+    var p = found.length ? found[found.length >> 1] : 150;
+    p = Math.max(DYN_PERIOD_MIN, Math.min(DYN_PERIOD_MAX, p));
+    if (cacheKey) dynPeriodCache[cacheKey] = p;
+    return p;
+  }
+
+  function dynStretch(buf, rate, cacheKey) {
     if (!buf || !(rate > 0) || rate >= 1) return buf;
     var inp = buf.getChannelData(0), n = inp.length;
-    var win = DYN_STRETCH_WIN, hop = DYN_STRETCH_HOP, seek = DYN_STRETCH_SEEK, ov = DYN_STRETCH_OV;
-    if (n < win * 2) return buf;
-    var inHop = hop * rate;                       // input advances slower than output
+    var P = dynPeriod(inp, cacheKey);
+    var hop = 2 * P, win = 4 * P, seek = Math.round(1.5 * P), ov = 2 * P;
+    if (n < win * 2) return buf;                       // too short to window — leave it alone
+    var inHop = hop * rate;                            // input advances slower than output
     var outLen = Math.ceil(n / rate) + win;
     var out = new Float32Array(outLen);
     var acc = new Float32Array(outLen);
@@ -5174,24 +5244,23 @@
       if (base + win >= n) break;
       var best = base;
       if (!first) {
-        /* ⚠⚠ CORRELATE AGAINST out[outPos], NOT AGAINST AN EARLIER POINT. This is where the first
-           version went wrong and why it sounded spliced and robotic: it compared each candidate
-           against out[prevOutPos + hop], but the output advances by hop/rate, so the target sat
-           (hop/rate - hop) samples BEHIND where the window was about to be written — 64 samples
-           adrift at 0.8. Every join was then chosen to match the wrong place, which is exactly the
-           periodic discontinuity a time-stretcher exists to avoid.
-           Normalised by the candidate's own energy too, or the search just picks whichever frame
-           is loudest rather than whichever one actually continues the waveform. */
-        var lo = Math.max(0, base - seek), hi = Math.min(n - win, base + seek);
+        /* ⚠⚠ CORRELATE AGAINST out[outPos], NOT AN EARLIER POINT. The first version compared
+           candidates against out[prevOutPos + hop] while the output advances by hop/rate, so the
+           target sat (hop/rate - hop) samples BEHIND where the window was about to be written —
+           64 adrift at 0.8. Every join was then chosen to match the wrong place, which is exactly
+           the periodic discontinuity a stretcher exists to avoid, and it sounded spliced.
+           Normalised by the candidate's own energy, or the search picks whichever frame is
+           LOUDEST rather than whichever continues the waveform. */
+        var lo2 = Math.max(0, base - seek), hi2 = Math.min(n - win, base + seek);
         var bestScore = -Infinity;
-        for (var c = lo; c <= hi; c += 4) {
+        for (var c2 = lo2; c2 <= hi2; c2 += 2) {
           var num = 0, den = 1e-9;
-          for (var k = 0; k < ov; k += 2) {
-            var av = inp[c + k], bv = out[outPos + k];
+          for (var k2 = 0; k2 < ov; k2 += 2) {
+            var av = inp[c2 + k2], bv = out[outPos + k2];
             num += av * bv; den += av * av;
           }
           var sc = num / Math.sqrt(den);
-          if (sc > bestScore) { bestScore = sc; best = c; }
+          if (sc > bestScore) { bestScore = sc; best = c2; }
         }
       }
       first = false;
@@ -5200,8 +5269,8 @@
         acc[outPos + j] += w[j];
       }
       /* Fixed analysis progression, so the output length stays exactly n/rate. (Advancing from
-         `best` instead is the other classic formulation, but it lets the position drift and the
-         duration wander with it.) */
+         `best` is the other classic formulation, but it lets the position drift and takes the
+         duration with it.) */
       ideal += inHop;
       outPos += hop;
     }
@@ -5212,6 +5281,7 @@
     var pcm = out.subarray(0, used);
     return { length: used, getChannelData: function () { return pcm; } };
   }
+
 
       var parts = [];   // AudioBuffer, or a number = silence length in samples
       var map = [];
@@ -5231,7 +5301,7 @@
            global would have rendered the neighbour at whatever speed THIS page happened to be
            set to, and persisted it under the neighbour's key: the r214 namespace bug's shape,
            a page-scoped answer to a unit-scoped question. */
-        if (th && st.sp && st.sp !== 1) th = dynStretch(th, st.sp);
+        if (th && st.sp && st.sp !== 1) th = dynStretch(th, st.sp, dynClipRef(s, 'TH').file);
         var en = needEn ? dynClipCache[dynClipRef(s, 'EN').file] : null;
         /* r147 — THE FLOOR NO LONGER SCALES (owner, 2026-08-08). It used to sit OUTSIDE the
            multiplier — `Math.max(3.0, syl*0.5) * pf` — so `pf` shrank everything uniformly and the
