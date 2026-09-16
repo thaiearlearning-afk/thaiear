@@ -9657,7 +9657,22 @@
         sentResetTimer = setTimeout(function () { resetSentBtn(); sentResetTimer = null; }, (duration + 0.5) * 1000);
         plysClipArm(num, duration);   // play counting — the dwell rule, see plysClipArm
       });
-      sa.playbackRate = slowMode ? 0.75 : 1.0;
+      /* THE THAI-SPEED SETTING GOVERNS A PILL TAP TOO (owner, 2026-09-16). This is the one
+         place a plain playbackRate is exactly right: a pill plays the Thai clip ALONE through a
+         real <audio> element, so there is no English and no pause to drag along — the constraint
+         that forced the dyn session to bake the stretch in at build time simply does not apply.
+         It is also instant here, with no rebuild.
+         ⚠ preservesPitch is set explicitly, in all three spellings. Modern browsers default it
+         to true, but older WebKit honours only the prefixed name — and without it a slowed pill
+         would drop in pitch while the same sentence in the dyn session did not.
+         ⚠ slowMode is the old per-pill tortoise. It is hidden on every live page
+         (`body.te-v2 .speed-toggle{display:none}`), so it can no longer be toggled; it stays as
+         an override rather than being ripped out, and dynSpeed is what actually decides. */
+      var spKeep = true;
+      sa.preservesPitch = spKeep;
+      sa.mozPreservesPitch = spKeep;
+      sa.webkitPreservesPitch = spKeep;
+      sa.playbackRate = slowMode ? 0.75 : (dynSpeed || 1);
       return sa.play();
     }).catch(function (err) {
       if (gen !== sentGen) return;   // superseded — the newer tap owns the button now
