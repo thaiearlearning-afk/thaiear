@@ -56,7 +56,7 @@
      It also fixes the edge: an upload purges `read/x.mp3`, but Cloudflare keys its cache on
      the query string, so `read/x.mp3?v=3` kept serving the old bytes. A new query string is
      a new URL and misses every cache at once. */
-  var AUDIO_VER = '?v=4';
+  var AUDIO_VER = '?v=5';
 
   /* ── audio ─────────────────────────────────────────────── */
   var player = new Audio();
