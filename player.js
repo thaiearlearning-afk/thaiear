@@ -4048,7 +4048,13 @@
      'global' row becomes {v:2, te, et}). The pre-r16 flat 'global' row and the old
      te_dyn_pf/rp/en/ep keys are deliberately NOT read — per owner, everyone restarts from
      the classic default rather than inheriting the old player-global values. */
-  var DYN_DEFAULTS = { pf: 1, rp: 2, en: true, ep: 0 };   // ep 0 = "not chosen" → English at the end
+  /* sp = THAI PLAYBACK SPEED, 1 / 0.9 / 0.8 / 0.7. Per unit, like every other setting here —
+     the sync button is what propagates a setup, and speed is no different (owner, 2026-09-16).
+     ⛔ IT SLOWS THE THAI AND NOTHING ELSE. Never the English, never the silences. That is why
+     it cannot be an <audio> playbackRate: the dyn player plays ONE stitched file, so a rate
+     change there would drag the English and the pauses with it. It is applied per Thai buffer
+     at BUILD time instead — see dynStretch(). */
+  var DYN_DEFAULTS = { pf: 1, rp: 2, en: true, ep: 0, sp: 1 };   // ep 0 = "not chosen" → English at the end
   // The settings currently IN EFFECT (this page's unit, current mode). dynLoadSettings()
   // refills them on boot, on a TE/ET switch, and when the account copy lands.
   var dynFactor = DYN_DEFAULTS.pf;
@@ -4057,6 +4063,7 @@
   // WHERE the English lands in a TE block — after the Nth Thai repeat. 0 = never chosen →
   // effective default is dynRepeats (the end); a choice above the repeat count clamps there too.
   var dynEngPos = DYN_DEFAULTS.ep;
+  var dynSpeed = DYN_DEFAULTS.sp;     // Thai-only playback speed (1 = normal)
   function dynEngPosEff() { return (dynEngPos >= 1 && dynEngPos <= dynRepeats) ? dynEngPos : dynRepeats; }
   function dynSetKey(ns, mode) { return 'te_dyn_set_' + ns + '_' + mode; }
   function dynGdefKey(mode) { return 'te_dyn_gdef_' + mode; }
@@ -4066,7 +4073,7 @@
   function dynWriteJson(k, o) { try { localStorage.setItem(k, JSON.stringify(o)); } catch (_) {} }
   // Sanitise an untrusted settings record (localStorage / another device) onto the defaults.
   function dynNormSet(o) {
-    var d = { pf: DYN_DEFAULTS.pf, rp: DYN_DEFAULTS.rp, en: DYN_DEFAULTS.en, ep: DYN_DEFAULTS.ep };
+    var d = { pf: DYN_DEFAULTS.pf, rp: DYN_DEFAULTS.rp, en: DYN_DEFAULTS.en, ep: DYN_DEFAULTS.ep, sp: DYN_DEFAULTS.sp };
     if (!o) return d;
     // r147: floor lowered 0.5 → 0.25 with the slider. Widening the ACCEPTED range is safe in this
     // direction only — a stored 0.25 from a device on the new build must survive being read by an
@@ -4075,6 +4082,10 @@
     var rp = parseInt(o.rp, 10); if (rp >= 1 && rp <= 4) d.rp = rp;
     if (typeof o.en === 'boolean') d.en = o.en;
     var ep = parseInt(o.ep, 10); if (!isNaN(ep) && ep >= 0 && ep <= 4) d.ep = ep;
+    /* 0.8 is the floor, set by ear on real clips (owner, 2026-09-16, after listening to the
+       stretch at 0.7/0.8/0.9): "70 doesn't sound good, and neither will 75". The UI offers
+       1 / 0.9 / 0.8 and nothing else, so anything outside that falls back to normal. */
+    var sp = parseFloat(o.sp); if (isFinite(sp) && sp >= 0.8 && sp <= 1) d.sp = sp;
     return d;
   }
   // The effective settings for any unit+mode — used for this page AND for a foreign unit
@@ -4084,7 +4095,7 @@
     var uts = (u && +u.ts) || 0, gts = (g && +g.ts) || 0;
     return dynNormSet((u && uts >= gts) ? u : (g || u));
   }
-  function dynCurrentSet() { return { pf: dynFactor, rp: dynRepeats, en: dynEnglish, ep: dynEngPos }; }
+  function dynCurrentSet() { return { pf: dynFactor, rp: dynRepeats, en: dynEnglish, ep: dynEngPos, sp: dynSpeed }; }
   /* ⭐ WHOSE SETTINGS ARE THESE CONTROLS SHOWING? (owner, 2026-08-27.)
      *"the dyn player settings for a given topic page should OWN that even if navigating from
      another page … when you hit next in dyn player and go to B, and it says 'now playing', the
@@ -4105,7 +4116,7 @@
   }
   function dynLoadSettings() {
     var s = dynSettingsFor(dynActiveNs(), currentMode);
-    dynFactor = s.pf; dynRepeats = s.rp; dynEnglish = s.en; dynEngPos = s.ep;
+    dynFactor = s.pf; dynRepeats = s.rp; dynEnglish = s.en; dynEngPos = s.ep; dynSpeed = s.sp;
   }
   // Re-resolve from storage and repaint. Safe to call at any time: the repaint no-ops before
   // the controls are mounted, and nothing is invalidated unless a value genuinely moved.
@@ -4559,7 +4570,12 @@
     // ≥2 repeats + not at the default end position) — so irrelevant toggles never churn keys
     // AND every pre-r15 persisted session stays valid (no migration wipe).
     var ep = (currentMode !== 'et' && st.en && st.rp > 1 && epEff !== st.rp) ? epEff : 0;
-    return currentMode + '|' + st.pf + '|r' + st.rp + '|e' + en + (ep ? '|p' + ep : '') + '|' + sents.map(function (s) {
+    /* Speed joins the key ONLY when it is not 1, exactly as the English-position token does:
+       every session persisted before this existed stays valid, so nobody's downloads rebuild
+       on upgrade for a setting they have not touched. */
+    var sp = (st.sp && st.sp !== 1) ? st.sp : 0;
+    return currentMode + '|' + st.pf + '|r' + st.rp + '|e' + en + (ep ? '|p' + ep : '') +
+      (sp ? '|s' + sp : '') + '|' + sents.map(function (s) {
       return s.prefix ? (s.prefix + ':' + (s.clipNum != null ? s.clipNum : s.num)) : s.num;
     }).join(',');
   }
@@ -5121,13 +5137,101 @@
         }
       }
       tFetch = Date.now() - tFetch0;
+  /* ── THAI-ONLY TIME STRETCH (WSOLA) ─────────────────────────────────────────────────────
+     Slow a mono speech buffer WITHOUT dropping its pitch. Resampling — the obvious one-liner —
+     lowers the pitch with the rate and is exactly the "drunken" sound the owner ruled out; this
+     instead overlaps and adds short windows, so the pitch is untouched and only the timing moves.
+
+     Why hand-rolled and not a library: player.js is PRECACHED, so every kilobyte lands on every
+     install, and the file already does buffer assembly and encoding. This is ~40 lines for mono
+     24 kHz speech over a 0.7–1.0 range, which is the only range the UI offers.
+
+     How it works: walk the input in HOP-sized steps but advance the OUTPUT by hop/rate, and for
+     each window search a small neighbourhood of the input for the offset that best continues the
+     previous window (normalised cross-correlation). That search is what stops the periodic
+     "warble" a fixed overlap-add produces on voiced speech.
+
+     ⚠ Returns the input untouched at rate >= 1 (nothing to do) and for anything too short to
+     window, so a caller never has to special-case either. */
+  var DYN_STRETCH_WIN = 1024;          // ~43ms at 24kHz — comfortably longer than a pitch period
+  var DYN_STRETCH_HOP = 256;           // OUTPUT hop; 4x overlap
+  var DYN_STRETCH_SEEK = 256;          // +/- search for the best-matching continuation
+  var DYN_STRETCH_OV = 256;            // how much of the join we correlate over
+  function dynStretch(buf, rate) {
+    if (!buf || !(rate > 0) || rate >= 1) return buf;
+    var inp = buf.getChannelData(0), n = inp.length;
+    var win = DYN_STRETCH_WIN, hop = DYN_STRETCH_HOP, seek = DYN_STRETCH_SEEK, ov = DYN_STRETCH_OV;
+    if (n < win * 2) return buf;
+    var inHop = hop * rate;                       // input advances slower than output
+    var outLen = Math.ceil(n / rate) + win;
+    var out = new Float32Array(outLen);
+    var acc = new Float32Array(outLen);
+    var w = new Float32Array(win);
+    for (var i = 0; i < win; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (win - 1));
+    var ideal = 0, outPos = 0, first = true;
+    while (outPos + win < outLen) {
+      var base = Math.round(ideal);
+      if (base + win >= n) break;
+      var best = base;
+      if (!first) {
+        /* ⚠⚠ CORRELATE AGAINST out[outPos], NOT AGAINST AN EARLIER POINT. This is where the first
+           version went wrong and why it sounded spliced and robotic: it compared each candidate
+           against out[prevOutPos + hop], but the output advances by hop/rate, so the target sat
+           (hop/rate - hop) samples BEHIND where the window was about to be written — 64 samples
+           adrift at 0.8. Every join was then chosen to match the wrong place, which is exactly the
+           periodic discontinuity a time-stretcher exists to avoid.
+           Normalised by the candidate's own energy too, or the search just picks whichever frame
+           is loudest rather than whichever one actually continues the waveform. */
+        var lo = Math.max(0, base - seek), hi = Math.min(n - win, base + seek);
+        var bestScore = -Infinity;
+        for (var c = lo; c <= hi; c += 4) {
+          var num = 0, den = 1e-9;
+          for (var k = 0; k < ov; k += 2) {
+            var av = inp[c + k], bv = out[outPos + k];
+            num += av * bv; den += av * av;
+          }
+          var sc = num / Math.sqrt(den);
+          if (sc > bestScore) { bestScore = sc; best = c; }
+        }
+      }
+      first = false;
+      for (var j = 0; j < win; j++) {
+        out[outPos + j] += inp[best + j] * w[j];
+        acc[outPos + j] += w[j];
+      }
+      /* Fixed analysis progression, so the output length stays exactly n/rate. (Advancing from
+         `best` instead is the other classic formulation, but it lets the position drift and the
+         duration wander with it.) */
+      ideal += inHop;
+      outPos += hop;
+    }
+    var used = Math.min(outLen, outPos + win);
+    for (var m2 = 0; m2 < used; m2++) if (acc[m2] > 1e-6) out[m2] /= acc[m2];
+    /* The assembler only ever asks a part for `.length` and `.getChannelData(0)`, so a plain
+       duck-typed holder is enough — no AudioContext just to own some samples. */
+    var pcm = out.subarray(0, used);
+    return { length: used, getChannelData: function () { return pcm; } };
+  }
+
       var parts = [];   // AudioBuffer, or a number = silence length in samples
       var map = [];
       var pos = 0;      // running length in samples
       function pushBuf(b) { parts.push(b); pos += b.length; }
       function pushSil(sec) { var n = Math.round(sec * DYN_SR); parts.push(n); pos += n; }
       inc.forEach(function (s) {
+        /* ⛔ THE STRETCH IS APPLIED HERE AND ONLY HERE — to the Thai buffer, never to `en` and
+           never to the silence counts below, which are plain sample numbers and so are immune by
+           construction. This is the whole reason speed is a build-time property rather than an
+           <audio> playbackRate: the session is one stitched file, so a rate set on the element
+           would drag the English and every pause along with the Thai. */
         var th = dynClipCache[dynClipRef(s, 'TH').file];
+        /* ⚠ st.sp, NOT the page-global dynSpeed. This function builds FOREIGN units too — the
+           prev/next chain renders a neighbour at ITS settings, not ours — and every other
+           setting here already reads from `st` for exactly that reason (r16). Reading the
+           global would have rendered the neighbour at whatever speed THIS page happened to be
+           set to, and persisted it under the neighbour's key: the r214 namespace bug's shape,
+           a page-scoped answer to a unit-scoped question. */
+        if (th && st.sp && st.sp !== 1) th = dynStretch(th, st.sp);
         var en = needEn ? dynClipCache[dynClipRef(s, 'EN').file] : null;
         /* r147 — THE FLOOR NO LONGER SCALES (owner, 2026-08-08). It used to sit OUTSIDE the
            multiplier — `Math.max(3.0, syl*0.5) * pf` — so `pf` shrank everything uniformly and the
@@ -5490,6 +5594,9 @@
     var k = dynParseKey(meta.key);
     if (!k || k.mode !== currentMode) return false;
     if (isFinite(k.pf) && k.pf > 0) dynFactor = k.pf;
+    // Absent on every session persisted before speed existed — those were built at 1, which
+    // is exactly what the default already is, so no migration is needed.
+    dynSpeed = (isFinite(k.sp) && k.sp >= 0.8 && k.sp <= 1) ? k.sp : 1;
     if (k.rp >= 1 && k.rp <= 4) dynRepeats = k.rp;
     if (currentMode !== 'et') {            // en/ep are TE-only; in ET the key always says e1
       dynEnglish = k.en;
@@ -5758,6 +5865,11 @@
     var pf = $('dyn-pf'), pv = $('dyn-pf-val');
     if (pf) pf.value = String(dynFactor);
     if (pv) pv.textContent = dynFactor + '×';
+    /* Speed follows the same repaint as everything else — the account sync, a TE/ET switch and
+       an adopted unit all land here, and a control left showing the previous unit's value is the
+       confusion r214 was about. */
+    var spEl = $('dyn-sp');
+    if (spEl) { var i = [1, 0.9, 0.8].indexOf(dynSpeed); spEl.value = String(i < 0 ? 0 : i); }
     var reps = $('dyn-reps');
     if (reps) reps.querySelectorAll('.dyn-rep-btn').forEach(function (x) { x.classList.toggle('on', x.textContent === String(dynRepeats)); });
     var enCb = $('dyn-en');
@@ -5911,6 +6023,11 @@
       'time you generate a new dynamic mp3. Learn more about the Dynamic Player in our ' +
       '<a href="' + pageLinkHref('guide.html') + '">guide</a>.',
     reps: 'This decides how many times a Thai sentence is spoken.',
+    // Named "Thai speed" rather than "Speed" on purpose (owner, 2026-09-16): it must be
+    // obvious that the English is untouched, because it genuinely is — the stretch is applied
+    // per Thai clip at build time and never to the English clip or the silences.
+    speed: 'This decides the speed that the Thai sentences are spoken. The English and the ' +
+      'pauses are not affected — only the Thai is slowed.',
     // r151 (owner-authored, verbatim). The last sentence is the one that earns its place: after
     // r147 the floor no longer scales, so 0.25x really does bottom out at a couple of seconds
     // rather than shrinking away — that is a promise worth making explicit rather than surprising.
@@ -6024,6 +6141,9 @@
     var bits = [st.mode.toUpperCase(), st.rp + 'repeat' + (st.rp === 1 ? '' : 's')];
     if (st.mode === 'te' && st.en) bits.push('english');
     if (st.pf !== 1) bits.push('pauses' + String(st.pf).replace('.', 'p') + 'x');
+    // Same reasoning as pauses: only when moved off normal, or every filename grows a token
+    // for a setting nobody touched.
+    if (st.sp && st.sp !== 1) bits.push('thai' + Math.round(st.sp * 100) + 'pc');
     var total = sentences.length;
     if (st.tokens.length < total) bits.push(st.tokens.length + 'of' + total);
     // Strip only what Windows/macOS actually reject in a filename; keep the name otherwise verbatim.
@@ -6129,7 +6249,7 @@
       .then(function () {
         return dynBuildSessionFor(inc, DYN_KEY_NS, meta.key, function (d, tot) {
           say('Preparing audio… ' + Math.round(d / tot * 100) + '%');
-        }, { pf: st.pf, rp: st.rp, en: st.en, ep: st.ep }, { pcm: true });
+        }, { pf: st.pf, rp: st.rp, en: st.en, ep: st.ep, sp: st.sp }, { pcm: true });
       })
       .then(function (r) {
         // Lane cuts may only fall at a sentence block's END — every one of those sits at the far
@@ -7883,6 +8003,9 @@
        ⚠ Neither r148's wider track nor r149's touch-action could have fixed this: aim and gesture
        were never the problem, a moving target was. */
     '#dyn-pf-val{display:inline-block;min-width:34px;text-align:left;font-variant-numeric:tabular-nums}' +
+    // Deliberately no numeric readout: the ends say what they mean and the thumb snaps.
+    '.dyn-sp-end{font-size:11.5px;opacity:.72;padding:0 4px;white-space:nowrap}' +
+    '#dyn-sp{vertical-align:middle;max-width:88px}' +
     '.dyn-slider input[type=range]{flex-shrink:0}' +
     /* r148 — GRABBABLE, WITHOUT LOOKING ANY DIFFERENT (owner: "flickery … doesn't know quite what
        to lock on to"). Two separate causes, both measured:
@@ -8276,6 +8399,16 @@
           ' <input id="dyn-pf" type="range" min="0.25" max="2" step="0.25"> <span id="dyn-pf-val">1×</span></span>' +
         '<span class="dyn-ctl-sep">·</span>' +
         '<span class="dyn-ctl-group">' + dynInfoLabel('Thai sentence repeats', 'reps') + ' <span class="dyn-reps" id="dyn-reps"></span></span>' +
+        '<span class="dyn-ctl-sep">·</span>' +
+        /* THAI SPEED. Named for what it affects, because it affects only that (owner,
+           2026-09-16). The slider carries no number: the underlying values are 1 / 0.9 / 0.8 but
+           a percentage invites picking a figure rather than listening, so the ends are labelled
+           Normal and Slower and the thumb snaps between three stops. Index-valued (0..2) rather
+           than rate-valued so the snapping is free and Normal sits on the left. */
+        '<span class="dyn-ctl-group">' + dynInfoLabel('Thai speed', 'speed') +
+          ' <span class="dyn-sp-end">Normal</span>' +
+          '<input id="dyn-sp" type="range" min="0" max="2" step="1" aria-label="Thai speed">' +
+          '<span class="dyn-sp-end">Slower</span></span>' +
         '<span class="dyn-ctl-sep" id="dyn-en-sep">·</span>' +
         '<label class="dyn-en-lbl dyn-ctl-group" id="dyn-en-wrap"><input type="checkbox" id="dyn-en"> English</label>';
       stEl.parentNode.insertBefore(sl, stEl.nextSibling);
@@ -8287,6 +8420,20 @@
         dynFactor = parseFloat(pf.value) || 1;
         dynSaveSettings();
         pv.textContent = dynFactor + '×';
+        dynInvalidate(true);
+      });
+      /* Thai speed. Same contract as Pauses above: write on `change` (not `input`, or dragging
+         across a stop would queue a rebuild per stop), persist, then invalidate so the session
+         rebuilds — which it must, because the speed is baked into the stitched audio. */
+      var spEl = sl.querySelector('#dyn-sp');
+      var SP_STEPS = [1, 0.9, 0.8];                 // index 0 = Normal, 2 = slowest offered
+      function spIdx(v) { var i = SP_STEPS.indexOf(v); return i < 0 ? 0 : i; }
+      spEl.value = String(spIdx(dynSpeed));
+      spEl.addEventListener('change', function () {
+        var v = SP_STEPS[parseInt(spEl.value, 10)] || 1;
+        if (v === dynSpeed) return;                 // no-op drags must not trigger a rebuild
+        dynSpeed = v;
+        dynSaveSettings();
         dynInvalidate(true);
       });
       // Thai repeat count: 1–4 segmented mini-buttons
