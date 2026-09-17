@@ -395,4 +395,8 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
    that caused the doubled-circle bug in the first place). No colour rule is right on both.
    A border paints on the element's own box and cannot bleed; the mark has zero advance, so
    the box is exactly the อ and the underline sits exactly under it. */
-.ph { border-bottom: 0.07em solid var(--ph-color); }
+/* ⚠ Only ever rendered on WebKit, which splits the grapheme cluster at the element
+   boundary, so the colour lands on the อ alone. Blink never sees this rule — it gets the
+   dotted-circle notation instead — which is what makes `color` safe here after it bled
+   across the whole cluster in v550. A border was tried in v551 and cut through อู / อุ. */
+.ph { color: var(--ph-color); }

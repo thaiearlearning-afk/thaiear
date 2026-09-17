@@ -514,16 +514,71 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  // Wraps the PLACEHOLDER อ so CSS can colour it. The first อ in each form is always the
-  // slot the consonant goes in; any later อ is a real letter belonging to the vowel itself
-  // (ออ as in ขอ, อ็อ◌ as in ล็อก). Verified against all 26 symbols.
-  // Takes ALREADY-ESCAPED text and only inserts markup it wrote itself.
+  // ⛔ TWO NOTATIONS, ONE PER TEXT ENGINE. Each is the version PROVEN to render correctly on
+  // that engine; neither works on the other, and there is no portable third option:
+  //   WebKit (iOS PWA + Safari)   red อ carrier, ◌ = trailing slot
+  //   Blink  (Android + desktop)  dotted circles throughout
+  // Tried and failed: circles everywhere (WebKit draws a SECOND circle for the mark); อ with
+  // a red glyph (Blink paints the whole grapheme cluster red, Android loses the colour
+  // entirely); อ with a red underline (the rule cuts through below-vowels อู / อุ).
+  //
+  // ⚠ THE PROBE MEASURES THE DEFECT ITSELF: does U+25CC + mark occupy ONE glyph of width or
+  // TWO? Blink combines them, so circle+mark == circle. WebKit does not, so the mark adds its
+  // own advance. Owner's iPhone over two loads: 23.78/44.09 then 40/60.31 — a gap of 20.31px
+  // both times, against 0 on Blink. An ABSOLUTE gap, never a ratio: Sarabun has no U+25CC
+  // glyph, so the circle comes from a fallback whose size changed between those two loads.
+  // ⛔ Never sniff the UA, and never probe whether an orphan mark has width — that was v546
+  // and it regressed iOS, because a non-zero advance is not a drawn circle.
+  var SPLITS_CLUSTER = (function () {
+    try {
+      var p = document.createElement('span');
+      p.setAttribute('aria-hidden', 'true');
+      p.style.cssText = 'position:absolute;left:-9999px;top:0;white-space:pre;' +
+        'font:40px Sarabun,sans-serif';
+      var host = document.body || document.documentElement;
+      host.appendChild(p);
+      p.textContent = '\u25CC';        var one = p.getBoundingClientRect().width;
+      p.textContent = '\u25CC\u0E35';  var both = p.getBoundingClientRect().width;
+      host.removeChild(p);
+      return one > 0 && (both - one) > 2;
+    } catch (e) { return false; }
+  })();
+
+  // The data stores the อ form. The circle form is derived, never stored twice: the FIRST อ
+  // of each form is always the placeholder and every later อ is a real letter (ออ as in ขอ,
+  // อ็อ◌ as in ล็อก). Verified against all 26 symbols.
+  function toCircles(s) {
+    return String(s).split(' / ').map(function (form) {
+      return form.replace('\u0E2D', '\u25CC');
+    }).join(' / ');
+  }
   function phAw(escaped) {
     return escaped.split(' / ').map(function (form) {
       return form.replace('\u0E2D', '<span class="ph">\u0E2D</span>');
     }).join(' / ');
   }
-  function symb(s) { return phAw(esc(s)); }
+  // A vowel symbol, in whichever notation this engine can actually render.
+  function symb(s) {
+    return SPLITS_CLUSTER ? phAw(esc(s)) : esc(toCircles(s));
+  }
+  // Prose naming those symbols has to agree with the cards, so it gets the same treatment:
+  // the explanatory clause is swapped wholesale, then each symbol token is converted.
+  // ⛔ THE DESCRIPTION MUST MATCH THE NOTATION ON SCREEN. Swapped as a whole sentence
+  // pair, not patched symbol by symbol, so it can never half-describe the other one.
+  var PROSE_AW = 'The อ in red is a stand-in showing where the consonant goes — a black อ is a real letter that belongs to the vowel itself. Where a second form has a ◌ after it, that marks a following final consonant.';
+  var PROSE_DC = 'The ◌ in each symbol shows where the consonant sits. Where a second form has an extra ◌ after it, that marks a following final consonant.';
+  var PROSE_SYMS = ['\u0E40\u0E2D\u0E35\u0E22', '\u0E40\u0E2D\u0E37\u0E2D',
+    '\u0E40\u0E2D\u0E32', '\u0E2D\u0E31\u0E27', '\u0E43\u0E2D', '\u0E44\u0E2D',
+    '\u0E2D\u0E33', '\u0E40\u0E2D', '\u0E41\u0E2D', '\u0E42\u0E2D',
+    '\u0E2D\u0E31', '\u0E2D\u0E30', '\u0E2D\u0E47', '\u0E2D\u25CC'];
+  function proseNotation(s) {
+    if (SPLITS_CLUSTER) return s;
+    s = s.replace(PROSE_AW, PROSE_DC);
+    PROSE_SYMS.forEach(function (sym) {
+      s = s.split(sym).join(toCircles(sym));
+    });
+    return s;
+  }
   function shuffle(arr) {
     var a = arr.slice();
     for (var i = a.length - 1; i > 0; i--) {
@@ -676,7 +731,7 @@
     }
     var intro = document.getElementById('read-intro');
     if (intro) {
-      if (sec.intro) intro.textContent = sec.intro;
+      if (sec.intro) intro.textContent = proseNotation(sec.intro);
       else intro.style.display = 'none';
     }
     var nav = document.getElementById('read-nav');
@@ -730,7 +785,7 @@
       .map(function (p) { return ' <span class="lc-alt">/ ' + symb(p) + '</span>'; })
       .join('');
     if (it.note) s += '<span class="gl-term lc-note" data-term="" data-title="' +
-      esc(it.name) + '" data-def="' + esc(it.note) + '"><sup class="gl-i">i</sup></span>';
+      esc(it.name) + '" data-def="' + esc(proseNotation(it.note)) + '"><sup class="gl-i">i</sup></span>';
     return s;
   }
   function wireGrid(root) {
@@ -1355,7 +1410,7 @@
       }).join('') + '</div>' +
       '<p class="read-p">Letters you\'ll never see ending a syllable: <span class="th">' + esc(F.neverFinal) + '</span>.</p>' +
 
-      '<h2 class="read-h2">The silent-letter mark อ์</h2>' +
+      '<h2 class="read-h2">The silent-letter mark ' + symb('อ์') + '</h2>' +
       '<p class="read-p">A small mark called <em>gaa-ran</em> (<span class="th">การันต์</span>) written over a letter kills it — the letter is written but not spoken. Common in words borrowed from other languages: <span class="th">ยักษ์</span> <em>yák</em> (giant) — the <span class="th">ษ</span> is silent.</p>' +
       '<p class="read-p" style="margin-bottom:0.25rem"><button class="tt-ex" data-audio="yaw-yak-word" type="button">' + SVG_PLAY + '<span class="th">ยักษ์</span><span class="rr">yák</span></button></p>' +
 
@@ -1451,6 +1506,7 @@
       html += '<div class="read-note">Every Thai consonant has a two-part name: its <strong>sound</strong> plus a <strong>word that starts with it</strong> — like saying &ldquo;A for Apple.&rdquo; So <span class="th">ก</span> is <em>gaw gài</em>: &ldquo;gaw&rdquo; is the sound, <span class="th">ไก่</span> <em>gài</em> means chicken. Tap a card to hear the full name, or the pill to hear just the word.</div>';
     } else {
       html += '<div class="read-note">Vowel names all start with <em>sara</em> (<span class="th">สระ</span> — &ldquo;vowel&rdquo;). Tap a card to hear the name, or the pill to hear a real word that uses it. Where a card shows more than one form, separated by slashes, the extra forms are how that vowel is written when a final consonant follows \u2014 the sound is exactly the same.</div>';
+      html = proseNotation(html);
     }
     html += '<div class="letter-grid">' + live.map(function (it) { return letterCardHtml(it, vowel); }).join('') + '</div>';
     if (dead.length) {
@@ -1478,19 +1534,28 @@
       '<p class="read-p">Thai doesn’t write tones directly. Instead, each syllable’s tone is <strong>derived</strong> from four things: the <strong>class</strong> of its first consonant (that’s why you learned the classes), whether the syllable is <strong>live or dead</strong>, the <strong>vowel length</strong>, and any <strong>tone mark</strong>. Learn the rules and you can read the tone of any word you meet.</p>' +
 
       '<h2 class="read-h2">Live and dead syllables</h2>' +
-      '<p class="read-p">A syllable is <strong>live</strong> if it can ring on: it ends in a long vowel or a sonorant sound — m, n, ng, y, w (<span class="th">มา</span>, <span class="th">นอน</span>, <span class="th">ยาว</span>). It’s <strong>dead</strong> if it cuts off short: a short open vowel, or a p / t / k stop at the end (<span class="th">จะ</span>, <span class="th">รัก</span>, <span class="th">มาก</span>). Note the four self-contained vowels <span class="th">อำ ใอ ไอ เอา</span> end in m / y / w sounds, so they’re always <strong>live</strong>.</p>' +
+      '<p class="read-p">A syllable is <strong>live</strong> if it can ring on: it ends in a long vowel or a sonorant sound — m, n, ng, y, w (<span class="th">มา</span>, <span class="th">นอน</span>, <span class="th">ยาว</span>). It’s <strong>dead</strong> if it cuts off short: a short open vowel, or a p / t / k stop at the end (<span class="th">จะ</span>, <span class="th">รัก</span>, <span class="th">มาก</span>). Note the four self-contained vowels <span class="th">' + proseNotation('อำ ใอ ไอ เอา') + '</span> end in m / y / w sounds, so they’re always <strong>live</strong>.</p>' +
 
       '<h2 class="read-h2">The four tone marks</h2>' +
       '<p class="read-p">Marks sit above the initial consonant. What they produce depends on the class — the names are just the Thai numbers 1–4.</p>' +
       '<div class="marks-row">' + D.toneMarks.map(function (m) {
-        return '<div class="mark-item"><div class="m-sym">' + phAw(esc(m.mark)) + '</div><div class="m-name">' + esc(m.name) + '</div>' +
+        return '<div class="mark-item"><div class="m-sym">' + symb(m.mark) + '</div><div class="m-name">' + esc(m.name) + '</div>' +
           (m.t ? '<div class="m-note">' + esc(m.t) + '</div>' : '<div class="m-note">&nbsp;</div>') + '</div>';
       }).join('') + '</div>' +
 
       '<h2 class="read-h2">The rules — one table</h2>' +
       '<p class="read-p">Find the class row, then the column that matches the syllable. Tap any example to hear the tone. Spoken out loud, the low-class row reads: <em>low + live = mid · low + dead-short = high · low + dead-long = falling · <span class="th">อ่</span> = falling · <span class="th">อ้</span> = high</em> — and likewise for the other rows.</p>' +
       '<div class="tone-table-scroll"><table class="tone-table"><thead><tr><th></th>' +
-      R.columns.map(function (c) { return '<th>' + c.replace('อ่', '<span class="th">อ่</span>').replace('อ้', '<span class="th">อ้</span>').replace('อ๊', '<span class="th">อ๊</span>').replace('อ๋', '<span class="th">อ๋</span>') + '</th>'; }).join('') +
+      R.columns.map(function (c) {
+        // ⚠ the needles have to track the notation, or a header silently loses
+        // its .th styling the moment the other engine is in use
+        c = proseNotation(c);
+        ['อ่', 'อ้', 'อ๊', 'อ๋'].forEach(function (mk) {
+          var m = SPLITS_CLUSTER ? mk : toCircles(mk);
+          c = c.replace(m, '<span class="th">' + (SPLITS_CLUSTER ? phAw(m) : m) + '</span>');
+        });
+        return '<th>' + c + '</th>';
+      }).join('') +
       '</tr></thead><tbody>' +
       R.rows.map(function (row) {
         return '<tr><td class="cls-cell">' + esc(row.cls) + '</td>' +

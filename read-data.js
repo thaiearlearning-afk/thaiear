@@ -31,7 +31,7 @@ window.ThaiEarRead = {
     { "key": "vlong",    "kind": "vowels",  "title": "Long vowels",  "short": "Long vowels",
       "page": "read-vowels-long.html",
       "blurb": "9 vowels",
-      "intro": "Thai vowels attach to a consonant — above, below, before, after, or wrapped right around it. The อ underlined in red is a stand-in showing where the consonant goes — an อ without the underline is a real letter that belongs to the vowel itself. Where a second form has a ◌ after it, that marks a following final consonant. Note that some vowels are written BEFORE the consonant but spoken after it: เอ, แอ, โอ. These 9 are the long vowels — held noticeably longer, roughly twice the length of their short partners. Length matters: it changes meaning, and (as you'll see in the tone rules) it can change the tone." },
+      "intro": "Thai vowels attach to a consonant — above, below, before, after, or wrapped right around it. The อ in red is a stand-in showing where the consonant goes — a black อ is a real letter that belongs to the vowel itself. Where a second form has a ◌ after it, that marks a following final consonant. Note that some vowels are written BEFORE the consonant but spoken after it: เอ, แอ, โอ. These 9 are the long vowels — held noticeably longer, roughly twice the length of their short partners. Length matters: it changes meaning, and (as you'll see in the tone rules) it can change the tone." },
     { "key": "vshort",   "kind": "vowels",  "title": "Short vowels", "short": "Short vowels",
       "page": "read-vowels-short.html",
       "blurb": "9 vowels",
