@@ -1,7 +1,7 @@
 {
   "name": "ThaiEar: Learn Thai by Ear",
   "short_name": "ThaiEar",
-  "description": "Learn Thai by listening — real sentences at natural speed, by topic and level, with audio.",
+  "description": "Learn Thai by listening — real sentences recorded by native speakers, by topic and level.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",

@@ -1,8 +1,8 @@
 # ThaiEar
 
-> A free Thai-language listening platform: real, natural Thai sentences organised by topic and difficulty, with native-speed audio, English translations, and word-by-word notes.
+> A free Thai-language listening platform: real, natural Thai sentences organised by topic and difficulty, recorded by native speakers, with English translations and word-by-word notes.
 
-ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every topic ramps from Beginner to Upper intermediate. Each sentence page shows the Thai, an English translation, and a gloss of each word, with native-speed audio to build listening comprehension.
+ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every topic ramps from Beginner to Upper intermediate. Each sentence page shows the Thai, an English translation, and a gloss of each word, with audio recorded by native Thai speakers to build listening comprehension.
 
 ## Topics
 
