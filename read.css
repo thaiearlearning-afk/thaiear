@@ -380,3 +380,12 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
   .tq-choice .c-sym.has-alt { font-size: 20px; }
   .tq-big-symbol.has-alt { font-size: 34px; }
 }
+
+/* The placeholder อ — the slot a consonant goes into — is red, so a black อ is always a
+   real letter belonging to the vowel (ออ as in ขอ, อ็อ◌ as in ล็อก). read.js marks the
+   first อ of each form; see phAw().
+   ⚠ #C0392B is the same red the quiz uses for a wrong answer, but that state colours a
+   tile's border and background, never glyph text, so the two do not collide. One variable
+   if it ever needs changing. */
+:root { --ph-color: #C0392B; }
+.ph { color: var(--ph-color); }

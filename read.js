@@ -514,6 +514,16 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  // Wraps the PLACEHOLDER อ so CSS can colour it. The first อ in each form is always the
+  // slot the consonant goes in; any later อ is a real letter belonging to the vowel itself
+  // (ออ as in ขอ, อ็อ◌ as in ล็อก). Verified against all 26 symbols.
+  // Takes ALREADY-ESCAPED text and only inserts markup it wrote itself.
+  function phAw(escaped) {
+    return escaped.split(' / ').map(function (form) {
+      return form.replace('\u0E2D', '<span class="ph">\u0E2D</span>');
+    }).join(' / ');
+  }
+  function symb(s) { return phAw(esc(s)); }
   function shuffle(arr) {
     var a = arr.slice();
     for (var i = a.length - 1; i > 0; i--) {
@@ -705,7 +715,7 @@
     return '<div class="letter-card' + (it.obsolete ? ' obsolete' : '') + '" data-audio="' + it.audio + '" role="button" tabindex="0" aria-label="Play ' + esc(it.name) + '">' +
       (it.obsolete ? '<span class="obsolete-chip">obsolete</span>' : '') +
       '<span class="lc-hint">' + SVG_SPEAKER + '</span>' +
-      '<div class="lc-ch' + (it.alt ? ' has-alt' : '') + '">' + esc(it.ch) + altHtml(it) + '</div>' + main + word + '</div>';
+      '<div class="lc-ch' + (it.alt ? ' has-alt' : '') + '">' + (vowel ? symb(it.ch) : esc(it.ch)) + altHtml(it) + '</div>' + main + word + '</div>';
   }
   // The second (and third) written form of a vowel that changes shape before a final
   // consonant. Display only -- `ch` stays the identity symbol everywhere else.
@@ -717,7 +727,7 @@
     // it fitted at 1x, so this is invisible until someone turns their font size up.
     var s = it.alt.split('/').map(function (p) { return p.trim(); })
       .filter(Boolean)
-      .map(function (p) { return ' <span class="lc-alt">/ ' + esc(p) + '</span>'; })
+      .map(function (p) { return ' <span class="lc-alt">/ ' + symb(p) + '</span>'; })
       .join('');
     if (it.note) s += '<span class="gl-term lc-note" data-term="" data-title="' +
       esc(it.name) + '" data-def="' + esc(it.note) + '"><sup class="gl-i">i</sup></span>';
@@ -826,12 +836,12 @@
           '<div class="tq-prompt">Listen, then choose the matching ' + (vowel ? 'vowel' : 'letter') + '</div>' +
           '<button class="tq-big-play" id="tq-play" type="button">' + SVG_SPEAKER + ' Play sound</button></div>' +
           '<div class="tq-choices">' + choices.map(function (c, i) {
-            return '<button class="tq-choice" data-i="' + i + '" type="button"><span class="c-sym' + (c.alt ? ' has-alt' : '') + '">' + esc(c.ch) + altHtml(c) + '</span></button>';
+            return '<button class="tq-choice" data-i="' + i + '" type="button"><span class="c-sym' + (c.alt ? ' has-alt' : '') + '">' + (vowel ? symb(c.ch) : esc(c.ch)) + altHtml(c) + '</span></button>';
           }).join('') + '</div>';
       } else {
         html += '<div class="tq-question">' +
           '<div class="tq-prompt">Which sound is this ' + (vowel ? 'vowel' : 'letter') + '? Play each option, then choose.</div>' +
-          '<div class="tq-big-symbol' + (target.alt ? ' has-alt' : '') + '">' + esc(target.ch) + altHtml(target) + '</div></div>' +
+          '<div class="tq-big-symbol' + (target.alt ? ' has-alt' : '') + '">' + (vowel ? symb(target.ch) : esc(target.ch)) + altHtml(target) + '</div></div>' +
           '<div class="tq-choices">' + choices.map(function (c, i) {
             return '<div class="tq-choice audio-opt" data-i="' + i + '">' +
               '<span class="c-play">' + SVG_PLAY + '</span>' +
@@ -1473,7 +1483,7 @@
       '<h2 class="read-h2">The four tone marks</h2>' +
       '<p class="read-p">Marks sit above the initial consonant. What they produce depends on the class — the names are just the Thai numbers 1–4.</p>' +
       '<div class="marks-row">' + D.toneMarks.map(function (m) {
-        return '<div class="mark-item"><div class="m-sym">' + m.mark + '</div><div class="m-name">' + esc(m.name) + '</div>' +
+        return '<div class="mark-item"><div class="m-sym">' + phAw(esc(m.mark)) + '</div><div class="m-name">' + esc(m.name) + '</div>' +
           (m.t ? '<div class="m-note">' + esc(m.t) + '</div>' : '<div class="m-note">&nbsp;</div>') + '</div>';
       }).join('') + '</div>' +
 
