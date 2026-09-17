@@ -360,7 +360,15 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
    rule covers the 44px card, the 40px quiz tile and the 64px prompt. The containers wrap
    and break rather than overflow: at 2x scaling three forms will not sit on one line in a
    150px card, and spilling out of the box is worse than a second line. */
-.lc-alt { font-size: 0.56em; color: var(--text-secondary); white-space: nowrap; }
+/* ⛔ EVERY FORM ON A MULTI-FORM CARD IS THE SAME SIZE (owner, 2026-09-17). The whole
+   container steps down instead of shrinking only the part after the slash: a card showing
+   เ◌อ / เ◌ิ◌ / เ◌ย is smaller than a single-form card, and that is deliberate -- uniformity
+   ACROSS THE SLASH reads as one fact about one vowel, where two sizes read as a main form
+   plus a footnote. So .lc-alt inherits (1em) and `.has-alt` carries the reduction. */
+.lc-alt { font-size: 1em; color: var(--text-secondary); white-space: nowrap; }
+.letter-card .lc-ch.has-alt { font-size: 22px; }
+.tq-choice .c-sym.has-alt { font-size: 26px; }
+.tq-big-symbol.has-alt { font-size: 44px; }
 .letter-card .lc-ch,
 .tq-choice .c-sym,
 .tq-big-symbol { overflow-wrap: break-word; }
@@ -368,5 +376,7 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
 .lc-note { cursor: help; vertical-align: super; margin-left: 2px; }
 .lc-note .gl-i { width: 13px; height: 13px; font-size: 9.5px; }
 @media (max-width: 560px) {
-  .lc-alt { font-size: 0.5em; }
+  .letter-card .lc-ch.has-alt { font-size: 18px; }
+  .tq-choice .c-sym.has-alt { font-size: 20px; }
+  .tq-big-symbol.has-alt { font-size: 34px; }
 }
