@@ -509,40 +509,8 @@
   }
 
   /* ── helpers ───────────────────────────────────────────── */
-  // ⛔ THE DOTTED-CIRCLE PLACEHOLDER IS NOT PORTABLE, AND THE TWO ENGINES FAIL OPPOSITE WAYS.
-  // WebKit/CoreText will not accept U+25CC as a base for a Thai combining mark: it inserts its
-  // OWN dotted circle to carry the mark, so ◌ั comes out as two circles with the mark on the
-  // SECOND, and ◌ั◌ as three. Blink does the reverse — an orphan Thai mark renders at ZERO width
-  // with no circle at all, so the placeholder is exactly what makes it visible there. Neither
-  // spelling works everywhere, so the engine is measured once and the matching string emitted.
-  // Reported on the iPhone PWA and correct on the Android app from the identical build.
-  // ⚠ Measure the ENGINE, never sniff the UA: this is shaping behaviour, not a browser identity,
-  // and it is a property of the text engine rather than of the font — so the probe does not have
-  // to wait for Sarabun to load.
-  var SHAPER_DRAWS_OWN_DOTTED_CIRCLE = (function () {
-    try {
-      // Measured in the DOM, not on a canvas: layout is what decides the rendering, and a
-      // canvas does not always run the identical shaping path. U+0E31 alone gets a dotted
-      // circle from CoreText and zero advance from Blink.
-      var p = document.createElement('span');
-      p.setAttribute('aria-hidden', 'true');
-      p.style.cssText = 'position:absolute;left:-9999px;top:0;font:40px sans-serif;' +
-        'white-space:pre;visibility:hidden';
-      p.textContent = '\u0E31';
-      (document.body || document.documentElement).appendChild(p);
-      var wide = p.getBoundingClientRect().width > 1;
-      p.parentNode.removeChild(p);
-      return wide;
-    } catch (e) { return false; }
-  })();
-  // a U+25CC immediately followed by a Thai above/below mark is the redundant one
-  var REDUNDANT_DOTTED = /\u25CC(?=[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E])/g;
-  function thaiSym(s) {
-    return SHAPER_DRAWS_OWN_DOTTED_CIRCLE ? s.replace(REDUNDANT_DOTTED, '') : s;
-  }
-
   function esc(s) {
-    return thaiSym(String(s == null ? '' : s)).replace(/[&<>"']/g, function (c) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
