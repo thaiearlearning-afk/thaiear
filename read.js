@@ -614,7 +614,10 @@
   function closePop() { if (popEl) popEl.setAttribute('hidden', ''); }
   function openPop(termEl) {
     var key = termEl.getAttribute('data-term');
-    var g = GLOSSARY[key];
+    // A vowel's alt-form note carries its text inline instead of a glossary key.
+    var g = GLOSSARY[key] || (termEl.getAttribute('data-def')
+      ? { title: termEl.getAttribute('data-title'), def: termEl.getAttribute('data-def') }
+      : null);
     if (!g) return;
     var pop = glPop();
     pop.querySelector('.gl-title').textContent = g.title;
@@ -702,11 +705,23 @@
     return '<div class="letter-card' + (it.obsolete ? ' obsolete' : '') + '" data-audio="' + it.audio + '" role="button" tabindex="0" aria-label="Play ' + esc(it.name) + '">' +
       (it.obsolete ? '<span class="obsolete-chip">obsolete</span>' : '') +
       '<span class="lc-hint">' + SVG_SPEAKER + '</span>' +
-      '<div class="lc-ch">' + esc(it.ch) + '</div>' + main + word + '</div>';
+      '<div class="lc-ch">' + esc(it.ch) + altHtml(it) + '</div>' + main + word + '</div>';
+  }
+  // The second (and third) written form of a vowel that changes shape before a final
+  // consonant. Display only -- `ch` stays the identity symbol everywhere else.
+  function altHtml(it) {
+    if (!it || !it.alt) return '';
+    var s = ' <span class="lc-alt">/ ' + esc(it.alt) + '</span>';
+    if (it.note) s += '<span class="gl-term lc-note" data-term="" data-title="' +
+      esc(it.name) + '" data-def="' + esc(it.note) + '"><sup class="gl-i">i</sup></span>';
+    return s;
   }
   function wireGrid(root) {
     root.querySelectorAll('.letter-card').forEach(function (card) {
       card.addEventListener('click', function (e) {
+        // Skip playback, but do NOT stopPropagation: the glossary popup listens on
+        // DOCUMENT, so swallowing the event here kills the tooltip it exists to open.
+        if (e.target.closest('.lc-note')) return;
         var wordBtn = e.target.closest('.lc-word');
         if (wordBtn) { e.stopPropagation(); play(wordBtn.getAttribute('data-audio'), wordBtn); return; }
         play(card.getAttribute('data-audio'), card);
@@ -804,12 +819,12 @@
           '<div class="tq-prompt">Listen, then choose the matching ' + (vowel ? 'vowel' : 'letter') + '</div>' +
           '<button class="tq-big-play" id="tq-play" type="button">' + SVG_SPEAKER + ' Play sound</button></div>' +
           '<div class="tq-choices">' + choices.map(function (c, i) {
-            return '<button class="tq-choice" data-i="' + i + '" type="button"><span class="c-sym">' + esc(c.ch) + '</span></button>';
+            return '<button class="tq-choice" data-i="' + i + '" type="button"><span class="c-sym">' + esc(c.ch) + altHtml(c) + '</span></button>';
           }).join('') + '</div>';
       } else {
         html += '<div class="tq-question">' +
           '<div class="tq-prompt">Which sound is this ' + (vowel ? 'vowel' : 'letter') + '? Play each option, then choose.</div>' +
-          '<div class="tq-big-symbol">' + esc(target.ch) + '</div></div>' +
+          '<div class="tq-big-symbol">' + esc(target.ch) + altHtml(target) + '</div></div>' +
           '<div class="tq-choices">' + choices.map(function (c, i) {
             return '<div class="tq-choice audio-opt" data-i="' + i + '">' +
               '<span class="c-play">' + SVG_PLAY + '</span>' +
@@ -1418,7 +1433,7 @@
     if (!vowel) {
       html += '<div class="read-note">Every Thai consonant has a two-part name: its <strong>sound</strong> plus a <strong>word that starts with it</strong> — like saying &ldquo;A for Apple.&rdquo; So <span class="th">ก</span> is <em>gaw gài</em>: &ldquo;gaw&rdquo; is the sound, <span class="th">ไก่</span> <em>gài</em> means chicken. Tap a card to hear the full name, or the pill to hear just the word.</div>';
     } else {
-      html += '<div class="read-note">Vowel names all start with <em>sara</em> (<span class="th">สระ</span> — &ldquo;vowel&rdquo;). Tap a card to hear the name, or the pill to hear a real word that uses it.</div>';
+      html += '<div class="read-note">Vowel names all start with <em>sara</em> (<span class="th">สระ</span> — &ldquo;vowel&rdquo;). Tap a card to hear the name, or the pill to hear a real word that uses it. Where a card shows two forms either side of a slash, the second is how that vowel is written when a final consonant follows \u2014 the sound is exactly the same.</div>';
     }
     html += '<div class="letter-grid">' + live.map(function (it) { return letterCardHtml(it, vowel); }).join('') + '</div>';
     if (dead.length) {

@@ -354,3 +354,19 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
   .read-dl-row { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
   .read-dl-btn { align-self: stretch; text-align: center; }
 }
+
+/* ── alt vowel forms (สระเปลี่ยนรูป): "เ◌อ / เ◌ิ◌ / เ◌ย" ──
+   em-relative so it tracks the glyph it follows under iOS text-size-adjust, and so one
+   rule covers the 44px card, the 40px quiz tile and the 64px prompt. The containers wrap
+   and break rather than overflow: at 2x scaling three forms will not sit on one line in a
+   150px card, and spilling out of the box is worse than a second line. */
+.lc-alt { font-size: 0.56em; color: var(--text-secondary); white-space: nowrap; }
+.letter-card .lc-ch,
+.tq-choice .c-sym,
+.tq-big-symbol { overflow-wrap: break-word; }
+.tq-choice .c-sym { display: block; }
+.lc-note { cursor: help; vertical-align: super; margin-left: 2px; }
+.lc-note .gl-i { width: 13px; height: 13px; font-size: 9.5px; }
+@media (max-width: 560px) {
+  .lc-alt { font-size: 0.5em; }
+}
