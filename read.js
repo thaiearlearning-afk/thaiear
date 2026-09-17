@@ -1345,7 +1345,7 @@
       }).join('') + '</div>' +
       '<p class="read-p">Letters you\'ll never see ending a syllable: <span class="th">' + esc(F.neverFinal) + '</span>.</p>' +
 
-      '<h2 class="read-h2">The silent-letter mark ◌์</h2>' +
+      '<h2 class="read-h2">The silent-letter mark อ์</h2>' +
       '<p class="read-p">A small mark called <em>gaa-ran</em> (<span class="th">การันต์</span>) written over a letter kills it — the letter is written but not spoken. Common in words borrowed from other languages: <span class="th">ยักษ์</span> <em>yák</em> (giant) — the <span class="th">ษ</span> is silent.</p>' +
       '<p class="read-p" style="margin-bottom:0.25rem"><button class="tt-ex" data-audio="yaw-yak-word" type="button">' + SVG_PLAY + '<span class="th">ยักษ์</span><span class="rr">yák</span></button></p>' +
 
@@ -1468,7 +1468,7 @@
       '<p class="read-p">Thai doesn’t write tones directly. Instead, each syllable’s tone is <strong>derived</strong> from four things: the <strong>class</strong> of its first consonant (that’s why you learned the classes), whether the syllable is <strong>live or dead</strong>, the <strong>vowel length</strong>, and any <strong>tone mark</strong>. Learn the rules and you can read the tone of any word you meet.</p>' +
 
       '<h2 class="read-h2">Live and dead syllables</h2>' +
-      '<p class="read-p">A syllable is <strong>live</strong> if it can ring on: it ends in a long vowel or a sonorant sound — m, n, ng, y, w (<span class="th">มา</span>, <span class="th">นอน</span>, <span class="th">ยาว</span>). It’s <strong>dead</strong> if it cuts off short: a short open vowel, or a p / t / k stop at the end (<span class="th">จะ</span>, <span class="th">รัก</span>, <span class="th">มาก</span>). Note the four self-contained vowels <span class="th">◌ำ ใ◌ ไ◌ เ◌า</span> end in m / y / w sounds, so they’re always <strong>live</strong>.</p>' +
+      '<p class="read-p">A syllable is <strong>live</strong> if it can ring on: it ends in a long vowel or a sonorant sound — m, n, ng, y, w (<span class="th">มา</span>, <span class="th">นอน</span>, <span class="th">ยาว</span>). It’s <strong>dead</strong> if it cuts off short: a short open vowel, or a p / t / k stop at the end (<span class="th">จะ</span>, <span class="th">รัก</span>, <span class="th">มาก</span>). Note the four self-contained vowels <span class="th">อำ ใอ ไอ เอา</span> end in m / y / w sounds, so they’re always <strong>live</strong>.</p>' +
 
       '<h2 class="read-h2">The four tone marks</h2>' +
       '<p class="read-p">Marks sit above the initial consonant. What they produce depends on the class — the names are just the Thai numbers 1–4.</p>' +
@@ -1478,9 +1478,9 @@
       }).join('') + '</div>' +
 
       '<h2 class="read-h2">The rules — one table</h2>' +
-      '<p class="read-p">Find the class row, then the column that matches the syllable. Tap any example to hear the tone. Spoken out loud, the low-class row reads: <em>low + live = mid · low + dead-short = high · low + dead-long = falling · <span class="th">◌่</span> = falling · <span class="th">◌้</span> = high</em> — and likewise for the other rows.</p>' +
+      '<p class="read-p">Find the class row, then the column that matches the syllable. Tap any example to hear the tone. Spoken out loud, the low-class row reads: <em>low + live = mid · low + dead-short = high · low + dead-long = falling · <span class="th">อ่</span> = falling · <span class="th">อ้</span> = high</em> — and likewise for the other rows.</p>' +
       '<div class="tone-table-scroll"><table class="tone-table"><thead><tr><th></th>' +
-      R.columns.map(function (c) { return '<th>' + c.replace('◌่', '<span class="th">◌่</span>').replace('◌้', '<span class="th">◌้</span>').replace('◌๊', '<span class="th">◌๊</span>').replace('◌๋', '<span class="th">◌๋</span>') + '</th>'; }).join('') +
+      R.columns.map(function (c) { return '<th>' + c.replace('อ่', '<span class="th">อ่</span>').replace('อ้', '<span class="th">อ้</span>').replace('อ๊', '<span class="th">อ๊</span>').replace('อ๋', '<span class="th">อ๋</span>') + '</th>'; }).join('') +
       '</tr></thead><tbody>' +
       R.rows.map(function (row) {
         return '<tr><td class="cls-cell">' + esc(row.cls) + '</td>' +
