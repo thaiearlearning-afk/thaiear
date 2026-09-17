@@ -388,4 +388,11 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
    tile's border and background, never glyph text, so the two do not collide. One variable
    if it ever needs changing. */
 :root { --ph-color: #C0392B; }
-.ph { color: var(--ph-color); }
+/* ⛔ AN UNDERLINE, NOT A COLOUR. อ and its combining mark are ONE grapheme cluster, and
+   Blink paints a cluster with the FIRST element's style — so `color` on this span bled into
+   the mark outside it and turned the whole of อี red on desktop and the Android app. WebKit
+   did not, because CoreText breaks the cluster at the element boundary (the same behaviour
+   that caused the doubled-circle bug in the first place). No colour rule is right on both.
+   A border paints on the element's own box and cannot bleed; the mark has zero advance, so
+   the box is exactly the อ and the underline sits exactly under it. */
+.ph { border-bottom: 0.07em solid var(--ph-color); }
