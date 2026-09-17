@@ -303,7 +303,7 @@
   const structures = [
     { id: 1, name: "Dâi (ได้)", levels: ['li1'], sentences: 14, page: "grammar-01.html", audio: "GramDai_LI1",
       keywords: ["dai","ได้","can","able","ability","permission","got to","past"] },
-    { id: 2, name: "Maa (มา)", levels: ['li1'], sentences: 9, page: "grammar-02.html", audio: "GramMaa_LI1",
+    { id: 2, name: "Maa (มา)", levels: ['li1'], sentences: 10, page: "grammar-02.html", audio: "GramMaa_LI1",
       keywords: ["maa","มา","come","direction","toward","โทรมา","from"] },
     { id: 3, name: "Yùu & thîi (อยู่ & ที่)", levels: ['li1'], sentences: 13, page: "grammar-03.html", audio: "GramYuu_LI1", access: "premium",
       keywords: ["yuu","thii","อยู่","ที่","at","located","still","right now","progressive"] },
