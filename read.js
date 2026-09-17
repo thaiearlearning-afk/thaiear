@@ -318,6 +318,90 @@
     }).catch(function () { return false; });
   }
 
+  /* ── the site's own confirm dialog ───────────────────────────────────────
+     ⚠ NEVER window.confirm — that is the plain grey browser box, and it has already been removed
+     from this file once (the results page's "Clear my reading progress", 2026-08-27). The download
+     card kept its own window.confirm until 2026-09-18, which is how the SAME dialog came to exist
+     in two styles in one section; there is now one implementation and both callers use it.
+     Markup, classes and behaviour are progress.html's reset dialog verbatim (the topic side's
+     equivalent), so every destructive confirm on the site reads the same. CSS lives in read.css.
+
+     • `body` is HTML (it carries <strong>); the button LABELS are escaped.
+     • `tone: 'primary'` colours the confirm button accent instead of red — for the one dialog
+       whose confirm button is the SAFE choice (the leave-guard's "Keep downloading").
+     • The backdrop dismisses WITHOUT running either callback. onCancel belongs to the cancel
+       BUTTON alone: the leave-guard hangs "Leave anyway" off it, and a stray backdrop tap must
+       never navigate the page away. */
+  function readModal(opts) {
+    var ov = document.createElement('div');
+    ov.className = 'te-modal';
+    ov.innerHTML = '<div class="te-modal-card" role="dialog" aria-modal="true">' +
+      '<p>' + opts.body + '</p>' +
+      '<div class="te-modal-actions">' +
+        '<button type="button" class="te-modal-cancel">' + esc(opts.cancel || 'Cancel') + '</button>' +
+        '<button type="button" class="te-modal-ok ' +
+          (opts.tone === 'primary' ? 'te-modal-primary' : 'te-modal-confirm') + '">' +
+          esc(opts.confirm || 'Delete') + '</button>' +
+      '</div></div>';
+    document.body.appendChild(ov);
+    var close = function () { try { ov.remove(); } catch (_) {} };
+    ov.querySelector('.te-modal-cancel').addEventListener('click', function () {
+      close(); if (opts.onCancel) opts.onCancel();
+    });
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('.te-modal-ok').addEventListener('click', function () {
+      close(); if (opts.onConfirm) opts.onConfirm();
+    });
+  }
+
+  /* ── LEAVE GUARD while the course is downloading ──────────────────────────────
+     Duplicated from player.js's installLeaveGuard, which has covered topic downloads since the dyn
+     rollout — this arm had no warning at all, so a tap on the nav mid-download silently abandoned
+     208 clips. Two halves, exactly as there:
+     ⚠ `beforeunload`'s dialog CANNOT be styled or reworded — every major browser has ignored
+     author-supplied text since ~2016 and renders its own generic wording in browser chrome, by
+     design — so it stays only as the un-stylable backstop for tab close, the URL bar and gestures
+     we cannot see. The realistic route out on a phone is a click on an INTERNAL LINK (the nav, a
+     lesson card, the footer), and that one we intercept and answer with the site's own dialog.
+     Not covered, deliberately and for the same reasons as on the topic side: `location.href = …`
+     assignments in JS (no event to hook) and the Android hardware back button.
+     ⚠ `dlBusy` is module-scope rather than mountDlCard's local `busy` because the listeners
+     outlive the card's closure; the two are set and cleared together. */
+  var dlBusy = false;
+  var dlGuardOn = false;
+  function installDlLeaveGuard() {
+    if (dlGuardOn) return;
+    dlGuardOn = true;
+    var bypass = false;
+    document.addEventListener('click', function (e) {
+      if (bypass || !dlBusy) return;
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (!a) return;
+      var href = a.getAttribute('href') || '';
+      // In-page anchors, protocol links and new-tab links leave the page where it is.
+      if (!href || href.charAt(0) === '#' || /^(mailto:|tel:|javascript:)/i.test(href)) return;
+      if (a.target && a.target !== '_self') return;
+      var dest = a.href;
+      e.preventDefault(); e.stopPropagation();
+      readModal({
+        body: '<strong>Download in progress</strong><br><br>If you leave now, this download won’t ' +
+          'finish. You can start it again any time.',
+        cancel: 'Leave anyway',
+        confirm: 'Keep downloading',
+        tone: 'primary',
+        onCancel: function () { bypass = true; window.location.href = dest; }
+      });
+    }, true);   // capture: run before the page's own link handlers
+    /* ⚠ `bypass` is honoured HERE TOO, which player.js does not do: once the visitor has answered
+       our own dialog with "Leave anyway", the browser's generic box on top of it is a second ask
+       for a decision already made. Everything else — tab close, the URL bar, a gesture — never
+       sets bypass and still gets the backstop. */
+    window.addEventListener('beforeunload', function (e) {
+      if (bypass || !dlBusy) return;
+      e.preventDefault(); e.returnValue = '';
+    });
+  }
+
   /* ── hub offline-download card ─────────────────────────── */
   function dlCardVisible() {
     var native = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -416,24 +500,33 @@
     }
     function startDownload() {
       if (busy) return;
-      busy = true;
+      busy = dlBusy = true;   // dlBusy is what the leave guard reads — see installDlLeaveGuard
       render('busy');
       dlDownload(function (done, total) {
         desc.textContent = 'Saving audio… ' + done + ' of ' + total;
         bar.style.width = Math.round(done / total * 100) + '%';
-      }).then(function () { busy = false; render('done'); })
-        .catch(function () { busy = false; render('error'); });
+      }).then(function () { busy = dlBusy = false; render('done'); })
+        .catch(function () { busy = dlBusy = false; render('error'); });
     }
     btn.addEventListener('click', function () {
       var state = card.getAttribute('data-state');
       if (state === 'done') {
-        if (window.confirm('Remove the offline copy of the Read Thai course? You can download it again any time.')) {
-          dlRemove().then(function () { render('none'); });
-        }
+        /* Same idiom as the topic side's "Delete this download?" and the account page's
+           "Remove ALL downloads?" — no typed confirmation here, because this removes ONE
+           download the user can rebuild in a tap, not every download on the device. */
+        readModal({
+          body: 'This removes the offline copy of the <strong>Read Thai course</strong> from this ' +
+            'device — every step, test and audio clip.<br><br>Your test scores are kept, and you ' +
+            'can download the course again any time.',
+          cancel: 'Keep',
+          confirm: 'Remove',
+          onConfirm: function () { dlRemove().then(function () { render('none'); }); }
+        });
       } else {
         startDownload();
       }
     });
+    installDlLeaveGuard();
 
     var m = dlManifest();
     if (!m) render('none');
@@ -1723,28 +1816,23 @@
       '<button class="rd-ghost-pill clear-progress-btn" id="clear-progress" type="button">Clear my reading progress</button>' +
       '</div>';
     var clearBtn = root.querySelector('#clear-progress');
-    /* ⚠ The site's own modal, never window.confirm — that is the plain grey browser box, and this
-       was the last place on the site still using it (owner, 2026-08-27). Markup, classes and
-       behaviour are progress.html's reset dialog verbatim (the same action on the topic side);
-       the CSS lives in read.css, next to .clear-progress-btn. */
+    /* ⚠ The site's own modal, never window.confirm — that is the plain grey browser box
+       (owner, 2026-08-27). Built by readModal() above; this dialog's wording, classes and
+       behaviour are progress.html's reset dialog verbatim (the same action on the topic side).
+       ⚠ The 2026-08-27 note here claimed this was "the last place on the site still using
+       window.confirm". It was not — the download card a few hundred lines up still did, and
+       went on doing so for three weeks, which is exactly the shape of thing a comment asserting
+       a site-wide fact gets wrong. Both now share readModal(). */
     if (clearBtn) clearBtn.addEventListener('click', function () {
-      var ov = document.createElement('div');
-      ov.className = 'te-modal';
-      ov.innerHTML = '<div class="te-modal-card" role="dialog" aria-modal="true">' +
-        '<p>This permanently deletes <strong>all</strong> your Read Thai test history — every ' +
-        'attempt, best score and average, across every section.<br>' +
-        '<strong>This cannot be undone.</strong></p>' +
-        '<div class="te-modal-actions">' +
-          '<button type="button" class="te-modal-cancel">Cancel</button>' +
-          '<button type="button" class="te-modal-confirm">Delete</button>' +
-        '</div></div>';
-      document.body.appendChild(ov);
-      var close = function () { try { ov.remove(); } catch (_) {} };
-      ov.querySelector('.te-modal-cancel').addEventListener('click', close);
-      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
-      ov.querySelector('.te-modal-confirm').addEventListener('click', function () {
-        try { localStorage.removeItem(LS_KEY); } catch (_) {}
-        location.reload();
+      readModal({
+        body: 'This permanently deletes <strong>all</strong> your Read Thai test history — every ' +
+          'attempt, best score and average, across every section.<br>' +
+          '<strong>This cannot be undone.</strong>',
+        confirm: 'Delete',
+        onConfirm: function () {
+          try { localStorage.removeItem(LS_KEY); } catch (_) {}
+          location.reload();
+        }
       });
     });
   }
