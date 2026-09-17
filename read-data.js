@@ -31,7 +31,7 @@ window.ThaiEarRead = {
     { "key": "vlong",    "kind": "vowels",  "title": "Long vowels",  "short": "Long vowels",
       "page": "read-vowels-long.html",
       "blurb": "9 vowels",
-      "intro": "Thai vowels attach to a consonant — above, below, before, after, or wrapped right around it. The อ in each symbol is a stand-in showing where the consonant goes; where a second form has a อ after it, that marks a following final consonant. Note that some vowels are written BEFORE the consonant but spoken after it: เอ, แอ, โอ. These 9 are the long vowels — held noticeably longer, roughly twice the length of their short partners. Length matters: it changes meaning, and (as you'll see in the tone rules) it can change the tone." },
+      "intro": "Thai vowels attach to a consonant — above, below, before, after, or wrapped right around it. The อ in each symbol is a stand-in showing where the consonant goes; where a second form has a ◌ after it, that marks a following final consonant. Note that some vowels are written BEFORE the consonant but spoken after it: เอ, แอ, โอ. These 9 are the long vowels — held noticeably longer, roughly twice the length of their short partners. Length matters: it changes meaning, and (as you'll see in the tone rules) it can change the tone." },
     { "key": "vshort",   "kind": "vowels",  "title": "Short vowels", "short": "Short vowels",
       "page": "read-vowels-short.html",
       "blurb": "9 vowels",
@@ -146,7 +146,7 @@ window.ThaiEarRead = {
     { "cls": "vshort", "ch": "อุ",    "name": "sara u",        "sound": "u — as the oo in \"group\"",         "ex": "คุณ",  "ext": "khun", "en": "you",       "audio": "sara-u",       "ttsName": "สระอุ",    "ttsEx": "คุณ" },
     { "cls": "vshort", "ch": "เอะ",  "name": "sara e", "alt": "เอ็◌",        "sound": "e — short, as in \"let\"",           "ex": "เตะ",  "ext": "dtè",  "en": "to kick",   "audio": "sara-e",       "ttsName": "สระเอะ",  "ttsEx": "เตะ" },
     { "cls": "vshort", "ch": "แอะ",  "name": "sara ae", "alt": "แอ็◌",       "sound": "ae — as in \"eh\" (indifference)",   "ex": "แกะ",  "ext": "gàe",  "en": "sheep",     "audio": "sara-ae",      "ttsName": "สระแอะ",  "ttsEx": "แกะ" },
-    { "cls": "vshort", "ch": "โอะ",  "name": "sara o", "alt": "อ◌", "note": "ออ means no vowel is written at all. When a final consonant follows, the short o is simply left out: คน khon (person), รถ rót (car), ธง thong (flag).",        "sound": "o — short, clipped \"go\"",          "ex": "โต๊ะ",  "ext": "dtó",  "en": "table",     "audio": "sara-o",       "ttsName": "สระโอะ",  "ttsEx": "โต๊ะ" },
+    { "cls": "vshort", "ch": "โอะ",  "name": "sara o", "alt": "อ◌", "note": "อ◌ means no vowel is written at all. When a final consonant follows, the short o is simply left out: คน khon (person), รถ rót (car), ธง thong (flag).",        "sound": "o — short, clipped \"go\"",          "ex": "โต๊ะ",  "ext": "dtó",  "en": "table",     "audio": "sara-o",       "ttsName": "สระโอะ",  "ttsEx": "โต๊ะ" },
     { "cls": "vshort", "ch": "เอาะ", "name": "sara aw (short)", "alt": "อ็อ◌","sound": "aw — short, as in British \"hot\"", "ex": "เกาะ", "ext": "gàw",  "en": "island",    "audio": "sara-aw-short","ttsName": "สระเอาะ", "ttsEx": "เกาะ" },
     { "cls": "vshort", "ch": "เออะ", "name": "sara uhr (short)","sound": "uh — short, as in \"the\"",         "ex": "เยอะ", "ext": "yúh",  "en": "a lot",     "audio": "sara-oe-short","ttsName": "สระเออะ", "ttsEx": "เยอะ" },
 
