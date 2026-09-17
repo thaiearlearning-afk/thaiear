@@ -711,7 +711,14 @@
   // consonant. Display only -- `ch` stays the identity symbol everywhere else.
   function altHtml(it) {
     if (!it || !it.alt) return '';
-    var s = ' <span class="lc-alt">/ ' + esc(it.alt) + '</span>';
+    // ONE SPAN PER FORM, never one for the whole string. Each form is nowrap so its own
+    // glyphs never split, but a line break IS allowed between forms. A single nowrap span
+    // for '/ เ◌ิ◌ / เ◌ย' spilled 81px out of a 150px card at 2x text scaling --
+    // it fitted at 1x, so this is invisible until someone turns their font size up.
+    var s = it.alt.split('/').map(function (p) { return p.trim(); })
+      .filter(Boolean)
+      .map(function (p) { return ' <span class="lc-alt">/ ' + esc(p) + '</span>'; })
+      .join('');
     if (it.note) s += '<span class="gl-term lc-note" data-term="" data-title="' +
       esc(it.name) + '" data-def="' + esc(it.note) + '"><sup class="gl-i">i</sup></span>';
     return s;
