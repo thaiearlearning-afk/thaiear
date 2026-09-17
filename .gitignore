@@ -166,3 +166,6 @@ gap-review/
 # PREMIUM clips copied from the local working set; local review only, never deploy.
 pickup-review.html
 pickup-clips/
+
+# Thai symbol shaping test (2026-09-17) — temporary, iOS diagnosis only. Remove when done.
+_shapetest.html
