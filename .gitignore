@@ -166,3 +166,7 @@ gap-review/
 # PREMIUM clips copied from the local working set; local review only, never deploy.
 pickup-review.html
 pickup-clips/
+
+# Modern-Thai font sampler (2026-09-19) — candidate woff2s + the compare page. Local only.
+_font-sampler.html
+_font-sampler/

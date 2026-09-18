@@ -2879,11 +2879,13 @@
        Default ON (new visitors should see it exists); .translit-off on #sentence-list hides both
        the under-Thai line and the chips' translit. Choice remembered per device via localStorage. */
     .controls-left { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .translit-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
-    .translit-btn:hover { background: var(--surface); }
-    .translit-btn.on { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 500; }
-    .translit-btn .tl-ico { font-size: calc(11px * var(--te-ui, 1)); }
-    .translit-btn .tl-ico .th { font-family: var(--font-thai); }
+    /* ⚠ THE ROW IS MEASURED, NOT EYEBALLED — at 360px there are 327px of content and the four
+       items come to 317 (Reveal all 87 + Transliteration 97 + Font 44 + "104 sentences" 71 +
+       gaps). Put an icon back on EITHER pill and the count wraps to a second line. That is why
+       Transliteration lost its ก→a mark (2026-09-19) and why Font carries no glyph. */
+    .translit-btn, .font-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    .translit-btn:hover, .font-btn:hover { background: var(--surface); }
+    .translit-btn.on, .font-btn.on { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 500; }
     .thai-translit { font-family: var(--font-ui); font-size: 13px; color: var(--text-tertiary); line-height: 1.55; margin-top: 1px; }
     .g-tl { color: var(--text-secondary); margin-left: 4px; }
     #sentence-list.translit-off .thai-translit, #sentence-list.translit-off .g-tl { display: none; }
@@ -2980,7 +2982,7 @@
       .play-btn { width: 34px; height: 34px; }
       .controls-row { margin-bottom: 0.5rem; }
       .reveal-all-btn { font-size: calc(11px * var(--te-ui, 1)); padding: 4px 10px; }
-      .translit-btn { font-size: calc(11px * var(--te-ui, 1)); padding: 4px 10px; }
+      .translit-btn, .font-btn { font-size: calc(11px * var(--te-ui, 1)); padding: 4px 10px; }
       .sentence-header { padding: 0.6rem 0.85rem; }
       .sent-preview { font-size: 15px; }
       .row-thai { font-size: 17px; }
@@ -3208,11 +3210,19 @@
         '</button>' +
         (HAS_TRANSLIT
           ? '<button class="translit-btn" id="translit-btn" onclick="toggleTranslit()" title="Show pronunciation under the Thai script">' +
-              '<span class="tl-ico"><span class="th">ก</span>→a</span> Transliteration' +
+              'Transliteration' +
             '</button>'
           : '') +
+        '<button class="font-btn" id="font-btn" onclick="toggleThaiFont()" title="Switch the Thai text to the loopless script you see on signs and billboards">' +
+          'Font' +
+        '</button>' +
       '</div>' +
-      '<span class="sent-count-label">' + sentences.length + ' sentences</span>' +
+      /* The count is a DUPLICATE on a topic or grammar page — the static <p class="topic-meta">
+         above the player already reads "23 sentences · Click each sentence to reveal…", and the
+         row needs the width for the Font button (owner, 2026-09-19). The playlist player view
+         has no topic-meta, so there it stays: this is the one surface where the row is the only
+         place the count appears. metaCount was resolved at mount from that same element. */
+      (metaCount ? '' : '<span class="sent-count-label">' + sentences.length + ' sentences</span>') +
     '</div>' +
     (SSR ? '' : '<div id="sentence-list"></div>') +   // SSR pages provide #sentence-list as static cards
     '<audio id="sent-audio-el" preload="none" style="display:none"></audio>';
@@ -9029,6 +9039,33 @@
     applyTranslitClass();
   }
 
+  /* ---- modern-Thai font toggle (2026-09-19) ----
+     Thai is written in two styles and the site only ever showed one: looped (ตัวอักษรมีหัว,
+     Sarabun) is what a course teaches; loopless (ตัวอักษรไม่มีหัว) is what signs, menus and
+     packaging actually use. Default OFF — the looped form stays the site's voice, and this is a
+     practice mode a reader opts into.
+
+     ⚠ THE CLASS GOES ON <html>, NOT ON #sentence-list, and the rules live in player-dyn.css
+     rather than in STYLES above. Both are deliberate: the pre-paint head script (written by
+     ssrify_topic.js) stamps the same class before first paint, so a reader who chose modern
+     never watches the page paint looped and flip. That script runs long before this file, which
+     is deferred, and it cannot depend on any element existing yet. Keep the class name, the
+     storage key and the default identical in all three places or the flip comes back. */
+  function thaiFontModern() { try { return localStorage.getItem('thaiear_thaifont') === 'modern'; } catch (_) { return false; } }
+  function applyThaiFontClass() {
+    var on = thaiFontModern();
+    try { document.documentElement.classList.toggle('te-thai-modern', on); } catch (_) {}
+    var b = $('font-btn');
+    if (b) {
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+  function toggleThaiFont() {
+    try { localStorage.setItem('thaiear_thaifont', thaiFontModern() ? 'classic' : 'modern'); } catch (_) {}
+    applyThaiFontClass();
+  }
+
   function switchAudio(mode) {
     if (currentMode === mode) return;
     currentMode = mode;
@@ -9878,6 +9915,7 @@
     }
     applyDirClass();   // keep the reveal order in sync with the current TE/ET direction
     applyTranslitClass();   // reflect the stored transliteration preference (default on)
+    applyThaiFontClass();   // reflect the stored Thai-script preference (default looped/Sarabun)
 
     var allOpen = sentences.filter(function (s) { return !sentLocked(s); })
       .every(function (s) { return states[s.num] === 3; });
@@ -10169,6 +10207,7 @@
   // inline onclick in the injected markup call these by name
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow, toggleTranslit: toggleTranslit,
+    toggleThaiFont: toggleThaiFont,
 
     advanceTopic: advanceTopic, toggleAutoplay: toggleAutoplay, toggleRepeat: toggleRepeat,
     downloadTopic: downloadTopic, deleteTopic: deleteTopic, confirmDelete: confirmDelete, cancelDelete: cancelDelete, refreshTopic: refreshTopic,
