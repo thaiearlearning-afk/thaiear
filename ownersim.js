@@ -580,6 +580,26 @@
          to "have I picked it up yet". */
       var D = null; try { D = window.__teDyn && window.__teDyn(); } catch (_) {}
       var L = [];
+      /* ── WHICH STATE IS THIS, AND IS IT EVEN A FAULT? ────────────────────────────────────────
+         The 2026-09-19 reading was taken on the ORIGIN page with a neighbour adopted — where no
+         highlight is CORRECT (the cards on screen are not the sentences playing, and there is no
+         card for the block's num). Two readings had to be traded to establish that. The panel now
+         says so itself, so a reading can never again be taken at the wrong moment without the
+         panel saying which moment it was. */
+      var live0 = document.querySelector('.sentence-card.dyn-live');
+      var vd;
+      if (!D) vd = '? old build — reload';
+      else if (D.adopted) vd = 'ORIGIN PAGE (playing ' + D.adopted + '). No highlight is CORRECT ' +
+        'here — these cards are not what is playing. Tap "Now playing" THEN read this again.';
+      else if (live0) vd = 'OK — ' + live0.id + ' is lit.';
+      else if (!D.local) vd = '*** BUG: home page, but local=false (the flag says foreign).';
+      else if (D.blk < 0) vd = '*** BUG: home + local, but the playhead is OUTSIDE the map ' +
+        '(engine ' + D.dur + 's vs map end — compare "meta" below).';
+      else vd = '*** BUG: home + local + block ' + D.blk + ' (num ' + D.blkNum + ') found, nothing lit.';
+      L.push('VERDICT ' + vd);
+      var mt = 0; try { mt = parseInt(sessionStorage.getItem('te_mount') || '0', 10); } catch (_) {}
+      L.push('mounted ' + (mt ? Math.round((Date.now() - mt) / 1000) + 's ago' : '?') +
+             '   title ' + ((document.querySelector('.topic-title') || {}).textContent || '?').trim().slice(0, 32));
       L.push('build   ' + (D ? D.build : '(no __teDyn — OLD BUILD)'));
       if (D) {
         L.push('FLAGS   local=' + D.local + '  sess=' + D.sess + '  display=' + D.display +
