@@ -10243,6 +10243,33 @@
     maybeWebResume();       // web: if we navigated here from the now-playing link, continue from where it was
   }
 
+  /* ── READ-ONLY WINDOW ONTO THE HIGHLIGHT DECISION (2026-09-19) ─────────────────────────────
+     ⚠ THIS EXISTS BECAUSE INFERENCE FROM OUTSIDE THE IIFE ALREADY COST A WRONG DEPLOY. Every
+     value that decides whether a card lights — dynSession, dynSessionIsLocal, dynAttached, the
+     block index — is module-private, and the ANDROID APP has no console, so a highlight fault
+     could previously only be reasoned about. r221 fixed a real cause of one and the fault
+     survived it; the ownersim probe could then prove the session existed and its nums matched
+     the cards, but not which guard was refusing, because the flag is not observable in the DOM.
+     Now it is.
+     ⚠ IT SETS NOTHING AND IS CALLED BY NOTHING IN THE PLAYER. It returns a flat snapshot for
+     ownersim.js (owner-gated, and not precached, so its side can be iterated without a release).
+     Keep it read-only: the moment it can change state it stops being a measurement. */
+  window.__teDyn = function () {
+    var m = dynSession && dynSession.map, blk = -1;
+    try { blk = dynBlockAt(mainAudio.currentTime || 0); } catch (_) { blk = 'ERR'; }
+    return {
+      build: DYN_BUILD, dyn: !!DYN, native: !!NATIVE, mode: currentMode, ns: DYN_KEY_NS,
+      sess: !!dynSession, display: !!(dynSession && dynSession.display), local: dynSessionIsLocal,
+      attached: dynAttached, stdRemote: dynStdRemote,
+      adopted: dynAdopted ? (dynAdopted.page || '?') : null,
+      chainIdx: dynChainIdx, homeIdx: dynHomeIdx, chainLen: dynChain ? dynChain.length : 0,
+      mapLen: m ? m.length : 0, blk: blk, lastLive: dynLastLive,
+      blkNum: (typeof blk === 'number' && blk >= 0 && m && m[blk]) ? m[blk].num : null,
+      t: +(mainAudio.currentTime || 0).toFixed(1), dur: +(mainAudio.duration || 0).toFixed(1),
+      paused: !!mainAudio.paused
+    };
+  };
+
   // inline onclick in the injected markup call these by name
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow, toggleTranslit: toggleTranslit,

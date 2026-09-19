@@ -568,10 +568,24 @@
       var live = document.querySelector('.sentence-card.dyn-live');
       var prev = document.getElementById('dyn-sent-prev');
       var strip = document.getElementById('dyn-np-strip') || document.querySelector('.dyn-np-link');
-      var eyebrow = document.querySelector('.dyn-fmt-tag, #dyn-build, .topic-eyebrow');
       var nat = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+      /* player.js's own snapshot, where it exists — the flags that DECIDE the highlight are
+         module-private, so everything below this is inference and everything in here is fact.
+         Absent = the device is on a build before the export shipped, which is itself the answer
+         to "have I picked it up yet". */
+      var D = null; try { D = window.__teDyn && window.__teDyn(); } catch (_) {}
       var L = [];
-      L.push('build   ' + ((eyebrow && eyebrow.textContent.trim().slice(0, 60)) || '?'));
+      L.push('build   ' + (D ? D.build : '(no __teDyn — OLD BUILD)'));
+      if (D) {
+        L.push('FLAGS   local=' + D.local + '  sess=' + D.sess + '  display=' + D.display +
+               '  attached=' + D.attached + '  std=' + D.stdRemote);
+        L.push('        dyn=' + D.dyn + ' native=' + D.native + ' mode=' + D.mode +
+               ' adopted=' + (D.adopted || '-'));
+        L.push('        chain ' + D.chainIdx + '/' + D.homeIdx + ' of ' + D.chainLen +
+               '  mapLen=' + D.mapLen);
+        L.push('        blk=' + D.blk + ' blkNum=' + D.blkNum + ' lastLive=' + D.lastLive +
+               '  t=' + D.t + '/' + D.dur + ' paused=' + D.paused);
+      }
       L.push('native  ' + nat + '   page ' + pageId);
       L.push('ns      ' + (ns || '(none)') + '   cfg.dynKey ' + (cfg.dynKey || '-'));
       L.push('np      ' + (np ? (np.key || '-') + ' | ' + (np.prefix || '-') + ' | ' + (np.mode || '-') : 'NONE'));
