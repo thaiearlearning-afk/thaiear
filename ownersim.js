@@ -557,7 +557,12 @@
         var m = JSON.parse(localStorage.getItem('te_dyn_meta_' + ns + '_' + mode) || 'null');
         if (!m || !m.map || !m.map.length) return 'MISSING';
         var nums = m.map.map(function (x) { return x.num; });
-        return 'map ' + nums.length + ' nums ' + nums[0] + '..' + nums[nums.length - 1] +
+        /* The DURATION is the sharp one: if the engine's dur does not match the map's, the audio
+           playing is not the session this map describes, and every block lookup lands outside it
+           — which looks exactly like "the highlight is switched off". */
+        return 'map ' + nums.length + ' dur ' + Math.round(m.duration || 0) + 's' +
+               ' end ' + Math.round((m.map[m.map.length - 1] || {}).end || 0) + 's' +
+               ' nums ' + nums[0] + '..' + nums[nums.length - 1] +
                ' key ' + String(m.key || '').slice(0, 34);
       } catch (_) { return 'UNREADABLE'; }
     }
