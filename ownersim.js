@@ -495,7 +495,123 @@
   /* The email hash IS the gate — K_ON is not consulted here any more. Requiring a URL-set flag
      made the picker unreachable in a standalone PWA / the Android app, which have no address bar
      and are exactly where the simulator is needed. */
-  function paint() { banner(); picker(); }
+  /* ── DYN HIGHLIGHT PROBE (2026-09-19) ──────────────────────────────────────────────────────
+     The playing card does not light in the ANDROID APP after arriving on a topic page via the dyn
+     player, while the iPhone is fine. r221 fixed one real cause (a topic page was foreign to
+     itself on the native adopt path) and the fault SURVIVED it, so the next step is a measurement
+     rather than a fifth reading of the same function.
+
+     ⚠ WHY IT LIVES HERE AND NOT IN player.js. player.js is PRECACHED and served cache-first, so
+     every iteration of a probe placed there costs an sw.js VERSION bump and a reinstall on the
+     device — and the device in question has no console to read anyway. ownersim.js is
+     deliberately NOT precached (see the header), so an edit here reaches the phone network-first
+     on its next navigation. Same reasoning that put the service-worker report in this file.
+
+     ⚠ IT READS ONLY WHAT IS OBSERVABLE FROM OUTSIDE player.js's IIFE — and that turns out to be
+     enough to decide the question, because two internals are faithfully mirrored into the DOM:
+       · `#dyn-sent-prev.dyn-sent-off` IS dynSyncSentBtns()'s answer, i.e. "dynSession is null or
+         carries no map". So the buttons tell us whether a session exists at all.
+       · `.sentence-card.dyn-live` is dynHighlight()'s only output.
+     With the persisted meta (plain localStorage) and the card ids, that separates the three
+     remaining candidates: no session · a session whose map nums do not match this page's cards ·
+     a session and matching nums but the highlight still gated off. */
+  function hlprobe() {
+    if (!window.ThaiEarTopic) return;                 // player pages only
+    if (document.getElementById('te-hl-probe')) return;
+    var cfg = window.ThaiEarTopic || {};
+    var ns = cfg.dynKey || cfg.audioPrefix || '';
+    var pageId = (location.pathname.split('/').pop() || '').replace(/\.html$/i, '').toLowerCase();
+
+    var box = document.createElement('div');
+    box.id = 'te-hl-probe';
+    box.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99999;font:11.5px/1.45 ' +
+      'ui-monospace,Menlo,Consolas,monospace;color:#123;background:rgba(255,255,255,.97);' +
+      'border:1px dashed #1F4E7A;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);' +
+      'max-width:calc(100vw - 16px);max-height:62vh;overflow:auto;padding:6px 8px';
+    var chip = document.createElement('button');
+    chip.type = 'button';
+    chip.textContent = '🔎 hl';
+    chip.style.cssText = 'font:inherit;border:0;background:none;color:#1F4E7A;cursor:pointer;padding:0';
+    var body = document.createElement('div');
+    body.style.display = 'none';
+    var pre = document.createElement('div');
+    pre.style.cssText = 'white-space:pre-wrap;word-break:break-word;margin:6px 0';
+    var btns = document.createElement('div');
+    var mkBtn = function (label) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = label;
+      b.style.cssText = 'font:inherit;border:1px solid #1F4E7A;background:#fff;color:#1F4E7A;' +
+        'border-radius:6px;padding:3px 8px;margin-right:6px;cursor:pointer';
+      btns.appendChild(b); return b;
+    };
+    var bCopy = mkBtn('copy'), bShare = mkBtn('share');
+    body.appendChild(pre); body.appendChild(btns);
+    box.appendChild(chip); box.appendChild(body);
+    chip.addEventListener('click', function () {
+      body.style.display = (body.style.display === 'none') ? 'block' : 'none';
+    });
+    document.body.appendChild(box);
+
+    function meta(mode) {
+      try {
+        var m = JSON.parse(localStorage.getItem('te_dyn_meta_' + ns + '_' + mode) || 'null');
+        if (!m || !m.map || !m.map.length) return 'MISSING';
+        var nums = m.map.map(function (x) { return x.num; });
+        return 'map ' + nums.length + ' nums ' + nums[0] + '..' + nums[nums.length - 1] +
+               ' key ' + String(m.key || '').slice(0, 34);
+      } catch (_) { return 'UNREADABLE'; }
+    }
+    function read() {
+      var np = null; try { np = JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) {}
+      var cards = [].slice.call(document.querySelectorAll('.sentence-card[id^="sc-"]'))
+        .map(function (el) { return el.id.slice(3); });
+      var live = document.querySelector('.sentence-card.dyn-live');
+      var prev = document.getElementById('dyn-sent-prev');
+      var strip = document.getElementById('dyn-np-strip') || document.querySelector('.dyn-np-link');
+      var eyebrow = document.querySelector('.dyn-fmt-tag, #dyn-build, .topic-eyebrow');
+      var nat = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+      var L = [];
+      L.push('build   ' + ((eyebrow && eyebrow.textContent.trim().slice(0, 60)) || '?'));
+      L.push('native  ' + nat + '   page ' + pageId);
+      L.push('ns      ' + (ns || '(none)') + '   cfg.dynKey ' + (cfg.dynKey || '-'));
+      L.push('np      ' + (np ? (np.key || '-') + ' | ' + (np.prefix || '-') + ' | ' + (np.mode || '-') : 'NONE'));
+      L.push('np.key==pageId? ' + (np ? String(np.key === pageId) : 'n/a') +
+             '   np.prefix==ns? ' + (np ? String(np.prefix === ns) : 'n/a'));
+      L.push('meta te ' + meta('te'));
+      L.push('meta et ' + meta('et'));
+      L.push('cards   ' + cards.length + (cards.length ? ' ' + cards[0] + '..' + cards[cards.length - 1] : ''));
+      // dynSyncSentBtns() mirrors "is there a session with a map" onto this button.
+      L.push('session ' + (prev ? (prev.classList.contains('dyn-sent-off') ? 'NO (±1 greyed)' : 'yes (±1 live)') : 'no ±1 button'));
+      L.push('dyn-live ' + (live ? live.id + (cards.indexOf(live.id.slice(3)) < 0 ? ' (NOT a card here!)' : '') : 'NONE'));
+      L.push('strip   ' + (strip ? strip.textContent.trim().slice(0, 48) : '-'));
+      L.push('body    ' + String(document.body.className).slice(0, 80));
+      var cur = document.getElementById('time-cur'), tot = document.getElementById('time-total');
+      L.push('time    ' + ((cur && cur.textContent) || '?') + ' / ' + ((tot && tot.textContent) || '?'));
+      return L.join('\n');
+    }
+    /* setTimeout, NOT requestAnimationFrame: rAF does not fire in a backgrounded app, which is
+       half of when this needs to be recording (r205 learned the same thing the hard way). */
+    (function tick() { try { pre.textContent = read(); } catch (e) { pre.textContent = 'probe error: ' + e; }
+      setTimeout(tick, 600); })();
+
+    bCopy.addEventListener('click', function () {
+      /* A WebView clipboard write can be refused or a silent no-op, and .select() on a READ-ONLY
+         textarea is refused on iOS — so the field is made writable, selected by range, and copied
+         synchronously inside the gesture. Same shape as the latency probe's copy (r206). */
+      var ta = document.createElement('textarea');
+      ta.value = pre.textContent;
+      ta.style.cssText = 'width:100%;height:9em;font:inherit';
+      body.insertBefore(ta, btns);
+      try { ta.focus(); ta.setSelectionRange(0, ta.value.length); document.execCommand('copy'); bCopy.textContent = 'copied'; }
+      catch (_) { bCopy.textContent = 'select all + copy'; }
+    });
+    bShare.addEventListener('click', function () {
+      if (navigator.share) navigator.share({ text: pre.textContent }).catch(function () {});
+      else bShare.textContent = 'no share';
+    });
+  }
+
+  function paint() { banner(); picker(); hlprobe(); }
   function ui() {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paint);
     else paint();
