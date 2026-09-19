@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v563';   // v563: player.js r223 -- the dyn Pauses/Thai-speed slider track is painted by us instead of derived from accent-color, because Blink derives NEAR-BLACK from the premium gold while WebKit keeps grey (the Android-only black bar). Cosmetic; non-premium is unchanged. Both player.js and player-dyn-mount.css are precached, so this bump is what delivers it; v562 is spent. // v562: player.js r222 -- prev/next in the dyn player now BUILDS an unconstructed playlist instead of skipping to the next constructed one, matching what the same walk has always done for topics. Offline and the lock screen are untouched by construction. player.js is precached and cache-first, so this bump is what delivers it; v561 is spent. // v561: DIAGNOSTIC ONLY -- player.js gains window.__teDyn(), a read-only snapshot of the flags that decide the dyn card highlight (dynSessionIsLocal, dynSession/display, dynAttached, the block index). The Android app has no console and those values are module-private, so the r221 highlight fault could only be reasoned about from the DOM -- which was wrong once already. ownersim.js (not precached, owner-gated) renders it. player.js is precached and cache-first, so this bump is what delivers the export. // v560: player.js r221 — in the ANDROID APP a topic page was foreign to itself on the native adopt path, so the playing card never highlighted and the sentence-skip buttons could not light one either (one flag, dynSessionIsLocal, gates both routes). player.js is precached, so this bump is what delivers it. The iPhone/PWA was never affected: the whole path is native-only. // v559: TERMS §12 NO LONGER SAYS THE AUDIO IS SYNTHESISED. It read "Some or all of the audio is produced using speech synthesis rather than recorded by a person" -- true until the Andovar delivery of 2026-09-15 and false after it, and in direct contradiction of the Play listing, the home page and about.html, all of which say the Thai is recorded by native speakers. refunds.html invokes statutory rights when a service is "not as described", so terms and marketing disagreeing was the one inconsistency worth clearing. Now: Thai recorded by native speakers, English still synthesised (named, because it is), plus BOTH reservations kept -- "we may change how any particular recording is produced" (so a future switch back is not a breach) and a fault disclaimer that covers ANY recording, because a human take can be wrong too. Last updated 23 Aug -> 19 Sep 2026. ⚠ terms.html is PRECACHED, so this bump is what delivers it: without it every returning device keeps serving the old wording indefinitely.
+const VERSION = 'v564';   // v564: A PRECACHE HOLE IS NOW REMEMBERED AND RETRIED, so a device can no longer be pinned to old files until the next deploy. install() races INSTALL_BUDGET_MS and activates whatever landed; activate() fills the holes from the OUTGOING cache (old bytes, no network) and fires ONE opportunistic re-fetch that is deliberately not awaited -- and nothing ever retried it. When that re-fetch also failed, the device sat on the NEW VERSION holding OLD FILES, and cache-first never re-checks a precached sub-resource, so the next attempt was the next DEPLOY. Observed live 2026-09-19: the owner's Android app reported v563 while player.js in that cache was still r222, across repeated force-closes. Navigations are network-first, so the sharp edge is NEW HTML meeting OLD JS, not merely stale features. Now the hole list is written to its own cache (thaiear-gaps) BEFORE the re-fetch, and whatever does not land is retried once per worker boot on a navigation, via waitUntil. ⚠ IT DELETES NOTHING but its own record -- which is why it is safe on the fetch path where SW_ACTIVATE_FIX_PLAN.md §12's cache SWEEP was deferred (a wrong keep-list there is silent loss of thaiear-dl / thaiear-audio-dl). ⚠ The record is NOT in the version cache: a 94th entry would break test_sw_precache's count AND the owner panel's per-cache entry count, which §11 calls the decisive measurement. test_sw_precache.js 35 -- 2 assertions go red on v563. // v563: player.js r223 -- the dyn Pauses/Thai-speed slider track is painted by us instead of derived from accent-color, because Blink derives NEAR-BLACK from the premium gold while WebKit keeps grey (the Android-only black bar). Cosmetic; non-premium is unchanged. Both player.js and player-dyn-mount.css are precached, so this bump is what delivers it; v562 is spent. // v562: player.js r222 -- prev/next in the dyn player now BUILDS an unconstructed playlist instead of skipping to the next constructed one, matching what the same walk has always done for topics. Offline and the lock screen are untouched by construction. player.js is precached and cache-first, so this bump is what delivers it; v561 is spent. // v561: DIAGNOSTIC ONLY -- player.js gains window.__teDyn(), a read-only snapshot of the flags that decide the dyn card highlight (dynSessionIsLocal, dynSession/display, dynAttached, the block index). The Android app has no console and those values are module-private, so the r221 highlight fault could only be reasoned about from the DOM -- which was wrong once already. ownersim.js (not precached, owner-gated) renders it. player.js is precached and cache-first, so this bump is what delivers the export. // v560: player.js r221 — in the ANDROID APP a topic page was foreign to itself on the native adopt path, so the playing card never highlighted and the sentence-skip buttons could not light one either (one flag, dynSessionIsLocal, gates both routes). player.js is precached, so this bump is what delivers it. The iPhone/PWA was never affected: the whole path is native-only. // v559: TERMS §12 NO LONGER SAYS THE AUDIO IS SYNTHESISED. It read "Some or all of the audio is produced using speech synthesis rather than recorded by a person" -- true until the Andovar delivery of 2026-09-15 and false after it, and in direct contradiction of the Play listing, the home page and about.html, all of which say the Thai is recorded by native speakers. refunds.html invokes statutory rights when a service is "not as described", so terms and marketing disagreeing was the one inconsistency worth clearing. Now: Thai recorded by native speakers, English still synthesised (named, because it is), plus BOTH reservations kept -- "we may change how any particular recording is produced" (so a future switch back is not a breach) and a fault disclaimer that covers ANY recording, because a human take can be wrong too. Last updated 23 Aug -> 19 Sep 2026. ⚠ terms.html is PRECACHED, so this bump is what delivers it: without it every returning device keeps serving the old wording indefinitely.
                           // v556: THE THAI SCRIPT GETS A SECOND FACE -- a "Font" pill next to Reveal all / Transliteration swaps the LEARNER TEXT (pill hint, sentence, gloss-chip Thai) from looped Sarabun to loopless Noto Sans Thai, the style of signs and packaging, on all 93 topic pages, the 20 grammar units and the playlist player. Default stays looped; the choice is per device (localStorage thaiear_thaifont) and is stamped on <html> PRE-PAINT by the ssrify dir: block, so a reader who chose modern never watches the page paint looped and flip. Transliteration, English, the nav wordmark and the whole Read Thai course are deliberately untouched -- that course teaches the looped letterforms it shows. ONE new precache entry (/fonts/notosansthai-thai.woff2, 26.9 KB, one variable file for both weights). Transliteration lost its "kaw-kai -> a" icon and the row lost its duplicate sentence count on pages that have a topic-meta line: at 360px the four items come to 317 of 327px, and an icon on either pill wraps the row. Also: gen_dyncss.js moved the generated dyncss <link> block to just before </head> on 94 pages -- generator and output had drifted since identity.js was inserted after it in v405; no behaviour change, and it ends the drift.
                           // hrefs -- the app card (x2) and "Create a free account" -- were
                           // raw, so every click paid a Cloudflare Pages 308 (127-1315 ms,
@@ -1200,6 +1200,76 @@ const PRECACHE_PATHS = new Set(PRECACHE);
 /* Add a list of URLs a few at a time. ~150 simultaneous fetches on a phone is exactly how the
    install below used to end up half-finished: the burst is throttled or the radio drops, entries
    fail, and .catch() swallows it. Small batches are far more likely to complete. */
+/* ── THE PENDING-GAP RECORD (2026-09-19) ─────────────────────────────────────────────────────
+   WHY THIS EXISTS. install() races the precache against INSTALL_BUDGET_MS and activates whatever
+   landed; activate() then fills the holes from the OUTGOING cache (migrateGaps — old bytes, no
+   network) and fires one opportunistic re-fetch of exactly those holes. That re-fetch is
+   deliberately not awaited, and **nothing has ever retried it**. So when it fails — a slow or
+   intermittent link is all it takes — the device ends up on the NEW VERSION holding OLD FILES,
+   and cache-first never re-checks a precached sub-resource. The note above migrateGaps says a
+   stale entry "can survive only until the next successful fetch, never permanently": true in
+   letter, misleading in practice, because within a version there was no later attempt. The next
+   attempt was the next deploy.
+   Observed live 2026-09-19: the owner's Android app reported v563 while player.js in that cache
+   was still r222, across repeated force-closes. Navigations are network-first, so the sharp edge
+   is not "old features" — it is NEW HTML meeting OLD JS.
+   THE FIX: write the hole list down, and re-try it on later navigations until each one lands.
+   ⚠ IT DELETES NOTHING but its own record — which is the whole reason it is safe to run on the
+   fetch path where SW_ACTIVATE_FIX_PLAN.md §12's cache sweep was deferred. That one was deferred
+   because a wrong keep-list is silent loss of thaiear-dl / thaiear-audio-dl; this one has no
+   keep-list and removes no cache.
+   ⚠ c.add() fetches from INSIDE the worker, which does NOT pass through our own fetch handler, so
+   there is no cache-first copy to defeat and no cache-busting is needed. (A PAGE-side fetch does
+   need it — ownersim.js's re-download button was a silent no-op for exactly that reason.) */
+/* ⚠⚠ THE RECORD LIVES IN ITS OWN CACHE, NOT IN THE VERSION CACHE — AND THE FIRST ATTEMPT PUT IT
+   THERE AND WAS CAUGHT BY THE HARNESS. A synthetic entry alongside the precache makes the version
+   cache hold 94 of 93 files, which breaks two things that are not decoration: test_sw_precache's
+   "no holes left" count, and the owner panel's PER-CACHE ENTRY COUNT — the decisive measurement
+   in SW_ACTIVATE_FIX_PLAN.md §11 for telling "install completed then the chain rejected" from
+   "the 8 s budget expired". A diagnostic that reads 94/93 is worse than no diagnostic.
+   Its own cache is invisible to both: the panel lists only /^thaiear-v\d+$/, and nothing serves
+   from it (it is not in FALLBACK_CACHES, so a fetch can never resolve against it).
+   ⚠ activate()'s sweep DELETES it, because it is not in the keep-list — deliberately left that
+   way rather than adding an entry to a keep-list SW_ACTIVATE_FIX_PLAN.md §12 warns about at
+   length. The record is per-version state, and activate rewrites it AFTER the sweep in the same
+   chain, so the deletion is correct rather than tolerated. */
+const GAPS_CACHE = 'thaiear-gaps';
+const GAPS_KEY = '/__te_gaps';   // synthetic: never in PRECACHE, never requested by a page
+/* Module scope, so it resets when the worker is torn down and re-booted — which is how the retry
+   gets more than one chance without costing anything on a healthy device. */
+let gapsRetriedThisBoot = false;
+function putPendingGaps(gaps) {
+  return caches.open(GAPS_CACHE).then(function (gc) {
+    if (!gaps || !gaps.length) return gc.delete(GAPS_KEY);
+    return gc.put(GAPS_KEY, new Response(JSON.stringify(gaps),
+      { headers: { 'Content-Type': 'application/json' } }));
+  }).catch(function () {});
+}
+function readPendingGaps() {
+  return caches.open(GAPS_CACHE)
+    .then(function (gc) { return gc.match(GAPS_KEY); })
+    .then(function (r) { return r ? r.json() : []; })
+    .then(function (a) { return Array.isArray(a) ? a : []; })
+    .catch(function () { return []; });
+}
+/* Re-fetch outstanding gaps, tick off the ones that land, and persist what is left. Replaces the
+   fire-and-forget addBatched() on the activate path so that a failure is REMEMBERED rather than
+   dropped. Same batching, same per-item swallow — the only new behaviour is the bookkeeping. */
+function retryGaps(c, gaps, width) {
+  if (!gaps || !gaps.length) return putPendingGaps([]);
+  var left = gaps.slice(), i = 0;
+  function lane() {
+    if (i >= gaps.length) return Promise.resolve();
+    var u = gaps[i++];
+    return c.add(u).then(function () {
+      var at = left.indexOf(u);
+      if (at > -1) left.splice(at, 1);
+    }).catch(function () {}).then(lane);
+  }
+  var lanes = [];
+  for (var n = 0; n < Math.min(width || 6, gaps.length); n++) lanes.push(lane());
+  return Promise.all(lanes).then(function () { return putPendingGaps(left); });
+}
 function addBatched(c, urls, width) {
   var i = 0;
   function lane() {
@@ -1337,8 +1407,19 @@ self.addEventListener('activate', function (e) {
                      failing because currentUser was still null.
                      The content is already correct at this point — stage 1 migrated it out of the
                      outgoing cache with no network — so this is purely an opportunistic
-                     freshening and must never gate activation. */
-                  addBatched(c, gaps, 6);
+                     freshening and must never gate activation.
+                     ⚠ 2026-09-19 — AND IT IS NO LONGER THE ONLY ATTEMPT. The list is written down
+                     FIRST, so a worker killed mid-refresh still leaves the record behind; whatever
+                     does not land here is retried on a later navigation (see the fetch handler).
+                     Still not returned, still opportunistic — the change is that a failure is now
+                     remembered instead of dropped. */
+                  putPendingGaps(gaps)
+                    .then(function () { return retryGaps(c, gaps, 6); })
+                    /* ⚠ A TRAILING CATCH, THOUGH NOTHING HERE IS AWAITED. This chain is
+                       fire-and-forget, so a rejection has no one to handle it and would surface
+                       as an unhandled rejection inside the worker — noise at best, and on some
+                       engines a reason to consider the worker unhealthy. */
+                    .catch(function () {});
                 });
             });
         });
@@ -1520,6 +1601,28 @@ self.addEventListener('fetch', function (e) {
       })
     );
     return;
+  }
+
+  /* ── RETRY THE PRECACHE HOLES A PREVIOUS ACTIVATE COULD NOT FILL (2026-09-19) ──────────────
+     ONCE PER WORKER BOOT, ON A NAVIGATION, AND ONLY IF A RECORD EXISTS. In a PWA or the app the
+     worker is terminated between visits, so "once per boot" is in practice "every so often, while
+     someone is using the site" — which is exactly the cadence wanted: frequent enough to catch the
+     next moment of decent signal, rare enough to cost nothing.
+     ⚠ waitUntil, NEVER the response path (SW_ACTIVATE_FIX_PLAN.md §12 requirement 2): it starts
+     after respondWith has been handed its promise, so a throw here cannot affect a page load, and
+     the whole thing is wrapped besides.
+     ⚠ THE COMMON CASE MUST BE FREE. A healthy device has no record, so this costs exactly one
+     cache.match that misses, once per boot, and never touches the network.
+     ⚠ Narrower width than activate's: a navigation is a moment the user is waiting on something
+     else, and there is no hurry — anything not taken this time is still on the list. */
+  if (req.mode === 'navigate' && !gapsRetriedThisBoot) {
+    gapsRetriedThisBoot = true;
+    try {
+      e.waitUntil(readPendingGaps().then(function (g) {
+        if (!g.length) return null;                       // the healthy case: one miss, no network
+        return caches.open(CACHE).then(function (c) { return retryGaps(c, g, 3); });
+      }).catch(function () {}));
+    } catch (_) {}
   }
 
   // Same-origin pages + assets: network-first for freshness (preserves the tandem-update model),
