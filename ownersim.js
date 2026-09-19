@@ -458,6 +458,8 @@
         '<button type="button" id="ownersim-sw-update" style="' + SWBTN + '">Check for update</button>' +
         '<button type="button" id="ownersim-sw-sweep" style="' + SWBTN + '"' +
           (activeCache && out.caches.length > 1 ? '' : ' disabled') + '>Clear orphan caches</button>' +
+        '<button type="button" id="ownersim-sw-refresh" style="' + SWBTN + '"' +
+          (activeCache ? '' : ' disabled') + '>Re-download app files</button>' +
       '</div>';
 
     var u = el.querySelector('#ownersim-sw-update');
@@ -487,6 +489,54 @@
       Promise.all(out.caches.filter(function (k) { return k !== activeCache; })
         .map(function (k) { return window.caches.delete(k).catch(function () {}); }))
         .then(function () { swReport(el); });
+    });
+
+    /* ── THE CASE NEITHER BUTTON ABOVE CAN REACH (2026-09-19) ────────────────────────────────
+       Owner, on the Android app: the panel reported the NEW worker version while the player still
+       reported the PREVIOUS build tag, and force-closing changed nothing.
+       That is not a stuck install — it is a completed one carrying a stale file. activate()'s
+       migrateGaps() copies any PRECACHE entry the new install failed to fetch out of the OUTGOING
+       cache, on purpose, so that a deploy can never leave a device worse off offline; the rescued
+       entry is then re-fetched, and on a flaky link THAT can fail too. The result is a correct,
+       active thaiear-v<new> cache holding one or more files from v<old>. Cache-first then serves
+       them for ever, because nothing re-checks a precached sub-resource.
+       ⚠ "Check for update" cannot fix it (the worker is already current) and "Clear orphan caches"
+       cannot either (the stale entry is in the ACTIVE cache, which that button must never touch).
+       So: re-fetch every entry of the active cache from the NETWORK and put it back.
+       ⚠ A FAILED FETCH LEAVES THE OLD ENTRY ALONE. Replacing it with an error, or deleting it,
+       would turn a cosmetic staleness into a broken shell offline — the exact harm migrateGaps
+       exists to prevent. Failures are counted and reported instead. */
+    var refresh = el.querySelector('#ownersim-sw-refresh');
+    if (refresh) refresh.addEventListener('click', function () {
+      if (!activeCache || !window.caches) return;
+      refresh.disabled = true;
+      refresh.textContent = 'redownloading…';
+      window.caches.open(activeCache).then(function (c) {
+        return c.keys().then(function (reqs) {
+          var done = 0, failed = 0;
+          return reqs.reduce(function (p, req) {
+            return p.then(function () {
+              /* cache:'reload' bypasses the HTTP cache, so this cannot be answered by the same
+                 stale copy one layer down. Same-origin only: the audio CDN is another origin and
+                 is not ours to refetch here. */
+              if (req.url.indexOf(location.origin) !== 0) return;
+              return fetch(req.url, { cache: 'reload', credentials: 'same-origin' })
+                .then(function (res) {
+                  if (!res || !res.ok) { failed++; return; }
+                  return c.put(req, res.clone()).then(function () { done++; })
+                    .catch(function () { failed++; });
+                })
+                .catch(function () { failed++; });
+            });
+          }, Promise.resolve()).then(function () { return { done: done, failed: failed }; });
+        });
+      }).then(function (r) {
+        refresh.textContent = 'refreshed ' + r.done + (r.failed ? ' · ' + r.failed + ' failed' : '') + ' — reloading';
+        setTimeout(function () { location.reload(); }, 900);
+      }).catch(function () {
+        refresh.disabled = false;
+        refresh.textContent = 'failed — retry';
+      });
     });
   }
   var SWBTN = 'border:1px solid #7A1F1F;background:#fff;color:#7A1F1F;border-radius:6px;' +
