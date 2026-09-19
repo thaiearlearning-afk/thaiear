@@ -511,16 +511,29 @@
       if (!activeCache || !window.caches) return;
       refresh.disabled = true;
       refresh.textContent = 'redownloading…';
+      /* ⚠⚠ THE URL MUST BE BUSTED, OR THIS BUTTON IS A NO-OP — AND THE FIRST VERSION OF IT WAS
+         (2026-09-19). A fetch() issued from the page goes THROUGH the service worker, and the
+         worker serves a precached sub-resource CACHE-FIRST: so asking for /player.js returned the
+         very stale copy we were trying to replace, and it was then written straight back.
+         `cache: 'reload'` does not help — it controls the HTTP cache, not the service worker.
+         ⚠ THIS EXACT TRAP IS ALREADY IN THE PROJECT NOTES: the v292→v295 incident could not
+         self-heal because cachePage()'s c.add() "fetches through the worker, which handed the
+         stale copy back". Same mechanism, same day of the week.
+         A query string the precache has never seen misses the cache-first lookup and reaches the
+         network; Cloudflare ignores it for a static asset, so the bytes are the real file. The
+         response is stored under the CLEAN key, and the busted entry the worker may have cached
+         on the way past is removed again. */
+      var bust = 'te-refresh=' + Date.now();
       window.caches.open(activeCache).then(function (c) {
         return c.keys().then(function (reqs) {
-          var done = 0, failed = 0;
+          var done = 0, failed = 0, junk = [];
           return reqs.reduce(function (p, req) {
             return p.then(function () {
-              /* cache:'reload' bypasses the HTTP cache, so this cannot be answered by the same
-                 stale copy one layer down. Same-origin only: the audio CDN is another origin and
-                 is not ours to refetch here. */
+              // Same-origin only: the audio CDN is another origin and not ours to refetch here.
               if (req.url.indexOf(location.origin) !== 0) return;
-              return fetch(req.url, { cache: 'reload', credentials: 'same-origin' })
+              if (req.url.indexOf('te-refresh=') > -1) { junk.push(req); return; }
+              var u = req.url + (req.url.indexOf('?') > -1 ? '&' : '?') + bust;
+              return fetch(u, { cache: 'reload', credentials: 'same-origin' })
                 .then(function (res) {
                   if (!res || !res.ok) { failed++; return; }
                   return c.put(req, res.clone()).then(function () { done++; })
@@ -528,11 +541,30 @@
                 })
                 .catch(function () { failed++; });
             });
-          }, Promise.resolve()).then(function () { return { done: done, failed: failed }; });
+          }, Promise.resolve()).then(function () {
+            // Drop any ?te-refresh= entries the worker stored as it passed them through.
+            return c.keys().then(function (after) {
+              return Promise.all(after.concat(junk)
+                .filter(function (r2) { return r2.url.indexOf('te-refresh=') > -1; })
+                .map(function (r2) { return c.delete(r2).catch(function () {}); }));
+            }).then(function () { return { done: done, failed: failed, c: c }; });
+          });
         });
       }).then(function (r) {
-        refresh.textContent = 'refreshed ' + r.done + (r.failed ? ' · ' + r.failed + ' failed' : '') + ' — reloading';
-        setTimeout(function () { location.reload(); }, 900);
+        /* ⚠ PROVE IT, DO NOT ANNOUNCE IT. "refreshed 31" says a loop ran, not that the file
+           changed — which is precisely how the first version read as success while changing
+           nothing. Read the build tag back OUT OF THE CACHE. */
+        return r.c.match(location.origin + '/player.js').then(function (res) {
+          return res ? res.text() : '';
+        }).then(function (txt) {
+          var m = txt.match(/DYN_BUILD\s*=\s*'([^']+)'/);
+          r.tag = m ? m[1] : '?';
+          return r;
+        }).catch(function () { r.tag = '?'; return r; });
+      }).then(function (r) {
+        refresh.textContent = 'cached player.js is now ' + r.tag +
+          ' (' + r.done + ' files' + (r.failed ? ', ' + r.failed + ' failed' : '') + ') — reloading';
+        setTimeout(function () { location.reload(); }, 2500);
       }).catch(function () {
         refresh.disabled = false;
         refresh.textContent = 'failed — retry';
