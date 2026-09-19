@@ -354,6 +354,26 @@
     var jobs = [];
 
     jobs.push(swAsk().then(function (r) { out.active = r; }));
+    /* ── IS A PRECACHE HOLE STILL OUTSTANDING ON THIS DEVICE? (2026-09-19, sw v564) ──────────
+       The state the v564 retry exists to clear, read straight from the page — CacheStorage is
+       reachable here, so this needs no service-worker change and no version bump.
+       ⚠ THIS IS THE ONLY DIRECT CHECK THAT THE FIX WORKED. A build tag alone can mostly only
+       falsify (a laggard proves the retry is failing; seeing none proves little, per
+       SW_ACTIVATE_FIX_PLAN.md §11's trap). Watching a record APPEAR and then GO is the repair
+       happening. Deliberately device-local: no beacon, no user id, nothing leaves the phone —
+       a remote version raises a PECR question (/api/seen is consent-free precisely because it
+       touches no device storage) and a Golden-Rule-0 question (counts, not per-user rows). */
+    jobs.push(
+      (window.caches && window.caches.has ? window.caches.has('thaiear-gaps') : Promise.resolve(false))
+        .then(function (yes) {
+          if (!yes) return null;
+          return window.caches.open('thaiear-gaps')
+            .then(function (gc) { return gc.match('/__te_gaps'); })
+            .then(function (r) { return r ? r.json() : null; });
+        })
+        .then(function (g) { out.gaps = g; })
+        .catch(function () {})
+    );
     jobs.push(
       (window.caches && window.caches.keys ? window.caches.keys() : Promise.resolve([]))
         .then(function (ks) {
@@ -446,6 +466,19 @@
         return esc(v);
       });
       rows.push('caches: ' + labelled.join(' · '));
+      /* ⚠ THE LINE THAT SAYS WHETHER v564 IS DOING ITS JOB ON THIS DEVICE. A record present means
+         the last activate could not re-fetch those files and they are running OLD inside a CURRENT
+         cache — the exact state that had the owner on sw v563 with player.js at r222. It should
+         clear itself within a navigation or two online; if it sits there, the retry is failing and
+         that is a finding. No record at all is the healthy state, and also the uninformative one. */
+      if (out.gaps && out.gaps.length) {
+        rows.push('<span style="color:#7A1F1F">⚠ ' + out.gaps.length +
+          ' precache file' + (out.gaps.length === 1 ? '' : 's') + ' still STALE — ' +
+          esc(out.gaps.slice(0, 4).join(', ')) + (out.gaps.length > 4 ? ' …' : '') +
+          '<br>(running old copies inside the current cache; a navigation online should clear it)</span>');
+      } else if (out.gaps !== undefined) {
+        rows.push('<span style="color:#1F5D3A">precache: no stale files outstanding</span>');
+      }
       var v = swVerdict(out.caches, activeCache);
       var tone = (v.code === 'stuck' || v.code === 'undeleted') ? 'color:#7A1F1F'
                : v.code === 'unknown' ? 'opacity:.75' : 'color:#1F5D3A';
