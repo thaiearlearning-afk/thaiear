@@ -170,3 +170,6 @@ pickup-clips/
 # Modern-Thai font sampler (2026-09-19) — candidate woff2s + the compare page. Local only.
 _font-sampler.html
 _font-sampler/
+
+# Quiz project cosmetic mockup (QUIZ_PROJECT.md) — never deploy
+quiz-mockup.html
