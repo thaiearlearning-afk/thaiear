@@ -21,7 +21,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Cooking & recipes: Techniques & kit in Thai](https://thaiear.com/topic-19a): Beginner, 34 sentences
 - [Groceries in Thai](https://thaiear.com/topic-46): Beginner, 38 sentences
 - [Family & relationships in Thai](https://thaiear.com/topic-08): Beginner, 38 sentences
-- [Getting around & transport: Modes & tickets in Thai](https://thaiear.com/topic-12a): Beginner, 27 sentences
+- [Getting around: Modes & tickets in Thai](https://thaiear.com/topic-12a): Beginner, 27 sentences
 - [Idioms in Thai](https://thaiear.com/topic-38): Beginner, 27 sentences
 - [Tongue twisters in Thai](https://thaiear.com/topic-39): Beginner, 19 sentences
 - [Occupations: Everyday jobs in Thai](https://thaiear.com/topic-42a): Beginner → Lower intermediate, 30 sentences
@@ -45,7 +45,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Working life: On the job in Thai](https://thaiear.com/topic-20a): Beginner → Lower intermediate, 24 sentences
 - [Food culture: Eating together in Thai](https://thaiear.com/topic-22a): Lower intermediate, 29 sentences
 - [Education system: Schools & stages in Thai](https://thaiear.com/topic-21a): Lower intermediate, 28 sentences
-- [Social life & events: Festivals & celebrations in Thai](https://thaiear.com/topic-16): Lower intermediate, 21 sentences
+- [Social life: Festivals & celebrations in Thai](https://thaiear.com/topic-16): Lower intermediate, 21 sentences
 - [Home & daily routine: Appliances & housework in Thai](https://thaiear.com/topic-10b): Lower intermediate, 32 sentences
 - [Romance & dating: Apps & first dates in Thai](https://thaiear.com/topic-36a): Lower intermediate, 24 sentences
 - [Hobbies & free time 1 in Thai](https://thaiear.com/topic-15): Lower intermediate, 19 sentences
@@ -64,8 +64,8 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Romance & dating: Commitment & marriage in Thai](https://thaiear.com/topic-36c): Lower intermediate, 27 sentences
 - [Thai culture & customs: Respect & etiquette in Thai](https://thaiear.com/topic-34a): Upper intermediate, 22 sentences
 - [Working life: Colleagues & workplace in Thai](https://thaiear.com/topic-20b): Upper intermediate, 24 sentences
-- [Getting around & transport: Directions & journeys in Thai](https://thaiear.com/topic-12b): Upper intermediate, 26 sentences
-- [Social life & events: Invitations & get-togethers in Thai](https://thaiear.com/topic-16b): Upper intermediate, 19 sentences
+- [Getting around: Directions & journeys in Thai](https://thaiear.com/topic-12b): Upper intermediate, 26 sentences
+- [Social life: Invitations & get-togethers in Thai](https://thaiear.com/topic-16b): Upper intermediate, 19 sentences
 - [Plans & future: Hopes & uncertainty in Thai](https://thaiear.com/topic-17b): Upper intermediate, 17 sentences
 - [Education system: Issues & reform in Thai](https://thaiear.com/topic-21b): Upper intermediate, 24 sentences
 - [Sport & exercise: Playing & keeping fit in Thai](https://thaiear.com/topic-26a): Upper intermediate, 26 sentences
