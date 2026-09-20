@@ -592,8 +592,11 @@
     render('<div class="tq-fill">'
          + head('Test yourself', ctx.unitName || '', true)
          + '<div class="qpick qpick-big">' + rows + '</div>'
-         + resultsPanel()
+         /* ⚠ ORDER: quizzes · tiger · My results · the way out (owner, 2026-09-20). The tiger
+            closes the four choices; the results dropdown is a collapsed one-line row, so it sits
+            between the mascot and the exit without pushing "Back to the topic" off the screen. */
          + tigerBlock()
+         + resultsPanel()
          + '<div class="tq-minor"><button type="button" class="tq-return">&larr; '
          + esc(ctx.originLabel || 'Back') + '</button></div></div>');
     wireClose();
