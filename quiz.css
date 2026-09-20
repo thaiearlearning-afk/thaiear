@@ -1011,8 +1011,24 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    ⚠ This is the ONLY `min-width` block in the file. Put desktop rules HERE rather than adding a
    second one, or the two will drift exactly as the duplicated .qpick-big blocks did.
    ══════════════════════════════════════════════════════════════════════════════════════════ */
-@media (min-width: 700px) {
-  /* ⛔⛔ ON DESKTOP THE QUIZ IS A PAGE, NOT A DIALOG — exactly what it already is on a phone.
+/* ⛔⛔ 481px, NOT 700 — THE TWO REGIMES MUST MEET WITH NO GAP. The full-bleed phone rules stop
+   at 480px and the page treatment used to start at 700, so **481–699px got NEITHER** and fell
+   back to the base styles: a 480px card with a dark scrim and rounded corners, i.e. exactly the
+   modal look this replaced. That band is not hypothetical — it is a half-screen browser window, a
+   small laptop, a landscape phone, and an iPad in split view.
+   ⚠⚠ THE GENERAL TRAP: a `max-width` set and a `min-width` set do not cover the range unless
+   their edges touch. Nothing warns you; the band simply renders the unstyled base. Whenever one
+   of these numbers changes, change the other in the same edit.
+   ⚠ The WIDE-SCREEN-only rules stay in the 700px block below — four tiles across needs the room.
+   ⚠ No upper bound is needed: `max-width: 820px` on a centred column behaves the same at 1440 as
+   at 3440, which is how `.read-wrap` has always worked.
+   ⚠⚠ 480.02px, NOT 481px, AND THE FRACTION IS DELIBERATE. A viewport is not always an integer —
+   browser zoom and fractional device-pixel ratios produce widths like 480.5, which satisfies
+   NEITHER `max-width: 480px` NOR `min-width: 481px`, leaving a sub-pixel band that renders the
+   unstyled base. 0.02px is the conventional epsilon: small enough that 480px itself still gets
+   the phone rules, large enough to clear any real fractional width above it. */
+@media (min-width: 480.02px) {
+  /* ⛔⛔ THE QUIZ IS A PAGE, NOT A DIALOG — exactly what it already is on a phone.
      Owner, 2026-09-20, after the first desktop pass only widened the card: "you get like a little
      phone shaped pop up screen ... it should never ever look like that. we dont have any other
      pages on the site that do that", and then "the reading section has quizzes on desktop that
@@ -1034,7 +1050,8 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   }
 
   /* ⚠ …and the controls stay narrow and centred inside it — the .tq-choices convention. Without
-     this a four-row picker stretches to 760px and each row becomes a letterbox. */
+     this a four-row picker stretches to 760px and each row becomes a letterbox. At 500px the cap
+     is simply a no-op, which is why it can live in this block rather than the wide one. */
   .tq-fill > .tq-head,
   .tq-fill > .qpick,
   .tq-fill > .tq-minor,
@@ -1049,10 +1066,16 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   .tq-fill:not(.tq-fill-res) > .tq-gap-s { max-height: 20px; }
   .tq-mascot img { width: 168px; }
 
-  /* ⚠ FOUR ACROSS, not 2×2 — the same move read.css makes with `.read-path` (3 up, 2 under
-     800px) and `.final-grid` (4 up, 2 under 800px). A square tile's height is set by its width,
-     so on a wide box a 2×2 becomes two rows of very large squares: that IS "ridiculously huge".
-     Four in a row keeps each square small and fills the width honestly. */
+}
+
+/* ⚠ WIDE SCREENS ONLY — rules that need the room, kept out of the 481px block on purpose.
+   FOUR ACROSS, not 2×2: the same move read.css makes with `.read-path` (3 up, 2 under 800px) and
+   `.final-grid` (4 up, 2 under 800px). A square tile's height is set by its width, so on a wide
+   box a 2×2 becomes two rows of very large squares — that IS "ridiculously huge". Four in a row
+   keeps each square small and fills the width honestly.
+   ⛔ It must NOT drop to 481px: four tiles across a 500px window would be ~105px each, smaller
+   than the 2×2 they replace, which is the opposite of the point. */
+@media (min-width: 700px) {
   .tq-entry { width: 100%; max-width: 640px; }
   .tqe-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
   .tqe-nm { font-size: 11.5px; }

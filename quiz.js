@@ -826,9 +826,32 @@
     var LADDER = (q.step === 5) ? [5, 10, 15, 20, 30, 50, 75]
                                 : [10, 20, 30, 50, 75, 100];
     var steps = LADDER.filter(function (v) { return v < n; }).slice(0, 5);
+
+    /* ⛔⛔ A LENGTH THIS UNIT CANNOT OFFER SNAPS TO THE CLOSEST IT CAN (owner, 2026-09-20: "if i
+       select 20 questions say for a quiz, but then some topics only have 14 questions - does it
+       default to the closest it can get to 20 i.e. selecting All (14)? i think it should").
+       ⚠⚠ IT DID NOT, AND IT LEFT THE ROW WITH NOTHING SELECTED AT ALL. "Use these settings for
+       all" syncs a length across every unit, so a saved 20 lands on a 14-sentence unit whose
+       options are only [10, All(14)]: 20 matched no step, and the All button's own condition was
+       `p.len === 'all' || !steps.length`, which is false when a step exists. So the learner saw an
+       unselected row and no explanation.
+       ⚠ The OUTCOME was already right by accident — readPrefs() falls back to 'all' when nothing
+       carries .on — which is exactly why this survived: it started the correct quiz while looking
+       broken. A fallback that hides a display bug is worse than one that does not.
+       ✅ THE RULE: the largest option that does not EXCEED what was asked for; if every option
+       exceeds it, the smallest. All counts as n. So 20 on a 14-unit selects All (14); 12 selects
+       10; a stored 5 on a unit whose ladder starts at 10 selects 10.
+       ⛔ Never round UP past the request when a lower option exists — silently handing someone a
+       longer quiz than they chose is the one direction that is not a convenience. */
+    var want = (p.len === 'all') ? n : (parseInt(p.len, 10) || n);
+    var vals = steps.concat([n]);                       /* the last is the All button */
+    var pick = null;
+    vals.forEach(function (v) { if (v <= want && (pick === null || v > pick)) pick = v; });
+    if (pick === null) pick = vals[0];                  /* everything exceeds it: take the smallest */
+
     var segs = steps.map(function (v) {
-      return '<button type="button" class="seg' + (p.len === v ? ' on' : '') + '" data-len="' + v + '">' + v + '</button>';
-    }).join('') + '<button type="button" class="seg' + (p.len === 'all' || !steps.length ? ' on' : '')
+      return '<button type="button" class="seg' + (pick === v ? ' on' : '') + '" data-len="' + v + '">' + v + '</button>';
+    }).join('') + '<button type="button" class="seg' + (pick === n ? ' on' : '')
       + '" data-len="all">All (' + n + ')</button>';
 
     /* §3A.6 — only shown where the unit actually has a sentence above the cap, otherwise it is a
