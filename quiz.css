@@ -37,6 +37,31 @@
 }
 .tq-sheet h3 { margin: 0 0 3px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
 .tq-sheet .sub { margin: 0 0 14px; font-size: 12.5px; color: var(--text-tertiary, #9A9A9A); }
+
+/* ⭐ THE PICKER'S HEADER IS A LANDING, NOT A LABEL (owner, 2026-09-20: "just looks very limp -
+   its black text against a white background"). It was the site's default h3 + grey sub, which
+   is right for a settings screen and wrong for the screen the learner ARRIVES on.
+   ⚠ It deliberately echoes .tq-entry, the block they just tapped: same tinted fill, same
+   tier-coloured ink, same rounded panel. Two surfaces that are one step apart should look
+   related, and the tier colour is the thing that carries it — gold on a premium unit.
+   ⛔ The unit NAME is the bigger of the two lines in weight terms, not the word "Test
+   yourself": the learner already knows they are opening a quiz; what they need confirming is
+   WHICH unit it is for. */
+.tq-head.hero {
+  --tqh-ink: var(--accent, #4B41AD);
+  --tqh-bg: var(--accent-light, #EEEDFE);
+  background: var(--tqh-bg); border-radius: var(--radius-md, 10px);
+  padding: 14px 15px 13px; margin: 0 0 16px;
+}
+.tq-sheet.premium .tq-head.hero { --tqh-ink: #B29234; --tqh-bg: #FBF5DC; }
+.tq-head.hero h3 {
+  margin: 0 0 2px; font-size: 12px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tqh-ink); opacity: .85;
+}
+.tq-head.hero .sub {
+  margin: 0; font-size: 17px; font-weight: 600; line-height: 1.25;
+  letter-spacing: -0.01em; color: var(--tqh-ink);
+}
 .tq-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 3px; }
 .tq-head h3 { flex: 1; }
 .tq-x {
@@ -182,6 +207,14 @@
 .opt:hover { border-color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); }
 .opt.right { border-color: #1F5D3A; background: #F1F7F3; color: #1F5D3A; font-weight: 500; }
 .opt.wrong { border-color: #B4342E; background: #FCF2F1; color: #B4342E; }
+
+/* ⚠ The Check button after it has been pressed. Same box, same width, same padding as
+   .nextbtn — only the colours and the word change, so nothing below it can move. The border
+   replaces the fill so the height is identical to the unpressed state to the pixel. */
+.nextbtn.t-verdict { cursor: default; }
+.nextbtn.t-verdict.right { background: #F1F7F3; color: #1F5D3A; box-shadow: inset 0 0 0 1px #1F5D3A; }
+.nextbtn.t-verdict.wrong { background: #FCF2F1; color: #B4342E; box-shadow: inset 0 0 0 1px #B4342E; }
+.nextbtn.t-verdict[disabled] { opacity: 1; }
 .opt.picked { border-color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); font-weight: 500; }
 .opt .mk { float: right; font-weight: 600; }
 .opt[disabled] { cursor: default; }
@@ -274,7 +307,17 @@
 }
 .chip.is-target .gl { color: var(--text-primary, #1A1A1A); }
 /* the breakdown sits between the English and the play button, so it needs its own air */
-.vchips { margin: 10px 0 2px; }
+/* ⚠ The play button needs air ABOVE it, not only below (owner, 2026-09-20: "very very close to
+   the above gloss chips, but a healthy gap below it until the next button"). The chips are a
+   dense block of small type and the button read as belonging to them. */
+.vchips { margin: 10px 0 15px; }
+
+/* ⭐ The transliteration pill, as a class so it reaches markup that already exists — see
+   applyTranslit(). ⛔ NOT .tt: the Builder's tray is owned by the three-way script setting
+   (§5.1/§9.3), and one surface must have exactly one control. */
+.tq-sheet.tq-tl-off .tlx,
+.tq-sheet.tq-tl-off .o-tl,
+.tq-sheet.tq-tl-off .tl { display: none; }
 .reveal { border-top: 0.5px solid var(--border, rgba(0,0,0,.09)); margin-top: 14px; padding-top: 13px; }
 .nextbtn {
   width: 100%; background: var(--accent, #4B41AD); color: #fff; border: 0;
@@ -473,7 +516,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .chip      { font-size: calc(12px   * var(--tq-scale)); padding: calc(4px * var(--tq-scale)) calc(8px * var(--tq-scale)); }
 .chip .tlx { font-size: calc(10.5px * var(--tq-scale)); }
 .chips     { gap: calc(5px * var(--tq-scale)); }
-.vchips    { margin: calc(10px * var(--tq-scale)) 0 calc(2px * var(--tq-scale)); }
+.vchips    { margin: calc(10px * var(--tq-scale)) 0 calc(15px * var(--tq-scale)); }
 
 /* buttons and prompts */
 .playbtn       { font-size: calc(14px   * var(--tq-scale)); padding: calc(15px * var(--tq-scale)); }
@@ -491,6 +534,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .tq-res-h  { font-size: calc(13px   * var(--tq-scale)); }
 .tq-res-t  { font-size: calc(12.5px * var(--tq-scale)); }
 .tq-res-t thead th { font-size: calc(11px * var(--tq-scale)); }
+.tq-mascot-t { font-size: calc(14px * var(--tq-scale)); }
 .seg       { font-size: calc(13px   * var(--tq-scale)); padding: calc(7px * var(--tq-scale)) calc(4px * var(--tq-scale));
              min-width: calc(58px * var(--tq-scale)); }
 /* ⚠ The row wraps rather than scrolls, so the gap has to scale too or the wrapped rows
@@ -508,6 +552,8 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .qpick .ds { font-size: calc(11.5px * var(--tq-scale)); }
 .qpick .sc { font-size: calc(12px   * var(--tq-scale)); }
 .tq-sheet h3 { font-size: calc(16px * var(--tq-scale)); }
+.tq-head.hero h3   { font-size: calc(12px * var(--tq-scale)); }
+.tq-head.hero .sub { font-size: calc(17px * var(--tq-scale)); }
 .tq-sheet .sub { font-size: calc(12.5px * var(--tq-scale)); }
 
 /* the size picker itself — five A's, ascending, the standard shape for this control */
@@ -588,6 +634,51 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    anything carrying text, and the topic card's own premium pill already uses exactly this pair.
    Matching it is what makes the block read as part of the page rather than bolted on.
    ══════════════════════════════════════════════════════════════════════════════════════════ */
+/* ⛔ NO TAP FLASH (owner, 2026-09-20: "on android when i hit the 'choose a quiz' button ...
+   there's a blue highlight thing, which very very briefly then overlays the test menu as it pops
+   up, like a little blue shadow").
+   Chromium paints its tap highlight on the element that was touched and holds it for ~300ms
+   AFTER the touch ends — so on a control whose job is to open an overlay, the flash outlives
+   the screen it belonged to and lands on top of the new one. It cannot be fixed on the overlay;
+   it has to be suppressed on the control. Every quiz control gets it, not just this one: the
+   same overlap happens on any tap that swaps the screen.
+   ⚠ Only the HIGHLIGHT goes. :active states and focus rings stay — they are the feedback that
+   the tap registered, and removing those would trade a cosmetic flash for an unresponsive feel. */
+.tq-sheet button, .tq-overlay button,
+.tqe-go, .tqe-tile, .tq-entry button { -webkit-tap-highlight-color: transparent; }
+
+/* ══ the mascot at the foot of the quiz menu ══════════════════════════════════════
+   ⚠⚠ TWO CAPS, NOT ONE, AND THAT IS THE BIT THAT HAS GONE WRONG BEFORE. A percentage alone
+   lets the image balloon on a wide sheet; a fixed px alone overflows a narrow phone. `width` is
+   the intent, `max-width: 46%` is the guard, and the aspect-ratio holds the box so nothing jumps
+   when the bytes land.
+   ⚠ The sheet is already narrower than the page, so this is deliberately smaller than the
+   158px the /topics mascot uses — the same figure at the same size would dominate a panel a
+   third of the width. */
+.tq-mascot { text-align: center; margin: 26px 0 4px; }
+.tq-mascot img {
+  width: 132px; max-width: 46%; height: auto; aspect-ratio: 440 / 389;
+  display: block; margin: 0 auto 6px;
+}
+.tq-mascot-t {
+  margin: 0; font-size: 14px; font-weight: 500; letter-spacing: .02em;
+  color: var(--accent, #4B41AD);
+}
+.tq-sheet.premium .tq-mascot-t { color: #B29234; }
+/* ⛔ The ellipsis animates WIDTH, never `content`: the Android app's webview cannot animate
+   `content`, and this is lifted from topics-page.css where that is already documented.
+   steps(3, start) is what makes it 1 -> 2 -> 3 dots rather than a smooth slide. */
+.tq-mascot-t .dots { display: inline-block; width: 1.1em; text-align: left; }
+.tq-mascot-t .dots::after {
+  content: '...'; display: inline-block; width: 0; overflow: hidden;
+  vertical-align: bottom; animation: tq-dots 1.5s steps(3, start) infinite;
+}
+@keyframes tq-dots { from { width: 0; } to { width: 1.05em; } }
+/* ⚠ Someone who has asked for less motion should not get a blinking caption. */
+@media (prefers-reduced-motion: reduce) {
+  .tq-mascot-t .dots::after { animation: none; width: 1.05em; }
+}
+
 .tq-entry {
   --tqe-ink: var(--accent, #4B41AD);
   --tqe-bg: var(--accent-light, #EEEDFE);

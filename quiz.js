@@ -107,6 +107,29 @@
   }
   function setTranslit(on) {
     try { localStorage.setItem('thaiear_translit', on ? '1' : '0'); } catch (_) {}
+    applyTranslit();
+  }
+  /* ⭐⭐ THE PILL IS A CLASS ON THE SHEET, NOT A RENDER-TIME DECISION (owner, 2026-09-20: "if i
+     answer the question, then change the transliteration setting - it doesnt update until the
+     next question ... interestingly modern thai font toggle works immediately").
+     That observation IS the diagnosis. The font toggle works because it is a class on <html>, so
+     it reaches markup that already exists; the transliteration was baked in at render time, and
+     since the settings menu deliberately no longer re-renders the question (it would throw the
+     answer away), nothing could reach it. Making it a class fixes the cause rather than
+     re-rendering, and the same change makes it instant on an UNanswered question too.
+     ⚠ IT GOVERNS ONLY THE TWO-STATE SURFACES — the chip translit, the option translit and the
+     sentence's translit line. The Thai Builder's tray is governed by the THREE-WAY script
+     setting (§5.1), which can also say "hide the Thai" and which a two-state class cannot
+     express; §9.3 is explicit that exactly one control owns each surface. */
+  function applyTranslit() {
+    if (sheet) sheet.classList.toggle('tq-tl-off', !translitOn());
+  }
+  /* ⚠ The overlay carries the unit's tier so its header can use the same ink as the entry
+     block the learner just tapped — gold on a premium unit, accent otherwise. Without it the
+     overlay looks like a different product from the block that opened it. */
+  function applyTier() {
+    var t = T();
+    if (sheet) sheet.classList.toggle('premium', !!(t && t.tier === 'premium'));
   }
   function thaiModern() {
     try { return localStorage.getItem('thaiear_thaifont') === 'modern'; } catch (_) { return false; }
@@ -300,6 +323,8 @@
     /* ⚠ Re-assert after every render: innerHTML wipes children, not the inline property, but a
        remount would lose it — and this is the one setting where a wrong value is visible. */
     applyFontScale();
+    applyTranslit();
+    applyTier();
     sheet.scrollTop = 0; ov.scrollTop = 0;
   }
   /* ⛔ NO GLOBAL CLOSE BUTTON ON THESE SCREENS (owner, 2026-09-20). It did the wrong thing from
@@ -308,9 +333,12 @@
      exactly what the owner hit. Every non-question screen already has an explicit, labelled way
      onward, so a second unlabelled exit was only ambiguity.
      ⚠ The question screen keeps its own × (see bar()); that one routes through the warning. */
-  function head(title, sub) {
-    return '<div class="tq-head"><h3>' + esc(title) + '</h3></div>'
-         + (sub ? '<p class="sub">' + esc(sub) + '</p>' : '');
+  /* ⚠ `hero` is for the PICKER only. head() is also used by the settings menu, the exclusions
+     list and the results screen, and a tinted panel on every one of those would be four heavy
+     bands in a row instead of a landing. The picker is the screen the learner arrives on. */
+  function head(title, sub, hero) {
+    return '<div class="tq-head' + (hero ? ' hero' : '') + '"><h3>' + esc(title) + '</h3>'
+         + (sub ? '<p class="sub">' + esc(sub) + '</p>' : '') + '</div>';
   }
   function wireClose() { /* intentionally empty — see head() */ }
 
@@ -461,8 +489,28 @@
       + '<div class="tq-res-b" hidden>'
       + (here ? '<div class="tq-res-u"><p class="mlab">This unit</p>' + here + '</div>' : '')
       + (others ? '<p class="mlab tq-res-sep">Everywhere else</p>' + others : '')
+      + roosterBlock()
       + '</div></div>';
   }
+
+  /* ⭐ THE MASCOT, at the foot of the quiz menu. Same shape as the Muay Thai figure on /topics
+     and the one on about.html: image, then a short line with an ellipsis that types itself.
+     ⚠ THE ELLIPSIS ANIMATES **WIDTH**, NOT `content` — the Android app's webview cannot animate
+     `content`, and steps(3, start) is what gives 1 -> 2 -> 3 dots. Copied deliberately from
+     topics-page.css rather than reinvented; that file carries the same warning.
+     ⚠ width AND height attributes are on the <img> so the browser reserves the box before the
+     bytes arrive. The picker is a scrolling sheet and the block sits under the results panel, so
+     a late-loading image with no intrinsic size would shove everything above it upward. */
+  function mascot(file, w, h, line) {
+    return '<div class="tq-mascot">'
+      + '<img src="' + file + '" alt="" width="' + w + '" height="' + h + '" decoding="async">'
+      + '<p class="tq-mascot-t">' + esc(line) + '<span class="dots"></span></p>'
+      + '</div>';
+  }
+  function tigerBlock() { return mascot('tiger.png', 440, 389, 'Stay sharp'); }
+  /* ⚠ The rooster sits INSIDE the results panel, which is collapsed by default — so the two
+     mascots are never on screen together, and each belongs to the thing it closes. */
+  function roosterBlock() { return mascot('rooster.png', 440, 495, 'Stay with it'); }
 
   function wireResults() {
     var h = sheet.querySelector('.tq-res-h');
@@ -492,11 +540,12 @@
     }).join('');
 
     render('<div class="tq-fill">'
-         + head('Test yourself', ctx.unitName || '')
+         + head('Test yourself', ctx.unitName || '', true)
          + '<div class="qpick qpick-big">' + rows + '</div>'
          + '<div class="tq-minor"><button type="button" class="tq-return">&larr; '
          + esc(ctx.originLabel || 'Back') + '</button></div></div>'
-         + resultsPanel());
+         + resultsPanel()
+         + tigerBlock());
     wireClose();
     sheet.querySelectorAll('.qpick button').forEach(function (b) {
       b.onclick = function () { openMenu(parseInt(b.dataset.q, 10)); };
@@ -984,8 +1033,17 @@
     function paint() {
       /* ⛔ The answer box must not reveal how many positions remain — no empty numbered slots. */
       dropEl.innerHTML = locked.map(function (g) { return tileHtml(g, 'lock'); }).join('')
-        + placed.map(function (ti) { return '<span class="tile in" data-p="' + ti + '">'
-            + esc(scriptBits(tray[ti].g[0], tray[ti].g[2], p.script).main) + '</span>'; }).join('');
+        + placed.map(function (ti) {
+            /* ⚠⚠ A PLACED CHIP KEEPS ITS TRANSLITERATION. It used to render as the Thai alone,
+               so the moment a chip entered the answer box the reading you were working from
+               vanished — worst for exactly the learner who turned it on. The CSS had always
+               anticipated this (.tile.in .tt is styled white against the accent fill); only the
+               markup was missing. Same shape as the tray so the two cannot drift. */
+            var b = scriptBits(tray[ti].g[0], tray[ti].g[2], p.script);
+            return '<span class="tile in" data-p="' + ti + '">' + esc(b.main)
+              + (p.script === 'both' && tray[ti].g[2]
+                  ? '<span class="tt">' + esc(tray[ti].g[2]) + '</span>' : '') + '</span>';
+          }).join('');
       dropEl.classList.toggle('filled', placed.length > 0);
       /* ⭐⭐ A TRAY CHIP KEEPS ITS OWN SLOT (owner, 2026-09-20: "rather than they keep sliding
          left as i select gloss chips, they stay in their positions, and if i unselect a gloss
@@ -1218,9 +1276,15 @@
          the probe under-reported by a whole row (104px measured against a real 152px). */
       probe.style.cssText = 'position:absolute;visibility:hidden;top:-9999px;left:0;min-height:0'
         + ';width:' + dropEl.offsetWidth + 'px';
+      /* ⚠ The probe must model the tile it is measuring. Placed chips now carry their
+         transliteration, which makes them two lines tall — a probe without it under-reports the
+         lock by a whole row and the Check button starts moving again. */
       probe.innerHTML = locked.map(function (g) { return tileHtml(g, 'lock'); }).join('')
-        + tray.map(function (t) { return '<span class="tile in">'
-            + esc(scriptBits(t.g[0], t.g[2], p.script).main) + '</span>'; }).join('');
+        + tray.map(function (t) {
+            return '<span class="tile in">' + esc(scriptBits(t.g[0], t.g[2], p.script).main)
+              + (p.script === 'both' && t.g[2] ? '<span class="tt">' + esc(t.g[2]) + '</span>' : '')
+              + '</span>';
+          }).join('');
       dropEl.parentNode.insertBefore(probe, dropEl);
       /* offsetHeight, not scrollHeight: the box has a border and scrollHeight excludes it,
          which left the lock 3px short and the button still twitching on the last tap. */
@@ -1233,12 +1297,17 @@
          measurement is still on the nodes, so scrollHeight would report that floor rather than
          the content, and the box could then only ever grow — exactly wrong when the learner has
          just chosen a SMALLER text size. */
-      if (force) { lockPx = 0; dropEl.style.minHeight = ''; trayEl.style.minHeight = ''; }
-      var h = Math.max(trayEl.scrollHeight, fullDropPx(), 66 * fontScale());
+      if (force) { lockPx = 0; dropEl.style.minHeight = ''; }
+      /* ⛔⛔ THE ANSWER BOX ONLY. The tray needs no lock: since a taken chip leaves a hidden
+         RESERVED SLOT rather than vanishing, its height cannot change — constant by
+         construction, which is better than a measured floor. Locking it too was worse than
+         redundant: the shared number is the max of the tray AND the box's worst case, so it made
+         the tray 30px taller than it ever needs, and releasing that on submit was itself a 30px
+         jump at the moment the learner looks at the verdict. */
+      var h = Math.max(fullDropPx(), 66 * fontScale());
       if (h <= lockPx) return;
       lockPx = h;
       dropEl.style.minHeight = h + 'px';
-      trayEl.style.minHeight = h + 'px';
     }
     lockHeights();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { lockHeights(); });
@@ -1267,17 +1336,11 @@
       trayEl.querySelectorAll('.tile').forEach(function (n) { n.onclick = null; });
       dropEl.querySelectorAll('.tile').forEach(function (n) { n.onclick = null; });
 
-      /* ⭐ RELEASE THE LOCK ON SUBMIT (owner, 2026-09-20: "make sure that when the answer appears
-         everything still fits on the screen"). The locked heights exist to stop the Check button
-         moving WHILE tiles are being tapped; once the answer is in, tapping is over and the
-         reserved space is dead weight — and the reveal needs exactly that space for the
-         correction, the chips and Next. Keeping it would push the reveal off a phone screen,
-         trading one layout fault for a worse one.
-         ⚠ The tray is emptied of purpose, so it collapses to its content; the answer box keeps
-         what it is actually holding. One deliberate reflow at the end, not jitter throughout. */
-      lockPx = 0;
-      trayEl.style.minHeight = '';
-      dropEl.style.minHeight = '';
+      /* ⛔ THE LOCK IS **NOT** RELEASED HERE ANY MORE. It used to be, so the reveal would fit
+         on screen — but showReveal() already scrolls the reveal into view, so the release bought
+         nothing and cost a 30px reflow at the exact moment the learner is reading the verdict.
+         Owner's condition on the verdict-in-place change was "so long as there isnt a rendering
+         race or any nasty flickers/shifts", and this was the shift. */
 
       /* ⛔ ON SUBMIT THE REAL THAI PLAYS, right or wrong, automatically, once (§5.1). */
       playSentence(s.num, null);
@@ -1285,9 +1348,23 @@
       /* ⭐ THE REVEAL IS ASYMMETRIC (§5.1): a correction is remediation, and remediation is only
          needed when there is something to remediate. A quiz that lectures after a right answer
          is a quiz people stop taking. */
+      /* ⭐⭐ THE CHECK BUTTON BECOMES THE VERDICT (owner, 2026-09-20). Once you have checked,
+         Check is dead weight sitting directly above a line that says "Not quite" — two rows
+         saying one thing, on the screen that is already the longest in the quiz.
+         ⛔⛔ THE SAME ELEMENT IS RE-LABELLED, NOT SWAPPED. His condition was "so long as there
+         isnt a rendering race or any nasty flickers/shifts", and that rules out the obvious
+         implementation: removing the button and inserting a pill would collapse its height for
+         one frame and shunt everything below it up and back. Changing the class and the text of
+         a node that is already there, at the same width and the same padding, cannot shift
+         anything — there is no frame in which the box does not exist.
+         ⚠ It stays a <button> and stays disabled: a re-labelled control must not still look
+         pressable, and turning it into a <p> would be the swap this exists to avoid. */
+      submit.classList.add('t-verdict', ok ? 'right' : 'wrong');
+      submit.textContent = ok ? 'Correct' : 'Not quite';
+
       var d = sheet.querySelector('.t-rev');
       if (ok) {
-        d.innerHTML = '<div class="reveal"><p class="opt right" style="margin:0">Correct</p>'
+        d.innerHTML = '<div class="reveal">'
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       } else {
@@ -1296,7 +1373,7 @@
            learn from a mistake — and the reveal is naturally built from Thai-first data, so this
            is the easiest thing here to get wrong. */
         var b = scriptBits(stripBars(s.thai), stripBars(s.translit), p.script);
-        d.innerHTML = '<div class="reveal"><p class="opt wrong" style="margin:0 0 10px">Not quite</p>'
+        d.innerHTML = '<div class="reveal">'
           + '<p class="mlab">The correct order</p>'
           + '<div class="chips">' + canon.map(chipHtml).join('') + '</div>'
           + '<p class="thaibig" style="margin-top:10px">' + esc(b.main) + '</p>'
@@ -1596,6 +1673,7 @@
       sheet.innerHTML = '';
       sheet.appendChild(keep);
       applyFontScale();
+      applyTranslit();
       sheet.scrollTop = 0; ov.scrollTop = 0;
       run.relayout = relayout;
       /* ⚠ A text-size change re-flows the question that is coming back, so anything holding a
