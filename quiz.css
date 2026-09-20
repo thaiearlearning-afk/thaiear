@@ -78,6 +78,15 @@
    Deliberately the SAME chip as the picker row — 34px, 10px radius, the accent tint, gold on a
    premium unit — so the menu reads as the row the learner just tapped having opened, rather than
    as an unrelated screen that happens to share a word. */
+/* ⚠ THE NON-HERO HEADER HAD NO BOTTOM MARGIN AT ALL (owner, 2026-09-20: "on all four quizzes
+   the 'How many questions' line is too close to the title ... its not actually the words in the
+   title its too close to - its the ICON - it is practically touching it").
+   His diagnosis is the whole fix. Spacing under this header came from the h3's own 3px margin,
+   which was survivable while the header WAS the h3 — and the 34px icon chip is taller than the
+   text, so it overhangs the h3's box and closed the gap to 4px. Measured, then set here rather
+   than on the h3, because the header is what the next block must clear.
+   ⚠ It applies to the in-quiz Options menu too, which shares this header and had the same 4px. */
+.tq-head:not(.hero) { margin: 0 0 18px; }
 .tq-head.has-ic { display: flex; align-items: center; gap: 11px; }
 .tq-head.has-ic .tq-head-ic {
   width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;

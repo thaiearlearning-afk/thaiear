@@ -209,8 +209,13 @@
   }
   /* head gloss = the gloss minus its disambiguating parenthetical or quoted literal. Used for
      the §6.3 two-answer test. ⛔ Comparison only — §6.4 requires the FULL gloss to be rendered. */
+  /* ⚠ The gloss WITHOUT its disambiguating parenthetical, case preserved — กับข้าว
+     'food ("rice dishes")' → 'food'. Two words carrying the same one are §6.3 twins. */
+  function bareGloss(g) {
+    return String(g || '').replace(/\s*\(.*?\)|\s*"[^"]*"/g, '').trim();
+  }
   function headGloss(g) {
-    return String(g || '').replace(/\s*\(.*?\)|\s*"[^"]*"/g, '').trim().toLowerCase().replace(/\.$/, '');
+    return bareGloss(g).toLowerCase().replace(/\.$/, '');
   }
 
   /* ── eligibility: what this quiz can ask about, net of BOTH kinds of exclusion ──────────── */
@@ -1747,8 +1752,29 @@
     shuffle(opts);
 
     var hidden = run.prefs.hide;
+    /* ⛔⛔ A MULTI-ANSWER PROMPT ASKS WITH THE SHARED GLOSS ALONE — no parentheticals by
+       default (owner, 2026-09-20: "just have 'food' - by default the multiple options in
+       brackets not contained unless we need to be specific for some reason").
+       กับข้าว and ของกิน are both glossed 'food', disambiguated as "rice dishes" and "things to
+       eat", which is what makes them §6.3 twins. The prompt printed the TARGET's own gloss, so it
+       read  food ("rice dishes")  while demanding two answers — it described one of the two and
+       said nothing about the other.
+       ⚠⚠ THAT IS A BIAS, NOT AN IMPRECISION, and the distinction is why this is a rule and not a
+       one-line data edit: naming one answer's sense makes that answer findable and leaves the
+       other to be guessed, so the question stops testing the same thing for both halves of its
+       own answer. The owner's rule: "all or none, never just one or some."
+       ✅ THE DEFAULT IS NONE, because the question is multiple choice — "the answer is in front
+       of the user and if the distractors are chosen well it wont be confused". 'food' is
+       unambiguous here precisely because อาหาร is not on the list. ⚠ That is a property of the
+       OPTION SET, not of the word, which is the thing to check when adding a distractor.
+       ⚠ §6.4 keeps the authored gloss verbatim, so this strips at RENDER time and edits nothing.
+       The reveal still shows each option's own full gloss, which is where the distinction earns
+       its keep — and `test_quiz_engine.js` fails if a twin group is MIXED, one member carrying a
+       parenthetical and another not, because then the reveal cannot tell them apart either.
+       ⚠ A one-answer question is untouched: there is no other answer to be fair to. */
+    var promptEn = (need === 2) ? bareGloss(w.en) : w.en;
     render(bar()
-      + '<p class="enq">' + esc(w.en) + '</p>'
+      + '<p class="enq">' + esc(promptEn) + '</p>'
       + (need === 2 ? '<p class="tq-need">Select <b>2</b> answers</p>' : '')
       + (hidden ? '<button type="button" class="startbtn t-show">Show the options</button>' : '')
       + '<div class="t-opts"' + (hidden ? ' hidden' : '') + '>'
