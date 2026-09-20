@@ -207,3 +207,7 @@ html.te-thai-modern .sent-preview,
 html.te-thai-modern .row-thai,
 html.te-thai-modern .g-thai,
 html.te-thai-modern .dyn-th { font-family: 'Noto Sans Thai', var(--font-thai); }
+/* .g-eng holds ENGLISH plus, on the grammar units, a Thai named pair. It cannot join the
+   list above: Noto Sans Thai has Latin glyphs, so it would restyle the English too.
+   --font-ui first keeps Latin in Inter; the Thai falls through to Noto. */
+html.te-thai-modern .g-eng { font-family: var(--font-ui), 'Noto Sans Thai', var(--font-thai); }
