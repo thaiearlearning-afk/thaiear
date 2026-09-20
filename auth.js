@@ -2214,6 +2214,16 @@
   }
   function qzSave() { try { localStorage.setItem(QZ_LS, JSON.stringify(qzLoadLocal())); } catch (_) {} }
   function qzKey(unit, type) { return unit + '|' + type; }
+  /* ⚠ Split from the RIGHT. A unit_key is free-form text — a playlist's is "pl:<uuid>" and a
+     uuid contains no pipe today, but nothing guarantees a future key will not. The quiz type is
+     always the last field, so the last separator is the only safe one to split on. */
+  function qzUnkey(k) {
+    var i = String(k).lastIndexOf('|');
+    if (i < 0) return null;
+    var t = parseInt(k.slice(i + 1), 10);
+    if (!(t >= 1 && t <= 4)) return null;
+    return { unit: k.slice(0, i), type: t };
+  }
 
   function qzUuid() {
     try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (_) {}
@@ -2378,6 +2388,44 @@
       });
       qzSave();
       qzQueue({ k: 'stats', batch: qzUuid(), rows: deltas });
+    },
+
+    /* ⭐⭐ EVERY UNIT'S TOTALS, DERIVED — THERE IS NO SECOND TABLE.
+       The owner expected this to need one ("this would need a new supabase table"). It does
+       not, and adding one would be the wrong call: quiz_item_stats already carries `seen` and
+       `correct` per item, and quiz_scores already carries the best percentage, so every number
+       on the panel is a sum of things that are already stored.
+       ⛔ A SEPARATE AGGREGATE TABLE WOULD BE DERIVED DATA THAT CAN DISAGREE WITH ITS SOURCE.
+       It would also have to reimplement the hard half of this: item stats are COUNTERS, synced
+       as deltas with a batch id precisely because two devices answering offline both hold
+       "seen 3" and a last-write-wins push would record 3 instead of 6 (§8.4). An aggregate
+       written the easy way would silently lose exactly those plays; written the correct way it
+       is a second delta pipeline to keep right. Summing the counters costs nothing and cannot
+       drift from them.
+       ⚠ Local-first by construction: it reads the same local mirror the quiz writes to, so the
+       panel is complete offline and identical to what will be on the server once flushed. */
+    resultsAll: function () {
+      var d = qzLoadLocal();
+      var out = {};
+      function row(unit, type) {
+        out[unit] = out[unit] || {};
+        out[unit][type] = out[unit][type] || { answered: 0, correct: 0, best: null };
+        return out[unit][type];
+      }
+      Object.keys(d.stats || {}).forEach(function (k) {
+        var p = qzUnkey(k); if (!p) return;
+        var r = row(p.unit, p.type), items = d.stats[k] || {};
+        Object.keys(items).forEach(function (it) {
+          r.answered += (items[it].seen || 0);
+          r.correct  += (items[it].correct || 0);
+        });
+      });
+      Object.keys(d.scores || {}).forEach(function (k) {
+        var p = qzUnkey(k); if (!p) return;
+        var v = d.scores[k];
+        row(p.unit, p.type).best = (v && typeof v.best === 'number') ? v.best : v;
+      });
+      return out;
     },
 
     flush: function () { return qzFlush(); },

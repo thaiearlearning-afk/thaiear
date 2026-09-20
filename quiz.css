@@ -150,11 +150,18 @@
 }
 .qx:hover { color: #B4342E; }
 .qopts {
-  display: flex; align-items: center; gap: 4px; color: var(--text-tertiary, #9A9A9A);
-  cursor: pointer; font-size: 15px; background: none; border: 0; padding: 2px 4px; line-height: 1;
-  font-family: inherit;
+  /* ⭐ A GEAR, NOT AN ELLIPSIS, AND BIGGER (owner, 2026-09-20). The ⋯ read as decoration and was
+     missed; settings live behind it, so it has to look like settings. 34px is also a real tap
+     target — the old one was ~19px, under the 44px guidance and fiddly on a phone. */
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; flex-shrink: 0;
+  color: var(--text-secondary, #5A5A5A);
+  cursor: pointer; background: none; border: 0; padding: 0; line-height: 0;
+  border-radius: 50%; font-family: inherit;
+  transition: background .15s, color .15s;
 }
-.qopts:hover { color: var(--accent, #4B41AD); }
+.qopts svg { width: 21px; height: 21px; fill: currentColor; }
+.qopts:hover { color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); }
 .playbtn {
   display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%;
   background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
@@ -199,6 +206,75 @@
   font-family: var(--font-ui, 'Inter', system-ui, sans-serif), var(--font-thai, 'Sarabun', sans-serif);
 }
 .chip .tlx { display: block; color: var(--text-tertiary, #9A9A9A); font-size: 10.5px; }
+/* ⚠ The chip the question was about. An outline rather than a different fill: the chips sit
+   on the accent-light background already, so a second fill would fight it, and an outline
+   survives both themes without a second colour token. */
+.chip.is-target { box-shadow: inset 0 0 0 1.5px var(--accent, #4B41AD); }
+
+/* ⚠ The published translation, under a prompt that was reworded to line up with the chips.
+   Secondary by design: it says what the sentence MEANS, while the line above says how it is
+   BUILT. At the same weight the learner would work from whichever they happened to read first,
+   which is the ambiguity this exists to remove. */
+.enq-nat {
+  margin: -8px 0 13px; font-size: 12.5px; line-height: 1.45;
+  color: var(--text-tertiary, #9A9A9A); font-style: italic;
+}
+
+/* ══ dragging in the Thai Builder ══════════════════════════════════════════════
+   ⛔ touch-action on the MOVABLE tiles only. Without it the browser claims the gesture for
+   scrolling and the drag never starts on a phone; with it on everything, the sheet could not be
+   scrolled at all. The locked head-start tiles are deliberately left scrollable — they cannot be
+   dragged, so a press on one should still scroll the page. */
+.tile[data-t], .tile[data-p] { touch-action: none; }
+.tq-lifted { opacity: .35; }
+
+/* ══ My results ══════════════════════════════════════════════════════════════════
+   ⚠ COLLAPSED BY DEFAULT. The picker's job is to start a quiz; a table of every unit's history
+   above the fold would bury the four buttons the screen exists for — and on a long history it
+   would be the majority of the page. One tap, and it remembers nothing, because reopening the
+   picker means someone is choosing a quiz again. */
+.tq-results { border-top: 0.5px solid var(--border, rgba(0,0,0,.09)); margin-top: 18px; padding-top: 4px; }
+.tq-res-h {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  background: none; border: 0; padding: 11px 2px; cursor: pointer; font-family: inherit;
+  font-size: 13px; font-weight: 600; color: var(--text-secondary, #5A5A5A);
+}
+.tq-res-cv { transition: transform .15s ease; }
+.tq-res-h.open .tq-res-cv { transform: rotate(180deg); }
+.tq-res-u { margin-bottom: 14px; }
+.tq-res-sep { margin-top: 16px; }
+.tq-res-t { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tq-res-t thead th {
+  font-weight: 500; color: var(--text-tertiary, #9A9A9A); text-align: right;
+  padding: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+}
+.tq-res-t tbody th {
+  font-weight: 500; text-align: left; color: var(--text-primary, #1A1A1A);
+  padding: 5px 8px 5px 0; white-space: nowrap;
+}
+.tq-res-t td { text-align: right; padding: 5px 0 5px 10px; color: var(--text-secondary, #5A5A5A); }
+/* ⚠ Tone, not colour alone — these read as counts either way; the colour is a hint. */
+.tq-res-t .ok   { color: #2F7D62; }
+.tq-res-t .no   { color: #B23A3A; }
+.tq-res-t .best { font-weight: 600; color: var(--text-primary, #1A1A1A); }
+.tq-res-t tbody tr + tr th,
+.tq-res-t tbody tr + tr td { border-top: 0.5px solid var(--border, rgba(0,0,0,.07)); }
+/* ⚠ The empty slot a taken chip leaves behind. visibility, NOT display or opacity: display
+   would collapse the box and bring the sliding back, and opacity would leave it clickable and
+   readable as a faded chip the learner could try to take twice. */
+.tile.slot { visibility: hidden; }
+.tq-flyer {
+  opacity: .95; box-shadow: 0 6px 18px rgba(0,0,0,.22);
+  transform-origin: top left; will-change: transform;
+}
+/* the gap that opens where the tile would land */
+.tq-ghost {
+  background: transparent; border: 1.5px dashed var(--accent, #4B41AD);
+  border-radius: var(--radius-sm, 6px); box-sizing: border-box;
+}
+.chip.is-target .gl { color: var(--text-primary, #1A1A1A); }
+/* the breakdown sits between the English and the play button, so it needs its own air */
+.vchips { margin: 10px 0 2px; }
 .reveal { border-top: 0.5px solid var(--border, rgba(0,0,0,.09)); margin-top: 14px; padding-top: 13px; }
 .nextbtn {
   width: 100%; background: var(--accent, #4B41AD); color: #fff; border: 0;
@@ -302,3 +378,256 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .tq-stay:hover { background: var(--accent-mid, #534AB7); }
 .tq-leave { background: var(--surface, #fff); color: var(--text-secondary, #5A5A5A); border: 0.5px solid var(--border-strong, rgba(0,0,0,.16)); }
 .tq-leave:hover { border-color: #B4342E; color: #B4342E; }
+
+/* ── owner feedback round 1 (2026-09-20) ─────────────────────────────────────────────────── */
+
+/* JOB 2 — transliteration on a Vocab option and in the exclusions list */
+.opt .o-th { font-family: var(--font-thai, 'Sarabun', sans-serif); font-size: 17px; }
+.opt .o-tl { display: block; font-size: 11.5px; color: var(--text-tertiary, #9A9A9A); line-height: 1.3; margin-top: 1px; }
+/* JOB 7 — after answering, every option shows what it meant */
+.opt .o-en { display: block; font-size: 12.5px; color: var(--text-secondary, #5A5A5A); line-height: 1.35; margin-top: 3px; }
+.opt.right .o-en { color: #1F5D3A; }
+.opt.wrong .o-en { color: #B4342E; }
+.tq-exitem .x-tl { font-size: 11.5px; color: var(--text-tertiary, #9A9A9A); }
+.cen { font-size: 13px; color: var(--text-secondary, #5A5A5A); margin: 0 0 4px; }
+
+/* JOB 5 — a two-answer question must announce itself, and say so again mid-answer */
+.tq-need {
+  font-size: 13.5px; font-weight: 600; color: var(--accent, #4B41AD);
+  background: var(--accent-light, #EEEDFE); border-radius: var(--radius-sm, 6px);
+  padding: 7px 11px; margin: 0 0 12px; display: inline-block;
+}
+.tq-need b { font-size: 15px; }
+/* ⚠ Sits where the reveal will go, so it occupies the space the answer is about to use rather
+   than pushing the options around. Red because it is the one message the learner is STUCK
+   without — the screen is correctly inert after one pick (§6.3 forbids marking it) and nothing
+   else on screen can explain that. */
+.tq-more {
+  font-size: 14px; font-weight: 600; color: #B4342E;
+  background: #FCF2F1; border: 0.5px solid rgba(180,52,46,.25);
+  border-radius: var(--radius-md, 10px); padding: 11px 13px; margin: 13px 0 0; text-align: center;
+}
+
+/* JOB 4 — the persistent exclude control, last thing in the sheet on every question screen.
+   ⚠ Quiet by design: it must be FINDABLE without competing with the answer. It is the only
+   control on the question screen that changes future runs rather than this one. */
+.tq-foot { margin-top: 20px; padding-top: 14px; border-top: 0.5px solid var(--border, rgba(0,0,0,.09)); }
+.tq-skip {
+  width: 100%; text-align: left; background: none; cursor: pointer; font-family: inherit;
+  border: 0.5px solid var(--border-strong, rgba(0,0,0,.16)); border-radius: var(--radius-md, 10px);
+  padding: 10px 13px; font-size: 13px; color: var(--text-secondary, #5A5A5A);
+  transition: border-color .15s, color .15s, background .15s;
+}
+.tq-skip:hover { border-color: #B4342E; color: #B4342E; }
+.tq-skip-sub { display: block; font-size: 11.5px; color: var(--text-tertiary, #9A9A9A); margin-top: 2px; }
+.tq-skip.done { border-color: #1F5D3A; background: #F1F7F3; color: #1F5D3A; font-weight: 500; }
+.tq-skip.done:hover { border-color: #1F5D3A; color: #1F5D3A; }
+.tq-skip.done .tq-skip-sub { color: #3E7A57; }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   JOB 6 — QUIZ TEXT SIZE (owner, 2026-09-20)
+   ══════════════════════════════════════════════════════════════════════════════════════════
+   ⭐ WHY THIS IS AN OVERRIDE LAYER AND NOT AN EDIT TO THE RULES ABOVE. Everything above this
+   line is copied verbatim from the mockup the owner approved. Rewriting those values in em or
+   calc() would make the approved design a derived thing that nobody could check against the
+   mockup again. Instead the baseline stays exactly as approved and this layer scales FROM it:
+   at --tq-scale: 1 every declaration below computes to the same number it overrides, so the
+   default rendering is identical by construction, not by care.
+
+   ⚠ It scales the BOXES AND THE GAPS, not just the glyphs — the owner asked for the heights and
+   spacing to grow "as appropriate". Padding, min-heights and gaps are all in here for that
+   reason; text-only scaling makes a large size look cramped rather than large.
+
+   ⛔ NO TRANSFORM. `transform: scale()` was the obvious one-liner and is wrong here: it scales
+   the layout box too, so the sheet would overflow its own width at the larger stops and the
+   text would resample rather than re-render — blurry Thai at exactly the size someone chose
+   because they were struggling to read it.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+.tq-sheet { --tq-scale: 1; }
+
+/* question text */
+.enq       { font-size: calc(15.5px * var(--tq-scale)); margin-bottom: calc(13px * var(--tq-scale)); }
+.enq-nat   { font-size: calc(12.5px * var(--tq-scale)); margin: calc(-8px * var(--tq-scale)) 0 calc(13px * var(--tq-scale)); }
+.thaibig   { font-size: calc(21px   * var(--tq-scale)); }
+.tl        { font-size: calc(12.5px * var(--tq-scale)); }
+.cen       { font-size: calc(13px   * var(--tq-scale)); }
+.traylab,
+.mlab      { font-size: calc(11px   * var(--tq-scale)); }
+
+/* options */
+.opt       { font-size: calc(13.5px * var(--tq-scale)); padding: calc(11px * var(--tq-scale)) calc(13px * var(--tq-scale)); margin-bottom: calc(7px * var(--tq-scale)); }
+.opt .o-th { font-size: calc(17px   * var(--tq-scale)); }
+.opt .o-tl { font-size: calc(11.5px * var(--tq-scale)); }
+.opt .o-en { font-size: calc(12.5px * var(--tq-scale)); }
+
+/* the Builder tray and answer box */
+.tile      { font-size: calc(16px   * var(--tq-scale)); padding: calc(6px * var(--tq-scale)) calc(10px * var(--tq-scale)); }
+.tile .tt  { font-size: calc(10.5px * var(--tq-scale)); }
+/* ⚠ min-height here is only the FLOOR for an empty box; quiz.js measures the real one after the
+   first layout and sets it inline on both containers so nothing reflows as tiles move. */
+.drop      { min-height: calc(66px  * var(--tq-scale)); padding: calc(9px * var(--tq-scale)); gap: calc(5px * var(--tq-scale)); align-content: flex-start; }
+.tray      { align-content: flex-start; }
+.tray      { gap: calc(5px * var(--tq-scale)); }
+
+/* chips */
+.chip      { font-size: calc(12px   * var(--tq-scale)); padding: calc(4px * var(--tq-scale)) calc(8px * var(--tq-scale)); }
+.chip .tlx { font-size: calc(10.5px * var(--tq-scale)); }
+.chips     { gap: calc(5px * var(--tq-scale)); }
+.vchips    { margin: calc(10px * var(--tq-scale)) 0 calc(2px * var(--tq-scale)); }
+
+/* buttons and prompts */
+.playbtn       { font-size: calc(14px   * var(--tq-scale)); padding: calc(15px * var(--tq-scale)); }
+.nextbtn       { font-size: calc(14px   * var(--tq-scale)); padding: calc(11px * var(--tq-scale)); }
+.startbtn      { font-size: calc(14.5px * var(--tq-scale)); padding: calc(12px * var(--tq-scale)); }
+.tq-say        { font-size: calc(12.5px * var(--tq-scale)); padding: calc(9px * var(--tq-scale)) calc(11px * var(--tq-scale)); }
+.tq-need       { font-size: calc(13.5px * var(--tq-scale)); }
+.tq-need b     { font-size: calc(15px   * var(--tq-scale)); }
+.tq-more       { font-size: calc(14px   * var(--tq-scale)); padding: calc(11px * var(--tq-scale)) calc(13px * var(--tq-scale)); }
+.tq-selfmark button { font-size: calc(14px * var(--tq-scale)); padding: calc(12px * var(--tq-scale)) calc(8px * var(--tq-scale)); }
+.tq-skip       { font-size: calc(13px   * var(--tq-scale)); padding: calc(10px * var(--tq-scale)) calc(13px * var(--tq-scale)); }
+.tq-skip-sub   { font-size: calc(11.5px * var(--tq-scale)); }
+
+/* menu controls */
+.tq-res-h  { font-size: calc(13px   * var(--tq-scale)); }
+.tq-res-t  { font-size: calc(12.5px * var(--tq-scale)); }
+.tq-res-t thead th { font-size: calc(11px * var(--tq-scale)); }
+.seg       { font-size: calc(13px   * var(--tq-scale)); padding: calc(7px * var(--tq-scale)) calc(4px * var(--tq-scale));
+             min-width: calc(58px * var(--tq-scale)); }
+/* ⚠ The row wraps rather than scrolls, so the gap has to scale too or the wrapped rows
+   sit on top of each other at the larger stops. */
+.segs      { gap: calc(6px * var(--tq-scale)); }
+.radio,
+.checkrow  { font-size: calc(13.5px * var(--tq-scale)); }
+.radio .rd { font-size: calc(12px   * var(--tq-scale)); }
+.hint      { font-size: calc(12px   * var(--tq-scale)); }
+.exline    { font-size: calc(13px   * var(--tq-scale)); }
+.tq-exitem { font-size: calc(13px   * var(--tq-scale)); }
+
+/* the picker */
+.qpick .nm { font-size: calc(14px   * var(--tq-scale)); }
+.qpick .ds { font-size: calc(11.5px * var(--tq-scale)); }
+.qpick .sc { font-size: calc(12px   * var(--tq-scale)); }
+.tq-sheet h3 { font-size: calc(16px * var(--tq-scale)); }
+.tq-sheet .sub { font-size: calc(12.5px * var(--tq-scale)); }
+
+/* the size picker itself — five A's, ascending, the standard shape for this control */
+.tq-fsize { display: flex; align-items: baseline; gap: 6px; }
+.tq-fs {
+  flex: 1; background: var(--surface, #fff); cursor: pointer; font-family: inherit;
+  border: 0.5px solid var(--border-strong, rgba(0,0,0,.16)); border-radius: var(--radius-sm, 6px);
+  padding: 8px 4px; color: var(--text-secondary, #5A5A5A); line-height: 1; font-weight: 600;
+}
+.tq-fs.on { background: var(--accent, #4B41AD); border-color: var(--accent, #4B41AD); color: #fff; }
+
+/* JOB 12 — "use these settings for all X quizzes"
+   ⚠ It needs to LOOK clickable: as plain text in a list of settings it read as a caption
+   (owner: "so its not just text - otherwise you dont really know its clickable"). The sync
+   glyph is the affordance; the border makes it a control rather than a label. */
+.tq-all {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  background: var(--surface, #fff); border: 0.5px solid var(--border-strong, rgba(0,0,0,.16));
+  border-radius: var(--radius-md, 10px); padding: 10px 13px; cursor: pointer;
+  font-family: inherit; font-size: calc(13px * var(--tq-scale, 1));
+  color: var(--text-secondary, #5A5A5A);
+  transition: border-color .15s, color .15s, background .15s;
+}
+.tq-all:hover { border-color: var(--accent, #4B41AD); color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); }
+.tq-sync { width: 17px; height: 17px; fill: currentColor; flex-shrink: 0; }
+.tq-all.done {
+  border-color: #1F5D3A; background: #F1F7F3; color: #1F5D3A; font-weight: 500; cursor: default;
+}
+.tq-all.done .tq-sync { display: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   JOBS 8 + 13 — USING THE SCREEN (owner, 2026-09-20)
+   "at the end of the quiz on android app i feel that everything is very top heavy, bottom 2/3
+   of screen nearly is white" — and the same of the quiz menu.
+   ⚠ The cause is structural, not cosmetic: on a phone .tq-sheet is min-height:100% (so the
+   overlay is a full screen) while the CONTENT of the picker and the results is short. Making
+   the type bigger alone would not fix it; the content has to be told to occupy the height.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+.tq-fill { display: flex; flex-direction: column; }
+.tq-fill .qpick { flex: 1; justify-content: center; }
+.tq-fill .tq-minor { margin-top: auto; }
+
+/* the picker's four rows, given room to breathe */
+.qpick-big button { padding: calc(15px * var(--tq-scale, 1)) calc(15px * var(--tq-scale, 1)); gap: 14px; }
+.qpick-big .ic { width: 40px; height: 40px; border-radius: 11px; font-size: calc(17px * var(--tq-scale, 1)); font-weight: 700; }
+.qpick-big .nm { font-size: calc(15.5px * var(--tq-scale, 1)); }
+.qpick-big .ds { font-size: calc(12.5px * var(--tq-scale, 1)); margin-top: 2px; }
+.qpick-big .sc { font-size: calc(15px * var(--tq-scale, 1)); }
+
+/* the results screen: the score is the point of the screen, so it takes the space */
+.tq-fill-res .tq-res { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 8px 0 18px; }
+.tq-fill-res .tq-pct { font-size: calc(64px * var(--tq-scale, 1)); line-height: 1; }
+.tq-fill-res .tq-raw { font-size: calc(16.5px * var(--tq-scale, 1)); margin-top: 8px; }
+.tq-fill-res .tq-best { font-size: calc(14px * var(--tq-scale, 1)); margin-top: 14px; }
+.tq-selfnote { margin: 20px auto 0; max-width: 300px; text-align: left; }
+.tq-acts { display: flex; flex-direction: column; gap: 9px; margin-top: auto; }
+.tq-acts .tq-exit, .tq-acts .tq-return {
+  background: none; border: 0.5px solid var(--border-strong, rgba(0,0,0,.16));
+  border-radius: var(--radius-md, 10px); padding: calc(11px * var(--tq-scale, 1));
+  font-family: inherit; font-size: calc(13.5px * var(--tq-scale, 1));
+  color: var(--text-secondary, #5A5A5A); cursor: pointer; text-align: center;
+}
+.tq-acts .tq-exit:hover, .tq-acts .tq-return:hover { border-color: var(--accent, #4B41AD); color: var(--accent, #4B41AD); }
+
+/* ⚠ Only worth filling when the sheet actually IS the screen. On desktop the sheet is a 480px
+   card in the middle of a backdrop, and stretching a card to the viewport looks broken. */
+@media (max-width: 480px) {
+  .tq-fill { min-height: calc(100vh - 32px); }
+  .tq-fill-res .tq-pct { font-size: calc(72px * var(--tq-scale, 1)); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   JOB 10 — THE ENTRY BLOCK, TIER-COLOURED (owner, 2026-09-20)
+   "the Test yourself button should be the color of the topic … please make it more prominent …
+   its a great feature. and shouldnt be an afterthought."
+   ⛔ THE PREMIUM PAIR IS THE *TEXT* GOLD, #B29234 on #FBF5DC — not the graphic gold #F0CC5C.
+   The standing palette rule is that the bright gold is for graphics and the darker one for
+   anything carrying text, and the topic card's own premium pill already uses exactly this pair.
+   Matching it is what makes the block read as part of the page rather than bolted on.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+.tq-entry {
+  --tqe-ink: var(--accent, #4B41AD);
+  --tqe-bg: var(--accent-light, #EEEDFE);
+  --tqe-line: rgba(75, 65, 173, .22);
+  max-width: 760px; margin: 32px auto 44px; padding: 20px 18px 18px;
+  background: var(--tqe-bg);
+  border: 0.5px solid var(--tqe-line);
+  border-radius: var(--radius-lg, 14px);
+  font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
+}
+.tq-entry.premium { --tqe-ink: #B29234; --tqe-bg: #FBF5DC; --tqe-line: rgba(178,146,52,.26); }
+
+.tqe-head { margin-bottom: 14px; }
+.tqe-t { margin: 0 0 3px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--tqe-ink); }
+.tqe-s { margin: 0; font-size: 13px; color: var(--text-secondary, #5A5A5A); }
+
+/* the 2x2 the owner suggested — each tile a shortcut, and each carrying its own best score */
+.tqe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.tqe-tile {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--surface, #fff); border: 0.5px solid var(--tqe-line);
+  border-radius: var(--radius-md, 10px); padding: 12px 13px;
+  font-family: inherit; cursor: pointer; text-align: left;
+  transition: border-color .15s, box-shadow .15s;
+}
+.tqe-tile:hover { border-color: var(--tqe-ink); box-shadow: 0 0 0 3px var(--tqe-bg); }
+.tqe-nm { font-size: 13.5px; font-weight: 500; color: var(--text-primary, #1A1A1A); line-height: 1.25; }
+.tqe-sc { font-size: 13px; font-weight: 700; color: var(--tqe-ink); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.tqe-sc.none { color: var(--text-tertiary, #9A9A9A); font-weight: 500; }
+
+.tqe-go {
+  width: 100%; background: var(--tqe-ink); color: #fff; border: 0;
+  border-radius: var(--radius-md, 10px); padding: 13px;
+  font: 600 15px/1.2 inherit; cursor: pointer;
+}
+.tqe-go:hover { filter: brightness(1.08); }
+.tqe-note { margin: 9px 0 0; font-size: 11.5px; color: var(--text-tertiary, #9A9A9A); text-align: center; }
+
+/* ⚠ One column on a phone: two 13.5px names side by side wrap to three lines each at 360px. */
+@media (max-width: 460px) {
+  .tqe-grid { grid-template-columns: 1fr; }
+  .tq-entry { margin: 24px auto 32px; }
+}

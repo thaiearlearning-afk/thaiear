@@ -40,7 +40,16 @@
   /* ── §3A.6 head start caps. ⏳ PROVISIONAL: re-measure after the corpus-wide chip pass, which
      inflated the pilot's chip counts by ~11%. At that point cap 8 fires on 41.5% of sentences
      rather than 28.6%, which is no longer "long sentences". §11A decision B. */
-  var HEADSTART = { on: 8, slight: 10, off: 0 };
+  /* ⚠⚠ THE NUMBER IS WHAT THE LEARNER STILL BUILDS, SO A SMALLER NUMBER IS MORE HELP — which
+     is why these are named and not numbered on screen. "6" looks like less than "10" and means
+     the opposite. Owner, 2026-09-20: 6 Full, 8 Partial, 10 Slight, 0 Off.
+     ⛔ 'on' IS A STORED KEY, NOT A LABEL. It is written to quiz_prefs and synced, so it cannot
+     simply be renamed — a learner who set it before today has 'on' in their account and the
+     radio would come back with nothing selected. It maps to 'partial', which is the level it
+     always was (8). Keep the alias. */
+  var HEADSTART = { full: 6, partial: 8, slight: 10, off: 0 };
+  var HEADSTART_ALIAS = { on: 'partial' };
+  function headKey(v) { return HEADSTART_ALIAS[v] || (HEADSTART[v] != null ? v : 'partial'); }
 
   var MAX_DECOYS = 4;          /* owner: "a cap of 4 decoys per sentence or its huge cognitive load" */
 
@@ -55,7 +64,7 @@
   var DROPPABLE = { 'ครับ':1,'ค่ะ':1,'คะ':1,'นะ':1,'นะคะ':1,'นะครับ':1,'ค่ะนะ':1,'จ้ะ':1,'จ้า':1,
                     'ผม':1,'ฉัน':1,'ดิฉัน':1,'เรา':1 };
 
-  var DEFAULTS = { len: 10, mode: 'even', hide: false, script: 'both', head: 'on', nodecoy: false };
+  var DEFAULTS = { len: 10, mode: 'even', hide: false, script: 'both', head: 'partial', nodecoy: false };
 
   /* ── state ─────────────────────────────────────────────────────────────────────────────── */
   var ov = null, sheet = null;
@@ -69,6 +78,30 @@
      the site toggle is two-state and cannot express "hide the Thai", which is the whole reason
      the three-way exists. The site toggle governs whether TRANSLITERATION IS SHOWN alongside;
      the three-way governs WHICH NOTATION the Builder tray and the written correction are in. */
+  /* ⭐ QUIZ TEXT SIZE (owner, 2026-09-20). Five stops, applied as ONE scale factor on the sheet
+     so every size and every gap moves together — the owner asked for the boxes and spacing to
+     grow with the text, not just the glyphs.
+     ⛔ SITE-WIDE, NOT PER QUIZ. It is a legibility preference like the Transliteration pill, not
+     a difficulty setting, so it lives in localStorage beside the other two rather than in
+     quiz_prefs. Nobody wants larger text in Vocab and smaller in Builder.
+     ⚠⚠ AND IT IS APPLIED TO THE SHEET, NOT RE-RENDERED PER QUESTION. The owner's constraint was
+     "without having a visible size change on render of the next question" — so the scale is a
+     CSS custom property set once on the container; a new question inherits it already correct
+     and never paints at one size then jumps to another. */
+  var FONT_STOPS = [0.9, 1, 1.15, 1.3, 1.5];
+  function fontScale() {
+    var v = 1;
+    try { v = parseFloat(localStorage.getItem('thaiear_quiz_fontscale')); } catch (_) {}
+    return (FONT_STOPS.indexOf(v) >= 0) ? v : 1;
+  }
+  function setFontScale(v) {
+    try { localStorage.setItem('thaiear_quiz_fontscale', String(v)); } catch (_) {}
+    applyFontScale();
+  }
+  function applyFontScale() {
+    if (sheet) sheet.style.setProperty('--tq-scale', String(fontScale()));
+  }
+
   function translitOn() {
     try { return localStorage.getItem('thaiear_translit') !== '0'; } catch (_) { return true; }
   }
@@ -192,7 +225,10 @@
     });
     document.body.appendChild(ov);
   }
-  function show() { mount(); ov.hidden = false; document.documentElement.style.overflow = 'hidden'; }
+  function show() {
+    mount(); applyFontScale();
+    ov.hidden = false; document.documentElement.style.overflow = 'hidden';
+  }
 
   /* ⭐ EXITING MID-QUIZ WARNS FIRST (owner, 2026-09-20). An unfinished run records nothing —
      §8.2 stores one best PERCENTAGE, and a part-finished run has no honest percentage to store
@@ -223,6 +259,7 @@
     m.addEventListener('click', function (e) { if (e.target === m) m.remove(); });
   }
 
+  /* Tear the overlay down completely — only for a real departure from the quiz area. */
   function doClose() {
     stopAudio();
     if (ov) {
@@ -233,17 +270,49 @@
     document.documentElement.style.overflow = '';
     run = null;
   }
-  function close() { confirmExit(doClose); }
-  function render(html) { mount(); sheet.innerHTML = html; sheet.scrollTop = 0; ov.scrollTop = 0; }
+
+  /* ⭐ EXITING A QUIZ RETURNS TO THE QUIZ MENU, NOT THE PAGE (owner, 2026-09-20: "when i exit
+     the quiz, I should return to the quiz menu, not the topic page").
+     ⚠ It is the RIGHT default because leaving a quiz is nearly always "this one, not that one" —
+     wrong length, wrong quiz, wrong moment — and dumping the learner back on the topic page makes
+     them walk in through the front door again to try the next one. Leaving the quiz AREA is still
+     one tap away, and it is the labelled one. */
+  function backToPicker() {
+    stopAudio();
+    var c = ov && ov.querySelector('.tq-confirm');
+    if (c) c.remove();
+    run = null;
+    openPicker();
+  }
+  function close() { confirmExit(backToPicker); }
+  /* ⚠ A rotation or a window resize changes the row width, so the row count, so any height a
+     question measured on render. One listener for the overlay, dispatched to whatever the
+     current question registered — questions that measure nothing register nothing. */
+  var relayoutTimer = null;
+  window.addEventListener('resize', function () {
+    if (!run || !run.relayout) return;
+    clearTimeout(relayoutTimer);
+    relayoutTimer = setTimeout(function () { if (run && run.relayout) run.relayout(); }, 120);
+  });
+
+  function render(html) {
+    mount(); sheet.innerHTML = html;
+    /* ⚠ Re-assert after every render: innerHTML wipes children, not the inline property, but a
+       remount would lose it — and this is the one setting where a wrong value is visible. */
+    applyFontScale();
+    sheet.scrollTop = 0; ov.scrollTop = 0;
+  }
+  /* ⛔ NO GLOBAL CLOSE BUTTON ON THESE SCREENS (owner, 2026-09-20). It did the wrong thing from
+     every screen that is not a question: from the exclusions list, "I have not picked anything,
+     get me out of here" means BACK TO THE MENU, not out of the quiz entirely — and that is
+     exactly what the owner hit. Every non-question screen already has an explicit, labelled way
+     onward, so a second unlabelled exit was only ambiguity.
+     ⚠ The question screen keeps its own × (see bar()); that one routes through the warning. */
   function head(title, sub) {
-    return '<div class="tq-head"><h3>' + esc(title) + '</h3>'
-         + '<button class="tq-x" type="button" aria-label="Close">&times;</button></div>'
+    return '<div class="tq-head"><h3>' + esc(title) + '</h3></div>'
          + (sub ? '<p class="sub">' + esc(sub) + '</p>' : '');
   }
-  function wireClose() {
-    var x = sheet.querySelector('.tq-x');
-    if (x) x.onclick = close;
-  }
+  function wireClose() { /* intentionally empty — see head() */ }
 
   /* ── audio ─────────────────────────────────────────────────────────────────────────────── */
   var au = null, auRevoke = null, auCredited = false, auNum = null;
@@ -284,6 +353,30 @@
   }
 
   /* ── script mode (§5.1 three-way) ──────────────────────────────────────────────────────── */
+  /* ⭐⭐ THE PROMPT THE PRODUCTION QUIZZES SHOW (§5.4).
+     A published translation is written to READ well. The Thai Builder needs one that can be
+     BUILT — one that cues every chip the learner has to place. Those are different jobs, and
+     #1015 is the case that proved it: "Even if you're full, you shouldn't refuse the host's
+     offer" is a good sentence and gives the learner no reason to reach for แล้ว, หาก, ชวน,
+     กิน or ก็, five of its twelve chips.
+
+     ⚠⚠ BOTH LINES, ALWAYS — not a subset someone had to grade. The owner flagged one rewrite as
+     clunky and then named the real problem: "i also dont think you'll be able to judge which are
+     clunky and which are okay." He is right; English register is not something this code can
+     rank, and a detector that tried would be wrong without saying so. So where a rewrite exists,
+     the quiz shows the buildable wording as the prompt and the published one underneath, smaller
+     and labelled. Nobody has to decide which sentences deserve it.
+
+     ⛔ THE SECOND LINE IS SECONDARY, NOT A SECOND PROMPT. It is what the sentence MEANS; the
+     first line is how it is BUILT. If it were the same size the learner would work from whichever
+     they read first, which is the ambiguity this is meant to remove. */
+  function promptFor(s) {
+    var o = (QD().enq || {})[String(s.num)];
+    if (!o || !o.q) return '<p class="enq">' + esc(s.english) + '</p>';
+    return '<p class="enq">' + esc(o.q) + '</p>'
+      + (o.nat && o.nat !== o.q ? '<p class="enq-nat">' + esc(o.nat) + '</p>' : '');
+  }
+
   function scriptBits(thai, translit, mode) {
     if (mode === 'thai') return { main: thai, sub: '' };
     if (mode === 'tl')   return { main: translit || thai, sub: '' };
@@ -293,6 +386,96 @@
   /* ══════════════════════════════════════════════════════════════════════════════════════
      THE PICKER
      ══════════════════════════════════════════════════════════════════════════════════════ */
+  /* ── MY RESULTS (§3C) — the bottom of the picker ─────────────────────────────
+     Owner, 2026-09-20: answered / correct / incorrect per quiz type, plus the best percentage,
+     for EVERY unit that has results — grammar units and playlists included, not only this one.
+     This unit's own rows float to the top under their own heading.
+
+     ⛔ NO "TIMES TAKEN" COLUMN. The owner ruled it out and gave the reason: "that is meaningless
+     actually when quizzes can be different length." A 5-question run and a 30-question run would
+     count the same, so the number ranks nothing.
+
+     ⚠ A UNIT WITH NO RESULTS IS NOT LISTED. 93 units of dashes is a table of contents, not a
+     results page; this is about what you have actually done.
+
+     ✅ Every number is a sum over the LOCAL mirror, so the panel is complete offline and becomes
+     identical to the account copy once the outbox flushes. ⚠ That is also why it can briefly
+     exceed what the server holds — the right direction: showing only what has synced would make
+     a plane journey look like it never happened. */
+
+  /* ⚠ A unit_key is not always a page. Topics and grammar units both resolve through topics.js
+     (findByPage has covered both arms since 2026-08-27); a playlist key resolves to nothing and
+     its raw form is a uuid nobody can read, so it gets a generic label rather than a wrong one. */
+  function unitLabel(key) {
+    var T = window.ThaiEarTopics;
+    if (key === ctx.unit && ctx.unitName) return ctx.unitName;
+    if (/^pl:/.test(key)) return 'A playlist';
+    try {
+      var f = T && T.findByPage && T.findByPage(key + '.html');
+      if (f && f.unit && f.unit.name) return f.unit.name;
+    } catch (_) {}
+    return key;
+  }
+  /* ⚠ Grammar units and playlists have no Vocab Trainer (§1), so its absence there is correct
+     and must not be drawn as a zero — a zero is a claim that you got them all wrong. */
+  function unitHasVocab(key) { return !/^pl:/.test(key) && !/^grammar-/.test(key); }
+
+  function resRow(q, r) {
+    var wrong = Math.max(0, (r.answered || 0) - (r.correct || 0));
+    return '<tr><th>' + esc(q.name) + '</th>'
+      + '<td>' + (r.answered || 0) + '</td>'
+      + '<td class="ok">' + (r.correct || 0) + '</td>'
+      + '<td class="no">' + wrong + '</td>'
+      + '<td class="best">' + (r.best == null ? '\u2014' : r.best + '%') + '</td></tr>';
+  }
+
+  function resTable(key, data) {
+    var body = QUIZZES.filter(function (q) { return unitHasVocab(key) || q.id !== 3; })
+      .map(function (q) {
+        var r = data[q.id];
+        return (r && (r.answered || r.best != null)) ? resRow(q, r) : '';
+      }).join('');
+    if (!body) return '';
+    return '<table class="tq-res-t"><thead><tr><th></th><th>done</th><th>right</th>'
+      + '<th>wrong</th><th>best</th></tr></thead><tbody>' + body + '</tbody></table>';
+  }
+
+  function resultsPanel() {
+    var st = store();
+    if (!st || !st.resultsAll) return '';
+    var all = st.resultsAll();
+    var keys = Object.keys(all);
+    if (!keys.length) return '';
+
+    var here = all[ctx.unit] ? resTable(ctx.unit, all[ctx.unit]) : '';
+    var others = keys.filter(function (k) { return k !== ctx.unit; }).sort()
+      .map(function (k) {
+        var t = resTable(k, all[k]);
+        return t ? '<div class="tq-res-u"><p class="mlab">' + esc(unitLabel(k)) + '</p>' + t + '</div>' : '';
+      }).join('');
+    if (!here && !others) return '';
+
+    return '<div class="tq-results">'
+      + '<button type="button" class="tq-res-h" aria-expanded="false">My results'
+      + '<span class="tq-res-cv" aria-hidden="true">\u25be</span></button>'
+      + '<div class="tq-res-b" hidden>'
+      + (here ? '<div class="tq-res-u"><p class="mlab">This unit</p>' + here + '</div>' : '')
+      + (others ? '<p class="mlab tq-res-sep">Everywhere else</p>' + others : '')
+      + '</div></div>';
+  }
+
+  function wireResults() {
+    var h = sheet.querySelector('.tq-res-h');
+    if (!h) return;
+    h.onclick = function () {
+      var b = sheet.querySelector('.tq-res-b');
+      var open = b.hidden;
+      b.hidden = !open;
+      h.setAttribute('aria-expanded', open ? 'true' : 'false');
+      h.classList.toggle('open', open);
+    };
+  }
+
   function openPicker() {
     var st = store();
     var rows = QUIZZES.map(function (q) {
@@ -308,15 +491,18 @@
            + (best == null ? '—' : best + '%') + '</span></button>';
     }).join('');
 
-    render(head('Test yourself', ctx.unitName || '')
-         + '<div class="qpick">' + rows + '</div>'
+    render('<div class="tq-fill">'
+         + head('Test yourself', ctx.unitName || '')
+         + '<div class="qpick qpick-big">' + rows + '</div>'
          + '<div class="tq-minor"><button type="button" class="tq-return">&larr; '
-         + esc(ctx.originLabel || 'Back') + '</button></div>');
+         + esc(ctx.originLabel || 'Back') + '</button></div></div>'
+         + resultsPanel());
     wireClose();
     sheet.querySelectorAll('.qpick button').forEach(function (b) {
       b.onclick = function () { openMenu(parseInt(b.dataset.q, 10)); };
     });
     sheet.querySelector('.tq-return').onclick = goBack;
+    wireResults();
     show();
   }
 
@@ -342,9 +528,21 @@
     var n = items.length;
 
     /* §3A.1 — 10s for the recognition quizzes, 5s for the two production ones. An option at or
-       above the available count is not shown; the row is capped at six plus All. */
-    var steps = [];
-    for (var v = q.step; v <= q.step * 6 && v < n; v += q.step) steps.push(v);
+       above the available count is not shown.
+       ⚠⚠ THE LADDER STOPS BEING LINEAR ONCE IT WOULD GET LONG. A unit's Vocab list is as big as
+       its OWNED vocabulary: across the 93 units that runs 25–115 words, median 66, and topic-40
+       tops out at 115. (Per unit — not per topic. 22a/22b only look small because their lists
+       were hand-curated to ~20 for the pilot.) A plain ×10 ladder would then offer
+       10·20·30·40·50·60·70·80·90·100·All, which is not a choice, it is a number pad.
+       ⛔ NOT A SIDE-SCROLLING ROW. Horizontal scroll hides options off the edge with nothing to
+       say they are there, and it is a fiddly target next to buttons that are themselves taps.
+       The row already wraps, so nothing needs to be hidden — there just have to be few enough
+       options to be a decision. Nobody chooses between 40 and 50 questions; they choose a quick
+       one, a proper one, or the lot. So the ladder goes coarse as it climbs and is capped at
+       five, with All always last and always honest about the true count. */
+    var LADDER = (q.step === 5) ? [5, 10, 15, 20, 30, 50, 75]
+                                : [10, 20, 30, 50, 75, 100];
+    var steps = LADDER.filter(function (v) { return v < n; }).slice(0, 5);
     var segs = steps.map(function (v) {
       return '<button type="button" class="seg' + (p.len === v ? ' on' : '') + '" data-len="' + v + '">' + v + '</button>';
     }).join('') + '<button type="button" class="seg' + (p.len === 'all' || !steps.length ? ' on' : '')
@@ -354,7 +552,10 @@
        control with no possible effect, which is worse than its absence. */
     var maxChips = 0;
     if (qid === 2) items.forEach(function (it) { maxChips = Math.max(maxChips, chipsOf(it.sent).length); });
-    var showHead = (qid === 2 && maxChips > HEADSTART.on);
+    /* ⚠ Against the SMALLEST cap — the most generous level. Testing the middle one hid the
+       control on a unit where only 'Full' could ever have fired, which is a setting the learner
+       could have used being withheld because a different setting could not. */
+    var showHead = (qid === 2 && maxChips > HEADSTART.full);
 
     var html = head(q.name, n + (qid === 3 ? ' words' : ' sentences') + ' available');
 
@@ -386,15 +587,28 @@
       html += '<div class="mgroup"><label class="checkrow"><input type="checkbox" class="c-nodecoy"'
         + (p.nodecoy ? ' checked' : '') + '><span>No decoy tiles<br>'
         + '<span class="rd" style="color:var(--text-tertiary);font-size:12px">'
-        + 'Every tile belongs in the answer — order only.</span></span></label></div>';
+        + 'Every tile belongs in the answer — just place them in the correct order.</span></span></label></div>';
       if (showHead) {
+        var hk = headKey(p.head);
         html += '<div class="mgroup"><p class="mlab">Head start</p><div class="radios">'
-          + radio('head', 'on',     p.head, 'On',     'you build the last ' + HEADSTART.on + ' chips')
-          + radio('head', 'slight', p.head, 'Slight', 'you build the last ' + HEADSTART.slight)
-          + radio('head', 'off',    p.head, 'Off',    'you build the whole sentence')
+          + radio('head', 'full',    hk, 'Full',    'you build the last ' + HEADSTART.full + ' chips')
+          + radio('head', 'partial', hk, 'Partial', 'you build the last ' + HEADSTART.partial)
+          + radio('head', 'slight',  hk, 'Slight',  'you build the last ' + HEADSTART.slight)
+          + radio('head', 'off',     hk, 'Off',     'you build the whole sentence')
           + '</div></div>';
       }
     }
+
+    html += fontGroup();
+
+    /* ⭐ WITH THE OTHER SETTINGS, ABOVE THE EXCLUSIONS LINE (owner, 2026-09-20). It acts ON the
+       settings above it, so below the start button it read as an afterthought — and it is not an
+       exit, which is what everything in that footer is. */
+    html += '<div class="mgroup"><button type="button" class="tq-all">'
+      + '<svg class="tq-sync" viewBox="0 0 24 24" aria-hidden="true">'
+      + '<path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>'
+      + '</svg><span class="tq-all-t">Use these settings for all ' + esc(q.name) + ' quizzes</span>'
+      + '</button></div>';
 
     html += '<div class="mgroup"><button type="button" class="exline"><span>Excluded '
       + (qid === 3 ? 'words' : 'sentences') + '</span><b class="ex-n">'
@@ -402,7 +616,6 @@
 
     html += '<button type="button" class="startbtn">Start</button>'
       + '<div class="tq-minor">'
-      + '<button type="button" class="tq-all">Use these settings for all ' + esc(q.name) + ' quizzes</button>'
       + '<button type="button" class="tq-back">&larr; Other quizzes</button>'
       + '<button type="button" class="tq-return">&larr; ' + esc(ctx.originLabel || 'Back') + '</button>'
       + '</div>';
@@ -430,20 +643,63 @@
         b.classList.add('on');
       };
     });
+    wireFontGroup();
     sheet.querySelector('.exline').onclick = function () { openExclusions(qid); };
     sheet.querySelector('.startbtn').onclick = function () {
       var cur = readPrefs(); savePrefs(qid, cur); start(qid, cur);
     };
-    sheet.querySelector('.tq-all').onclick = function (e) {
+    /* ⚠⚠ THE CONFIRMATION MUST EXPIRE WHEN IT STOPS BEING TRUE (owner, 2026-09-20: "when i click
+       it, it changes forever. even if i change a setting, it doesn't change back"). It was
+       latched and disabled, so after changing a setting the screen still claimed those settings
+       were applied everywhere — a stale claim about the account, which is worse than no claim:
+       the learner has no way to tell the button is now lying, and the only fix was to leave the
+       menu. Now every control on this menu resets it. */
+    var allBtn = sheet.querySelector('.tq-all');
+    function resetAllBtn() {
+      allBtn.classList.remove('done');
+      allBtn.disabled = false;
+      allBtn.querySelector('.tq-all-t').textContent =
+        'Use these settings for all ' + q.name + ' quizzes';
+    }
+    allBtn.onclick = function () {
       var cur = readPrefs(); savePrefs(qid, cur);
       var st = store(); if (st) st.useEverywhere(ctx.unit, qid);
-      e.target.textContent = '✓ Applied to every ' + q.name + ' quiz';
-      e.target.classList.add('done');
-      e.target.disabled = true;
+      allBtn.classList.add('done');
+      allBtn.disabled = true;
+      allBtn.querySelector('.tq-all-t').textContent =
+        '\u2713 Applied to every ' + q.name + ' quiz';
     };
+    /* every control that feeds readPrefs() un-latches it */
+    sheet.querySelectorAll('.seg, .tq-fs, input[name=mode], input[name=script], input[name=head], '
+                         + '.c-hide, .c-nodecoy').forEach(function (el) {
+      el.addEventListener('click', resetAllBtn);
+      el.addEventListener('change', resetAllBtn);
+    });
     sheet.querySelector('.tq-back').onclick = openPicker;
     sheet.querySelector('.tq-return').onclick = goBack;
     show();
+  }
+
+  /* One renderer, used by the pre-quiz menu and the in-question settings — the owner asked for
+     it in both, and two copies of a control is how they drift. */
+  function fontGroup() {
+    var cur = fontScale();
+    return '<div class="mgroup"><p class="mlab">Text size</p><div class="tq-fsize">'
+      + FONT_STOPS.map(function (v, i) {
+          return '<button type="button" class="tq-fs' + (v === cur ? ' on' : '') + '"'
+            + ' data-fs="' + v + '" style="font-size:' + (11 + i * 2.5) + 'px"'
+            + ' aria-label="Text size ' + (i + 1) + ' of ' + FONT_STOPS.length + '">A</button>';
+        }).join('')
+      + '</div></div>';
+  }
+  function wireFontGroup() {
+    sheet.querySelectorAll('.tq-fs').forEach(function (b) {
+      b.onclick = function () {
+        sheet.querySelectorAll('.tq-fs').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        setFontScale(parseFloat(b.dataset.fs));
+      };
+    });
   }
 
   function radio(name, val, cur, label, desc) {
@@ -461,6 +717,7 @@
       rows = (QD().q3 || []).map(function (w) {
         return '<label class="tq-exitem"><input type="checkbox" data-item="' + esc(w.th) + '"'
           + (ex[w.th] ? ' checked' : '') + '><span><span class="x-th">' + esc(w.th) + '</span>'
+          + ((w.tl && translitOn()) ? ' <span class="x-tl">' + esc(w.tl) + '</span>' : '')
           + '<span class="x-en">' + esc(w.en) + '</span></span></label>';
       }).join('');
     } else {
@@ -474,7 +731,7 @@
                 'Ticked items are skipped. This list is only for this quiz — it does not affect '
               + 'the player or the other quizzes.')
          + '<div class="tq-exlist">' + rows + '</div>'
-         + '<button type="button" class="startbtn">Done</button>');
+         + '<button type="button" class="startbtn">&larr; Back to the ' + esc(q.name) + ' menu</button>');
     wireClose();
     sheet.querySelectorAll('.tq-exitem input').forEach(function (cb) {
       cb.onchange = function () {
@@ -495,7 +752,9 @@
   }
 
   function bar() {
-    var pctW = Math.round((run.i / run.items.length) * 100);
+    /* ⚠ The denominator can SHRINK mid-run now (an exclusion drops the current question), so
+       guard the division rather than assume the length the run started with. */
+    var pctW = run.items.length ? Math.round((run.i / run.items.length) * 100) : 100;
     /* ⚠ A QUESTION SCREEN NEEDS ITS OWN VISIBLE EXIT. The picker and the menu get one from
        head(), but a question is rendered from bar() — so until this was added the only ways out
        mid-quiz were Escape and a backdrop tap, neither of which is discoverable on a phone,
@@ -504,8 +763,82 @@
       + '<button class="qx" type="button" aria-label="Leave this quiz">&times;</button>'
       + '<span>' + (run.i + 1) + ' / ' + run.items.length + '</span>'
       + '<span class="qprog"><i style="width:' + pctW + '%"></i></span>'
-      + '<button class="qopts" type="button" title="Options">&#8943;</button></div>';
+      + '<button class="qopts" type="button" title="Quiz settings" aria-label="Quiz settings">'
+      + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>'
+      + '<path d="M19.4 13a7.8 7.8 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L14.9 3h-3.8l-.4 2.6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.8 7.8 0 0 0 0 2l-2 1.6 2 3.4 2.4-1c.5.4 1.1.7 1.7 1l.4 2.6h3.8l.4-2.6c.6-.3 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.6z"/>'
+      + '</svg></button></div>';
   }
+  /* ⭐ THE EXCLUDE CONTROL LIVES ON THE QUESTION, NOT IN THE SETTINGS MENU (owner, 2026-09-20).
+     Buried behind the gear it was invisible at the moment it is wanted — you decide you are done
+     with a sentence WHILE you are looking at it, not after going hunting for a menu. It is the
+     last thing in the sheet, so it is present before AND after the reveal and keeps the same
+     place relative to the content.
+     ⚠ It writes to THIS quiz's list only (§3A.2), so the label has to say so, or it reads as
+     global — five separate lists per unit is the whole point of that section. */
+  function foot() {
+    return '<div class="tq-foot"><button type="button" class="tq-skip"></button></div>';
+  }
+  function paintSkip(b, on, answered) {
+    b.classList.toggle('done', !!on);
+    b.innerHTML = on
+      ? '✓ Excluded from ' + esc(run.q.name)
+        + '<span class="tq-skip-sub">from your next run — tap to undo</span>'
+      : "Don't test me on this again"
+        + '<span class="tq-skip-sub">'
+        + (answered ? 'removes it from ' + esc(run.q.name) + ' only'
+                    : 'skips it now, and drops it from ' + esc(run.q.name))
+        + '</span>';
+  }
+
+  /* ⚠ "Has this question been answered yet?" is asked of the DOM, not of a flag the four
+     engines would each have to remember to set. The reveal IS the answer state — it exists only
+     once the question is marked — so the one place that already knows is the one place asked.
+     ⛔ `.t-rev` alone will not do: the two-answer Vocab prompt ("Select 1 more") renders into
+     the same container while the question is still open. */
+  function answeredNow() {
+    return !!(sheet && sheet.querySelector('.t-rev .reveal'));
+  }
+
+  /* Repaint the skip footer against the CURRENT answer state, without rebinding anything. */
+  function refreshFoot() {
+    var b = sheet && sheet.querySelector('.tq-skip');
+    if (!b || !run || !run.items[run.i]) return;
+    var st = store();
+    paintSkip(b, st && st.isExcluded(ctx.unit, run.q.id, run.items[run.i].key), answeredNow());
+  }
+
+  function wireFoot() {
+    var b = sheet.querySelector('.tq-skip');
+    if (!b) return;
+    var st = store(), key = run.items[run.i].key;
+    var answered = answeredNow();
+    paintSkip(b, st && st.isExcluded(ctx.unit, run.q.id, key), answered);
+    b.onclick = function () {
+      if (!st) return;
+      var on = st.toggleExcluded(ctx.unit, run.q.id, key);
+
+      /* ⭐⭐ EXCLUDING AN UNANSWERED QUESTION SKIPS IT NOW (owner, 2026-09-20, replacing §3A.5's
+         "applies from the next run"): "you should auto navigate to the next question ... if doing
+         a quiz of 10 and i remove 1 partway through, it becomes a quiz out of 9, that's fine."
+         ⚠ NO REPLACEMENT IS DRAWN. The run simply gets one shorter — which the owner chose
+         explicitly, and it is the honest arithmetic: the learner answered nine questions, so the
+         score is out of nine. Pulling in a tenth would also mean the quiz you asked for and the
+         quiz you sat were different lengths for a reason you never saw.
+         ⛔ ONLY WHILE IT IS UNANSWERED. Once a question is marked, its result is already in
+         run.answers and in run.right; removing the item would leave the numerator counting a
+         question the denominator no longer does, and the score would read 8/7. An exclusion
+         taken after the reveal therefore keeps the old behaviour and applies from the next run,
+         which is what that button's own sub-label says in that state. */
+      if (on && !answeredNow()) {
+        run.items.splice(run.i, 1);
+        stopAudio();
+        /* ⚠ The index is NOT advanced: removing item i makes the next question item i. */
+        return question();
+      }
+      paintSkip(b, on, answeredNow());
+    };
+  }
+
   function wireBar() {
     var o = sheet.querySelector('.qopts');
     if (o) o.onclick = inQuestionMenu;
@@ -515,6 +848,10 @@
 
   function question() {
     if (run.i >= run.items.length) return results();
+    /* ⚠ An engine may register a re-layout hook for the question it is drawing; it belongs to
+       that question, so clear it before the next one or a stale closure runs against dead
+       nodes and silently locks nothing. */
+    run.relayout = null;
     var id = run.q.id;
     if (id === 1) qListen();
     else if (id === 2) qBuild();
@@ -542,8 +879,8 @@
       + (hidden ? '<button type="button" class="startbtn t-show">Show the options</button>' : '')
       + '<div class="t-opts"' + (hidden ? ' hidden' : '') + '>'
       + opts.map(function (o, i) { return '<button class="opt" type="button" data-i="' + i + '">' + esc(o.t) + '</button>'; }).join('')
-      + '</div><div class="t-rev"></div>');
-    wireBar();
+      + '</div><div class="t-rev"></div>' + foot());
+    wireBar(); wireFoot();
 
     var pb = sheet.querySelector('.playbtn');
     pb.onclick = function () { playSentence(s.num, pb); };
@@ -574,12 +911,33 @@
       + '<div class="chips">' + chipsOf(s).map(chipHtml).join('') + '</div>'
       + '<button class="nextbtn" type="button">' + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
     d.querySelector('.nextbtn').onclick = function () { advance(String(s.num), ok); };
+    showReveal(d);
   }
-  function chipHtml(g) {
+
+  /* ⚠ A reveal that lands below the fold reads as "nothing happened" — the owner hit exactly that
+     shape on the two-answer question. Scroll it into view rather than trusting it to fit: the
+     reveal's height varies with the sentence, the chip count and the text-size setting, so there
+     is no layout that guarantees it. ⛔ Scroll the OVERLAY, not the page behind it. */
+  function showReveal(d) {
+    /* ⚠ THE ONE CHOKE POINT. All four engines call this the moment a question is marked, which
+       makes it the only place that knows the answer state has changed — so the footer is
+       repainted here rather than in four engines that would each have to remember. */
+    refreshFoot();
+    if (!d || !d.scrollIntoView) return;
+    try { d.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {
+      try { d.scrollIntoView(false); } catch (_) {}
+    }
+  }
+
+  function chipHtml(g, target) {
     /* ⚠ The per-chip transliteration follows the SITE toggle (§9.3), exactly as the chip on a
        topic page does — .g-tl is what #sentence-list.translit-off hides there. */
     var tl = (g[2] && translitOn()) ? '<span class="tlx">' + esc(g[2]) + '</span>' : '';
-    return '<span class="chip"><span class="th">' + esc(g[0]) + '</span>'
+    /* ⚠ `target` marks the chip the question was ABOUT. Without it the learner has to find
+       their word again in a row of a dozen chips, which is the opposite of what a breakdown is
+       for. It is a highlight, not a different chip — same markup, one class. */
+    var hit = (target && g[0] === target) ? ' is-target' : '';
+    return '<span class="chip' + hit + '"><span class="th">' + esc(g[0]) + '</span>'
       + '<span class="gl">' + esc(g[1]) + '</span>' + tl + '</span>';
   }
 
@@ -590,25 +948,30 @@
     var p = run.prefs;
 
     /* §3A.6 head start: a CAP, not a fixed prefix. A sentence at or below the cap gets none. */
-    var cap = HEADSTART[p.head] || 0;
+    var cap = HEADSTART[headKey(p.head)] || 0;
     var lockN = (cap && canon.length > cap) ? (canon.length - cap) : 0;
     var locked = canon.slice(0, lockN);
     var buildable = canon.slice(lockN);
 
     var decoys = p.nodecoy ? [] : (QD().q2[String(s.num)] || []).slice(0, MAX_DECOYS);
+    /* ⚠ A decoy is stored as [thai, translit, gloss] — the SAME SHAPE as a real chip, so the tray
+       renderer cannot tell them apart and therefore cannot render them differently. That is the
+       point: a decoy that looks different from a real tile is not a decoy. */
     var tray = shuffle(buildable.map(function (g) { return { g: g, real: 1 }; })
-      .concat(decoys.map(function (th) { return { g: [th, '', ''], real: 0 }; })));
+      .concat(decoys.map(function (d) {
+        return { g: (typeof d === 'string') ? [d, '', ''] : [d[0], '', d[1]], real: 0 };
+      })));
 
     var placed = [];   /* indexes into tray */
 
     render(bar()
-      + '<p class="enq">' + esc(s.english) + '</p>'
+      + promptFor(s)
       + (lockN ? '<p class="traylab">Start of the sentence (placed for you)</p>' : '')
       + '<div class="drop"></div>'
       + '<p class="traylab">Tap the tiles in order</p><div class="tray"></div>'
       + '<button class="nextbtn t-submit" type="button" disabled>Check</button>'
-      + '<div class="t-rev"></div>');
-    wireBar();
+      + '<div class="t-rev"></div>' + foot());
+    wireBar(); wireFoot();
 
     var dropEl = sheet.querySelector('.drop'), trayEl = sheet.querySelector('.tray');
     var submit = sheet.querySelector('.t-submit');
@@ -624,23 +987,272 @@
         + placed.map(function (ti) { return '<span class="tile in" data-p="' + ti + '">'
             + esc(scriptBits(tray[ti].g[0], tray[ti].g[2], p.script).main) + '</span>'; }).join('');
       dropEl.classList.toggle('filled', placed.length > 0);
+      /* ⭐⭐ A TRAY CHIP KEEPS ITS OWN SLOT (owner, 2026-09-20: "rather than they keep sliding
+         left as i select gloss chips, they stay in their positions, and if i unselect a gloss
+         chip it returns to its original holding position").
+         A taken chip used to render as nothing, so every chip after it shifted left and the
+         whole tray re-flowed on every single tap. That makes the tray a moving target: you look
+         away to place one chip and the one you were going to take next is somewhere else — and
+         taking a chip back out reshuffled everything again, so there was no stable picture of
+         what was left.
+         ⚠⚠ THE SLOT IS THE SAME TILE, HIDDEN — not an empty box. Its width comes from its own
+         Thai, so nothing else can reserve the right amount of room; an empty placeholder would
+         have to guess, and would be wrong for every chip. `visibility: hidden` keeps the box and
+         drops the ink.
+         ✅ It also makes the tray's height constant by construction, which is the same fault the
+         answer box needs a measured lock for — here the layout simply never changes. */
       trayEl.innerHTML = tray.map(function (t, i) {
-        return placed.indexOf(i) >= 0 ? '' : '<span class="tile" data-t="' + i + '">'
+        var taken = placed.indexOf(i) >= 0;
+        return '<span class="tile' + (taken ? ' slot' : '') + '"'
+          + (taken ? ' aria-hidden="true"' : ' data-t="' + i + '"') + '>'
           + esc(scriptBits(t.g[0], t.g[2], p.script).main)
           + (p.script === 'both' && t.g[2] ? '<span class="tt">' + esc(t.g[2]) + '</span>' : '') + '</span>';
       }).join('');
       submit.disabled = placed.length === 0;
       trayEl.querySelectorAll('[data-t]').forEach(function (n) {
-        n.onclick = function () { placed.push(parseInt(n.dataset.t, 10)); paint(); };
+        n.onclick = function () {
+          if (dragMoved) { dragMoved = false; return; }
+          placed.push(parseInt(n.dataset.t, 10)); paint();
+        };
+        wireDrag(n, 'tray');
       });
       dropEl.querySelectorAll('[data-p]').forEach(function (n) {
         n.onclick = function () {
+          if (dragMoved) { dragMoved = false; return; }
           var ti = parseInt(n.dataset.p, 10);
           placed.splice(placed.indexOf(ti), 1); paint();
         };
+        wireDrag(n, 'drop');
       });
     }
+
+    /* ═════════════════════════════════════════════════════════════════════════════════════
+       DRAGGING (owner, 2026-09-20)
+       ═════════════════════════════════════════════════════════════════════════════════════
+       ⛔ POINTER EVENTS, NOT HTML5 DRAG AND DROP. draggable="true" / dragstart does not fire on
+       touch at all, so the whole feature would work on the desktop and silently not exist on the
+       phone — which is where this quiz is actually taken. Pointer events are one code path for
+       mouse, touch and pen.
+       ⛔ TAPPING STILL WORKS. Dragging is added to tapping, not instead of it: a press that
+       never travels more than DRAG_SLOP is still a tap and still places or removes the tile. The
+       click handler checks dragMoved, because a real drag ends with a click event too and
+       without the flag every drag would also fire the tap and undo itself.
+       ⚠ THE LOCKED HEAD-START TILES ARE OUT OF ALL OF IT. They carry no data-p, so they are
+       never given a handler, never picked up, and never counted as an insertion point — which
+       is what makes "before the first movable tile" mean "after the whole locked prefix" for
+       free, rather than by a special case that could be got wrong. */
+    var DRAG_SLOP = 6;
+    var dragMoved = false;
+    var drag = null;
+    /* ⛔⛔ ONCE THE ANSWER IS CHECKED, NOTHING MOVES. Submitting nulls the tap handlers, but a
+       pointerdown listener is not an onclick and survives that — so without this the learner
+       could still rearrange a marked answer underneath the reveal, and the tiles would no longer
+       agree with what they were marked on. */
+    var frozen = false;
+
+    /* Only the movable tiles inside the answer box, in visual order. The locked ones are absent
+       by construction (no data-p), so every index here is an index into `placed`. */
+    function dropTiles() {
+      return [].slice.call(dropEl.querySelectorAll('[data-p]'));
+    }
+
+    /* ⚠ Rows dominate. A wrapped flex row means the nearest tile by plain distance can easily
+       be the one above or below the pointer, so the vertical difference is weighted — pick the
+       row first, then the side of that tile's centre the pointer is on. */
+    function insertIndexAt(x, y) {
+      var nodes = dropTiles().filter(function (n) { return n !== drag.ghost; });
+      if (!nodes.length) return 0;
+      /* ⚠ "Before everything" has to be reachable. Nearest-tile-plus-side cannot express it:
+         aim at the far left of the box, above the first movable tile, and the nearest tile is on
+         the row below with the pointer to its left — which resolves to that tile's index, so the
+         chip lands SECOND. The head of the list gets an explicit region: anything above the first
+         movable tile's row, or left of it on that row, is index 0. */
+      var f = nodes[0].getBoundingClientRect();
+      if (y < f.top || (y <= f.bottom && x < f.left + f.width / 2)) return 0;
+      var best = 0, bestD = Infinity, after = false;
+      nodes.forEach(function (n, i) {
+        var r = n.getBoundingClientRect();
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        var d = Math.abs(y - cy) * 3 + Math.abs(x - cx);
+        if (d < bestD) { bestD = d; best = i; after = x > cx; }
+      });
+      return best + (after ? 1 : 0);
+    }
+
+    function inside(el, x, y) {
+      var r = el.getBoundingClientRect();
+      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    }
+
+    function wireDrag(node, from) {
+      node.addEventListener('pointerdown', function (ev) {
+        if (frozen) return;
+        if (ev.button != null && ev.button !== 0) return;      /* left / primary only */
+        dragMoved = false;
+        var startX = ev.clientX, startY = ev.clientY;
+        var ti = parseInt(from === 'tray' ? node.dataset.t : node.dataset.p, 10);
+        /* ⚠ Capture from the FIRST event, not from the moment the drag is recognised. A quick
+           flick can clear the six-pixel slop and leave the tile in the same frame, and without
+           capture that move is delivered to whatever is underneath — the drag then never starts
+           and the tile just sits there, which reads as the feature being broken. */
+        try { node.setPointerCapture(ev.pointerId); } catch (_) {}
+
+        function move(e) {
+          if (!dragMoved) {
+            if (Math.abs(e.clientX - startX) < DRAG_SLOP && Math.abs(e.clientY - startY) < DRAG_SLOP) return;
+            begin(e);
+          }
+          var r = drag.flyer;
+          r.style.transform = 'translate(' + (e.clientX - drag.dx) + 'px,' + (e.clientY - drag.dy) + 'px)';
+          /* live feedback: the gap opens where the tile would land */
+          if (inside(dropEl, e.clientX, e.clientY)) {
+            var idx = insertIndexAt(e.clientX, e.clientY);
+            var nodes = dropTiles().filter(function (n) { return n !== drag.ghost; });
+            dropEl.insertBefore(drag.ghost, nodes[idx] || null);
+            drag.ghost.hidden = false;
+            drag.target = idx;
+          } else {
+            drag.ghost.hidden = true;
+            drag.target = -1;
+          }
+        }
+
+        function begin(e) {
+          dragMoved = true;
+          var r = node.getBoundingClientRect();
+          var flyer = node.cloneNode(true);
+          flyer.className = node.className + ' tq-flyer';
+          flyer.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:2147483000;'
+            + 'width:' + r.width + 'px;margin:0';
+          document.body.appendChild(flyer);
+          /* a placeholder of the same size, so the layout does not jump as the tile leaves */
+          var ghost = document.createElement('span');
+          ghost.className = 'tile tq-ghost';
+          ghost.style.width = r.width + 'px';
+          ghost.style.height = r.height + 'px';
+          ghost.hidden = true;
+          drag = { flyer: flyer, ghost: ghost, dx: e.clientX - r.left, dy: e.clientY - r.top, target: -1 };
+          node.classList.add('tq-lifted');
+        }
+
+        function up(e) {
+          node.removeEventListener('pointermove', move);
+          node.removeEventListener('pointerup', up);
+          node.removeEventListener('pointercancel', up);
+          if (!dragMoved) return;                       /* a tap: leave it to the click handler */
+          var overDrop = inside(dropEl, e.clientX, e.clientY);
+          var idx = overDrop ? insertIndexAt(e.clientX, e.clientY) : -1;
+          drag.flyer.remove();
+          if (drag.ghost.parentNode) drag.ghost.remove();
+          node.classList.remove('tq-lifted');
+          drag = null;
+
+          if (from === 'tray') {
+            /* ⚠ Dropped anywhere but the answer box = no change. A tray tile has nowhere else
+               to go, so "cancel" is the only honest reading of a drop on empty space. */
+            if (overDrop) placed.splice(idx, 0, ti);
+          } else {
+            var at = placed.indexOf(ti);
+            placed.splice(at, 1);
+            /* ⚠ The index was measured while this tile was still in the list, so an insertion
+               point after its old home is one too many once it is gone. */
+            if (overDrop) placed.splice(idx > at ? idx - 1 : idx, 0, ti);
+            /* dropped outside: it goes back to the tray, which is what removing it means */
+          }
+          paint();
+          /* ⚠⚠ The click that follows a real drag must not ALSO fire the tap handler, which
+             would immediately undo the drag. The flag is therefore consumed by the click handler
+             itself and cleared at the next pointerdown — never on a timer.
+             ⛔ It was a setTimeout(0), and that is wrong twice over: a background tab throttles
+             the timer to a second or more, so every tap in between was swallowed and tapping
+             appeared to stop working after the first drag; and paint() has already replaced the
+             nodes, so in a real browser the click may never be dispatched at all, leaving the
+             flag true until something else happened to clear it. A flag whose lifetime is "until
+             the event that consumes it" must not be given a lifetime in milliseconds. */
+        }
+
+        node.addEventListener('pointermove', move);
+        node.addEventListener('pointerup', up);
+        node.addEventListener('pointercancel', up);
+      });
+    }
+
     paint();
+
+    /* ⭐ THE LAYOUT IS LOCKED BEFORE THE FIRST TAP (owner, 2026-09-20: "the check button creeps up
+       as the space gets smaller … should stay in a fixed position"). Tiles move between the tray
+       and the answer box, so without this BOTH containers resize on every tap and everything
+       below them walks up and down the screen — including the button you are aiming at, which is
+       how you mis-tap.
+       ⚠ Measured, not calculated: tile widths depend on the Thai, the font, the script mode and
+       the text-size setting, so the only honest number is what the browser actually laid out.
+       Taken on the initial paint, when EVERY tile is in the tray, which is the worst case for
+       either container — a learner can place all of them, so the answer box needs the same room.
+       The style sits on the containers themselves, so paint()'s innerHTML rewrites cannot clear it.
+
+       ⚠⚠ MEASURE SYNCHRONOUSLY — NOT IN requestAnimationFrame. The first version deferred to
+       rAF on the belief that scrollHeight reads 0 before layout. It does not: reading scrollHeight
+       forces a synchronous reflow, so the number is right the moment paint() has written the
+       tiles. And rAF does not fire at all in a HIDDEN tab, so that version silently locked
+       nothing whenever the quiz was opened in a background tab — which is exactly how it was
+       caught. A layout guarantee must not depend on the tab being on screen.
+
+       ⚠ The web font can land after this and change every tile's width, so re-measure on
+       fonts.ready — but MONOTONICALLY. By then the learner may already have moved tiles into the
+       answer box, which makes the tray genuinely shorter; shrinking to that would undo the lock
+       mid-tap, which is the fault itself. It may only ever grow. */
+    var lockPx = 0;
+
+    /* ⚠⚠ THE TRAY'S HEIGHT IS NOT THE ANSWER BOX'S WORST CASE. The answer box carries padding
+       the tray does not, so the same tiles are TALLER once they are inside it — measured at
+       104px in the tray and 111px in the box on the pilot unit. Locking both to the tray's
+       number therefore still let the Check button move on the last tap, which is the whole
+       complaint. So measure the box holding EVERYTHING, in a hidden copy of the box laid out at
+       the real width: a clone, never the live node — rewriting the live innerHTML to measure it
+       would destroy the click handlers on tiles already placed. */
+    function fullDropPx() {
+      var probe = dropEl.cloneNode(false);
+      /* ⚠ The width must be COPIED from the live box, not inherited. `left:0;right:0` on an
+         absolutely positioned clone resolves against the nearest POSITIONED ancestor, which
+         here is the sheet — wider than the answer box, so the tiles fitted in fewer rows and
+         the probe under-reported by a whole row (104px measured against a real 152px). */
+      probe.style.cssText = 'position:absolute;visibility:hidden;top:-9999px;left:0;min-height:0'
+        + ';width:' + dropEl.offsetWidth + 'px';
+      probe.innerHTML = locked.map(function (g) { return tileHtml(g, 'lock'); }).join('')
+        + tray.map(function (t) { return '<span class="tile in">'
+            + esc(scriptBits(t.g[0], t.g[2], p.script).main) + '</span>'; }).join('');
+      dropEl.parentNode.insertBefore(probe, dropEl);
+      /* offsetHeight, not scrollHeight: the box has a border and scrollHeight excludes it,
+         which left the lock 3px short and the button still twitching on the last tap. */
+      var h = probe.offsetHeight;
+      probe.remove();
+      return h;
+    }
+    function lockHeights(force) {
+      /* ⚠⚠ A RE-MEASURE MUST CLEAR THE OLD FLOOR FIRST. The min-height from the last
+         measurement is still on the nodes, so scrollHeight would report that floor rather than
+         the content, and the box could then only ever grow — exactly wrong when the learner has
+         just chosen a SMALLER text size. */
+      if (force) { lockPx = 0; dropEl.style.minHeight = ''; trayEl.style.minHeight = ''; }
+      var h = Math.max(trayEl.scrollHeight, fullDropPx(), 66 * fontScale());
+      if (h <= lockPx) return;
+      lockPx = h;
+      dropEl.style.minHeight = h + 'px';
+      trayEl.style.minHeight = h + 'px';
+    }
+    lockHeights();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { lockHeights(); });
+
+    /* ⭐ THE LOCK FOLLOWS THE TEXT SIZE (owner, 2026-09-20: "this will have to be able to vary
+       with selected font size"). Every number inside it — tile height, padding, gap, and how
+       many tiles fit on a row — is multiplied by --tq-scale, so a height measured at 0.9 is
+       simply wrong at 1.5: too short, and the Check button starts moving on the last tap again.
+       The measurement is cheap and honest, so re-take it rather than trying to scale the old
+       number. ⚠ The empty-box floor is scaled too, or the smallest stop keeps a box sized for
+       the default.
+       ⚠ A rotation is the same fault by another route — it changes the row width, so the row
+       count, so the height — which is why this hook is on the run and not on the font control. */
+    run.relayout = function () { lockHeights(true); };
 
     submit.onclick = function () {
       /* ⛔⛔ THE CHECK RUNS ON THE WHOLE BOX — LOCKED CHIPS INCLUDED — NEVER THE TAIL ALONE
@@ -651,8 +1263,21 @@
       var ok = acceptedBy(s.num, built, canon.map(function (g) { return g[0]; }));
       if (!ok) logRejected(s.num, built);
       submit.disabled = true;
+      frozen = true;
       trayEl.querySelectorAll('.tile').forEach(function (n) { n.onclick = null; });
       dropEl.querySelectorAll('.tile').forEach(function (n) { n.onclick = null; });
+
+      /* ⭐ RELEASE THE LOCK ON SUBMIT (owner, 2026-09-20: "make sure that when the answer appears
+         everything still fits on the screen"). The locked heights exist to stop the Check button
+         moving WHILE tiles are being tapped; once the answer is in, tapping is over and the
+         reserved space is dead weight — and the reveal needs exactly that space for the
+         correction, the chips and Next. Keeping it would push the reveal off a phone screen,
+         trading one layout fault for a worse one.
+         ⚠ The tray is emptied of purpose, so it collapses to its content; the answer box keeps
+         what it is actually holding. One deliberate reflow at the end, not jitter throughout. */
+      lockPx = 0;
+      trayEl.style.minHeight = '';
+      dropEl.style.minHeight = '';
 
       /* ⛔ ON SUBMIT THE REAL THAI PLAYS, right or wrong, automatically, once (§5.1). */
       playSentence(s.num, null);
@@ -680,6 +1305,7 @@
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       }
       d.querySelector('.nextbtn').onclick = function () { advance(String(s.num), ok); };
+      showReveal(d);
     };
   }
 
@@ -734,51 +1360,97 @@
     var twins = list.filter(function (x) { return x.th !== w.th && headGloss(x.en) === headGloss(w.en); });
     var need = twins.length ? 2 : 1;
 
-    var wrongs = shuffle(list.filter(function (x) {
+    /* ⚠ DEPRIORITISE A CONTAINING OPTION (owner, 2026-09-20). He met ของกิน beside ของกินเล่น
+       for "snacks". ของกินเล่น IS the only right answer — ของกิน is food in general — so the
+       question was fair, but one option being a SUBSTRING of another reads as a trick rather
+       than a test, and it is the same containment class that ban A catches in quiz 2.
+       ⛔ Deprioritised, NOT banned: a unit's list is only ~20 words, so a hard ban could leave a
+       question short of options, and a short question is a worse fault than an awkward one.
+       They sort last and are used only if nothing else is available. */
+    function contains(a, b) {
+      return a.length >= 2 && b.length >= 2 && (a.indexOf(b) >= 0 || b.indexOf(a) >= 0);
+    }
+    function rank(arr) {
+      return shuffle(arr).sort(function (a, b) {
+        return (contains(a.th, w.th) ? 1 : 0) - (contains(b.th, w.th) ? 1 : 0);
+      });
+    }
+    var wrongs = rank(list.filter(function (x) {
       return x.th !== w.th && headGloss(x.en) !== headGloss(w.en) && x.pos === w.pos;
-    })).concat(shuffle(list.filter(function (x) {
+    })).concat(rank(list.filter(function (x) {
       return x.th !== w.th && headGloss(x.en) !== headGloss(w.en) && x.pos !== w.pos;
-    }))).concat(shuffle(pool.slice()));
+    }))).concat(rank(pool.slice()));
 
-    var opts = [{ th: w.th, ok: 1 }];
-    if (need === 2) opts.push({ th: twins[0].th, ok: 1 });
+    var opts = [{ th: w.th, en: w.en, tl: w.tl, ok: 1 }];
+    if (need === 2) opts.push({ th: twins[0].th, en: twins[0].en, tl: twins[0].tl, ok: 1 });
     for (var k = 0; opts.length < 4 && k < wrongs.length; k++) {
-      if (!opts.some(function (o) { return o.th === wrongs[k].th; })) opts.push({ th: wrongs[k].th, ok: 0 });
+      if (!opts.some(function (o) { return o.th === wrongs[k].th; })) {
+        opts.push({ th: wrongs[k].th, en: wrongs[k].en, tl: wrongs[k].tl, ok: 0 });
+      }
     }
     shuffle(opts);
 
     var hidden = run.prefs.hide;
     render(bar()
       + '<p class="enq">' + esc(w.en) + '</p>'
-      + (need === 2 ? '<p class="tl">Select 2</p>' : '')
+      + (need === 2 ? '<p class="tq-need">Select <b>2</b> answers</p>' : '')
       + (hidden ? '<button type="button" class="startbtn t-show">Show the options</button>' : '')
       + '<div class="t-opts"' + (hidden ? ' hidden' : '') + '>'
-      + opts.map(function (o, i) { return '<button class="opt" type="button" data-i="' + i + '"><span class="o-th">' + esc(o.th) + '</span></button>'; }).join('')
-      + '</div><div class="t-rev"></div>');
-    wireBar();
+      + opts.map(function (o, i) { return optHtml(o, i); }).join('')
+      + '</div><div class="t-rev"></div>' + foot());
+    wireBar(); wireFoot();
 
     var sh = sheet.querySelector('.t-show');
     if (sh) sh.onclick = function () { sh.remove(); sheet.querySelector('.t-opts').hidden = false; };
 
     var chosen = [];
+    /* ⭐ THE OWNER GOT STUCK ON A TWO-ANSWER QUESTION: he picked one, nothing happened, and
+       nothing said why. §6.3 forbids marking the first pick (it would leak the answer to the
+       second), so the screen is CORRECTLY inert — which means the only thing that can rescue it
+       is telling him. The prompt goes where the reveal will appear, so it occupies the space the
+       answer is about to use rather than shifting the page. */
+    function prompt() {
+      var d = sheet.querySelector('.t-rev');
+      var left = need - chosen.length;
+      d.innerHTML = (left > 0 && chosen.length > 0)
+        ? '<p class="tq-more">Select ' + (left === 1 ? 'one more answer' : left + ' more answers') + '</p>'
+        : '';
+    }
     sheet.querySelectorAll('.opt').forEach(function (b) {
       b.onclick = function () {
         var i = parseInt(b.dataset.i, 10);
         /* ⛔⛔ NEITHER SELECTION IS MARKED UNTIL BOTH ARE MADE (§6.3): colouring the first leaks
            the answer to the second, turning a 2-of-4 question into a 1-of-3. */
         var at = chosen.indexOf(i);
-        if (at >= 0) { chosen.splice(at, 1); b.classList.remove('picked'); return; }
+        if (at >= 0) { chosen.splice(at, 1); b.classList.remove('picked'); prompt(); return; }
         chosen.push(i); b.classList.add('picked');
-        if (chosen.length < need) return;
+        if (chosen.length < need) { prompt(); return; }
         var ok = chosen.every(function (ci) { return opts[ci].ok; }) && chosen.length === need;
         sheet.querySelectorAll('.opt').forEach(function (x, xi) {
           x.disabled = true; x.classList.remove('picked');
           if (opts[xi].ok) x.classList.add('right');
           else if (chosen.indexOf(xi) >= 0) x.classList.add('wrong');
+          /* ⭐ Owner: after answering, show what the OTHER options meant. Three quarters of the
+             screen was otherwise a dead end — you learn the answer and nothing about the words
+             you rejected. Re-rendered in place so nothing moves. */
+          var enEl = document.createElement('span');
+          enEl.className = 'o-en';
+          enEl.textContent = opts[xi].en || '';
+          if (!x.querySelector('.o-en')) x.appendChild(enEl);
         });
         vocabReveal(w, ok);
       };
     });
+  }
+
+  /* One renderer for a Vocab option. ⭐ `withEn` is the owner's request: after answering, the
+     WRONG options show their English too — otherwise the learner learns nothing from the three
+     they did not pick, which is three quarters of what was on screen. */
+  function optHtml(o, i, withEn) {
+    var tl = (o.tl && translitOn()) ? '<span class="o-tl">' + esc(o.tl) + '</span>' : '';
+    var en = withEn ? '<span class="o-en">' + esc(o.en || '') + '</span>' : '';
+    return '<button class="opt" type="button" data-i="' + i + '">'
+      + '<span class="o-th">' + esc(o.th) + '</span>' + tl + en + '</button>';
   }
 
   function vocabReveal(w, ok) {
@@ -794,9 +1466,22 @@
     var html = '<div class="reveal">';
     if (w.lit) html += '<p class="tq-say"><b>Literally:</b> ' + esc(w.lit) + '</p>';
     if (s) {
+      /* ⭐ THE BREAKDOWN, NOT JUST THE SENTENCE (owner, 2026-09-20: "you should see the gloss
+         chip breakdown for the sentence as well in the answer. right now its just thai +
+         english"). A whole Thai sentence with a whole English sentence under it shows the word
+         in use but does not show WHERE — the learner has the answer and still cannot point at
+         it. The chips are the join, and they already exist on the sentence, so this duplicates
+         nothing (§1) and follows the transliteration pill for free.
+         ⚠ Under the English, not above it: read the sentence, read what it means, then take it
+         apart. Putting the parts first makes the reveal open on a wall of small type. */
       html += '<p class="mlab">Appears in</p>'
         + '<p class="thaibig">' + esc(stripBars(s.thai)) + '</p>'
-        + '<p class="tl">' + esc(s.english) + '</p>'
+        + (translitOn() ? '<p class="tl">' + esc(stripBars(s.translit)) + '</p>' : '')
+        + '<p class="cen">' + esc(s.english) + '</p>'
+        + (chipsOf(s).length
+            ? '<div class="chips vchips">'
+              + chipsOf(s).map(function (g) { return chipHtml(g, w.th); }).join('') + '</div>'
+            : '')
         + '<button class="playbtn" type="button"><span class="tri"></span>Play the sentence</button>';
     }
     html += '<button class="nextbtn" type="button">'
@@ -805,17 +1490,21 @@
     var pb = d.querySelector('.playbtn');
     if (pb && s) { pb.onclick = function () { playSentence(s.num, pb); }; playSentence(s.num, pb); }
     d.querySelector('.nextbtn').onclick = function () { advance(w.th, ok); };
+  showReveal(d);
   }
 
   /* ── Quiz 4 — Speak Thai (§6A) ─────────────────────────────────────────────────────────── */
   function qSpeak() {
     var it = run.items[run.i], s = it.sent;
+    /* ⚠ Speak Thai gets the buildable wording too. It is the same job as the Builder — produce
+       the Thai from an English prompt — so a prompt that omits half the sentence's parts is the
+       same fault here, and marking yourself against it is if anything harsher. */
     render(bar()
-      + '<p class="enq">' + esc(s.english) + '</p>'
+      + promptFor(s)
       + '<p class="tq-say">Say it in Thai, out loud. Then reveal and mark yourself — it is your own call.</p>'
       + '<button class="startbtn t-reveal" type="button">Reveal answer</button>'
-      + '<div class="t-rev"></div>');
-    wireBar();
+      + '<div class="t-rev"></div>' + foot());
+    wireBar(); wireFoot();
 
     sheet.querySelector('.t-reveal').onclick = function () {
       this.remove();
@@ -835,13 +1524,31 @@
       playSentence(s.num, pb);          /* ⛔ the real Thai plays on reveal (§6A.1) */
       d.querySelector('.tq-got').onclick = function () { advance(String(s.num), true); };
       d.querySelector('.tq-not').onclick = function () { advance(String(s.num), false); };
+      showReveal(d);
     };
   }
 
   /* ── the in-question options menu (§3A.5) ──────────────────────────────────────────────── */
+  /* ⭐⭐ THE QUESTION IS PUT ASIDE, NOT THROWN AWAY (owner, 2026-09-20: "if i have answered a
+     question, and then click the settings in the top right, when i exit the settings and return
+     to question, it reverts and is now unanswered").
+     The menu used to finish with question(), which re-runs the engine from scratch: a new
+     shuffle, new options, no answer, no reveal — and on a question the learner has already
+     marked, that is destroying work. It also contradicted this screen's own subtitle, which
+     promises the settings apply from the NEXT question.
+     ⚠⚠ The fix MOVES the nodes into a detached fragment rather than stashing innerHTML.
+     innerHTML is a string: the question would come back looking identical with every onclick
+     gone — a worse bug than the one being fixed, because it looks fine. Moving elements keeps
+     their handlers, classes and inline styles, which together are the answered state.
+     ✅ Text size is the deliberate exception to "applies from the next question": it is a CSS
+     variable on the sheet, so it reaches the restored question at once, which is what makes it
+     usable as a control rather than a promise. */
   function inQuestionMenu() {
     var qid = run.q.id, p = run.prefs;
-    var cur = run.items[run.i];
+    var scaleBefore = fontScale();
+    var keep = document.createDocumentFragment();
+    while (sheet.firstChild) keep.appendChild(sheet.firstChild);
+    var relayout = run.relayout;
     var html = head('Options', 'Applies from the next question');
     if (qid === 2 || qid === 4) {
       html += '<div class="mgroup"><p class="mlab">Thai script</p><div class="radios">'
@@ -854,24 +1561,26 @@
       html += '<div class="mgroup"><label class="checkrow"><input type="checkbox" class="c-hide"'
         + (p.hide ? ' checked' : '') + '><span>Hide the answers until I ask</span></label></div>';
     }
+    html += fontGroup();
+    /* ⛔⛔ EXACTLY ONE TRANSLITERATION CONTROL PER QUIZ (owner, 2026-09-20: "show transliteration
+       is confusingly an option in both of them!!"). Quizzes 2 and 4 carry §5.1's THREE-WAY Thai
+       script setting, which already decides whether transliteration appears — and can also say
+       "hide the Thai", which the two-state site pill cannot express. Offering both on the same
+       screen asked the learner to reconcile two controls over one thing.
+       ✅ So the site pill is shown ONLY where there is no three-way: quizzes 1 and 3. */
+    var hasThreeWay = (qid === 2 || qid === 4);
     html += '<div class="mgroup"><p class="mlab">Display</p>'
-      + '<label class="checkrow"><input type="checkbox" class="c-tl"'
-      + (translitOn() ? ' checked' : '') + '><span>Show transliteration</span></label>'
+      + (hasThreeWay ? '' :
+          '<label class="checkrow"><input type="checkbox" class="c-tl"'
+          + (translitOn() ? ' checked' : '') + '><span>Show transliteration</span></label>')
       + '<label class="checkrow"><input type="checkbox" class="c-tf"'
       + (thaiModern() ? ' checked' : '') + '><span>Modern Thai font</span></label></div>';
-    html += '<div class="mgroup"><button type="button" class="exline"><span>'
-      + 'Don\'t test me on this again <span class="rd" style="color:var(--text-tertiary)">'
-      + '— in ' + esc(run.q.name) + ' only</span></span><b class="x-mark"></b></button></div>'
-      + '<button type="button" class="startbtn">Back to the question</button>';
+    /* ⛔ The exclude control is NOT in this menu any more — it is a footer on the
+       question itself, where the learner is looking when they decide (owner, 2026-09-20). */
+    html += '<button type="button" class="startbtn">Back to the question</button>';
     render(html);
     wireClose();
-    sheet.querySelector('.exline').onclick = function () {
-      var st = store();
-      if (st) st.toggleExcluded(ctx.unit, qid, cur.key);
-      this.querySelector('.x-mark').textContent = '✓';
-      /* ⚠ An exclusion taken mid-run does NOT shorten the run in progress — the item is already
-         on the question list and removing it would move the score denominator under the learner. */
-    };
+    wireFontGroup();
     sheet.querySelector('.startbtn').onclick = function () {
       var sc = sheet.querySelector('input[name=script]:checked'); if (sc) run.prefs.script = sc.value;
       var hi = sheet.querySelector('.c-hide'); if (hi) run.prefs.hide = hi.checked;
@@ -880,8 +1589,19 @@
       var tl = sheet.querySelector('.c-tl'); if (tl) setTranslit(tl.checked);
       var tf = sheet.querySelector('.c-tf'); if (tf) setThaiModern(tf.checked);
       savePrefs(qid, run.prefs);
-      question();      /* ⚠ re-renders the CURRENT question with the new setting */
+      restoreQuestion();
     };
+
+    function restoreQuestion() {
+      sheet.innerHTML = '';
+      sheet.appendChild(keep);
+      applyFontScale();
+      sheet.scrollTop = 0; ov.scrollTop = 0;
+      run.relayout = relayout;
+      /* ⚠ A text-size change re-flows the question that is coming back, so anything holding a
+         measured height has to re-measure at the size it is now being drawn at. */
+      if (relayout && fontScale() !== scaleBefore) relayout();
+    }
   }
 
   /* ── results (§3B.1) ───────────────────────────────────────────────────────────────────── */
@@ -897,21 +1617,30 @@
     }
     var q = run.q;
 
-    render(head(q.name, '')
+    /* ⭐ THE RESULTS SCREEN FILLS THE SCREEN (owner, 2026-09-20: "everything is very top heavy,
+       bottom 2/3 of screen nearly is white"). The score is the whole point of the screen, so it
+       takes the space: the block centres in the sheet and the actions sit under it rather than
+       everything bunching at the top of a tall phone viewport. */
+    render('<div class="tq-fill tq-fill-res">'
+      + head(q.name, '')
       + '<div class="tq-res"><div class="tq-pct">' + pct + '%</div>'
-      + '<div class="tq-raw">' + r + ' / ' + n + '</div>'
+      + '<div class="tq-raw">' + r + ' of ' + n + ' right</div>'
       + '<div class="tq-best' + (isBest ? ' tq-newbest' : '') + '">'
-      + (isBest ? 'Your best yet' : 'Your best is ' + prev + '%') + '</div></div>'
-      + (q.id === 4 ? '<p class="tq-say" style="margin-top:14px">You marked this one yourself, so it '
-          + 'is not comparable with the other quizzes.</p>' : '')
+      + (isBest ? 'Your best yet' : 'Your best is ' + prev + '%') + '</div>'
+      + (q.id === 4 ? '<p class="tq-say tq-selfnote">You marked this one yourself, so it is not '
+          + 'comparable with the other quizzes.</p>' : '')
+      + '</div>'
+      + '<div class="tq-acts">'
       + '<button type="button" class="startbtn t-again">Try again</button>'
-      + '<div class="tq-minor">'
-      + '<button type="button" class="tq-exit">Exit to the quiz menu</button>'
+      + '<button type="button" class="tq-exit">&larr; All four quizzes</button>'
       + '<button type="button" class="tq-return">&larr; ' + esc(ctx.originLabel || 'Back') + '</button>'
-      + '</div>');
+      + '</div></div>');
     wireClose();
-    sheet.querySelector('.t-again').onclick = function () { start(q.id, run.prefs); };
-    sheet.querySelector('.tq-exit').onclick = function () { openMenu(q.id); };
+    var againPrefs = run.prefs;
+    sheet.querySelector('.t-again').onclick = function () { start(q.id, againPrefs); };
+    /* ⛔ The FOUR-TYPE picker, not this quiz's settings menu (owner, 2026-09-20: "it should take
+       you to the main quiz menu with the four quiz types"). */
+    sheet.querySelector('.tq-exit').onclick = function () { run = null; openPicker(); };
     sheet.querySelector('.tq-return').onclick = goBack;
     if (st) st.flush();
   }
@@ -957,39 +1686,69 @@
     }).catch(function () { return false; });
   }
 
+  /* ⭐ THE ENTRY IS A FEATURE, NOT AN AFTERTHOUGHT (owner, 2026-09-20: "please make it more
+     prominent … its a great feature. and shouldnt be an afterthought").
+     A single quiet button under the sentences was easy to scroll past, and it also said nothing
+     about what was behind it. This is a titled block with the four quizzes named in a 2x2 grid —
+     which does three things at once: it takes real space, it says what you get, and each tile is
+     a SHORTCUT straight into that quiz rather than decoration. It also carries each quiz's best
+     score, so the block is worth looking at on a return visit.
+
+     ⛔ TIER-COLOURED, from the page's own tier (owner: "blue/purple for free, gold for premium
+     in keeping with the page's style"). ⚠ The gold pair is the TEXT gold #B29234 on #FBF5DC, not
+     the graphic gold #F0CC5C — the palette rule is that the bright gold is for graphics and the
+     darker one for anything bearing text, and the topic card's own premium pill already uses
+     exactly this pair. Matching it is what makes the block look like part of the page. */
   function mountButton() {
     if (document.getElementById('tq-entry')) return;
     var t = T();
-    if (!t || !(t.sentences || []).length || !t.quiz) return;   /* no authored data: no button */
+    if (!t || !(t.sentences || []).length || !t.quiz) return;   /* no authored data: no block */
+
+    var premium = (t.tier === 'premium');
+    var unit = location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
+    var st = store();
+
+    var tiles = QUIZZES.map(function (q) {
+      if (q.topicOnly && false) return '';
+      var best = st ? st.bestScore(unit, q.id) : null;
+      return '<button type="button" class="tqe-tile" data-q="' + q.id + '">'
+        + '<span class="tqe-nm">' + esc(q.name) + '</span>'
+        + '<span class="tqe-sc' + (best == null ? ' none' : '') + '">'
+        + (best == null ? '—' : best + '%') + '</span></button>';
+    }).join('');
 
     var wrap = document.createElement('div');
     wrap.id = 'tq-entry';
-    wrap.style.cssText = 'max-width:760px;margin:28px auto 40px;padding:0 16px';
-    var unit = location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
+    wrap.className = 'tq-entry' + (premium ? ' premium' : '');
     wrap.innerHTML =
-      '<button type="button" style="width:100%;background:var(--quiz-bg,#F1F7F3);'
-      + 'color:var(--quiz-ink,#1F5D3A);border:0.5px solid var(--quiz-line,rgba(31,93,58,.18));'
-      + 'border-radius:var(--radius-md,10px);padding:14px;font:600 15px/1.2 var(--font-ui,Inter,system-ui,sans-serif);'
-      + 'cursor:pointer">Test yourself</button>'
-      + '<p style="margin:7px 0 0;font:11.5px/1.4 var(--font-ui,Inter,system-ui,sans-serif);'
-      + 'color:var(--text-tertiary,#9A9A9A);text-align:center">Owner-only while this is in testing.</p>';
+        '<div class="tqe-head">'
+      + '<h2 class="tqe-t">Test yourself on this topic</h2>'
+      + '<p class="tqe-s">Four ways to practise what you have just heard</p>'
+      + '</div>'
+      + '<div class="tqe-grid">' + tiles + '</div>'
+      + '<button type="button" class="tqe-go">Choose a quiz</button>'
+      + '<p class="tqe-note">Owner-only while this is in testing.</p>';
 
-    /* Put it after the sentence list, wherever that ends. ⚠ Fall back to the end of <main>, then
-       body — a topic page whose markup shifts must still get the button rather than silently not. */
+    /* after the sentence list, wherever it ends. ⚠ Fall back to <main> then body — a topic page
+       whose markup shifts must still get the block rather than silently not. */
     var list = document.getElementById('sentence-list');
-    var host = (list && list.parentNode) || document.querySelector('main') || document.body;
     if (list && list.parentNode) list.parentNode.insertBefore(wrap, list.nextSibling);
-    else host.appendChild(wrap);
+    else (document.querySelector('main') || document.body).appendChild(wrap);
 
-    wrap.querySelector('button').onclick = function () {
+    function open(qid) {
       window.ThaiEarQuiz.open({
         unit: unit,
         unitName: (document.querySelector('h1') || {}).textContent || document.title,
         kind: 'topic',
         originHref: location.pathname,
-        originLabel: 'Back to the topic'
+        originLabel: 'Back to the topic',
+        start: qid || null
       });
-    };
+    }
+    wrap.querySelector('.tqe-go').onclick = function () { open(); };
+    wrap.querySelectorAll('.tqe-tile').forEach(function (b) {
+      b.onclick = function () { open(parseInt(b.dataset.q, 10)); };
+    });
   }
 
   function boot() {
@@ -1021,7 +1780,9 @@
       };
       var st = store();
       if (st && st.pull) st.pull();      /* best-effort; the UI never waits on it */
-      openPicker();
+      /* ⚠ A tile on the entry block is a SHORTCUT into one quiz; the block's own button opens
+         the picker. Both land in the same component (§9.2) — this only chooses the first screen. */
+      if (opts.start) openMenu(opts.start); else openPicker();
       return true;
     },
     close: close,
