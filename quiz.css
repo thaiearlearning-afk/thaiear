@@ -38,37 +38,35 @@
 .tq-sheet h3 { margin: 0 0 3px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
 .tq-sheet .sub { margin: 0 0 14px; font-size: 12.5px; color: var(--text-tertiary, #9A9A9A); }
 
-/* ⭐ THE PICKER'S HEADER IS A LANDING, NOT A LABEL (owner, 2026-09-20: "just looks very limp -
-   its black text against a white background"). It was the site's default h3 + grey sub, which
-   is right for a settings screen and wrong for the screen the learner ARRIVES on.
-   ⚠ It deliberately echoes .tq-entry, the block they just tapped: same tinted fill, same
-   tier-coloured ink, same rounded panel. Two surfaces that are one step apart should look
-   related, and the tier colour is the thing that carries it — gold on a premium unit.
-   ⛔ The unit NAME is the bigger of the two lines in weight terms, not the word "Test
-   yourself": the learner already knows they are opening a quiz; what they need confirming is
-   WHICH unit it is for. */
+/* ⭐⭐ A TITLE AND A SUBTITLE, TOLD APART (owner, 2026-09-20: "all text is the exact same
+   color, and same background too, could distinguish between the title and subtitle ... right now
+   it looks like a 4 year old did it with a crayon").
+   The first attempt put both lines in the same gold on the same tint, which is two labels
+   stacked rather than a heading. Now they differ on THREE axes at once — colour, weight and
+   ground — so the hierarchy survives whichever one a given screen or eye picks up:
+     · "Test yourself" is the small tinted eyebrow, INSIDE the coloured band
+     · the unit name is larger, darker, and sits on the sheet's own white below it
+   ⚠ IT ALSO HAD TO GET SMALLER. Both lines were wrapping to two — "Test yourself" at 17px bold
+   in a panel with 15px of padding could not fit a phone, and the unit names are long now that
+   they carry a colon ("Food culture: Regional food & etiquette"). The eyebrow is one short
+   phrase so it can be small; the unit name gets the room that frees up. */
 .tq-head.hero {
   --tqh-ink: var(--accent, #4B41AD);
   --tqh-bg: var(--accent-light, #EEEDFE);
-  background: var(--tqh-bg); border-radius: var(--radius-md, 10px);
-  padding: 14px 15px 13px; margin: 0 0 16px;
+  margin: 0 0 14px;
 }
 .tq-sheet.premium .tq-head.hero { --tqh-ink: #B29234; --tqh-bg: #FBF5DC; }
 .tq-head.hero h3 {
-  margin: 0 0 2px; font-size: 12px; font-weight: 600; letter-spacing: .07em;
-  text-transform: uppercase; color: var(--tqh-ink); opacity: .85;
+  display: inline-block; margin: 0 0 7px;
+  background: var(--tqh-bg); color: var(--tqh-ink);
+  border-radius: 999px; padding: 4px 11px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  line-height: 1.2; white-space: nowrap;
 }
 .tq-head.hero .sub {
-  margin: 0; font-size: 17px; font-weight: 600; line-height: 1.25;
-  letter-spacing: -0.01em; color: var(--tqh-ink);
+  margin: 0; font-size: 19px; font-weight: 600; line-height: 1.2;
+  letter-spacing: -0.015em; color: var(--text-primary, #1A1A1A);
 }
-.tq-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 3px; }
-.tq-head h3 { flex: 1; }
-.tq-x {
-  background: none; border: 0; padding: 2px 4px; cursor: pointer; line-height: 1;
-  font-size: 20px; color: var(--text-tertiary, #9A9A9A); font-family: inherit;
-}
-.tq-x:hover { color: var(--text-primary, #1A1A1A); }
 
 /* ── quiz-type picker ────────────────────────────────────────────────────────────────── */
 .qpick { display: flex; flex-direction: column; gap: 8px; }
@@ -197,7 +195,13 @@
   width: 0; height: 0; border-left: 13px solid currentColor;
   border-top: 8px solid transparent; border-bottom: 8px solid transparent;
 }
-.playbtn.playing .tri { border: 0; width: 11px; height: 13px; background: currentColor; }
+/* ⚠ PAUSE, NOT STOP. Two bars, because a filled square says "stop" — and the control does not
+   stop anything, it pauses and resumes. Same 13px optical height as the triangle so the button
+   does not resize between states. */
+.playbtn.playing .tri {
+  border: 0; width: 13px; height: 13px; background: transparent; box-sizing: border-box;
+  border-left: 4px solid currentColor; border-right: 4px solid currentColor;
+}
 .opt {
   display: block; width: 100%; text-align: left; background: var(--surface, #fff);
   border: 0.5px solid var(--border-strong, rgba(0,0,0,.16)); border-radius: var(--radius-md, 10px);
@@ -550,10 +554,24 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 /* the picker */
 .qpick .nm { font-size: calc(14px   * var(--tq-scale)); }
 .qpick .ds { font-size: calc(11.5px * var(--tq-scale)); }
+
+/* ⭐ THE WHOLE MENU HAS TO FIT ONE SCREEN, with "Back to the topic" the last thing on it
+   (owner, 2026-09-20). Four rows, a mascot and a way out is not much, but the rows were sized
+   for a screen with nothing else on it. Everything here is a trim rather than a redesign: the
+   rows lose vertical padding, the gaps close, and the mascot takes what that frees.
+   ⚠ The trims are on .qpick-big only — the compact .qpick is not used anywhere yet, and
+   changing a variant nobody renders is how a rule gets forgotten. */
+.qpick-big button { padding: 11px 13px; margin-bottom: 7px; }
+.qpick-big .ic { width: 30px; height: 30px; font-size: 13px; }
+.qpick-big .nm { font-size: 14.5px; }
+.qpick-big .ds { font-size: 11.5px; }
+.tq-fill { padding-bottom: 0; }
+.tq-fill .tq-minor { margin-top: 10px; }
 .qpick .sc { font-size: calc(12px   * var(--tq-scale)); }
 .tq-sheet h3 { font-size: calc(16px * var(--tq-scale)); }
-.tq-head.hero h3   { font-size: calc(12px * var(--tq-scale)); }
-.tq-head.hero .sub { font-size: calc(17px * var(--tq-scale)); }
+/* ⛔ The hero header is the PICKER's, and the picker is not text-scaled (see applyFontScale).
+   Leaving it on the variable would be harmless today because the picker pins --tq-scale to 1,
+   but it would silently start scaling again the first time that changes. */
 .tq-sheet .sub { font-size: calc(12.5px * var(--tq-scale)); }
 
 /* the size picker itself — five A's, ascending, the standard shape for this control */
@@ -578,7 +596,9 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   transition: border-color .15s, color .15s, background .15s;
 }
 .tq-all:hover { border-color: var(--accent, #4B41AD); color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); }
-.tq-sync { width: 17px; height: 17px; fill: currentColor; flex-shrink: 0; }
+/* ⚠ STROKED, not filled — it is the dyn player's sync glyph, which is a stroke icon. A
+   leftover `fill: currentColor` here would paint both arcs solid and make it a blob. */
+.tq-sync { width: 17px; height: 17px; fill: none; flex-shrink: 0; }
 .tq-all.done {
   border-color: #1F5D3A; background: #F1F7F3; color: #1F5D3A; font-weight: 500; cursor: default;
 }
@@ -655,10 +675,13 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    ⚠ The sheet is already narrower than the page, so this is deliberately smaller than the
    158px the /topics mascot uses — the same figure at the same size would dominate a panel a
    third of the width. */
-.tq-mascot { text-align: center; margin: 26px 0 4px; }
+/* ⚠ Bigger than the first pass (owner: "the tiger is too small currently"), and it can afford
+   to be now that the rows above it are tighter. The two caps stay: a fixed width for intent, a
+   percentage for the guard, so it cannot balloon on a wide sheet or overflow a narrow one. */
+.tq-mascot { text-align: center; margin: 14px 0 2px; }
 .tq-mascot img {
-  width: 132px; max-width: 46%; height: auto; aspect-ratio: 440 / 389;
-  display: block; margin: 0 auto 6px;
+  width: 172px; max-width: 54%; height: auto; aspect-ratio: 440 / 389;
+  display: block; margin: 0 auto 5px;
 }
 .tq-mascot-t {
   margin: 0; font-size: 14px; font-weight: 500; letter-spacing: .02em;

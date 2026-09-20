@@ -98,8 +98,17 @@
     try { localStorage.setItem('thaiear_quiz_fontscale', String(v)); } catch (_) {}
     applyFontScale();
   }
+  /* ⛔⛔ THE TEXT SIZE DOES NOT REACH THE PICKER (owner, 2026-09-20: "the font size selector
+     has been affecting the main quizzes menu with the 4 quizzes - it doesnt need to do that,
+     its predominantly just to help within the quiz itself to help read gloss chips").
+     He is right, and it was also the cause of the picker overflowing: at 1.5 the four rows, the
+     header and the mascot could not fit a phone screen, and the setting exists to make THAI
+     legible, not to inflate a menu of four English buttons.
+     ✅ It still applies on a quiz's own settings menu, so the stops give live feedback while
+     you choose one — which is the only place other than a question where you would want it. */
+  var scaleOff = false;
   function applyFontScale() {
-    if (sheet) sheet.style.setProperty('--tq-scale', String(fontScale()));
+    if (sheet) sheet.style.setProperty('--tq-scale', scaleOff ? '1' : String(fontScale()));
   }
 
   function translitOn() {
@@ -351,12 +360,47 @@
   }
   /* Play a sentence's Thai. ⚠ Credit is gated on a DWELL (≥1.5s heard, or `ended`), never on
      play() — see the note on ThaiEarQuizAudio.credit. Under-counting is the safe direction. */
+  /* ⭐⭐ A REAL PLAY/PAUSE CYCLE (owner, 2026-09-20). The button used to swap its triangle for a
+     SQUARE — which reads as stop — and tapping it called playSentence() again, whose first act
+     is stopAudio() followed by a fresh fetch and a restart. So the control showed one thing,
+     promised another, and did a third.
+     ⚠ THE LABEL MOVES WITH THE ICON. A pause icon above the words "Play the Thai" is the same
+     fault in smaller print, so the button's own text is swapped and its original kept on the
+     element — no second source of truth, and nothing to re-derive when the question changes. */
+  function setPlayUI(btn, playing) {
+    if (!btn) return;
+    if (!btn.dataset.playLabel) {
+      btn.dataset.playLabel = (btn.textContent || '').trim();
+    }
+    btn.classList.toggle('playing', !!playing);
+    var tri = btn.querySelector('.tri');
+    btn.textContent = playing ? 'Pause' : btn.dataset.playLabel;
+    btn.insertBefore(tri || document.createElement('span'), btn.firstChild);
+    if (tri) tri.className = 'tri';
+  }
+
+  /* The click handler for every audio button. ⚠ Resumes rather than restarts when it is the
+     SAME sentence — restarting a clip someone paused two seconds in is its own small annoyance,
+     and it would also re-mint the signed URL for no reason. */
+  function toggleSentence(num, btn) {
+    if (au && auNum === num) {
+      if (au.paused) {
+        au.play().then(function () { setPlayUI(btn, true); }).catch(function () {});
+      } else {
+        au.pause();
+        setPlayUI(btn, false);
+      }
+      return;
+    }
+    playSentence(num, btn);
+  }
+
   function playSentence(num, btn) {
     var QA = window.ThaiEarQuizAudio;
     if (!QA || !QA.clip) return Promise.resolve(false);
     stopAudio();
     auNum = num; auCredited = false;
-    if (btn) btn.classList.add('playing');
+    setPlayUI(btn, true);
     return QA.clip(num, 'TH').then(function (r) {
       au = new Audio(r.url); auRevoke = r.revoke;
       function creditOnce() {
@@ -367,15 +411,20 @@
       au.addEventListener('timeupdate', function () { if (au && au.currentTime >= 1.5) creditOnce(); });
       au.addEventListener('ended', function () {
         creditOnce();
-        if (btn) btn.classList.remove('playing');
+        setPlayUI(btn, false);
       });
-      au.addEventListener('error', function () { if (btn) btn.classList.remove('playing'); });
+      /* ⚠ The element can be paused or resumed by something other than this button — a lock
+         screen, a headset, the OS. Listening to the element rather than only to our own click
+         is what keeps the icon honest in those cases. */
+      au.addEventListener('pause', function () { if (au && !au.ended) setPlayUI(btn, false); });
+      au.addEventListener('play', function () { setPlayUI(btn, true); });
+      au.addEventListener('error', function () { setPlayUI(btn, false); });
       return au.play().then(function () { return true; }).catch(function () {
-        if (btn) btn.classList.remove('playing');
+        setPlayUI(btn, false);
         return false;
       });
     }).catch(function () {
-      if (btn) btn.classList.remove('playing');
+      setPlayUI(btn, false);
       return false;
     });
   }
@@ -525,6 +574,7 @@
   }
 
   function openPicker() {
+    scaleOff = true;                 /* ↑ see applyFontScale: the picker is not scaled */
     var st = store();
     var rows = QUIZZES.map(function (q) {
       /* ⛔ Vocab Trainer is topic-only (§1). A grammar unit or playlist shows three, not four. */
@@ -542,10 +592,10 @@
     render('<div class="tq-fill">'
          + head('Test yourself', ctx.unitName || '', true)
          + '<div class="qpick qpick-big">' + rows + '</div>'
-         + '<div class="tq-minor"><button type="button" class="tq-return">&larr; '
-         + esc(ctx.originLabel || 'Back') + '</button></div></div>'
          + resultsPanel()
-         + tigerBlock());
+         + tigerBlock()
+         + '<div class="tq-minor"><button type="button" class="tq-return">&larr; '
+         + esc(ctx.originLabel || 'Back') + '</button></div></div>');
     wireClose();
     sheet.querySelectorAll('.qpick button').forEach(function (b) {
       b.onclick = function () { openMenu(parseInt(b.dataset.q, 10)); };
@@ -572,6 +622,7 @@
      THE PRE-QUIZ MENU (§3A)
      ══════════════════════════════════════════════════════════════════════════════════════ */
   function openMenu(qid) {
+    scaleOff = false;
     var q = quizById(qid), p = prefsFor(qid);
     var items = eligible(qid);
     var n = items.length;
@@ -654,8 +705,14 @@
        settings above it, so below the start button it read as an afterthought — and it is not an
        exit, which is what everything in that footer is. */
     html += '<div class="mgroup"><button type="button" class="tq-all">'
-      + '<svg class="tq-sync" viewBox="0 0 24 24" aria-hidden="true">'
-      + '<path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/>'
+      /* ⚠ THE SAME ICON THE DYN PLAYER USES FOR THE SAME JOB. Its sync button is literally
+         "Apply these settings to all topics and playlists" (player.js ~8689), so the two
+         controls must not look like different ideas. The old glyph was the single curved arrow,
+         which is RESET rather than sync — and the owner read it exactly that way. */
+      + '<svg class="tq-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+      + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      + '<path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>'
+      + '<path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>'
       + '</svg><span class="tq-all-t">Use these settings for all ' + esc(q.name) + ' quizzes</span>'
       + '</button></div>';
 
@@ -759,6 +816,7 @@
 
   /* ── exclusions (§3A.2) — one list per quiz, re-includable with the same tap ────────────── */
   function openExclusions(qid) {
+    scaleOff = false;
     var q = quizById(qid), st = store();
     var ex = st ? st.excluded(ctx.unit, qid) : {};
     var rows;
@@ -896,6 +954,7 @@
   }
 
   function question() {
+    scaleOff = false;
     if (run.i >= run.items.length) return results();
     /* ⚠ An engine may register a re-layout hook for the question it is drawing; it belongs to
        that question, so clear it before the next one or a stale closure runs against dead
@@ -932,7 +991,7 @@
     wireBar(); wireFoot();
 
     var pb = sheet.querySelector('.playbtn');
-    pb.onclick = function () { playSentence(s.num, pb); };
+    pb.onclick = function () { toggleSentence(s.num, pb); };
     /* ⚠ Auto-play once on arrival (§4.1). Hiding the options must not hide the QUESTION. */
     playSentence(s.num, pb);
 
@@ -1588,7 +1647,7 @@
       + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
     d.innerHTML = html;
     var pb = d.querySelector('.playbtn');
-    if (pb && s) { pb.onclick = function () { playSentence(s.num, pb); }; playSentence(s.num, pb); }
+    if (pb && s) { pb.onclick = function () { toggleSentence(s.num, pb); }; playSentence(s.num, pb); }
     d.querySelector('.nextbtn').onclick = function () { advance(w.th, ok); };
   showReveal(d);
   }
@@ -1620,7 +1679,7 @@
         + '<button type="button" class="tq-not">Not quite</button>'
         + '</div></div>';
       var pb = d.querySelector('.playbtn');
-      pb.onclick = function () { playSentence(s.num, pb); };
+      pb.onclick = function () { toggleSentence(s.num, pb); };
       playSentence(s.num, pb);          /* ⛔ the real Thai plays on reveal (§6A.1) */
       d.querySelector('.tq-got').onclick = function () { advance(String(s.num), true); };
       d.querySelector('.tq-not').onclick = function () { advance(String(s.num), false); };
@@ -1644,6 +1703,7 @@
      variable on the sheet, so it reaches the restored question at once, which is what makes it
      usable as a control rather than a promise. */
   function inQuestionMenu() {
+    scaleOff = false;
     var qid = run.q.id, p = run.prefs;
     var scaleBefore = fontScale();
     var keep = document.createDocumentFragment();
@@ -1707,6 +1767,7 @@
 
   /* ── results (§3B.1) ───────────────────────────────────────────────────────────────────── */
   function results() {
+    scaleOff = false;
     var n = run.items.length, r = run.right;
     var pct = Math.round((r / n) * 100);
     var st = store();
