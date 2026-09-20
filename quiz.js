@@ -425,6 +425,7 @@
        remount would lose it — and this is the one setting where a wrong value is visible. */
     applyFontScale();
     applyTier();
+    mountMascot();
     sheet.scrollTop = 0; ov.scrollTop = 0;
   }
   /* ⛔ NO GLOBAL CLOSE BUTTON ON THESE SCREENS (owner, 2026-09-20). It did the wrong thing from
@@ -677,11 +678,43 @@
      ⚠ width AND height attributes are on the <img> so the browser reserves the box before the
      bytes arrive. The picker is a scrolling sheet and the block sits under the results panel, so
      a late-loading image with no intrinsic size would shove everything above it upward. */
+  /* ⛔⛔ THE MASCOT IMAGE IS CACHED AS A NODE AND MOVED BETWEEN RENDERS, NEVER REBUILT
+     (owner, 2026-09-20: "the tiger image flickers on load").
+     ⚠⚠ IT IS NOT LAYOUT SHIFT, WHICH IS WHY THE USUAL FIX DID NOT HELP: the img already
+     carries width/height and the CSS already pins `aspect-ratio: 440/389`, so the space was
+     always reserved. The flicker is a DECODE pop, and render() is what causes it — it sets
+     sheet.innerHTML, so every visit to the picker constructs a BRAND NEW <img>. A fresh element
+     must be decoded before it can paint even when the bytes are already in the HTTP cache, so
+     the tile appeared blank for a frame every single time, not just on first load.
+     ✅ Moving an existing node keeps its decoded bitmap, so there is no frame without it. The
+     markup emits an empty slot and mountMascot() puts the one <img> back after each render.
+     ⚠ decode() is awaited at WARM time (see mountButton) so even the first open has it ready. */
+  var mascotNode = null;
+  function mascotImg(file, w, h) {
+    if (mascotNode && mascotNode.getAttribute('data-f') === file) return mascotNode;
+    var i = new Image();
+    i.setAttribute('data-f', file);
+    i.width = w; i.height = h; i.alt = '';
+    i.decoding = 'async';
+    try { i.fetchPriority = 'high'; } catch (_) {}
+    i.src = file;
+    mascotNode = i;
+    return i;
+  }
   function mascot(file, w, h, line) {
-    return '<div class="tq-mascot">'
-      + '<img src="' + file + '" alt="" width="' + w + '" height="' + h + '" decoding="async">'
+    return '<div class="tq-mascot" data-mascot="' + file + '" data-w="' + w + '" data-h="' + h + '">'
       + '<p class="tq-mascot-t">' + esc(line) + '<span class="dots"></span></p>'
       + '</div>';
+  }
+  /* ⚠ Runs inside render(), so every screen that shows a mascot gets it with no call site
+     having to remember. */
+  function mountMascot() {
+    if (!sheet) return;
+    var box = sheet.querySelector('.tq-mascot[data-mascot]');
+    if (!box) return;
+    var img = mascotImg(box.getAttribute('data-mascot'),
+                        +box.getAttribute('data-w'), +box.getAttribute('data-h'));
+    box.insertBefore(img, box.firstChild);
   }
   function tigerBlock() { return mascot('tiger.png', 440, 389, 'Stay sharp'); }
   /* ⛔ THE ROOSTER IS NOT MOUNTED (owner, 2026-09-20: "since the my results is a dropdown, i
@@ -2177,9 +2210,12 @@
        exactly the people who will use it and nobody else.
        ⚠ Fire-and-forget, after the block is in the DOM, so it cannot delay the page. */
     try {
-      var warm = new Image();
-      warm.decoding = 'async';
-      warm.src = 'tiger.png';
+      /* ⚠ DECODE IT, not merely fetch it. Warming only the HTTP cache still leaves the first
+         <img> to decode on the frame it is inserted, which is the flicker. decode() resolves
+         once the bitmap exists, and the node is the SAME one the picker will mount — see
+         mascotImg — so that work is never repeated. */
+      var warm = mascotImg('tiger.png', 440, 389);
+      if (warm.decode) warm.decode().catch(function () {});
     } catch (_) {}
 
     var list = document.getElementById('sentence-list');

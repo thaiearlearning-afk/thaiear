@@ -93,6 +93,18 @@
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
 }
+/* ⛔⛔ SIZE THE SVG. Without this the chip rendered as an EMPTY TINTED BOX on iPhone (owner,
+   2026-09-20: "the icons dont load on iphone within each individual quiz - they are empty
+   blueish boxes ... works on quiz menu and on view from topic pages").
+   ⚠⚠ IT WAS NEVER A LOADING PROBLEM — the markup is an inline <svg>, so there is nothing to
+   load. An inline SVG with a viewBox and no CSS width/height has no intrinsic size, and the two
+   engines disagree about what to do with that: Blink resolves it against the flex container and
+   draws something, WebKit gives it zero and draws nothing. The two chips that WORK are the ones
+   with explicit rules — `.qpick .ic svg` and `.tqe-ic svg` — which is exactly why the picker and
+   the topic block were fine and only the new header was broken.
+   ⚠ 17px against a 34px chip, matching .qpick .ic svg, because this chip is deliberately the
+   same object as a picker row's. */
+.tq-head.has-ic .tq-head-ic svg { width: 17px; height: 17px; display: block; }
 .tq-sheet.premium .tq-head.has-ic .tq-head-ic { background: #FBF5DC; color: #B29234; }
 .tq-head.has-ic .tq-head-tx { min-width: 0; }
 
@@ -851,10 +863,22 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    four tints read equally on any tier.
    ⚠ aspect-ratio 1, not a fixed height: the tiles stay square as the column width changes, and
    a long quiz name wraps inside the square rather than stretching it. */
-.tqe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.tqe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 12px; }
+/* ⛔⛔ THE TILE IS A WIDE RECTANGLE, NOT A SQUARE (owner, 2026-09-20: "the whole structure
+   could be smaller - it spans the whole width of the phone and the box almost takes up 2/3 of
+   the whole screen - can we just reduce the overall size by a third").
+   Measured before changing anything: at 390px the block was 502px tall, which on an 844px phone
+   really is 60% of the viewport, and the grid alone was 305px of it because `aspect-ratio: 1`
+   on a half-width tile makes a ~147px SQUARE and there are two rows of them.
+   ⚠⚠ THE HEIGHT IS THE PROBLEM, SO THE HEIGHT IS WHAT CHANGES — the width is left alone on
+   purpose. Narrowing the grid would have shrunk the tiles in BOTH directions, and the binding
+   constraint on this component is horizontal: "Listening comprehension" is 23 characters and
+   already wrapped to two lines at 390px. Taking width away would have forced the font down
+   further to buy back a line, which is the opposite of what was asked ("font size can stay the
+   same"). A 2:1 tile keeps every pixel of text room and halves the vertical cost. */
 .tqe-tile {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
-  aspect-ratio: 1 / 1; border: 0; border-radius: var(--radius-md, 10px); padding: 10px 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  aspect-ratio: 2 / 1; border: 0; border-radius: var(--radius-md, 10px); padding: 8px 6px;
   font-family: inherit; cursor: pointer; text-align: center;
   background: var(--t-bg); color: var(--t-ink);
   transition: transform .12s ease, box-shadow .15s ease;
@@ -869,18 +893,38 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .tqe-tile.t-s { --t-bg: #EFEFF4; --t-ink: #44506B; }   /* Speak   — slate, NOT gold: see quiz.js */
 
 .tqe-ic { display: flex; align-items: center; justify-content: center; }
-.tqe-ic svg { width: 30px; height: 30px; display: block; }
+.tqe-ic svg { width: 24px; height: 24px; display: block; }
+/* ⚠ 12.5px → 11.5px, which is the owner's own fallback ("unless it collapses to multiple rows
+   in which case reduce until it fits on one line"). It buys "Listening comprehension" — the only
+   name long enough to be a problem — a single line at 390px and above.
+   ⛔ NOT `white-space: nowrap`: a learner who has raised their phone's text size SHOULD get two
+   lines rather than a clipped or overflowing name, which is the case the owner explicitly
+   allowed ("can expand to multiple lines if user has large font settings on their phone"). The
+   tile grows with it, because the wrap is what the height responds to. */
 .tqe-nm {
-  font-size: 12.5px; font-weight: 600; line-height: 1.2; color: currentColor;
+  font-size: 11.5px; font-weight: 600; line-height: 1.2; color: currentColor;
   letter-spacing: -0.005em;
 }
 .tqe-sc { font-size: 11px; font-weight: 700; opacity: .72; font-variant-numeric: tabular-nums; }
 
 /* ⚠ Three columns would make the squares tiny on a phone; two is the shape he asked for and it
    holds at every width. Only the icon shrinks. */
+/* ⚠⚠ THE LADDER IS SET FROM MEASURED TEXT, NOT GUESSED. "Listening comprehension" is the only
+   name long enough to matter — the other three are barely half its width — and in this face it
+   renders at 140px @11.5, 133 @11 and 127 @10.5. The room inside a tile is
+   (vw − 32 page − 28 block − 8 gap) / 2 − 12 tile padding, i.e. 149px at 390, 141 at 375, 134 at
+   360 and 114 at 320.
+   ✅ So 11px holds one line down to 375 and 10.5px holds it at 360.
+   ⛔ 320px CANNOT hold it one line at any readable size and is deliberately left to wrap: that is
+   an iPhone SE 1st-gen class of device, and the alternative is illegible type for everyone else.
+   ⚠ Re-measure this if the name changes or the UI font does — both invalidate every number
+   above, and the failure is silent (it just wraps again). */
 @media (max-width: 420px) {
-  .tqe-ic svg { width: 26px; height: 26px; }
-  .tqe-nm { font-size: 11.5px; }
+  .tqe-ic svg { width: 21px; height: 21px; }
+  .tqe-nm { font-size: 11px; }
+}
+@media (max-width: 370px) {
+  .tqe-nm { font-size: 10.5px; }
 }
 
 /* ⚠ The primary action on the block, so it is sized like one. 15px was small enough that the
