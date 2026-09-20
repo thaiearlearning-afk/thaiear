@@ -468,7 +468,17 @@
 
 /* ── phone ───────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
-  .tq-overlay { padding: 0; }
+  /* ⛔⛔ THE SCRIM IS PAINTED IN THE SHEET'S OWN COLOUR ONCE THE SHEET IS THE WHOLE SCREEN.
+     Owner, 2026-09-20, correcting me: "it only shows when you try to scroll beyond the edge of
+     the page i.e. scroll up at the top or down at the bottom. in its resting state its fine."
+     Exactly right, and it rules out the explanation I first reached for (a height that fell
+     short). Below 480px the overlay is full-bleed and the sheet covers every pixel, so the dark
+     backdrop is never visible AT REST — it is pure liability. iOS rubber-banding then scrolls
+     past the sheet's end and reveals the one thing underneath, which is that scrim.
+     ✅ So on a phone the overlay simply takes the sheet's colour: overscroll reveals more of the
+     same surface and there is nothing to see. ⚠ It keeps the dark scrim at ≥480px, where the
+     sheet really is a card on top of the page and the dimming is doing a job. */
+  .tq-overlay { padding: 0; background: var(--surface, #fff); }
   .tq-sheet { border-radius: 0; min-height: 100%; max-width: none; border: 0; }
   .tq-pct { font-size: 34px; }
   .seg { min-width: 48px; font-size: 12.5px; }
@@ -775,9 +785,11 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   /* ⛔⛔ NO SUBTRACTION ON A PHONE — THE 32px IS COMPENSATION FOR PADDING THAT IS NOT THERE.
      The overlay is full-bleed below 480px (`.tq-overlay { padding: 0 }`, and the sheet drops its
      radius, border and max-width), so subtracting the desktop overlay's 14px×2 left the fill
-     32px SHORTER than the screen — and what showed in that strip was the dark backdrop. That is
-     the other half of "if you scroll up and down you briefly see the dead space around the edges
-     of the topic quiz popup window thing" (owner, 2026-09-20).
+     32px SHORTER than the screen. ⚠ This is a real inconsistency and was NOT the dead space the
+     owner reported — he checked and corrected me: "in its resting state its fine." The visible
+     fault was the scrim showing under rubber-banding, fixed at the .tq-overlay rule above. This
+     one is kept because a full-bleed sheet subtracting a padding it does not have is wrong
+     regardless of whether anything currently shows through.
      ⚠ Keep this in step with .tq-overlay's padding: the two numbers are one decision written in
      two places, and nothing checks them against each other. */
   .tq-fill { min-height: 100vh; }
