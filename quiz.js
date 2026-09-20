@@ -1522,7 +1522,7 @@
       var d = sheet.querySelector('.t-rev');
       if (ok) {
         d.innerHTML = '<div class="reveal">'
-          + (exact ? '' : modelAnswer(s, canon, p))
+          + modelAnswer(s, canon, p, exact ? 'exact' : 'variant')
           + replay
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
@@ -1532,7 +1532,7 @@
            learn from a mistake — and the reveal is naturally built from Thai-first data, so this
            is the easiest thing here to get wrong. */
         d.innerHTML = '<div class="reveal">'
-          + modelAnswer(s, canon, p, true)
+          + modelAnswer(s, canon, p, 'wrong')
           + replay
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
@@ -1554,12 +1554,25 @@
      handed a wall of Thai at the one moment they are trying to learn from a difference — and
      the reveal is naturally built from Thai-first data, so this is the easiest thing here to get
      wrong. */
-  function modelAnswer(s, canon, p, wasWrong) {
+  /* ⭐⭐ THE WRITTEN THAI IS SHOWN EVERY TIME (owner, 2026-09-20). Assembling chips and reading
+     the finished sentence are different acts: you can place eight tiles correctly and never have
+     seen the thing you built as a sentence. It was missing on exactly the answer where the
+     learner has most earned it.
+     ⚠ THE CHIPS ARE THE PART THAT IS CONDITIONAL, not the sentence. On an exact match the chip
+     row would be a copy of what is still on screen directly above it, so it is dropped — the
+     comparison is against the canonical order, which the caller has already computed, so this is
+     a branch on a known fact rather than a guess.
+     §5.1's asymmetry survives in the thing that matters: an exact answer gets no CORRECTION. It
+     just gets to read what it wrote. */
+  function modelAnswer(s, canon, p, mode) {
     var b = scriptBits(stripBars(s.thai), stripBars(s.translit), p.script);
-    return '<p class="mlab">' + (wasWrong ? 'The correct order' : 'Yours works. The usual wording')
-      + '</p>'
-      + '<div class="chips">' + canon.map(chipHtml).join('') + '</div>'
-      + '<p class="thaibig" style="margin-top:10px">' + esc(b.main) + '</p>'
+    var exact = (mode === 'exact');
+    var lab = (mode === 'wrong') ? 'The correct order'
+            : (mode === 'variant') ? 'Yours works. The usual wording'
+            : 'The sentence';
+    return '<p class="mlab">' + lab + '</p>'
+      + (exact ? '' : '<div class="chips">' + canon.map(chipHtml).join('') + '</div>')
+      + '<p class="thaibig"' + (exact ? '' : ' style="margin-top:10px"') + '>' + esc(b.main) + '</p>'
       + (b.sub ? '<p class="tl">' + esc(b.sub) + '</p>' : '');
   }
 
