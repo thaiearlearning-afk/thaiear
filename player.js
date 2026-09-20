@@ -10351,6 +10351,90 @@
   };
 
   // inline onclick in the injected markup call these by name
+  /* ── ⭐ THE QUIZ'S ONE DOOR INTO THE AUDIO STACK (2026-09-20, QUIZ_PROJECT.md §8.5) ────────
+     quiz.js needs a PLAYABLE URL for a sentence's Thai clip, and it must not build one itself.
+
+     ⛔⛔ WHY THIS IS AN EXPORT AND NOT A REIMPLEMENTATION. buildUrl() owns the signed-URL mint
+     cache (`te_mint_v1`), and CLAUDE.md is explicit that its keying is an ENTITLEMENT BOUNDARY,
+     not housekeeping: a signed URL is a bearer token for its clip and lives 5 hours, so a store
+     that is not keyed on the user hands the next person to sign in on that browser the previous
+     one's PREMIUM urls — a bypass no padlock catches, because nothing on the page looks wrong and
+     the URL simply works. A second copy of that logic in quiz.js is a second chance to get it
+     wrong, silently. One door.
+
+     ⚠ AND IT RESOLVES OFFLINE FIRST, which is the whole of §8.5. audio.thaiear.com is OUT OF THE
+     SERVICE WORKER'S SCOPE (sw.js line 10), so a downloaded clip is NOT served to a plain
+     <audio src> by the SW — it has to be read out of `thaiear-audio-dl` deliberately. Without
+     this branch a downloaded topic's quizzes would be the one offline surface that silently
+     needed a network.
+
+     Returns { url, revoke } — `revoke` is a no-op for remote URLs and releases the blob for
+     offline ones. ⚠ The caller MUST call revoke() when the clip is done or a long session leaks
+     one object URL per question. */
+  function quizClipUrl(num, side) {
+    side = side || 'TH';
+    var s = null;
+    for (var i = 0; i < sentences.length; i++) {
+      if (String(sentences[i].num) === String(num)) { s = sentences[i]; break; }
+    }
+    if (!s) return Promise.reject({ code: 'nosent' });
+    var ref = dynClipRef(s, side);
+    var noop = function () {};
+
+    /* 1. the downloaded copy, if this device has one */
+    function fromDisk() {
+      var cap = (window.ThaiEarDL && window.ThaiEarDL.capabilities) ? window.ThaiEarDL.capabilities() : null;
+      if (cap && cap.native && cap.fs) {
+        return cap.fs.readFile({ path: 'offline/' + ref.file, directory: 'DATA' })
+          .then(function (r) {
+            if (!r || !r.data) return null;
+            var bin = atob(r.data), arr = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            var u = URL.createObjectURL(new Blob([arr], { type: 'audio/mpeg' }));
+            return { url: u, revoke: function () { try { URL.revokeObjectURL(u); } catch (_) {} } };
+          }).catch(function () { return null; });
+      }
+      if (!window.caches) return Promise.resolve(null);
+      return caches.open(AUDIO_DL_CACHE)
+        .then(function (c) { return c.match('/__offline-audio/' + ref.file); })
+        .then(function (res) {
+          if (!res) return null;
+          return res.blob().then(function (b) {
+            var u = URL.createObjectURL(b);
+            return { url: u, revoke: function () { try { URL.revokeObjectURL(u); } catch (_) {} } };
+          });
+        }).catch(function () { return null; });
+    }
+
+    return fromDisk().then(function (hit) {
+      if (hit) return hit;
+      /* 2. the network, through the entitlement gate */
+      return buildUrl(ref.file, ref.gated).then(function (u) { return { url: u, revoke: noop }; });
+    });
+  }
+
+  window.ThaiEarQuizAudio = {
+    clip: quizClipUrl,
+    /* Exposed so the quiz can say "this unit is gated" without duplicating the tier rules. */
+    gated: function () { return GATED; },
+    prefix: function () { return PREFIX; },
+
+    /* ⛔⛔ THE ONLY WAY QUIZ CODE MAY CREDIT A LISTEN. CLAUDE.md: "Never call the plays API
+       directly from quiz code — route through the existing dwell machinery."
+       A sentence heard inside a quiz counts (owner decision 18) toward sentence_plays, the
+       listening-time figures and the streak — all three for free, because sentence_plays is keyed
+       on the GLOBAL sentence number alone and a quiz is just another surface hitting that key.
+
+       ⚠⚠ THE CALLER MUST ONLY CALL THIS FOR AUDIO ACTUALLY HEARD, NOT ON play(). Crediting on
+       trigger would let someone clicking through a quiz inflate their listening time without
+       hearing anything, which corrupts the one number on this site that is honestly measured.
+       quiz.js gates on a dwell (≥1.5s of playback, or `ended`), which errs toward UNDER-counting
+       — the safe direction, and the same direction the player's own block-exit credit errs in. */
+    credit: function (num, reps) {
+      try { notePlaySentence(num, reps || 1); } catch (_) {}
+    }
+  };
+
   Object.assign(window, { switchAudio: switchAudio, togglePlay: togglePlay, skip: skip,
     toggleAll: toggleAll, cycle: cycle, toggleSentPlay: toggleSentPlay, toggleSlow: toggleSlow, toggleTranslit: toggleTranslit,
     toggleThaiFont: toggleThaiFont,

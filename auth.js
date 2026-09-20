@@ -2186,6 +2186,252 @@
     flush: function () { return fvFlush(); }
   };
 
+  /* ── Quizzes (public.quiz_* — see quiz_schema.sql) ──────────────────────────────────────
+     FOUR STORES WITH THREE DIFFERENT SYNC SHAPES, and the differences are load-bearing:
+       scores      a MAX      -> max() on both sides, idempotent under any retry
+       prefs       a setting  -> last-write-wins, with a '*' row as the account default
+       exclusions  a toggle   -> ROW PER ITEM, like favourites, never a blob
+       itemStats   a COUNTER  -> DELTAS with a batch id; last-write-wins would LOSE answers
+     ⛔ Do not unify them (QUIZ_PROJECT.md §11 Phase 4).
+
+     ⚠⚠ EVERYTHING HERE WORKS SIGNED OUT AND OFFLINE AGAINST localStorage ALONE. The account is
+     a sync target, not a prerequisite — a quiz must be fully playable with no network and no
+     user, which is also what makes a downloaded topic's quizzes work (§8.5). */
+
+  var QZ_LS   = 'thaiear_quiz_v1';        /* { scores, prefs, excl, stats, outbox } */
+  var qzCache = null;
+  var qzFlushing = false;
+
+  function qzBlank() { return { scores: {}, prefs: {}, excl: {}, stats: {}, outbox: [] }; }
+
+  function qzLoadLocal() {
+    if (qzCache) return qzCache;
+    try { qzCache = JSON.parse(localStorage.getItem(QZ_LS) || 'null') || qzBlank(); }
+    catch (_) { qzCache = qzBlank(); }
+    var b = qzBlank();
+    Object.keys(b).forEach(function (k) { if (!qzCache[k]) qzCache[k] = b[k]; });
+    return qzCache;
+  }
+  function qzSave() { try { localStorage.setItem(QZ_LS, JSON.stringify(qzLoadLocal())); } catch (_) {} }
+  function qzKey(unit, type) { return unit + '|' + type; }
+
+  function qzUuid() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (_) {}
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
+  /* The outbox is the whole offline story: every write lands locally AND is queued, and the
+     queue drains whenever we are online with a user. ⚠ Every entry must be idempotent on the
+     server, because a flush can be interrupted and replayed. */
+  function qzQueue(op) { var d = qzLoadLocal(); d.outbox.push(op); qzSave(); qzFlush(); }
+
+  function qzSend(op, uid) {
+    if (op.k === 'score') {
+      /* ⚠ We always send the LOCAL BEST, and the local best only rises, so re-sending is safe
+         without a server-side greatest(). */
+      return client.from('quiz_scores').upsert({
+        user_id: uid, unit_key: op.unit, quiz_type: op.type,
+        best: op.best, taken: op.taken, updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,unit_key,quiz_type' });
+    }
+    if (op.k === 'prefs') {
+      return client.from('quiz_prefs').upsert({
+        user_id: uid, unit_key: op.unit, quiz_type: op.type,
+        data: op.data, updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,unit_key,quiz_type' });
+    }
+    if (op.k === 'excl') {
+      return op.on
+        ? client.from('quiz_exclusions').upsert(
+            { user_id: uid, unit_key: op.unit, quiz_type: op.type, item: op.item },
+            { onConflict: 'user_id,unit_key,quiz_type,item' })
+        : client.from('quiz_exclusions').delete()
+            .eq('user_id', uid).eq('unit_key', op.unit)
+            .eq('quiz_type', op.type).eq('item', op.item);
+    }
+    if (op.k === 'stats') {
+      /* ⛔ Deltas via the rpc, keyed on a batch id the SERVER dedupes. Absolute values here
+         would lose every answer given on a second device. */
+      return client.rpc('apply_quiz_stats', { p_batch: op.batch, p_rows: op.rows });
+    }
+    if (op.k === 'prefsAll') {
+      /* "Use these settings for all X quizzes": write the '*' default, then blank the per-unit
+         overrides for that quiz type. ⛔ ONE write plus one update, never 93 rows — and it keeps
+         working as units are added, which a bulk copy would not. */
+      return client.from('quiz_prefs').upsert({
+          user_id: uid, unit_key: '*', quiz_type: op.type,
+          data: op.data, updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id,unit_key,quiz_type' })
+        .then(function (r) {
+          if (r && r.error) return r;
+          return client.from('quiz_prefs')
+            .update({ data: {}, updated_at: new Date().toISOString() })
+            .eq('user_id', uid).eq('quiz_type', op.type).neq('unit_key', '*');
+        });
+    }
+    return Promise.resolve({});
+  }
+
+  function qzFlush() {
+    var d = qzLoadLocal();
+    if (qzFlushing || !client || !currentUser || !d.outbox.length) return Promise.resolve(false);
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(false);
+    qzFlushing = true;
+    var batch = d.outbox.slice();
+    var uid = currentUser.id;
+
+    return Promise.all(batch.map(function (op) {
+      return Promise.resolve(qzSend(op, uid)).then(
+        function (r) { return (r && r.error) ? { error: r.error } : { ok: 1 }; },
+        function (e) { return { error: e }; });
+    })).then(function (res) {
+      /* ⚠ Drop only the entries that SUCCEEDED. Clearing the whole box on a partial failure is
+         the fault that loses a learner's offline run. */
+      var keep = [];
+      res.forEach(function (r, i) { if (r.error) keep.push(batch[i]); });
+      var cur = qzLoadLocal();
+      cur.outbox = keep.concat(cur.outbox.slice(batch.length));
+      qzSave();
+      qzFlushing = false;
+      return keep.length === 0;
+    }).catch(function () { qzFlushing = false; return false; });
+  }
+
+  window.ThaiEarQuizStore = {
+    /* ---- scores ---------------------------------------------------------------------- */
+    bestScore: function (unit, type) {
+      var r = qzLoadLocal().scores[qzKey(unit, type)];
+      return r ? r.best : null;
+    },
+    allScores: function () { return qzLoadLocal().scores; },
+    recordScore: function (unit, type, pct) {
+      var d = qzLoadLocal(), k = qzKey(unit, type);
+      var cur = d.scores[k] || { best: 0, taken: 0 };
+      cur.best = Math.max(cur.best, Math.round(pct));
+      cur.taken = (cur.taken || 0) + 1;
+      d.scores[k] = cur; qzSave();
+      qzQueue({ k: 'score', unit: unit, type: type, best: cur.best, taken: cur.taken });
+      return cur;
+    },
+
+    /* ---- prefs: per-unit row, else the '*' default, else the caller's built-ins -------- */
+    prefs: function (unit, type) {
+      var d = qzLoadLocal();
+      var own = d.prefs[qzKey(unit, type)];
+      if (own && Object.keys(own).length) return own;
+      return d.prefs[qzKey('*', type)] || {};
+    },
+    setPrefs: function (unit, type, data) {
+      var d = qzLoadLocal();
+      d.prefs[qzKey(unit, type)] = data; qzSave();
+      qzQueue({ k: 'prefs', unit: unit, type: type, data: data });
+    },
+    /* ⚠⚠ The local state is updated BEFORE the queue entry is made, and the queue is ordered,
+       so a still-pending per-unit write can never land after the default. The 2026-08-25
+       snap-back was exactly this race in the other direction. */
+    useEverywhere: function (unit, type) {
+      var d = qzLoadLocal();
+      var data = this.prefs(unit, type);
+      var suffix = '|' + type;
+      Object.keys(d.prefs).forEach(function (k) {
+        if (k.slice(-suffix.length) === suffix && k !== qzKey('*', type)) d.prefs[k] = {};
+      });
+      d.prefs[qzKey('*', type)] = data;
+      qzSave();
+      qzQueue({ k: 'prefsAll', type: type, data: data });
+      return data;
+    },
+
+    /* ---- exclusions: row per item ----------------------------------------------------- */
+    excluded: function (unit, type) { return qzLoadLocal().excl[qzKey(unit, type)] || {}; },
+    isExcluded: function (unit, type, item) {
+      return !!(qzLoadLocal().excl[qzKey(unit, type)] || {})[String(item)];
+    },
+    toggleExcluded: function (unit, type, item) {
+      var d = qzLoadLocal(), k = qzKey(unit, type);
+      d.excl[k] = d.excl[k] || {};
+      item = String(item);
+      var on = !d.excl[k][item];
+      if (on) d.excl[k][item] = 1; else delete d.excl[k][item];
+      qzSave();
+      qzQueue({ k: 'excl', unit: unit, type: type, item: item, on: on });
+      return on;
+    },
+
+    /* ---- item stats: local counters, flushed as deltas -------------------------------- */
+    itemStats: function (unit, type) { return qzLoadLocal().stats[qzKey(unit, type)] || {}; },
+    noteAnswers: function (unit, type, rows) {
+      if (!rows || !rows.length) return;
+      var d = qzLoadLocal(), k = qzKey(unit, type);
+      d.stats[k] = d.stats[k] || {};
+      var deltas = [];
+      rows.forEach(function (r) {
+        var item = String(r.item);
+        var cur = d.stats[k][item] || { seen: 0, correct: 0 };
+        cur.seen += 1; if (r.correct) cur.correct += 1;
+        d.stats[k][item] = cur;
+        deltas.push({ unit_key: unit, quiz_type: type, item: item,
+                      seen: 1, correct: r.correct ? 1 : 0 });
+      });
+      qzSave();
+      qzQueue({ k: 'stats', batch: qzUuid(), rows: deltas });
+    },
+
+    flush: function () { return qzFlush(); },
+    pending: function () { return qzLoadLocal().outbox.length; },
+
+    /* Pull the account copy over the local one, keeping anything still queued. */
+    pull: function () {
+      if (!client || !currentUser) return Promise.resolve(false);
+      var uid = currentUser.id;
+      return Promise.all([
+        client.from('quiz_scores').select('unit_key,quiz_type,best,taken').eq('user_id', uid),
+        client.from('quiz_prefs').select('unit_key,quiz_type,data').eq('user_id', uid),
+        client.from('quiz_exclusions').select('unit_key,quiz_type,item').eq('user_id', uid),
+        client.from('quiz_item_stats').select('unit_key,quiz_type,item,seen,correct').eq('user_id', uid)
+      ]).then(function (r) {
+        var d = qzLoadLocal();
+        if (r[0] && !r[0].error) (r[0].data || []).forEach(function (x) {
+          var k = qzKey(x.unit_key, x.quiz_type), cur = d.scores[k];
+          /* ⚠ MAX both ways: an offline run recorded here must not be lost to the server copy. */
+          d.scores[k] = { best:  Math.max(x.best  || 0, cur ? cur.best  : 0),
+                          taken: Math.max(x.taken || 0, cur ? cur.taken : 0) };
+        });
+        if (r[1] && !r[1].error) (r[1].data || []).forEach(function (x) {
+          var k = qzKey(x.unit_key, x.quiz_type);
+          /* ⚠ A local pref that exists wins — it may be newer and still queued. */
+          if (!d.prefs[k] || !Object.keys(d.prefs[k]).length) d.prefs[k] = x.data || {};
+        });
+        if (r[2] && !r[2].error) {
+          var ex = {};
+          (r[2].data || []).forEach(function (x) {
+            var k = qzKey(x.unit_key, x.quiz_type);
+            (ex[k] = ex[k] || {})[x.item] = 1;
+          });
+          Object.keys(ex).forEach(function (k) { d.excl[k] = ex[k]; });
+        }
+        if (r[3] && !r[3].error) (r[3].data || []).forEach(function (x) {
+          var k = qzKey(x.unit_key, x.quiz_type);
+          (d.stats[k] = d.stats[k] || {})[x.item] = { seen: x.seen || 0, correct: x.correct || 0 };
+        });
+        qzSave();
+        return true;
+      }).catch(function () { return false; });
+    },
+
+    /* test seam: wipe the local mirror without touching the account */
+    _reset: function () { qzCache = qzBlank(); qzSave(); }
+  };
+
+  /* Drain on reconnect and on sign-in — the two moments every other outbox here uses. */
+  try {
+    window.addEventListener('online', function () { qzFlush(); });
+    window.addEventListener('thaiear:auth', function () { qzFlush(); });
+  } catch (_) {}
+
   /* ══ OAUTH / MAGIC-LINK FAILURE SURFACING (2026-08-17) ══════════════════════════════════════
      Until today a FAILED sign-in was completely silent. startGoogleSignIn() hands off to Google
      and the return trip is handled by supabase-js's detectSessionInUrl — which only ever looks
