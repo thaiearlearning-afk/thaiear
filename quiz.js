@@ -18,15 +18,44 @@
   'use strict';
 
   /* ── the four quizzes, IN DISPLAY ORDER ────────────────────────────────────────────────── */
+  /* ⭐ THE FOUR QUIZ ICONS. §9.0 called the V/L/B/S letters placeholders and the last
+     undesigned thing in the arm; this closes it.
+     ⚠ ONE VISUAL LANGUAGE, and it is the site's: 24-grid, stroked at 1.9, round caps and
+     joins — the same construction as the sync glyph, the gear and the Read Thai icons. A filled
+     set here would read as a different product from the rest of the sheet.
+     ⚠ Each one says what the quiz ASKS, not what it is about: an ear taking in sound for
+     listening, blocks being assembled for the Builder, a mouth speaking for Speak Thai, a book
+     for the Vocab Trainer. */
+  function icon(paths) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"'
+         + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
+  }
+  var ICONS = {
+    /* a book, half-open */
+    vocab:  icon('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v16H6.5A2.5 2.5 0 0 0 4 21.5z"/>'
+          + '<path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v16h5.5a2.5 2.5 0 0 1 2.5 2.5z"/>'),
+    /* an ear, with two waves coming in */
+    listen: icon('<path d="M6 9a5 5 0 0 1 10 0c0 2.5-1.6 3.4-2.6 4.4-.8.8-1.1 1.6-1.2 2.6a2.6 2.6 0 0 1-5.2 0"/>'
+          + '<path d="M9.4 9.2a1.9 1.9 0 0 1 3.2 1.3"/>'
+          + '<path d="M19 7.5a6.5 6.5 0 0 1 0 9"/><path d="M21.6 4.5a10.5 10.5 0 0 1 0 15"/>'),
+    /* three blocks being stacked */
+    build:  icon('<rect x="3" y="14" width="7" height="7" rx="1.4"/>'
+          + '<rect x="14" y="14" width="7" height="7" rx="1.4"/>'
+          + '<rect x="8.5" y="3.5" width="7" height="7" rx="1.4"/>'),
+    /* a mouth speaking, with sound leaving it */
+    speak:  icon('<path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/>'
+          + '<path d="M5.5 10.5a6.5 6.5 0 0 0 13 0"/><path d="M12 17v4"/><path d="M8.5 21h7"/>')
+  };
+
   var QUIZZES = [
     { id: 3, key: 'vocab', name: 'Vocab Trainer', ds: 'See a word, pick the Thai',
-      icon: 'V', step: 10, topicOnly: true },
+      icon: ICONS.vocab, step: 10, topicOnly: true },
     { id: 1, key: 'listen', name: 'Listening comprehension', ds: 'Hear Thai, pick the English',
-      icon: 'L', step: 10 },
+      icon: ICONS.listen, step: 10 },
     { id: 2, key: 'build', name: 'Thai Builder', ds: 'See English, build the Thai',
-      icon: 'B', step: 5 },
+      icon: ICONS.build, step: 5 },
     { id: 4, key: 'speak', name: 'Speak Thai', ds: 'See English, say it aloud, mark yourself',
-      icon: 'S', step: 5 }
+      icon: ICONS.speak, step: 5 }
   ];
   function quizById(id) { for (var i = 0; i < QUIZZES.length; i++) if (QUIZZES[i].id === id) return QUIZZES[i]; return null; }
 
@@ -257,9 +286,54 @@
     });
     document.body.appendChild(ov);
   }
+  /* ⭐⭐ THE OVERLAY TAKES A HISTORY ENTRY, SO THE BACK GESTURE CLOSES IT (owner, 2026-09-20).
+     The quiz is a DOM overlay, not a navigation — so it pushed nothing, and an edge-swipe popped
+     whatever brought the learner to the topic page in the first place. They opened a quiz and
+     landed on the topics grid, two steps from where they were.
+     ✅ Closing the overlay lands them exactly where "Back to the topic" does, for free: the topic
+     page is still underneath at the scroll position they left it.
+     ⚠ SAME URL. pushState with location.href adds an entry without changing the address, so a
+     reload or a shared link still opens the topic page rather than a quiz that cannot be
+     restored — the quiz has no URL state to restore from. */
+  var pushedEntry = false;
+  function pushEntry() {
+    if (pushedEntry) return;
+    try { history.pushState({ te_quiz: 1 }, '', location.href); pushedEntry = true; } catch (_) {}
+  }
+  /* ⚠ Only ever pops an entry we know is OURS. Without the state check, an explicit close on a
+     history we did not push would send the learner back a page. */
+  function dropEntry() {
+    if (!pushedEntry) return;
+    pushedEntry = false;
+    try {
+      if (history.state && history.state.te_quiz) history.back();
+    } catch (_) {}
+  }
+
+  window.addEventListener('popstate', function () {
+    if (!ov || ov.hidden) return;
+    /* ⛔⛔ A SWIPE MID-RUN STILL WARNS. It is exactly the case the warning exists for — an
+       unfinished run records nothing (§8.2) — and an edge-swipe is the easiest of all the exits
+       to do by accident. popstate cannot be cancelled, so the entry is PUT BACK first and the
+       question is asked; cancelling leaves the overlay open with its entry intact, and
+       confirming drops it for real. */
+    if (runInProgress()) {
+      try { history.pushState({ te_quiz: 1 }, '', location.href); pushedEntry = true; } catch (_) {}
+      confirmExit(function () { pushedEntry = false; doClose(); dropEntry0(); });
+      return;
+    }
+    pushedEntry = false;
+    doClose();
+  });
+  /* the confirmed-exit path has already cleared the flag, so it needs an unguarded pop */
+  function dropEntry0() {
+    try { if (history.state && history.state.te_quiz) history.back(); } catch (_) {}
+  }
+
   function show() {
     mount(); applyFontScale();
     ov.hidden = false; document.documentElement.style.overflow = 'hidden';
+    pushEntry();
   }
 
   /* ⭐ EXITING MID-QUIZ WARNS FIRST (owner, 2026-09-20). An unfinished run records nothing —
@@ -598,8 +672,8 @@
             closes the four choices; the results dropdown is a collapsed one-line row, so it sits
             between the mascot and the exit without pushing "Back to the topic" off the screen. */
          + tigerBlock()
-         + '<div class="tq-minor"><button type="button" class="tq-return">'
-         + esc(ctx.originLabel || 'Back') + ' &rarr;</button></div>'
+         + '<div class="tq-minor"><button type="button" class="tq-return">&larr; '
+         + esc(ctx.originLabel || 'Back') + '</button></div>'
          + resultsPanel() + '</div>');
     wireClose();
     sheet.querySelectorAll('.qpick button').forEach(function (b) {
@@ -613,8 +687,8 @@
   function goBack() {
     var href = ctx.originHref;
     /* ⚠ Return leaves the quiz as surely as the X does, so it takes the same warning. */
-    if (runInProgress()) { confirmExit(function () { doClose(); nav(); }); return; }
-    doClose(); nav();
+    if (runInProgress()) { confirmExit(function () { doClose(); dropEntry(); nav(); }); return; }
+    doClose(); dropEntry(); nav();
     function nav() {
     /* ⛔ Not history.back() and not document.referrer (§3B.2): referrer is empty on a PWA cold
        start and wrong after a reload, and back() walks into the quiz just left. The call site
@@ -728,7 +802,7 @@
     html += '<button type="button" class="startbtn">Start</button>'
       + '<div class="tq-minor">'
       + '<button type="button" class="tq-back">&larr; Other quizzes</button>'
-      + '<button type="button" class="tq-return">' + esc(ctx.originLabel || 'Back') + ' &rarr;</button>'
+      + '<button type="button" class="tq-return">&larr; ' + esc(ctx.originLabel || 'Back') + '</button>'
       + '</div>';
 
     render(html);
@@ -1436,10 +1510,20 @@
          against the canonical chip order, which is the one the corpus actually records. */
       var exact = built.join('\u0001') === canon.map(function (g) { return g[0]; }).join('\u0001');
 
+      /* ⭐ A REPLAY BUTTON, like the other three quizzes (owner, 2026-09-20). The Thai plays
+         once automatically on submit (§5.1) and there was no way to hear it again — which is
+         the one thing a learner wants most on the answer they just got wrong.
+         ⚠ It goes UNDER the model answer and ABOVE Next, the same slot Vocab and Speak use, so
+         the three reveals read the same way round. On an exact match there is no model answer,
+         so the button is the only thing above Next and the spacing is unchanged. */
+      var replay = '<button class="playbtn" type="button"><span class="tri"></span>'
+                 + 'Play the Thai</button>';
+
       var d = sheet.querySelector('.t-rev');
       if (ok) {
         d.innerHTML = '<div class="reveal">'
           + (exact ? '' : modelAnswer(s, canon, p))
+          + replay
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       } else {
@@ -1449,9 +1533,15 @@
            is the easiest thing here to get wrong. */
         d.innerHTML = '<div class="reveal">'
           + modelAnswer(s, canon, p, true)
+          + replay
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       }
+      /* ⚠ toggleSentence, not playSentence: the clip is ALREADY playing from the automatic
+         play on submit, so a fresh call would stop it and start it again from the top. This is
+         the same control the other reveals use and it resumes rather than restarts. */
+      var rb = d.querySelector('.playbtn');
+      if (rb) rb.onclick = function () { toggleSentence(s.num, rb); };
       d.querySelector('.nextbtn').onclick = function () { advance(String(s.num), ok); };
       showReveal(d);
     };
@@ -1800,7 +1890,7 @@
       + '<div class="tq-acts">'
       + '<button type="button" class="startbtn t-again">Try again</button>'
       + '<button type="button" class="tq-exit">&larr; All four quizzes</button>'
-      + '<button type="button" class="tq-return">' + esc(ctx.originLabel || 'Back') + ' &rarr;</button>'
+      + '<button type="button" class="tq-return">&larr; ' + esc(ctx.originLabel || 'Back') + '</button>'
       + '</div></div>');
     wireClose();
     var againPrefs = run.prefs;
@@ -1875,13 +1965,22 @@
     var unit = location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
     var st = store();
 
+    /* ⚠ A COLOUR PER QUIZ, from tints the stylesheet already has — the accent and the
+       right/wrong pair. Inventing four hues for one component is how a palette drifts.
+       ⛔ GOLD IS NOT ONE OF THEM, though the owner offered it. Gold is this site's PREMIUM
+       signifier, so a gold tile on a free topic would say something untrue — and on a premium
+       unit it would vanish into the block's own gold ground. The fourth is a slate.
+       ⛔ AND NO SCORE ON THE TILE. It showed a dash per row and the owner had to ask what they
+       were; worse, the dash was not even honest — bestScore() reads the LOCAL mirror and this
+       block renders at page load, before any pull(), so an account WITH scores shows four
+       dashes on a device that has not synced yet. The scores live in My Results, which is
+       reached from the picker and therefore after a pull. */
+    var TINT = { 3: 'v', 1: 'l', 2: 'b', 4: 's' };
     var tiles = QUIZZES.map(function (q) {
-      if (q.topicOnly && false) return '';
-      var best = st ? st.bestScore(unit, q.id) : null;
-      return '<button type="button" class="tqe-tile" data-q="' + q.id + '">'
+      return '<button type="button" class="tqe-tile t-' + TINT[q.id] + '" data-q="' + q.id + '">'
+        + '<span class="tqe-ic">' + q.icon + '</span>'
         + '<span class="tqe-nm">' + esc(q.name) + '</span>'
-        + '<span class="tqe-sc' + (best == null ? ' none' : '') + '">'
-        + (best == null ? '—' : best + '%') + '</span></button>';
+        + '</button>';
     }).join('');
 
     var wrap = document.createElement('div');
@@ -1898,6 +1997,21 @@
 
     /* after the sentence list, wherever it ends. ⚠ Fall back to <main> then body — a topic page
        whose markup shifts must still get the block rather than silently not. */
+    /* ⭐ WARM THE MASCOT (owner, 2026-09-20: "the tiger always loads v slowly. no issue with
+       other images"). It is the SMALLEST of the site's mascots — 34KB against gecko's 122KB — so
+       the cause is not weight, it is timing: every other mascot is in its page's initial HTML and
+       is fetched during page load, while the tiger's first request happens at the instant the
+       picker renders, which is the one moment it has to already be there.
+       ⛔ NOT a PRECACHE entry: that is paid for by every device on every VERSION bump, for an
+       image only the owner can currently see. This block is owner-gated, so warming it here costs
+       exactly the people who will use it and nobody else.
+       ⚠ Fire-and-forget, after the block is in the DOM, so it cannot delay the page. */
+    try {
+      var warm = new Image();
+      warm.decoding = 'async';
+      warm.src = 'tiger.png';
+    } catch (_) {}
+
     var list = document.getElementById('sentence-list');
     if (list && list.parentNode) list.parentNode.insertBefore(wrap, list.nextSibling);
     else (document.querySelector('main') || document.body).appendChild(wrap);
@@ -1946,7 +2060,18 @@
         originLabel: opts.originLabel || 'Back to the topic'
       };
       var st = store();
-      if (st && st.pull) st.pull();      /* best-effort; the UI never waits on it */
+      /* ⚠⚠ REPAINT WHEN THE PULL LANDS. bestScore() reads the LOCAL mirror, and on a device
+         that has not synced yet that mirror is empty — so the picker painted "—" against every
+         quiz for an account that HAS scores, and never corrected itself because nothing
+         re-rendered. The UI still does not WAIT on the pull; it just stops ignoring the answer.
+         ⚠ Guarded on the picker still being the visible screen: by the time a network round trip
+         finishes the learner may be three questions into a quiz, and re-rendering then would
+         throw the question away. */
+      if (st && st.pull) {
+        st.pull().then(function (ok) {
+          if (ok && ov && !ov.hidden && sheet && sheet.querySelector('.qpick')) openPicker();
+        }).catch(function () {});
+      }
       /* ⚠ A tile on the entry block is a SHORTCUT into one quiz; the block's own button opens
          the picker. Both land in the same component (§9.2) — this only chooses the first screen. */
       if (opts.start) openMenu(opts.start); else openPicker();

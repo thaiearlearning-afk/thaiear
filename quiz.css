@@ -82,6 +82,11 @@
   background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 15px;
 }
+/* ⚠ The tile used to hold a single letter, so it needed no rule for its contents. The svg is
+   sized here rather than on the element, because the four are one set and should not be able to
+   drift apart. 17px in a 30px tile leaves the same optical padding the letters had. */
+.qpick .ic svg { width: 17px; height: 17px; display: block; }
+.tq-sheet.premium .qpick .ic { background: #FBF5DC; color: #B29234; }
 .qpick .nm { font-size: 14px; font-weight: 500; color: var(--text-primary, #1A1A1A); display: block; line-height: 1.25; }
 .qpick .ds { font-size: 11.5px; color: var(--text-tertiary, #9A9A9A); display: block; line-height: 1.35; }
 .qpick .sc { margin-left: auto; font-size: 12px; font-weight: 600; color: #1F5D3A; font-variant-numeric: tabular-nums; }
@@ -736,7 +741,9 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   --tqe-bg: var(--accent-light, #EEEDFE);
   --tqe-line: rgba(75, 65, 173, .22);
   max-width: 760px; margin: 32px auto 44px; padding: 20px 18px 18px;
-  background: var(--tqe-bg);
+  /* ⚠ NEUTRAL GROUND, tier colour on the edge. See the grid rules below: a tinted ground made
+     one of the four coloured tiles invisible on a premium unit. */
+  background: var(--surface-2, #F7F7F6);
   border: 0.5px solid var(--tqe-line);
   border-radius: var(--radius-lg, 14px);
   font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
@@ -748,23 +755,62 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .tqe-s { margin: 0; font-size: 13px; color: var(--text-secondary, #5A5A5A); }
 
 /* the 2x2 the owner suggested — each tile a shortcut, and each carrying its own best score */
-.tqe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+/* ⭐⭐ A SQUARE, COLOURED 2×2 (owner, 2026-09-20: "more geometric and colorful and visually
+   nice"). Icon centred, name beneath, and the block's own ground showing between the tiles as
+   the "little moat" he described.
+   ⚠ THE BLOCK GOES NEUTRAL SO THE TILES CAN BE COLOURED. It used to be tinted with the tier
+   colour, which on a premium unit is the same gold as one of the tiles would have been — the
+   tile would have disappeared into its own background. The tier colour now lives on the heading,
+   the border and the button, which is where it carries meaning; the ground is neutral so all
+   four tints read equally on any tier.
+   ⚠ aspect-ratio 1, not a fixed height: the tiles stay square as the column width changes, and
+   a long quiz name wraps inside the square rather than stretching it. */
+.tqe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
 .tqe-tile {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  background: var(--surface, #fff); border: 0.5px solid var(--tqe-line);
-  border-radius: var(--radius-md, 10px); padding: 12px 13px;
-  font-family: inherit; cursor: pointer; text-align: left;
-  transition: border-color .15s, box-shadow .15s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  aspect-ratio: 1 / 1; border: 0; border-radius: var(--radius-md, 10px); padding: 10px 8px;
+  font-family: inherit; cursor: pointer; text-align: center;
+  background: var(--t-bg); color: var(--t-ink);
+  transition: transform .12s ease, box-shadow .15s ease;
 }
-.tqe-tile:hover { border-color: var(--tqe-ink); box-shadow: 0 0 0 3px var(--tqe-bg); }
-.tqe-nm { font-size: 13.5px; font-weight: 500; color: var(--text-primary, #1A1A1A); line-height: 1.25; }
-.tqe-sc { font-size: 13px; font-weight: 700; color: var(--tqe-ink); font-variant-numeric: tabular-nums; flex-shrink: 0; }
-.tqe-sc.none { color: var(--text-tertiary, #9A9A9A); font-weight: 500; }
+.tqe-tile:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.09); }
+.tqe-tile:active { transform: none; }
 
+/* the four, from tints already in this stylesheet */
+.tqe-tile.t-v { --t-bg: #EEEDFE; --t-ink: #4B41AD; }   /* Vocab   — the accent */
+.tqe-tile.t-l { --t-bg: #F1F7F3; --t-ink: #1F5D3A; }   /* Listen  — the "right" green */
+.tqe-tile.t-b { --t-bg: #FCF2F1; --t-ink: #B4342E; }   /* Builder — the "wrong" clay */
+.tqe-tile.t-s { --t-bg: #EFEFF4; --t-ink: #44506B; }   /* Speak   — slate, NOT gold: see quiz.js */
+
+.tqe-ic { display: flex; align-items: center; justify-content: center; }
+.tqe-ic svg { width: 30px; height: 30px; display: block; }
+.tqe-nm {
+  font-size: 12.5px; font-weight: 600; line-height: 1.2; color: currentColor;
+  letter-spacing: -0.005em;
+}
+.tqe-sc { font-size: 11px; font-weight: 700; opacity: .72; font-variant-numeric: tabular-nums; }
+
+/* ⚠ Three columns would make the squares tiny on a phone; two is the shape he asked for and it
+   holds at every width. Only the icon shrinks. */
+@media (max-width: 420px) {
+  .tqe-ic svg { width: 26px; height: 26px; }
+  .tqe-nm { font-size: 11.5px; }
+}
+
+/* ⚠ The primary action on the block, so it is sized like one. 15px was small enough that the
+   owner noticed it on a phone before anything else — and on iOS a control under 16px also makes
+   Safari zoom the viewport on focus, which is the same threshold topics-page.css fights for the
+   search field. 17px clears both. */
 .tqe-go {
   width: 100%; background: var(--tqe-ink); color: #fff; border: 0;
-  border-radius: var(--radius-md, 10px); padding: 13px;
-  font: 600 15px/1.2 inherit; cursor: pointer;
+  border-radius: var(--radius-md, 10px); padding: 15px;
+  /* ⛔⛔ NOT THE `font` SHORTHAND. It read `font: 600 15px/1.2 inherit`, and `inherit` is not a
+     legal font-family inside the shorthand — so the browser threw the WHOLE declaration away and
+     the button fell back to the UA default of 13.3px. That is why it looked tiny on a phone;
+     changing 15 to 17 in the shorthand would have done nothing at all. Longhand, so each part
+     stands on its own. */
+  font-family: inherit; font-weight: 600; font-size: 17px; line-height: 1.2;
+  letter-spacing: -0.005em; cursor: pointer;
 }
 .tqe-go:hover { filter: brightness(1.08); }
 .tqe-note { margin: 9px 0 0; font-size: 11.5px; color: var(--text-tertiary, #9A9A9A); text-align: center; }
