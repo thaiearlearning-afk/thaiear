@@ -1362,9 +1362,20 @@
       submit.classList.add('t-verdict', ok ? 'right' : 'wrong');
       submit.textContent = ok ? 'Correct' : 'Not quite';
 
+      /* ⭐⭐ A NON-STANDARD BUT CORRECT ANSWER IS MARKED RIGHT **AND** SHOWN THE MODEL ANSWER
+         (owner, 2026-09-20). Now that a sentence can license omitting กัน or ก็, and that fronting
+         a time adverbial is accepted, "correct" covers several genuinely different sentences —
+         and a learner who drops a word they were never sure about learns nothing from a bare
+         tick. They are right, and they should also see what the sentence normally looks like.
+         ⚠ ONLY WHEN IT DIFFERS. §5.1's asymmetry still holds for an exact match: a quiz that
+         lectures after the textbook answer is a quiz people stop taking. The comparison is
+         against the canonical chip order, which is the one the corpus actually records. */
+      var exact = built.join('\u0001') === canon.map(function (g) { return g[0]; }).join('\u0001');
+
       var d = sheet.querySelector('.t-rev');
       if (ok) {
         d.innerHTML = '<div class="reveal">'
+          + (exact ? '' : modelAnswer(s, canon, p))
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       } else {
@@ -1372,18 +1383,30 @@
            transliteration must not be handed a wall of Thai at the one moment they are trying to
            learn from a mistake — and the reveal is naturally built from Thai-first data, so this
            is the easiest thing here to get wrong. */
-        var b = scriptBits(stripBars(s.thai), stripBars(s.translit), p.script);
         d.innerHTML = '<div class="reveal">'
-          + '<p class="mlab">The correct order</p>'
-          + '<div class="chips">' + canon.map(chipHtml).join('') + '</div>'
-          + '<p class="thaibig" style="margin-top:10px">' + esc(b.main) + '</p>'
-          + (b.sub ? '<p class="tl">' + esc(b.sub) + '</p>' : '')
+          + modelAnswer(s, canon, p, true)
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       }
       d.querySelector('.nextbtn').onclick = function () { advance(String(s.num), ok); };
       showReveal(d);
     };
+  }
+
+  /* One renderer for the model answer, used by BOTH branches — a learner who was wrong and a
+     learner who was right-but-different need exactly the same thing, and two copies of it would
+     drift. Only the heading changes.
+     ⛔⛔ IT HONOURS THE LEARNER'S SCRIPT SETTING. Someone working in transliteration must not be
+     handed a wall of Thai at the one moment they are trying to learn from a difference — and
+     the reveal is naturally built from Thai-first data, so this is the easiest thing here to get
+     wrong. */
+  function modelAnswer(s, canon, p, wasWrong) {
+    var b = scriptBits(stripBars(s.thai), stripBars(s.translit), p.script);
+    return '<p class="mlab">' + (wasWrong ? 'The correct order' : 'Yours works. The usual wording')
+      + '</p>'
+      + '<div class="chips">' + canon.map(chipHtml).join('') + '</div>'
+      + '<p class="thaibig" style="margin-top:10px">' + esc(b.main) + '</p>'
+      + (b.sub ? '<p class="tl">' + esc(b.sub) + '</p>' : '');
   }
 
   /* §5.2 — the answer space is the set of LICENSED VARIATIONS, not the permutation space.
