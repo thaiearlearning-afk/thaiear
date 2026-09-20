@@ -147,6 +147,29 @@
   font-size: 12.5px; color: var(--text-secondary, #5A5A5A); text-align: left;
 }
 .tq-minor button:hover { color: var(--accent, #4B41AD); text-decoration: underline; }
+
+/* ⭐ THE WAY OUT IS A CONTROL, NOT A FOOTNOTE (owner, 2026-09-20: "slightly larger/more
+   prominent (not aggressively so)"). It sat in .tq-minor at 12.5px with no affordance, which is
+   right for "← All four quizzes" — a sideways step inside the quiz — and wrong for the one
+   button that LEAVES.
+   ⚠ The arrow points FORWARD, and that is deliberate: ← means "back up a level within the
+   quiz", which is what the siblings beside it do. This one goes somewhere — to the topic — so
+   it gets →, and the two kinds of exit stop looking like the same thing.
+   ⛔ Restrained on purpose: a bordered pill at 13.5px, not a filled accent button. It is the
+   way out of the quiz, not the thing the screen is for. */
+.tq-minor .tq-return {
+  align-self: flex-start; font-size: 13.5px; font-weight: 500;
+  color: var(--text-primary, #1A1A1A);
+  border: 0.5px solid var(--border-strong, rgba(0,0,0,.16));
+  border-radius: 999px; padding: 7px 14px;
+}
+.tq-minor .tq-return:hover {
+  text-decoration: none; border-color: var(--accent, #4B41AD);
+  background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
+}
+.tq-sheet.premium .tq-minor .tq-return:hover {
+  border-color: #B29234; background: #FBF5DC; color: #B29234;
+}
 .tq-minor .done { color: #1F5D3A; text-decoration: none; cursor: default; }
 
 /* ── the exclusions list ─────────────────────────────────────────────────────────────── */
@@ -678,9 +701,15 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 /* ⚠ Bigger than the first pass (owner: "the tiger is too small currently"), and it can afford
    to be now that the rows above it are tighter. The two caps stay: a fixed width for intent, a
    percentage for the guard, so it cannot balloon on a wide sheet or overflow a narrow one. */
-.tq-mascot { text-align: center; margin: 14px 0 2px; }
+/* ⚠ SIZED AGAINST THE SITE'S OTHER MASCOTS, not guessed. guide.html renders khwai.jpg at
+   200×177 — all but identical proportions to the tiger's 440×389 — and about.html's is 195px.
+   172px looked small precisely because it was smaller than every other animal on the site.
+   ⚠ It grows UPWARD: the top margin shrinks rather than the block pushing the exit down, which
+   is what keeps the whole menu on one screen. The two caps stay — a fixed width for intent, a
+   percentage for the guard. */
+.tq-mascot { text-align: center; margin: 4px 0 2px; }
 .tq-mascot img {
-  width: 172px; max-width: 54%; height: auto; aspect-ratio: 440 / 389;
+  width: 200px; max-width: 58%; height: auto; aspect-ratio: 440 / 389;
   display: block; margin: 0 auto 5px;
 }
 .tq-mascot-t {

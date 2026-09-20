@@ -538,7 +538,6 @@
       + '<div class="tq-res-b" hidden>'
       + (here ? '<div class="tq-res-u"><p class="mlab">This unit</p>' + here + '</div>' : '')
       + (others ? '<p class="mlab tq-res-sep">Everywhere else</p>' + others : '')
-      + roosterBlock()
       + '</div></div>';
   }
 
@@ -557,9 +556,12 @@
       + '</div>';
   }
   function tigerBlock() { return mascot('tiger.png', 440, 389, 'Stay sharp'); }
-  /* ⚠ The rooster sits INSIDE the results panel, which is collapsed by default — so the two
-     mascots are never on screen together, and each belongs to the thing it closes. */
-  function roosterBlock() { return mascot('rooster.png', 440, 495, 'Stay with it'); }
+  /* ⛔ THE ROOSTER IS NOT MOUNTED (owner, 2026-09-20: "since the my results is a dropdown, i
+     dont think we need the rooster mascot there ... looks very busy so near the tiger").
+     I had reasoned the two were never on screen together because the panel is collapsed — true
+     of the default state and wrong about the one that matters: expanding the dropdown puts a
+     second animal a few pixels below the first. The image stays in the repo; it is a mascot
+     looking for a surface, not dead weight. */
 
   function wireResults() {
     var h = sheet.querySelector('.tq-res-h');
@@ -596,9 +598,9 @@
             closes the four choices; the results dropdown is a collapsed one-line row, so it sits
             between the mascot and the exit without pushing "Back to the topic" off the screen. */
          + tigerBlock()
-         + resultsPanel()
-         + '<div class="tq-minor"><button type="button" class="tq-return">&larr; '
-         + esc(ctx.originLabel || 'Back') + '</button></div></div>');
+         + '<div class="tq-minor"><button type="button" class="tq-return">'
+         + esc(ctx.originLabel || 'Back') + ' &rarr;</button></div>'
+         + resultsPanel() + '</div>');
     wireClose();
     sheet.querySelectorAll('.qpick button').forEach(function (b) {
       b.onclick = function () { openMenu(parseInt(b.dataset.q, 10)); };
@@ -726,7 +728,7 @@
     html += '<button type="button" class="startbtn">Start</button>'
       + '<div class="tq-minor">'
       + '<button type="button" class="tq-back">&larr; Other quizzes</button>'
-      + '<button type="button" class="tq-return">&larr; ' + esc(ctx.originLabel || 'Back') + '</button>'
+      + '<button type="button" class="tq-return">' + esc(ctx.originLabel || 'Back') + ' &rarr;</button>'
       + '</div>';
 
     render(html);
@@ -1798,7 +1800,7 @@
       + '<div class="tq-acts">'
       + '<button type="button" class="startbtn t-again">Try again</button>'
       + '<button type="button" class="tq-exit">&larr; All four quizzes</button>'
-      + '<button type="button" class="tq-return">&larr; ' + esc(ctx.originLabel || 'Back') + '</button>'
+      + '<button type="button" class="tq-return">' + esc(ctx.originLabel || 'Back') + ' &rarr;</button>'
       + '</div></div>');
     wireClose();
     var againPrefs = run.prefs;
