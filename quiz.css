@@ -331,9 +331,17 @@
    Secondary by design: it says what the sentence MEANS, while the line above says how it is
    BUILT. At the same weight the learner would work from whichever they happened to read first,
    which is the ambiguity this exists to remove. */
+/* ⚠ 13.5px and the SECONDARY ink, not the tertiary (owner, 2026-09-20: "should be a bit
+   bigger/more noticeable"). At 12.5px in --text-tertiary it read as a caption — the grey the
+   rest of the site uses for things you are not meant to read — and the learner skipped the one
+   line that says what the sentence MEANS.
+   ⛔ STILL CLEARLY SECONDARY, and the gap to the prompt is what carries that: 15.5px medium
+   against 13.5px italic. It must not close further. If the two lines read as equal the learner
+   works from whichever they happen to see first, which is the ambiguity §5.4 exists to remove —
+   one line says how the sentence is BUILT, the other what it MEANS. */
 .enq-nat {
-  margin: -8px 0 13px; font-size: 12.5px; line-height: 1.45;
-  color: var(--text-tertiary, #9A9A9A); font-style: italic;
+  margin: -6px 0 13px; font-size: 13.5px; line-height: 1.45;
+  color: var(--text-secondary, #5A5A5A); font-style: italic;
 }
 
 /* ══ dragging in the Thai Builder ══════════════════════════════════════════════
@@ -592,7 +600,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 
 /* question text */
 .enq       { font-size: calc(15.5px * var(--tq-scale)); margin-bottom: calc(13px * var(--tq-scale)); }
-.enq-nat   { font-size: calc(12.5px * var(--tq-scale)); margin: calc(-8px * var(--tq-scale)) 0 calc(13px * var(--tq-scale)); }
+.enq-nat   { font-size: calc(13.5px * var(--tq-scale)); margin: calc(-6px * var(--tq-scale)) 0 calc(13px * var(--tq-scale)); }
 .thaibig   { font-size: calc(21px   * var(--tq-scale)); }
 .tl        { font-size: calc(12.5px * var(--tq-scale)); }
 .cen       { font-size: calc(13px   * var(--tq-scale)); }

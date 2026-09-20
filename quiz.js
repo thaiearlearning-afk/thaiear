@@ -465,11 +465,35 @@
   function wireClose() { /* intentionally empty — see head() */ }
 
   /* ── audio ─────────────────────────────────────────────────────────────────────────────── */
+  /* ⛔⛔ THE BUTTON IS STATE, NOT A CLOSURE, AND THAT WAS THE BUG. Every element listener
+     used to capture the `btn` passed to playSentence() — but the Builder auto-plays on submit
+     with `playSentence(s.num, null)`, BEFORE the reveal (and its replay button) exists. So every
+     listener was bound to null, setPlayUI() returned at its first line, and the reveal's button
+     could never be updated by the element again.
+     ✅ That is the whole explanation for "the display is stuck on showing the pause button
+     forever": the `ended` listener fires correctly and writes to nobody. It also explains why
+     pressing pause DOES reset it — that path calls setPlayUI(btn) directly from the click
+     handler, with the real button in hand.
+     ⚠ auPending is the second half: the mint is async, so a tap that lands while the auto-play
+     is still fetching used to start a SECOND fetch and a second <audio>, and the two raced —
+     which is the "first tap nothing, second shows pause, third actually plays" sequence. A tap
+     during a pending play now ADOPTS it instead of starting a rival. */
   var au = null, auRevoke = null, auCredited = false, auNum = null;
+  var auBtn = null;        /* the button currently showing this clip's state */
+  var auPending = null;    /* the num whose clip is being minted right now */
   function stopAudio() {
     if (au) { try { au.pause(); } catch (_) {} }
     if (auRevoke) { try { auRevoke(); } catch (_) {} auRevoke = null; }
-    au = null; auNum = null; auCredited = false;
+    au = null; auNum = null; auCredited = false; auBtn = null; auPending = null;
+  }
+  /* ⚠ A button created AFTER playback started (the Builder's reveal is built while the clip
+     from submit is already running) must take over the display and show the truth, not a
+     default. Called wherever a play button is wired. */
+  function adoptAudioBtn(num, btn) {
+    if (!btn) return;
+    if (auNum !== num && auPending !== num) return;
+    auBtn = btn;
+    setPlayUI(btn, !!(au && !au.paused && !au.ended) || auPending === num);
   }
   /* Play a sentence's Thai. ⚠ Credit is gated on a DWELL (≥1.5s heard, or `ended`), never on
      play() — see the note on ThaiEarQuizAudio.credit. Under-counting is the safe direction. */
@@ -496,7 +520,16 @@
      SAME sentence — restarting a clip someone paused two seconds in is its own small annoyance,
      and it would also re-mint the signed URL for no reason. */
   function toggleSentence(num, btn) {
+    /* ⚠ A tap while this same clip is still being minted ADOPTS the pending play. Starting a
+       second one was the race behind "first tap nothing, second shows pause, third plays". */
+    if (auPending === num) { auBtn = btn; setPlayUI(btn, true); return; }
     if (au && auNum === num) {
+      auBtn = btn;
+      /* ⚠ An ENDED element is not a paused one to resume — rewind it first. play() on a
+         finished clip is specified to seek to the start, but only once it is not also being
+         re-entered mid-teardown; setting currentTime makes the restart explicit and gives the
+         `play` event something audible to accompany. */
+      if (au.ended) { try { au.currentTime = 0; } catch (_) {} }
       if (au.paused) {
         au.play().then(function () { setPlayUI(btn, true); }).catch(function () {});
       } else {
@@ -512,9 +545,12 @@
     var QA = window.ThaiEarQuizAudio;
     if (!QA || !QA.clip) return Promise.resolve(false);
     stopAudio();
-    auNum = num; auCredited = false;
+    auNum = num; auCredited = false; auBtn = btn; auPending = num;
     setPlayUI(btn, true);
     return QA.clip(num, 'TH').then(function (r) {
+      /* ⚠ A newer play may have superseded this one while the mint was in flight. */
+      if (auPending !== num) { try { r.revoke && r.revoke(); } catch (_) {} return false; }
+      auPending = null;
       au = new Audio(r.url); auRevoke = r.revoke;
       function creditOnce() {
         if (auCredited) return;
@@ -522,22 +558,26 @@
         try { QA.credit(num, 1); } catch (_) {}
       }
       au.addEventListener('timeupdate', function () { if (au && au.currentTime >= 1.5) creditOnce(); });
+      /* ⛔ EVERY LISTENER TALKS TO auBtn, NEVER TO `btn`. See the note on auBtn: `btn` is
+         whatever was in hand when the clip STARTED, which for the Builder's auto-play is null
+         and for any later reveal is a button that no longer exists. */
       au.addEventListener('ended', function () {
         creditOnce();
-        setPlayUI(btn, false);
+        setPlayUI(auBtn, false);
       });
       /* ⚠ The element can be paused or resumed by something other than this button — a lock
          screen, a headset, the OS. Listening to the element rather than only to our own click
          is what keeps the icon honest in those cases. */
-      au.addEventListener('pause', function () { if (au && !au.ended) setPlayUI(btn, false); });
-      au.addEventListener('play', function () { setPlayUI(btn, true); });
-      au.addEventListener('error', function () { setPlayUI(btn, false); });
+      au.addEventListener('pause', function () { if (au && !au.ended) setPlayUI(auBtn, false); });
+      au.addEventListener('play', function () { setPlayUI(auBtn, true); });
+      au.addEventListener('error', function () { setPlayUI(auBtn, false); });
       return au.play().then(function () { return true; }).catch(function () {
-        setPlayUI(btn, false);
+        setPlayUI(auBtn, false);
         return false;
       });
     }).catch(function () {
-      setPlayUI(btn, false);
+      if (auPending === num) auPending = null;
+      setPlayUI(auBtn || btn, false);
       return false;
     });
   }
@@ -1701,6 +1741,9 @@
          the same control the other reveals use and it resumes rather than restarts. */
       var rb = d.querySelector('.playbtn');
       if (rb) rb.onclick = function () { toggleSentence(s.num, rb); };
+      /* ⚠ The clip is ALREADY running — the submit handler started it before this button
+         existed, with a null button. Take over the display or it never updates again. */
+      adoptAudioBtn(s.num, rb);
       d.querySelector('.nextbtn').onclick = function () { advance(String(s.num), ok); };
       }
       drawRev();
@@ -1964,6 +2007,9 @@
     if (pb && s) {
       pb.onclick = function () { toggleSentence(s.num, pb); };
       if (first) playSentence(s.num, pb);
+      /* ⚠ On a REDRAW this is a brand-new node while the clip from the first draw may still be
+         playing, and the element's listeners still point at the old button. */
+      else adoptAudioBtn(s.num, pb);
     }
     d.querySelector('.nextbtn').onclick = function () { advance(w.th, ok); };
     }
@@ -2004,6 +2050,7 @@
         /* ⛔ the real Thai plays on reveal (§6A.1) — on the FIRST draw only, so a script
            change does not restart the clip. */
         if (first) playSentence(s.num, pb);
+        else adoptAudioBtn(s.num, pb);   /* ⚠ redrawn node, clip may still be running */
         d.querySelector('.tq-got').onclick = function () { advance(String(s.num), true); };
         d.querySelector('.tq-not').onclick = function () { advance(String(s.num), false); };
       }
