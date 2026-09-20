@@ -791,7 +791,12 @@
        could have used being withheld because a different setting could not. */
     var showHead = (qid === 2 && maxChips > HEADSTART.full);
 
-    var html = head(q.name, n + (qid === 3 ? ' words' : ' sentences') + ' available', false, q.icon);
+    /* ⛔ NO SUBTITLE HERE (owner, 2026-09-20: "youve removed the sentences/ words available
+       subtitle i never asked for"). It read "N sentences available" and its real cost was
+       alignment: the icon chip centres against the whole text block, so a second line pushed the
+       TITLE off the chip's centre line and the two stopped lining up. The count is not lost —
+       the length row below says "All (N)". */
+    var html = head(q.name, '', false, q.icon);
 
     html += '<div class="mgroup"><p class="mlab">How many questions</p><div class="segs">' + segs + '</div></div>';
 

@@ -58,8 +58,12 @@
   margin: 0 0 10px;
 }
 .tq-sheet.premium .tq-head.hero { --tqh-ink: #B29234; --tqh-bg: #FBF5DC; }
+/* ⚠ The gap under the eyebrow is 12px, not 7 (owner, 2026-09-20: "on quiz menu the topic
+   title is too close to the 'test yourself' it is cramped"). The pill and the unit name are
+   different enough in size and weight that a tight gap reads as one crowded block rather than
+   two lines of a hierarchy. */
 .tq-head.hero h3 {
-  display: inline-block; margin: 0 0 7px;
+  display: inline-block; margin: 0 0 12px;
   background: var(--tqh-bg); color: var(--tqh-ink);
   border-radius: 999px; padding: 4px 11px;
   font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
@@ -320,8 +324,16 @@
    would be the majority of the page. One tap, and it remembers nothing, because reopening the
    picker means someone is choosing a quiz again. */
 .tq-results { border-top: 0.5px solid var(--border, rgba(0,0,0,.09)); margin-top: 8px; padding-top: 2px; }
+/* ⚠ THE CARET SITS NEXT TO THE LABEL, not at the far edge (owner, 2026-09-20: "the little
+   triangle that flips when you click 'my results' can we have it directly next to my results,
+   instead of on the other side of the page"). It was `justify-content: space-between`, which
+   flung it to the right margin — fine on a table header where the right edge means something,
+   and wrong here, where it is the disclosure marker FOR those two words and reads as unrelated
+   at arm's length from them.
+   ⚠ The button stays full width so the whole row is still the tap target; only the contents
+   pack left. */
 .tq-res-h {
-  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 6px;
   background: none; border: 0; padding: 11px 2px; cursor: pointer; font-family: inherit;
   font-size: 13px; font-weight: 600; color: var(--text-secondary, #5A5A5A);
 }
@@ -687,8 +699,8 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    ⚠ Auto margins rather than `justify-content: center`, deliberately: centring can push the
    START of an overflowing flex container out of reach, and the first thing off the top would be
    the unit name. Auto margins never overflow the start edge. */
-.tq-fill:not(.tq-fill-res) > .tq-gap { flex: 1 1 0; min-height: 10px; max-height: 56px; }
-.tq-fill:not(.tq-fill-res) > .tq-gap-s { min-height: 4px; max-height: 34px; }
+.tq-fill:not(.tq-fill-res) > .tq-gap { flex: 1 1 0; min-height: 6px; max-height: 56px; }
+.tq-fill:not(.tq-fill-res) > .tq-gap-s { min-height: 2px; max-height: 34px; }
 .tq-fill:not(.tq-fill-res) > :first-child { margin-top: auto; }
 .tq-fill:not(.tq-fill-res) > :last-child { margin-bottom: auto; }
 
@@ -702,7 +714,15 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    ⚠ The --tq-scale here is vestigial: applyFontScale() pins the picker to 1 (the text-size
    control deliberately does not reach this screen), so these resolve to the literal px. Left in
    place rather than stripped, because the compact .qpick variant may yet want scaling. */
-.qpick-big button { padding: 9px 13px; gap: 12px; margin-bottom: 6px; }
+/* ⚠ THE ROW SEPARATION IS A `gap`, NOT A MARGIN (owner, 2026-09-20: "the four quiz pills
+   could be further apart from each other ... there's plenty of whitespace around the 4 quiz
+   pills"). It was `gap: 8px` on .qpick PLUS `margin-bottom: 6px` on each button — 14px between
+   rows and a stray 6px hanging off the last one. One property now, and the trailing space goes.
+   ✅ Nothing else had to move: the flexible .tq-gap elements give up exactly this much and the
+   tiger stays where it is, which is what the owner asked for ("no need to move the tiger down
+   or to push the elements above up"). That is the whole point of making the slack flexible. */
+.qpick-big { gap: 20px; }
+.qpick-big button { padding: 9px 13px; gap: 12px; }
 .qpick-big .ic { width: 34px; height: 34px; border-radius: 10px; }
 .qpick-big .nm { font-size: 14.5px; }
 .qpick-big .ds { font-size: 11.5px; margin-top: 1px; }
