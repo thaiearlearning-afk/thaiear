@@ -140,28 +140,20 @@
     if (sheet) sheet.style.setProperty('--tq-scale', scaleOff ? '1' : String(fontScale()));
   }
 
-  function translitOn() {
-    try { return localStorage.getItem('thaiear_translit') !== '0'; } catch (_) { return true; }
-  }
-  function setTranslit(on) {
-    try { localStorage.setItem('thaiear_translit', on ? '1' : '0'); } catch (_) {}
-    applyTranslit();
-  }
-  /* ⭐⭐ THE PILL IS A CLASS ON THE SHEET, NOT A RENDER-TIME DECISION (owner, 2026-09-20: "if i
+  /* ⛔⛔ THE SITE TRANSLITERATION PILL DOES NOT REACH INSIDE THE QUIZ. It governs topic pages;
+     in here the three-way script setting is the only control, on all four quizzes — see
+     curScript(). translitOn()/setTranslit()/applyTranslit() and the .tq-tl-off class are all
+     GONE, along with the CSS that hid .tlx/.o-tl/.tl, because a rule that hides a
+     transliteration the learner just asked for is the exact fault this arm kept producing.
+     ⚠ The history is worth keeping because the first two fixes were both partial. The pill was
+     originally read at RENDER time, so it never reached an answered question (owner: "if i
      answer the question, then change the transliteration setting - it doesnt update until the
-     next question ... interestingly modern thai font toggle works immediately").
-     That observation IS the diagnosis. The font toggle works because it is a class on <html>, so
-     it reaches markup that already exists; the transliteration was baked in at render time, and
-     since the settings menu deliberately no longer re-renders the question (it would throw the
-     answer away), nothing could reach it. Making it a class fixes the cause rather than
-     re-rendering, and the same change makes it instant on an UNanswered question too.
-     ⚠ IT GOVERNS ONLY THE TWO-STATE SURFACES — the chip translit, the option translit and the
-     sentence's translit line. The Thai Builder's tray is governed by the THREE-WAY script
-     setting (§5.1), which can also say "hide the Thai" and which a two-state class cannot
-     express; §9.3 is explicit that exactly one control owns each surface. */
-  function applyTranslit() {
-    if (sheet) sheet.classList.toggle('tq-tl-off', !translitOn());
-  }
+     next question ... interestingly modern thai font toggle works immediately" — that
+     observation was the diagnosis: the font toggle is a class on <html>). Making it a class
+     fixed the timing and created a worse bug, because it then hid `.tl` GLOBALLY, including on
+     the Builder, whose three-way said to show it. Scoping the class with :not(.tq-threeway)
+     fixed that and still left two different controls doing one job. The answer was to delete the
+     control, not to scope it again. */
   /* ⚠ The overlay carries the unit's tier so its header can use the same ink as the entry
      block the learner just tapped — gold on a premium unit, accent otherwise. Without it the
      overlay looks like a different product from the block that opened it. */
@@ -183,14 +175,6 @@
      ⚠ 'tl' (transliteration INSTEAD of Thai) still needs the next question: the tile's main text
      IS the Thai, so swapping it is a re-render, not a visibility change. both <-> thai are
      instant, which is the pair that actually gets toggled. */
-  function applyScript() {
-    if (!sheet) return;
-    var m = (run && run.prefs && run.prefs.script) || 'both';
-    var three = !!(run && run.q && (run.q.id === 2 || run.q.id === 4));
-    sheet.classList.toggle('tq-threeway', three);
-    sheet.classList.toggle('tq-script-thai', three && m === 'thai');
-    sheet.classList.toggle('tq-script-tl', three && m === 'tl');
-  }
   function thaiModern() {
     try { return localStorage.getItem('thaiear_thaifont') === 'modern'; } catch (_) { return false; }
   }
@@ -435,9 +419,7 @@
     /* ⚠ Re-assert after every render: innerHTML wipes children, not the inline property, but a
        remount would lose it — and this is the one setting where a wrong value is visible. */
     applyFontScale();
-    applyTranslit();
     applyTier();
-    applyScript();
     sheet.scrollTop = 0; ov.scrollTop = 0;
   }
   /* ⛔ NO GLOBAL CLOSE BUTTON ON THESE SCREENS (owner, 2026-09-20). It did the wrong thing from
@@ -449,9 +431,19 @@
   /* ⚠ `hero` is for the PICKER only. head() is also used by the settings menu, the exclusions
      list and the results screen, and a tinted panel on every one of those would be four heavy
      bands in a row instead of a landing. The picker is the screen the learner arrives on. */
-  function head(title, sub, hero) {
-    return '<div class="tq-head' + (hero ? ' hero' : '') + '"><h3>' + esc(title) + '</h3>'
-         + (sub ? '<p class="sub">' + esc(sub) + '</p>' : '') + '</div>';
+  /* ⚠ `icon` is a quiz's own glyph (owner, 2026-09-20: "for each quiz title within its menu
+     and settings area ... to the left of the title e.g. Speak Thai can we have its associated
+     symbol/icon?"). It is the SAME markup and the same 34px tinted chip as the picker row the
+     learner just tapped, so the menu reads as that row opening rather than as a new screen.
+     ⛔ It is passed IN, never looked up from the title: two quizzes could be renamed into each
+     other's glyph by a string match and nothing would say so. */
+  function head(title, sub, hero, icon) {
+    var body = '<h3>' + esc(title) + '</h3>'
+             + (sub ? '<p class="sub">' + esc(sub) + '</p>' : '');
+    if (icon) body = '<span class="tq-head-ic">' + icon + '</span>'
+                   + '<div class="tq-head-tx">' + body + '</div>';
+    return '<div class="tq-head' + (hero ? ' hero' : '') + (icon ? ' has-ic' : '') + '">'
+         + body + '</div>';
   }
   function wireClose() { /* intentionally empty — see head() */ }
 
@@ -556,6 +548,33 @@
     if (!o || !o.q) return '<p class="enq">' + esc(s.english) + '</p>';
     return '<p class="enq">' + esc(o.q) + '</p>'
       + (o.nat && o.nat !== o.q ? '<p class="enq-nat">' + esc(o.nat) + '</p>' : '');
+  }
+
+  /* ⭐⭐ ONE SCRIPT CONTROL FOR ALL FOUR QUIZZES (owner, 2026-09-20: "vocab quiz and
+     listening comp quiz still have potential to show thai, transliterations or both - settings
+     need to update for those as well. lets not create divergences between quizzes on the day we
+     have made them").
+     ⛔⛔ THIS REPLACES §9.3's SPLIT, which gave quizzes 2 and 4 the three-way and quizzes 1
+     and 3 the site's two-state transliteration pill. The split was defensible as "one control
+     per surface" and wrong as a whole: the same learner meets all four quizzes in one sitting,
+     so two different controls over one thing is a divergence WITHIN the arm, not a tidy
+     separation between halves of it. It also meant quizzes 1 and 3 simply could not say
+     "transliteration only", which is the mode a learner who cannot yet read the script needs
+     most.
+     ⚠ The SITE pill no longer reaches inside the quiz sheet at all. It still governs topic
+     pages; in here run.prefs.script is the only thing consulted, and it is per-quiz and
+     persisted like every other quiz preference. */
+  function curScript() {
+    return (run && run.prefs && run.prefs.script) || 'both';
+  }
+
+  /* ⚠ Engines register a redraw for whatever they have put on screen that depends on the
+     script mode, and the settings menu fires them all on the way out. COMPOSABLE rather than one
+     slot, because a question and its reveal are drawn at different moments and both need it —
+     a single assignment would have the reveal silently replace the question's. */
+  function onRepaint(fn) {
+    var prev = run.repaint;
+    run.repaint = prev ? function () { prev(); fn(); } : fn;
   }
 
   function scriptBits(thai, translit, mode) {
@@ -697,11 +716,17 @@
 
     render('<div class="tq-fill">'
          + head('Test yourself', ctx.unitName || '', true)
+         /* ⚠ THE GAPS ARE FLEXIBLE ELEMENTS, not margins — see .tq-gap in quiz.css. */
+         + '<div class="tq-gap"></div>'
          + '<div class="qpick qpick-big">' + rows + '</div>'
-         /* ⚠ ORDER: quizzes · tiger · My results · the way out (owner, 2026-09-20). The tiger
-            closes the four choices; the results dropdown is a collapsed one-line row, so it sits
-            between the mascot and the exit without pushing "Back to the topic" off the screen. */
+         + '<div class="tq-gap"></div>'
+         /* ⚠ ORDER: quizzes · tiger · the way out · My results (owner, 2026-09-20, who revised
+            it: "i think back to topic button should be above the my results dropdown"). The tiger
+            closes the four choices, and the exit stays ABOVE the dropdown because the dropdown
+            EXPANDS — put the way out last and opening the results pushes it off the screen, which
+            is the one control that must never need a scroll to reach. */
          + tigerBlock()
+         + '<div class="tq-gap tq-gap-s"></div>'
          + '<div class="tq-minor"><button type="button" class="tq-return">&larr; '
          + esc(ctx.originLabel || 'Back') + '</button></div>'
          + resultsPanel() + '</div>');
@@ -766,7 +791,7 @@
        could have used being withheld because a different setting could not. */
     var showHead = (qid === 2 && maxChips > HEADSTART.full);
 
-    var html = head(q.name, n + (qid === 3 ? ' words' : ' sentences') + ' available');
+    var html = head(q.name, n + (qid === 3 ? ' words' : ' sentences') + ' available', false, q.icon);
 
     html += '<div class="mgroup"><p class="mlab">How many questions</p><div class="segs">' + segs + '</div></div>';
 
@@ -784,13 +809,14 @@
         + 'Attempt it in your head first. Does not affect your score.</span></span></label></div>';
     }
 
-    if (qid === 2 || qid === 4) {
-      html += '<div class="mgroup"><p class="mlab">Thai script</p><div class="radios">'
-        + radio('script', 'both', p.script, 'Thai + transliteration', '')
-        + radio('script', 'thai', p.script, 'Thai only', 'the hard mode')
-        + radio('script', 'tl',   p.script, 'Transliteration only', "if you can't read the script yet")
-        + '</div></div>';
-    }
+    /* ⛔ ALL FOUR QUIZZES, not just the two production ones — see curScript(). Every quiz puts
+       Thai on the screen somewhere (quiz 1 and 4 in the reveal, quiz 3 in the options as well),
+       so every quiz needs to be told how to write it. */
+    html += '<div class="mgroup"><p class="mlab">Thai script</p><div class="radios">'
+      + radio('script', 'both', p.script, 'Thai + transliteration', '')
+      + radio('script', 'thai', p.script, 'Thai only', 'the hard mode')
+      + radio('script', 'tl',   p.script, 'Transliteration only', "if you can't read the script yet")
+      + '</div></div>';
 
     if (qid === 2) {
       html += '<div class="mgroup"><label class="checkrow"><input type="checkbox" class="c-nodecoy"'
@@ -886,7 +912,7 @@
     };
     /* every control that feeds readPrefs() un-latches it */
     sheet.querySelectorAll('.seg, .tq-fs, input[name=mode], input[name=script], input[name=head], '
-                         + '.c-hide, .c-nodecoy').forEach(function (el) {
+                         + '.c-hide, .c-nodecoy, .c-tf').forEach(function (el) {
       el.addEventListener('click', resetAllBtn);
       el.addEventListener('change', resetAllBtn);
     });
@@ -933,7 +959,7 @@
       rows = (QD().q3 || []).map(function (w) {
         return '<label class="tq-exitem"><input type="checkbox" data-item="' + esc(w.th) + '"'
           + (ex[w.th] ? ' checked' : '') + '><span><span class="x-th">' + esc(w.th) + '</span>'
-          + ((w.tl && translitOn()) ? ' <span class="x-tl">' + esc(w.tl) + '</span>' : '')
+          + ((w.tl && prefsFor(qid).script !== 'thai') ? ' <span class="x-tl">' + esc(w.tl) + '</span>' : '')
           + '<span class="x-en">' + esc(w.en) + '</span></span></label>';
       }).join('');
     } else {
@@ -1069,6 +1095,7 @@
        that question, so clear it before the next one or a stale closure runs against dead
        nodes and silently locks nothing. */
     run.relayout = null;
+    run.repaint = null;
     var id = run.q.id;
     if (id === 1) qListen();
     else if (id === 2) qBuild();
@@ -1123,11 +1150,16 @@
   /* shared reveal for the listening quiz: the Thai, its translit, and the chips */
   function reveal(s, ok) {
     var d = sheet.querySelector('.t-rev');
-    d.innerHTML = '<div class="reveal"><p class="thaibig">' + esc(stripBars(s.thai)) + '</p>'
-      + (translitOn() ? '<p class="tl">' + esc(stripBars(s.translit)) + '</p>' : '')
-      + '<div class="chips">' + chipsOf(s).map(chipHtml).join('') + '</div>'
-      + '<button class="nextbtn" type="button">' + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
-    d.querySelector('.nextbtn').onclick = function () { advance(String(s.num), ok); };
+    function draw() {
+      var b = scriptBits(stripBars(s.thai), stripBars(s.translit), curScript());
+      d.innerHTML = '<div class="reveal"><p class="thaibig">' + esc(b.main) + '</p>'
+        + (b.sub ? '<p class="tl">' + esc(b.sub) + '</p>' : '')
+        + '<div class="chips">' + chipsOf(s).map(function (g) { return chipHtml(g); }).join('') + '</div>'
+        + '<button class="nextbtn" type="button">' + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
+      d.querySelector('.nextbtn').onclick = function () { advance(String(s.num), ok); };
+    }
+    draw();
+    onRepaint(draw);
     showReveal(d);
   }
 
@@ -1147,14 +1179,16 @@
   }
 
   function chipHtml(g, target) {
-    /* ⚠ The per-chip transliteration follows the SITE toggle (§9.3), exactly as the chip on a
-       topic page does — .g-tl is what #sentence-list.translit-off hides there. */
-    var tl = (g[2] && translitOn()) ? '<span class="tlx">' + esc(g[2]) + '</span>' : '';
+    /* ⚠ The chip follows the QUIZ's three-way, not the site pill — see curScript(). In 'tl'
+       mode the chip's headword becomes the transliteration, which is the case a two-state pill
+       could not express at all. */
+    var b = scriptBits(g[0], g[2], curScript());
+    var tl = b.sub ? '<span class="tlx">' + esc(b.sub) + '</span>' : '';
     /* ⚠ `target` marks the chip the question was ABOUT. Without it the learner has to find
        their word again in a row of a dozen chips, which is the opposite of what a breakdown is
        for. It is a highlight, not a different chip — same markup, one class. */
     var hit = (target && g[0] === target) ? ' is-target' : '';
-    return '<span class="chip' + hit + '"><span class="th">' + esc(g[0]) + '</span>'
+    return '<span class="chip' + hit + '"><span class="th">' + esc(b.main) + '</span>'
       + '<span class="gl">' + esc(g[1]) + '</span>' + tl + '</span>';
   }
 
@@ -1490,6 +1524,19 @@
        ⚠ A rotation is the same fault by another route — it changes the row width, so the row
        count, so the height — which is why this hook is on the run and not on the font control. */
     run.relayout = function () { lockHeights(true); };
+    /* ⭐⭐ THE SCRIPT SETTING APPLIES TO THE QUESTION ALREADY ON SCREEN, and the owner found
+       the mechanism himself: "if i click any of the gloss chips in the builder, they all update.
+       so you just need to find that code path and trigger it on any settings change."
+       ⚠⚠ IT HAD TO BE A RE-RENDER, NOT A CSS CLASS. v578 tried the class route, which is what
+       makes the Thai-font and transliteration pills instant, and it CANNOT express this one:
+       in 'tl' mode the tile's MAIN TEXT changes from the Thai to the transliteration, and there
+       is no rule that turns one string into another. That is exactly the half that failed live
+       — "transliteration only isn't transliteration only, it has thai script and
+       transliteration" — because only the 'thai' branch had a rule and 'tl' had none.
+       ✅ paint() rebuilds the tray and the answer box from `placed`, which is state, so the
+       answer survives — the same property that makes it safe on every chip tap. And `p` IS
+       run.prefs, not a copy, so it reads the new value with no plumbing. */
+    run.repaint = paint;
 
     submit.onclick = function () {
       /* ⛔⛔ THE CHECK RUNS ON THE WHOLE BOX — LOCKED CHIPS INCLUDED — NEVER THE TAIL ALONE
@@ -1550,6 +1597,11 @@
                  + 'Play the Thai</button>';
 
       var d = sheet.querySelector('.t-rev');
+      /* ⚠ The model answer is Thai, so it redraws with the script setting like every other
+         reveal in the arm. paint() is already registered for the tray and the box; this composes
+         with it rather than replacing it — see onRepaint. */
+      onRepaint(function () { drawRev(); });
+      function drawRev() {
       if (ok) {
         d.innerHTML = '<div class="reveal">'
           + modelAnswer(s, canon, p, exact ? 'exact' : 'variant')
@@ -1573,6 +1625,8 @@
       var rb = d.querySelector('.playbtn');
       if (rb) rb.onclick = function () { toggleSentence(s.num, rb); };
       d.querySelector('.nextbtn').onclick = function () { advance(String(s.num), ok); };
+      }
+      drawRev();
       showReveal(d);
     };
   }
@@ -1700,6 +1754,18 @@
     var sh = sheet.querySelector('.t-show');
     if (sh) sh.onclick = function () { sh.remove(); sheet.querySelector('.t-opts').hidden = false; };
 
+    /* ⚠ The options are the one place outside the Builder where the QUESTION itself is Thai,
+       so a script change has to reach them and not only the reveal. Only the inner text is
+       rewritten — see optInner. */
+    onRepaint(function () {
+      sheet.querySelectorAll('.opt').forEach(function (x, xi) {
+        if (!opts[xi]) return;
+        var en = x.querySelector('.o-en');
+        x.innerHTML = optInner(opts[xi]);
+        if (en) x.appendChild(en);
+      });
+    });
+
     var chosen = [];
     /* ⭐ THE OWNER GOT STUCK ON A TWO-ANSWER QUESTION: he picked one, nothing happened, and
        nothing said why. §6.3 forbids marking the first pick (it would leak the answer to the
@@ -1744,10 +1810,17 @@
      WRONG options show their English too — otherwise the learner learns nothing from the three
      they did not pick, which is three quarters of what was on screen. */
   function optHtml(o, i, withEn) {
-    var tl = (o.tl && translitOn()) ? '<span class="o-tl">' + esc(o.tl) + '</span>' : '';
-    var en = withEn ? '<span class="o-en">' + esc(o.en || '') + '</span>' : '';
     return '<button class="opt" type="button" data-i="' + i + '">'
-      + '<span class="o-th">' + esc(o.th) + '</span>' + tl + en + '</button>';
+      + optInner(o) + (withEn ? '<span class="o-en">' + esc(o.en || '') + '</span>' : '')
+      + '</button>';
+  }
+  /* ⚠ Split out so a script change can rewrite an option's TEXT without touching the button:
+     its right/wrong/picked classes and its disabled state are the record of what the learner
+     did, and re-rendering the whole option would throw them away. */
+  function optInner(o) {
+    var b = scriptBits(o.th, o.tl, curScript());
+    return '<span class="o-th">' + esc(b.main) + '</span>'
+      + (b.sub ? '<span class="o-tl">' + esc(b.sub) + '</span>' : '');
   }
 
   function vocabReveal(w, ok) {
@@ -1760,6 +1833,10 @@
       return null;
     })();
     var d = sheet.querySelector('.t-rev');
+    /* ⚠ `first` guards the AUTOPLAY. A script change redraws this block, and the clip must not
+       restart every time the learner changes a display setting — the reveal is re-rendered, not
+       re-entered. */
+    function draw(first) {
     var html = '<div class="reveal">';
     if (w.lit) html += '<p class="tq-say"><b>Literally:</b> ' + esc(w.lit) + '</p>';
     if (s) {
@@ -1771,9 +1848,10 @@
          nothing (§1) and follows the transliteration pill for free.
          ⚠ Under the English, not above it: read the sentence, read what it means, then take it
          apart. Putting the parts first makes the reveal open on a wall of small type. */
+      var sb = scriptBits(stripBars(s.thai), stripBars(s.translit), curScript());
       html += '<p class="mlab">Appears in</p>'
-        + '<p class="thaibig">' + esc(stripBars(s.thai)) + '</p>'
-        + (translitOn() ? '<p class="tl">' + esc(stripBars(s.translit)) + '</p>' : '')
+        + '<p class="thaibig">' + esc(sb.main) + '</p>'
+        + (sb.sub ? '<p class="tl">' + esc(sb.sub) + '</p>' : '')
         + '<p class="cen">' + esc(s.english) + '</p>'
         + (chipsOf(s).length
             ? '<div class="chips vchips">'
@@ -1785,9 +1863,15 @@
       + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
     d.innerHTML = html;
     var pb = d.querySelector('.playbtn');
-    if (pb && s) { pb.onclick = function () { toggleSentence(s.num, pb); }; playSentence(s.num, pb); }
+    if (pb && s) {
+      pb.onclick = function () { toggleSentence(s.num, pb); };
+      if (first) playSentence(s.num, pb);
+    }
     d.querySelector('.nextbtn').onclick = function () { advance(w.th, ok); };
-  showReveal(d);
+    }
+    draw(true);
+    onRepaint(function () { draw(false); });
+    showReveal(d);
   }
 
   /* ── Quiz 4 — Speak Thai (§6A) ─────────────────────────────────────────────────────────── */
@@ -1805,22 +1889,28 @@
 
     sheet.querySelector('.t-reveal').onclick = function () {
       this.remove();
-      var b = scriptBits(stripBars(s.thai), stripBars(s.translit), run.prefs.script);
       var d = sheet.querySelector('.t-rev');
-      d.innerHTML = '<div class="reveal">'
-        + '<p class="thaibig">' + esc(b.main) + '</p>'
-        + (b.sub ? '<p class="tl">' + esc(b.sub) + '</p>' : '')
-        + '<button class="playbtn" type="button"><span class="tri"></span>Play the Thai</button>'
-        + '<div class="chips">' + chipsOf(s).map(chipHtml).join('') + '</div>'
-        + '<div class="tq-selfmark">'
-        + '<button type="button" class="tq-got">I got it</button>'
-        + '<button type="button" class="tq-not">Not quite</button>'
-        + '</div></div>';
-      var pb = d.querySelector('.playbtn');
-      pb.onclick = function () { toggleSentence(s.num, pb); };
-      playSentence(s.num, pb);          /* ⛔ the real Thai plays on reveal (§6A.1) */
-      d.querySelector('.tq-got').onclick = function () { advance(String(s.num), true); };
-      d.querySelector('.tq-not').onclick = function () { advance(String(s.num), false); };
+      function draw(first) {
+        var b = scriptBits(stripBars(s.thai), stripBars(s.translit), curScript());
+        d.innerHTML = '<div class="reveal">'
+          + '<p class="thaibig">' + esc(b.main) + '</p>'
+          + (b.sub ? '<p class="tl">' + esc(b.sub) + '</p>' : '')
+          + '<button class="playbtn" type="button"><span class="tri"></span>Play the Thai</button>'
+          + '<div class="chips">' + chipsOf(s).map(function (g) { return chipHtml(g); }).join('') + '</div>'
+          + '<div class="tq-selfmark">'
+          + '<button type="button" class="tq-got">I got it</button>'
+          + '<button type="button" class="tq-not">Not quite</button>'
+          + '</div></div>';
+        var pb = d.querySelector('.playbtn');
+        pb.onclick = function () { toggleSentence(s.num, pb); };
+        /* ⛔ the real Thai plays on reveal (§6A.1) — on the FIRST draw only, so a script
+           change does not restart the clip. */
+        if (first) playSentence(s.num, pb);
+        d.querySelector('.tq-got').onclick = function () { advance(String(s.num), true); };
+        d.querySelector('.tq-not').onclick = function () { advance(String(s.num), false); };
+      }
+      draw(true);
+      onRepaint(function () { draw(false); });
       showReveal(d);
     };
   }
@@ -1846,31 +1936,34 @@
     var scaleBefore = fontScale();
     var keep = document.createDocumentFragment();
     while (sheet.firstChild) keep.appendChild(sheet.firstChild);
-    var relayout = run.relayout;
-    var html = head('Options', 'Applies from the next question');
-    if (qid === 2 || qid === 4) {
-      html += '<div class="mgroup"><p class="mlab">Thai script</p><div class="radios">'
-        + radio('script', 'both', p.script, 'Thai + transliteration', '')
-        + radio('script', 'thai', p.script, 'Thai only', '')
-        + radio('script', 'tl',   p.script, 'Transliteration only', '')
-        + '</div></div>';
-    }
+    var relayout = run.relayout, repaint = run.repaint;
+    var scriptBefore = p.script;
+    /* ⚠ The subtitle used to read "Applies from the next question", which was true when every
+       one of these settings was baked in at render time. It is not true any more — the text
+       size, the font, the transliteration pill and now the three-way script setting all reach
+       the question you came from. Only the QUESTION COUNT and the question MIX cannot, because
+       the run they describe is already under way. */
+    var html = head('Options', 'Most of these apply straight away');
+    html += '<div class="mgroup"><p class="mlab">Thai script</p><div class="radios">'
+      + radio('script', 'both', p.script, 'Thai + transliteration', '')
+      + radio('script', 'thai', p.script, 'Thai only', '')
+      + radio('script', 'tl',   p.script, 'Transliteration only', '')
+      + '</div></div>';
     if (qid === 1 || qid === 3) {
       html += '<div class="mgroup"><label class="checkrow"><input type="checkbox" class="c-hide"'
         + (p.hide ? ' checked' : '') + '><span>Hide the answers until I ask</span></label></div>';
     }
     html += fontGroup();
-    /* ⛔⛔ EXACTLY ONE TRANSLITERATION CONTROL PER QUIZ (owner, 2026-09-20: "show transliteration
-       is confusingly an option in both of them!!"). Quizzes 2 and 4 carry §5.1's THREE-WAY Thai
-       script setting, which already decides whether transliteration appears — and can also say
-       "hide the Thai", which the two-state site pill cannot express. Offering both on the same
-       screen asked the learner to reconcile two controls over one thing.
-       ✅ So the site pill is shown ONLY where there is no three-way: quizzes 1 and 3. */
-    var hasThreeWay = (qid === 2 || qid === 4);
+    /* ⛔⛔ EXACTLY ONE TRANSLITERATION CONTROL, AND IT IS THE THREE-WAY (owner, 2026-09-20:
+       "show transliteration is confusingly an option in both of them!!", and then "lets not
+       create divergences between quizzes on the day we have made them").
+       The first fix showed the site pill on quizzes 1 and 3 and the three-way on 2 and 4 — one
+       control per surface, but TWO controls across an arm the same learner walks through in one
+       sitting, and the pill cannot say "transliteration only" at all. Now every quiz has the
+       three-way and the SITE pill does not appear in here.
+       ⚠ The Modern Thai font stays: it is genuinely site-wide and orthogonal — it says which
+       FACE draws the Thai, not whether there is any. */
     html += '<div class="mgroup"><p class="mlab">Display</p>'
-      + (hasThreeWay ? '' :
-          '<label class="checkrow"><input type="checkbox" class="c-tl"'
-          + (translitOn() ? ' checked' : '') + '><span>Show transliteration</span></label>')
       + '<label class="checkrow"><input type="checkbox" class="c-tf"'
       + (thaiModern() ? ' checked' : '') + '><span>Modern Thai font</span></label></div>';
     /* ⛔ The exclude control is NOT in this menu any more — it is a footer on the
@@ -1882,23 +1975,24 @@
     sheet.querySelector('.startbtn').onclick = function () {
       var sc = sheet.querySelector('input[name=script]:checked'); if (sc) run.prefs.script = sc.value;
       var hi = sheet.querySelector('.c-hide'); if (hi) run.prefs.hide = hi.checked;
-      /* ⚠ These two are SITE-wide, not quiz prefs — they are deliberately not in run.prefs and
-         not synced to quiz_prefs, because the learner set them for the whole site. */
-      var tl = sheet.querySelector('.c-tl'); if (tl) setTranslit(tl.checked);
+      /* ⚠ SITE-wide, not a quiz pref — deliberately not in run.prefs and not synced to
+         quiz_prefs, because the learner set it for the whole site. */
       var tf = sheet.querySelector('.c-tf'); if (tf) setThaiModern(tf.checked);
       savePrefs(qid, run.prefs);
       restoreQuestion();
-      applyScript();     /* ↑ run.prefs.script may have just changed */
     };
 
     function restoreQuestion() {
       sheet.innerHTML = '';
       sheet.appendChild(keep);
       applyFontScale();
-      applyTranslit();
-      applyScript();
       sheet.scrollTop = 0; ov.scrollTop = 0;
       run.relayout = relayout;
+      run.repaint = repaint;
+      /* ⚠ Only when it CHANGED. paint() rewrites innerHTML and re-wires every tile, so firing
+         it on a menu visit that touched nothing would drop any in-flight pointer capture for no
+         reason at all. */
+      if (repaint && run.prefs.script !== scriptBefore) repaint();
       /* ⚠ A text-size change re-flows the question that is coming back, so anything holding a
          measured height has to re-measure at the size it is now being drawn at. */
       if (relayout && fontScale() !== scaleBefore) relayout();
@@ -1924,7 +2018,7 @@
        takes the space: the block centres in the sheet and the actions sit under it rather than
        everything bunching at the top of a tall phone viewport. */
     render('<div class="tq-fill tq-fill-res">'
-      + head(q.name, '')
+      + head(q.name, '', false, q.icon)
       + '<div class="tq-res"><div class="tq-pct">' + pct + '%</div>'
       + '<div class="tq-raw">' + r + ' of ' + n + ' right</div>'
       + '<div class="tq-best' + (isBest ? ' tq-newbest' : '') + '">'

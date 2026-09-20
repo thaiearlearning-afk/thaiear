@@ -70,6 +70,19 @@
   letter-spacing: -0.015em; color: var(--text-primary, #1A1A1A);
 }
 
+/* ⭐ THE QUIZ'S OWN GLYPH BESIDE ITS NAME on its menu and its results (owner, 2026-09-20).
+   Deliberately the SAME chip as the picker row — 34px, 10px radius, the accent tint, gold on a
+   premium unit — so the menu reads as the row the learner just tapped having opened, rather than
+   as an unrelated screen that happens to share a word. */
+.tq-head.has-ic { display: flex; align-items: center; gap: 11px; }
+.tq-head.has-ic .tq-head-ic {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
+}
+.tq-sheet.premium .tq-head.has-ic .tq-head-ic { background: #FBF5DC; color: #B29234; }
+.tq-head.has-ic .tq-head-tx { min-width: 0; }
+
 /* ── quiz-type picker ────────────────────────────────────────────────────────────────── */
 .qpick { display: flex; flex-direction: column; gap: 8px; }
 .qpick button {
@@ -159,22 +172,28 @@
    prominent (not aggressively so)"). It sat in .tq-minor at 12.5px with no affordance, which is
    right for "← All four quizzes" — a sideways step inside the quiz — and wrong for the one
    button that LEAVES.
-   ⚠ The arrow points FORWARD, and that is deliberate: ← means "back up a level within the
-   quiz", which is what the siblings beside it do. This one goes somewhere — to the topic — so
-   it gets →, and the two kinds of exit stop looking like the same thing.
+   ⚠ BOTH WAYS OUT GET THE SAME PILL (owner, 2026-09-20: "the '<- other quizzes' can we have
+   that identical in style to the back to the topic message that appears just below it"). An
+   earlier version argued they should DIFFER — ← for a step back inside the quiz, → for the one
+   that leaves — and so gave "Other quizzes" no affordance at all. Two adjacent controls doing
+   the same KIND of thing, one drawn as a button and one as a footnote, reads as an oversight;
+   and the owner reverted the forward arrow too, so both are ←, leading.
    ⛔ Restrained on purpose: a bordered pill at 13.5px, not a filled accent button. It is the
    way out of the quiz, not the thing the screen is for. */
-.tq-minor .tq-return {
+.tq-minor .tq-return,
+.tq-minor .tq-back {
   align-self: flex-start; font-size: 13.5px; font-weight: 500;
   color: var(--text-primary, #1A1A1A);
   border: 0.5px solid var(--border-strong, rgba(0,0,0,.16));
   border-radius: 999px; padding: 7px 14px;
 }
-.tq-minor .tq-return:hover {
+.tq-minor .tq-return:hover,
+.tq-minor .tq-back:hover {
   text-decoration: none; border-color: var(--accent, #4B41AD);
   background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
 }
-.tq-sheet.premium .tq-minor .tq-return:hover {
+.tq-sheet.premium .tq-minor .tq-return:hover,
+.tq-sheet.premium .tq-minor .tq-back:hover {
   border-color: #B29234; background: #FBF5DC; color: #B29234;
 }
 .tq-minor .done { color: #1F5D3A; text-decoration: none; cursor: default; }
@@ -346,21 +365,13 @@
    dense block of small type and the button read as belonging to them. */
 .vchips { margin: 10px 0 15px; }
 
-/* ⭐ The transliteration pill, as a class so it reaches markup that already exists — see
-   applyTranslit(). ⛔ NOT .tt: the Builder's tray is owned by the three-way script setting
-   (§5.1/§9.3), and one surface must have exactly one control. */
-.tq-sheet.tq-tl-off .tlx,
-.tq-sheet.tq-tl-off .o-tl { display: none; }
-/* ⛔⛔ THE SITE PILL MUST NOT REACH A THREE-WAY SCREEN. §9.3: quizzes 2 and 4 are governed by
-   the three-way script setting and 1 and 3 by the two-state pill — exactly one control per
-   surface. Without :not(), a learner with the Builder's three-way on "Thai + transliteration"
-   and the site pill off saw no transliteration under the answer, decided by a control that is
-   not even rendered on that screen. */
-.tq-sheet.tq-tl-off:not(.tq-threeway) .tl { display: none; }
+/* ⛔⛔ NOTHING HIDES A TRANSLITERATION HERE ANY MORE. .tlx, .o-tl and .tl are EMITTED, or
+   not, by curScript() in quiz.js — the three-way script setting, which every one of the four
+   quizzes now carries. There used to be .tq-tl-off rules driven by the site pill; they were
+   deleted because the pill and the three-way were two controls over one thing, and whichever
+   one the learner had not just touched won. If you are tempted to add a display:none here for
+   a transliteration, the bug is in what the engine emitted. */
 
-/* the three-way, as a class so it reaches the question already on screen */
-.tq-sheet.tq-script-thai .tl,
-.tq-sheet.tq-script-thai .tile .tt { display: none; }
 .reveal { border-top: 0.5px solid var(--border, rgba(0,0,0,.09)); margin-top: 14px; padding-top: 13px; }
 .nextbtn {
   width: 100%; background: var(--accent, #4B41AD); color: #fff; border: 0;
@@ -658,6 +669,28 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    ⚠ The owner's words were "there's room for all elements to shift up", which is exactly what
    removing the stretch does: everything sits at its natural height from the top. */
 .tq-fill { display: flex; flex-direction: column; }
+
+/* ⛔⛔ THE PICKER'S SLACK IS DISTRIBUTED, NOT DUMPED (owner, 2026-09-20, with a screenshot of
+   both phones: "way too much dead space at bottom of the menu for the quizzes page - about twice
+   the height of one of the four quiz boxes in deadspace ... you can shift the four quizzes down
+   a bit so they arent so close to the title, make the tiger not so close to the four boxes. i
+   guess just decompress stuff a bit - everything is a good size").
+   ⚠⚠ THE DEAD SPACE WAS CREATED BY THE FIX FOR THE OPPOSITE FAULT. .tq-sheet is min-height:100%
+   on a phone, so the sheet is always full height; the old rules (`flex:1` on .qpick and
+   `margin-top:auto` on .tq-minor) absorbed the slack, and removing them to stop a SHORT screen
+   overflowing left a tall one with ~340px in one lump under the last element. Both readings were
+   right about their own phone and wrong as a rule.
+   ✅ So: flexible GAPS that grow into the slack up to a cap, then auto margins on the first and
+   last children centre whatever is still over. A short screen collapses every gap to its min and
+   scrolls exactly as before — flex-grow resolves BEFORE auto margins, so the caps are honoured
+   first and the centring only ever sees the remainder.
+   ⚠ Auto margins rather than `justify-content: center`, deliberately: centring can push the
+   START of an overflowing flex container out of reach, and the first thing off the top would be
+   the unit name. Auto margins never overflow the start edge. */
+.tq-fill:not(.tq-fill-res) > .tq-gap { flex: 1 1 0; min-height: 10px; max-height: 56px; }
+.tq-fill:not(.tq-fill-res) > .tq-gap-s { min-height: 4px; max-height: 34px; }
+.tq-fill:not(.tq-fill-res) > :first-child { margin-top: auto; }
+.tq-fill:not(.tq-fill-res) > :last-child { margin-bottom: auto; }
 
 /* ⛔⛔ THE ONLY .qpick-big BLOCK. There were TWO, ~60 lines apart, and the later one silently
    won every trim the earlier one made — identical specificity, so source order decided, and two

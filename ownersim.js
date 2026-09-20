@@ -632,162 +632,21 @@
   /* The email hash IS the gate — K_ON is not consulted here any more. Requiring a URL-set flag
      made the picker unreachable in a standalone PWA / the Android app, which have no address bar
      and are exactly where the simulator is needed. */
-  /* ── DYN HIGHLIGHT PROBE (2026-09-19) ──────────────────────────────────────────────────────
-     The playing card does not light in the ANDROID APP after arriving on a topic page via the dyn
-     player, while the iPhone is fine. r221 fixed one real cause (a topic page was foreign to
-     itself on the native adopt path) and the fault SURVIVED it, so the next step is a measurement
-     rather than a fifth reading of the same function.
+  /* ⛔ THE DYN HIGHLIGHT PROBE (🔎 hl) IS DELETED (owner, 2026-09-20, twice: "can we hide
+     the 'h1' probe that is showing on all my topic pages", then "also get rid of h1 in the
+     bottom left for fucks sake").
+     It was a ONE-OFF measurement for the r221 Android highlight bug of 2026-09-19: it read the
+     dyn session's map and duration out of localStorage and printed them, because the app has no
+     console. That bug is closed, and the probe was mounting a fixed dashed pill in the corner of
+     every topic page the owner opened, on every device, indefinitely.
+     ⚠ THE LESSON, which is the only reason this note exists: a diagnostic mounted for the owner
+     UNCONDITIONALLY has no expiry and nothing ever reports it. It shipped inside paint(), beside
+     the banner and the picker, which are permanent fixtures — so it quietly inherited their
+     lifetime. A probe for one specific bug belongs behind a toggle, as the layout debugger now
+     is, or it belongs deleted with the bug. Do not re-add this one; write a fresh one against
+     whatever fault is actually in hand. */
 
-     ⚠ WHY IT LIVES HERE AND NOT IN player.js. player.js is PRECACHED and served cache-first, so
-     every iteration of a probe placed there costs an sw.js VERSION bump and a reinstall on the
-     device — and the device in question has no console to read anyway. ownersim.js is
-     deliberately NOT precached (see the header), so an edit here reaches the phone network-first
-     on its next navigation. Same reasoning that put the service-worker report in this file.
-
-     ⚠ IT READS ONLY WHAT IS OBSERVABLE FROM OUTSIDE player.js's IIFE — and that turns out to be
-     enough to decide the question, because two internals are faithfully mirrored into the DOM:
-       · `#dyn-sent-prev.dyn-sent-off` IS dynSyncSentBtns()'s answer, i.e. "dynSession is null or
-         carries no map". So the buttons tell us whether a session exists at all.
-       · `.sentence-card.dyn-live` is dynHighlight()'s only output.
-     With the persisted meta (plain localStorage) and the card ids, that separates the three
-     remaining candidates: no session · a session whose map nums do not match this page's cards ·
-     a session and matching nums but the highlight still gated off. */
-  function hlprobe() {
-    if (!window.ThaiEarTopic) return;                 // player pages only
-    if (document.getElementById('te-hl-probe')) return;
-    var cfg = window.ThaiEarTopic || {};
-    var ns = cfg.dynKey || cfg.audioPrefix || '';
-    var pageId = (location.pathname.split('/').pop() || '').replace(/\.html$/i, '').toLowerCase();
-
-    var box = document.createElement('div');
-    box.id = 'te-hl-probe';
-    box.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99999;font:11.5px/1.45 ' +
-      'ui-monospace,Menlo,Consolas,monospace;color:#123;background:rgba(255,255,255,.97);' +
-      'border:1px dashed #1F4E7A;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);' +
-      'max-width:calc(100vw - 16px);max-height:62vh;overflow:auto;padding:6px 8px';
-    var chip = document.createElement('button');
-    chip.type = 'button';
-    chip.textContent = '🔎 hl';
-    chip.style.cssText = 'font:inherit;border:0;background:none;color:#1F4E7A;cursor:pointer;padding:0';
-    var body = document.createElement('div');
-    body.style.display = 'none';
-    var pre = document.createElement('div');
-    pre.style.cssText = 'white-space:pre-wrap;word-break:break-word;margin:6px 0';
-    var btns = document.createElement('div');
-    var mkBtn = function (label) {
-      var b = document.createElement('button');
-      b.type = 'button'; b.textContent = label;
-      b.style.cssText = 'font:inherit;border:1px solid #1F4E7A;background:#fff;color:#1F4E7A;' +
-        'border-radius:6px;padding:3px 8px;margin-right:6px;cursor:pointer';
-      btns.appendChild(b); return b;
-    };
-    var bCopy = mkBtn('copy'), bShare = mkBtn('share');
-    body.appendChild(pre); body.appendChild(btns);
-    box.appendChild(chip); box.appendChild(body);
-    chip.addEventListener('click', function () {
-      body.style.display = (body.style.display === 'none') ? 'block' : 'none';
-    });
-    document.body.appendChild(box);
-
-    function meta(mode) {
-      try {
-        var m = JSON.parse(localStorage.getItem('te_dyn_meta_' + ns + '_' + mode) || 'null');
-        if (!m || !m.map || !m.map.length) return 'MISSING';
-        var nums = m.map.map(function (x) { return x.num; });
-        /* The DURATION is the sharp one: if the engine's dur does not match the map's, the audio
-           playing is not the session this map describes, and every block lookup lands outside it
-           — which looks exactly like "the highlight is switched off". */
-        return 'map ' + nums.length + ' dur ' + Math.round(m.duration || 0) + 's' +
-               ' end ' + Math.round((m.map[m.map.length - 1] || {}).end || 0) + 's' +
-               ' nums ' + nums[0] + '..' + nums[nums.length - 1] +
-               ' key ' + String(m.key || '').slice(0, 34);
-      } catch (_) { return 'UNREADABLE'; }
-    }
-    function read() {
-      var np = null; try { np = JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) {}
-      var cards = [].slice.call(document.querySelectorAll('.sentence-card[id^="sc-"]'))
-        .map(function (el) { return el.id.slice(3); });
-      var live = document.querySelector('.sentence-card.dyn-live');
-      var prev = document.getElementById('dyn-sent-prev');
-      var strip = document.getElementById('dyn-np-strip') || document.querySelector('.dyn-np-link');
-      var nat = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-      /* player.js's own snapshot, where it exists — the flags that DECIDE the highlight are
-         module-private, so everything below this is inference and everything in here is fact.
-         Absent = the device is on a build before the export shipped, which is itself the answer
-         to "have I picked it up yet". */
-      var D = null; try { D = window.__teDyn && window.__teDyn(); } catch (_) {}
-      var L = [];
-      /* ── WHICH STATE IS THIS, AND IS IT EVEN A FAULT? ────────────────────────────────────────
-         The 2026-09-19 reading was taken on the ORIGIN page with a neighbour adopted — where no
-         highlight is CORRECT (the cards on screen are not the sentences playing, and there is no
-         card for the block's num). Two readings had to be traded to establish that. The panel now
-         says so itself, so a reading can never again be taken at the wrong moment without the
-         panel saying which moment it was. */
-      var live0 = document.querySelector('.sentence-card.dyn-live');
-      var vd;
-      if (!D) vd = '? old build — reload';
-      else if (D.adopted) vd = 'ORIGIN PAGE (playing ' + D.adopted + '). No highlight is CORRECT ' +
-        'here — these cards are not what is playing. Tap "Now playing" THEN read this again.';
-      else if (live0) vd = 'OK — ' + live0.id + ' is lit.';
-      else if (!D.local) vd = '*** BUG: home page, but local=false (the flag says foreign).';
-      else if (D.blk < 0) vd = '*** BUG: home + local, but the playhead is OUTSIDE the map ' +
-        '(engine ' + D.dur + 's vs map end — compare "meta" below).';
-      else vd = '*** BUG: home + local + block ' + D.blk + ' (num ' + D.blkNum + ') found, nothing lit.';
-      L.push('VERDICT ' + vd);
-      var mt = 0; try { mt = parseInt(sessionStorage.getItem('te_mount') || '0', 10); } catch (_) {}
-      L.push('mounted ' + (mt ? Math.round((Date.now() - mt) / 1000) + 's ago' : '?') +
-             '   title ' + ((document.querySelector('.topic-title') || {}).textContent || '?').trim().slice(0, 32));
-      L.push('build   ' + (D ? D.build : '(no __teDyn — OLD BUILD)'));
-      if (D) {
-        L.push('FLAGS   local=' + D.local + '  sess=' + D.sess + '  display=' + D.display +
-               '  attached=' + D.attached + '  std=' + D.stdRemote);
-        L.push('        dyn=' + D.dyn + ' native=' + D.native + ' mode=' + D.mode +
-               ' adopted=' + (D.adopted || '-'));
-        L.push('        chain ' + D.chainIdx + '/' + D.homeIdx + ' of ' + D.chainLen +
-               '  mapLen=' + D.mapLen);
-        L.push('        blk=' + D.blk + ' blkNum=' + D.blkNum + ' lastLive=' + D.lastLive +
-               '  t=' + D.t + '/' + D.dur + ' paused=' + D.paused);
-      }
-      L.push('native  ' + nat + '   page ' + pageId);
-      L.push('ns      ' + (ns || '(none)') + '   cfg.dynKey ' + (cfg.dynKey || '-'));
-      L.push('np      ' + (np ? (np.key || '-') + ' | ' + (np.prefix || '-') + ' | ' + (np.mode || '-') : 'NONE'));
-      L.push('np.key==pageId? ' + (np ? String(np.key === pageId) : 'n/a') +
-             '   np.prefix==ns? ' + (np ? String(np.prefix === ns) : 'n/a'));
-      L.push('meta te ' + meta('te'));
-      L.push('meta et ' + meta('et'));
-      L.push('cards   ' + cards.length + (cards.length ? ' ' + cards[0] + '..' + cards[cards.length - 1] : ''));
-      // dynSyncSentBtns() mirrors "is there a session with a map" onto this button.
-      L.push('session ' + (prev ? (prev.classList.contains('dyn-sent-off') ? 'NO (±1 greyed)' : 'yes (±1 live)') : 'no ±1 button'));
-      L.push('dyn-live ' + (live ? live.id + (cards.indexOf(live.id.slice(3)) < 0 ? ' (NOT a card here!)' : '') : 'NONE'));
-      L.push('strip   ' + (strip ? strip.textContent.trim().slice(0, 48) : '-'));
-      L.push('body    ' + String(document.body.className).slice(0, 80));
-      var cur = document.getElementById('time-cur'), tot = document.getElementById('time-total');
-      L.push('time    ' + ((cur && cur.textContent) || '?') + ' / ' + ((tot && tot.textContent) || '?'));
-      return L.join('\n');
-    }
-    /* setTimeout, NOT requestAnimationFrame: rAF does not fire in a backgrounded app, which is
-       half of when this needs to be recording (r205 learned the same thing the hard way). */
-    (function tick() { try { pre.textContent = read(); } catch (e) { pre.textContent = 'probe error: ' + e; }
-      setTimeout(tick, 600); })();
-
-    bCopy.addEventListener('click', function () {
-      /* A WebView clipboard write can be refused or a silent no-op, and .select() on a READ-ONLY
-         textarea is refused on iOS — so the field is made writable, selected by range, and copied
-         synchronously inside the gesture. Same shape as the latency probe's copy (r206). */
-      var ta = document.createElement('textarea');
-      ta.value = pre.textContent;
-      ta.style.cssText = 'width:100%;height:9em;font:inherit';
-      body.insertBefore(ta, btns);
-      try { ta.focus(); ta.setSelectionRange(0, ta.value.length); document.execCommand('copy'); bCopy.textContent = 'copied'; }
-      catch (_) { bCopy.textContent = 'select all + copy'; }
-    });
-    bShare.addEventListener('click', function () {
-      if (navigator.share) navigator.share({ text: pre.textContent }).catch(function () {});
-      else bShare.textContent = 'no share';
-    });
-  }
-
-  function paint() { banner(); picker(); hlprobe(); }
+  function paint() { banner(); picker(); }
   function ui() {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paint);
     else paint();
