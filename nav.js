@@ -596,30 +596,17 @@
   function ensureLayoutDbg() {
     try {
       if (/[?&]layoutdbg=1/.test(location.search)) localStorage.setItem('te_layoutdbg', 'on');
-      if (localStorage.getItem('te_layoutdbg') === 'off') return;
-      /* ⭐ OFF BY DEFAULT ON THE WEB, ON BY DEFAULT WHERE IT CANNOT BE ARMED (owner,
-         2026-09-20: "it obscures my view").
-         ⛔ NOT a blanket default-off. layoutdbg.js's header gives the reason it is on: the app
-         and the installed PWA have no address bar, so ?layoutdbg=1 cannot reach them, and an
-         arm-by-URL switch would make the tool unreachable on exactly the two devices whose bugs
-         it exists for. Turning it off everywhere would quietly retire it.
-         ✅ So the default now follows whether the URL switch is USABLE: in a browser with an
-         address bar it stays hidden until armed, and in the app or a standalone PWA it behaves
-         as before. The ✕ on the overlay and an explicit 'on' both still win — this only changes
-         what happens when nobody has said either way. */
-      if (!localStorage.getItem('te_layoutdbg')) {
-        var standalone = false;
-        try {
-          standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
-                    || window.navigator.standalone === true
-                    || !!window.Capacitor;
-        } catch (_) {}
-        if (!standalone) return;
-      }
-      /* ⚠ te_layoutdbg_ok too: thaiear_identity is wiped by an explicit logout, and signed-out
-         is the state this tool most needs to see. */
-      if (!localStorage.getItem('te_layoutdbg') && localStorage.getItem('te_layoutdbg_ok') !== '1' &&
-          !localStorage.getItem('thaiear_identity')) return;
+      /* ⛔⛔ OFF UNLESS EXPLICITLY ARMED (owner, 2026-09-20: "this has NEVER yielded anything
+         useful - just turn it off"). It used to load for anyone holding an identity record and
+         show itself unless dismissed, which put a debug overlay on every page of the owner's own
+         site by default.
+         ✅ The reachability problem its header worried about is solved properly rather than by
+         defaulting it on: the owner panel on the home page now has a toggle, and that panel
+         works in the app and the installed PWA where ?layoutdbg=1 cannot go. So the tool is one
+         tap away instead of always present.
+         ⚠ 'off' is still honoured explicitly as well as by absence, so an existing device that
+         dismissed the overlay stays exactly as it is. */
+      if (localStorage.getItem('te_layoutdbg') !== 'on') return;
     } catch (_) { return; }
     if (document.getElementById('thaiear-layoutdbg-js')) return;
     const s = document.createElement('script');

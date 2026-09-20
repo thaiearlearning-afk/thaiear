@@ -21,7 +21,9 @@
   position: fixed; inset: 0; z-index: 900;
   background: rgba(20, 16, 40, 0.55);
   display: flex; align-items: flex-start; justify-content: center;
-  padding: 24px 16px; overflow-y: auto;
+  /* ⚠ 14px, not 24: on a phone the overlay's own padding is 48px of the viewport spent on
+     nothing, and the sheet already has 16px of its own inside it. */
+  padding: 14px 12px; overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 .tq-overlay[hidden] { display: none; }
@@ -53,7 +55,7 @@
 .tq-head.hero {
   --tqh-ink: var(--accent, #4B41AD);
   --tqh-bg: var(--accent-light, #EEEDFE);
-  margin: 0 0 14px;
+  margin: 0 0 10px;
 }
 .tq-sheet.premium .tq-head.hero { --tqh-ink: #B29234; --tqh-bg: #FBF5DC; }
 .tq-head.hero h3 {
@@ -144,8 +146,8 @@
 
 /* Secondary actions under the start button — Return, and "use these settings everywhere". */
 .tq-minor {
-  display: flex; flex-direction: column; gap: 7px; margin-top: 11px;
-  padding-top: 11px; border-top: 0.5px solid var(--border, rgba(0,0,0,.09));
+  display: flex; flex-direction: column; gap: 7px; margin-top: 9px;
+  padding-top: 9px; border-top: 0.5px solid var(--border, rgba(0,0,0,.09));
 }
 .tq-minor button {
   background: none; border: 0; padding: 4px; cursor: pointer; font-family: inherit;
@@ -298,7 +300,7 @@
    above the fold would bury the four buttons the screen exists for — and on a long history it
    would be the majority of the page. One tap, and it remembers nothing, because reopening the
    picker means someone is choosing a quiz again. */
-.tq-results { border-top: 0.5px solid var(--border, rgba(0,0,0,.09)); margin-top: 18px; padding-top: 4px; }
+.tq-results { border-top: 0.5px solid var(--border, rgba(0,0,0,.09)); margin-top: 8px; padding-top: 2px; }
 .tq-res-h {
   width: 100%; display: flex; align-items: center; justify-content: space-between;
   background: none; border: 0; padding: 11px 2px; cursor: pointer; font-family: inherit;
@@ -348,8 +350,17 @@
    applyTranslit(). ⛔ NOT .tt: the Builder's tray is owned by the three-way script setting
    (§5.1/§9.3), and one surface must have exactly one control. */
 .tq-sheet.tq-tl-off .tlx,
-.tq-sheet.tq-tl-off .o-tl,
-.tq-sheet.tq-tl-off .tl { display: none; }
+.tq-sheet.tq-tl-off .o-tl { display: none; }
+/* ⛔⛔ THE SITE PILL MUST NOT REACH A THREE-WAY SCREEN. §9.3: quizzes 2 and 4 are governed by
+   the three-way script setting and 1 and 3 by the two-state pill — exactly one control per
+   surface. Without :not(), a learner with the Builder's three-way on "Thai + transliteration"
+   and the site pill off saw no transliteration under the answer, decided by a control that is
+   not even rendered on that screen. */
+.tq-sheet.tq-tl-off:not(.tq-threeway) .tl { display: none; }
+
+/* the three-way, as a class so it reaches the question already on screen */
+.tq-sheet.tq-script-thai .tl,
+.tq-sheet.tq-script-thai .tile .tt { display: none; }
 .reveal { border-top: 0.5px solid var(--border, rgba(0,0,0,.09)); margin-top: 14px; padding-top: 13px; }
 .nextbtn {
   width: 100%; background: var(--accent, #4B41AD); color: #fff; border: 0;
@@ -589,10 +600,9 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    rows lose vertical padding, the gaps close, and the mascot takes what that frees.
    ⚠ The trims are on .qpick-big only — the compact .qpick is not used anywhere yet, and
    changing a variant nobody renders is how a rule gets forgotten. */
-.qpick-big button { padding: 11px 13px; margin-bottom: 7px; }
-.qpick-big .ic { width: 30px; height: 30px; font-size: 13px; }
-.qpick-big .nm { font-size: 14.5px; }
-.qpick-big .ds { font-size: 11.5px; }
+/* ⚠ The last 16px, taken from the rows rather than the mascot. Four rows at 2px less
+   padding each is invisible; making the tiger smaller is the thing the owner asked me to
+   undo. An icon, a name and a one-line description do not need 83px of row. */
 .tq-fill { padding-bottom: 0; }
 .tq-fill .tq-minor { margin-top: 10px; }
 .qpick .sc { font-size: calc(12px   * var(--tq-scale)); }
@@ -640,16 +650,30 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    overlay is a full screen) while the CONTENT of the picker and the results is short. Making
    the type bigger alone would not fix it; the content has to be told to occupy the height.
    ══════════════════════════════════════════════════════════════════════════════════════════ */
+/* ⛔⛔ .tq-fill NO LONGER STRETCHES, and that was the real cause of the overflow rather than
+   any single measurement. `flex: 1` on the rows plus `margin-top: auto` on the footer were there
+   to push a SHORT picker down the screen — written when the picker was four rows and nothing
+   else. With a mascot and a results row added it is no longer short, and those two rules were
+   spending height the content now needs, on a phone where there is none to spend.
+   ⚠ The owner's words were "there's room for all elements to shift up", which is exactly what
+   removing the stretch does: everything sits at its natural height from the top. */
 .tq-fill { display: flex; flex-direction: column; }
-.tq-fill .qpick { flex: 1; justify-content: center; }
-.tq-fill .tq-minor { margin-top: auto; }
 
-/* the picker's four rows, given room to breathe */
-.qpick-big button { padding: calc(15px * var(--tq-scale, 1)) calc(15px * var(--tq-scale, 1)); gap: 14px; }
-.qpick-big .ic { width: 40px; height: 40px; border-radius: 11px; font-size: calc(17px * var(--tq-scale, 1)); font-weight: 700; }
-.qpick-big .nm { font-size: calc(15.5px * var(--tq-scale, 1)); }
-.qpick-big .ds { font-size: calc(12.5px * var(--tq-scale, 1)); margin-top: 2px; }
-.qpick-big .sc { font-size: calc(15px * var(--tq-scale, 1)); }
+/* ⛔⛔ THE ONLY .qpick-big BLOCK. There were TWO, ~60 lines apart, and the later one silently
+   won every trim the earlier one made — identical specificity, so source order decided, and two
+   passes of "make the rows tighter" changed nothing at all while reporting success. The row
+   stayed at 15px padding and a 40px icon throughout. That is why the menu would not come down to
+   size: the measurements were honest and the rule being edited was dead.
+   ⚠ If a third is ever added, this one wins or loses purely on where it sits in the file. One
+   block.
+   ⚠ The --tq-scale here is vestigial: applyFontScale() pins the picker to 1 (the text-size
+   control deliberately does not reach this screen), so these resolve to the literal px. Left in
+   place rather than stripped, because the compact .qpick variant may yet want scaling. */
+.qpick-big button { padding: 9px 13px; gap: 12px; margin-bottom: 6px; }
+.qpick-big .ic { width: 34px; height: 34px; border-radius: 10px; }
+.qpick-big .nm { font-size: 14.5px; }
+.qpick-big .ds { font-size: 11.5px; margin-top: 1px; }
+.qpick-big .sc { font-size: 13px; }
 
 /* the results screen: the score is the point of the screen, so it takes the space */
 .tq-fill-res .tq-res { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 8px 0 18px; }
@@ -712,7 +736,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    ⚠ It grows UPWARD: the top margin shrinks rather than the block pushing the exit down, which
    is what keeps the whole menu on one screen. The two caps stay — a fixed width for intent, a
    percentage for the guard. */
-.tq-mascot { text-align: center; margin: 4px 0 2px; }
+.tq-mascot { text-align: center; margin: 2px 0 0; }
 .tq-mascot img {
   width: 200px; max-width: 58%; height: auto; aspect-ratio: 440 / 389;
   display: block; margin: 0 auto 5px;
@@ -815,8 +839,15 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .tqe-go:hover { filter: brightness(1.08); }
 .tqe-note { margin: 9px 0 0; font-size: 11.5px; color: var(--text-tertiary, #9A9A9A); text-align: center; }
 
-/* ⚠ One column on a phone: two 13.5px names side by side wrap to three lines each at 360px. */
+/* ⛔⛔ NO ONE-COLUMN FALLBACK. This rule was correct for the ORIGINAL entry tiles — wide rows
+   with the name and score side by side, which did wrap badly at 360px. Against the square 2×2 it
+   was a disaster: `aspect-ratio: 1` on a full-width tile makes a ~350px square, and four of them
+   stack into 1400px of vertical wall. The owner saw it on both phones.
+   ⚠ The lesson, not the fix: a responsive override survives the design it was written for. When
+   a component is replaced, its media queries are part of the component.
+   Two columns hold at every width — a 360px phone gives ~160px squares — and the 420px query
+   above shrinks the icon and the name for exactly that case. */
 @media (max-width: 460px) {
-  .tqe-grid { grid-template-columns: 1fr; }
-  .tq-entry { margin: 24px auto 32px; }
+  .tq-entry { margin: 24px auto 32px; padding: 16px 14px 14px; }
+  .tqe-grid { gap: 8px; }
 }

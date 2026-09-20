@@ -169,6 +169,28 @@
     var t = T();
     if (sheet) sheet.classList.toggle('premium', !!(t && t.tier === 'premium'));
   }
+
+  /* ⭐⭐ THE THREE-WAY SCRIPT SETTING IS A CLASS TOO, for the same reason the site pill became
+     one: the settings menu deliberately does not re-render the question, so anything baked in at
+     render time cannot be reached. Owner: "when i change a setting in settings, it doesnt apply
+     to the display until the next question ... font size and modern font apply immediately (as
+     they ought to)."
+     ⚠⚠ IT ALSO MARKS WHICH CONTROL OWNS THIS SCREEN, and that is the bug it fixes. §9.3 gives
+     quizzes 2 and 4 the three-way and quizzes 1 and 3 the two-state site pill — exactly one
+     control per surface. v571 made the site pill a class that hid `.tl` GLOBALLY, so a learner
+     with the Builder's three-way on "Thai + transliteration" and the site pill off got no
+     transliteration under the answer, from a control that is not even shown on that screen.
+     ⚠ 'tl' (transliteration INSTEAD of Thai) still needs the next question: the tile's main text
+     IS the Thai, so swapping it is a re-render, not a visibility change. both <-> thai are
+     instant, which is the pair that actually gets toggled. */
+  function applyScript() {
+    if (!sheet) return;
+    var m = (run && run.prefs && run.prefs.script) || 'both';
+    var three = !!(run && run.q && (run.q.id === 2 || run.q.id === 4));
+    sheet.classList.toggle('tq-threeway', three);
+    sheet.classList.toggle('tq-script-thai', three && m === 'thai');
+    sheet.classList.toggle('tq-script-tl', three && m === 'tl');
+  }
   function thaiModern() {
     try { return localStorage.getItem('thaiear_thaifont') === 'modern'; } catch (_) { return false; }
   }
@@ -383,14 +405,21 @@
      wrong length, wrong quiz, wrong moment — and dumping the learner back on the topic page makes
      them walk in through the front door again to try the next one. Leaving the quiz AREA is still
      one tap away, and it is the labelled one. */
-  function backToPicker() {
+  /* ⚠ MID-QUIZ, THE × GOES TO **THIS QUIZ'S** MENU, not the four-type picker (owner,
+     2026-09-20: "maybe i want to change the decoy tile setting or whatever"). Leaving a run is
+     nearly always "not like this" rather than "not this quiz" — wrong length, decoys on, head
+     start too generous — and the screen that fixes all of those is one level up, not two.
+     ⚠ The RESULTS screen's exit is deliberately different and still goes to the picker: there
+     the run is finished, so the next question really is which quiz. */
+  function backToQuizMenu() {
     stopAudio();
     var c = ov && ov.querySelector('.tq-confirm');
     if (c) c.remove();
+    var qid = run && run.q && run.q.id;
     run = null;
-    openPicker();
+    if (qid) openMenu(qid); else openPicker();
   }
-  function close() { confirmExit(backToPicker); }
+  function close() { confirmExit(backToQuizMenu); }
   /* ⚠ A rotation or a window resize changes the row width, so the row count, so any height a
      question measured on render. One listener for the overlay, dispatched to whatever the
      current question registered — questions that measure nothing register nothing. */
@@ -408,6 +437,7 @@
     applyFontScale();
     applyTranslit();
     applyTier();
+    applyScript();
     sheet.scrollTop = 0; ov.scrollTop = 0;
   }
   /* ⛔ NO GLOBAL CLOSE BUTTON ON THESE SCREENS (owner, 2026-09-20). It did the wrong thing from
@@ -1858,6 +1888,7 @@
       var tf = sheet.querySelector('.c-tf'); if (tf) setThaiModern(tf.checked);
       savePrefs(qid, run.prefs);
       restoreQuestion();
+      applyScript();     /* ↑ run.prefs.script may have just changed */
     };
 
     function restoreQuestion() {
@@ -1865,6 +1896,7 @@
       sheet.appendChild(keep);
       applyFontScale();
       applyTranslit();
+      applyScript();
       sheet.scrollTop = 0; ov.scrollTop = 0;
       run.relayout = relayout;
       /* ⚠ A text-size change re-flows the question that is coming back, so anything holding a

@@ -493,7 +493,25 @@
           (activeCache && out.caches.length > 1 ? '' : ' disabled') + '>Clear orphan caches</button>' +
         '<button type="button" id="ownersim-sw-refresh" style="' + SWBTN + '"' +
           (activeCache ? '' : ' disabled') + '>Re-download app files</button>' +
+        /* ⚠ THE LAYOUT DEBUGGER'S ONLY REACHABLE SWITCH. layoutdbg.js is armed by
+           ?layoutdbg=1, and the app and the installed PWA have no address bar — which is why it
+           used to default ON and sit over every page. It defaults off now, so this panel is how
+           it gets turned back on; the panel itself works everywhere. */
+        '<button type="button" id="ownersim-dbg" style="' + SWBTN + '">' +
+          (layoutDbgOn() ? 'Layout debugger: ON' : 'Layout debugger: off') + '</button>' +
       '</div>';
+
+    var dbg = el.querySelector('#ownersim-dbg');
+    if (dbg) dbg.addEventListener('click', function () {
+      var on = !layoutDbgOn();
+      try { localStorage.setItem('te_layoutdbg', on ? 'on' : 'off'); } catch (_) {}
+      /* ⚠ Turning it ON needs a reload, because nav.js decides whether to FETCH the script at
+         page load. Turning it OFF can hide the overlay there and then, so it does. */
+      if (on) { dbg.textContent = 'Layout debugger: ON — reload'; return; }
+      dbg.textContent = 'Layout debugger: off';
+      var box = document.getElementById('te-layout-dbg');
+      if (box && box.remove) box.remove();
+    });
 
     var u = el.querySelector('#ownersim-sw-update');
     if (u) u.addEventListener('click', function () {
@@ -604,6 +622,10 @@
       });
     });
   }
+  function layoutDbgOn() {
+    try { return localStorage.getItem('te_layoutdbg') === 'on'; } catch (_) { return false; }
+  }
+
   var SWBTN = 'border:1px solid #7A1F1F;background:#fff;color:#7A1F1F;border-radius:6px;' +
     'padding:4px 9px;font:12px/1.3 system-ui,-apple-system,sans-serif;cursor:pointer';
 
