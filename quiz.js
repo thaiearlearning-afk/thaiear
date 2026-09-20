@@ -34,10 +34,21 @@
     /* a book, half-open */
     vocab:  icon('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v16H6.5A2.5 2.5 0 0 0 4 21.5z"/>'
           + '<path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v16h5.5a2.5 2.5 0 0 1 2.5 2.5z"/>'),
-    /* an ear, with two waves coming in */
+    /* ⛔⛔ AN EAR WITH TWO WAVES — AND THE WAVES MUST FIT THE viewBox (owner, 2026-09-20: "the
+       rightmost edge of the listening comprehension icon seems cut off everywhere it appears ...
+       one of the soundwaves, the outermost one, seems to have a nick in the middle of it").
+       Both symptoms are one cause, and it is arithmetic, not rendering. An arc's apex sits a
+       SAGITTA out from its chord: s = r − √(r² − (chord/2)²). The old outer wave was
+       `M21.6 a10.5 10.5 0 0 1 0 15`, so s = 10.5 − √54 = 3.15 and the apex landed at x = 24.75 —
+       past the 24-unit viewBox before the stroke is even counted. With stroke-width 1.9 its outer
+       edge reached 25.70, i.e. 1.7 units outside. The viewBox clipped the apex FLAT, and a flat
+       spot in the middle of a curve reads as a nick.
+       ⚠ THE RIGHTMOST INK MUST CLEAR 24 INCLUDING HALF THE STROKE. Now: outer apex 22.38 + 0.95
+       = 23.33, inner 18.16 + 0.95 = 19.11. ⚠ Recompute both if this icon is ever restyled — a
+       thicker stroke pushes the edge out again, and the failure is silent. */
     listen: icon('<path d="M6 9a5 5 0 0 1 10 0c0 2.5-1.6 3.4-2.6 4.4-.8.8-1.1 1.6-1.2 2.6a2.6 2.6 0 0 1-5.2 0"/>'
           + '<path d="M9.4 9.2a1.9 1.9 0 0 1 3.2 1.3"/>'
-          + '<path d="M19 7.5a6.5 6.5 0 0 1 0 9"/><path d="M21.6 4.5a10.5 10.5 0 0 1 0 15"/>'),
+          + '<path d="M16.8 8.2a6 6 0 0 1 0 7.6"/><path d="M19.8 5.3a10 10 0 0 1 0 13.4"/>'),
     /* three blocks being stacked */
     build:  icon('<rect x="3" y="14" width="7" height="7" rx="1.4"/>'
           + '<rect x="14" y="14" width="7" height="7" rx="1.4"/>'
