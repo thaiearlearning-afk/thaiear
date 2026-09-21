@@ -2559,20 +2559,29 @@
     if (list && list.parentNode) list.parentNode.insertBefore(wrap, list.nextSibling);
     else (document.querySelector('main') || document.body).appendChild(wrap);
 
-    function open(qid) {
+    function open() {
       window.ThaiEarQuiz.open({
         unit: unit,
         unitName: (document.querySelector('h1') || {}).textContent || document.title,
         kind: 'topic',
         originHref: location.pathname,
-        originLabel: 'Back to the topic',
-        start: qid || null
+        originLabel: 'Back to the topic'
       });
     }
-    wrap.querySelector('.tqe-go').onclick = function () { open(); };
-    wrap.querySelectorAll('.tqe-tile').forEach(function (b) {
-      b.onclick = function () { open(parseInt(b.dataset.q, 10)); };
-    });
+    /* ⭐⭐ EVERY CONTROL ON THIS BLOCK OPENS THE PICKER — the four tiles no longer shortcut into
+       their own quiz (owner, 2026-09-21: "i feel like people might just click on it expecting it
+       is one button and the icons are just representations. seems cleaner").
+       ⚠⚠ THE TILES LOOK LIKE ILLUSTRATION, NOT LIKE FOUR SEPARATE BUTTONS, and that is the whole
+       argument. A block titled "Test yourself on this topic" with a "Choose a quiz" button under
+       it reads as ONE control with decorative icons; a learner who taps a tile expecting the
+       block's action and instead lands inside a quiz has been given something they did not ask
+       for. The shortcut saved one tap and cost that, and the picker is where the four are
+       actually LABELLED, named and scored.
+       ⛔ This does NOT retire `start`. `?quiz=vocab` still opens that quiz's own menu via
+       bootFromUrl(), which is right: a url naming one quiz is an explicit request for it, unlike
+       a tap on a tile in a block whose own button says "choose". */
+    wrap.querySelector('.tqe-go').onclick = open;
+    wrap.querySelectorAll('.tqe-tile').forEach(function (b) { b.onclick = open; });
   }
 
   /* ⭐ REOPEN FROM THE URL (2026-09-21). `?quiz=vocab|listen|build|speak` opens that quiz's own
