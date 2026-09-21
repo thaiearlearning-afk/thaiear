@@ -270,6 +270,80 @@
     }
     paintLat();
     d.appendChild(lat);
+
+    /* ── QUIZ REJECTION LOG (QUIZ_GO_LIVE_PLAN.md §2.10, 2026-09-22) ────────────────────────
+       ⭐⭐ WHY THIS READER IS WORTH A PANEL. SOLUTION_FINDER.md §6c: the precision/recall
+       asymmetry means a wrongly-ACCEPTED answer NEVER comes back — a learner told they are
+       right does not report it. A wrongly-REJECTED one is the only signal that can reach us,
+       and it arrives silently. quiz.js has recorded them since Phase 5 and there was NO
+       retrieval path, so nobody could ever read them: the highest-value artifact of the launch,
+       written to a key on one device and never looked at.
+       ⚠ THE PANEL IS HERE BECAUSE OF WHERE THE OWNER TESTS. ?flags do not exist in the app or
+       an installed PWA — no address bar — and offline behaviour is exactly what has to be
+       tested there. This panel is already reachable on both.
+       ⭐ THE ACCOUNT COUNT IS THE POINT OF THE THREE NUMBERS. "Queued" rising offline and
+       falling to zero on reconnect while "in your account" rises by the same amount is the
+       whole round trip, observed rather than asserted. A flush that merely reports success
+       proves nothing.
+       ⚠ THE TEXTAREA IS THE DELIVERY, NOT THE CLIPBOARD — same lesson as the latency probe: a
+       WebView clipboard write can be refused or silently no-op, and evidence that cannot leave
+       the device is not evidence.
+       ⛔ GOLDEN RULE 0: these are ANSWERS, not people. A row is a unit, a sentence number and a
+       chip order; there is no name, address or id here and none may be added. And what leaves
+       this panel goes into a REPLY or a fix, never pasted row-by-row into a document. */
+    var rej = document.createElement('div');
+    rej.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px dashed #d8c8c8;' +
+      'font-size:12px;line-height:1.65';
+    function QS() { return window.ThaiEarQuizStore; }
+    function paintRej(acct) {
+      var S = QS();
+      var rows = (S && S.rejections) ? S.rejections() : [];
+      var queued = (S && S.pendingRejections) ? S.pendingRejections() : 0;
+      /* ⚠ NOTHING LEARNER-WRITTEN IS INTERPOLATED INTO innerHTML HERE — only two counts and the
+         account number. The rows themselves go into a textarea's `.value`, which is text by
+         construction and needs no escaping. Keep it that way: a built chip order is Thai the
+         learner typed, and putting it through innerHTML would be the one place that matters. */
+      rej.innerHTML = '<strong style="color:#7A1F1F">Quiz rejection log</strong><br>' +
+        '<span>' + rows.length + ' on this device · <b>' + queued + ' queued</b> to sync · ' +
+        (acct == null ? 'account count unknown (offline or signed out)'
+                      : '<b>' + acct + '</b> in your account') + '</span>' +
+        '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
+          '<button type="button" id="ownersim-rej-refresh" style="' + SWBTN + '">Refresh</button>' +
+          '<button type="button" id="ownersim-rej-flush" style="' + SWBTN + '">Sync now</button>' +
+          '<button type="button" id="ownersim-rej-dump" style="' + SWBTN + '">Show the last 50</button>' +
+        '</div>' +
+        '<span style="display:block;margin-top:6px;color:#7A1F1F">Offline test: get some Thai' +
+        ' Builder answers rejected with the network off, watch <i>queued</i> rise, reconnect and' +
+        ' watch it fall to zero while the account count rises by the same amount.</span>';
+      rej.querySelector('#ownersim-rej-refresh').addEventListener('click', function () { loadRej(); });
+      rej.querySelector('#ownersim-rej-flush').addEventListener('click', function () {
+        var S2 = QS();
+        if (S2 && S2.flush) S2.flush().then(function () { loadRej(); });
+      });
+      rej.querySelector('#ownersim-rej-dump').addEventListener('click', function () {
+        var ta = document.createElement('textarea');
+        ta.readOnly = true;
+        ta.style.cssText = 'width:100%;height:150px;margin-top:8px;font:11px/1.45 ui-monospace,' +
+          'Menlo,Consolas,monospace;border:1px solid #d8c8c8;border-radius:6px;padding:6px';
+        /* newest first — the useful end of a tail */
+        ta.value = rows.slice().reverse().map(function (r) {
+          return r.unit + '  #' + r.item + '\n  built: ' + r.built +
+                 (r.canon ? '\n  canon: ' + r.canon : '');
+        }).slice(0, 50).join('\n') || '(nothing rejected on this device yet)';
+        var old = rej.querySelector('textarea');
+        if (old) old.parentNode.removeChild(old);
+        rej.appendChild(ta);
+        ta.focus(); ta.select();
+      });
+
+    }
+    function loadRej() {
+      var S = QS();
+      if (S && S.rejectionCount) S.rejectionCount().then(paintRej);
+      else paintRej(null);
+    }
+    loadRej();
+    d.appendChild(rej);
     /* A collapsed handle by default — the panel is a diagnostic, not furniture. The choice is
        remembered so a testing session does not mean re-opening it on every navigation. */
     var t = document.createElement('button');

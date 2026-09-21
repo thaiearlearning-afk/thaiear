@@ -2272,7 +2272,11 @@
   var qzCache = null;
   var qzFlushing = false;
 
-  function qzBlank() { return { scores: {}, prefs: {}, excl: {}, stats: {}, outbox: [] }; }
+  /* ⚠ qzLoadLocal() back-fills every key of this shape onto a stored blob, so adding one here
+     is also the migration for a device that already holds the old shape — `rej` simply appears
+     empty rather than undefined. ⛔ Which is why the back-fill must stay: it is not defensive
+     padding, it is how a new field reaches a device that never re-installs anything. */
+  function qzBlank() { return { scores: {}, prefs: {}, excl: {}, stats: {}, rej: [], outbox: [] }; }
 
   function qzLoadLocal() {
     if (qzCache) return qzCache;
@@ -2336,6 +2340,19 @@
       /* ⛔ Deltas via the rpc, keyed on a batch id the SERVER dedupes. Absolute values here
          would lose every answer given on a second device. */
       return client.rpc('apply_quiz_stats', { p_batch: op.batch, p_rows: op.rows });
+    }
+    if (op.k === 'rej') {
+      /* ⛔⛔ THE ID COMES FROM THE CLIENT AND THE INSERT IGNORES CONFLICTS. A flush can be
+         interrupted and replayed — that is why every other op here is an upsert — so an INSERT
+         needs an id the client already knows. A server-generated key would duplicate every row
+         that was in flight when the connection dropped, and the duplicates would look exactly
+         like independent learners hitting the same gap: the one inference this table exists to
+         support, quietly corrupted. `ignoreDuplicates` is upsert's ON CONFLICT DO NOTHING. */
+      return client.from('quiz_rejections').upsert({
+        id: op.id, user_id: uid, unit_key: op.unit, quiz_type: op.type,
+        item: String(op.item), built: op.built, canon: op.canon || null,
+        at: new Date(op.at || Date.now()).toISOString()
+      }, { onConflict: 'id', ignoreDuplicates: true });
     }
     if (op.k === 'prefsAll') {
       /* "Use these settings for all X quizzes": write the '*' default, then blank the per-unit
@@ -2498,8 +2515,60 @@
       return out;
     },
 
+    /* ⭐⭐ THE REJECTION LOG (QUIZ_GO_LIVE_PLAN.md §2.10) — OFFLINE-FIRST, SYNCED.
+       Owner, 2026-09-22: "it ought to work offline, then sync when going online again — like
+       sentence counts do, like the changing display name does — other parts of the site already
+       have this path established so no need to invent the wheel." So it rides the quiz outbox
+       that scores, prefs, exclusions and item stats already use: write locally, queue, drain on
+       reconnect and on sign-in. Nothing new was invented for the transport.
+
+       ⭐ WHY IT MATTERS MORE THAN IT LOOKS. SOLUTION_FINDER.md §6c: a wrongly-ACCEPTED answer
+       NEVER comes back — a learner told they are right does not report it. A wrongly-REJECTED
+       one is the only signal that can reach us at all, and it arrives silently. This log is the
+       single highest-value artifact the launch produces.
+
+       ⛔ THE ID IS MADE HERE, BEFORE THE ROW EVER LEAVES. The outbox replays on an interrupted
+       flush; without a client-generated key every in-flight row would be duplicated, and the
+       duplicates would look exactly like independent learners hitting the same gap.
+       ⚠ The LOCAL mirror is capped at 300 — it is a diagnostic tail, not a store. The OUTBOX is
+       not capped, because an entry there is work not yet done; qzFlush() drains it in batches. */
+    noteRejected: function (unit, type, item, built, canon) {
+      var d = qzLoadLocal(), id = qzUuid(), at = Date.now();
+      var row = { id: id, unit: unit, type: type, item: String(item),
+                  built: built, canon: canon || '', at: at };
+      d.rej = (d.rej || []).concat([row]).slice(-300);
+      qzSave();
+      qzQueue({ k: 'rej', id: id, unit: unit, type: type, item: String(item),
+                built: built, canon: canon || '', at: at });
+      return row;
+    },
+    /* The local tail, newest last. ⛔ Read-only and owner-facing; nothing on the site renders
+       it to a learner, and nothing writes it to a file — see quiz_rejections.sql. */
+    rejections: function () { return (qzLoadLocal().rej || []).slice(); },
+    /* ⭐ THE ACCOUNT'S OWN COUNT — what makes the offline round trip OBSERVABLE rather than
+       asserted. Answer some Builder questions wrong offline, watch pendingRejections() rise;
+       reconnect, watch it fall to zero and THIS number rise by the same amount. Without a
+       server-side count the owner can only be told the flush "succeeded".
+       ⚠ head + exact, so nothing comes back but the number — the rows themselves have no
+       business travelling for a count. Resolves null rather than rejecting: offline it simply
+       cannot be known, and "unknown" is the honest reading there. RLS scopes it to the caller's
+       own rows, which is exactly the scope this check needs. */
+    rejectionCount: function () {
+      if (!client || !currentUser) return Promise.resolve(null);
+      return client.from('quiz_rejections')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', currentUser.id)
+        .then(function (r) { return (r && !r.error && typeof r.count === 'number') ? r.count : null; })
+        .catch(function () { return null; });
+    },
+
     flush: function () { return qzFlush(); },
     pending: function () { return qzLoadLocal().outbox.length; },
+    /* How many rejection rows are still waiting to sync — the number that makes the offline
+       round trip observable rather than assumed. */
+    pendingRejections: function () {
+      return qzLoadLocal().outbox.filter(function (o) { return o.k === 'rej'; }).length;
+    },
 
     /* Pull the account copy over the local one, keeping anything still queued. */
     pull: function () {

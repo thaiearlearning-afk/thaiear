@@ -2115,7 +2115,22 @@
   /* ⭐ §11 Phase 5: "the highest-value artifact of this phase is the log of quiz-2 answers the
      checker REJECTED — every false negative is a gap in the accepted-order rule or a decoy that
      builds a real sentence, and there is no other way to find them." */
+  /* ⚠⚠ OFFLINE-FIRST AND SYNCED SINCE 2026-09-22 (§2.10). Owner: "it ought to work offline,
+     then sync when going online again — like sentence counts do, like the changing display name
+     does — other parts of the site already have this path established so no need to invent the
+     wheel." So it goes through the quiz STORE, which writes locally and queues an op that the
+     existing outbox drains on reconnect and on sign-in. Nothing here knows about the network.
+     ⛔ It used to write a private localStorage key that nothing could ever read back off the
+     device — the highest-value signal the launch produces, stranded on one browser.
+     ⚠ The fallback is the OLD key, not silence: if auth.js has not loaded, losing the
+     observation is worse than writing it somewhere imperfect. It is a genuine fallback, not a
+     second implementation — the store is the path, and this is what happens when it is absent. */
   function logRejected(num, built) {
+    var canon = (sentByNum(num) ? buildChipsOf(sentByNum(num)).map(function (g) { return g[0]; }).join(' ') : '');
+    var st = store();
+    if (st && st.noteRejected) {
+      try { st.noteRejected(ctx.unit, 2, num, built.join(' '), canon); return; } catch (_) {}
+    }
     try {
       var K = 'te_quiz_rejected_v1';
       var L = JSON.parse(localStorage.getItem(K) || '[]');
