@@ -1120,6 +1120,13 @@ const PRECACHE = [
                    // quizzes are meant to work offline (decision 24), which needs the engine
                    // on the device, not just the page.
   '/pl-list.js',   // r130: shared playlist-list module (index panel + playlists.html legacy embed)
+  '/pl-quiz.js',   // §2.7b: the quizzes at the foot of a playlist. Same reasoning as quiz.js above
+                   // — a downloaded playlist's quizzes must work offline, which needs the module
+                   // on the device. ⛔ The per-unit quiz-data/*.json side-cars are deliberately
+                   // NOT here: there are 113 of them and a playlist needs only the handful its own
+                   // sentences come from, so they are fetched at runtime and copied into the
+                   // DURABLE thaiear-audio-dl cache when a playlist is downloaded. Seeding all 113
+                   // would be ~3 MB paid by every device on every VERSION bump.
   '/dl-core.js',   // r121: shared download engine (§D.1) — real product code, consumed by playlists.html (and the index from P2b)
   /* The "Study ThaiEar offline" app card. It never RENDERS in the app or an installed PWA — it is
      the plain-browser-tab counterpart to the download controls — but every topic page, read.html

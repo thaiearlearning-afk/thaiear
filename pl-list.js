@@ -97,7 +97,16 @@
     '.pl-open:hover { background: var(--accent-mid); }' +
     '.pl-rm-list { margin: 0 0 0.75rem; }' +
     /* r76 — while "Remove sentences" select mode is open, the row's OTHER actions are hidden. */
-    '.pl-box.rm-mode .pl-remsent, .pl-box.rm-mode .pl-rename, .pl-box.rm-mode .pl-del, .pl-box.rm-mode .pl-open { display: none; }' +
+    '.pl-box.rm-mode .pl-remsent, .pl-box.rm-mode .pl-rename, .pl-box.rm-mode .pl-del, .pl-box.rm-mode .pl-open, .pl-box.rm-mode .pl-quiz-enter { display: none; }' +
+    /* ⭐ "Enter quiz" (DECISION 4). The same quiet outlined accent pill as .pl-remsent and
+       .pl-rename — Open player stays the one FILLED control, because it is still the primary
+       action on a playlist and a second filled pill beside it would compete with it.
+       ⛔ display:none UNTIL ThaiEarTopics.quizGate() adds .pl-q-on to the root. The markup is
+       emitted unconditionally so setList()'s byte-comparison stays stable; the gate only ever
+       toggles a class. §2.1 reaches this through the same one constant as every other surface. */
+    '.pl-quiz-enter { display: none; }' +
+    '.pl-q-on .pl-quiz-enter { display: inline-block; font-family: var(--font-ui); font-size: 12px; color: var(--accent); background: none; border: 0.5px solid var(--accent); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; margin-right: 8px; text-decoration: none; }' +
+    '.pl-q-on .pl-quiz-enter:hover { background: var(--accent-light); }' +
     /* Download area — mirrors index.html / dyn-index.html exactly. */
     '.dl-batch-bar { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: .5px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px 9px; margin: 0 0 1rem; }' +
     '.dl-batch-btns { display: flex; gap: 8px; }' +
@@ -260,6 +269,25 @@
 
     var root = document.getElementById('pl-root');
     var openId = null;
+
+    /* ⛔ THE ARM'S ONE GATE, asked once and answered with a class (DECISION 4 / §2.1).
+       ⚠ A CLASS RATHER THAN A CONDITIONAL RENDER, deliberately: setList() skips the DOM write
+       when the markup is byte-identical, and that byte-comparison is what stops the click
+       handlers below being hung twice on the same nodes. Markup that varied with an async gate
+       would make it unstable exactly when the gate resolved.
+       ⚠ Re-asked on thaiear:auth because the gate reads the identity record, which identity.js
+       writes before auth.js confirms — so a first answer of "no" can legitimately become "yes".
+       Latched by the class check, since that event fires once per recorded play. */
+    function askQuizGate() {
+      var T = window.ThaiEarTopics;
+      if (!T || !T.quizGate) return;
+      if (document.documentElement.classList.contains('pl-q-on')) return;
+      T.quizGate().then(function (ok) {
+        if (ok) try { document.documentElement.classList.add('pl-q-on'); } catch (_) {}
+      });
+    }
+    askQuizGate();
+    try { window.addEventListener('thaiear:auth', askQuizGate); } catch (_) {}
 
     function PL() { return window.ThaiEarAuth && window.ThaiEarAuth.playlists; }
     function user() { return window.ThaiEarAuth && window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser(); }
@@ -801,6 +829,33 @@
       return by;
     }
     /* r85 — one clip, recorded, on first use. §D.1: mechanics live in dl-core.js as ThaiEarDL.noteClip. */
+    /* ⛔ THE UNIT IS RESOLVED BY SENTENCE NUMBER, NOT BY AUDIO PREFIX — a split topic's parts
+       SHARE a prefix (topic-13a and topic-13b are both "…_LI1"), so a prefix cannot name a
+       unit and a lookup built on one would quietly save the wrong half's questions.
+       topic-sentences.json is the authoritative {page:[nums]} map and is precached.
+       ⚠ pl-quiz.js owns the same resolution for the READ side; this is deliberately the one
+       call into it rather than a second inversion written here. */
+    function dlSaveQuizData(p) {
+      var Q = window.ThaiEarPlQuiz, T = window.ThaiEarTopics;
+      if (!Q || !Q._unitsFor || !window.caches || !caches.open) return Promise.resolve();
+      var items = (p.items || []).map(function (it) { return { clipNum: it.num }; });
+      function go() {
+        var units = Q._unitsFor(items);
+        if (!units || !units.length) return Promise.resolve();
+        return caches.open(DL_CACHE).then(function (c) {
+          return ThaiEarDL.pool(units, 4, function (u) {
+            var url = '/quiz-data/' + u + '.json';
+            return fetch(url).then(function (r) {
+              if (r && r.ok) return c.put(url, r.clone());
+            }).catch(function () {});
+          });
+        }).catch(function () {});
+      }
+      if (Q._unitsFor(items)) return go();
+      if (T && T.loadSentenceNums) return T.loadSentenceNums().then(go).catch(function () {});
+      return Promise.resolve();
+    }
+
     function dlNoteClip(pfx, tier, file, ref) {
       ThaiEarDL.noteClip(pfx, file, ref, {
         seed: function () { return { tier: tier, files: [], at: Date.now(), dyn: true }; }
@@ -847,6 +902,16 @@
         // r137: make sure the version map is in hand before recording the baseline — the mount-time
         // load may not have resolved yet if the user tapped Download immediately (same ordering
         // player.js uses: the clips land, THEN loadAudioVers, THEN the manifest write).
+        /* ⭐ THE QUIZ SIDE-CARS TRAVEL WITH THE AUDIO (§2.6 / PL-AUTO). A downloaded playlist
+           must be able to run its quizzes offline, and pl-quiz.js fetches one small JSON per
+           unit the playlist draws on. Those are NOT precached — there are 113 of them and a
+           playlist needs a handful — so they are copied here, into the DURABLE
+           `thaiear-audio-dl`, which activate() deliberately never wipes. The version cache
+           would lose them on the next VERSION bump, which is precisely the case that matters:
+           a device that downloaded a playlist, then took a deploy, then went offline.
+           ⚠ NEVER FAILS THE DOWNLOAD. A missing side-car costs that unit's quiz-1 questions
+           and nothing else — the audio, which is what the user asked for, is already saved. */
+        chain = chain.then(function () { return dlSaveQuizData(p); });
         chain.then(function () { return dlAvLoad(); }).then(function () {
           var m = dlManifest();
           prefixes.forEach(function (pfx) {
@@ -1243,6 +1308,27 @@
               // Open playlist → the ?pl= PLAYER, which stays its own top-level page. Not the panel.
               ? '<a class="pl-open" href="' + pageHref('playlists.html') + '?pl=' + encodeURIComponent(p.id) + '">▶ Open player</a>'
               : '<p class="pl-note">This playlist is empty.</p>') +
+            /* ⭐ DECISION 4 (owner, 2026-09-21): "when you click on playlist pill, it opens a
+               menu of options including 'enter playlist' — the one under that should be 'Enter
+               quiz'." So it sits directly beneath Open player, and nowhere else — ⛔ the
+               playlist PILLS get no quiz strip (that is topic cards only).
+               ⛔⛔ AN ANCHOR, NOT A BUTTON, AND THAT IS NOT A STYLE PREFERENCE. The three
+               siblings below are <button>s that get click handlers wired after every render,
+               and that wiring is the subject of this file's loudest warning: setList() skips
+               the DOM write when the markup is byte-identical, so re-wiring hung ANOTHER
+               handler on the same nodes each time, an even number of them toggled a tap back
+               to where it started, and the owner saw "only on the second tap do the four
+               options appear". An anchor needs no handler, so it cannot join that class of bug
+               — which is exactly why .pl-open is one.
+               ⚠ GUARDED ON items.length, the same condition and the same branch as Open
+               player: a quiz over zero sentences is worse than an absent one.
+               ⛔ HIDDEN BY CSS UNTIL THE ARM'S ONE GATE SAYS OTHERWISE, never by omitting it
+               from the markup — a render that varies with an async gate would make setList()'s
+               byte-comparison unstable, and that comparison is what keeps the handlers sane. */
+            (p.items.length
+              ? '<a class="pl-quiz-enter" href="' + pageHref('playlists.html') + '?pl='
+                + encodeURIComponent(p.id) + '&quiz=menu">Enter quiz</a>'
+              : '') +
             (p.items.length ? '<button class="pl-remsent" type="button">Remove sentences</button>' : '') +
             '<button class="pl-rename" type="button">Rename playlist</button>' +
             '<button class="pl-del" type="button">Delete playlist</button>' +
