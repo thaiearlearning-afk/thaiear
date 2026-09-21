@@ -12,6 +12,17 @@
    — and "← All playlists" loaded the whole index INSIDE the panel. The player is a top-level
    destination (§0d keeps ?pl=); the embed is only ever the LIST. */
 var _b=document.createElement('base');_b.target='_top';document.head.appendChild(_b);}</script>
+<!-- ⭐ ?quiz= ARRIVES WANTING THE QUIZ, NOT THE PLAYLIST — set BEFORE FIRST PAINT.
+     Owner, 2026-09-22: "when i hit 'enter quiz' on a playlist, it flashes to the playlist,
+     before going into the quiz". The quiz opens a few hundred ms later (the side-cars have to
+     be fetched), and anything that decides AFTER the first paint can only cover a flash that
+     has already happened. A blocking head script is the one place that can prevent it.
+     ⛔ pl-quiz.js only ever REMOVES this class, on every exit path including failure, so the
+     worst case is the playlist appearing a moment late — never a page stuck blank. If
+     pl-quiz.js is absent the class is never set, so nothing depends on it arriving.
+     ⚠ visibility, not display: the layout is built either way, so nothing jumps when it goes. -->
+<script>try{if(/[?&]quiz=/.test(location.search))document.documentElement.className+=' te-quiz-boot'}catch(e){}</script>
+<style>html.te-quiz-boot #pl-player-wrap,html.te-quiz-boot #pl-list-wrap{visibility:hidden}</style>
 <style>.te-embed #site-nav-root,.te-embed nav.site-nav{display:none!important}
 .te-embed .wrap{padding-top:0}/* r128: panel title sits the same distance below the switcher as the topics title */
 </style>

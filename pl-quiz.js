@@ -160,6 +160,30 @@
     setTimeout(fn, 1200);
   }
 
+  function unhide() {
+    try { document.documentElement.classList.remove('te-quiz-boot'); } catch (_) {}
+  }
+
+  /* ⭐ WARM THE TIGER BEFORE THE PICKER EXISTS — 2026-09-22, reported live: "the tiger picture
+     also flashes on first render".
+     quiz.js already warms it, but from inside mountButton(), which on a ?quiz= arrival happens
+     milliseconds before the picker renders — no time for a fetch AND a decode. Here it starts
+     the moment we know a quiz is being opened, which on a playlist is while the side-cars are
+     still being fetched.
+     ⚠ DECODE, NOT MERELY FETCH. Warming the HTTP cache still leaves the bitmap to be decoded on
+     the frame the <img> is inserted, and that is the flash. decode() resolves once the bitmap
+     exists. ⚠ Fire-and-forget: it must never delay the quiz it is decorating. */
+  var warmed = false;
+  function warmTiger() {
+    if (warmed) return;
+    warmed = true;
+    try {
+      var im = new Image();
+      im.src = 'tiger.png';
+      if (im.decode) im.decode().catch(function () {});
+    } catch (_) {}
+  }
+
   /* ── the public entry ──────────────────────────────────────────────────────────────────
      opts: { playlist: {id, name}, root: <element to append the block to> } */
   function mount(opts) {
@@ -172,10 +196,25 @@
        there is deliberately no second condition to remember here. */
     var TT = T();
     if (!TT || !TT.quizGate) return;
+    /* ⭐ ?quiz= MEANS "I CAME HERE FOR THE QUIZ", SO NOTHING WAITS — 2026-09-22, reported live:
+       "when i hit 'enter quiz' on a playlist, it flashes to the playlist, before going into the
+       quiz". That flash was `atIdle`: the idle pass is right for someone who opened the playlist
+       to LISTEN and may never scroll to the block, and exactly wrong for someone who asked for
+       the quiz by url. Same work, different urgency.
+       ⛔ AND THE PAGE IS HIDDEN UP FRONT rather than after the quiz renders. Deciding late is
+       what makes it a flash: the playlist paints, then gets covered. `te-quiz-boot` is set
+       before anything is fetched and removed if the quiz cannot open, so the failure mode is
+       "the playlist appears a moment later", never "a blank page". */
+    /* ⚠ THE CLASS IS SET BY A BLOCKING HEAD SCRIPT IN playlists.html, NOT HERE, and that is the
+       point: this file runs long after the first paint, so adding it here could only ever hide
+       content the learner had already seen — a blink, which is a different ugliness rather than
+       a fix. This module's only job with it is to REMOVE it, on every exit. */
+    var wanted = /[?&]quiz=/.test(location.search);
     TT.quizGate().then(function (ok) {
-      if (!ok) return;
-      atIdle(function () { build(p, root); });
-    });
+      if (!ok) { unhide(); return; }
+      if (wanted) { warmTiger(); build(p, root); }
+      else atIdle(function () { build(p, root); });
+    }, unhide);
   }
 
   function build(p, root) {
@@ -189,17 +228,17 @@
       var TT = T();
       if (TT && TT.loadSentenceNums) {
         TT.loadSentenceNums().then(function () {
-          if (unitsFor(t.sentences)) build(p, root);
-        }).catch(function () {});
-      }
+          if (unitsFor(t.sentences)) build(p, root); else unhide();
+        }).catch(unhide);
+      } else unhide();
       return;
     }
-    if (!units.length) return;
+    if (!units.length) { unhide(); return; }
     Promise.all(units.map(loadUnit)).then(function (cars) {
       t.quiz = assemble(t.sentences, cars);
       return loadEngine();
     }).then(function () {
-      if (!window.ThaiEarQuiz || !window.ThaiEarQuiz.mountEntry) return;
+      if (!window.ThaiEarQuiz || !window.ThaiEarQuiz.mountEntry) { unhide(); return; }
       /* ⛔ THE SAME COMPONENT, MOUNTED SOMEWHERE ELSE (§2.7b). Owner, 2026-09-21: "at the
          bottom of the playlist under all the sentences there should be the quizzes box (3
          quizzes not 4, horizontal bars, stacking vertically)." The `three` treatment and the
@@ -224,7 +263,7 @@
          than guessing or doing nothing. */
       var slug;
       try { slug = new URL(location.href).searchParams.get('quiz'); } catch (_) { slug = null; }
-      if (!slug) return;
+      if (!slug) { unhide(); return; }
       var start = null;
       (window.ThaiEarQuiz._quizzes || []).forEach(function (q) {
         if (q.key === slug && !q.topicOnly) start = q.id;
@@ -233,7 +272,11 @@
         unit: ctx.unit, unitName: ctx.unitName, kind: 'playlist',
         originHref: ctx.originHref, originLabel: ctx.originLabel, start: start
       });
-    }).catch(function () {});
+      /* ⚠ AFTER open(), not before: the quiz has hidden the page content itself by then, so
+         removing the boot class reveals the QUIZ rather than the playlist behind it. Removing
+         it earlier would show the playlist for exactly the frame this whole change removes. */
+      unhide();
+    }).catch(unhide);
   }
 
   window.ThaiEarPlQuiz = {

@@ -3655,14 +3655,26 @@
      Cleared on `online`, so a reconnect re-tests rather than inheriting old verdicts. */
   var dynNoDlSeen = {};
   function dynNoDlKey(ref) { return ref.prefix + '|' + ref.file.replace(/_(TH|EN)\.mp3$/, ''); }
-  function sentNoDl(s) {
-    if (!PLMODE || !s) return false;
-    if (sentLocked(s)) return false;           // premium lock wins; never both
+  /* ⭐ THE TESTED BODY, EXTRACTED SO IT CAN BE REUSED RATHER THAN RE-DERIVED (2026-09-22).
+     Owner, on the quiz needing the same answer: *"the gate logic is all working and established
+     in playlists already ... so you dont need to derive something from scratch that might not
+     work. use the answer given there and extend the reach of it."* Exactly right, and it is the
+     quizClipUrl lesson verbatim — that function hand-rolled two helpers that already existed
+     and got BOTH wrong, invisibly, because online it simply fell through to the network.
+     ⚠ NOTHING HERE CHANGED. The PLMODE guard and the lock precedence stayed at the call site
+     below, so a playlist card looks exactly as it did; only the reach is new. */
+  function clipAbsent(s) {
+    if (!s) return false;
     var ref = dynClipRef(s, 'TH');
     if (dynNoDlSeen[dynNoDlKey(ref)]) return true;   // measured, so it outranks what onLine claims
     if (navigator.onLine) return false;        // only FALSE is trustworthy — see above
     if (!(OFFLINE || WEB_DL || DYN_WEB_DL)) return false;   // no offline store on this platform
     return !(isDownloaded(ref.prefix) && hasLocalFile(ref.prefix, ref.file));
+  }
+  function sentNoDl(s) {
+    if (!PLMODE || !s) return false;
+    if (sentLocked(s)) return false;           // premium lock wins; never both
+    return clipAbsent(s);
   }
   function sentNoDlCount() {
     if (!PLMODE) return 0;
@@ -10470,13 +10482,34 @@
     gate: function (tier) { return gate(tier); },
     locked: function (num) { return sentLocked(sentById(num)); },
     gateSent: function (num) { return gateSent(num); },
-    /* ⚠ OFFLINE, ON A PARTIALLY-DOWNLOADED PLAYLIST, a sentence whose clip is not on the device
-       cannot be heard — so the quiz must not offer it. Owner, 2026-09-22: "if a playlist is
-       partially available offline - what happens to the quiz? ... just something clean."
-       ⛔ ONLY MEASURED EVIDENCE COUNTS, which is why this delegates rather than re-deriving:
-       sentNoDl() trusts a recorded fetch failure over navigator.onLine (which lies in a
-       WebView), returns false whenever we are online, and is false on a topic page by
-       construction — a topic downloads whole or not at all. */
+    /* ⛔⛔ THE RULE, IN THE OWNER'S WORDS (2026-09-22): "if a quiz card is to appear, its audio
+       must be playable (i.e. if offline MUST be downloaded, and valid premium needed for
+       premium audio)". ONE predicate, asked by all four quizzes, because the failure it
+       prevents is identical in each: a question the learner is shown and cannot hear.
+
+       ⚠⚠ IT IS NOT sentNoDl(). That one is PLMODE-only and answers "should this card look
+       greyed out", which is a different question with a deliberately narrower scope — a topic
+       page gates the whole page, so per-card greying there would be noise. But a topic download
+       CAN be partial: dlNoteClip() records each clip as it lands precisely so an interrupted
+       download is resumable, so "downloaded" and "every clip present" are not the same claim.
+       ⛔ SO THE PLMODE GUARD IS DELIBERATELY ABSENT HERE and sentNoDl is left exactly as it is;
+       widening it would change what a playlist CARD looks like, which nobody asked for.
+
+       ⛔ BOTH HALVES ARE THE ESTABLISHED ANSWERS, NOT NEW ONES. `sentLocked()` is the very
+       predicate that greys a playlist's premium cards and floats them to the bottom — so an
+       expired account gets the same verdict in the quiz that it already gets in the list, by
+       construction. `clipAbsent()` is sentNoDl's own body, extracted rather than copied.
+       ⚠ The only thing this adds is REACH: sentNoDl is PLMODE-only because per-card greying
+       would be noise on a topic page, but a topic download CAN be partial — dlNoteClip()
+       records each clip as it lands precisely so an interrupted one is resumable, so
+       "downloaded" and "every clip present" are different claims.
+       ⚠ Anything missing or throwing answers PLAYABLE: a quiz that silently shrinks because a
+       helper is absent is a worse failure than one question that cannot play its clip. */
+    playable: function (num) {
+      var s = sentById(num);
+      if (!s) return true;
+      try { return !sentLocked(s) && !clipAbsent(s); } catch (_) { return true; }
+    },
     noDl: function (num) { return sentNoDl(sentById(num)); },
 
     /* ⛔⛔ THE ONLY WAY QUIZ CODE MAY CREDIT A LISTEN. CLAUDE.md: "Never call the plays API

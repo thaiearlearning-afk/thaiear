@@ -362,7 +362,18 @@
     background: var(--surface);
     border: 0.5px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 0.6rem 1rem 0.55rem;
+    /* ⛔⛔ THE SIDE AND BOTTOM PADDING ARE CUSTOM PROPERTIES BECAUSE SOMETHING ELSE HAS TO
+       CANCEL THEM. .topic-quiz spans the card's full width by using their negatives, and CSS
+       gives it no way to read them — so before this they were RESTATED, and the phone override
+       below (14px 16px 13px, px on purpose) left the strip 4.2px short of the card's bottom
+       edge. Owner saw it as "the quiz bit of the topic pills actually leaves some whitespace of
+       the topic pill underneath it".
+       ⚠ ONE SOURCE PER BREAKPOINT. Change the padding here or below and the strip follows; a
+       new breakpoint that sets `padding` without these two silently reopens the same gap, so
+       set the properties, not the shorthand alone. */
+    --card-px: 1rem;
+    --card-pb: 0.55rem;
+    padding: 0.6rem var(--card-px) var(--card-pb);
     text-decoration: none;
     display: flex;
     flex-direction: column;
@@ -641,7 +652,8 @@
     justify-content: space-between;
     gap: 8px;
     width: auto;
-    margin: 0.5rem -1rem -0.55rem;
+    /* ⛔ DERIVED FROM THE CARD'S OWN PADDING, never restated — see --card-px/--card-pb. */
+    margin: 0.5rem calc(-1 * var(--card-px, 1rem)) calc(-1 * var(--card-pb, 0.55rem));
     padding: 6px 1rem 7px;
     border: 0;
     border-top: 0.5px solid var(--border);
@@ -1012,7 +1024,13 @@
     .topic-search-wrap { max-width: none; margin-top: -1rem; }
     .topic-search { font-size: calc(12.5px * var(--te-ui, 1)); padding: 7px 30px; }
     .topic-card {
-      padding: 14px 16px 13px;   /* px, not rem — rem padding inflates under Android textZoom */
+      /* px, not rem — rem padding inflates under Android textZoom.
+         ⚠ AND THE TWO PROPERTIES MOVE WITH IT, or .topic-quiz keeps cancelling the DESKTOP
+         padding and leaves a white band below the strip. That is the bug this pair exists to
+         make impossible. */
+      --card-px: 16px;
+      --card-pb: 13px;
+      padding: 14px var(--card-px) var(--card-pb);
       min-width: 0;              /* grid item: stop min-content blowing past the 1fr column */
     }
     .level-badge {

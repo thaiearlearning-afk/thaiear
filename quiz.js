@@ -261,7 +261,16 @@
 
     if (qid === 3) {
       (qd.q3 || []).forEach(function (w) {
-        if (!ex[w.th]) out.push({ key: w.th, word: w });
+        if (ex[w.th]) return;
+        /* ⛔⛔ THE VOCAB TRAINER IS NOT EXEMPT, THOUGH ITS QUESTION HAS NO AUDIO (owner,
+           2026-09-22, naming it explicitly: "all 4 types, even the vocab quiz with the
+           'appears in' sentence"). Its REVEAL plays the context sentence and auto-plays it —
+           so a word whose context is premium-and-unentitled, or simply not on the device
+           offline, is a card that goes silent at exactly the moment it is teaching. Dropped
+           here, at eligibility, so the size picker never counts it.
+           ⚠ A word with no context sentence recorded is kept: there is no clip to fail. */
+        if (w.num != null && !canHear(w.num)) return;
+        out.push({ key: w.th, word: w });
       });
       return out;
     }
@@ -275,7 +284,13 @@
          cannot deliver, and it is the same treatment the playlist PLAYER gives these items:
          drop them from the session, never fail the whole thing. On a topic page the whole-page
          gate has already fired before any of this runs. */
-      if (sentIsLocked(s.num)) return;
+      /* ⛔⛔ ONE TEST, ALL FOUR QUIZZES (owner, 2026-09-22): "if a quiz card is to appear, its
+         audio must be playable (i.e. if offline MUST be downloaded, and valid premium needed
+         for premium audio)". It was two separate filters — an entitlement one and an offline
+         one — which is two chances to disagree about the same question. canHear() asks
+         player.js, whose answer is the SAME sentLocked() that greys a playlist's premium cards
+         and floats them to the bottom, plus sentNoDl's own extracted body. */
+      if (!canHear(s.num)) return;
       /* ⛔ AND A SENTENCE WHOSE AUDIO IS NOT ON THIS DEVICE IS NOT A QUESTION EITHER, offline.
          Only a PARTIALLY-downloaded playlist can produce one — a topic downloads whole or not
          at all — and it matters for the two quizzes that make a sound: Listening cannot ask
@@ -284,7 +299,6 @@
          ⚠ The Builder does NOT need audio to ask, but it is excluded too, and deliberately: a
          run assembled from "the parts of this playlist you can hear" is a coherent thing, and
          one where the Builder silently has more questions than Listening is not. */
-      if (sentNoAudio(s.num)) return;
       if (qid === 1 && !(qd.q1 && qd.q1[n] && qd.q1[n].length >= 3)) return;   /* §3A.1a */
       if (qid === 2 && buildChipsOf(s).length < MIN_CHIPS_Q2) return;          /* §3A.1a */
       out.push({ key: n, sent: s });
@@ -312,16 +326,17 @@
     if (a && a.gate) { a.gate(); return true; }
     return false;
   }
-  function sentIsLocked(num) {
+  /* ⛔⛔ THE RULE (owner, 2026-09-22): "if a quiz card is to appear, its audio must be playable
+     (i.e. if offline MUST be downloaded, and valid premium needed for premium audio)".
+     ⚠ ONE PREDICATE FOR ALL FOUR QUIZZES, and that is the whole point — the fault is identical
+     in each (a question you are shown and cannot hear), so a per-quiz rule would be four
+     chances to get it wrong. player.js owns the answer; this is the call.
+     ⚠ TRUE ON ANY DOUBT. A missing bridge or a throw means "ask it": a quiz that silently
+     shrinks because a helper is absent is a worse failure than one clip that will not play. */
+  function canHear(num) {
     var a = QA();
-    try { return !!(a && a.locked && a.locked(num)); } catch (_) { return false; }
-  }
-  /* ⚠ FALSE ON ANY DOUBT. An older player.js without this bridge, or a throw, must mean "ask
-     it" — a quiz that silently shrinks because a helper is missing is a worse failure than one
-     question that cannot play its clip. */
-  function sentNoAudio(num) {
-    var a = QA();
-    try { return !!(a && a.noDl && a.noDl(num)); } catch (_) { return false; }
+    if (!a || !a.playable) return true;
+    try { return !!a.playable(num); } catch (_) { return true; }
   }
 
   /* ── §3A.3 selection: WHICH items a short run uses. Order is ALWAYS shuffled afterwards. ── */
@@ -2749,6 +2764,18 @@
   }
   function boot() {
     if (!T() || !T().quiz) return;        /* only the pilot units carry quiz data */
+    /* ⛔⛔ A PLAYLIST MOUNTS ITS OWN BLOCK, AND THIS ONE MUST NOT RACE IT — 2026-09-22,
+       reported live: "quiz square not visible within playlists either".
+       playlists.html injects this file, so boot() runs there too; with no opts mountButton()
+       falls back to `<main>` and then to `document.body` — and playlists.html has no <main>, so
+       the block was being appended to the END OF THE BODY, below the page, while pl-quiz.js's
+       correctly-placed mountEntry() then returned early on the `#tq-entry` id guard. The block
+       existed; it was just nowhere anybody would look.
+       ⚠ THE FALLBACK IS NOT THE BUG AND IS KEPT — it is what stops a topic page with shifted
+       markup silently losing the block. What was missing is that a playlist is not that case:
+       it has a host that knows exactly where the block goes. `playlistMode` is the same flag
+       player.js reads to know the page mixes topics, so there is no new signal to keep in step. */
+    if (T().playlistMode) return;
     isOwner().then(function (ok) {
       if (!ok) return;
       mountButton();
@@ -2760,10 +2787,39 @@
     });
   }
   var urlBooted = false;
-  /* ⚠ Wait for DOMContentLoaded: the sentence list is SSR'd but this file may be deferred, and
-     the identity record is read synchronously from localStorage, not from a live session. */
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
+  /* ⛔⛔ `defer` MEANS "NOT YET", AND THIS IS THE BUG IT CAUSED — 2026-09-22, reported live:
+     "on topic pages themselves, im not seeing the quiz square at the bottom at all."
+
+     A topic page loads `player.js`, then `quiz.js`, then `topics.js`, all DEFERRED. While a
+     deferred script is executing, `document.readyState` is already 'interactive', NOT
+     'loading' — so the `else boot()` below fired IMMEDIATELY, at the bottom of this file, with
+     topics.js not yet run. The gate moved into topics.js earlier today, so `isOwner()` found no
+     `ThaiEarTopics`, answered false by design (fail closed), and the entry block never mounted.
+     Before the gate moved, this file's own isOwner() had no such dependency and the early boot
+     was harmless — which is exactly why the move broke it and nothing said so.
+
+     ⚠⚠ THE RETRY WAS NOT A RESCUE. `thaiear:auth` is the only other route in, and on a device
+     where auth resolves before this listener is bound there is no second chance at all. A
+     feature that appears only when an event happens to land late is worse than one that never
+     appears, because it cannot be reproduced.
+
+     ✅ SO THE FIRST BOOT WAITS FOR DOMContentLoaded WHENEVER topics.js IS NOT IN YET — the
+     browser fires it only once every deferred script has run, which is the one moment the
+     dependency is guaranteed. Same shape the Progress page needs for the same reason
+     (PROGRESS_PAGE_SPEC.md §7), and the band pages get it free from load order. */
+     ⚠⚠ 'interactive' IS THE SIGNAL, AND IT IS THE WHOLE FIX. While deferred scripts are
+     running the document is already 'interactive', so testing for 'loading' alone misses the
+     window entirely. Not-'complete' means DOMContentLoaded is still to come and waiting for it
+     is free; 'complete' means it has been and gone — the case where playlists.html injects
+     this file itself — so boot at once. */
+  function bootWhenReady() {
+    if (document.readyState !== 'complete') {
+      document.addEventListener('DOMContentLoaded', boot);
+      return;
+    }
+    boot();
+  }
+  bootWhenReady();
   /* Auth can resolve after first paint (identity.js writes the marker, then auth.js confirms), so
      re-check once on the auth event. ⚠ Latched by the getElementById guard in mountButton. */
   try { window.addEventListener('thaiear:auth', boot); } catch (_) {}
