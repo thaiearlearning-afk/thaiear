@@ -2806,7 +2806,8 @@
      ✅ SO THE FIRST BOOT WAITS FOR DOMContentLoaded WHENEVER topics.js IS NOT IN YET — the
      browser fires it only once every deferred script has run, which is the one moment the
      dependency is guaranteed. Same shape the Progress page needs for the same reason
-     (PROGRESS_PAGE_SPEC.md §7), and the band pages get it free from load order. */
+     (PROGRESS_PAGE_SPEC.md §7), and the band pages get it free from load order.
+
      ⚠⚠ 'interactive' IS THE SIGNAL, AND IT IS THE WHOLE FIX. While deferred scripts are
      running the document is already 'interactive', so testing for 'loading' alone misses the
      window entirely. Not-'complete' means DOMContentLoaded is still to come and waiting for it
