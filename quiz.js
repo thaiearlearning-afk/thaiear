@@ -107,7 +107,7 @@
   var DEFAULTS = { len: 10, mode: 'even', hide: false, script: 'both', head: 'partial', nodecoy: false };
 
   /* ── state ─────────────────────────────────────────────────────────────────────────────── */
-  var ov = null, sheet = null;
+  var root = null, sheet = null;   /* the quiz PAGE root (#tq-page), not an overlay */
   var ctx = null;              /* { unit, origin, originHref, originLabel } */
   var run = null;              /* { q, prefs, items, i, right, answers, audio } */
 
@@ -295,32 +295,66 @@
   }
   function savePrefs(qid, p) { var st = store(); if (st) st.setPrefs(ctx.unit, qid, p); }
 
-  /* ── overlay plumbing ──────────────────────────────────────────────────────────────────── */
+  /* ── page plumbing ─────────────────────────────────────────────────────────────────────── */
+  /* ⭐⭐ THE QUIZ IS A VIEW ON THE TOPIC PAGE, NOT AN OVERLAY (owner, 2026-09-21).
+     It used to be a fixed, self-scrolling box with a scrim, sized against the viewport. Every
+     disguise that made it read as a page on desktop — scrim removed, height filled, card edges
+     dropped — was working against its own shape, and the viewport arithmetic is what put "My
+     results" below the fold on iOS Safari (100vh is Safari's LARGE viewport, so the sheet was
+     taller than the visible area and its last child fell off the bottom).
+     ✅ Now the topic content is HIDDEN, the quiz renders into the page itself, the site nav stays
+     visible, and the document does the scrolling. Nothing is sized against a viewport that lies:
+     if a min-height overestimates, the page simply scrolls — nothing becomes unreachable.
+     ⛔⛔ NO role="dialog" / aria-modal, AND DO NOT PUT THEM BACK. The page behind is hidden, not
+     merely covered, so there is nothing to trap focus against. The old markup claimed a modal it
+     never implemented — there was no focus trap, no focus move on open, no inert background, so a
+     keyboard or screen-reader user could tab straight out of the "modal" into the frozen topic
+     page. A page needs no dialog semantics at all, which is how the migration fixed that for free.
+     ⛔ The backdrop-click-to-close listener is GONE with the backdrop. Do not re-add a
+     click-outside handler: outside is now the nav and the page, which have their own jobs. */
   function mount() {
-    if (ov) return;
-    ov = el('<div class="tq-overlay" role="dialog" aria-modal="true" hidden><div class="tq-sheet"></div></div>');
-    sheet = ov.querySelector('.tq-sheet');
-    /* ⚠ Backdrop click closes, but ONLY on the backdrop — a stray tap inside a tray must not
-       destroy a half-built sentence. */
-    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    if (root) return;
+    root = el('<div class="tq-page" id="tq-page" hidden><div class="tq-sheet"></div></div>');
+    sheet = root.querySelector('.tq-sheet');
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && ov && !ov.hidden) close();
+      if (e.key === 'Escape' && root && !root.hidden) close();
     });
-    document.body.appendChild(ov);
+    document.body.appendChild(root);
   }
-  /* ⭐⭐ THE OVERLAY TAKES A HISTORY ENTRY, SO THE BACK GESTURE CLOSES IT (owner, 2026-09-20).
-     The quiz is a DOM overlay, not a navigation — so it pushed nothing, and an edge-swipe popped
-     whatever brought the learner to the topic page in the first place. They opened a quiz and
-     landed on the topics grid, two steps from where they were.
-     ✅ Closing the overlay lands them exactly where "Back to the topic" does, for free: the topic
-     page is still underneath at the scroll position they left it.
-     ⚠ SAME URL. pushState with location.href adds an entry without changing the address, so a
-     reload or a shared link still opens the topic page rather than a quiz that cannot be
-     restored — the quiz has no URL state to restore from. */
+  /* ⭐⭐ THE QUIZ AREA TAKES A HISTORY ENTRY, SO THE BACK GESTURE CLOSES IT (owner, 2026-09-20).
+     It pushed nothing before, so an edge-swipe popped whatever brought the learner to the topic
+     page in the first place: they opened a quiz and landed on the topics grid, two steps from
+     where they were.
+     ✅ Closing lands them exactly where "Back to the topic" does — same page, same scroll.
+     ⚠⚠ EXACTLY ONE ENTRY FOR THE WHOLE QUIZ AREA, AND KEEP IT THAT WAY. Moving between the
+     picker, a quiz's own menu and a run REPLACES the url, it does not push. Back therefore
+     always means "leave the quiz area", which is the behaviour that shipped and that the
+     mid-run warning below is written against. Pushing per screen would make back walk
+     run → menu → picker, and every one of those hops would have to re-ask the warning.
+     ⚠ THE URL NOW CARRIES `?quiz=<key>` (2026-09-21) — it did not before, when the quiz was an
+     overlay with no state to restore. A reload or a shared link reopens that quiz's MENU, which
+     is the honest best: a part-finished RUN has nothing stored to restore (§8.2), so it cannot
+     and must not come back. `boot()` reads it. */
   var pushedEntry = false;
-  function pushEntry() {
-    if (pushedEntry) return;
-    try { history.pushState({ te_quiz: 1 }, '', location.href); pushedEntry = true; } catch (_) {}
+  /* Build the quiz url without disturbing any other query parameter the page arrived with
+     (?testauth=1, a utm tail, …) — replacing the whole search string would drop them. */
+  function quizUrl(slug) {
+    var u;
+    try { u = new URL(location.href); } catch (_) { return location.href; }
+    if (slug) u.searchParams.set('quiz', slug); else u.searchParams.delete('quiz');
+    return u.pathname + (u.search || '') + (u.hash || '');
+  }
+  function pushEntry(slug) {
+    if (pushedEntry) { syncUrl(slug); return; }
+    try { history.pushState({ te_quiz: 1 }, '', quizUrl(slug)); pushedEntry = true; } catch (_) {}
+  }
+  /* ⚠ replaceState, never push — see the one-entry rule above. Guarded on OUR entry being the
+     current one, so it can never rewrite a history entry that belongs to the page. */
+  function syncUrl(slug) {
+    if (!pushedEntry) return;
+    try {
+      if (history.state && history.state.te_quiz) history.replaceState({ te_quiz: 1 }, '', quizUrl(slug));
+    } catch (_) {}
   }
   /* ⚠ Only ever pops an entry we know is OURS. Without the state check, an explicit close on a
      history we did not push would send the learner back a page. */
@@ -333,7 +367,7 @@
   }
 
   window.addEventListener('popstate', function () {
-    if (!ov || ov.hidden) return;
+    if (!root || root.hidden) return;
     /* ⛔⛔ A SWIPE MID-RUN STILL WARNS. It is exactly the case the warning exists for — an
        unfinished run records nothing (§8.2) — and an edge-swipe is the easiest of all the exits
        to do by accident. popstate cannot be cancelled, so the entry is PUT BACK first and the
@@ -352,10 +386,65 @@
     try { if (history.state && history.state.te_quiz) history.back(); } catch (_) {}
   }
 
-  function show() {
+  /* ⭐ WHERE THE LEARNER WAS ON THE TOPIC PAGE, so closing puts them back there.
+     ⚠⚠ THE BROWSER CANNOT DO THIS FOR US, and that is not a style preference. Entering the quiz
+     hides the topic content, which collapses the document height to the quiz's own; the scroll
+     position is clamped to that new height immediately, so by the time anything would restore it
+     the old value is already gone. Hence: capture on the way in, restore on the way out.
+     ⛔⛔ CAPTURED IN open(), BEFORE ANYTHING RENDERS — NOT IN show(). This looked right in show()
+     and recorded 0 every single time, which is the worst kind of wrong: openPicker() and
+     openMenu() both call render() BEFORE show(), and render() ends in scrollToTop(). So by the
+     time show() ran, the page had already been scrolled to the top and the value it captured was
+     the quiz's own scroll position, not the learner's. Caught by measuring in a browser (scroll
+     to 1400, open, close, land at 0); the code reads correctly either way. */
+  var savedScrollY = 0;
+  function captureScroll() {
+    if (root && !root.hidden) return;        /* already inside the quiz — do not overwrite */
+    savedScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    takeScrollControl();
+  }
+  /* ⛔⛔ THE BROWSER'S OWN SCROLL RESTORATION FIGHTS OURS AND IT WINS — MEASURED, NOT REASONED
+     (2026-09-21: scrolled to 1400, opened a quiz, closed it, landed at 0).
+     `history.scrollRestoration` defaults to 'auto', so on the pop that dropEntry() performs the
+     browser reapplies the scroll position it recorded for that entry — which is 0, because the
+     entry was pushed immediately after show() scrolled to the top of the quiz. It runs AFTER
+     doClose()'s scrollTo and silently overwrites it, so the restore looked correct in the code
+     and did nothing at all on screen.
+     ✅ Taking manual control for the life of the quiz view is safe HERE specifically: on a topic
+     page the quiz is the only thing that pushes a history entry at all (auth.js only ever
+     replaceState()s an OAuth token out of the url, and pl-list.js is not loaded on these pages),
+     so there is no other entry whose scroll the browser should be restoring.
+     ⚠ Put back on exit rather than left manual — the setting is per document, and a later feature
+     that pushes its own entries must not inherit this. */
+  /* ⛔⛔ SET IT OUTRIGHT, NEVER SAVE-AND-PUT-BACK — the save/restore version got STUCK on 'manual',
+     measured (2026-09-21: open, close, and it never came back to 'auto').
+     The pair can come apart, and when it does the stale value is what gets restored forever after:
+     afterClose() is deferred and bails if the learner has reopened in the meantime, so a release
+     is skipped; the next take then sees a value it has already stored, declines to record the
+     real one, and the eventual release writes 'manual' back on top of 'manual'. Nothing reports
+     it and every later close inherits it.
+     ✅ 'auto' is the spec default and nothing else on a topic page ever changes it — auth.js only
+     replaceState()s, pl-list.js is not loaded here, and read.js's 'manual' belongs to a different
+     arm on a different page. So there is no previous value worth preserving, and an unconditional
+     pair cannot get stuck however many times it is called or in what order. */
+  function takeScrollControl() {
+    try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (_) {}
+  }
+  function releaseScrollControl() {
+    try { if ('scrollRestoration' in history) history.scrollRestoration = 'auto'; } catch (_) {}
+  }
+  function show(slug) {
     mount(); applyFontScale();
-    ov.hidden = false; document.documentElement.style.overflow = 'hidden';
-    pushEntry();
+    /* ⚠ show() is called by BOTH openPicker() and openMenu(), so it runs again on a screen change
+       within the quiz area. Capture the page scroll only on the real entry, or the second call
+       overwrites it with 0 and closing dumps the learner at the top of the topic page. */
+    if (root.hidden) {
+      root.hidden = false;
+      document.documentElement.classList.add('tq-mode');
+      document.body.classList.add('tq-mode');
+      window.scrollTo(0, 0);
+    }
+    pushEntry(slug);
   }
 
   /* ⭐ EXITING MID-QUIZ WARNS FIRST (owner, 2026-09-20). An unfinished run records nothing —
@@ -378,7 +467,7 @@
       + '<button type="button" class="tq-stay">Keep going</button>'
       + '<button type="button" class="tq-leave">Exit without saving</button>'
       + '</div></div></div>');
-    ov.appendChild(m);
+    root.appendChild(m);
     m.querySelector('.tq-stay').onclick = function () { m.remove(); };
     m.querySelector('.tq-leave').onclick = function () { m.remove(); then(); };
     /* ⚠ A tap on the confirm's own backdrop cancels — the SAFE direction. Getting this the other
@@ -387,16 +476,49 @@
     m.addEventListener('click', function (e) { if (e.target === m) m.remove(); });
   }
 
-  /* Tear the overlay down completely — only for a real departure from the quiz area. */
+  /* Leave the quiz AREA and give the topic page back — only for a real departure. */
   function doClose() {
     stopAudio();
-    if (ov) {
-      var c = ov.querySelector('.tq-confirm');
+    if (root) {
+      var c = root.querySelector('.tq-confirm');
       if (c) c.remove();
-      ov.hidden = true;
+      root.hidden = true;
     }
-    document.documentElement.style.overflow = '';
+    document.documentElement.classList.remove('tq-mode');
+    document.body.classList.remove('tq-mode');
+    /* ⚠ AFTER the classes come off, not before: while .tq-mode is still applied the topic content
+       is display:none, the document is short, and a scrollTo past its height is silently clamped
+       to the bottom of the quiz. The content has to be back in flow for the position to exist. */
+    try { window.scrollTo(0, savedScrollY); } catch (_) {}
     run = null;
+    afterClose();
+  }
+
+  /* ⛔⛔ THE TIDY-UP HAS TO RUN *AFTER* THE POP, AND THAT IS WHY IT IS DEFERRED (2026-09-21).
+     doClose() is called from two places and in BOTH the history move happens around it, not
+     before it: goBack() runs `doClose(); dropEntry();` and the popstate handler is itself mid-pop.
+     So anything that inspects or rewrites the url inside doClose() is reading the url as it was a
+     moment ago. A zero timeout is enough — it lands after the pop has settled.
+     Two jobs, both of which failed silently when they were inline:
+     1. ⚠ A LEFTOVER ?quiz= WOULD REOPEN THE QUIZ ON THE NEXT RELOAD. It survives exactly one way:
+        the page was LOADED at /topic-NN?quiz=vocab, so the url already carried the parameter
+        before pushEntry() duplicated it, and popping our entry lands on a url that still has it.
+        Opened from the entry block, the pre-push url had no parameter and this is a no-op.
+     2. ⚠ THE SCROLL RESTORE, AGAIN — see takeScrollControl(). The immediate one in doClose() is
+        what stops a visible jump; this one is what survives a pop.
+     ⚠ Guarded on the quiz still being closed: a learner can reopen inside the timeout, and
+     stripping the url or moving the scroll then would fight them. */
+  function afterClose() {
+    setTimeout(function () {
+      if (!root || !root.hidden) return;          /* reopened in the meantime */
+      try {
+        if (new URL(location.href).searchParams.has('quiz')) {
+          history.replaceState(history.state, '', quizUrl(null));
+        }
+      } catch (_) {}
+      try { window.scrollTo(0, savedScrollY); } catch (_) {}
+      releaseScrollControl();
+    }, 0);
   }
 
   /* ⭐ EXITING A QUIZ RETURNS TO THE QUIZ MENU, NOT THE PAGE (owner, 2026-09-20: "when i exit
@@ -413,13 +535,46 @@
      the run is finished, so the next question really is which quiz. */
   function backToQuizMenu() {
     stopAudio();
-    var c = ov && ov.querySelector('.tq-confirm');
+    var c = root && root.querySelector('.tq-confirm');
     if (c) c.remove();
     var qid = run && run.q && run.q.id;
     run = null;
     if (qid) openMenu(qid); else openPicker();
   }
   function close() { confirmExit(backToQuizMenu); }
+
+  /* ⭐⭐ A LINK CLICK MID-RUN MUST WARN — THE SITE NAV IS REACHABLE NOW (owner, 2026-09-21).
+     The overlay covered the nav (z-index 900 over nav.js's 100), so there was nothing there to
+     click. On a real page the nav is right at the top, and the topic page's own prev/next is at
+     the foot: half a dozen new ways to destroy a run with one tap, silently, because an
+     unfinished run records nothing (§8.2).
+     ⚠⚠ CAPTURE PHASE, ON DOCUMENT, MATCHED WITH closest('a[href]') — deliberately NOT a listener
+     per link, and this is not a style choice. nav.js REBUILDS the whole nav on every auth change
+     (navHtml() → slot.replaceWith(el)), so per-link handlers would be silently thrown away the
+     moment a sign-in resolved; and anything a later script adds to the page is covered the day it
+     is added rather than the day somebody remembers to wire it.
+     ⚠ Fires only DURING a run — the picker, a quiz's menu and the results screen have nothing to
+     lose, which is the same rule confirmExit() already applies everywhere else.
+     ⛔ NOT beforeunload (owner, 2026-09-21, asked and answered). That covers a DIFFERENT class of
+     exit — reload, typed url, tab close — and browsers have not allowed a custom message since
+     2016, so all it can show is the generic "Changes you made may not be saved": precisely the
+     vague thing this modal exists to replace. The realistic ACCIDENT on that path is a
+     pull-to-refresh swipe, and `overscroll-behavior-y: contain` in quiz.css kills that outright
+     with no dialog to read. A deliberate reload stays unprotected, exactly as it was. */
+  document.addEventListener('click', function (e) {
+    if (!root || root.hidden || !runInProgress()) return;
+    /* let a modified click do what the learner asked: a new tab does not leave the run */
+    if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    if (root.contains(a) || a.target === '_blank' || a.hasAttribute('download')) return;
+    var href = a.getAttribute('href') || '';
+    if (!href || href.charAt(0) === '#' || /^(mailto:|tel:|javascript:)/i.test(href)) return;
+    var dest = a.href;                 /* resolve BEFORE the default is cancelled */
+    e.preventDefault();
+    e.stopPropagation();
+    confirmExit(function () { location.href = dest; });
+  }, true);
   /* ⚠ A rotation or a window resize changes the row width, so the row count, so any height a
      question measured on render. One listener for the overlay, dispatched to whatever the
      current question registered — questions that measure nothing register nothing. */
@@ -430,6 +585,14 @@
     relayoutTimer = setTimeout(function () { if (run && run.relayout) run.relayout(); }, 120);
   });
 
+  /* ⚠ THE DOCUMENT IS THE SCROLLER NOW, so a new screen scrolls the WINDOW, not a box. The old
+     `sheet.scrollTop = 0; ov.scrollTop = 0` moved a self-scrolling overlay that no longer
+     exists and would silently do nothing. Scrolling to 0 (not to the quiz's own top) is
+     deliberate: the nav is position:sticky at top:0, so 0 is the first line of the quiz with the
+     nav above it — exactly what the learner should see on a new question. */
+  function scrollToTop() {
+    try { window.scrollTo(0, 0); } catch (_) { document.documentElement.scrollTop = 0; }
+  }
   function render(html) {
     mount(); sheet.innerHTML = html;
     /* ⚠ Re-assert after every render: innerHTML wipes children, not the inline property, but a
@@ -437,7 +600,7 @@
     applyFontScale();
     applyTier();
     mountMascot();
-    sheet.scrollTop = 0; ov.scrollTop = 0;
+    scrollToTop();
   }
   /* ⛔ NO GLOBAL CLOSE BUTTON ON THESE SCREENS (owner, 2026-09-20). It did the wrong thing from
      every screen that is not a question: from the exclusions list, "I have not picked anything,
@@ -825,7 +988,7 @@
     });
     sheet.querySelector('.tq-return').onclick = goBack;
     wireResults();
-    show();
+    show('menu');        /* the four-quiz picker */
   }
 
   function goBack() {
@@ -1035,7 +1198,7 @@
     });
     sheet.querySelector('.tq-back').onclick = openPicker;
     sheet.querySelector('.tq-return').onclick = goBack;
-    show();
+    show(q && q.key);    /* this quiz's own menu — ?quiz=vocab|listen|build|speak */
   }
 
   /* One renderer, used by the pre-quiz menu and the in-question settings — the owner asked for
@@ -2131,7 +2294,7 @@
       sheet.innerHTML = '';
       sheet.appendChild(keep);
       applyFontScale();
-      sheet.scrollTop = 0; ov.scrollTop = 0;
+      scrollToTop();
       run.relayout = relayout;
       run.repaint = repaint;
       /* ⚠ Only when it CHANGED. paint() rewrites innerHTML and re-wires every tile, so firing
@@ -2319,10 +2482,49 @@
     });
   }
 
+  /* ⭐ REOPEN FROM THE URL (2026-09-21). `?quiz=vocab|listen|build|speak` opens that quiz's own
+     MENU; `?quiz=menu` opens the four-quiz picker. Anything else is ignored rather than guessed.
+     ⚠⚠ A RUN IS DELIBERATELY NOT RESTORED, and this is a data-model fact, not a shortcut. §8.2
+     stores one best PERCENTAGE per quiz and an unfinished run has no honest percentage, so
+     nothing about a part-finished run is written down anywhere — there is nothing to restore
+     from. Landing on the menu is the honest best, and it is also what the mid-run warning has
+     been promising all along ("your result will not be saved").
+     ⛔ Do not "improve" this by persisting a run to localStorage to make the url restore one.
+     That would make an abandoned run resumable and quietly reopen every question §8.2 settled. */
+  function bootFromUrl() {
+    var slug;
+    try { slug = new URL(location.href).searchParams.get('quiz'); } catch (_) { return; }
+    if (!slug) return;
+    var start = null;
+    if (slug !== 'menu') {
+      for (var i = 0; i < QUIZZES.length; i++) if (QUIZZES[i].key === slug) start = QUIZZES[i].id;
+      if (!start) return;               /* an unknown slug opens nothing — never guess */
+    }
+    /* ⚠ The SAME context the entry block builds (unitName from the h1, not document.title —
+       the <title> is the SEO pattern "<Name> in Thai — Audio Phrases" and would put that in the
+       quiz header). Keep these two in step. */
+    window.ThaiEarQuiz.open({
+      unit: location.pathname.replace(/^.*\//, '').replace(/\.html$/, ''),
+      unitName: (document.querySelector('h1') || {}).textContent || document.title,
+      kind: 'topic',
+      originHref: location.pathname,
+      originLabel: 'Back to the topic',
+      start: start
+    });
+  }
   function boot() {
     if (!T() || !T().quiz) return;        /* only the pilot units carry quiz data */
-    isOwner().then(function (ok) { if (ok) mountButton(); });
+    isOwner().then(function (ok) {
+      if (!ok) return;
+      mountButton();
+      /* ⚠ AFTER the gate, never before: the arm is owner-only, so a ?quiz= url handed to anyone
+         else must do nothing at all rather than open a quiz the entry block will not even show.
+         ⚠ Latched the same way mountButton() is — boot() runs again on thaiear:auth, and a
+         second open() mid-run would throw the run away. */
+      if (!urlBooted) { urlBooted = true; bootFromUrl(); }
+    });
   }
+  var urlBooted = false;
   /* ⚠ Wait for DOMContentLoaded: the sentence list is SSR'd but this file may be deferred, and
      the identity record is read synchronously from localStorage, not from a live session. */
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
@@ -2356,9 +2558,13 @@
          throw the question away. */
       if (st && st.pull) {
         st.pull().then(function (ok) {
-          if (ok && ov && !ov.hidden && sheet && sheet.querySelector('.qpick')) openPicker();
+          if (ok && root && !root.hidden && sheet && sheet.querySelector('.qpick')) openPicker();
         }).catch(function () {});
       }
+      /* ⛔ BEFORE THE FIRST RENDER — see captureScroll(). Both branches below render, and render()
+         ends in scrollToTop(), so anything that reads the page's scroll after this line reads the
+         quiz's, not the learner's. */
+      captureScroll();
       /* ⚠ A tile on the entry block is a SHORTCUT into one quiz; the block's own button opens
          the picker. Both land in the same component (§9.2) — this only chooses the first screen. */
       if (opts.start) openMenu(opts.start); else openPicker();

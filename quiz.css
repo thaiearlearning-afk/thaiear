@@ -14,31 +14,81 @@
   --quiz-line: rgba(31, 93, 58, 0.18);
 }
 
-/* ── overlay shell ───────────────────────────────────────────────────────────────────────
-   ⚠ Fixed + inset with its own scroll container: a quiz is a MODE, not a section of the topic
-   page. Scrolling the page behind it while building a Thai sentence loses the tray. */
-.tq-overlay {
-  position: fixed; inset: 0; z-index: 900;
-  background: rgba(20, 16, 40, 0.55);
-  display: flex; align-items: flex-start; justify-content: center;
-  /* ⚠ 14px, not 24: on a phone the overlay's own padding is 48px of the viewport spent on
-     nothing, and the sheet already has 16px of its own inside it. */
-  padding: 14px 12px; overflow-y: auto;
-  /* ⛔ THE OVERLAY'S SCROLL MUST NOT CHAIN INTO THE PAGE BEHIND IT. Without this, scrolling
-     past either end of the sheet starts moving the topic page underneath — which on a phone
-     reads as the quiz "sliding around" and is half of what the owner saw as dead space at the
-     edges (2026-09-20). */
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+/* ── page shell ──────────────────────────────────────────────────────────────────────────
+   ⭐⭐ THE QUIZ IS A VIEW ON THE TOPIC PAGE, NOT AN OVERLAY (owner, 2026-09-21).
+   It was `position: fixed; inset: 0` with a scrim and its own scroll container. Everything that
+   made it read as a page on desktop was a disguise fighting that shape, and sizing a
+   self-scrolling box against the viewport is what put "My results" below the fold on iOS Safari.
+   ⛔⛔ DO NOT REINTRODUCE `position: fixed`, A SCRIM, OR AN INNER SCROLL CONTAINER. The document
+   is the scroller now. The old comment here said a quiz is "a MODE, not a section of the topic
+   page" and that is still true — but the mode is achieved by HIDING the topic content
+   (`body.tq-mode`, below), not by floating a box over it. Hiding is what makes the nav usable,
+   the a11y claim honest, and the viewport arithmetic unnecessary. */
+.tq-page {
+  /* normal flow, directly under the sticky site nav */
+  width: 100%;
+  padding: 14px 12px;
+  box-sizing: border-box;
 }
-.tq-overlay[hidden] { display: none; }
+.tq-page[hidden] { display: none; }
+
+/* ⭐⭐ QUIZ MODE — HIDE THE TOPIC PAGE, BY RULE, NEVER BY AN ELEMENT LIST.
+   ⚠⚠ A LIST WOULD ROT AND THE ROT WOULD BE INVISIBLE. In the SHIPPED HTML a topic page has no
+   <main> wrapper — body's children are the nav placeholder, the eyebrow, the h1, #player-root,
+   #sentence-list, #tq-entry and nav.topic-nav — and player.js appends TEN more body-level
+   elements at runtime (the floating mini transport, the dyn select bar, toasts, download
+   overlays), while footer.js injects a footer that is in no page's source at all.
+   ⚠⚠⚠ AND THE STATIC HTML IS NOT THE RUNTIME DOM — measured in a browser, 2026-09-21, and it is
+   the reason to distrust reading the source here. By the time a quiz can be opened, player.js has
+   WRAPPED the topic content in `div.page-wrap`, so #sentence-list and #player-root are no longer
+   body children at all. A hand-written list taken from the page source would have named exactly
+   those, matched NOTHING, and hidden nothing — with the quiz rendering on top of a fully visible
+   topic page and no error anywhere. The blanket rule is immune to that by construction: it hides
+   whatever the direct children turn out to be.
+   🎯 THE MINI TRANSPORT IS THE ONE THAT WOULD HAVE BITTEN, and it is the likely case rather than
+   an exotic one: it is `position: fixed; top: 54px; z-index: 60`, it latches on once the learner
+   plays the topic audio, and it shows whenever #player-root is out of view. display:none gives a
+   zero rect, so the IntersectionObserver reads "not in view" and the bar slides in OVER the quiz.
+   The z-index:900 overlay used to cover it; nothing covers it now. This rule is what stops it.
+   ⚠ .te-consent is exempt: it is a UK GDPR obligation and must stay reachable. It is
+   position:fixed at z-index 9999, so it already sat above the old overlay — no change either way.
+   ⚠ Scripts are children too; display:none on a <script> is inert. */
+body.tq-mode > *:not(nav.site-nav):not(#tq-page):not(.te-consent) { display: none !important; }
+
+/* ⛔⛔ PULL-TO-REFRESH MUST NOT BE ABLE TO DESTROY A RUN (owner, 2026-09-21, agreed explicitly).
+   The overlay was its own scroll container with `overscroll-behavior: contain` and the document
+   was locked at `overflow: hidden`. The quiz now scrolls the document, and the site sets
+   overscroll-behavior NOWHERE else — so at the top of a question a slightly over-enthusiastic
+   downward swipe on Android Chrome would reload the page and take the run with it, silently,
+   with no warning possible: a reload is the one exit class a click handler cannot see.
+   ✅ This kills the gesture for the duration of the quiz and restores it on exit. It was chosen
+   over `beforeunload`, which cannot show our honest wording (browsers have forced a generic
+   "Changes you made may not be saved" since 2016) and which a deliberate reload deserves anyway.
+   ⚠ Needed on BOTH: the propagating element differs between engines. */
+html.tq-mode, body.tq-mode { overscroll-behavior-y: contain; }
+
+/* ⛔⛔ THE SURFACE COLOUR MUST COVER THE WHOLE VIEWPORT, NOT JUST THE SHEET — CAUGHT IN A BROWSER,
+   NOT IN THE DIFF (2026-09-21).
+   The body is #FAFAF8, a warm off-white; the sheet is `--surface`, pure #FFFFFF. The overlay used
+   to be `position: fixed; inset: 0` WITH that surface colour, so the entire screen was white and
+   the sheet had no visible edge. Drop the overlay and the sheet becomes an 820px pure-white panel
+   sitting on an off-white page — two faint vertical seams down the screen, exactly the "card on a
+   backdrop" read the desktop pass spent two rounds removing.
+   ⚠ ON THE BODY, NOT ON .tq-page: .tq-page is only as tall as its content, so on a tall window
+   with a short screen (the picker) the off-white would come back below it. A body background
+   propagates to the canvas and covers the viewport however short the content is.
+   ⚠ This is a COSMETIC PARITY rule — its whole job is that the migration changed nothing visible.
+   Removing it does not break a layout, it just quietly reintroduces the seams. */
+body.tq-mode { background: var(--surface, #fff); }
 .tq-sheet {
   background: var(--surface, #fff);
   border: 0.5px solid var(--border, rgba(0,0,0,.09));
   border-radius: var(--radius-lg, 14px);
   padding: 16px;
   width: 100%; max-width: 480px;
-  margin: auto;
+  /* ⚠ `margin: auto` centred the sheet inside a flex overlay that no longer exists. In normal
+     flow the vertical auto resolves to 0, so this is `0 auto` written explicitly. */
+  margin: 0 auto;
   font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
   color: var(--text-primary, #1A1A1A);
 }
@@ -476,18 +526,17 @@
 
 /* ── phone ───────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
-  /* ⛔⛔ THE SCRIM IS PAINTED IN THE SHEET'S OWN COLOUR ONCE THE SHEET IS THE WHOLE SCREEN.
-     Owner, 2026-09-20, correcting me: "it only shows when you try to scroll beyond the edge of
-     the page i.e. scroll up at the top or down at the bottom. in its resting state its fine."
-     Exactly right, and it rules out the explanation I first reached for (a height that fell
-     short). Below 480px the overlay is full-bleed and the sheet covers every pixel, so the dark
-     backdrop is never visible AT REST — it is pure liability. iOS rubber-banding then scrolls
-     past the sheet's end and reveals the one thing underneath, which is that scrim.
-     ✅ So on a phone the overlay simply takes the sheet's colour: overscroll reveals more of the
-     same surface and there is nothing to see. ⚠ It keeps the dark scrim at ≥480px, where the
-     sheet really is a card on top of the page and the dimming is doing a job. */
-  .tq-overlay { padding: 0; background: var(--surface, #fff); }
-  .tq-sheet { border-radius: 0; min-height: 100%; max-width: none; border: 0; }
+  /* ✅ RESOLVED BY THE PAGE MIGRATION (2026-09-21), and the history is worth keeping because the
+     symptom was subtle. There used to be a dark scrim behind the sheet, and on a phone the owner
+     saw it only on overscroll: "it only shows when you try to scroll beyond the edge of the page
+     i.e. scroll up at the top or down at the bottom. in its resting state its fine." That was the
+     correct diagnosis and it ruled out the height-falls-short explanation I first reached for —
+     the sheet covered every pixel at rest, and iOS rubber-banding revealed the one thing under
+     it. The fix then was to paint the overlay in the sheet's own colour.
+     ⛔ THERE IS NO SCRIM AND NO OVERLAY NOW, so there is nothing to paint and nothing to reveal.
+     Do not re-add a background here "to be safe" — the page's own surface is already behind it. */
+  .tq-page { padding: 0; }
+  .tq-sheet { border-radius: 0; max-width: none; border: 0; }
   .tq-pct { font-size: 34px; }
   .seg { min-width: 48px; font-size: 12.5px; }
 }
@@ -507,8 +556,12 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 
 /* ── leaving mid-quiz (owner, 2026-09-20) ────────────────────────────────────────────────
    ⛔ The site's own modal, never window.confirm — the rule progress.html's reset already
-   follows. ⚠ It sits INSIDE .tq-overlay and above it, so the quiz stays visible behind the
-   warning: the learner can see what they are about to abandon. */
+   follows. ⚠ It sits INSIDE .tq-page and above it, so the quiz stays visible behind the
+   warning: the learner can see what they are about to abandon.
+   ⚠⚠ IT STAYS position:fixed EVEN THOUGH THE QUIZ NO LONGER IS (2026-09-21). This one really
+   IS a dialog — it interrupts, it has two buttons and nothing else may be reached until one of
+   them is pressed — so it keeps its scrim and its viewport anchoring. The migration removed the
+   FALSE modal (the quiz itself), not this true one. */
 .tq-confirm {
   position: fixed; inset: 0; z-index: 950;
   background: rgba(20, 16, 40, 0.55);
@@ -790,31 +843,31 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 /* ⚠ Only worth filling when the sheet actually IS the screen. On desktop the sheet is a 480px
    card in the middle of a backdrop, and stretching a card to the viewport looks broken. */
 @media (max-width: 480px) {
-  /* ⛔⛔ NO SUBTRACTION ON A PHONE — THE 32px IS COMPENSATION FOR PADDING THAT IS NOT THERE.
-     The overlay is full-bleed below 480px (`.tq-overlay { padding: 0 }`, and the sheet drops its
-     radius, border and max-width), so subtracting the desktop overlay's 14px×2 left the fill
-     32px SHORTER than the screen. ⚠ This is a real inconsistency and was NOT the dead space the
-     owner reported — he checked and corrected me: "in its resting state its fine." The visible
-     fault was the scrim showing under rubber-banding, fixed at the .tq-overlay rule above. This
-     one is kept because a full-bleed sheet subtracting a padding it does not have is wrong
-     regardless of whether anything currently shows through.
-     ⚠ Keep this in step with .tq-overlay's padding: the two numbers are one decision written in
-     two places, and nothing checks them against each other. */
-  .tq-fill { min-height: 100vh; }
-  /* ⛔⛔ dvh, NOT vh, AND THIS IS WHY "MY RESULTS" WAS INVISIBLE IN MOBILE SAFARI (owner,
-     2026-09-20: "on mobile browser on iphone (not PWA) i cant see the 'my results' dropdown ...
-     why?").
-     On iOS Safari `100vh` is the LARGE viewport — the height the page would have if the URL bar
-     and toolbar were collapsed — so it is TALLER than what you can actually see, by roughly the
-     chrome's height. .tq-fill was therefore stretched past the bottom of the window and its last
-     child, the results dropdown, sat below the fold with nothing to suggest it was there.
-     ⚠⚠ THE PWA IS UNAFFECTED, WHICH IS THE TELL AND WAS ALSO THE TRAP: standalone mode has no
-     URL bar, so there vh == what you see. A fault that appears only in the browser and not in
-     the installed app is this, almost every time.
-     ✅ `100dvh` is the DYNAMIC viewport height: it tracks the chrome as it collapses and expands.
-     It is a progressive enhancement — the vh line above stays as the fallback for anything that
-     does not know dvh, and a browser that does simply takes the later declaration. */
-  .tq-fill { min-height: 100dvh; }
+  /* ⭐⭐ THIS MIN-HEIGHT IS WHAT KEEPS THE PHONE SPACING THE OWNER APPROVED — IT IS NOT LEFTOVER
+     VIEWPORT GYMNASTICS. KEEP IT (owner, 2026-09-21: "preserve spacing - how it looks now is
+     good").
+     The picker and results distribute their slack through FLEXIBLE GAPS (`.tq-gap { flex: 1 1 0;
+     max-height: 56px }`) plus auto margins on the first and last child. Those gaps can only grow
+     into slack that EXISTS, and the slack came from the sheet being told to fill the screen.
+     Delete this and every gap collapses to its 6px minimum: the picker and the results screen
+     become tight and top-aligned, undoing the 2026-09-20 pass ("you can shift the four quizzes
+     down a bit ... i guess just decompress stuff a bit - everything is a good size").
+     ⚠⚠ AND IT NO LONGER CARRIES THE BUG THAT MADE "MY RESULTS" INVISIBLE, which is the whole
+     reason it is safe to keep. That fault (owner, 2026-09-20: "on mobile browser on iphone (not
+     PWA) i cant see the 'my results' dropdown ... why?") needed TWO things: iOS Safari's `100vh`
+     being the LARGE viewport — taller than what you can see — AND the sheet being a FIXED,
+     self-scrolling box, so anything past the visible height was simply unreachable. The box is
+     gone. This is normal flow now: if the min-height overestimates, the PAGE scrolls and the last
+     child is one swipe away. A min-height can no longer hide anything.
+     ⚠ THE PWA WAS UNAFFECTED AND THAT WAS THE TELL: standalone mode has no URL bar, so there
+     vh == what you see. A fault that appears only in the browser and not in the installed app is
+     this, almost every time. Worth remembering even though the class is now closed.
+     ⚠ dvh tracks the chrome as it collapses; the vh line stays as the fallback for anything that
+     does not know dvh. Both subtract the 54px sticky nav, which is IN FLOW above the quiz — omit
+     that and the quiz is one nav taller than the space it has, which is a scrollbar on a screen
+     that should have none. */
+  .tq-fill { min-height: calc(100vh - 54px); }
+  .tq-fill { min-height: calc(100dvh - 54px); }
   .tq-fill-res .tq-pct { font-size: calc(72px * var(--tq-scale, 1)); }
 }
 
@@ -837,7 +890,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    same overlap happens on any tap that swaps the screen.
    ⚠ Only the HIGHLIGHT goes. :active states and focus rings stay — they are the feedback that
    the tap registered, and removing those would trade a cosmetic flash for an unresponsive feel. */
-.tq-sheet button, .tq-overlay button,
+.tq-sheet button, .tq-page button,
 .tqe-go, .tqe-tile, .tq-entry button { -webkit-tap-highlight-color: transparent; }
 
 /* ══ the mascot at the foot of the quiz menu ══════════════════════════════════════
@@ -1036,7 +1089,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    unstyled base. 0.02px is the conventional epsilon: small enough that 480px itself still gets
    the phone rules, large enough to clear any real fractional width above it. */
 @media (min-width: 480.02px) {
-  /* ⛔⛔ THE QUIZ IS A PAGE, NOT A DIALOG — exactly what it already is on a phone.
+  /* ⛔⛔ THE QUIZ IS A PAGE, NOT A DIALOG — and since 2026-09-21 it genuinely IS one.
      Owner, 2026-09-20, after the first desktop pass only widened the card: "you get like a little
      phone shaped pop up screen ... it should never ever look like that. we dont have any other
      pages on the site that do that", and then "the reading section has quizzes on desktop that
@@ -1045,16 +1098,21 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
      the sheet was correctly 820px with its controls at 480, and it STILL read as a modal, because
      two things say "dialog" regardless of width — a dark scrim behind it, and being TALLER than
      the viewport so it scrolls inside itself (650 > 551) while the page sits frozen underneath.
-     ✅ So the scrim goes (the overlay takes the surface colour, as it already does under 480px)
-     and the sheet fills the height and loses its card edges. What is left is a white surface with
-     a centred column — which IS `.read-wrap`'s model, the thing the owner pointed at.
-     ✅ AND THIS NEEDS NO ROUTE. A real /quiz URL would have to solve where the topic DATA comes
-     from: the quiz reads window.ThaiEarTopic off the page it is mounted on, and decision 24
-     rejected a side-car JSON per unit. Nothing here touches that. */
-  .tq-overlay { padding: 0; background: var(--surface, #fff); }
+     ✅ THE 820/480 PAIRING IS THE PART THAT WAS RIGHT AND IT IS UNCHANGED — a wide surface with a
+     narrow centred column is `.read-wrap`'s model, the thing the owner pointed at. What has gone
+     is the scrim, the self-scrolling box and the fill-the-viewport height, because the quiz is a
+     view on the topic page now and the document does the scrolling.
+     ⛔ `min-height: 100vh` IS DELIBERATELY ABSENT HERE. On a phone it survives (see the max-width
+     block) because the flexible gaps need slack to grow into. On desktop the sheet is a wide
+     column whose content is short, and stretching it to the viewport is what made the whole
+     screen read as a modal in the first place. The two are not the same decision.
+     ✅ AND THIS NEEDED NO NEW ROUTE. A real /quiz URL would have to solve where the topic DATA
+     comes from: the quiz reads window.ThaiEarTopic off the page it is mounted on, and decision 24
+     rejected a side-car JSON per unit. A view on the topic page has the data already. */
+  .tq-page { padding: 0; }
   .tq-sheet {
     max-width: 820px; padding: 2rem 1.5rem 3rem;
-    border: 0; border-radius: 0; min-height: 100vh; min-height: 100dvh;
+    border: 0; border-radius: 0;
   }
 
   /* ⚠ …and the controls stay narrow and centred inside it — the .tq-choices convention. Without
