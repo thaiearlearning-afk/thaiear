@@ -280,7 +280,77 @@
     if (T.loadClipDurations) T.loadClipDurations().then(applyListenTime);
   }
 
-  function refresh() { applyEntitlement(); applyDownloadState(); applyListenTime(); loadListenInputs(); }
+  /* ── THE QUIZ STRIP (QUIZ_GO_LIVE_PLAN.md §2.3, QUIZ_PROJECT.md §9.1) ────────────────────
+     ⛔⛔ THE MARKUP IS NOT WRITTEN HERE. `ThaiEarTopics.quizStripHtml()` owns it, and
+     cardHtml() emits the identical string for a card built in the browser — one renderer, the
+     §9.1 rule. What lives here is INSERTION (for cards that came from a generated page, where
+     the strip is deliberately absent while the arm is gated) and the FIGURES.
+     ⚠ WHY INSERTION AT ALL: while QUIZ_PUBLIC is false the band pages must ship without the
+     strip, or every visitor would read "Quiz results" for a feature they cannot open. At
+     go-live the constant flips, gen_topics_pages.js is re-run with the flag, the static cards
+     carry it — and this function then finds nothing to insert and only fills the figures.
+     ⚠ ASYNC GATE, so this paints in two passes for the owner. That is correct and cheap: a
+     synchronous answer is not available (SHA-256 of the signed-in address) and blocking first
+     paint on it would be far worse than one late insertion. */
+  var quizGateOk = false, quizPulled = false;
+  function quizUnitKeyOf(card) {
+    return String(card.getAttribute('data-page') || '').replace(/\.html$/, '');
+  }
+  function applyQuizStrip() {
+    if (!T || !T.quizGate) return;
+    T.quizGate().then(function (ok) {
+      quizGateOk = ok;
+      if (!ok) return;
+      paintQuizStrips();
+      /* ⚠ bestScore() reads the LOCAL mirror, which on a device that has not synced is empty —
+         so ask for the account copy ONCE and repaint. Guarded, because refresh() runs on every
+         thaiear:auth event and auth.js fires one per recorded play. */
+      var S = window.ThaiEarQuizStore;
+      if (!quizPulled && S && S.pull && window.ThaiEarAuth &&
+          window.ThaiEarAuth.getUser && window.ThaiEarAuth.getUser()) {
+        quizPulled = true;
+        S.pull().then(paintQuizStrips).catch(function () {});
+      }
+    });
+  }
+  function paintQuizStrips() {
+    if (!quizGateOk) return;
+    var S = window.ThaiEarQuizStore;
+    var all = (S && S.resultsAll) ? S.resultsAll() : {};
+    var cards = document.querySelectorAll('.topic-card[data-page]');
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i], key = quizUnitKeyOf(card);
+      var strip = card.querySelector('.topic-quiz');
+      if (!strip) {
+        var link = card.querySelector('.topic-card-link');
+        var name = link ? (link.textContent || '').trim() : key;
+        card.insertAdjacentHTML('beforeend', T.quizStripHtml({ page: key, name: name }));
+        strip = card.querySelector('.topic-quiz');
+        if (!strip) continue;
+        /* ⚠ An href would be a second link inside a card that already has a stretched one, so
+           this is a button that navigates. Built by CONCATENATION — hrefFor() strips only a
+           trailing ".html", and handed the whole query string it silently does nothing. */
+        (function (c) {
+          strip.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            var page = c.getAttribute('data-page');
+            location.href = T.hrefFor(page) + '?quiz=menu';
+          });
+        })(card);
+      }
+      var row = all[key] || {};
+      var cells = strip.querySelectorAll('.tqs-c');
+      for (var j = 0; j < cells.length; j++) {
+        var r = row[cells[j].getAttribute('data-q')];
+        /* ⛔ An em dash for "never tried", never 0% — and `best` can legitimately be 0 for a
+           run that scored nothing, so test for null, not for falsiness. */
+        var txt = (r && r.best != null) ? (r.best + '%') : '—';
+        if (cells[j].textContent !== txt) cells[j].textContent = txt;
+      }
+    }
+  }
+
+  function refresh() { applyEntitlement(); applyDownloadState(); applyListenTime(); loadListenInputs(); applyQuizStrip(); }
 
   /* ── the re-decorate hook ────────────────────────────────────────────────────────────────
      Everything above decorates `.topic-card[data-page]` wherever it finds it, so a surface that
@@ -355,8 +425,13 @@
       ? hits.map(function (h) { return cardHtml(h.unit); }).join('')
       : '<p class="grid-msg">No topics match that. Try a Thai word, or an English one like ' +
         '&ldquo;hospital&rdquo;.</p>';
-    applyDownloadState();
-    applyListenTime();      // results are rebuilt from scratch, so their captions are too
+    /* ⚠⚠ refresh(), NOT a hand-picked pair of applies. It used to call applyDownloadState()
+       and applyListenTime() by name, which meant every decoration added later — the quiz strip
+       is the first — silently did NOT reach search results. That is the §9.1 failure mode
+       wearing different clothes: a control that exists on the band cards and vanishes the
+       moment the visitor types. refresh() is safe to call often; every apply is a no-op once
+       the DOM already says the right thing, and loadListenInputs() is guarded. */
+    refresh();              // results are rebuilt from scratch, so every decoration is too
   }
   q.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(run, 120); });
   q.addEventListener('search', run);          // the native clear (Esc / the X on some browsers)

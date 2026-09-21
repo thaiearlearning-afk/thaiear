@@ -1011,7 +1011,101 @@
       (opts.fav === false ? ''
         : '<button class="topic-fav" type="button" aria-pressed="false" hidden' +
           ' aria-label="Add ' + cardEsc(u.name) + ' to favourites">' + HEART_SVG + '</button>') +
+      /* ⭐ THE QUIZ STRIP (§9.1). Emitted only when the caller asks for it, and EMPTY — the
+         figures are filled by topics-page.js decorate(), exactly as the listening caption is.
+         ⚠ "Reserve, do not grow into it": every card that gets a strip gets it at the same
+         height whether or not anyone has ever taken a quiz, so a grid of cards cannot end up
+         with one card 16px taller than its neighbours (the 2026-08-22 caption measurement). */
+      (opts.quiz ? quizStripHtml(u) : '') +
     '</div>';
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════════════════════
+     THE QUIZ ARM — its ONE visibility gate, and its ONE strip renderer
+     ══════════════════════════════════════════════════════════════════════════════════════
+     ⛔⛔ QUIZ_PUBLIC IS THE GO-LIVE SWITCH AND IT IS THE ONLY ONE. QUIZ_GO_LIVE_PLAN.md §2.1
+     ("un-gate the arm") is this constant going true, plus a re-run of gen_topics_pages.js so
+     the static band cards carry the strip rather than having it inserted at runtime. Every
+     other surface — quiz.js's entry block and ?quiz= urls, the card strip, the playlist
+     "Enter quiz" row, the playlist entry block, the Progress columns — asks quizGate() and
+     nothing else, so there is no second place to remember.
+     ⚠ THE GATE IS ASYNC BY CONSTRUCTION (SHA-256 of the signed-in address), so a surface must
+     render without it and add the quiz parts when it resolves. Never block a paint on it.
+     ⚠ THIS IS PRIVACY, NOT SECURITY, and that is fine: nothing is entitled by it and the
+     sentences are public either way. ⛔ The plain address must never appear in a file —
+     Golden Rule 0 covers the owner's own — hence the hash. */
+  var QUIZ_PUBLIC = false;
+  var QUIZ_OWNER_SHA = ['f158e8ba0177149ebd33d06f08ac400709d39133f9f366f7bdb3ac17bcb1c171'];
+  var quizGatePromise = null;
+  function quizOwnerEmail() {
+    try {
+      var id = JSON.parse(localStorage.getItem('thaiear_identity') || 'null');
+      var e = id && id.user && id.user.email;
+      return e ? String(e).trim().toLowerCase() : '';
+    } catch (_) { return ''; }
+  }
+  /* Defensive throughout: anything missing (TextEncoder, subtle on a non-secure origin) must
+     mean "not the owner", never an exception that takes the calling file with it. */
+  function quizOwnerOk() {
+    var e = quizOwnerEmail(), sub, enc;
+    try {
+      sub = window.crypto && window.crypto.subtle;
+      enc = (typeof TextEncoder !== 'undefined') ? new TextEncoder() : null;
+    } catch (_) { return Promise.resolve(false); }
+    if (!e || !sub || !enc) return Promise.resolve(false);
+    return sub.digest('SHA-256', enc.encode(e)).then(function (buf) {
+      var h = Array.prototype.map.call(new Uint8Array(buf), function (b) {
+        return (b + 0x100).toString(16).slice(1);
+      }).join('');
+      return QUIZ_OWNER_SHA.indexOf(h) >= 0;
+    }).catch(function () { return false; });
+  }
+  /* ⚠ NOT MEMOISED ACROSS SIGN-IN. The identity record is written by identity.js before auth.js
+     confirms, so a first call can legitimately answer "no" and a later one "yes" — every caller
+     re-asks on `thaiear:auth`. What IS memoised is one in-flight digest, so a burst of auth
+     events on startup does not queue a dozen of them. */
+  function quizGate() {
+    if (QUIZ_PUBLIC) return Promise.resolve(true);
+    var e = quizOwnerEmail();
+    if (!quizGatePromise || quizGatePromise._for !== e) {
+      quizGatePromise = quizOwnerOk();
+      quizGatePromise._for = e;
+    }
+    return quizGatePromise;
+  }
+
+  /* ⛔ Vocab Trainer is TOPIC-ONLY (QUIZ_PROJECT.md §6.5 / §6A.6), so a grammar unit and a
+     playlist have THREE quizzes, not four — and their absence must never be drawn as a zero,
+     because a zero is a claim that you got them all wrong. Keyed off the PAGE, which is the
+     only thing a card carries. */
+  function quizUnitKind(page) {
+    var p = String(page || '').toLowerCase();
+    if (/^pl:/.test(p)) return 'playlist';
+    if (/^grammar-/.test(p)) return 'grammar';
+    return 'topic';
+  }
+  function quizHasVocab(page) { return quizUnitKind(page) === 'topic'; }
+  /* §1's display order — Vocab · Listening · Builder · Speak. ⛔ Never sort by id. */
+  var QUIZ_STRIP_IDS = [3, 1, 2, 4];
+  var QUIZ_STRIP_NAME = { 3: 'Vocab Trainer', 1: 'Listening comprehension',
+                          2: 'Thai Builder', 4: 'Speak Thai' };
+  /* ⛔⛔ ONE COPY OF THIS MARKUP. cardHtml() emits it for a card built in the browser;
+     topics-page.js decorate() inserts THIS SAME STRING into a card that came from a generated
+     page. Two renderers is the bug §9.1 exists to prevent — a control added to one of them
+     vanishes on the other, silently. */
+  function quizStripHtml(u) {
+    var page = (u && u.page) || '';
+    var cells = QUIZ_STRIP_IDS.filter(function (id) {
+      return id !== 3 || quizHasVocab(page);
+    }).map(function (id) {
+      /* ⛔ THE EMPTY STATE IS AN EM DASH, NEVER 0% (owner, 2026-09-19). 0% reads as a failed
+         attempt when it means "never tried", which on a newly shipped feature is every card. */
+      return '<span class="tqs-c" data-q="' + id + '" title="' + QUIZ_STRIP_NAME[id] + '">—</span>';
+    }).join('');
+    return '<button type="button" class="topic-quiz" tabindex="0"' +
+           ' aria-label="Quizzes for ' + cardEsc((u && u.name) || 'this unit') + '">' +
+           '<span class="tqs-l">Quiz results:</span>' +
+           '<span class="tqs-cells">' + cells + '</span></button>';
   }
 
   window.ThaiEarTopics = {
@@ -1034,6 +1128,11 @@
        would give the wrong lock-screen title and make ↩ Return play the wrong unit. */
     sequenceFor, inFavCircuit, favSequence,
     searchUnits, tokenize,
+    /* the quiz arm's ONE gate and ONE strip renderer — see the block above cardHtml's exports.
+       ⛔ QUIZ_PUBLIC is exposed as a FUNCTION, not a captured boolean: a generator reads it at
+       call time, and a consumer that cached `false` at load would never see the go-live flip. */
+    quizGate, quizStripHtml, quizUnitKind, quizHasVocab, QUIZ_STRIP_IDS,
+    quizPublic: function () { return QUIZ_PUBLIC; },
     hrefFor   // ⚠ every emitted topic link goes through this — see the note above hrefFor()
   };
 

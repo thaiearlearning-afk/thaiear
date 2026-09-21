@@ -838,6 +838,17 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .qpick-big .ds { font-size: 11.5px; margin-top: 1px; }
 .qpick-big .sc { font-size: 13px; }
 
+/* ⭐ THREE ROWS, NOT FOUR (§9.2a). Grammar units and playlists have no Vocab Trainer, and a
+   four-row panel with three rows in it reads as empty rather than as a shorter menu. Owner:
+   "enlarge the bars a little and space them out more". ⛔ A VARIANT, never a second .qpick —
+   this block must stay immediately after .qpick-big and must be the ONLY .qpick-three, or it
+   drifts exactly as the two duplicated .qpick-big blocks did (see the warning above them). */
+.qpick-three { gap: 26px; }
+.qpick-three button { padding: 13px 15px; }
+.qpick-three .ic { width: 38px; height: 38px; }
+.qpick-three .nm { font-size: 15.5px; }
+.qpick-three .ds { font-size: 12px; }
+
 /* the results screen: the score is the point of the screen, so it takes the space */
 .tq-fill-res .tq-res { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 8px 0 18px; }
 .tq-fill-res .tq-pct { font-size: calc(64px * var(--tq-scale, 1)); line-height: 1; }
@@ -1026,6 +1037,37 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 }
 .tqe-sc { font-size: 11px; font-weight: 700; opacity: .72; font-variant-numeric: tabular-nums; }
 
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   ⭐ THE THREE-QUIZ VARIANT (§9.2a) — grammar units and playlists. Vocab Trainer is
+   topic-only, so these render THREE, and a 2-column grid of square tiles with three in it
+   leaves a visible empty quarter that reads as a missing feature.
+   Owner, 2026-09-21: "for desktop, three squares across, horizontally (for playlists) cos
+   right now its 4 squares in a horizontal line for desktop on topics. so its uniform …
+   all these configurations make best use of the layout (phone tall, desktop wide)."
+       phone   → three full-width HORIZONTAL BARS, stacked
+       ≥700px  → three SQUARES across, exactly as the topic block does four
+
+   ⛔⛔ THE ONE REAL TRAP IS `aspect-ratio: 1 / 1` ON .tqe-tile. Drop the grid to one column
+   and each tile becomes a FULL-WIDTH SQUARE — three of them stacked is a screen and a half,
+   which is the identical failure to the four-square stack the no-one-column rule below was
+   written for. A column-count change ALONE looks finished and is wrong. The aspect ratio and
+   the flex direction are both part of the variant: a square wants its icon ABOVE its label, a
+   bar wants them side by side.
+   ⚠ The spacing needs no new value — ONE `gap` governs both axes, so a single-column grid
+   inherits the identical "little moat" the 2×2 has, at every breakpoint, for free. */
+.tq-entry.three .tqe-grid { grid-template-columns: 1fr; }
+.tq-entry.three .tqe-tile {
+  aspect-ratio: auto;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 54px;
+  padding: 11px 15px;
+  text-align: left;
+}
+.tq-entry.three .tqe-nm { font-size: 13.5px; }
+.tq-entry.three .tqe-ic svg { width: 24px; height: 24px; }
+
 /* ⚠ Three columns would make the squares tiny on a phone; two is the shape he asked for and it
    holds at every width. Only the icon shrinks. */
 /* ⚠ Only the icon and the name step down on a small phone; two columns hold at every width. */
@@ -1159,4 +1201,21 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   .tqe-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
   .tqe-nm { font-size: 11.5px; }
   .tqe-ic svg { width: 24px; height: 24px; }
+  /* ⭐ THREE ACROSS, AND BACK TO SQUARES — "so its uniform" (owner, 2026-09-21). The bar
+     treatment is the PHONE answer to a tall viewport; a wide one has room for the same square
+     tiles the four-quiz block uses, so every declaration the bar variant set on a phone is
+     explicitly undone here rather than left to cascade. ⛔ Do not shorten this to the
+     grid-template-columns line alone — the aspect-ratio and flex-direction overrides above are
+     not media-scoped, so without these three tiles stay bar-shaped on desktop. */
+  .tq-entry.three .tqe-grid { grid-template-columns: repeat(3, 1fr); }
+  .tq-entry.three .tqe-tile {
+    aspect-ratio: 1 / 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    min-height: 0;
+    padding: 8px 6px;
+    text-align: center;
+  }
+  .tq-entry.three .tqe-nm { font-size: 11.5px; }
 }

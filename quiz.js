@@ -1041,9 +1041,12 @@
   function openPicker() {
     scaleOff = true;                 /* ↑ see applyFontScale: the picker is not scaled */
     var st = store();
-    var rows = QUIZZES.map(function (q) {
-      /* ⛔ Vocab Trainer is topic-only (§1). A grammar unit or playlist shows three, not four. */
-      if (q.topicOnly && ctx.kind && ctx.kind !== 'topic') return '';
+    /* ⛔ Vocab Trainer is topic-only (§1). A grammar unit or playlist shows three, not four —
+       and the panel gets the `qpick-three` variant so three rows do not read as an empty
+       four-row panel (§9.2a: "enlarge the bars a little and space them out more"). */
+    var vis = quizzesFor(ctx.kind);
+    var three = vis.length < QUIZZES.length;
+    var rows = vis.map(function (q) {
       var n = eligible(q.id).length;
       var best = st ? st.bestScore(ctx.unit, q.id) : null;
       return '<button type="button" data-q="' + q.id + '"' + (n ? '' : ' disabled') + '>'
@@ -1058,7 +1061,7 @@
          + head('Test yourself', ctx.unitName || '', true)
          /* ⚠ THE GAPS ARE FLEXIBLE ELEMENTS, not margins — see .tq-gap in quiz.css. */
          + '<div class="tq-gap"></div>'
-         + '<div class="qpick qpick-big">' + rows + '</div>'
+         + '<div class="qpick qpick-big' + (three ? ' qpick-three' : '') + '">' + rows + '</div>'
          + '<div class="tq-gap"></div>'
          /* ⚠ ORDER: quizzes · tiger · the way out · My results (owner, 2026-09-20, who revised
             it: "i think back to topic button should be above the my results dropdown"). The tiger
@@ -2455,32 +2458,34 @@
      not compete with the player or interrupt the reading flow.
 
      ⚠ THIS IS PRIVACY, NOT SECURITY, AND THAT IS FINE HERE — nothing is entitled by it and the
-     sentences are already public. Same SHA-256-of-the-lowercased-address pattern as ownersim.js
-     (⛔ the plain address must never appear in a file — Golden Rule 0 covers the owner's own). */
-  var OWNER_SHA = ['f158e8ba0177149ebd33d06f08ac400709d39133f9f366f7bdb3ac17bcb1c171'];
+     sentences are already public.
 
-  function ownerEmail() {
-    try {
-      var id = JSON.parse(localStorage.getItem('thaiear_identity') || 'null');
-      var e = id && id.user && id.user.email;
-      return e ? String(e).trim().toLowerCase() : '';
-    } catch (_) { return ''; }
-  }
-  /* Defensive throughout: anything missing (TextEncoder, subtle on a non-secure origin) must mean
-     "not the owner", never an exception. */
+     ⛔⛔ THE GATE MOVED TO topics.js ON 2026-09-22 AND THERE IS NOW EXACTLY ONE OF IT.
+     `ThaiEarTopics.quizGate()` answers for every surface — this entry block, ?quiz= urls, the
+     topic-card strip, the playlist row and block, and the Progress columns — so going public
+     (QUIZ_GO_LIVE_PLAN.md §2.1) is ONE constant in ONE file rather than five files to remember.
+     A copy kept here "as a fallback" would be a second gate that a go-live flip does not reach,
+     which is the exact shape of the bug this consolidation prevents.
+     ⚠ NO topics.js ⟹ NO QUIZ. Every page that loads quiz.js also loads topics.js, and failing
+     CLOSED is the right way round for a gated feature. */
   function isOwner() {
-    var e = ownerEmail(), sub, enc;
-    try {
-      sub = window.crypto && window.crypto.subtle;
-      enc = (typeof TextEncoder !== 'undefined') ? new TextEncoder() : null;
-    } catch (_) { return Promise.resolve(false); }
-    if (!e || !sub || !enc) return Promise.resolve(false);
-    return sub.digest('SHA-256', enc.encode(e)).then(function (buf) {
-      var h = Array.prototype.map.call(new Uint8Array(buf), function (b) {
-        return (b + 0x100).toString(16).slice(1);
-      }).join('');
-      return OWNER_SHA.indexOf(h) >= 0;
-    }).catch(function () { return false; });
+    var T2 = window.ThaiEarTopics;
+    if (!T2 || !T2.quizGate) return Promise.resolve(false);
+    try { return T2.quizGate(); } catch (_) { return Promise.resolve(false); }
+  }
+
+  /* ⛔ Vocab Trainer is TOPIC-ONLY (§6.5, §6A.6), so grammar units and playlists have THREE
+     quizzes. The kind is derived from the unit key — one rule, shared with topics.js, rather
+     than a `kind` that each call site has to remember to pass. */
+  function kindOf(unit) {
+    var T2 = window.ThaiEarTopics;
+    if (T2 && T2.quizUnitKind) return T2.quizUnitKind(unit);
+    if (/^pl:/.test(String(unit || ''))) return 'playlist';
+    if (/^grammar-/.test(String(unit || ''))) return 'grammar';
+    return 'topic';
+  }
+  function quizzesFor(kind) {
+    return QUIZZES.filter(function (q) { return !(q.topicOnly && kind !== 'topic'); });
   }
 
   /* ⭐ THE ENTRY IS A FEATURE, NOT AN AFTERTHOUGHT (owner, 2026-09-20: "please make it more
@@ -2496,13 +2501,31 @@
      the graphic gold #F0CC5C — the palette rule is that the bright gold is for graphics and the
      darker one for anything bearing text, and the topic card's own premium pill already uses
      exactly this pair. Matching it is what makes the block look like part of the page. */
-  function mountButton() {
+  /* ⭐⭐ ONE ENTRY BLOCK, THREE HOSTS (§9.2a). A topic page mounts it under the sentence list,
+     a grammar unit does the same, and `playlists.html?pl=<id>` mounts it at the foot of the
+     playlist. ⛔ A VARIANT CLASS, NEVER A SECOND BLOCK — a control added to one copy vanishes
+     on the others, which is the §9.1 lesson applied before the mistake rather than after it.
+
+     opts (all optional; the defaults are the topic page's):
+       unit / unitName   the quiz's unit key and heading
+       mount             the element to append to (default: after #sentence-list)
+       originHref/Label  where "← Back" goes
+       premium           force the gold treatment (default: the page's own tier) */
+  function mountButton(opts) {
+    opts = opts || {};
     if (document.getElementById('tq-entry')) return;
     var t = T();
     if (!t || !(t.sentences || []).length || !t.quiz) return;   /* no authored data: no block */
 
-    var premium = (t.tier === 'premium');
-    var unit = location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
+    var unit = opts.unit || location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
+    var kind = kindOf(unit);
+    var vis = quizzesFor(kind);
+    /* ⛔⛔ THREE TILES ARE BARS, NOT A 2×2 WITH A HOLE (§9.2a, owner 2026-09-21). The `three`
+       class is what overrides `.tqe-tile`'s `aspect-ratio: 1/1` — without it a single-column
+       grid makes each tile a FULL-WIDTH SQUARE and three of them stack into a screen and a
+       half, the exact "ridiculously huge" failure the desktop rule was written to avoid. */
+    var three = vis.length < QUIZZES.length;
+    var premium = (opts.premium != null) ? !!opts.premium : (t.tier === 'premium');
     var st = store();
 
     /* ⚠ A COLOUR PER QUIZ, from tints the stylesheet already has — the accent and the
@@ -2516,24 +2539,32 @@
        dashes on a device that has not synced yet. The scores live in My Results, which is
        reached from the picker and therefore after a pull. */
     var TINT = { 3: 'v', 1: 'l', 2: 'b', 4: 's' };
-    var tiles = QUIZZES.map(function (q) {
+    var tiles = vis.map(function (q) {
       return '<button type="button" class="tqe-tile t-' + TINT[q.id] + '" data-q="' + q.id + '">'
         + '<span class="tqe-ic">' + q.icon + '</span>'
         + '<span class="tqe-nm">' + esc(q.name) + '</span>'
         + '</button>';
     }).join('');
 
+    /* ⚠ THE NOUN CHANGES WITH THE HOST, THE COMPONENT DOES NOT. "this topic" on a playlist
+       would be wrong, and "this unit" everywhere would be a worse kind of right.
+       ⛔ COPY RULE: no speed claim anywhere here — "native-speed" / "natural-speed" was
+       removed from all 111 places it appeared and must not come back. */
+    var NOUN = { topic: 'topic', grammar: 'unit', playlist: 'playlist' };
+    var COUNT = three ? 'Three' : 'Four';
     var wrap = document.createElement('div');
     wrap.id = 'tq-entry';
-    wrap.className = 'tq-entry' + (premium ? ' premium' : '');
+    wrap.className = 'tq-entry' + (premium ? ' premium' : '') + (three ? ' three' : '');
     wrap.innerHTML =
         '<div class="tqe-head">'
-      + '<h2 class="tqe-t">Test yourself on this topic</h2>'
-      + '<p class="tqe-s">Four ways to practise what you have just heard</p>'
+      + '<h2 class="tqe-t">Test yourself on this ' + (NOUN[kind] || 'unit') + '</h2>'
+      + '<p class="tqe-s">' + COUNT + ' ways to practise what you have just heard</p>'
       + '</div>'
       + '<div class="tqe-grid">' + tiles + '</div>'
       + '<button type="button" class="tqe-go">Choose a quiz</button>'
-      + '<p class="tqe-note">Owner-only while this is in testing.</p>';
+      + (window.ThaiEarTopics && window.ThaiEarTopics.quizPublic && window.ThaiEarTopics.quizPublic()
+          ? ''
+          : '<p class="tqe-note">Owner-only while this is in testing.</p>');
 
     /* after the sentence list, wherever it ends. ⚠ Fall back to <main> then body — a topic page
        whose markup shifts must still get the block rather than silently not. */
@@ -2555,17 +2586,26 @@
       if (warm.decode) warm.decode().catch(function () {});
     } catch (_) {}
 
-    var list = document.getElementById('sentence-list');
-    if (list && list.parentNode) list.parentNode.insertBefore(wrap, list.nextSibling);
-    else (document.querySelector('main') || document.body).appendChild(wrap);
+    /* ⚠ THE MOUNT POINT IS THE ONLY THING A HOST GETS TO CHOOSE. On a topic or grammar page
+       the block goes after the sentence list, wherever it ends (fall back to <main> then body —
+       a page whose markup shifts must still get the block rather than silently not). A playlist
+       passes its own container, because there the owner asked for it "at the bottom of the
+       playlist under all the sentences". */
+    if (opts.mount) opts.mount.appendChild(wrap);
+    else {
+      var list = document.getElementById('sentence-list');
+      if (list && list.parentNode) list.parentNode.insertBefore(wrap, list.nextSibling);
+      else (document.querySelector('main') || document.body).appendChild(wrap);
+    }
 
     function open() {
       window.ThaiEarQuiz.open({
         unit: unit,
-        unitName: (document.querySelector('h1') || {}).textContent || document.title,
-        kind: 'topic',
-        originHref: location.pathname,
-        originLabel: 'Back to the topic'
+        unitName: opts.unitName
+               || (document.querySelector('h1') || {}).textContent || document.title,
+        kind: kind,
+        originHref: opts.originHref || location.pathname,
+        originLabel: opts.originLabel || 'Back to the topic'
       });
     }
     /* ⭐⭐ EVERY CONTROL ON THIS BLOCK OPENS THE PICKER — the four tiles no longer shortcut into
@@ -2605,10 +2645,14 @@
     /* ⚠ The SAME context the entry block builds (unitName from the h1, not document.title —
        the <title> is the SEO pattern "<Name> in Thai — Audio Phrases" and would put that in the
        quiz header). Keep these two in step. */
+    var unit = location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
     window.ThaiEarQuiz.open({
-      unit: location.pathname.replace(/^.*\//, '').replace(/\.html$/, ''),
+      unit: unit,
       unitName: (document.querySelector('h1') || {}).textContent || document.title,
-      kind: 'topic',
+      /* ⚠ DERIVED, not hardcoded 'topic'. A ?quiz= url on a grammar page used to declare
+         itself a topic, which put the topic-only Vocab Trainer into the picker for a unit
+         that has no vocab list — a fourth row that could only ever say "nothing to ask yet". */
+      kind: kindOf(unit),
       originHref: location.pathname,
       originLabel: 'Back to the topic',
       start: start
@@ -2647,10 +2691,15 @@
     open: function (opts) {
       opts = opts || {};
       if (!T() || !(T().sentences || []).length) return false;
+      var unit = opts.unit
+        || (location.pathname.replace(/^.*\//, '').replace(/\.html$/, '') || 'unknown');
       ctx = {
-        unit: opts.unit || (location.pathname.replace(/^.*\//, '').replace(/\.html$/, '') || 'unknown'),
+        unit: unit,
         unitName: opts.unitName || document.title.split('—')[0].trim(),
-        kind: opts.kind || 'topic',
+        /* ⚠ DERIVED from the unit key unless the caller insists — a `kind` that every call site
+           must remember to pass is a `kind` that one of them gets wrong, and the only symptom
+           is a fourth picker row on a unit that can never fill it. */
+        kind: opts.kind || kindOf(unit),
         originHref: opts.originHref || location.pathname,
         originLabel: opts.originLabel || 'Back to the topic'
       };
@@ -2665,8 +2714,17 @@
       return true;
     },
     close: close,
+    /* ⭐ MOUNT THE ENTRY BLOCK SOMEWHERE ELSE (§2.7b). playlists.html calls this once its own
+       window.ThaiEarTopic is built, passing the container it wants the block appended to. The
+       gate is the caller's to check — the host knows when its data is ready and this must not
+       guess. ⛔ Same component, same variant class; only the mount point is new. */
+    mountEntry: function (opts) { return mountButton(opts || {}); },
+    /* the arm's single gate, re-exported so a host need not know it lives in topics.js */
+    gate: isOwner,
     /* test seam */
     _accepts: accepts,
-    _quizzes: QUIZZES
+    _quizzes: QUIZZES,
+    _kindOf: kindOf,
+    _quizzesFor: quizzesFor
   };
 })();
