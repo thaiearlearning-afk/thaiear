@@ -10381,11 +10381,27 @@
     var ref = dynClipRef(s, side);
     var noop = function () {};
 
-    /* 1. the downloaded copy, if this device has one */
+    /* 1. the downloaded copy, if this device has one
+       ⛔⛔ USE THE SAME KEY BUILDERS THE WRITER USES — offlineDir() and webCacheKey(), NEVER a
+       hand-built path. Both keys are namespaced BY PREFIX:
+           native  offlineDir(pfx) + '/' + file   ->  offline/FoodSocial_LI1/FoodSocial_LI1_S977_TH.mp3
+           web     webCacheKey(pfx, file)         ->  /__offline-audio/FoodSocial_LI1/FoodSocial_LI1_S977_TH.mp3
+       This function hand-built `'offline/' + ref.file` and `'/__offline-audio/' + ref.file`,
+       dropping the prefix directory on BOTH paths, so fromDisk() could never match a downloaded
+       clip and **every quiz clip fell through to the network**. Online that is invisible — it just
+       fetches, with a small delay. Offline it is silence and a stuck play button.
+       ⚠ Owner, 2026-09-21, on the Android app with topic-22a downloaded: "on the vocab builder
+       quiz, after i submit the result, i hit the player and the play button is just stuck, no
+       audio. when online it fetches the audio but i think from online because slight delay."
+       That delay was the whole diagnosis: a downloaded clip does not go to the network.
+       ⚠ PRE-EXISTING, not from the page migration — the migration touched no audio code at all.
+       It survived because offline had never been run end to end (§11A item 7).
+       ⚠ `ref.prefix` is `s.prefix || PREFIX`, i.e. PER SENTENCE — a playlist mixes topics, so the
+       page's own PREFIX is the wrong namespace there. dynClipRef already resolved it; use it. */
     function fromDisk() {
       var cap = (window.ThaiEarDL && window.ThaiEarDL.capabilities) ? window.ThaiEarDL.capabilities() : null;
       if (cap && cap.native && cap.fs) {
-        return cap.fs.readFile({ path: 'offline/' + ref.file, directory: 'DATA' })
+        return cap.fs.readFile({ path: offlineDir(ref.prefix) + '/' + ref.file, directory: 'DATA' })
           .then(function (r) {
             if (!r || !r.data) return null;
             var bin = atob(r.data), arr = new Uint8Array(bin.length);
@@ -10396,7 +10412,7 @@
       }
       if (!window.caches) return Promise.resolve(null);
       return caches.open(AUDIO_DL_CACHE)
-        .then(function (c) { return c.match('/__offline-audio/' + ref.file); })
+        .then(function (c) { return c.match(webCacheKey(ref.prefix, ref.file)); })
         .then(function (res) {
           if (!res) return null;
           return res.blob().then(function (b) {
