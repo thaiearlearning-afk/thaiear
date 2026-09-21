@@ -2380,8 +2380,19 @@
         '<button class="offline-btn" onclick="downloadTopic()">Update</button>' +
         '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
     } else { // idle
+      /* ⭐ §2.6 — "Download for offline — topic audio and quiz". ⚠ IT IS A PROMISE, so it is
+         made only where it is TRUE: the arm must be public (a gated visitor cannot open a quiz
+         at all) AND this unit must actually carry quiz data. A unit with no authored questions
+         says the plain thing, as it always has.
+         ⛔ NOT the owner gate. This is copy every visitor reads, so it follows QUIZ_PUBLIC —
+         the same one constant §2.1 flips — and not "am I the owner", which would put a promise
+         on the owner's screen that nobody else's download keeps. */
+      var T2 = window.ThaiEarTopics;
+      var qz = !!(T2 && T2.quizPublic && T2.quizPublic() && cfg && cfg.quiz
+                  && Object.keys(cfg.quiz).length);
       bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' + DL_ICON_SVG +
-        ' Download for offline</button>';
+        (qz ? ' Download for offline — topic audio and quiz' : ' Download for offline') +
+        '</button>';
     }
   }
   /* Turn a rejection into something a person can read. `String(err)` on a plain rejection object
