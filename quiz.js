@@ -950,6 +950,41 @@
     };
   }
 
+  /* ⭐⭐ THE PICKER'S SCORES NEED THE PULL, AND THE PULL CAN FIRE BEFORE AUTH EXISTS — so it
+     must be RETRIED, not fired once (owner, 2026-09-21: "on the desktop logged on my quiz results
+     for some reason arent showing on the quiz menu. i see — instead of my percentage").
+     ⚠⚠ THE TELL WAS THAT MOBILE WAS FINE AND DESKTOP WAS NOT, and it is the whole diagnosis:
+     bestScore() reads the LOCAL mirror. The phone had played the quizzes, so its mirror was
+     already populated and never needed the network; the desktop had not, so its picker depended
+     entirely on pull() landing. A bug that is per-DEVICE rather than per-account is a local-cache
+     bug, every time.
+     ⛔ `pull()` RETURNS false IMMEDIATELY WHEN `currentUser` IS NULL — it does not wait and it
+     does not reject, so the old single attempt could resolve false a few milliseconds into the
+     page load, the repaint guard would skip, and nothing would ever correct the "—". auth.js
+     resolves the session asynchronously (userFromSession on restore) and fires `thaiear:auth`
+     when it lands, which is the signal this now waits for.
+     ⚠ This predates the page migration — the logic was byte-identical before it — but `?quiz=`
+     urls made it far easier to hit, because they open the quiz AT PAGE LOAD, which is the worst
+     possible moment for a session that has not resolved.
+     ✅ LATCHED ON SUCCESS ONLY, and that is what keeps it cheap. `thaiear:auth` fires once per
+     RECORDED PLAY, so an unlatched retry would be a network round trip per sentence heard — the
+     trap CLAUDE.md calls out for progress.html. Here a failed pull costs nothing at all (it
+     returns before touching the network), and the first success stops it for good. */
+  var scoresPulled = false;
+  function syncScores() {
+    if (scoresPulled) return;
+    var st = store();
+    if (!st || !st.pull) return;
+    st.pull().then(function (ok) {
+      if (!ok) return;                 /* not signed in yet — a later thaiear:auth retries */
+      scoresPulled = true;
+      /* ⚠ Only repaint if the PICKER is still the visible screen: by the time a network round
+         trip finishes the learner may be three questions into a quiz, and re-rendering then
+         would throw the question away. */
+      if (root && !root.hidden && sheet && sheet.querySelector('.qpick')) openPicker();
+    }).catch(function () {});
+  }
+
   function openPicker() {
     scaleOff = true;                 /* ↑ see applyFontScale: the picker is not scaled */
     var st = store();
@@ -2532,6 +2567,10 @@
   /* Auth can resolve after first paint (identity.js writes the marker, then auth.js confirms), so
      re-check once on the auth event. ⚠ Latched by the getElementById guard in mountButton. */
   try { window.addEventListener('thaiear:auth', boot); } catch (_) {}
+  /* ⚠ …and retry the score pull when the session finally resolves — see syncScores(). Guarded on
+     the quiz having been OPENED at least once (`root` exists), so a topic page whose learner
+     never touched the quizzes never pays for a pull it has no use for. */
+  try { window.addEventListener('thaiear:auth', function () { if (root) syncScores(); }); } catch (_) {}
 
   /* ══════════════════════════════════════════════════════════════════════════════════════
      PUBLIC API — one picker component, several call sites (§9.2)
@@ -2548,19 +2587,7 @@
         originHref: opts.originHref || location.pathname,
         originLabel: opts.originLabel || 'Back to the topic'
       };
-      var st = store();
-      /* ⚠⚠ REPAINT WHEN THE PULL LANDS. bestScore() reads the LOCAL mirror, and on a device
-         that has not synced yet that mirror is empty — so the picker painted "—" against every
-         quiz for an account that HAS scores, and never corrected itself because nothing
-         re-rendered. The UI still does not WAIT on the pull; it just stops ignoring the answer.
-         ⚠ Guarded on the picker still being the visible screen: by the time a network round trip
-         finishes the learner may be three questions into a quiz, and re-rendering then would
-         throw the question away. */
-      if (st && st.pull) {
-        st.pull().then(function (ok) {
-          if (ok && root && !root.hidden && sheet && sheet.querySelector('.qpick')) openPicker();
-        }).catch(function () {});
-      }
+      syncScores();
       /* ⛔ BEFORE THE FIRST RENDER — see captureScroll(). Both branches below render, and render()
          ends in scrollToTop(), so anything that reads the page's scroll after this line reads the
          quiz's, not the learner's. */
