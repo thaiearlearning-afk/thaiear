@@ -2387,11 +2387,22 @@
          ⛔ NOT the owner gate. This is copy every visitor reads, so it follows QUIZ_PUBLIC —
          the same one constant §2.1 flips — and not "am I the owner", which would put a promise
          on the owner's screen that nobody else's download keeps. */
+      /* ⚠ THIS BAR SERVES BOTH A TOPIC PAGE AND playlists.html?pl= (PLMODE), so the noun has to
+         follow the surface — "topic audio" on a playlist would be wrong twice over, since a
+         playlist is neither a topic nor one topic's audio. Owner, 2026-09-22: "for playlists it
+         should be 'Playlist audio and quiz'."
+         ⚠ A PLAYLIST'S quiz DATA IS NOT IN cfg — pl-quiz.js derives it from the items AT IDLE,
+         after this bar has already painted, so cfg.quiz is empty here even when the playlist
+         will certainly have quizzes. The honest condition there is that the playlist HAS
+         sentences, which is the same thing: its quizzes are derived from them. */
       var T2 = window.ThaiEarTopics;
-      var qz = !!(T2 && T2.quizPublic && T2.quizPublic() && cfg && cfg.quiz
-                  && Object.keys(cfg.quiz).length);
+      var pub = !!(T2 && T2.quizPublic && T2.quizPublic());
+      var qz = pub && (PLMODE ? !!(cfg.sentences || []).length
+                              : !!(cfg && cfg.quiz && Object.keys(cfg.quiz).length));
       bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' + DL_ICON_SVG +
-        (qz ? ' Download for offline — topic audio and quiz' : ' Download for offline') +
+        (qz ? (PLMODE ? ' Download for offline — playlist audio and quiz'
+                      : ' Download for offline — topic audio and quiz')
+            : ' Download for offline') +
         '</button>';
     }
   }
