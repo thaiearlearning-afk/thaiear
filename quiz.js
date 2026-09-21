@@ -2146,7 +2146,17 @@
 
     /* §6.3 — if another word on THIS list answers the same prompt, the question asks for TWO. */
     var twins = list.filter(function (x) { return x.th !== w.th && headGloss(x.en) === headGloss(w.en); });
-    var need = twins.length ? 2 : 1;
+    /* ⚠⚠ EVERY TWIN, NOT TWO (2026-09-22). This was `twins.length ? 2 : 1` with only twins[0]
+       pushed as a second correct option — so on a list where THREE words share a prompt, the
+       question asked for 2, offered one of the three, and the third could never appear at all:
+       the distractor filter excludes the same head gloss, so it was not an option either. A
+       valid answer that is absent from its own question, silently.
+       ✅ The convention already generalises and the owner confirmed it should (2026-09-22):
+       "Select 3 answers" at the top, then "Select 2 more answers" and "Select one more answer"
+       as they are picked — prompt() has always counted `need - chosen.length`, and the scoring
+       has always been `chosen.every(ok) && chosen.length === need`. Only the two literal 2s
+       were in the way. */
+    var need = twins.length + 1;
 
     /* ⚠ DEPRIORITISE A CONTAINING OPTION (owner, 2026-09-20). He met ของกิน beside ของกินเล่น
        for "snacks". ของกินเล่น IS the only right answer — ของกิน is food in general — so the
@@ -2170,8 +2180,13 @@
     }))).concat(rank(pool.slice()));
 
     var opts = [{ th: w.th, en: w.en, tl: w.tl, ok: 1 }];
-    if (need === 2) opts.push({ th: twins[0].th, en: twins[0].en, tl: twins[0].tl, ok: 1 });
-    for (var k = 0; opts.length < 4 && k < wrongs.length; k++) {
+    twins.forEach(function (t) { opts.push({ th: t.th, en: t.en, tl: t.tl, ok: 1 }); });
+    /* ⚠ THE OPTION COUNT GROWS WITH THE ANSWER, or a three-answer question is 3 right out of 4
+       and the learner can very nearly guess it. Two wrong options is the floor the two-answer
+       question already had; this keeps it at every size rather than letting the question get
+       easier the more answers it demands. */
+    var cap = Math.max(4, need + 2);
+    for (var k = 0; opts.length < cap && k < wrongs.length; k++) {
       if (!opts.some(function (o) { return o.th === wrongs[k].th; })) {
         opts.push({ th: wrongs[k].th, en: wrongs[k].en, tl: wrongs[k].tl, ok: 0 });
       }
@@ -2199,10 +2214,10 @@
        its keep — and `test_quiz_engine.js` fails if a twin group is MIXED, one member carrying a
        parenthetical and another not, because then the reveal cannot tell them apart either.
        ⚠ A one-answer question is untouched: there is no other answer to be fair to. */
-    var promptEn = (need === 2) ? bareGloss(w.en) : w.en;
+    var promptEn = (need > 1) ? bareGloss(w.en) : w.en;
     render(bar()
       + '<p class="enq">' + esc(promptEn) + '</p>'
-      + (need === 2 ? '<p class="tq-need">Select <b>2</b> answers</p>' : '')
+      + (need > 1 ? '<p class="tq-need">Select <b>' + need + '</b> answers</p>' : '')
       + (hidden ? '<button type="button" class="startbtn t-show">Show the options</button>' : '')
       + '<div class="t-opts"' + (hidden ? ' hidden' : '') + '>'
       + opts.map(function (o, i) { return optHtml(o, i); }).join('')
