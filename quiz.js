@@ -692,7 +692,20 @@
          finished clip is specified to seek to the start, but only once it is not also being
          re-entered mid-teardown; setting currentTime makes the restart explicit and gives the
          `play` event something audible to accompany. */
-      if (au.ended) { try { au.currentTime = 0; } catch (_) {} }
+      /* ⭐⭐ A REPLAY IS A SECOND LISTEN AND MUST COUNT AS ONE (owner, 2026-09-21: "i played the
+         thais like to snack all day sentence about [several] times on the vocab trainer. so that
+         should be seen as multiple plays, not just one").
+         ⚠⚠ IT DID NOT, AND THE REASON IS THAT THIS BRANCH NEVER REACHES playSentence(). The
+         only resets were playSentence() (a FRESH clip) and stopAudio() (teardown) — neither of
+         which a replay of the already-loaded clip goes through — so the 2nd, 3rd and 4th listen
+         were silently uncounted. Inconsistent with the dyn player, where one trip through a card
+         at Thai-repeats 4 is ONE pass and FOUR listens. Same repetition, different accounting.
+         ⛔ ON THE `ended` BRANCH ONLY, AND THE DISTINCTION IS THE WHOLE POINT (owner agreed):
+         replaying a clip that FINISHED is a genuine second listen; pausing mid-clip and resuming
+         is ONE listen interrupted, and crediting that would let a learner inflate the one number
+         on this site that is honestly measured by tapping pause/play. The resume path below is
+         deliberately left alone. */
+      if (au.ended) { try { au.currentTime = 0; } catch (_) {} auCredited = false; }
       if (au.paused) {
         au.play().then(function () { setPlayUI(btn, true); }).catch(function () {});
       } else {
