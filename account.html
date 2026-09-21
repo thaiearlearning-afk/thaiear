@@ -617,10 +617,24 @@ function saveDisplayName() {
   var btn = document.getElementById('dispname-save');
   var a = window.ThaiEarAuth;
   if (!input || !a || !a.updateDisplayName) return;
-  /* Disabled while in flight: updateUser is a network write, and a double tap would fire two
-     of them and race over which name lands. */
-  if (btn) { btn.disabled = true; }
+  /* ⛔⛔ THE BUTTON IS NO LONGER DISABLED WHILE IN FLIGHT, AND THAT IS THE FIX, NOT AN OVERSIGHT
+     (owner, 2026-09-21, on the Android app with a weak connection: "it hung for ages and ages,
+     and even if i hit cancel, then when i tried again to change display name the confirm button
+     was a paler blue and not clickable").
+     ⚠⚠ THE RE-ENABLE LIVED AT THE END OF THE PROMISE CHAIN, SO A PROMISE THAT NEVER SETTLED NEVER
+     RAN IT. And cancelEditName() only toggles `display` — it does not re-render the editor — so
+     the SAME button came back still disabled, and nothing short of a reload could clear it.
+     Reproducible with no network at all: any never-settling save kills the control permanently.
+     ✅ updateDisplayName() is now LOCAL-FIRST and resolves in the same tick, so there is no
+     in-flight window left to guard. The double-tap race it was protecting against is gone with
+     it: two taps now write the same value locally and queue the same desired final value, and
+     last-write-wins makes a duplicate push a no-op.
+     ⛔ Do not reintroduce a disable here without a guaranteed re-enable OUTSIDE the chain — a
+     finally that cannot be skipped, or a timeout. */
   setStatus('Saving…');
+  /* ⚠ Belt and braces: clear any disabled state an older build (or a future regression) may have
+     left on the control, so a learner who hit the old bug is not stuck after updating. */
+  if (btn) { btn.disabled = false; }
   a.updateDisplayName(input.value).then(function (clean) {
     var cur = document.getElementById('dispname-current');
     if (cur) cur.textContent = clean;    // the fact line above, not the button
@@ -630,9 +644,11 @@ function saveDisplayName() {
        Errors still speak — those are the case the user CANNOT see. */
     setStatus('');
   }).catch(function (e) {
+    /* ⚠ Only VALIDATION can reach here now — an empty name, or over 20 characters. A network
+       failure no longer rejects: the name is already saved locally and queued, and the push
+       retries on reconnect and on the next auth resolution. Telling the learner "could not save"
+       when it is saved and will sync would be false. */
     setStatus((e && e.message) || 'Could not save that name.', true);
-  }).then(function () {
-    if (btn) btn.disabled = false;
   });
 }
 

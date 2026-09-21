@@ -500,8 +500,23 @@
           persistConsent();
           /* The server is authoritative, INCLUDING when it says there is no name: a name cleared
              on another device must clear here too, which is why this is not `if (row.display_name)`. */
-          var name = row.display_name || '';
-          if (name !== chosenName) { applyChosenName(name); }
+          /* ⛔⛔ …EXCEPT OVER A LOCAL RENAME THAT HAS NOT REACHED THE SERVER YET. This read runs on
+             every auth resolution, so without this guard a name typed offline would be applied
+             locally, then silently overwritten by the stale server value the moment the app came
+             back — and applyChosenName() rewrites the durable identity mirror too, so the
+             learner's change would be gone for good, having appeared to save.
+             ⚠ This is the rule CLAUDE.md draws from the dyn-settings incident, which cost two
+             wrong deploys: NEVER LET A BACKGROUND SYNC OVERWRITE A LOCAL CHANGE THAT HAS NOT BEEN
+             PUSHED YET. Same shape as applyPendingFlags(), which overlays unsynced toggles on top
+             of a freshly-fetched server map for exactly this reason.
+             ✅ The pending value wins and the push is retried instead; once it lands, unqueueName()
+             clears the guard and the server is authoritative again on the next read. */
+          var queued = pendingName();
+          if (queued != null) { pushName(); }
+          else {
+            var name = row.display_name || '';
+            if (name !== chosenName) { applyChosenName(name); }
+          }
         })
         /* ⚠ A FAILED READ MUST KEEP THE CACHED ANSWER, not fall back to false. With no cache
            false was the only safe resting state; now, un-ticking a subscribed user's button
@@ -518,6 +533,11 @@
   // through to Supabase; if the write can't happen (offline), it's queued and flushed on reconnect.
   // This is single-user data, so reconnect is simply last-write-wins (the device's local state wins).
   // All keys are uid-scoped in localStorage so a different sign-in never reads stale data.
+  /* ⚠ Bounds the display-name write. Same reasoning as signOut()'s race below: an unbounded
+     Supabase call hangs indefinitely on a weak connection, and navigator.onLine cannot be
+     trusted to tell you so in the webview. 6s is generous for a single-row upsert and short
+     enough that a retry happens on this visit rather than the next one. */
+  var NAME_PUSH_TIMEOUT_MS = 6000;
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
   function uid() { return currentUser && currentUser.id; }
@@ -549,6 +569,39 @@
     if (!client || !currentUser || !navigator.onLine) return;
     var ops = pendingFlags();
     Object.keys(ops).forEach(function (key) { var o = ops[key]; pushFlag(key, o.tk, o.num, o.nugget, o.flagged); });
+  }
+
+  /* ---- display name: queued like a flag, last-write-wins ----------------------------------
+     ⚠ Stores the DESIRED FINAL VALUE, not an edit. Rename three times offline and reconnect: the
+     third name is the one that lands, which is what "whichever is the latest username change
+     wins" means. ⛔ Never a list of operations — that would replay stale names.
+     ⚠ uid-scoped like its neighbours, so a different sign-in on the same device cannot pick up
+     someone else's pending name. */
+  function pendingName() { var c = lsGet('thaiear_name_pending'); return (c && c.uid === uid()) ? c.name : null; }
+  function queueName(n) { if (uid()) lsSet('thaiear_name_pending', { uid: uid(), name: n }); }
+  function unqueueName() { try { localStorage.removeItem('thaiear_name_pending'); } catch (_) {} }
+  /* ⚠⚠ RACED AGAINST A TIMEOUT, and clearing the queue is gated on the write having genuinely
+     SUCCEEDED. A timeout means "we do not know", so the entry stays queued and the next flush
+     retries it — treating a timeout as success is how a name silently fails to reach the server
+     while the device shows it saved. */
+  function pushName() {
+    if (!client || !currentUser) return;
+    var want = pendingName();
+    if (!want) return;
+    var row = { user_id: currentUser.id, email: currentUser.email || null,
+                display_name: want, updated_at: new Date().toISOString() };
+    var write = client.from('profiles').upsert(row).then(function (res) {
+      if (res && res.error) throw res.error;
+      /* ⛔ Only clear if the queued value is STILL the one we just wrote. A rename during the
+         round trip must not have its newer value discarded by this older write's success. */
+      if (pendingName() === want) unqueueName();
+    });
+    var timeout = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, NAME_PUSH_TIMEOUT_MS); });
+    return Promise.race([write, timeout]).catch(function () {});
+  }
+  function flushName() {
+    if (!client || !currentUser || !navigator.onLine || !pendingName()) return;
+    pushName();
   }
   // Overlay any unsynced local flag toggles on top of a freshly-fetched server map.
   function applyPendingFlags() {
@@ -844,7 +897,7 @@
      declaration, and this listener only runs on an event, so the ordering is safe. It matters
      more than the others: until the playlist outbox drains, playlists.authoritative() stays false
      and dlReconcileRefs() cannot reap ghost download claims. */
-  window.addEventListener('online', function () { flushProgress(); flushFlags(); dpFlush(); fvFlush(); plFlush(); plysFlush(); });
+  window.addEventListener('online', function () { flushProgress(); flushFlags(); flushName(); dpFlush(); fvFlush(); plFlush(); plysFlush(); });
 
   // ---- listening progress (own `progress` row, RLS) ----------------------
   // One jsonb row per user: { goal, topics:{ topicKey:count } }. Read on demand
@@ -1419,22 +1472,39 @@
        before supabase has answered. Update the server and not the mirror and the new name
        appears, then reverts to the old one on the next page load — the mirror is what paints
        the first frame. That is also why writeIdentity() is called with the PATCHED session. */
+    /* ⭐⭐ OFFLINE-FIRST, LIKE EVERY OTHER MUTATION IN THIS FILE (owner, 2026-09-21).
+       It used to be the ONE holdout: a network-first upsert whose local copies were updated only
+       AFTER the server answered. Three faults followed, all of which the owner hit on the Android
+       app: offline it rejected with "TypeError: failed to fetch" and saved nothing; on a weak
+       connection it hung indefinitely, because nothing bounded the wait; and the account page's
+       Save button, disabled for the duration, never came back — see the note there.
+       ✅ Now it follows the shape documented at the top of the offline-first section: apply to the
+       LOCAL cache immediately so it works with no connection, write through to Supabase, and if
+       the write cannot happen, queue it and flush on reconnect.
+       ⚠ LAST-WRITE-WINS IS CORRECT HERE and is what the owner asked for ("whichever is the latest
+       username change on the account, wins"). A display name is a DESIRED FINAL VALUE, so it
+       belongs with progress, flags and dyn_prefs. ⛔ It must NOT be modelled on the play counter,
+       which queues DELTAS precisely because last-write-wins would lose plays — that file's warning
+       about not harmonising the counter with its neighbours cuts both ways.
+       ⚠ The write is RACED against a timeout. navigator.onLine is unreliable in the webview and
+       frequently reports "online" in aeroplane mode — signOut() directly below learned this and
+       bounds its own network call for the same reason. An unbounded promise here is what left the
+       button dead, so the timeout is not merely tidiness. */
     updateDisplayName: function (name) {
-      if (!client) return Promise.reject(new Error('auth still loading'));
       var clean = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
       if (!clean) return Promise.reject(new Error('Please enter a name.'));
       if (clean.length > 20) return Promise.reject(new Error('Please use 20 characters or fewer.'));
-      var row = { user_id: currentUser.id, email: currentUser.email || null,
-                  display_name: clean, updated_at: new Date().toISOString() };
-      return client.from('profiles').upsert(row).then(function (res) {
-        if (res && res.error) throw res.error;
-        /* Local first, so the name is on screen in this tick: the mirror, the module copy, the
-           slim user, and the durable identity the next page load paints from. */
-        applyChosenName(clean);
-        if (currentSession) writeIdentity(currentSession);
-        notify();
-        return clean;
-      });
+      if (!currentUser) return Promise.reject(new Error('auth still loading'));
+      /* ⛔ LOCAL FIRST AND UNCONDITIONALLY — the whole point. The mirror, the module copy, the
+         slim user, and the durable identity the next page load paints from. */
+      applyChosenName(clean);
+      if (currentSession) writeIdentity(currentSession);
+      notify();
+      queueName(clean);
+      /* ⚠ Resolves as soon as the name is LOCAL. The push is fire-and-forget: the caller must not
+         wait on the network, or every fault above comes straight back. */
+      pushName();
+      return Promise.resolve(clean);
     },
     signOut: function () {
       if (!client) return Promise.resolve();
@@ -2663,6 +2733,7 @@
       refreshDesktopDl();    // desktop MP3 download entitlement (server-derived, not cached to disk)
       dpFlush();             // push any dyn settings changed while offline
       fvFlush();             // ...and any favourite toggled while offline (same reasoning)
+      flushName();           // ...and a display name renamed while offline (same reasoning again)
       /* ⚠ AND THE PLAYLIST OUTBOX — on AUTH RESOLUTION, not just the 'online' event. That event
          only fires on a TRANSITION, so an app queued-offline, closed, and later reopened while
          already connected would never have replayed: the queue would sit there until the user
