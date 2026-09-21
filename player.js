@@ -10382,44 +10382,39 @@
     var noop = function () {};
 
     /* 1. the downloaded copy, if this device has one
-       ⛔⛔ USE THE SAME KEY BUILDERS THE WRITER USES — offlineDir() and webCacheKey(), NEVER a
-       hand-built path. Both keys are namespaced BY PREFIX:
-           native  offlineDir(pfx) + '/' + file   ->  offline/FoodSocial_LI1/FoodSocial_LI1_S977_TH.mp3
-           web     webCacheKey(pfx, file)         ->  /__offline-audio/FoodSocial_LI1/FoodSocial_LI1_S977_TH.mp3
-       This function hand-built `'offline/' + ref.file` and `'/__offline-audio/' + ref.file`,
-       dropping the prefix directory on BOTH paths, so fromDisk() could never match a downloaded
-       clip and **every quiz clip fell through to the network**. Online that is invisible — it just
-       fetches, with a small delay. Offline it is silence and a stuck play button.
-       ⚠ Owner, 2026-09-21, on the Android app with topic-22a downloaded: "on the vocab builder
-       quiz, after i submit the result, i hit the player and the play button is just stuck, no
+       ⛔⛔⛔ THIS FUNCTION REIMPLEMENTED localBlobUrl() AND cachedBlobUrl() BY HAND AND GOT BOTH
+       WRONG. Quiz audio never once used a downloaded clip, on either platform, since the quiz
+       shipped. Two independent faults, each sufficient on its own:
+
+       1. ⛔ IT GATED THE NATIVE BRANCH ON `window.ThaiEarDL`, WHICH DOES NOT EXIST ON A TOPIC
+          PAGE. dl-core.js is loaded by playlists.html, NOT by topic-NN.html (verified in a
+          browser: ThaiEarDL undefined, and it is absent from the page's script list). So `cap`
+          was always null here, the native branch was UNREACHABLE, and the Android app fell
+          through to Cache Storage — where a native download never goes, because those clips are
+          written to the FILESYSTEM. Silence, on the platform where offline matters most.
+       2. ⛔ THE WEB KEY DROPPED THE PREFIX DIRECTORY. Both offline keys are namespaced by prefix
+          (`offlineDir(pfx)+'/'+file`, `webCacheKey(pfx, file)`); this hand-built
+          `'/__offline-audio/' + ref.file`, so the PWA branch could not match either.
+
+       ⚠⚠ ONLINE BOTH FAULTS ARE INVISIBLE — fromDisk() returns null and the clip is simply
+       fetched, with a delay nobody would question. That is why it survived to here.
+       ⚠ Owner, 2026-09-21, Android app, topic-22a downloaded: "the play button is just stuck, no
        audio. when online it fetches the audio but i think from online because slight delay."
-       That delay was the whole diagnosis: a downloaded clip does not go to the network.
-       ⚠ PRE-EXISTING, not from the page migration — the migration touched no audio code at all.
+       THE DELAY WAS THE DIAGNOSIS: a downloaded clip does not go to the network.
+       ⚠ PRE-EXISTING, not from the page migration — that commit touched no audio code at all.
        It survived because offline had never been run end to end (§11A item 7).
-       ⚠ `ref.prefix` is `s.prefix || PREFIX`, i.e. PER SENTENCE — a playlist mixes topics, so the
-       page's own PREFIX is the wrong namespace there. dynClipRef already resolved it; use it. */
+       ✅ THE LESSON IS THE GENERAL ONE: there were already two tested helpers for exactly this,
+       used by the dyn player, and a third copy was written anyway. `ref.prefix` is the PER-SENTENCE
+       prefix (`s.prefix || PREFIX`) — a playlist mixes topics, so the page's own PREFIX is the
+       wrong namespace there, and dynClipRef has already resolved it. */
     function fromDisk() {
-      var cap = (window.ThaiEarDL && window.ThaiEarDL.capabilities) ? window.ThaiEarDL.capabilities() : null;
-      if (cap && cap.native && cap.fs) {
-        return cap.fs.readFile({ path: offlineDir(ref.prefix) + '/' + ref.file, directory: 'DATA' })
-          .then(function (r) {
-            if (!r || !r.data) return null;
-            var bin = atob(r.data), arr = new Uint8Array(bin.length);
-            for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-            var u = URL.createObjectURL(new Blob([arr], { type: 'audio/mpeg' }));
-            return { url: u, revoke: function () { try { URL.revokeObjectURL(u); } catch (_) {} } };
-          }).catch(function () { return null; });
-      }
-      if (!window.caches) return Promise.resolve(null);
-      return caches.open(AUDIO_DL_CACHE)
-        .then(function (c) { return c.match(webCacheKey(ref.prefix, ref.file)); })
-        .then(function (res) {
-          if (!res) return null;
-          return res.blob().then(function (b) {
-            var u = URL.createObjectURL(b);
-            return { url: u, revoke: function () { try { URL.revokeObjectURL(u); } catch (_) {} } };
-          });
-        }).catch(function () { return null; });
+      /* ⛔⛔ DELEGATE TO THE TWO HELPERS THE DYN PLAYER ALREADY USES. This hand-rolled both of
+         them and got BOTH wrong, in ways that only showed up offline. */
+      var p = NATIVE ? localBlobUrl(ref.prefix, ref.file) : cachedBlobUrl(ref.prefix, ref.file);
+      return p.then(function (u) {
+        if (!u) return null;
+        return { url: u, revoke: function () { try { URL.revokeObjectURL(u); } catch (_) {} } };
+      }).catch(function () { return null; });
     }
 
     return fromDisk().then(function (hit) {
