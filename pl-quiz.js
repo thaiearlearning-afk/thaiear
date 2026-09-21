@@ -270,7 +270,11 @@
       });
       window.ThaiEarQuiz.open({
         unit: ctx.unit, unitName: ctx.unitName, kind: 'playlist',
-        originHref: ctx.originHref, originLabel: ctx.originLabel, start: start
+        originHref: ctx.originHref, originLabel: ctx.originLabel, start: start,
+        /* ⚠ ARRIVED BY URL, so the quiz must NOT push a second history entry: tapping "Enter
+           quiz" already navigated here from the playlist menu. Owner, 2026-09-22 — a back-swipe
+           should return to the MENU he left, not to the playlist he passed through. */
+        fromUrl: true
       });
       /* ⚠ AFTER open(), not before: the quiz has hidden the page content itself by then, so
          removing the boot class reveals the QUIZ rather than the playlist behind it. Removing

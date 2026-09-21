@@ -431,9 +431,26 @@
     if (slug) u.searchParams.set('quiz', slug); else u.searchParams.delete('quiz');
     return u.pathname + (u.search || '') + (u.hash || '');
   }
+  /* ⛔⛔ AN ARRIVAL BY URL PUSHES NOTHING — 2026-09-22, reported live: "when i swipe back after
+     hitting 'enter quiz' from the playlist menu, i end up on the playlist itself. But I left
+     from the playlist menu and would like a back swipe to return me there."
+     Exactly right, and the cause is a double entry. Tapping "Enter quiz" NAVIGATES from the
+     menu to ?pl=<id>&quiz=menu — that is one history entry — and then the quiz pushed a SECOND
+     entry for itself. Back therefore went quiz -> playlist -> menu, two swipes to undo one tap.
+     ⚠ THE ONE-ENTRY RULE IS UNCHANGED AND THIS IS WHAT HONOURS IT: the url the learner arrived
+     on already IS the quiz, so pushing another is the duplicate. Opened from a tile on the page,
+     nothing has navigated and the push is still exactly right. */
+  var urlEntry = false;
   function pushEntry(slug) {
+    if (urlEntry) { syncUrlDirect(slug); return; }
     if (pushedEntry) { syncUrl(slug); return; }
     try { history.pushState({ te_quiz: 1 }, '', quizUrl(slug)); pushedEntry = true; } catch (_) {}
+  }
+  /* ⚠ The url-arrival entry is the PAGE'S, not ours, so moving between quiz screens replaces it
+     without claiming it — no te_quiz marker is written, and dropEntry() therefore still refuses
+     to pop an entry it does not own. */
+  function syncUrlDirect(slug) {
+    try { history.replaceState(history.state, '', quizUrl(slug)); } catch (_) {}
   }
   /* ⚠ replaceState, never push — see the one-entry rule above. Guarded on OUR entry being the
      current one, so it can never rewrite a history entry that belongs to the page. */
@@ -1154,8 +1171,16 @@
     function nav() {
     /* ⛔ Not history.back() and not document.referrer (§3B.2): referrer is empty on a PWA cold
        start and wrong after a reload, and back() walks into the quiz just left. The call site
-       passed its origin explicitly; falling back to the topic page is the owner's own fallback. */
-      if (href && href !== location.pathname) location.href = href;
+       passed its origin explicitly; falling back to the topic page is the owner's own fallback.
+
+       ⚠⚠ COMPARED AGAINST pathname + search, NOT pathname ALONE — 2026-09-22, reported live:
+       "when returning to the topic by hitting 'back to topic' there's also a render flash."
+       On a topic page the two were equal and nothing navigated: doClose() simply revealed the
+       page, instantly. On a PLAYLIST the origin is "/playlists?pl=<id>" while location.pathname
+       is "/playlists", so they never matched and the quiz RELOADED THE WHOLE PAGE to return to
+       the page it was already on — a full navigation, and the flash was it repainting from
+       scratch. The comparison was written when a playlist could not host a quiz. */
+      if (href && href !== location.pathname + location.search) location.href = href;
     }
   }
 
@@ -2759,7 +2784,10 @@
       kind: kindOf(unit),
       originHref: location.pathname,
       originLabel: 'Back to the topic',
-      start: start
+      start: start,
+      /* ⚠ THE URL IS ALREADY THE QUIZ'S ENTRY — see pushEntry. Without this a ?quiz= link
+         costs two back-swipes to undo one tap. */
+      fromUrl: true
     });
   }
   function boot() {
@@ -2839,6 +2867,9 @@
       if (!T() || !(T().sentences || []).length) return false;
       var unit = opts.unit
         || (location.pathname.replace(/^.*\//, '').replace(/\.html$/, '') || 'unknown');
+      /* ⚠ Set BEFORE the first render, because openPicker()/openMenu() call show() -> pushEntry()
+         on their way out. Deciding after would push the duplicate this flag exists to prevent. */
+      urlEntry = !!opts.fromUrl;
       ctx = {
         unit: unit,
         unitName: opts.unitName || document.title.split('—')[0].trim(),

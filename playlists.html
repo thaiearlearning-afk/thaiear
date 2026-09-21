@@ -21,8 +21,18 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
      worst case is the playlist appearing a moment late — never a page stuck blank. If
      pl-quiz.js is absent the class is never set, so nothing depends on it arriving.
      ⚠ visibility, not display: the layout is built either way, so nothing jumps when it goes. -->
-<script>try{if(/[?&]quiz=/.test(location.search))document.documentElement.className+=' te-quiz-boot'}catch(e){}</script>
-<style>html.te-quiz-boot #pl-player-wrap,html.te-quiz-boot #pl-list-wrap{visibility:hidden}</style>
+<!-- ⚠ AND ?pl= HIDES THE LIST FOR THE SAME REASON. This document serves TWO views and the LIST
+     is the one in the markup, so a ?pl= arrival painted the list of playlists and then swapped
+     it for the player — a flash of the wrong screen on every "Open player" tap. bootPlayer()
+     hides it, but bootPlayer() runs after first paint, which is exactly one frame too late.
+     Owner, 2026-09-22: "when i hit enter playlist from the playlist menu there can still be a
+     bit of a flash". ⚠ PRE-EXISTING, not from the quiz work — it is the same class of fault, so
+     it takes the same one-line cure. -->
+<script>try{var _s=location.search;
+if(/[?&]quiz=/.test(_s))document.documentElement.className+=' te-quiz-boot';
+if(/[?&]pl=/.test(_s))document.documentElement.className+=' te-pl-boot';}catch(e){}</script>
+<style>html.te-quiz-boot #pl-player-wrap,html.te-quiz-boot #pl-list-wrap{visibility:hidden}
+html.te-pl-boot #pl-list-wrap{display:none}</style>
 <style>.te-embed #site-nav-root,.te-embed nav.site-nav{display:none!important}
 .te-embed .wrap{padding-top:0}/* r128: panel title sits the same distance below the switcher as the topics title */
 </style>
