@@ -268,11 +268,44 @@
     (t.sentences || []).forEach(function (s) {
       var n = String(s.num);
       if (ex[n]) return;
+      /* ⛔⛔ A LOCKED SENTENCE IS NOT A QUESTION (§2.2). Only playlists can produce one: a
+         playlist MIXES topics, so entitlement there is a property of the item, not of the page,
+         and `locked()` answers false on every topic page by construction. Dropping it here —
+         at eligibility, not at ask time — is what stops the size picker offering a run it
+         cannot deliver, and it is the same treatment the playlist PLAYER gives these items:
+         drop them from the session, never fail the whole thing. On a topic page the whole-page
+         gate has already fired before any of this runs. */
+      if (sentIsLocked(s.num)) return;
       if (qid === 1 && !(qd.q1 && qd.q1[n] && qd.q1[n].length >= 3)) return;   /* §3A.1a */
       if (qid === 2 && buildChipsOf(s).length < MIN_CHIPS_Q2) return;          /* §3A.1a */
       out.push({ key: n, sent: s });
     });
     return out;
+  }
+
+  /* ── §2.2 entitlement — CALLED, never reimplemented ────────────────────────────────────
+     ⛔⛔ EVERY BRANCH LIVES IN player.js's gate(): free-but-signed-out → the free sign-in and
+     never the paywall; premium in the APP → the informational sheet, because Google Play
+     forbids steering to outside payment; premium on the WEB → subscribe.html; unreachable
+     server for >50 days → the licence overlay, because they may well be paid up. A second copy
+     here would be a second entitlement BOUNDARY, and those fail silently — nothing looks wrong
+     and the URL simply works (the te_mint_v1 lesson).
+     ⚠ MISSING BRIDGE ⟹ ENTITLED. ThaiEarQuizAudio is player.js's, and if it is absent the quiz
+     cannot play audio at all, so refusing entry would be a worse answer than letting the
+     existing per-clip failure speak. */
+  function QA() { return window.ThaiEarQuizAudio || null; }
+  function entitled() {
+    var a = QA();
+    return !a || !a.entitled ? true : !!a.entitled();
+  }
+  function fireGate() {
+    var a = QA();
+    if (a && a.gate) { a.gate(); return true; }
+    return false;
+  }
+  function sentIsLocked(num) {
+    var a = QA();
+    try { return !!(a && a.locked && a.locked(num)); } catch (_) { return false; }
   }
 
   /* ── §3A.3 selection: WHICH items a short run uses. Order is ALWAYS shuffled afterwards. ── */
@@ -1099,6 +1132,16 @@
      THE PRE-QUIZ MENU (§3A)
      ══════════════════════════════════════════════════════════════════════════════════════ */
   function openMenu(qid) {
+    /* ⛔⛔ THE ENTITLEMENT GATE FIRES HERE — BEFORE THE SETTINGS SCREEN, NOT INSIDE THE RUN
+       (DECISION 1, owner 2026-09-21: "they shouldnt be able to get into the quiz and then it
+       just gates them as they set everything up. thats frustrating").
+       ⚠⚠ THAT IS STRONGER THAN "ON THE TILE" AND THE DIFFERENCE IS THE WHOLE POINT. Letting
+       someone choose 20 questions, turn decoys off and set a head start, and only THEN telling
+       them to sign in, spends their effort and discards it. BOTH entry paths — an entry-block
+       tile and a picker row — arrive here, which is exactly why the check belongs in front of
+       this function rather than at either call site.
+       ⚠ The PICKER itself stays viewable: it advertises the feature and shows nothing personal. */
+    if (!entitled() && fireGate()) return;
     scaleOff = false;
     var q = quizById(qid), p = prefsFor(qid);
     var items = eligible(qid);

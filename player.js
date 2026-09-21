@@ -10430,6 +10430,25 @@
     gated: function () { return GATED; },
     prefix: function () { return PREFIX; },
 
+    /* ⛔⛔ THE ENTITLEMENT STORY IS gate()'s AND THE QUIZ MUST CALL IT, NEVER REIMPLEMENT IT
+       (QUIZ_GO_LIVE_PLAN.md §1.1/§2.2). gate() already branches four ways that a second copy
+       would get wrong: a FREE unit refused for want of an account routes to the free sign-in
+       and never to the paywall; a premium tap IN THE APP gets the informational sheet, because
+       Google Play's reader rule forbids steering to outside payment; a premium tap on the WEB
+       gets subscribe.html; and a subscriber we simply could not REACH for >50 days gets the
+       licence overlay rather than being told to buy what they may already own.
+       ⚠ A duplicated entitlement rule is a duplicated entitlement BOUNDARY, and the te_mint_v1
+       lesson is that those fail silently and invisibly — nothing on the page looks wrong and
+       the URL simply works. This is the whole of §2.2's plumbing: three functions, no logic.
+       ⚠ `locked` is PER SENTENCE and answers only in playlist mode — a playlist mixes topics,
+       so entitlement there is a property of the item, not of the page (the page itself declares
+       tier 'free' precisely so everyone may press play). On a topic page it is always false and
+       `entitled` is the question to ask instead. */
+    entitled: function () { return entitledForPage(); },
+    gate: function (tier) { return gate(tier); },
+    locked: function (num) { return sentLocked(sentById(num)); },
+    gateSent: function (num) { return gateSent(num); },
+
     /* ⛔⛔ THE ONLY WAY QUIZ CODE MAY CREDIT A LISTEN. CLAUDE.md: "Never call the plays API
        directly from quiz code — route through the existing dwell machinery."
        A sentence heard inside a quiz counts (owner decision 18) toward sentence_plays, the
