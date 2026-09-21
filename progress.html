@@ -104,6 +104,39 @@
      row that is about the reader rather than about the topic. */
   .prog-row-plays { font-size: 12.5px; font-weight: 500; color: #1F5D3A; white-space: nowrap;
     font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+  /* ── quiz best scores (QUIZ_GO_LIVE_PLAN.md §2.5) ──────────────────────────────────────
+     ⛔⛔ HIDDEN UNTIL ThaiEarTopics.quizGate() SAYS OTHERWISE. The cells are rendered on every
+     row and revealed by a single class on the root, so the gate costs no re-render and going
+     public (§2.1) reaches this page through the same one constant as every other surface.
+     ⚠ FOUR COLUMNS ON EVERY ROW, including the grammar and playlist rows that have no Vocab
+     Trainer — owner, 2026-09-21: they keep the column and show a dash, so the columns stay
+     ALIGNED down a page that interleaves both arms. A row with three cells would shunt the
+     other three sideways and the page would read as ragged rather than as shorter.
+     ⛔ The dash means "does not apply" here and "never tried" elsewhere. Both are honestly
+     blank; 0% would be a lie in either — it reads as a failed attempt. */
+  .prog-row-q { display: none; }
+  .prog-q-on .prog-row-q { display: flex; gap: 7px; flex-shrink: 0; }
+  .pq-c {
+    width: 3.1em; text-align: right; font-size: 12px; font-weight: 600;
+    font-variant-numeric: tabular-nums; color: var(--accent);
+  }
+  /* the "never tried" / "does not apply" dash is quieter than a score — it is not a result */
+  .pq-c.pq-none { color: var(--text-tertiary); font-weight: 500; }
+  /* One header, at the top of the one list. ⚠ Not a <th>: .prog-row is a flex row, not a
+     table, so the head is another flex row using the identical cell widths. */
+  .prog-qhead { display: none; }
+  .prog-q-on .prog-qhead {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    padding: 0 0.85rem 0.35rem; font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary);
+  }
+  .prog-q-on .prog-qhead .pq-c { font-size: 10.5px; color: inherit; }
+  @media (max-width: 480px) {
+    .prog-q-on .prog-row-q { gap: 4px; }
+    .prog-q-on .pq-c { width: 2.8em; font-size: 11px; }
+    .prog-q-on .prog-row-plays { font-size: 11.5px; }
+  }
   .prog-band { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
     color: var(--text-tertiary); margin: 1.4rem 0 0.5rem; }
   .prog-band:first-child { margin-top: 0; }
@@ -176,6 +209,8 @@
   var T = function () { return window.ThaiEarTopics; };
   var durations = null;     // {num: seconds}, from clip-durations.json
   var sentNums = null;      // {page: [nums]}, from topic-sentences.json
+  var quizResults = null;   // {unitKey: {quizId: {best, answered, correct}}}, from the quiz store
+  var quizOn = false;       // ThaiEarTopics.quizGate() has said yes — the columns may show
   var painted = '';         // signature of what is on screen, so repeats are free
 
   /* ── formatting ─────────────────────────────────────────────────────────────────────────── */
@@ -270,7 +305,11 @@
                stats.daysListened, stats.streak, stats.bestStreak,
                sentNums ? 1 : 0, durations ? 1 : 0,
                pls ? pls.length : -1,
-               pls ? pls.map(function (p) { return p.id + ':' + (p.items ? p.items.length : 0); }).join(',') : ''
+               pls ? pls.map(function (p) { return p.id + ':' + (p.items ? p.items.length : 0); }).join(',') : '',
+               /* ⚠ THE QUIZ COLUMNS ARE AN INPUT LIKE ANY OTHER. Left out of this signature
+                  they would render once and then never update — the failure this comment
+                  block warns about, one line above. */
+               quizOn ? 1 : 0, quizSig()
               ].join('|');
     if (sig === painted) return;
     painted = sig;
@@ -326,13 +365,62 @@
      the card cannot drift apart. The row shows the bare time: the section heading and its note
      already say what is being measured, and "Thai listening time: 2h 5min" on every one of 113
      rows would not fit beside the unit name anyway. */
+  /* ⛔⛔ ONE ROW BUILDER FOR ALL THREE KINDS. unitRow() and playlistRows() each used to write
+     their own <a class="prog-row"> — the same markup twice, which is how the quiz columns
+     would have landed on the topic and grammar rows and silently not on the playlists. The
+     owner's requirement that the arms share a format is only guaranteed by there being one
+     function, so the playlist rows now come through here too.
+     `key` is the QUIZ UNIT KEY — "topic-22a", "grammar-06", "pl:<uuid>" — which is what
+     quiz.js writes scores under, and it is the only argument that differs between the kinds. */
+  function progRow(href, name, secs, key) {
+    return '<a class="prog-row" href="' + esc(href) + '">' +
+             '<span class="prog-row-name">' + esc(name) + '</span>' +
+             '<span class="prog-row-plays">' + esc(humanTime(secs)) + '</span>' +
+             quizCells(key) +
+           '</a>';
+  }
+  /* §1's display order — Vocab · Listening · Builder · Speak. ⛔ Never sort by id. */
+  var Q_IDS = [3, 1, 2, 4];
+  var Q_ABBR = { 3: 'V', 1: 'L', 2: 'B', 4: 'S' };
+  var Q_NAME = { 3: 'Vocab Trainer', 1: 'Listening comprehension',
+                 2: 'Thai Builder', 4: 'Speak Thai' };
+  function quizCells(key) {
+    var t = T();
+    var all = quizResults || {};
+    var row = all[key] || {};
+    /* ⛔ Vocab Trainer is topic-only, so on a grammar unit or a playlist its cell is a dash
+       that means "does not apply" rather than "never tried" — see the CSS note. */
+    var hasVocab = (t && t.quizHasVocab) ? t.quizHasVocab(key) : !/^(pl:|grammar-)/.test(key);
+    return '<span class="prog-row-q">' + Q_IDS.map(function (id) {
+      var r = (id === 3 && !hasVocab) ? null : row[id];
+      /* `best` of 0 is a real score, so test for null — not for falsiness. */
+      var has = !!(r && r.best != null);
+      return '<span class="pq-c' + (has ? '' : ' pq-none') + '" title="' + Q_NAME[id] + '">' +
+             (has ? r.best + '%' : '—') + '</span>';
+    }).join('') + '</span>';
+  }
+  /* A cheap fingerprint of the quiz figures for the repaint signature: unit count plus the
+     sum of every stored best. Any score that moves moves the sum. */
+  function quizSig() {
+    if (!quizResults) return '-';
+    var keys = Object.keys(quizResults), sum = 0;
+    for (var i = 0; i < keys.length; i++) {
+      var row = quizResults[keys[i]];
+      for (var q in row) if (row[q] && row[q].best != null) sum += row[q].best;
+    }
+    return keys.length + '/' + sum;
+  }
+  function quizHead() {
+    return '<div class="prog-qhead"><span class="prog-row-name"></span>' +
+           '<span class="prog-row-q">' + Q_IDS.map(function (id) {
+             return '<span class="pq-c" title="' + Q_NAME[id] + '">' + Q_ABBR[id] + '</span>';
+           }).join('') + '</span></div>';
+  }
+
   function unitRow(t, u, reps) {
     var secs = (sentNums && sentNums[bareOf(u.page)])
       ? t.listenSeconds(sentNums[bareOf(u.page)], reps, durations) : 0;
-    return '<a class="prog-row" href="' + esc(t.hrefFor ? t.hrefFor(u.page) : u.page) + '">' +
-             '<span class="prog-row-name">' + esc(u.name) + '</span>' +
-             '<span class="prog-row-plays">' + esc(humanTime(secs)) + '</span>' +
-           '</a>';
+    return progRow(t.hrefFor ? t.hrefFor(u.page) : u.page, u.name, secs, bareOf(u.page));
   }
 
   /* Every live unit, in the site's own display order — the Grammar by Ear units first, then the
@@ -391,6 +479,10 @@
            'playlist, this contributes to your Total Thai listening time and your per topic ' +
            'or playlist Thai listening time. Time spent within pauses or listening to ' +
            'English sentences is not counted. Rounded to the nearest minute.</p>' +
+           /* ⚠ The head sits OUTSIDE .prog-list: `.prog-row:first-child` rounds the top of the
+              list, and a head row inside it would take that radius and leave the first real
+              row square. It is hidden with the cells, by the same one class. */
+           quizHead() +
            '<div class="prog-list">' + rows + '</div>';
   }
 
@@ -414,10 +506,12 @@
     var rows = lists.map(function (p) {
       var secs = (p.items && p.items.length)
         ? t.listenSeconds(p.items.map(function (it) { return it.num; }), reps, durations) : 0;
-      return '<a class="prog-row" href="playlists.html?pl=' + encodeURIComponent(p.id) + '">' +
-               '<span class="prog-row-name">' + esc(p.name) + '</span>' +
-               '<span class="prog-row-plays">' + esc(humanTime(secs)) + '</span>' +
-             '</a>';
+      /* ⚠ THE CLEAN URL, BUILT BY CONCATENATION. A bare "playlists.html?pl=" takes Cloudflare
+         Pages' 308 to /playlists — an uncached origin round trip measured at 127–1315 ms, and
+         it runs before the service worker starts. hrefFor() strips only a TRAILING ".html", so
+         the query must be appended after the call, never passed into it. */
+      var base = t.hrefFor ? t.hrefFor('playlists.html') : 'playlists.html';
+      return progRow(base + '?pl=' + encodeURIComponent(p.id), p.name, secs, 'pl:' + p.id);
     }).join('');
 
     /* The same .prog-band heading, and the rows are returned bare so they land inside the one
@@ -513,6 +607,46 @@
   askSentenceNums();
   document.addEventListener('DOMContentLoaded', askSentenceNums);
   window.addEventListener('thaiear:auth', askSentenceNums);
+
+  /* ── the quiz columns (§2.5) ───────────────────────────────────────────────────────────
+     ⚠⚠ SAME RETRY SHAPE AS askSentenceNums(), AND FOR THE SAME REASON — this script is INLINE
+     and topics.js is DEFERRED, so T() is undefined at parse time on EVERY load. A one-shot
+     `if (T() && T().quizGate)` here would be an unconditional skip, which is exactly how all
+     93 topic rows read "0 min" for five days. DOMContentLoaded fires after every deferred
+     script has run; the auth event is the second chance behind it.
+     ⚠ LATCHED, because thaiear:auth fires once per recorded play — an unlatched retry would be
+     a digest and an account pull per sentence heard.
+     ⚠ RE-LATCHED ON SIGN-IN: the gate reads the identity record, which identity.js writes
+     before auth.js confirms, so the first answer can legitimately be "no" and a later one
+     "yes". askQuiz() therefore re-asks whenever the signed-in user CHANGES, not merely once. */
+  var quizAskedFor = null;
+  function askQuiz() {
+    var t = T(), a = A();
+    if (!t || !t.quizGate) return;
+    var uid = (a && a.getUser && a.getUser() && a.getUser().id) || 'out';
+    if (quizAskedFor === uid) return;
+    quizAskedFor = uid;
+    t.quizGate().then(function (ok) {
+      if (!ok) return;
+      quizOn = true;
+      try { document.documentElement.classList.add('prog-q-on'); } catch (_) {}
+      paintQuiz();
+      /* The local mirror answers immediately and offline; the account copy is what makes a
+         second device agree. pull() resolves false when signed out and never rejects. */
+      var S = window.ThaiEarQuizStore;
+      if (S && S.pull) S.pull().then(paintQuiz).catch(function () {});
+    });
+  }
+  function paintQuiz() {
+    var S = window.ThaiEarQuizStore;
+    if (!quizOn || !S || !S.resultsAll) return;
+    quizResults = S.resultsAll();
+    painted = '';       // the cells are inside the rows, so this is a rebuild
+    render();
+  }
+  askQuiz();
+  document.addEventListener('DOMContentLoaded', askQuiz);
+  window.addEventListener('thaiear:auth', askQuiz);
   function pullAll() {
     var a = A();
     if (!(a && a.getUser && a.getUser())) return;
