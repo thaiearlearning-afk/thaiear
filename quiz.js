@@ -218,6 +218,22 @@
   function chipsOf(s) {
     return (s && s.gloss || []).filter(function (g) { return g && g[0]; });
   }
+  /* ⛔⛔ THE BUILDER'S TRAY IS NOT ALWAYS THE CORPUS CHIP LIST (§5.4). A chip whose THAI is
+     discontinuous — ลอง...ดู "give it a try" — is ONE corpus chip describing a construction that
+     wraps its object, and the topic page must KEEP it: that is the accurate description and it
+     was authored deliberately (owner, 2026-09-21: "leave the ellipsis chips as they are in the
+     topics themselves and author split versions only visible in the thai builder").
+     ✅ But a single draggable TILE cannot occupy two positions, so the Builder gets its own list
+     from gen_builder_chips.py, published as topic.quiz.bchips keyed by sentence number and
+     ALREADY ORDERED to spell the sentence — the two halves are not adjacent.
+     ⚠ TRAY AND TRAY-COUNT ONLY. Every reveal/teaching surface still calls chipsOf(): the
+     learner should meet ลอง...ดู as one construction there, which is the whole reason the
+     corpus was left alone. */
+  function buildChipsOf(s) {
+    var b = s && QD().bchips && QD().bchips[String(s.num)];
+    return (b && b.length) ? b.filter(function (g) { return g && g[0]; }) : chipsOf(s);
+  }
+
   /* head gloss = the gloss minus its disambiguating parenthetical or quoted literal. Used for
      the §6.3 two-answer test. ⛔ Comparison only — §6.4 requires the FULL gloss to be rendered. */
   /* ⚠ The gloss WITHOUT its disambiguating parenthetical, case preserved — กับข้าว
@@ -246,7 +262,7 @@
       var n = String(s.num);
       if (ex[n]) return;
       if (qid === 1 && !(qd.q1 && qd.q1[n] && qd.q1[n].length >= 3)) return;   /* §3A.1a */
-      if (qid === 2 && chipsOf(s).length < MIN_CHIPS_Q2) return;               /* §3A.1a */
+      if (qid === 2 && buildChipsOf(s).length < MIN_CHIPS_Q2) return;          /* §3A.1a */
       out.push({ key: n, sent: s });
     });
     return out;
@@ -1523,7 +1539,7 @@
   /* ── Quiz 2 — Thai Builder (§5) ────────────────────────────────────────────────────────── */
   function qBuild() {
     var it = run.items[run.i], s = it.sent;
-    var canon = chipsOf(s);
+    var canon = buildChipsOf(s);
     var p = run.prefs;
 
     /* §3A.6 head start: a CAP, not a fixed prefix. A sentence at or below the cap gets none. */
