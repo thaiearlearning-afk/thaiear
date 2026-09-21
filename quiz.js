@@ -1124,7 +1124,12 @@
     /* §3A.6 — only shown where the unit actually has a sentence above the cap, otherwise it is a
        control with no possible effect, which is worse than its absence. */
     var maxChips = 0;
-    if (qid === 2) items.forEach(function (it) { maxChips = Math.max(maxChips, chipsOf(it.sent).length); });
+    /* ⚠ buildChipsOf, NOT chipsOf: the cap is applied in qBuild against canon = the TRAY, so
+       the count that decides whether this control appears has to be the same count. With the
+       corpus count a unit whose largest sentence is 6 chips, one of which splits to 7 tiles,
+       hides the control (6 > 6 fails) while lockN still fires in qBuild — a head start on a
+       setting the learner was never shown. That is the exact inversion of the note above. */
+    if (qid === 2) items.forEach(function (it) { maxChips = Math.max(maxChips, buildChipsOf(it.sent).length); });
     /* ⚠ Against the SMALLEST cap — the most generous level. Testing the middle one hid the
        control on a unit where only 'Full' could ever have fired, which is a setting the learner
        could have used being withheld because a different setting could not. */
