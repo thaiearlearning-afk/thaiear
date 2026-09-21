@@ -276,6 +276,15 @@
          drop them from the session, never fail the whole thing. On a topic page the whole-page
          gate has already fired before any of this runs. */
       if (sentIsLocked(s.num)) return;
+      /* ⛔ AND A SENTENCE WHOSE AUDIO IS NOT ON THIS DEVICE IS NOT A QUESTION EITHER, offline.
+         Only a PARTIALLY-downloaded playlist can produce one — a topic downloads whole or not
+         at all — and it matters for the two quizzes that make a sound: Listening cannot ask
+         without the clip, and Speak plays it on the reveal. Dropping it at eligibility keeps
+         the size picker honest instead of building a run with silent questions in it.
+         ⚠ The Builder does NOT need audio to ask, but it is excluded too, and deliberately: a
+         run assembled from "the parts of this playlist you can hear" is a coherent thing, and
+         one where the Builder silently has more questions than Listening is not. */
+      if (sentNoAudio(s.num)) return;
       if (qid === 1 && !(qd.q1 && qd.q1[n] && qd.q1[n].length >= 3)) return;   /* §3A.1a */
       if (qid === 2 && buildChipsOf(s).length < MIN_CHIPS_Q2) return;          /* §3A.1a */
       out.push({ key: n, sent: s });
@@ -306,6 +315,13 @@
   function sentIsLocked(num) {
     var a = QA();
     try { return !!(a && a.locked && a.locked(num)); } catch (_) { return false; }
+  }
+  /* ⚠ FALSE ON ANY DOUBT. An older player.js without this bridge, or a throw, must mean "ask
+     it" — a quiz that silently shrinks because a helper is missing is a worse failure than one
+     question that cannot play its clip. */
+  function sentNoAudio(num) {
+    var a = QA();
+    try { return !!(a && a.noDl && a.noDl(num)); } catch (_) { return false; }
   }
 
   /* ── §3A.3 selection: WHICH items a short run uses. Order is ALWAYS shuffled afterwards. ── */

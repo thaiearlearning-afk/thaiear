@@ -10470,6 +10470,14 @@
     gate: function (tier) { return gate(tier); },
     locked: function (num) { return sentLocked(sentById(num)); },
     gateSent: function (num) { return gateSent(num); },
+    /* ⚠ OFFLINE, ON A PARTIALLY-DOWNLOADED PLAYLIST, a sentence whose clip is not on the device
+       cannot be heard — so the quiz must not offer it. Owner, 2026-09-22: "if a playlist is
+       partially available offline - what happens to the quiz? ... just something clean."
+       ⛔ ONLY MEASURED EVIDENCE COUNTS, which is why this delegates rather than re-deriving:
+       sentNoDl() trusts a recorded fetch failure over navigator.onLine (which lies in a
+       WebView), returns false whenever we are online, and is false on a topic page by
+       construction — a topic downloads whole or not at all. */
+    noDl: function (num) { return sentNoDl(sentById(num)); },
 
     /* ⛔⛔ THE ONLY WAY QUIZ CODE MAY CREDIT A LISTEN. CLAUDE.md: "Never call the plays API
        directly from quiz code — route through the existing dwell machinery."
