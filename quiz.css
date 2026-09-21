@@ -438,7 +438,20 @@ body.tq-mode { background: var(--surface, #fff); }
 /* ⚠ Tone, not colour alone — these read as counts either way; the colour is a hint. */
 .tq-res-t .ok   { color: #2F7D62; }
 .tq-res-t .no   { color: #B23A3A; }
-.tq-res-t .best { font-weight: 600; color: var(--text-primary, #1A1A1A); }
+/* ⚠ AVG sits between `wrong` and `best` and must not compete with BEST for emphasis. BEST is the
+   headline (600 weight, primary ink); AVG is secondary ink at normal weight — present, readable,
+   and clearly the quieter of the two percentages. Giving both the bold treatment made the row
+   read as two headlines and it was no longer obvious which number the learner was meant to take
+   away. ⚠ Deliberately NOT tinted green/red like .ok/.no: those are COUNTS whose colour is a
+   hint about right vs wrong, and a percentage that is sometimes green and sometimes red would
+   imply a pass mark this site does not set. */
+.tq-res-t .avg  { color: var(--text-secondary, #5A5A5A); font-variant-numeric: tabular-nums; }
+/* ⚠ tabular-nums on both percentage columns so 9% / 61% / 100% stay right-aligned to the same
+   column edge down a table of several units. */
+.tq-res-t .best { font-weight: 600; color: var(--text-primary, #1A1A1A); font-variant-numeric: tabular-nums; }
+/* ⚠ Six columns now, so the numeric cells lose some of their breathing room — the name column is
+   nowrap and would otherwise push the row wide enough to scroll on a phone. */
+.tq-res-t td { padding-left: 8px; }
 .tq-res-t tbody tr + tr th,
 .tq-res-t tbody tr + tr td { border-top: 0.5px solid var(--border, rgba(0,0,0,.07)); }
 /* ⚠ The empty slot a taken chip leaves behind. visibility, NOT display or opacity: display

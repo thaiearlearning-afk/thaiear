@@ -61,8 +61,15 @@
   var QUIZZES = [
     { id: 3, key: 'vocab', name: 'Vocab Trainer', ds: 'See a word, pick the Thai',
       icon: ICONS.vocab, step: 10, topicOnly: true },
-    { id: 1, key: 'listen', name: 'Listening comprehension', ds: 'Hear Thai, pick the English',
-      icon: ICONS.listen, step: 10 },
+    /* ⚠ shortName is for the RESULTS TABLE ONLY (owner, 2026-09-21: "might have to shorten
+       'listening comprehension' to 'listening' which is fine and still not ambiguous"). That
+       table gained an AVG column and its name cell is `white-space: nowrap`, so the longest
+       name is what sets the width and squeezes the six numeric columns.
+       ⛔ NOT a rename. `name` is what the picker rows, the entry tiles, the quiz's own menu and
+       its results header all show, and it stays "Listening comprehension" everywhere. Only the
+       one narrow table falls back to the short form. */
+    { id: 1, key: 'listen', name: 'Listening comprehension', shortName: 'Listening',
+      ds: 'Hear Thai, pick the English', icon: ICONS.listen, step: 10 },
     { id: 2, key: 'build', name: 'Thai Builder', ds: 'See English, build the Thai',
       icon: ICONS.build, step: 5 },
     { id: 4, key: 'speak', name: 'Speak Thai', ds: 'See English, say it aloud, mark yourself',
@@ -869,12 +876,29 @@
      and must not be drawn as a zero — a zero is a claim that you got them all wrong. */
   function unitHasVocab(key) { return !/^pl:/.test(key) && !/^grammar-/.test(key); }
 
+  /* \u2b50\u2b50 AVG \u2014 LIFETIME CORRECTNESS, BESIDE THE SINGLE BEST RUN (owner, 2026-09-21: "if i have 23
+     right and 6 wrong, it shows my overall percentage of correctness of all time").
+     \u26a0 NO NEW DATA AND NO SCHEMA CHANGE. `answered` and `correct` are already the per-row sums of
+     quiz_item_stats.seen / .correct, so the figure is exactly right/(right+wrong) \u2014 the two
+     columns already on screen either side of it. It is derived at render, never stored, so it
+     cannot drift from the counts it sits next to.
+     \u26a0\u26a0 AVG AND BEST ANSWER DIFFERENT QUESTIONS AND WILL OFTEN DISAGREE \u2014 that is the point of
+     showing both. BEST is the high-water mark of ONE run (quiz_scores is a MAX, \u00a78.2); AVG is
+     every question ever answered, so it falls when you get one wrong and never resets. A learner
+     on 90% best and 61% avg is being told something true that neither number says alone.
+     \u26d4 Guard the divide: a unit with a stored `best` but zero answered items is reachable \u2014 a run
+     finished before item stats existed \u2014 and 0/0 must read as an em dash, not NaN%. */
+  function resAvg(r) {
+    var n = r.answered || 0;
+    return n ? Math.round((r.correct || 0) / n * 100) + '%' : '\u2014';
+  }
   function resRow(q, r) {
     var wrong = Math.max(0, (r.answered || 0) - (r.correct || 0));
-    return '<tr><th>' + esc(q.name) + '</th>'
+    return '<tr><th>' + esc(q.shortName || q.name) + '</th>'
       + '<td>' + (r.answered || 0) + '</td>'
       + '<td class="ok">' + (r.correct || 0) + '</td>'
       + '<td class="no">' + wrong + '</td>'
+      + '<td class="avg">' + resAvg(r) + '</td>'
       + '<td class="best">' + (r.best == null ? '\u2014' : r.best + '%') + '</td></tr>';
   }
 
@@ -886,7 +910,7 @@
       }).join('');
     if (!body) return '';
     return '<table class="tq-res-t"><thead><tr><th></th><th>done</th><th>right</th>'
-      + '<th>wrong</th><th>best</th></tr></thead><tbody>' + body + '</tbody></table>';
+      + '<th>wrong</th><th>avg</th><th>best</th></tr></thead><tbody>' + body + '</tbody></table>';
   }
 
   function resultsPanel() {
