@@ -1730,6 +1730,25 @@
       } catch (_) {}
     }).catch(function () {});
   }
+  /* r215 — record the published quiz stamp for THIS unit against its prefix. Safe on the
+     prefix-keyed manifest because prefix ↔ unit is 1:1 (measured 2026-09-23: 113 units, 113
+     distinct audio prefixes — a split topic's parts do NOT share one, contrary to a comment
+     elsewhere that says they do). ⚠ Silent on every failure: a missing stamp means the card
+     keeps offering an update, which is recoverable, where a wrong one would declare a stale
+     download current. */
+  function dynStampUnitQz() {
+    var unit = String(PAGE_FILE || '').replace(/\.html$/, '');
+    if (!unit) return;
+    dynQzSigLoad().then(function (sig) {
+      if (!sig || sig[unit] == null) return;
+      try {
+        var m = getManifest(), e = m[PREFIX];
+        if (!e) return;                       // entry went away under us; nothing to stamp
+        e.qz = sig[unit];
+        setManifest(m);
+      } catch (_) {}
+    }).catch(function () {});
+  }
   function dynUpdateAudio() {
     // Transient too — same reasoning as downloadTopic's offline guard: keep Update/Delete reachable.
     if (!navigator.onLine) { offlineBarFlash('error', 'you’re offline — reconnect to update'); return; }
@@ -2183,6 +2202,12 @@
            this prefix's clips and its page is not this page, so stamping a prefix-level content
            hash from a playlist download would claim the whole topic page is current. */
         if (!PLMODE && ref === 'topic') e.ver = contentHash();
+        /* ⭐ r215 — AND THE PUBLISHED QUIZ STAMP, which is what the topic CARD compares against.
+           The card cannot hash a page it is not on, so contentHash alone leaves it blind; this is
+           the one signal both surfaces can read. ⚠ WITHOUT THIS THE CARD NAGS FOR EVER: its
+           `e.qz == null` flip would never clear. Written async because the stamp map is fetched —
+           the manifest entry already exists by then, so this is a field update, not a race. */
+        if (!PLMODE && ref === 'topic') dynStampUnitQz();
         /* D0c (rollout P1): this topic's OWN dyn download now covers everything the player needs
            (mainSrcFor/ensureMainSrc never touch the combined file once DYN is true — see
            dynEnsureMainSrc), so the classic TE/ET pair is dead weight the moment the per-sentence

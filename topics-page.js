@@ -177,6 +177,48 @@
     return cur != null && e.av !== cur;
   }
 
+  /* ── r215: THE CARD ASKS THE CONTENT QUESTION TOO ───────────────────────────────
+     Owner, 2026-09-23, straight after v643 shipped: "the ticks are still showing for all — page
+     update available message isnt triggering the appearance of dotted circles".
+     ⭐ THE CARD ONLY EVER KNEW ABOUT AUDIO. avStale() compares audio-versions.json against the
+     recorded `av`, and nothing on this surface had any idea the PAGE could be superseded — so
+     v643's content prompt appeared on the topic page while the card beside it still said
+     "downloaded". ⚠⚠ THIS IS THE SAME DIVERGENCE THE avFor() NOTE ABOVE RECORDS ("the card kept
+     showing the TICK while the topic page itself offered the update", 2026-09-16), reintroduced
+     on a NEW AXIS. One surface gaining a question the others do not have is the recurring shape;
+     the fix is the card asking from the same evidence, not a second predicate that happens to
+     agree.
+     ⚠ WHAT THE CARD CAN AND CANNOT SEE. player.js compares contentHash() — the page's own
+     sentences AND quiz block — but it is ON that page. A card is not, and cannot hash a document
+     it does not have. What it can read is the manifest plus the PUBLISHED per-unit quiz stamp
+     (quiz-data/index.json `sig`, written by gen_quiz_data.js beside each side-car). That covers
+     an answer-key change and a C3 prompt rewrite, because `orders` and `enq` both live in the
+     side-car. ⛔ It does NOT cover a pure sentence-TEXT edit, which moves contentHash but not
+     the side-car: the page catches that and the card does not. Under-reporting, never over-, and
+     stated here so nobody reads the card as authoritative. */
+  function contentStale(unit, prefix) {
+    var sig = window.__teQuizSig;
+    /* No published stamp for this unit — say nothing. Also the guard that stops the two
+       one-time flips below firing on a unit that has no quiz to be missing, which is what
+       keeps them from nagging where there is nothing to deliver (player.js does the same with
+       its `cfg.quiz` check). */
+    if (!sig || !unit || sig[unit] == null) return false;
+    var e = offlineManifest()[prefix];
+    if (!e) return false;
+    /* ⭐ TWO ABSENT-BASELINE FLIPS, BOTH ONE-TIME AND BOTH SELF-CLEARING.
+       · !e.ver  — the download predates the content stamp, which the dyn path never wrote
+         before v643. This is the case the owner is in, and it is what makes the card agree with
+         the page he is already looking at.
+       · e.qz == null — the download predates THIS stamp (anything updated on v643/v644). Left
+         alone it would be a permanent blind spot: the card could never see a future answer-key
+         change, and the page would offer an update the card contradicted, which is the whole
+         bug again one release later. ⛔ Adopting the published sig instead would be worse — we
+         cannot know the downloaded side-car matches it, and adopting would silently declare a
+         stale download current.
+       Both clear the moment the update runs, because finalize now records `ver` AND `qz`. */
+    if (!e.ver || e.qz == null) return true;
+    return e.qz !== sig[unit];
+  }
   function applyDownloadState() {
     /* dl-core is not on a plain browser tab, and that is correct — download UI is app +
        installed-PWA only, so there is simply nothing to report. */
@@ -186,7 +228,11 @@
       var prefix = cards[i].getAttribute('data-audio');
       if (!prefix) continue;
       var done = isDownloaded(prefix);
-      var want = done ? (avStale(prefix) ? 'upd' : 'dl') : '';
+      /* r215 — audio OR content. Either one supersedes the download, the remedy is the same
+         re-download, and the mark has one "update" state, so they collapse here rather than
+         becoming a third card state the buttons would not know about. */
+      var unit = String(cards[i].getAttribute('data-page') || '').replace(/\.html$/, '');
+      var want = done ? ((avStale(prefix) || contentStale(unit, prefix)) ? 'upd' : 'dl') : '';
       var slot = cards[i].querySelector('.topic-meta-row');
       if (!slot) continue;
       var mark = slot.querySelector('.dl-badge, .dl-select');
@@ -207,6 +253,17 @@
   /* audio-versions.json is written by generate_topic_audio.py on every audio build. It is
      what lets a re-rendered topic show "update available" even though the page TEXT did not
      change — player.js's own content hash cannot see an audio-only re-render. */
+  /* r215 — the published per-unit quiz stamps, written by gen_quiz_data.js in the same pass
+     as the side-cars so a stamp cannot drift from the file it fingerprints. Precached, ~4 KB,
+     and fetched once per page. Failure is silent and means "flag nothing", exactly as a missing
+     audio-versions.json does. */
+  function loadQz() {
+    if (window.__teQuizSig) return Promise.resolve();
+    return fetch('quiz-data/index.json', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j && j.sig) window.__teQuizSig = j.sig; })
+      .catch(function () {});
+  }
   function loadAv() {
     if (window.__teAudioVersions) return Promise.resolve();
     return fetch('audio-versions.json', { cache: 'no-cache' })
@@ -373,7 +430,10 @@
   window.addEventListener('online', refresh);
   window.addEventListener('offline', refresh);
   refresh();
-  loadAv().then(applyDownloadState);
+  /* r215 — both maps, then ONE repaint. applyDownloadState() reads them synchronously, so a
+     paint before either lands legitimately shows a tick; waiting for both means the grid settles
+     once rather than flickering tick → dot. Each leg degrades to "flag nothing" on its own. */
+  Promise.all([loadAv(), loadQz()]).then(applyDownloadState);
 
   /* ── search (landing page only) ────────────────────────────────────────────
      Ranking and matching live in topics.js (searchUnits) so the rules sit next to the
