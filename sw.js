@@ -33,7 +33,11 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v619';   // v619: MASCOTS GO A SHADE LIGHTER. Owner reviewed all 11 at four
+const VERSION = 'v620';   // v620: A FINE TRIM ON THE QUIZ MENU. "My results" sat half cut
+                          // off on a phone; the owner named the three gaps (title->Vocab
+                          // Trainer, above the tiger, below it). 31px off in total, all in
+                          // the <=481px block. quiz.css IS PRECACHED, so without this bump
+                          // every returning device keeps serving the old spacing for ever.
                           // depths and took the lightest navy on every one - the deep pass in
                           // v615 had pushed several below where the artwork wanted to sit.
                           // Body fills now land within a couple of points of --accent L25.
