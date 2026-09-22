@@ -957,6 +957,19 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
      ⚠ These are CAPS on flexible gaps, not sizes: on a tall screen the slack is still shared out,
      and on a short one the gaps were already shrinking below the cap and this changes nothing.
      That is the intended asymmetry — it only bites where there is slack to give back. */
+  /* ⭐ …AND THE BLOCK STARTS AT THE TOP ON A PHONE (owner, 2026-09-22, second pass): "i think if
+     we trim a bit of space from above 'test yourself' that would be good, then everything else
+     shifts up and spacing preserved."
+     The top-level rule gives the first child `margin-top: auto`, which pairs with the last
+     child's to CENTRE the block — so on a phone the slack was being split above and below, and
+     the share above the eyebrow was the space he could scroll up into. Dropping it here sends the
+     whole share to the bottom instead: every gap keeps the size it had and the block simply sits
+     higher, which is exactly what he asked for.
+     ⚠ The auto margin's stated purpose — "never overflow the start edge" — is not lost. That
+     protects content TALLER than the box, and a zero top margin cannot overflow the start edge at
+     all; it starts there. ⛔ Phone only: the desktop sheet is a card on a backdrop and still
+     centres. */
+  .tq-fill:not(.tq-fill-res) > :first-child { margin-top: 0; }
   .tq-fill:not(.tq-fill-res) > .tq-gap { max-height: 34px; }
   .tq-fill:not(.tq-fill-res) > .tq-gap-s { max-height: 20px; }
   /* the last few px come off the tiger's own box, so the picture keeps its breathing room */

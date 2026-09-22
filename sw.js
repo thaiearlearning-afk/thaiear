@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v622';   // v622: THE QUIZ MENU'S PHONE SPACING, TRIMMED. "My results" sat
+const VERSION = 'v623';   // v623: THE QUIZ MENU STARTS AT THE TOP, AND THE BLOCK SITS
+                          // HIGHER. Two halves. (1) The guard on the corrective scroll
+                          // was being tripped by the very restore it exists to undo —
+                          // WebKit's restore fires a SCROLL EVENT, so `userScrolled`
+                          // went true and the 80ms pass never ran. It now needs a real
+                          // gesture, plus one more pass when the mascot image lands.
+                          // (2) The first child's auto top margin is dropped on phones,
+                          // so the slack goes to the bottom and everything shifts up:
+                          // 33px off the space above "Test yourself", measured.
                           // half cut off; the owner named the three gaps (title->Vocab
                           // Trainer, above the tiger, below it). ⚠ THE CAPS HE WAS SEEING
                           // WERE THE TOP-LEVEL 56px/34px — the 30px/10px pair that reads

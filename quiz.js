@@ -740,15 +740,29 @@
     } catch (_) {}
   }
   /* ⚠ Set by any real scroll the learner makes, cleared on every render - so the 80ms pass above
-     can tell "the browser put us here" from "they scrolled". */
+     can tell "the browser put us here" from "they scrolled".
+     ⛔⛔ AND "REAL" HAS TO MEAN A GESTURE, NOT A SCROLL EVENT — THAT IS WHAT MADE THE 80ms PASS
+     A NO-OP ON iOS (owner, 2026-09-22, still landing part-way down on the iPhone after the two
+     deferred scrolls shipped). WebKit's own restore-toward-the-clamped-offset FIRES A SCROLL
+     EVENT. So the browser doing the exact thing this guard exists to undo was setting the flag
+     that cancels the undo, every time, and the guard silently disarmed the fix it was guarding.
+     A restore has no input behind it, so the gesture is the honest signal: only a touch, wheel,
+     pointer or key since the last render makes a scroll the learner's.
+     ⚠ Do not "simplify" this back to the scroll event alone. It reads as equivalent, it passes
+     on desktop (where nothing restores), and it fails on exactly the browser the fix is for. */
   var userScrolled = false;
+  var userGesture = false;
   try {
+    ['touchstart', 'wheel', 'pointerdown', 'keydown'].forEach(function (ev) {
+      window.addEventListener(ev, function () { userGesture = true; }, { passive: true });
+    });
     window.addEventListener('scroll', function () {
-      if (root && !root.hidden) userScrolled = true;
+      if (root && !root.hidden && userGesture) userScrolled = true;
     }, { passive: true });
   } catch (_) {}
   function render(html) {
     userScrolled = false;
+    userGesture = false;
     mount(); sheet.innerHTML = html;
     /* ⚠ Re-assert after every render: innerHTML wipes children, not the inline property, but a
        remount would lose it — and this is the one setting where a wrong value is visible. */
@@ -1113,6 +1127,21 @@
     if (!box) return;
     var img = mascotImg(box.getAttribute('data-mascot'),
                         +box.getAttribute('data-w'), +box.getAttribute('data-h'));
+    /* ⚠ THE MASCOT IS THE LAST THING TO SETTLE, so it is the honest moment for one more
+       corrective scroll. The two deferred passes in scrollToTop() race a fixed 80ms; on a cold
+       cache the image decodes later than that, the document grows again, and iOS restores toward
+       the offset it clamped when the topic content was hidden. Waiting for THIS event instead of
+       guessing a longer timeout is the difference between a fix and a bigger number.
+       ⛔ Same guard as the 80ms pass: never yank a learner who has actually scrolled. */
+    try {
+      img.addEventListener('load', function () {
+        try {
+          if (root && !root.hidden && (window.pageYOffset || 0) > 0 && !userScrolled) {
+            window.scrollTo(0, 0);
+          }
+        } catch (_) {}
+      }, { once: true });
+    } catch (_) {}
     box.insertBefore(img, box.firstChild);
   }
   function tigerBlock() { return mascot('tiger.png', 440, 389, 'Stay sharp'); }
