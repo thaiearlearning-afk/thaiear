@@ -334,8 +334,8 @@ body.tq-mode { background: var(--surface, #fff); }
 .qopts:hover { color: var(--accent, #261B65); background: var(--accent-light, #ECEBFA); }
 .playbtn {
   display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%;
-  background: var(--chip-accent-light, #ECEBFA); color: var(--chip-accent, #4B41AD);
-  border: 0.5px solid rgba(75, 65, 173, .2); border-radius: var(--radius-md, 10px); padding: 15px;
+  background: var(--chip-accent-light, #F6F6FD); color: var(--chip-accent, #261B65);
+  border: 0.5px solid rgba(38, 27, 101, .2); border-radius: var(--radius-md, 10px); padding: 15px;
   font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; margin-bottom: 14px;
 }
 .playbtn .tri {
@@ -388,12 +388,20 @@ body.tq-mode { background: var(--surface, #fff); }
      "incl the gloss chips in the quiz page answers, they now clash with the overriding color
      theme so please apply the tint to those as well". The pinned lavender ground existed only
      because the tint was grey, and it no longer is. */
-  --chip-accent: #4B41AD;
+  /* ⛔ WAS #4B41AD, the retired purple, held by owner exemption until 2026-09-22 — when he saw
+     it live against the navy and reversed it: "i think quiz chips should also look like this
+     new #f6f6fd and #261b65 ... also the play the thai boxes too".
+     ⚠ THIS REACHES EXACTLY THREE SURFACES, and that is the point: .chip .th, .chip.is-target
+     and .playbtn. The THAI BUILDER is NOT one of them — its tiles are .tile/.drop/.tray on
+     --accent, and the owner asked for those to stay as they are ("the chips in the thai
+     builder in the actual question that you click and drag are fine as is"). Do not merge
+     the two families on the grounds that they now hold the same value. */
+  --chip-accent: #261B65;
   --chip-accent-light: var(--card-tint, #F6F6FD);
 }
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.chip { background: var(--chip-accent-light, #ECEBFA); border-radius: var(--radius-sm, 6px); padding: 4px 8px; font-size: 12px; line-height: 1.35; }
-.chip .th { font-family: var(--font-thai, 'Sarabun', sans-serif); color: var(--chip-accent, #4B41AD); font-weight: 500; }
+.chip { background: var(--chip-accent-light, #F6F6FD); border-radius: var(--radius-sm, 6px); padding: 4px 8px; font-size: 12px; line-height: 1.35; }
+.chip .th { font-family: var(--font-thai, 'Sarabun', sans-serif); color: var(--chip-accent, #261B65); font-weight: 500; }
 .chip .gl {
   color: var(--text-secondary, #5A5A5A); margin-left: 5px;
   /* ⚠ PER-CHARACTER FALLBACK, NOT A THAI FONT. A gloss can legitimately CONTAIN THAI SCRIPT: the
@@ -411,7 +419,7 @@ body.tq-mode { background: var(--surface, #fff); }
 /* ⚠ The chip the question was about. An outline rather than a different fill: the chips sit
    on the accent-light background already, so a second fill would fight it, and an outline
    survives both themes without a second colour token. */
-.chip.is-target { box-shadow: inset 0 0 0 1.5px var(--chip-accent, #4B41AD); }
+.chip.is-target { box-shadow: inset 0 0 0 1.5px var(--chip-accent, #261B65); }
 
 /* ⚠ The published translation, under a prompt that was reworded to line up with the chips.
    Secondary by design: it says what the sentence MEANS, while the line above says how it is
@@ -556,7 +564,7 @@ body.tq-mode { background: var(--surface, #fff); }
    together are the quiz's deliberate purple family; everything else in the arm is navy. */
 .tq-say {
   font-size: 12.5px; color: var(--text-secondary, #5A5A5A);
-  background: var(--chip-accent-light, #ECEBFA); border-radius: var(--radius-sm, 6px);
+  background: var(--chip-accent-light, #F6F6FD); border-radius: var(--radius-sm, 6px);
   padding: 9px 11px; margin: 0 0 14px; line-height: 1.45;
 }
 .tq-selfmark { display: flex; gap: 8px; margin-top: 13px; }

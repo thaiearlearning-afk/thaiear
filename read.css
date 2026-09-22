@@ -92,7 +92,11 @@
 .letter-card .lc-word svg { width: 10px; height: 10px; flex-shrink: 0; }
 .letter-card.obsolete { opacity: 0.62; }
 .obsolete-chip { position: absolute; top: 7px; left: 9px; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); background: var(--bg); border-radius: 8px; padding: 1px 7px; }
-.read-note { font-size: 13px; color: var(--text-secondary); background: var(--accent-light); border-radius: var(--radius-md); padding: 0.75rem 1rem; line-height: 1.6; margin: 0 0 1.5rem; }
+/* ⛔ GROUND IS --lav-bg, NOT --accent-light. These must match the guide page's .readthai-box
+   exactly (owner, 2026-09-22) and --accent-light is the T3 tint, which is a pale LAVENDER
+   (hue 244, sat 60). --lav-bg is --card-tint #F6F6FD, near-white. Same for .quiz-summary,
+   .signin-gate and .read-dl below - one box style across the reading arm. */
+.read-note { font-size: 13px; color: var(--accent, #261B65); background: var(--lav-bg, #F6F6FD); border-radius: var(--radius-md); padding: 0.75rem 1rem; line-height: 1.6; margin: 0 0 1.5rem; }
 .read-note .th { font-family: var(--font-thai); }
 
 /* ── test panel ── */
@@ -223,8 +227,8 @@
 .qc-mark button.got.on { background: #2E8B57; border-color: #2E8B57; color: #fff; }
 .qc-mark button.missed { border-color: #C0392B; }
 .qc-mark button.missed.on { background: #C0392B; border-color: #C0392B; color: #fff; }
-.quiz-summary { text-align: center; font-size: 14px; color: var(--text-secondary); background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 0.9rem 1rem; margin-top: 1rem; }
-.quiz-summary strong { color: var(--text-primary); }
+.quiz-summary { text-align: center; font-size: 14px; color: var(--accent, #261B65); background: var(--lav-bg, #F6F6FD); border: 0; border-radius: var(--radius-md); padding: 0.9rem 1rem; margin-top: 1rem; }
+.quiz-summary strong { color: var(--accent, #261B65); }
 
 /* quiz submit */
 .quiz-submit-wrap { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 1.1rem; }
@@ -245,10 +249,15 @@ body.te-testing .read-intro,
 body.te-testing #read-root > *:not(.test-panel) { display: none; }
 
 /* ── sign-in gate (tests are free but need an account) ── */
-.signin-gate { text-align: center; padding: 1.5rem 1rem 1.6rem; }
-.signin-gate .sg-title { font-size: 17px; font-weight: 600; color: var(--text-primary); margin-bottom: 0.4rem; }
-.signin-gate p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 420px; margin: 0 auto 1rem; }
-.signin-gate .sg-btn { font-size: 14px; padding: 9px 22px; text-decoration: none; }
+.signin-gate { text-align: center; padding: 1.5rem 1rem 1.6rem; background: var(--lav-bg, #F6F6FD); border-radius: var(--radius-md); }
+.signin-gate .sg-title { font-size: 17px; font-weight: 600; color: var(--accent, #261B65); margin-bottom: 0.4rem; }
+.signin-gate p { font-size: 14px; color: var(--accent, #261B65); line-height: 1.6; max-width: 420px; margin: 0 auto 1rem; }
+/* ⚠ --read-term is the RETIRED #4B41AD and is deliberately kept for .gl-term, where it sits
+   inside black body text and needs the contrast. A BUTTON has no such excuse, so .sg-btn
+   overrides it - this is the "old blue" the owner spotted on the signed-out gate. */
+.signin-gate .sg-btn { font-size: 14px; padding: 9px 22px; text-decoration: none;
+  background: var(--accent, #261B65); color: #fff; }
+.signin-gate .sg-btn:hover { background: var(--accent-mid, #342682); color: #fff; }
 
 /* clear-progress (results page) — the BUTTON rules live below .rd-ghost-pill, see there */
 .clear-progress-wrap { text-align: center; margin-top: 1.75rem; }
@@ -298,10 +307,13 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
    buttons can stay lavender as they are and their text can stay same color as is." So BOTH halves
    are pinned - the ground and the ink - since following --accent-light alone would have left
    purple text on a grey ground, which is neither thing.
-   ⚠ THE PRESSED/PLAYING STATE IS THE PINNED PURPLE, NOT THE NAVY. It is the same pill inverting,
-   so inverting it into a different hue would make it look like a different control mid-press. */
-.rd-play-pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--read-term, #4B41AD); background: var(--lav-bg, #ECEBFA); border: none; border-radius: 18px; padding: 6px 14px; cursor: pointer; transition: background 0.15s, color 0.15s; }
-.rd-play-pill:hover, .rd-play-pill.playing { background: var(--read-term, #4B41AD); color: #fff; }
+   ⛔ THE PINNING IS REVOKED (owner, 2026-09-22): "previously i said they were fine but they should
+   get the same treatment so they look like the guide box A", and separately "check if any other
+   little boxes like that still carrying the old blue". Ground and ink both follow the palette now,
+   and the pressed state inverts into the SAME navy - the mid-press-hue-change argument below was
+   only ever a reason to keep the two ENDS of the inversion matched, not a reason to stay purple. */
+.rd-play-pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--accent, #261B65); background: var(--lav-bg, #F6F6FD); border: none; border-radius: 18px; padding: 6px 14px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.rd-play-pill:hover, .rd-play-pill.playing { background: var(--accent, #261B65); color: #fff; }
 /* ⚠ SUBMIT RESULTS IS A rd-play-pill TOO, AND IT IS THE ONE THE OWNER ASKED TO GO NAVY:
    "the submit results pill at the bottom of the page." It borrows the pill's shape and size from
    the rule above and takes the accent back, because it is a COMMIT action at the end of the quiz,
@@ -365,7 +377,7 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
 }
 
 /* ── offline-download card (hub; app / installed-PWA only) ── */
-.read-dl { background: var(--accent-light); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.05rem 1.2rem 0.95rem; margin: 1.5rem 0 0.25rem; }
+.read-dl { background: var(--lav-bg, #F6F6FD); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.05rem 1.2rem 0.95rem; margin: 1.5rem 0 0.25rem; }
 .read-dl-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .read-dl-title { display: flex; align-items: center; gap: 7px; font-size: 14.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
 .read-dl-ico { display: inline-flex; width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; }

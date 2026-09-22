@@ -66,7 +66,6 @@
      pair, which is also what makes them findable: COLOR_THEME.md lists them.
      ⚠ Same family as quiz.css's --chip-accent / --chip-accent-light - the quiz's reveal chips,
      "Play the sentence" and the "Literally:" line. One deliberate second colour, four surfaces. */
-:root {
   /* ⛔⛔ THESE PANELS NOW TAKE THE SITE TINT (owner, 2026-09-22): "re all the lavender boxes i
      mentioned (and others you find) incl the gloss chips in the quiz page answers, they now clash
      with the overriding color theme so please apply the tint to those as well (the newer slightly
@@ -82,8 +81,7 @@
      take the card's value - the same reasoning that kept them out of the accent in the first
      place: a large filled area wants the lighter of the two. */
   --lav-bg: var(--card-tint, #F6F6FD);
-  --lav-ink: #3B3488;
-}
+  --lav-ink: var(--accent, #261B65);   /* was #3B3488. Owner 2026-09-22: the boxes still read lavender, and it was always the INK - the ground moved to --card-tint already. Only the ground was ever exempt. */
 
     --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
     --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
@@ -539,7 +537,7 @@
   /* ⛔ TAKES THE SITE TINT - the cycler box under the mock player. See --lav-bg above. */
   .dp-info { background: var(--lav-bg, #ECEBFA); border-radius: var(--radius-md); padding: 0.85rem 1.05rem; margin: 0 0 1rem; }
   .dp-info p { margin: 0; color: var(--lav-ink, #3B3488); font-size: 13.5px; line-height: 1.6; }
-  .dp-info p strong { color: #2B2566; }
+  .dp-info p strong { color: var(--accent, #261B65); }
   /* the real pages define these tokens in their own CSS; guide.html lacks a couple the player CSS uses */
   :root { --gold-light: #FBF5DC; }
 </style>

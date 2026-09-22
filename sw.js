@@ -33,7 +33,18 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v615';   // v615: THE BRAND RASTERS GO NAVY. 11 mascots + the whole round-logo
+const VERSION = 'v616';   // v616: THE LAST PURPLE SURFACES FOLLOW THE PALETTE. The note panels
+                          // (guide, app), the reading quiz's Part B/C + "check by ear" boxes and
+                          // its sign-in gate, the Read Thai play pills, and the quiz's GLOSS chips
+                          // and "Play the Thai" button all move to #F6F6FD ground / #261B65 ink.
+                          // ⛔ ROOT CAUSE, and it was not a colour decision: guide.html and app.html
+                          // each had a NESTED `:root {` inside the outer one. Under CSS nesting that
+                          // is `:root :root`, which can never match - so --lav-bg / --lav-ink were
+                          // never defined and the panels had been painting from the var() FALLBACKS
+                          // (#ECEBFA / #3B3488) for weeks. --gold and --radius-* were swallowed too.
+                          // read.css, quiz.css, guide.html and app.html are ALL precached and served
+                          // cache-first, so without this bump none of it reaches a returning device.
+                          // v615: THE BRAND RASTERS GO NAVY. 11 mascots + the whole round-logo
                           // family (favicons, .ico, apple-touch, both app icons, both swirls,
                           // og-image) recoloured from the retired purple onto --accent #261B65.
                           // 17 of them are PRECACHED and served cache-first, so without this a
