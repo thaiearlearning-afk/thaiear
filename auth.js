@@ -2424,9 +2424,27 @@
       /* ⚠ Drop only the entries that SUCCEEDED. Clearing the whole box on a partial failure is
          the fault that loses a learner's offline run. */
       var keep = [];
-      res.forEach(function (r, i) { if (r.error) keep.push(batch[i]); });
+      var firstErr = null;
+      res.forEach(function (r, i) {
+        if (r.error) {
+          keep.push(batch[i]);
+          /* ⛔⛔ A SWALLOWED ERROR MAKES A STUCK OUTBOX UNDIAGNOSABLE. Owner, 2026-09-22: "it
+             wont sync even though im online" — the panel showed 5 queued for ever and there was
+             nothing anywhere to say WHY, because every op's error was dropped on the floor here.
+             Keeping the first one costs nothing and turns "it doesn't work" into a message.
+             ⚠ The op KIND is recorded with it: a flush carries scores, prefs, exclusions, stats
+             and rejections together, so "which one is failing" is half the answer. */
+          if (!firstErr) {
+            var e = r.error || {};
+            firstErr = { k: batch[i].k,
+                         msg: String(e.message || e.msg || e.code || e) .slice(0, 300),
+                         at: Date.now() };
+          }
+        }
+      });
       var cur = qzLoadLocal();
       cur.outbox = keep.concat(cur.outbox.slice(batch.length));
+      cur.lastErr = firstErr;          /* cleared by a clean flush, below */
       qzSave();
       qzFlushing = false;
       return keep.length === 0;
@@ -2600,6 +2618,9 @@
 
     flush: function () { return qzFlush(); },
     pending: function () { return qzLoadLocal().outbox.length; },
+    /* The first error from the last flush, or null after a clean one. Owner-facing only — it is
+       what the rejection panel prints when the queue will not drain. */
+    lastError: function () { return qzLoadLocal().lastErr || null; },
     /* How many rejection rows are still waiting to sync — the number that makes the offline
        round trip observable rather than assumed. */
     pendingRejections: function () {

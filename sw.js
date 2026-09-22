@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v616';   // v616: THE LAST PURPLE SURFACES FOLLOW THE PALETTE. The note panels
+const VERSION = 'v617';   // v617: A STUCK QUIZ OUTBOX NOW SAYS WHY. Owner, 2026-09-22: 5 Thai Builder rejections sat queued and "it wont sync even though im online" -- and there was nothing to act on, because qzFlush() dropped every op's error on the floor and only counted the survivors. The first error of a flush is now kept with the op KIND that produced it (a flush carries scores, prefs, exclusions, stats and rejections together, so which-one-is-failing is half the answer) and the owner panel prints it. auth.js is precached and cache-first, hence the bump; ownersim.js is deliberately not precached, so the panel half would have arrived on its own. ⚠ THE PANEL GOT ITS OWN ESCAPER: the `esc` further down ownersim.js is scoped to the service-worker block, and calling it from the rejection block would have thrown and taken the whole panel down -- caught by reading, not by node --check, which is happy with an undefined name. v616 is spent.   // v616: THE LAST PURPLE SURFACES FOLLOW THE PALETTE. The note panels
                           // (guide, app), the reading quiz's Part B/C + "check by ear" boxes and
                           // its sign-in gate, the Read Thai play pills, and the quiz's GLOSS chips
                           // and "Play the Thai" button all move to #F6F6FD ground / #261B65 ink.

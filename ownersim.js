@@ -312,6 +312,23 @@
           '<button type="button" id="ownersim-rej-flush" style="' + SWBTN + '">Sync now</button>' +
           '<button type="button" id="ownersim-rej-dump" style="' + SWBTN + '">Show the last 50</button>' +
         '</div>' +
+        (function () {
+          /* ⛔ THE REASON THE QUEUE WILL NOT DRAIN, when there is one. Without this the panel
+             says "5 queued" for ever and the owner has nothing to act on — which is exactly
+             what happened on 2026-09-22. The message is escaped: it comes from the server. */
+          var e = (S && S.lastError) ? S.lastError() : null;
+          if (!e) return '';
+          /* ⚠ ITS OWN ESCAPER. The `esc` further down this file is scoped to the service-worker
+             block, so referring to it here throws and takes the whole panel with it. */
+          var q = function (t) {
+            return String(t).replace(/[&<>]/g, function (c) {
+              return c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;';
+            });
+          };
+          return '<div style="margin-top:8px;padding:6px 8px;border-radius:6px;' +
+            'background:#FBECEC;border:1px solid #E3BDBD;color:#7A1F1F">' +
+            '<b>Last sync error</b> (' + q(e.k || '?') + '): ' + q(e.msg) + '</div>';
+        }()) +
         '<span style="display:block;margin-top:6px;color:#7A1F1F">Offline test: get some Thai' +
         ' Builder answers rejected with the network off, watch <i>queued</i> rise, reconnect and' +
         ' watch it fall to zero while the account count rises by the same amount.</span>';
