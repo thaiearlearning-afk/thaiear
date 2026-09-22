@@ -275,7 +275,7 @@ body.te-testing #read-root > *:not(.test-panel) { display: none; }
    words. Any future inline-highlight colour needs the same check. */
 /* ⚠ the PILL GROUND follows the site tint; --read-term stays the lighter blue for the glossary
    terms, which is a legibility requirement against black body text, not a theme choice. */
-:root { --read-term: #4B41AD; --lav-bg: var(--accent-light, #ECEBFA); }
+:root { --read-term: #4B41AD; --lav-bg: var(--card-tint, #F6F6FD); }
 .gl-term { color: var(--read-term, #4B41AD); text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; position: relative; }
 .gl-i { font-size: 8.5px; font-weight: 700; font-style: normal; color: #fff; background: var(--accent); border-radius: 50%; width: 11px; height: 11px; display: inline-flex; align-items: center; justify-content: center; margin-left: 1px; vertical-align: super; line-height: 1; font-family: var(--font-ui); }
 .gl-pop { position: absolute; z-index: 300; width: 260px; background: var(--surface); border: 0.5px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: 0 8px 28px rgba(0,0,0,0.16); padding: 0.75rem 0.9rem 0.7rem; font-family: var(--font-ui); }

@@ -377,7 +377,7 @@ body.tq-mode { background: var(--surface, #fff); }
      theme so please apply the tint to those as well". The pinned lavender ground existed only
      because the tint was grey, and it no longer is. */
   --chip-accent: #4B41AD;
-  --chip-accent-light: var(--accent-light, #ECEBFA);
+  --chip-accent-light: var(--card-tint, #F6F6FD);
 }
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .chip { background: var(--chip-accent-light, #ECEBFA); border-radius: var(--radius-sm, 6px); padding: 4px 8px; font-size: 12px; line-height: 1.35; }

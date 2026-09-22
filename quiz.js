@@ -1163,6 +1163,25 @@
     show('menu');        /* the four-quiz picker */
   }
 
+  /* ⛔⛔ ONE DEFINITION OF "WHERE AM I", USED BY BOTH SIDES (2026-09-22).
+     Owner: "when i hit 'back to the topic' on the 22a pilot quiz, from the quiz menu, i get a
+     flash every time (i think its, topic page -> quiz menu -> topic page)."
+     CAUSE: the two sides of the comparison were built differently. originHref was set to
+     `location.pathname` (no query), while goBack compared it against
+     `location.pathname + location.search` - and opening a quiz PUTS ?quiz= in the url. So on every
+     topic page the two could never be equal, the "am I already here?" test always said no, and
+     the quiz did a FULL NAVIGATION back to the page it was already on. The flash was that page
+     repainting from scratch.
+     ⚠ ?quiz= IS STRIPPED because it is the quiz's own marker, not part of the address: leaving it
+     in would also mean "returning" to a url that reopens the quiz.
+     ⚠ Both the setter and the comparison call this, so they cannot drift apart again - which is
+     how this bug survived the LAST fix to the same line (that one made the playlist case work by
+     hand-stripping ?quiz= at one call site only). */
+  function hereHref() {
+    var q = location.search.replace(/([?&])quiz=[^&]*(&|$)/, '$1').replace(/[?&]$/, '');
+    return location.pathname + q;
+  }
+
   function goBack() {
     var href = ctx.originHref;
     /* ⚠ Return leaves the quiz as surely as the X does, so it takes the same warning. */
@@ -1180,7 +1199,7 @@
        is "/playlists", so they never matched and the quiz RELOADED THE WHOLE PAGE to return to
        the page it was already on — a full navigation, and the flash was it repainting from
        scratch. The comparison was written when a playlist could not host a quiz. */
-      if (href && href !== location.pathname + location.search) location.href = href;
+      if (href && href !== hereHref()) location.href = href;
     }
   }
 
@@ -2561,7 +2580,16 @@
       + '</div>'
       + '<div class="tq-acts">'
       + '<button type="button" class="startbtn t-again">Try again</button>'
-      + '<button type="button" class="tq-exit">&larr; All four quizzes</button>'
+      /* ⭐ "← Quiz menu" (owner, 2026-09-22): "after try again and before all four quizzes
+         should be <-quiz menu please (in the same style as the all four quizzes and back to topic
+         buttons)". It returns to THIS quiz's own menu - where its settings and its Start button
+         are - which is a different destination from the picker below it. Before this the only way
+         back to a quiz's settings was to leave to the picker and come back in. */
+      + '<button type="button" class="tq-exit tq-menu">&larr; Quiz menu</button>'
+      /* ⚠ NOT "All four": a grammar unit and a playlist have THREE quizzes, because the Vocab
+         Trainer is topic-only. This label was hard-coded and said "four" on every one of them. */
+      + '<button type="button" class="tq-exit">&larr; ' + (quizzesFor(ctx.kind).length === 4
+          ? 'All four quizzes' : 'All ' + quizzesFor(ctx.kind).length + ' quizzes') + '</button>'
       + '<button type="button" class="tq-return">&larr; ' + esc(ctx.originLabel || 'Back') + '</button>'
       + '</div></div>');
     wireClose();
@@ -2569,7 +2597,12 @@
     sheet.querySelector('.t-again').onclick = function () { start(q.id, againPrefs); };
     /* ⛔ The FOUR-TYPE picker, not this quiz's settings menu (owner, 2026-09-20: "it should take
        you to the main quiz menu with the four quiz types"). */
-    sheet.querySelector('.tq-exit').onclick = function () { run = null; openPicker(); };
+    /* ⚠ querySelectorAll + the LAST one: .tq-menu also carries .tq-exit (it is the same button
+       treatment), so a bare querySelector('.tq-exit') would now wire the picker handler onto the
+       Quiz menu button and both would go to the picker. */
+    sheet.querySelector('.tq-menu').onclick = function () { run = null; openMenu(q.id); };
+    var exits = sheet.querySelectorAll('.tq-exit:not(.tq-menu)');
+    exits[exits.length - 1].onclick = function () { run = null; openPicker(); };
     sheet.querySelector('.tq-return').onclick = goBack;
     if (st) st.flush();
   }
@@ -2733,7 +2766,7 @@
         unitName: opts.unitName
                || (document.querySelector('h1') || {}).textContent || document.title,
         kind: kind,
-        originHref: opts.originHref || location.pathname,
+        originHref: opts.originHref || hereHref(),
         originLabel: opts.originLabel || 'Back to the topic'
       });
     }
@@ -2782,7 +2815,7 @@
          itself a topic, which put the topic-only Vocab Trainer into the picker for a unit
          that has no vocab list — a fourth row that could only ever say "nothing to ask yet". */
       kind: kindOf(unit),
-      originHref: location.pathname,
+      originHref: hereHref(),
       originLabel: 'Back to the topic',
       start: start,
       /* ⚠ THE URL IS ALREADY THE QUIZ'S ENTRY — see pushEntry. Without this a ?quiz= link
@@ -2877,7 +2910,7 @@
            must remember to pass is a `kind` that one of them gets wrong, and the only symptom
            is a fourth picker row on a unit that can never fill it. */
         kind: opts.kind || kindOf(unit),
-        originHref: opts.originHref || location.pathname,
+        originHref: opts.originHref || hereHref(),
         originLabel: opts.originLabel || 'Back to the topic'
       };
       syncScores();

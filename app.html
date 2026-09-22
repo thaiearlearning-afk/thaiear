@@ -69,7 +69,12 @@
      the same family, so the reason is gone and keeping them pinned is what would clash now.
      ⚠ THE INK IS UNCHANGED, deliberately - he asked for the tint, and his instruction about these
      same surfaces was "their text can stay same color as is". */
-  --lav-bg: var(--accent-light);
+  /* ⚠ THE CARD TINT, NOT --accent-light (owner, 2026-09-22): "they all need to become the same
+     tint as the free topic pills". A topic card's body is --card-tint, a lighter wash of the tint;
+     --accent-light is the deeper one the play buttons sit on. These are full-width panels, so they
+     take the card's value - the same reasoning that kept them out of the accent in the first
+     place: a large filled area wants the lighter of the two. */
+  --lav-bg: var(--card-tint, #F6F6FD);
   --lav-ink: #3B3488;
 }
 

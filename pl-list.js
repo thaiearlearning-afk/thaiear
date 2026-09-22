@@ -234,7 +234,7 @@
        is .pl-add, which is var(--accent) and therefore already navy.
        ⚠ The dashed border and the hint text below follow the accent, so button, border and hint
        read as one colour on the lavender ground. Only the GROUND is pinned. */
-    ':root { --lav-bg: var(--accent-light, #ECEBFA); }' +
+    ':root { --lav-bg: var(--card-tint, #F6F6FD); }' +
     '.pl-add-card { display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1.5px dashed var(--accent); border-radius: var(--radius-lg); background: var(--lav-bg, #ECEBFA); padding: 14px 12px; margin: 0 1px 1.25rem; }' +
     '.pl-add-card .pl-add { margin-bottom: 0; }' +
     '.pl-add-hint { font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--accent); text-align: center; line-height: 1.45; }';

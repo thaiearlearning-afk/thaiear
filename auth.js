@@ -1309,6 +1309,42 @@
        continues; deleting the account is what removes the record, via account.html. Clears the
        LOCAL store too, including any queued outbox, or the next flush resurrects what was just
        cleared. Resolves true on success. */
+    /* ⛔⛔ DELETE EVERY QUIZ RECORD TOO (owner, 2026-09-22): "does deleting my progress data at
+       the bottom of progress page remove all quiz data as well? (including the quiz data that isn't
+       shown on the progress table e.g. number of questions right, wrong, AVG (AVG is derived
+       anyway) - it ought to please."
+       ⚠ IT DID NOT. resetPlays() deletes /api/plays and clears the plays cache; the quiz arm keeps
+       its records in FIVE separate tables plus its own localStorage blob, and none of them was
+       touched. A delete control that leaves records behind is worse than none, because the person
+       has been told the data is gone.
+       ⚠ WHAT IS DELETED: scores, per-item stats, the stat batches, exclusions ("stop asking me
+       this"), and the Builder rejection log. WHAT IS NOT: quiz_prefs, which holds display settings
+       (script mode, English on/off) rather than any record of what was done - the same reason the
+       site pill and the font choice survive a reset.
+       ⚠ THE LOCAL BLOB IS CLEARED LAST AND INCLUDES THE OUTBOX. Miss the outbox and the next flush
+       re-uploads what was just deleted - exactly the trap resetPlays' own comment records.
+       ⚠ EACH TABLE IS SWALLOWED SEPARATELY. One table refusing (quiz_rejections had no delete
+       policy until the migration in quiz_rejections.sql) must not abandon the other four
+       half-deleted. The result reports which, if any, refused. */
+    resetQuiz: function () {
+      var uid = currentUser && currentUser.id;
+      if (!client || !uid) return Promise.resolve({ ok: false, refused: [] });
+      var TABLES = ['quiz_scores', 'quiz_item_stats', 'quiz_stat_batches',
+                    'quiz_exclusions', 'quiz_rejections'];
+      return Promise.all(TABLES.map(function (t) {
+        return client.from(t).delete().eq('user_id', uid)
+          .then(function (res) { return (res && res.error) ? t : null; })
+          .catch(function () { return t; });
+      })).then(function (results) {
+        var refused = results.filter(Boolean);
+        try {
+          qzCache = qzBlank();
+          localStorage.setItem(QZ_LS, JSON.stringify(qzCache));
+        } catch (_) {}
+        notify();
+        return { ok: refused.length === 0, refused: refused };
+      });
+    },
     resetPlays: function () {
       var tok = currentSession && currentSession.access_token;
       if (!currentUser || !tok) return Promise.resolve(false);

@@ -33,7 +33,18 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v612';   // v612: THE NAVY BRIGHTENS. #1C124E read "almost black ... too somber
+const VERSION = 'v613';   // v613: ONE bump for six changes, deliberately. I shipped four bumps
+                          // in two hours and the owner felt it: the precache is 97 entries and
+                          // 4.12 MB, every bump re-fetches all of it, and while install is in
+                          // flight the worker has not claimed the page so navigations bypass the
+                          // SW to the network. Nothing in the fetch handler changed - measured,
+                          // 0 diffs - the cost was purely the release cadence. BATCH THE BUMPS.
+                          // In here: the results page gains a Quiz menu button and stops saying
+                          // "four" on 3-quiz units; "Back to the topic" no longer reloads the page
+                          // it is already on; deleting progress now deletes the quiz records too;
+                          // the homepage topics third is flat; the lavender panels take the card
+                          // tint.
+                          // v612: THE NAVY BRIGHTENS. #1C124E read "almost black ... too somber
                           // and funerial" against the whole site, so the accent moves to #261B65
                           // (A2.5 off a rendered ladder) and the tint to #ECEBFA (T3) -- the tint
                           // being a SEPARATE dial, because at 31% saturation it read grey however

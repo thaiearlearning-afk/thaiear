@@ -252,7 +252,16 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 /* THE TOPICS THIRD. Owner 2026-09-22: "the homepage topics third is blue/purple - that can be
    navy." Same three-stop shape, hue moved: mid stop == --accent, so the third and the
    [data-gt="purple"] welcome band still quote each other. */
-.c-purple{ background:linear-gradient(150deg,#342682 0%, #261B65 46%, #1A1247 100%); }
+/* ⛔ FLAT, NOT A GRADIENT (owner, 2026-09-22): "the topics third of the homepage seems to get
+   brighter towards the middle of the color block and darker at the edges - can you remove the
+   gradient and make it A2.5 uniformly please."
+   ⚠ The three-stop gradient was fine under the old bright purple and became a defect under a dark
+   accent: at this lightness the eye reads the middle stop as a highlight and the ends as shading,
+   so a flat panel looked lit from within. Retired:
+     linear-gradient(150deg,#342682 0%, #261B65 46%, #1A1247 100%)
+   ⚠ KEEP IT EQUAL TO --accent. The band and the [data-gt="purple"] welcome pill quote each other,
+   so this is the value that has to move with a palette change. */
+.c-purple{ background:#261B65; }
 .c-purple .s-title{ color:#fff; }
 .c-purple .s-sub{ color:rgba(255,255,255,.72); }
 .c-purple .s-meta{ color:var(--gold); }

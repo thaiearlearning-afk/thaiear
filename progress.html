@@ -578,7 +578,12 @@
       var ov = document.createElement('div');
       ov.className = 'te-modal';
       ov.innerHTML = '<div class="te-modal-card" role="dialog" aria-modal="true">' +
-        '<p>Are you sure you want to delete your progress data?<br><strong>This cannot be undone.</strong></p>' +
+        /* ⚠ SAY WHAT IT TAKES. It clears listening counts AND every quiz record - scores, the
+           per-question right/wrong behind them, exclusions and the Builder rejection log - so the
+           wording has to cover that or the control over-delivers silently. */
+        '<p>Are you sure you want to delete your progress data?<br>' +
+        'This clears your listening counts <strong>and every quiz score</strong>.<br>' +
+        '<strong>This cannot be undone.</strong></p>' +
         '<div class="te-modal-actions">' +
           '<button type="button" class="te-modal-cancel">Cancel</button>' +
           '<button type="button" class="te-modal-confirm">Delete</button>' +
@@ -590,8 +595,19 @@
       ov.querySelector('.te-modal-confirm').addEventListener('click', function () {
         var go = ov.querySelector('.te-modal-confirm');
         go.disabled = true; go.textContent = 'Deleting…';
-        A().resetPlays().then(function (okd) {
+        /* ⛔⛔ THE QUIZ RECORDS GO TOO (owner, 2026-09-22): "does deleting my progress data at the
+           bottom of progress page remove all quiz data as well? ... it ought to please."
+           ⚠ BOTH, AND THE PLAYS RESULT IS WHAT THE BUTTON REPORTS. The quiz reset is additive - a
+           table that refuses must not make the whole delete look failed and send someone pressing
+           it again - but a refusal is still surfaced, because "deleted" has to be true. */
+        Promise.all([A().resetPlays(), A().resetQuiz ? A().resetQuiz() : Promise.resolve({ ok: true, refused: [] })])
+          .then(function (both) {
+          var okd = both[0], qz = both[1] || { ok: true, refused: [] };
           close();
+          if (okd && !qz.ok) {
+            btn.textContent = 'Progress cleared — some quiz records could not be removed';
+            setTimeout(function () { btn.textContent = 'Reset progress data'; }, 4000);
+          }
           if (!okd) {
             btn.textContent = 'Could not reset — try again';
             setTimeout(function () { btn.textContent = 'Reset progress data'; }, 2500);
