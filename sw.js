@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v609';   // v609: THE PURPLE -> NAVY RECOLOUR. --accent #4B41AD -> #1C124E in the 151
+const VERSION = 'v610';   // v610: app-cta.js's hover ground was a LITERAL tint of the old accent
+                          // (#E7E5FD), so the app card's border went navy on hover and its fill
+                          // stayed lilac. Found by find_offpalette.py, which looks at HUE rather
+                          // than at a list of remembered hexes -- a list would never have held it.
+                          // app-cta.js is precached, hence the bump.
+                          // v609: THE PURPLE -> NAVY RECOLOUR. --accent #4B41AD -> #1C124E in the 151
                           // files that declare it, plus the card tier tints, the one-dark quiz strip and
                           // tier pills, and the retirement of the premium GOLD skin (owner A6). Almost
                           // every precached file changed colour without changing its URL, so this bump is

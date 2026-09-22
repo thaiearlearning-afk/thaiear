@@ -81,7 +81,9 @@
     '.te-appcta{display:block;text-decoration:none;-webkit-tap-highlight-color:transparent;' +
       'background:var(--accent-light);border:0.5px solid var(--border);border-radius:var(--radius-lg);' +
       'padding:1.05rem 1.2rem;transition:border-color .15s,background .15s}' +
-    '.te-appcta:hover{border-color:var(--accent);background:#E7E5FD}' +
+    // ⚠ the hover ground follows the palette; it was a literal tint of the OLD accent, so it
+    // stayed lilac while the border beside it went navy
+    '.te-appcta:hover{border-color:var(--accent);background:var(--accent-light)}' +
     '.te-appcta-row{display:flex;align-items:center;gap:14px}' +
     '.te-appcta-ico{flex-shrink:0;width:34px;height:34px;padding:7px;border-radius:10px;' +
       'background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center}' +
