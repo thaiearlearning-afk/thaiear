@@ -33,7 +33,29 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v638';   // v638: the Progress heading no longer flashes from "Sign in to track
+const VERSION = 'v639';   // v639: THE THAI BUILDER SHOWS THE GLOSSED SENTENCE WHEN YOU ARE
+                          // RIGHT. Owner, 2026-09-22: "if you get the answer right, you dont
+                          // see the model sentence ... which means you don't see the english
+                          // gloss chips ... then in all circumstances they see the full
+                          // glossed sentence with the english glosses."
+                          // ⚠⚠ modelAnswer() ALREADY ran on the correct path and the Thai
+                          // sentence was already shown; only the CHIP ROW was suppressed, by
+                          // `exact ? '' : ...`. The comment defending that guard said the row
+                          // "would be a copy of what is still on screen directly above it" --
+                          // TRUE OF THE THAI AND FALSE OF THE POINT, because the row directly
+                          // above is the learner's own tiles, which carry NO ENGLISH GLOSSES.
+                          // So it duplicated the script they already had and withheld the one
+                          // thing they could not get elsewhere: the better they did, the less
+                          // they were shown.
+                          // ✅ §5.1's asymmetry is intact -- an exact answer still gets no
+                          // CORRECTION, it reads what it wrote with the glosses attached. Only
+                          // the heading changes: 'The correct order - you got it'.
+                          // ⚠ test_quiz_engine.js's assertion was DEFENDING the bug (it
+                          // required the chips be hidden on an exact answer) -- retuned to pin
+                          // the opposite rule, plus one asserting the heading.
+                          // quiz.js is precached, hence the bump.
+                          //
+                          // v638:   // v638: the Progress heading no longer flashes from "Sign in to track
                           // progress" to the visitor's name. Owner, 2026-09-22: "im getting a
                           // render flash as my personal info populates it ... can we wait until
                           // the information exchange is resolved before rendering the objects
