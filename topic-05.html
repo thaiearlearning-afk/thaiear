@@ -89,6 +89,16 @@
      it read as fine print rather than orientation. */
   .topic-meta { font-size: 14px; line-height: 1.28; color: var(--text-tertiary); margin: 0.2rem 0 0.1rem; }
   .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
+  /* Tap/Click: the affordance is a property of the INPUT, not the viewport width, so
+     this asks (pointer:fine) rather than a breakpoint -- a touch laptop keeps "Tap".
+     In the page's own style block on purpose: quiz.css arriving late would show both. */
+  .tm-click { display: none; }
+  @media (hover: hover) and (pointer: fine) { .tm-tap { display: none; } .tm-click { display: inline; } }
+  /* ⚠ The picker, not a quiz. ?quiz=menu is the same url the band-card strip uses, so
+     entitlement is handled where it already is (quiz.js fires the gate in front of
+     openMenu()); a premium unit shows the picker and gates on choosing. quiz.js also
+     REMOVES this link if the gate ever answers false -- see tmQuizLink(). */
+  .topic-meta .tm-quiz { color: var(--accent); text-decoration: underline; }
   .topic-nav { display: flex; justify-content: space-between; align-items: stretch; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border); gap: 1rem; }
   .topic-nav-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 46%; min-width: 0; overflow-wrap: break-word; font-size: calc(13px * var(--te-ui, 1)); font-family: var(--font-ui); color: var(--accent); text-decoration: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 7px 14px; transition: background 0.15s, border-color 0.15s; white-space: normal; }
   .topic-nav-btn > span { min-width: 0; overflow-wrap: break-word; }  /* flex item: without min-width:0 its min-content width overflows the 46% cap */
@@ -155,7 +165,7 @@
   <div class="topic-eyebrow" id="topic-eyebrow"></div>
   <h1 class="topic-title">Weather &amp; seasons</h1>
   <div class="te-intro-wrap"><p class="topic-intro">Talk about the weather and seasons in Thai. This topic covers Thailand's three seasons — หน้าฝน (rainy), หน้าหนาว (cool), and the hot season — and the everyday weather that comes with them: ฝนตก (it's raining), แดดแรง (the sun's strong), ลม (wind), หมอก (fog), and ฟ้าร้อง (thunder). Real situations run through it — grabbing a ร่ม (umbrella) before rain, hanging washing in the sun, flooded roads, the 40-degree heat, and checking the forecast. All 32 sentences are recorded by native speakers and come with English translations and word-by-word notes, so the weather vocabulary sinks in by ear.</p><button type="button" class="te-intro-more">Read more</button></div>
-  <p class="topic-meta"><strong>32 sentences</strong> · Click each sentence to reveal Thai, English, and notes</p>
+  <p class="topic-meta"><strong>32 sentences</strong> · <span class="tm-tap">Tap</span><span class="tm-click">Click</span> to reveal Thai, English and notes. <a class="tm-quiz" href="?quiz=menu">Take the quiz</a></p>
   <div id="player-root"></div>
 
   <!-- SSR content: static, source-visible accordion cards (collapsed via st-0).

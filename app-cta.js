@@ -184,9 +184,9 @@
      quiz results, not listens or playlists, so the generic line was simply wrong there (owner,
      2026-08-15). Zone 2's title names what there is to download on this surface. */
   var SIGNUP_DESC = {
-    topic:    'A free account keeps track of what you’ve listened to and lets you build playlists.',
-    index:    'A free account keeps track of what you’ve listened to and lets you build playlists.',
-    playlist: 'A free account keeps track of what you’ve listened to and lets you build playlists.',
+    topic:    'A free account keeps track of what you’ve listened to, saves your quiz scores, and lets you build playlists.',
+    index:    'A free account keeps track of what you’ve listened to, saves your quiz scores, and lets you build playlists.',
+    playlist: 'A free account keeps track of what you’ve listened to, saves your quiz scores, and lets you build playlists.',
     read:     'A free account keeps track of your reading course quiz results.'
   };
   var SIGNUP_APP_TITLE = {

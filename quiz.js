@@ -2996,8 +2996,43 @@
       fromUrl: true
     });
   }
+  /* ⭐ "Take the quiz" IN THE LINE ABOVE THE PLAYER (owner, 2026-09-23). The link is STATIC
+     HTML on all 113 unit pages, and that is deliberate: it sits inside a sentence, so revealing
+     it after paint would re-wrap the line and push the player down — the shift the Progress page
+     was told off for. Visible at parse time, then withdrawn if the gate disagrees.
+     ⛔⛔ SO THE ONE SWITCH STILL REACHES IT. `QUIZ_PUBLIC` going false must take this link with
+     it, or the copy would advertise a feature nothing can open. Same apply-then-re-check shape
+     player.js uses for identity.js's synchronous guess: assume yes, remove on a real no.
+     ⚠ THE HREF IS THE FALLBACK, NOT DECORATION. Without JS (or before this file runs) the link
+     navigates to ?quiz=menu and bootFromUrl() opens the picker there — so it works either way.
+     Intercepting it only saves the reload. Modified clicks are left alone so "open in new tab"
+     still does what it says. */
+  function tmQuizLink(ok) {
+    var a;
+    try { a = document.querySelector('.topic-meta .tm-quiz'); } catch (_) { return; }
+    if (!a) return;
+    if (!ok) { if (a.parentNode) a.parentNode.removeChild(a); return; }
+    if (a.getAttribute('data-tq-bound')) return;      /* boot() re-runs on thaiear:auth */
+    a.setAttribute('data-tq-bound', '1');
+    a.addEventListener('click', function (e) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button > 0) return;
+      e.preventDefault();
+      var unit = location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
+      /* ⚠ The SAME context bootFromUrl() builds — unitName from the h1, never document.title,
+         which is the SEO pattern "<Name> in Thai — Audio Phrases". Keep the three in step. */
+      window.ThaiEarQuiz.open({
+        unit: unit,
+        unitName: (document.querySelector('h1') || {}).textContent || document.title,
+        kind: kindOf(unit),
+        originHref: hereHref(),
+        originLabel: 'Back to the topic'
+      });
+    });
+  }
   function boot() {
-    if (!T() || !T().quiz) return;        /* only the pilot units carry quiz data */
+    /* ⚠ A unit with no quiz data loses the link too — otherwise the copy points at a picker
+       that can never open. Before the guard, not after. */
+    if (!T() || !T().quiz) { tmQuizLink(false); return; }
     /* ⛔⛔ A PLAYLIST MOUNTS ITS OWN BLOCK, AND THIS ONE MUST NOT RACE IT — 2026-09-22,
        reported live: "quiz square not visible within playlists either".
        playlists.html injects this file, so boot() runs there too; with no opts mountButton()
@@ -3011,6 +3046,7 @@
        player.js reads to know the page mixes topics, so there is no new signal to keep in step. */
     if (T().playlistMode) return;
     isOwner().then(function (ok) {
+      tmQuizLink(ok);
       if (!ok) return;
       mountButton();
       /* ⚠ AFTER the gate, never before: the arm is owner-only, so a ?quiz= url handed to anyone
