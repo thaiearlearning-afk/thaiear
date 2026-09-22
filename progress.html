@@ -52,7 +52,11 @@
      extract stopped one line short of it, so the whole page rendered flush to the viewport edge
      with no column at all. Nothing in the DOM was missing; it just had no width. Caught by looking
      at the live page, which was the only way it was going to be caught. */
-  .page-wrap { max-width: 640px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+  /* ⚠ THE SIDE padding is px, not rem: a rem gutter inflates under Android textZoom and at
+     320@2.0× it takes 96px of a 320px viewport before anything on the page gets a pixel
+     (TEXT_SCALING.md §1). 24px is 1.5rem at the default root, so nothing moves at default size.
+     The vertical rem values are left alone - vertical space may grow with the text. */
+  .page-wrap { max-width: 640px; margin: 0 auto; padding: 3rem 24px 4rem; }
 
   /* ── the yak + "Fluency loading…" (carried over from the retired page, 2026-08-20) ────────
      Pure CSS dot cycle, no JS. */
@@ -78,13 +82,26 @@
   .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.75rem; }
   .stat-card {
     background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
-    padding: 0.9rem 1rem;
+    /* ⛔ A GRID ITEM IS FLOORED AT ITS MIN-CONTENT WIDTH. At large system text "sentences" alone
+       is wider than half the page, so the `1fr` tracks grew to fit it and the two cards burst the
+       viewport together - the identical fault, and the identical fix, as the quiz entry tiles. */
+    min-width: 0;
+    /* ⛔ px, NOT rem — a rem padding inflates under Android textZoom (TEXT_SCALING.md §1), and
+       on a 2-column grid at 320px that is 64px of padding per side inside a ~123px column: the
+       cards burst the page by 79px. ⚠ PRE-DATES THE QUIZ COLUMNS — found in the same 2026-09-22
+       pass and fixed here because it is the same page, but it was never a quiz fault.
+       14px/16px are the computed values at the default 16px root, so this is byte-identical at
+       default size. */
+    padding: 14px 16px;
   }
   .stat-val {
     font-size: 24px; font-weight: 600; color: var(--accent); line-height: 1.15;
     font-variant-numeric: tabular-nums;
   }
-  .stat-lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .stat-lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px;
+    /* ⚠ `anywhere`, so the LABEL can no longer size the grid track - see .stat-card above.
+       It only ever breaks a word that genuinely does not fit the column. */
+    overflow-wrap: anywhere; }
   .stat-note { font-size: 11.5px; color: var(--text-tertiary); margin-top: 3px; line-height: 1.45; }
 
   /* ── per-topic list ──────────────────────────────────────────────────────────────────── */
@@ -92,9 +109,17 @@
   .prog-h2-note { font-size: 12.5px; color: var(--text-tertiary); margin-bottom: 0.9rem; }
   .prog-list { display: flex; flex-direction: column; gap: 1px; }
   .prog-row {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    display: flex; align-items: baseline; justify-content: space-between;
+    /* ⚠ the column gap tightens with the cap — 12px at default size, ~7px at 2.0×, where the row
+       is carrying a name, the minutes and four score cells on a 320px line and every px counts */
+    gap: calc(12px * var(--te-ui, 1));
     background: var(--surface); border: 0.5px solid var(--border);
-    padding: 0.5rem 0.85rem; text-decoration: none; color: inherit;
+    /* ⛔ px, NOT rem — the row's own padding was the single biggest thing eating it under
+       Android textZoom: 0.85rem is 27px a side at 2.0×, i.e. 54px of a 241px row, before the
+       name, the minutes or the four quiz cells get anything. TEXT_SCALING.md §1: a padding that
+       must not grow with the text goes in px. These are the computed values at the default 16px
+       root, so the row is byte-identical at default size. */
+    padding: 8px 14px; text-decoration: none; color: inherit;
   }
   .prog-row:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
   .prog-row:last-child  { border-radius: 0 0 var(--radius-md) var(--radius-md); }
@@ -112,7 +137,13 @@
   .prog-row-name { font-size: 13.5px; min-width: 0; overflow-wrap: break-word; flex: 1 1 auto; }
   /* Same green as the index card and .reveal-all-btn on a premium topic — the one number on the
      row that is about the reader rather than about the topic. */
-  .prog-row-plays { font-size: 12.5px; font-weight: 500; color: #1F5D3A; white-space: nowrap;
+  /* ⚠ CAPPED, like the quiz cells beside it and for the same reason: this is a compact
+     right-hand numeric column, not running text, and the row now carries FIVE such columns on a
+     phone. Uncapped it reserved 4.9em of fully-inflated type and left the unit name nothing.
+     ⚠ The WIDTH is in em so it tracks whatever the font ends up being - cap the font and the
+     column follows, with no second number to keep in step. --te-ui is exactly 1 at default. */
+  .prog-row-plays { font-size: calc(12.5px * var(--te-ui, 1)); font-weight: 500; color: #1F5D3A;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums; flex: 0 0 auto; width: 4.9em; text-align: right; }
 
   /* ── quiz best scores (QUIZ_GO_LIVE_PLAN.md §2.5) ──────────────────────────────────────
@@ -125,15 +156,44 @@
      other three sideways and the page would read as ragged rather than as shorter.
      ⛔ The dash means "does not apply" here and "never tried" elsewhere. Both are honestly
      blank; 0% would be a lie in either — it reads as a failed attempt. */
+  /* the quiz headline pair - revealed by the same one class as the columns */
+  .stat-grid-q { display: none; }
+  .prog-q-on .stat-grid-q { display: grid; }
   .prog-row-q { display: none; }
-  .prog-q-on .prog-row-q { display: flex; gap: 7px; flex: 0 0 auto; }
+  /* ⛔⛔ `margin-left: auto` PLUS the wrap below, and the pair is what keeps the columns straight.
+     At 320px with the system text at 200% the row simply cannot hold a name, the minutes and four
+     score cells on one line — measured, with everything already capped and the name column
+     collapsed to zero it still wants 257px of 241px. Every remaining lever is a freeze, and a
+     freeze fails WCAG 1.4.4 (TEXT_SCALING.md §2). So the CELLS drop to a second line.
+     ⚠ THEY DROP IDENTICALLY ON EVERY ROW, which is the only reason this is safe: .prog-row-q is
+     a SINGLE flex child of fixed width, and the header carries the same three children at the
+     same widths, so the header and all 113 rows wrap at the same point. A per-row decision would
+     have made the page ragged, which is the fault the name-grows rule above exists to prevent.
+     ⚠ The auto margin is what holds them RIGHT once wrapped — `space-between` puts a lone item on
+     a wrapped line at the START, which would park the scores under the unit name. */
+  .prog-q-on .prog-row-q { display: flex; gap: 7px; flex: 0 0 auto; margin-left: auto; }
+  .prog-q-on .prog-row, .prog-q-on .prog-qhead { flex-wrap: wrap; }
   /* ⛔ ONE CELL WIDTH, IN px, SHARED BY THE ROWS AND THE HEADER.
      ⚠ It was `3.1em`, and em is relative to the ELEMENT's own font-size - so the header, which
      sets 10.5px against the rows' 12px, silently got a 32.6px cell against their 37.2px and the
      labels sat left of the numbers they label. A px variable cannot do that.
      ⚠ And the box fits "100%" with room to spare: a cell that has to grow for its content is a
      cell that shunts its neighbours, which is the other half of what the owner saw. */
-  .prog-q-on .prog-row, .prog-q-on .prog-qhead { --pq-w: 38px; }
+  /* ⛔⛔ `var(--te-ui-raw) * var(--te-ui)` IS "GROW WITH THE TEXT, CAPPED" — their product is
+     min(raw, 1.15), and it is exactly 1 at default size. The cell font is capped above, so it
+     still grows ~15%; a box frozen in px then holds 37px of "100%" in 34px and clips it at both
+     edges. The box and its text must move by the SAME factor or one of them is wrong, and this
+     is the only expression that says so in one place. ⚠ Keep both vars — `--te-ui` alone would
+     SHRINK the box, `--te-ui-raw` alone would grow it without the cap and reopen the overflow. */
+  .prog-q-on .prog-row, .prog-q-on .prog-qhead {
+    /* ⚠ TWO TERMS, AND THE SECOND ONE IS NOT PADDING-BY-FEEL. The first grows the box by
+       exactly what the type grew by; the second is a measured cushion for the fact that the
+       box's fit is NOT linear in font-size - a 38px box holds "100%" exactly at 12px, and at the
+       capped 13.8px it needs ~41px, not 43.7. Both terms vanish at --te-grow: 1, so the cell is
+       38px at default size to the pixel, which is the only thing that had to stay true. */
+    --te-grow: calc(var(--te-ui-raw, 1) * var(--te-ui, 1));
+    --pq-w: calc(38px * var(--te-grow) + (var(--te-grow) - 1) * 16px);
+  }
   .pq-c {
     flex: 0 0 var(--pq-w, 38px); width: var(--pq-w, 38px);
     /* ✅ CENTRED, not right-aligned. Owner, 2026-09-22: "the one result i've got in the
@@ -142,7 +202,18 @@
        dash hard against the right edge of its box while a four-character score filled the box, so
        the two never shared a visual centre and the score appeared to crowd the dash beside it.
        Centring makes a dash and a score read as the same column. */
-    text-align: center; font-size: 12px; font-weight: 600;
+    /* ⛔⛔ THE CELL FONT IS CAPPED AT --te-ui, AND IT HAS TO BE, BECAUSE --pq-w IS px.
+       The width is px on purpose (see the note above: an em cell drifted off its header). A px
+       box holding text that inflates in full is the textZoom failure by construction — at
+       320@2.0× "100%" rendered 65px inside a 34px cell, four cells over, and the row burst by
+       66px with the name column already collapsed to zero. Capping the TYPE is what keeps the
+       box honest; widening the box cannot work, because four inflated cells plus the minutes
+       column exceed a 320px row whatever the name does.
+       ⚠ --te-ui is exactly 1 at default size, so this is a no-op until the system text is
+       raised, and it CAPS rather than freezes (TEXT_SCALING.md §2). The unit NAME and the
+       minutes beside it scale in full — those are the numbers someone raised their text to
+       read; this is a four-column score grid. */
+    text-align: center; font-size: calc(12px * var(--te-ui, 1)); font-weight: 600;
     font-variant-numeric: tabular-nums; color: var(--accent);
   }
   /* the "never tried" / "does not apply" dash is quieter than a score — it is not a result */
@@ -152,16 +223,27 @@
   .prog-qhead { display: none; }
   .prog-q-on .prog-qhead {
     display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-    padding: 0 0.85rem 0.35rem; font-size: 10.5px; font-weight: 600;
+    /* ⚠ px, in step with .prog-row's — the header holds the columns open and must keep the
+       IDENTICAL horizontal padding or the labels sit off the numbers they label. */
+    padding: 0 14px 6px; font-size: 10.5px; font-weight: 600;
     letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary);
   }
   /* ⚠ font-size only - the WIDTH comes from --pq-w so the header cannot drift off the rows */
-  .prog-q-on .prog-qhead .pq-c { font-size: 10.5px; color: inherit; }
+  .prog-q-on .prog-qhead .pq-c { font-size: calc(10.5px * var(--te-ui, 1)); color: inherit; }
   @media (max-width: 480px) {
     .prog-q-on .prog-row-q { gap: 4px; }
-    .prog-q-on .prog-row, .prog-q-on .prog-qhead { --pq-w: 34px; }
-    .prog-q-on .pq-c { font-size: 11px; }
-    .prog-q-on .prog-row-plays { font-size: 11.5px; width: 4.6em; }
+    .prog-q-on .prog-row, .prog-q-on .prog-qhead {
+      --pq-w: calc(34px * var(--te-grow) + (var(--te-grow) - 1) * 16px);
+    }
+    /* ⚠ --te-ui here too, or this narrower override silently undoes the cap above — it is a
+       plain px value at equal-or-greater specificity and would win on every phone. */
+    .prog-q-on .pq-c { font-size: calc(11px * var(--te-ui, 1)); }
+    /* ⚠ AND THE MINUTES COLUMN IS THE OTHER HALF OF THE ROW'S BUDGET. Its 4.6em tracks the
+       text in full, which is right — but on a phone the row also carries four quiz cells now,
+       and 4.6em of inflated text plus 4 × 34px leaves the unit name nothing at all. The cap is
+       on the WIDTH only: the figure inside still scales, it just stops reserving a column
+       wider than the row. */
+    .prog-q-on .prog-row-plays { font-size: calc(11.5px * var(--te-ui, 1)); width: 4.6em; }
   }
   .prog-band { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
     color: var(--text-tertiary); margin: 1.4rem 0 0.5rem; }
@@ -203,6 +285,29 @@
      anything deferred is too late to stop the first frame painting the wrong state. ~1 KB,
      precached. -->
 <script src="/identity.js"></script>
+<!-- ⭐⭐ APPLY THE REMEMBERED QUIZ-GATE ANSWER BEFORE THE FIRST PAINT.
+     ⚠⚠ THE GATE CANNOT ANSWER IN TIME, HOWEVER FAST IT IS. It is a SHA-256 digest and
+     crypto.subtle resolves off a task, so askQuiz()'s answer always lands AFTER the synchronous
+     render() at the foot of this page. The quiz cards and columns therefore appeared a beat late
+     and pushed "Your listening time" and all 113 rows down by 103px, measured (owner,
+     2026-09-22: "dont want these new boxes losing a render race then pushing down the text below
+     creating a flash or whatever").
+     ⚠ BLOCKING AND IN THE HEAD, for the same reason identity.js above it is: a deferred script
+     runs after the document is parsed, which is exactly the frame this needs to beat.
+     ⛔ IT IS A HINT, NOT THE GATE. topics.js owns both the key and the answer (quizGateGuess /
+     rememberGate); askQuiz() below re-asks the real gate every load and REMOVES this class if the
+     answer is no, so a remembered '1' on a browser whose session has changed heals on that load.
+     ⚠ Read inline rather than through topics.js because topics.js is deferred - it has not run
+     yet at this point, which is the whole problem being solved. Keep the key in step with
+     topics.js's GATE_KEY. -->
+<script>
+  try {
+    if (localStorage.getItem('thaiear_quiz_gate') === '1' &&
+        JSON.parse(localStorage.getItem('thaiear_identity') || 'null')) {
+      document.documentElement.classList.add('prog-q-on');
+    }
+  } catch (e) {}
+</script>
 </head>
 <body>
 
@@ -365,6 +470,18 @@
         card(humanTime(tot.seconds), 'Thai listening time') +
       '</div>' +
 
+      /* ⭐ THE QUIZ PAIR, A SECOND ROW OF THE SAME CARDS (owner, 2026-09-22: "can we add other
+         boxes like this following the same format, below the existing and above 'your listening
+         time'"). Same card() builder, so they cannot drift from the four above - the §9.1 rule
+         that there is ONE renderer, applied here before the second copy exists rather than after.
+         ⛔ HIDDEN BY THE SAME ONE CLASS AS THE COLUMNS. The arm is owner-gated, so these render
+         on every load and are revealed by `prog-q-on` when quizGate() resolves - no re-render,
+         and going public reaches this page through the same single constant as every other
+         surface. ⚠ It is a SEPARATE .stat-grid, not two more cells in the first: a 2-column grid
+         with six cells would put the quiz pair alongside "days in a row", and the owner asked for
+         them BELOW the existing four. */
+      quizStatGrid() +
+
       /* playlistRows() is folded into topicList()'s single list — see the note there. */
       topicList(repsMap) +
 
@@ -372,6 +489,36 @@
 
     root.innerHTML = html;
     if (user) wireReset();
+  }
+
+  /* ⛔⛔ THE EMPTY STATE IS AN EM DASH, NEVER 0% - the same rule the card strip carries
+     (topics.js quizStripHtml), and for the same reason: 0% reads as "you got them all wrong"
+     when it means "you have not answered any", which on a newly shipped feature is everyone.
+     ⚠ THE PERCENTAGE IS OVER QUESTIONS ANSWERED, NOT OVER QUESTIONS THAT EXIST. Someone who
+     has answered 10 of 2,458 and got 9 right reads 90%, which is the honest reading of "quiz
+     questions correct" - the denominator is stated by the card beside it.
+     ⚠ SUMMED ACROSS EVERY UNIT AND EVERY QUIZ, from the same resultsAll() the columns use, so
+     the headline and the per-row figures cannot disagree. */
+  function quizTotals() {
+    var all = quizResults || {}, answered = 0, correct = 0;
+    for (var k in all) {
+      var row = all[k];
+      for (var q in row) {
+        if (!row[q]) continue;
+        answered += row[q].answered || 0;
+        correct += row[q].correct || 0;
+      }
+    }
+    return { answered: answered, correct: correct };
+  }
+  function quizStatGrid() {
+    var q = quizTotals();
+    var pct = q.answered ? Math.round(q.correct / q.answered * 100) + '%' : '—';
+    return '<div class="stat-grid stat-grid-q">' +
+      card(q.answered.toLocaleString(), 'quiz questions answered') +
+      card(pct, 'quiz questions correct',
+           q.answered ? q.correct.toLocaleString() + ' of ' + q.answered.toLocaleString() : '') +
+      '</div>';
   }
 
   function card(val, lbl, note) {
@@ -429,12 +576,22 @@
      sum of every stored best. Any score that moves moves the sum. */
   function quizSig() {
     if (!quizResults) return '-';
-    var keys = Object.keys(quizResults), sum = 0;
+    var keys = Object.keys(quizResults), sum = 0, ans = 0, cor = 0;
     for (var i = 0; i < keys.length; i++) {
       var row = quizResults[keys[i]];
-      for (var q in row) if (row[q] && row[q].best != null) sum += row[q].best;
+      for (var q in row) {
+        if (!row[q]) continue;
+        if (row[q].best != null) sum += row[q].best;
+        /* ⚠ ANSWERED AND CORRECT ARE IN THE SIGNATURE TOO, because the two headline quiz cards
+           read them and a BEST can stay put while they move - answer three more questions
+           correctly at a score below your best and `sum` does not budge. Without this the cards
+           would render once and then never update, which is exactly the failure the note above
+           the signature warns about. */
+        ans += row[q].answered || 0;
+        cor += row[q].correct || 0;
+      }
     }
-    return keys.length + '/' + sum;
+    return keys.length + '/' + sum + '/' + ans + '/' + cor;
   }
   function quizHead() {
     /* ⚠ THE SPACER IS LOAD-BEARING. The header must have the SAME THREE CHILDREN as a data
@@ -674,6 +831,11 @@
     if (quizAskedFor === uid) return;
     quizAskedFor = uid;
     t.quizGate().then(function (ok) {
+      /* ⛔ A NO MUST UNDO THE HEAD SCRIPT'S HINT, or a remembered '1' survives a session change
+         for ever and shows empty quiz columns to someone who has none. The hint is applied
+         before paint precisely because it is usually right; this is what makes being wrong
+         temporary rather than permanent. */
+      if (!ok) { try { document.documentElement.classList.remove('prog-q-on'); } catch (_) {} }
       if (!ok) return;
       quizOn = true;
       try { document.documentElement.classList.add('prog-q-on'); } catch (_) {}

@@ -33,7 +33,24 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v627';   // v627: ⭐ THE QUIZ ARM IS PUBLIC. Owner, 2026-09-22: "remove owner
+const VERSION = 'v628';   // v628: ⭐ THE QUIZ ARM AT 200% SYSTEM TEXT, plus two headline quiz
+                          // cards on Progress and uniform topic-card heights. Owner, 2026-09-22:
+                          // "no mishaping or text overspilling on font size up to 200% ... on
+                          // all surfaces within the quizzes, quiz menu and on the quiz results
+                          // banner under the topic pills". SEVEN surfaces measured broken at
+                          // 320@2.0x and now clean: the entry 2x2 (78px page side-scroll, and
+                          // 78px-wide slivers once that was fixed -- it becomes the approved BAR
+                          // variant above 1.35x), the picker row, the My-results table (+302px,
+                          // the worst), the results percentage (+260px, and already over at
+                          // 320@1x), the exclusions header, the card strip, and the Progress
+                          // rows. ⛔ The results table is the ONE capped surface in the arm --
+                          // it is a six-column grid, not running text. Everything else scales in
+                          // full. TEXT_SCALING.md §11 is the register of what has been measured.
+                          // ⚠ Also fixed a regression THIS pass introduced: `overflow-wrap:
+                          // break-word` on .tq-sheet reached the animated ellipsis, whose box is
+                          // `width: 0`, and broke "..." over three lines -- +45px at DEFAULT
+                          // size. Caught only by the no-op check.
+                          // v627: ⭐ THE QUIZ ARM IS PUBLIC. Owner, 2026-09-22: "remove owner
                           // gate and make live". QUIZ_PUBLIC in topics.js is now true, which is
                           // the ONE switch: quizGate() short-circuits on it, so every surface --
                           // the entry block, ?quiz= urls, the card strip, the playlist 'Enter

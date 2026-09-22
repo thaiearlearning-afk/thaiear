@@ -218,3 +218,8 @@ logo-depth-review.html
 _home-logoA.html
 _home-logoB.html
 home-logo-compare.html
+
+# Quiz 200%-text harness (2026-09-22) — local only, never deploy
+_tqzoom.html
+_quiz-head.css
+_prog-hint-probe.html

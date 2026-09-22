@@ -368,6 +368,23 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
+    /* ⛔⛔ EVERY CARD IS THE HEIGHT OF THE TALLEST (owner, 2026-09-22: "the topic pills … are no
+       longer uniformly sized … across all the menus beginners, beginners to lower int etc they
+       all seem different sizes. this needs to be rectified … and ideally prevented from
+       happening again").
+       ⚠⚠ THE CAUSE IS NOT THE QUIZ STRIP, THOUGH THAT IS WHEN IT WAS NOTICED. Measured on
+       topics-beginner with the strip removed entirely: row 1 is 112px and rows 2-6 are 130px,
+       because a grid equalises WITHIN a row and never ACROSS rows, and `Greetings & farewells`
+       wraps to two lines where `Numbers` does not. The strip made every card taller by the same
+       amount, so it changed nothing about the variation — it just made the page long enough to
+       see several rows at once.
+       ✅ `1fr` asks the grid the question directly: make every row as tall as the tallest. This
+       is the SAME fix `.tp-bands` carries (see its note lower down) and it is preferred to a
+       `min-height` reserve on .topic-name for the reason recorded there — a reserve has to
+       encode a LINE COUNT, and the line count is not stable across widths or under text scaling.
+       ⛔ Do not "fix" a future unevenness with a min-height here. It will equalise at the one
+       width you tested and at no other. */
+    grid-auto-rows: 1fr;
   }
   /* Cards ~30% shorter (owner 2026-08-02): tighter padding + gap. */
   .topic-card {
@@ -670,11 +687,30 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    /* ⚠ The gaps TIGHTEN as the type is capped (`* var(--te-ui, 1)`, exactly 1 at default size,
+       so nothing moves until the system text is raised). With four four-character scores this
+       strip is 12px too wide for a 320px card at 2.0×, and there is nothing to trim in the
+       content: "Quiz results:" is the label and the cells are the data. See the cells' own gap
+       below — the two together are what buy the 12px back. */
+    gap: calc(8px * var(--te-ui, 1));
+    /* ⛔ THE BACKSTOP, AND IT COSTS NOTHING WHILE THE ROW FITS. `space-between` on a single line
+       is unchanged by this; it only engages if the row genuinely cannot fit, and then the cells
+       drop under the label instead of hanging off the card. A future fifth quiz, a longer label
+       or a wider score can no longer produce a side-scroll on a band page.
+       ⚠ It does mean --strip-h (the fav heart / download tick centring) is a few px out in that
+       wrapped state. That is the right trade: the marks sit slightly off centre, rather than the
+       scores leaving the card. */
+    flex-wrap: wrap;
     width: auto;
     /* ⛔ DERIVED FROM THE CARD'S OWN PADDING, never restated — see --card-px/--card-pb. */
     margin: 0.5rem calc(-1 * var(--card-px, 1rem)) calc(-1 * var(--card-pb, 0.55rem));
-    padding: 6px 1rem 7px;
+    /* ⛔⛔ THE SIDE PADDING IS THE CARD'S OWN --card-px, NEVER A RESTATED `1rem`. It was `1rem`
+       literally, which is the exact mistake the note above warns about, in the other direction:
+       the MARGIN cancelled the phone's 16px while the PADDING added a rem — and a rem inflates
+       under Android textZoom (TEXT_SCALING.md §1). At 320@2.0× that is 64px of padding on a
+       267px strip, leaving 203px for 260px of content: the strip burst its card by 25px and the
+       band page side-scrolled. One source per breakpoint, for both properties. */
+    padding: 6px var(--card-px, 1rem) 7px;
     border: 0;
     /* ⛔ ONE TIER-NEUTRAL DARK, white ink. See the premium rule below for why it is restated
        there rather than inherited. */
@@ -728,7 +764,8 @@
   .tqs-l { flex-shrink: 0; }
   .tqs-cells {
     display: flex;
-    gap: 9px;
+    /* ⚠ see the strip's own gap above — tightens with the cap, exactly 9px at default size */
+    gap: calc(9px * var(--te-ui, 1));
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }

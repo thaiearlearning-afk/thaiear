@@ -1212,7 +1212,11 @@
       var best = st ? st.bestScore(ctx.unit, q.id) : null;
       return '<button type="button" data-q="' + q.id + '"' + (n ? '' : ' disabled') + '>'
            + '<span class="ic">' + q.icon + '</span>'
-           + '<span><span class="nm">' + esc(q.name) + '</span>'
+           /* ⚠ THE TEXT COLUMN IS CLASSED SO IT CAN BE GIVEN `min-width: 0` (quiz.css `.qpick
+              .tx`). Unclassed it could only be reached by :nth-child, and a flex item with no
+              min-width floor sets the row's width from its longest word — which burst the sheet
+              at large system text. Keep the class if the markup is reworked. */
+           + '<span class="tx"><span class="nm">' + esc(q.name) + '</span>'
            + '<span class="ds">' + esc(n ? q.ds : 'nothing to ask yet') + '</span></span>'
            + '<span class="sc' + (best == null ? ' none' : '') + '">'
            + (best == null ? '—' : best + '%') + '</span></button>';
@@ -2864,7 +2868,57 @@
        a tap on a tile in a block whose own button says "choose". */
     wrap.querySelector('.tqe-go').onclick = open;
     wrap.querySelectorAll('.tqe-tile').forEach(function (b) { b.onclick = open; });
+    applyEntryShape(wrap);
   }
+
+  /* ⭐⭐ THE 2×2 BECOMES BARS ONCE THE SYSTEM TEXT IS BIG ENOUGH THAT A SQUARE STOPS WORKING.
+     ⚠⚠ CSS CANNOT ASK THIS QUESTION. A media query reads the VIEWPORT, and Android's textZoom /
+     iOS Dynamic Type change the text without changing the viewport — so the one signal is
+     nav.js's measured `--te-ui-raw` (TEXT_SCALING.md §2), read here rather than re-measured.
+     ⚠ Absent, unparseable or 1 ⟹ no class, so this is a provable no-op at default size and on
+     any page where nav.js has not run.
+     ⚠ 1.35 IS MEASURED, NOT PICKED. At 390px a tile is 118px wide with ~106px of usable line,
+     and "Listening comprehension" needs 88px at 12px — so the name stays on one line up to
+     ~1.2× and is breaking mid-word by 1.4×. Below the threshold the squares are still the
+     better shape; above it they are 78px slivers (measured 320@2.0×).
+     ⚠ RE-READ ON THE SAME EVENTS nav.js RE-MEASURES ON, because the setting can be changed
+     while the app is backgrounded — and debounced behind nav.js's own 250ms requeue so we never
+     read the value it is part-way through updating. */
+  function entryRaw() {
+    try {
+      var v = parseFloat(getComputedStyle(document.documentElement)
+        .getPropertyValue('--te-ui-raw'));
+      return (v > 0) ? v : 1;
+    } catch (_) { return 1; }
+  }
+  function applyEntryShape(wrap) {
+    if (!wrap) return;
+    wrap.classList.toggle('bars', entryRaw() >= 1.35);
+    /* ⚠ ONE RE-CHECK ON THE NEXT FRAME, because this reads a variable ANOTHER script publishes.
+       nav.js's uiScale() runs first today, so the value is already right at mount — but that is
+       a load-order fact, not a guarantee, and the failure mode is silent: the block simply keeps
+       the square 2×2 at a size where it renders as 78px slivers. The resize/visibilitychange
+       listeners below only fire if something changes, so they are no help to a device that
+       loads once and never resizes. A single rAF costs nothing and removes the dependency. */
+    try {
+      requestAnimationFrame(function () {
+        wrap.classList.toggle('bars', entryRaw() >= 1.35);
+      });
+    } catch (_) {}
+  }
+  var shapeT = null;
+  function requeueShape() {
+    if (shapeT) clearTimeout(shapeT);
+    shapeT = setTimeout(function () {
+      applyEntryShape(document.getElementById('tq-entry'));
+    }, 400);
+  }
+  try {
+    window.addEventListener('resize', requeueShape);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) requeueShape();
+    });
+  } catch (_) {}
 
   /* ⭐ REOPEN FROM THE URL (2026-09-21). `?quiz=vocab|listen|build|speak` opens that quiz's own
      MENU; `?quiz=menu` opens the four-quiz picker. Anything else is ignored rather than guessed.

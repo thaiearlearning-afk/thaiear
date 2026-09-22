@@ -102,6 +102,15 @@ body.tq-mode { background: var(--surface, #fff); }
   margin: 0 auto;
   font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
   color: var(--text-primary, #1A1A1A);
+  /* ⛔⛔ OS TEXT SCALING — see the block at the foot of this file. A long English word
+     ("comprehension") is wider than its box once the system font size passes ~150%, and with
+     the default `overflow-wrap: normal` it does not break: it simply runs out of the sheet and
+     takes the whole document sideways with it. `break-word` inherits to every descendant, so
+     one declaration covers the headers, the options, the exclusion rows and the results table.
+     ⚠ NOT `anywhere`: that also shrinks min-content, which would let a flex/grid track collapse
+     under text it should be sizing to. The min-content cases are fixed with `min-width: 0` at
+     the item that needs it, which is the §9 lesson in TEXT_SCALING.md. */
+  overflow-wrap: break-word;
 }
 .tq-sheet h3 { margin: 0 0 3px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
 .tq-sheet .sub { margin: 0 0 14px; font-size: 12.5px; color: var(--text-tertiary, #9A9A9A); }
@@ -198,6 +207,13 @@ body.tq-mode { background: var(--surface, #fff); }
    sized here rather than on the element, because the four are one set and should not be able to
    drift apart. 17px in a 30px tile leaves the same optical padding the letters had. */
 .qpick .ic svg { width: 17px; height: 17px; display: block; }
+/* ⛔ THE TEXT COLUMN MUST BE ABLE TO SHRINK. It is the middle flex item between a fixed icon
+   and the score, and a flex item is floored at its MIN-CONTENT width — so at large system text
+   "comprehension" set the row's width and the row burst the sheet (measured +41px at 320@2.0×).
+   `min-width: 0` is what lets it shrink; the `overflow-wrap` inherited from .tq-sheet is what
+   then breaks the word instead of clipping it. Same pair as .tq-head-tx above, and the same
+   fix TEXT_SCALING.md §9 records for .pl-box-meta. */
+.qpick .tx { min-width: 0; }
 .tq-sheet.premium .qpick .ic { background: var(--accent-light, #ECEBFA); color: var(--accent, #261B65); }
 .qpick .nm { font-size: 14px; font-weight: 500; color: var(--text-primary, #1A1A1A); display: block; line-height: 1.25; }
 .qpick .ds { font-size: 11.5px; color: var(--text-tertiary, #9A9A9A); display: block; line-height: 1.35; }
@@ -474,9 +490,26 @@ body.tq-mode { background: var(--surface, #fff); }
   font-weight: 500; color: var(--text-tertiary, #9A9A9A); text-align: right;
   padding: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
 }
+/* ⛔⛔ THE UNIT NAME WRAPS — IT USED TO BE `white-space: nowrap` AND THAT IS WHAT MADE THIS
+   TABLE THE WORST SURFACE IN THE ARM UNDER OS TEXT SCALING (+302px at 320@2.0×, measured
+   2026-09-22). Six columns is already the most this sheet can hold; a name column that refuses
+   to wrap takes whatever it needs and the five numeric columns are pushed straight off the
+   screen — and a <table> has no min-width:0 escape, so nothing downstream can recover it.
+   ⚠ IT IS A NO-OP AT DEFAULT SIZE, which is why it is safe: the names are "Vocab Trainer",
+   "Listening", "Thai Builder", "Speak Thai" and none of them wraps in the width it is given.
+   Verified byte-identical at 390@1× before shipping. */
 .tq-res-t tbody th {
   font-weight: 500; text-align: left; color: var(--text-primary, #1A1A1A);
-  padding: 5px 8px 5px 0; white-space: nowrap;
+  padding: 5px calc(8px * var(--te-ui, 1)) 5px 0;
+  /* ⛔⛔ `anywhere`, so the TABLE'S WIDTH STOPS DEPENDING ON THE DATA. A <table> has no
+     `min-width: 0` escape: auto layout floors every column at its min-content, and for this one
+     that is a whole quiz NAME. "Listening" alone was 63px of the 273px a 320px phone has at
+     2.0×, and the five numeric columns are sized by their header words and cannot give it back.
+     ⚠ THE POINT IS THE FUTURE, not today's four names. 113 units are being wired into this arm
+     and a fifth quiz would bring its own name; with `anywhere` the table's min-content is one
+     character and no name that arrives later can reopen this. In practice it never breaks — auto
+     layout still hands the column ~67px, which fits "Listening" on one line. */
+  overflow-wrap: anywhere;
 }
 .tq-res-t td { text-align: right; padding: 5px 0 5px 10px; color: var(--text-secondary, #5A5A5A); }
 /* ⚠ Tone, not colour alone — these read as counts either way; the colour is a hint. */
@@ -493,9 +526,18 @@ body.tq-mode { background: var(--surface, #fff); }
 /* ⚠ tabular-nums on both percentage columns so 9% / 61% / 100% stay right-aligned to the same
    column edge down a table of several units. */
 .tq-res-t .best { font-weight: 600; color: var(--text-primary, #1A1A1A); font-variant-numeric: tabular-nums; }
-/* ⚠ Six columns now, so the numeric cells lose some of their breathing room — the name column is
-   nowrap and would otherwise push the row wide enough to scroll on a phone. */
-.tq-res-t td { padding-left: 8px; }
+/* ⚠ Six columns now, so the numeric cells lose some of their breathing room.
+   ⛔⛔ AND THE GUTTER SHRINKS AS THE TYPE IS CAPPED — `* var(--te-ui, 1)`, which is exactly 1 at
+   default size and so changes nothing until the system text is raised. This is the LAST 7px and
+   it was measured, not guessed: at 320@2.0× the six columns come to 280px inside 273px, and each
+   numeric column is sized by its HEADER WORD ("wrong" is the widest at 52px), so there is no
+   content to trim. Five gutters at 8px is 40px; at the capped 4.6px it is 23px, which clears it
+   with room.
+   ⚠ This is the one place in the codebase where a px gutter is deliberately made SMALLER under
+   inflation rather than merely held constant (TEXT_SCALING.md §1 covers the holding case). It is
+   justified because this table is the arm's single pinch point and the alternative is dropping a
+   column the learner asked to see. Do not generalise it. */
+.tq-res-t td { padding-left: calc(8px * var(--te-ui, 1)); }
 .tq-res-t tbody tr + tr th,
 .tq-res-t tbody tr + tr td { border-top: 0.5px solid var(--border, rgba(0,0,0,.07)); }
 /* ⚠ The empty slot a taken chip leaves behind. visibility, NOT display or opacity: display
@@ -627,7 +669,17 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   position: fixed; inset: 0; z-index: 950;
   background: rgba(20, 16, 40, 0.55);
   display: flex; align-items: center; justify-content: center; padding: 20px;
+  /* ⛔ THE ONE SCROLLER THIS FILE ALLOWS, and it is allowed because this really is a fixed
+     dialog (see the note above) — the ban on an inner scroll container is about the QUIZ, which
+     is a view in normal flow. At large system text the card grows past a short viewport, and a
+     centred flex child taller than its container overflows BOTH edges: the top of the card, and
+     the "Keep going" button, become unreachable with no way to scroll to them. `auto` costs
+     nothing while the card fits.
+     ⚠ `align-items: center` must stay paired with `margin: auto` on the card, or an overflowing
+     card is clipped at the START edge — the same trap .tq-fill's auto margins document. */
+  overflow-y: auto; overscroll-behavior: contain;
 }
+.tq-confirm > .tq-confirm-card { margin: auto; }
 .tq-confirm-card {
   background: var(--surface, #fff); border-radius: var(--radius-lg, 14px);
   max-width: 360px; width: 100%; padding: 20px;
@@ -756,8 +808,18 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 
 /* menu controls */
 .tq-res-h  { font-size: calc(13px   * var(--tq-scale)); }
-.tq-res-t  { font-size: calc(12.5px * var(--tq-scale)); }
-.tq-res-t thead th { font-size: calc(11px * var(--tq-scale)); }
+/* ⛔⛔ THE ONE SURFACE IN THIS ARM THAT IS CAPPED AGAINST OS TEXT SCALING, and it is capped for
+   the reason TEXT_SCALING.md §2 gives for the nav: it is a DENSE SIX-COLUMN GRID whose width is
+   set by its content, so full inflation does not make it more readable, it makes it unreachable.
+   `--te-ui` caps growth at 1.15 and is exactly 1 at default size, so this is a no-op until the
+   learner has actually raised their system text.
+   ⚠ IT CAPS, IT DOES NOT FREEZE — WCAG 1.4.4 wants text resizable, and the wrap fix above is
+   what carries the rest of the load. Everything ELSE in the quiz scales in full: this table is
+   the exception because it is a table, not because small type is acceptable here.
+   ⛔ Do not extend `--te-ui` to .tq-res-h, the picker or any question screen — those are
+   content, they reflow, and capping them would be the freeze this document forbids. */
+.tq-res-t  { font-size: calc(12.5px * var(--tq-scale) * var(--te-ui, 1)); }
+.tq-res-t thead th { font-size: calc(11px * var(--tq-scale) * var(--te-ui, 1)); }
 .tq-mascot-t { font-size: calc(14px * var(--tq-scale)); }
 .seg       { font-size: calc(13px   * var(--tq-scale)); padding: calc(7px * var(--tq-scale)) calc(4px * var(--tq-scale));
              min-width: calc(58px * var(--tq-scale)); }
@@ -899,7 +961,15 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 
 /* the results screen: the score is the point of the screen, so it takes the space */
 .tq-fill-res .tq-res { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 8px 0 18px; }
-.tq-fill-res .tq-pct { font-size: calc(64px * var(--tq-scale, 1)); line-height: 1; }
+/* ⛔⛔ THE SCORE IS CAPPED AGAINST THE VIEWPORT, NOT ONLY AGAINST --tq-scale. "100%" at this
+   size is ~4.3 characters wide, so the number alone decides whether the screen side-scrolls:
+   measured 619px inside a 343px sheet at 390@2.0×, i.e. 260px of page overflow, and it already
+   overflowed by ~21px at 320px with NO scaling at all (§7a's lesson — check 1× first).
+   ⚠ `min()`, so the vw arm only ever bites when it is the smaller of the two: at 390px and
+   above the default rendering is the unchanged 64/72px. It is a ceiling, not a new size.
+   ⛔ Not `transform: scale()` and not a smaller constant — the number IS the screen, and the
+   surrounding rules (.tq-raw, .tq-best) are deliberately left to scale in full. */
+.tq-fill-res .tq-pct { font-size: min(calc(64px * var(--tq-scale, 1)), 19vw); line-height: 1; }
 .tq-fill-res .tq-raw { font-size: calc(16.5px * var(--tq-scale, 1)); margin-top: 8px; }
 .tq-fill-res .tq-best { font-size: calc(14px * var(--tq-scale, 1)); margin-top: 14px; }
 .tq-selfnote { margin: 20px auto 0; max-width: 300px; text-align: left; }
@@ -940,7 +1010,8 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
      that should have none. */
   .tq-fill { min-height: calc(100vh - 54px); }
   .tq-fill { min-height: calc(100dvh - 54px); }
-  .tq-fill-res .tq-pct { font-size: calc(72px * var(--tq-scale, 1)); }
+  /* ⚠ Same viewport ceiling as the base rule above — a phone is exactly where it bites. */
+  .tq-fill-res .tq-pct { font-size: min(calc(72px * var(--tq-scale, 1)), 19vw); }
 
   /* ⭐ A FINE TRIM SO "MY RESULTS" IS NOT HALF CUT OFF (owner, 2026-09-22, with a screenshot):
      "we can get some space by making the space around the tiger slightly smaller (both above and
@@ -1032,8 +1103,21 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    `content`, and this is lifted from topics-page.css where that is already documented.
    steps(3, start) is what makes it 1 -> 2 -> 3 dots rather than a smooth slide. */
 .tq-mascot-t .dots { display: inline-block; width: 1.1em; text-align: left; }
+/* ⛔⛔ `white-space: nowrap` IS LOAD-BEARING AND IT IS NOT ABOUT THIS ELEMENT'S OWN COPY.
+   This is a THREE-CHARACTER string in a box declared `width: 0` — the animation reveals it by
+   growing the box, and `overflow: hidden` clips it meanwhile. Add `overflow-wrap: break-word`
+   anywhere above it (the .tq-sheet rule does, for the OS-text-scaling pass) and the browser
+   obediently breaks "..." at zero width into THREE LINES, one dot each. The inline-block becomes
+   three lines tall, the caption's line box follows, and "Stay sharp" gains 45px of height —
+   measured at 390@1×, i.e. AT DEFAULT SIZE, on a change that was supposed to be a no-op.
+   ⚠⚠ THE GENERAL TRAP, worth more than the fix: an inherited wrapping rule reaches every
+   ZERO-WIDTH OR CLIPPED box under it, and those are exactly the boxes whose height nobody is
+   watching. If you add a wrap rule to a container, look for `width: 0` beneath it.
+   ✅ Caught only by the §6 no-op check (TEXT_SCALING.md — measure twice, with the new rules
+   overridden away, and confirm the numbers match). Nothing else would have reported it. */
 .tq-mascot-t .dots::after {
   content: '...'; display: inline-block; width: 0; overflow: hidden;
+  white-space: nowrap;
   vertical-align: bottom; animation: tq-dots 1.5s steps(3, start) infinite;
 }
 @keyframes tq-dots { from { width: 0; } to { width: 1.05em; } }
@@ -1057,6 +1141,9 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   border: 0.5px solid var(--tqe-line);
   border-radius: var(--radius-lg, 14px);
   font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
+  /* ⚠ The same inherited guard .tq-sheet carries — the heading, the subtitle and the "Choose a
+     quiz" button all hold a word long enough to burst this block at large system text. */
+  overflow-wrap: break-word;
 }
 .tq-entry.premium { --tqe-ink: var(--accent, #261B65); --tqe-bg: var(--accent-light, #ECEBFA); --tqe-line: rgba(28, 18, 78, .22); }
 
@@ -1092,6 +1179,14 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .tqe-tile {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   aspect-ratio: 1 / 1; border: 0; border-radius: var(--radius-md, 10px); padding: 8px 6px;
+  /* ⛔⛔ A GRID ITEM IS FLOORED AT ITS MIN-CONTENT WIDTH UNLESS YOU SAY OTHERWISE, and that
+     floor is a whole WORD. At large system text "comprehension" was wider than half the block,
+     so the `1fr` track grew to fit it, the 2×2 grew with it and the topic page side-scrolled by
+     78px (measured 390@2.0×, 2026-09-22). The tile's own overflow was never the problem — the
+     TRACK SIZING was, and no amount of wrapping inside the tile can undo it.
+     ⚠ Pairs with `overflow-wrap: anywhere` on .tqe-nm below: this lets the track shrink, that
+     lets the word break once it has. Either alone leaves half the fault in place. */
+  min-width: 0;
   font-family: inherit; cursor: pointer; text-align: center;
   background: var(--t-bg); color: var(--t-ink);
   transition: transform .12s ease, box-shadow .15s ease;
@@ -1118,6 +1213,12 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .tqe-nm {
   font-size: 12px; font-weight: 600; line-height: 1.2; color: currentColor;
   letter-spacing: -0.005em;
+  /* ⚠ `anywhere`, not `break-word`, and the difference is the whole point HERE (it is the other
+     way round on .tq-sheet). `anywhere` also shrinks the MIN-CONTENT contribution, which is what
+     the `1fr` grid track is sized from — so the name can no longer decide how wide the block is.
+     ⛔ Still not `nowrap`: "a learner who has raised their phone's text size should get more
+     lines, not a clipped name" is the owner's own allowance, recorded above. */
+  overflow-wrap: anywhere;
 }
 .tqe-sc { font-size: 11px; font-weight: 700; opacity: .72; font-variant-numeric: tabular-nums; }
 
@@ -1139,8 +1240,24 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    bar wants them side by side.
    ⚠ The spacing needs no new value — ONE `gap` governs both axes, so a single-column grid
    inherits the identical "little moat" the 2×2 has, at every breakpoint, for free. */
-.tq-entry.three .tqe-grid { grid-template-columns: 1fr; }
-.tq-entry.three .tqe-tile {
+/* ⭐⭐ …AND THE SAME BARS ARE HOW THE FOUR-TILE BLOCK SURVIVES OS TEXT SCALING (2026-09-22).
+   ⚠⚠ NOT OVERFLOW — SHAPE. With `min-width: 0` on the tile the 2×2 stops bursting the page, and
+   what is left is worse to look at than the overflow was: measured at 320@2.0× the tiles are
+   78px wide and 183px tall, and "Listening comprehension" renders as "Liste / ning / comp /
+   rehen / sion". A square tile's width is half the block's, and the block is 80% of a page whose
+   own padding is in rem — so at 2× the width available per tile SHRINKS while the type doubles.
+   No amount of wrapping fixes a 78px square; the tile has to stop being one.
+   ✅ So it borrows the variant the owner already approved for three-quiz units: icon beside the
+   label, full width, stacked. `.bars` is set by quiz.js from `--te-ui-raw` (mountButton →
+   applyEntryShape), because CSS cannot query text inflation — a media query sees the viewport,
+   which textZoom does not change.
+   ⛔ ONE BLOCK FOR BOTH VARIANTS. The §9.2a rule ("a variant class, never a second block")
+   applies to the RULES as much as the markup: a second copy of these declarations is a control
+   that gets added to one shape and silently not the other. */
+.tq-entry.three .tqe-grid,
+.tq-entry.bars  .tqe-grid { grid-template-columns: 1fr; }
+.tq-entry.three .tqe-tile,
+.tq-entry.bars  .tqe-tile {
   aspect-ratio: auto;
   flex-direction: row;
   justify-content: flex-start;
@@ -1149,8 +1266,26 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   padding: 11px 15px;
   text-align: left;
 }
-.tq-entry.three .tqe-nm { font-size: 13.5px; }
-.tq-entry.three .tqe-ic svg { width: 24px; height: 24px; }
+.tq-entry.three .tqe-nm,
+.tq-entry.bars  .tqe-nm { font-size: 13.5px; }
+.tq-entry.three .tqe-ic svg,
+.tq-entry.bars  .tqe-ic svg { width: 24px; height: 24px; }
+/* ⚠ A BAR HAS A LINE'S WIDTH, SO THE NAME WRAPS AT SPACES AGAIN — put `break-word` back over
+   .tqe-nm's `anywhere`. `anywhere` exists only to stop a WORD sizing a grid TRACK, and a
+   single-column grid has no track to size. Leaving it on would break "comprehension" mid-word
+   inside a bar that has room for it. */
+/* ⚠ AND IT IS A FLEX ITEM IN A ROW NOW, so it needs the same `min-width: 0` the square tile
+   needed as a grid item — measured: without it the bar was 163px holding 253px of name. Two
+   different layouts, one cause (an item is floored at its longest word), two places to fix it. */
+.tq-entry.three .tqe-nm,
+.tq-entry.bars  .tqe-nm { overflow-wrap: break-word; min-width: 0; }
+/* ⛔ THE BLOCK GIVES UP ITS 80% AT LARGE TEXT, and only then. The 80% is the owner's own
+   ("reduce the width of the overall box ... maybe by like 20%") and was asked for at default
+   size, where the block has width to spare. Under inflation it is the opposite problem: the
+   page's own padding grows with the text while the block takes a fixed SHARE of what is left,
+   so the bar ends up ~160px holding 24px type. The narrowing is a cosmetic preference; fitting
+   the words is not. ⚠ Scoped to `.bars`, so nothing changes at default size. */
+.tq-entry.bars { width: 100%; }
 
 /* ⚠ Three columns would make the squares tiny on a phone; two is the shape he asked for and it
    holds at every width. Only the icon shrinks. */
@@ -1302,8 +1437,12 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
      explicitly undone here rather than left to cascade. ⛔ Do not shorten this to the
      grid-template-columns line alone — the aspect-ratio and flex-direction overrides above are
      not media-scoped, so without these three tiles stay bar-shaped on desktop. */
-  .tq-entry.three .tqe-grid { grid-template-columns: repeat(3, 1fr); }
-  .tq-entry.three .tqe-tile {
+  /* ⚠ `:not(.bars)` — a grammar unit read at large system text carries BOTH classes, and this
+     block sits later in the file at equal specificity, so without it the desktop reset would
+     silently put that unit back to squares. `.bars` is a text-inflation state, not a width one:
+     it holds at every viewport, which is exactly why it cannot be undone in a width query. */
+  .tq-entry.three:not(.bars) .tqe-grid { grid-template-columns: repeat(3, 1fr); }
+  .tq-entry.three:not(.bars) .tqe-tile {
     aspect-ratio: 1 / 1;
     flex-direction: column;
     justify-content: center;
@@ -1312,5 +1451,5 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
     padding: 8px 6px;
     text-align: center;
   }
-  .tq-entry.three .tqe-nm { font-size: 11.5px; }
+  .tq-entry.three:not(.bars) .tqe-nm { font-size: 11.5px; }
 }

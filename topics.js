@@ -1072,7 +1072,11 @@
      re-asks on `thaiear:auth`. What IS memoised is one in-flight digest, so a burst of auth
      events on startup does not queue a dozen of them. */
   function quizGate() {
-    if (QUIZ_PUBLIC) return Promise.resolve(true);
+    /* ⚠ REMEMBERED IN THE PUBLIC BRANCH TOO. quizGateGuess() short-circuits on QUIZ_PUBLIC and
+       so does not need it — but a surface that reads the KEY directly (progress.html's pre-paint
+       head script does, because topics.js is deferred and has not run when it matters) has no
+       way to see the constant. Writing it here means one switch still reaches everything. */
+    if (QUIZ_PUBLIC) return Promise.resolve(rememberGate(true));
     var e = quizOwnerEmail();
     if (!quizGatePromise || quizGatePromise._for !== e) {
       quizGatePromise = quizOwnerOk().then(rememberGate);
