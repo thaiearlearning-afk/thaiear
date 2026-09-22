@@ -1034,7 +1034,14 @@
      ⚠ THIS IS PRIVACY, NOT SECURITY, and that is fine: nothing is entitled by it and the
      sentences are public either way. ⛔ The plain address must never appear in a file —
      Golden Rule 0 covers the owner's own — hence the hash. */
-  var QUIZ_PUBLIC = false;
+  /* ✅ PUBLIC since 2026-09-22 (owner: "remove owner gate and make live"). The arm shipped
+     gated on 2026-09-22 with all 113 units wired; this constant going true is what turns it
+     on, and gen_topics_pages.js is re-run alongside so the STATIC band cards carry the strip
+     rather than having it inserted at runtime.
+     ⛔ The owner-hash path below is NOT dead and must not be deleted: quizGate() short-circuits
+     on QUIZ_PUBLIC, so flipping this back to false re-gates every surface in one edit. That is
+     the whole reason there is exactly one switch. */
+  var QUIZ_PUBLIC = true;
   var QUIZ_OWNER_SHA = ['f158e8ba0177149ebd33d06f08ac400709d39133f9f366f7bdb3ac17bcb1c171'];
   var quizGatePromise = null;
   function quizOwnerEmail() {
@@ -1068,10 +1075,42 @@
     if (QUIZ_PUBLIC) return Promise.resolve(true);
     var e = quizOwnerEmail();
     if (!quizGatePromise || quizGatePromise._for !== e) {
-      quizGatePromise = quizOwnerOk();
+      quizGatePromise = quizOwnerOk().then(rememberGate);
       quizGatePromise._for = e;
     }
     return quizGatePromise;
+  }
+  /* ⭐⭐ THE ANSWER IS REMEMBERED SO THE *NEXT* PAGE CAN KNOW IT BEFORE IT PAINTS.
+     ⚠⚠ THE PROBLEM THIS SOLVES IS A LAYOUT SHIFT, NOT A SLOW GATE. The gate is a SHA-256
+     digest, which is fast — but `crypto.subtle.digest` returns a real promise resolved off a
+     task, so its answer CANNOT arrive before a synchronous first render however fast it is.
+     Every surface that reveals quiz UI therefore paints without it and then grows: measured
+     103px on the Progress page, which pushes "Your listening time" and the whole 113-row list
+     down after the page has already appeared (owner, 2026-09-22: "dont want these new boxes
+     losing a render race then pushing down the text below creating a flash or whatever").
+     ✅ A remembered answer makes the SECOND and every later load correct at parse time. The
+     first load of a browser still shifts — there is nothing to remember yet, and inventing a
+     guess would be worse than one shift.
+     ⛔ THIS IS A CACHE OF A YES/NO, NOT AN IDENTITY. It stores '1' or '0' and nothing else —
+     Golden Rule 0. It is also NOT a security boundary (the gate never was: see the note above
+     quizGate) so a tampered '1' reveals a feature whose content is public anyway.
+     ⚠ A stale '1' must be able to heal: consumers apply the guess at parse time and then
+     REMOVE what they applied if the real answer comes back false. Same shape player.js uses for
+     identity.js's synchronous guess — apply, then re-check against the authoritative answer. */
+  var GATE_KEY = 'thaiear_quiz_gate';
+  function rememberGate(ok) {
+    try { localStorage.setItem(GATE_KEY, ok ? '1' : '0'); } catch (_) {}
+    return ok;
+  }
+  /* ⚠ SYNCHRONOUS, and deliberately answers NO whenever nobody is signed in — a remembered '1'
+     on a browser where the session has since changed would otherwise flash the quiz UI on for
+     someone it does not belong to. Nothing signed in means nothing to be the owner of. */
+  function quizGateGuess() {
+    if (QUIZ_PUBLIC) return true;
+    try {
+      if (!quizOwnerEmail()) return false;
+      return localStorage.getItem(GATE_KEY) === '1';
+    } catch (_) { return false; }
   }
 
   /* ⛔ Vocab Trainer is TOPIC-ONLY (QUIZ_PROJECT.md §6.5 / §6A.6), so a grammar unit and a
@@ -1131,7 +1170,7 @@
     /* the quiz arm's ONE gate and ONE strip renderer — see the block above cardHtml's exports.
        ⛔ QUIZ_PUBLIC is exposed as a FUNCTION, not a captured boolean: a generator reads it at
        call time, and a consumer that cached `false` at load would never see the go-live flip. */
-    quizGate, quizStripHtml, quizUnitKind, quizHasVocab, QUIZ_STRIP_IDS,
+    quizGate, quizGateGuess, quizStripHtml, quizUnitKind, quizHasVocab, QUIZ_STRIP_IDS,
     quizPublic: function () { return QUIZ_PUBLIC; },
     hrefFor   // ⚠ every emitted topic link goes through this — see the note above hrefFor()
   };

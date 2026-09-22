@@ -33,7 +33,35 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v626';   // v626: EVERY UNIT NOW HAS QUIZ DATA — quiz-data/index.json
+const VERSION = 'v627';   // v627: ⭐ THE QUIZ ARM IS PUBLIC. Owner, 2026-09-22: "remove owner
+                          // gate and make live". QUIZ_PUBLIC in topics.js is now true, which is
+                          // the ONE switch: quizGate() short-circuits on it, so every surface --
+                          // the entry block, ?quiz= urls, the card strip, the playlist 'Enter
+                          // quiz' row, the Progress columns -- opens together. ⛔ The owner-hash
+                          // path is deliberately NOT deleted: flipping the constant back re-gates
+                          // all of it in one edit.
+                          // ⭐ AND THE QUIZ'S OWN ENTITLEMENT RULE LANDS WITH IT (owner, same
+                          // day): an account is required to enter ANY quiz menu, and premium
+                          // is required for a premium topic AND for the whole Grammar by Ear
+                          // arm -- including grammar-01/02, whose AUDIO stays free. quiz.js
+                          // holds none of this: player.js's quizEntitled() is the one rule,
+                          // kept separate from entitledForPage() because tightening THAT
+                          // would have put every free topic's audio behind a login.
+                          // WHY THE BUMP: topics.js and player.js are PRECACHED and served cache-first, so
+                          // without it a returning device keeps the gated copy indefinitely and
+                          // the arm stays invisible to exactly the people who already use the
+                          // site. The five band pages are re-generated so their STATIC cards
+                          // carry the strip rather than waiting for a runtime insert.
+                          // ⚠ §2.2 ENTITLEMENT IS NOT A SEPARATE SWITCH AND NEEDED NO CHANGE:
+                          // the bridge was built and merely unreachable while gated. Un-gating
+                          // activates it -- entitled() delegates to player.js's entitledForPage()
+                          // and the gate fires in FRONT of openMenu(), before the settings
+                          // screen, per the owner's 2026-09-21 decision. Asserted by
+                          // test_quiz_engine.js, which is why un-gating is safe to do in one step.
+                          // ⛔ ?quiz= urls are crawlable now but are NOT in sitemap.xml -- owner,
+                          // 2026-09-22: "none go on the sitemap". gen_sitemap.js emits none.
+                          //
+                          // v626: EVERY UNIT NOW HAS QUIZ DATA — quiz-data/index.json
                           // lists all 113 (93 topic + 20 grammar), up from 27. THAT FILE
                           // IS PRECACHED AND SERVED CACHE-FIRST, so without this bump a
                           // returning device keeps the 27-unit manifest indefinitely and

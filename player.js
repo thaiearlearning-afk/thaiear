@@ -3543,6 +3543,44 @@
     if (TIER === 'member') return !!(a.getUser && a.getUser()); // member = any signed-in user
     return !!(a.isSubscribed && a.isSubscribed());              // premium = active subscription
   }
+  /* ⛔⛔ QUIZ ENTITLEMENT IS STRICTER THAN AUDIO ENTITLEMENT, AND THAT IS THE POINT.
+     Owner, 2026-09-22: "free quizzes are gated entry - only logged in users (free or premium
+     can enter the test menu) and for quizzes attached to premium topics or grammar by ear then
+     only premium users can enter the quiz menu. so entering the quiz menu is the gate."
+
+     ⚠⚠ entitledForPage() ANSWERS A DIFFERENT QUESTION — may this AUDIO play — and on a free
+     topic it returns true for a signed-out visitor. That is right for audio (the free topics are
+     the shop window) and wrong for a quiz, where the bar is an account. So this is a SEPARATE
+     predicate rather than a tweak to that one: changing entitledForPage() would have silently
+     put every free topic's audio behind a login.
+
+     ⚠ THE WHOLE GRAMMAR ARM COUNTS AS PREMIUM HERE, including grammar-01 (Dâi) and grammar-02
+     (Maa), which declare no tier and whose AUDIO is free. That asymmetry is deliberate and is
+     the owner's instruction as worded; it is not inferred from their access field.
+
+     ⚠ Auth still resolving → NOT entitled is never the answer. Every caller re-asks on
+     `thaiear:auth`, so answering "yes" briefly is recoverable and wrongly gating a paying user
+     is not. */
+  function quizNeedsPremium() {
+    return /^grammar-/.test(PAGE_FILE || '') || TIER === 'premium' || TIER === 'member';
+  }
+  function quizEntitled() {
+    var a = window.ThaiEarAuth;
+    if (!a || !a.isReady) return true;
+    if (quizNeedsPremium()) {
+      /* premium units go through canUseOffline, which already encodes the whole story —
+         confirmed active, lapsed, or simply unreachable for >50 days. A grammar unit with no
+         declared tier has no such licence state, so the plain subscription question is right. */
+      return TIER === 'premium' ? canUseOffline('premium')
+                                : !!(a.isSubscribed && a.isSubscribed());
+    }
+    return !!(a.getUser && a.getUser());          /* free unit: an account is the bar */
+  }
+  /* What a refused QUIZ tap should do: the paywall where premium is required, the free sign-in
+     where an account is. ⛔ Without this a signed-out visitor refused on grammar-01 would be sent
+     to gateSignIn() by the page's own free tier, sign in, and be refused again. */
+  function quizGateTier() { return quizNeedsPremium() ? 'premium' : TIER; }
+
   /* gateSignIn(): "this needs an ACCOUNT" — the free sign-in page, on web AND in the app (login is
      not payment steering, so Google Play is fine with it). Used by playlists, downloads, progress
      and flagging: features, not content.
@@ -10456,8 +10494,9 @@
        so entitlement there is a property of the item, not of the page (the page itself declares
        tier 'free' precisely so everyone may press play). On a topic page it is always false and
        `entitled` is the question to ask instead. */
-    entitled: function () { return entitledForPage(); },
-    gate: function (tier) { return gate(tier); },
+    /* ⛔ The QUIZ's rule, not the audio's — see quizEntitled(). */
+    entitled: function () { return quizEntitled(); },
+    gate: function (tier) { return gate(tier == null ? quizGateTier() : tier); },
     locked: function (num) { return sentLocked(sentById(num)); },
     gateSent: function (num) { return gateSent(num); },
     /* ⛔⛔ THE RULE, IN THE OWNER'S WORDS (2026-09-22): "if a quiz card is to appear, its audio
