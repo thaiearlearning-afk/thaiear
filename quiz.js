@@ -1076,6 +1076,23 @@
       + '<th>wrong</th><th>avg</th><th>best</th></tr></thead><tbody>' + body + '</tbody></table>';
   }
 
+  /* ⛔⛔ THE "MY RESULTS" OPEN STATE SURVIVES A RE-RENDER, AND IT HAS TO (owner, 2026-09-22:
+     "ive had it happen a few times where i open 'my results' then it closes and i have to open
+     it again shortly after entering the quiz menu - seems like if things are still loading in
+     in background it is maybe unstable").
+     ⚠⚠ HE HAD THE CAUSE EXACTLY RIGHT. syncScores() repaints the picker when the network score
+     pull lands, and openPicker() rebuilds this panel from scratch — so a dropdown opened in the
+     second or two before that round trip finished was destroyed by the repaint. It is LATCHED
+     (scoresPulled), which is why it happens ONCE and then never again, precisely as described.
+     ⚠ The repaint itself is correct — it is what puts the freshly pulled scores on screen. What
+     was wrong was rebuilding a piece of UI STATE the learner had set. Fix the state, not the
+     repaint.
+     ⚠ Module-scoped rather than read back off the DOM, because by the time resultsPanel() is
+     called during a repaint the old sheet is already gone.
+     ⚠ NOT reset by openPicker() — surviving a repaint is the whole point. doClose() resets it,
+     so a fresh entry into the quiz starts collapsed exactly as before. */
+  var resultsOpen = false;
+
   function resultsPanel() {
     var st = store();
     if (!st || !st.resultsAll) return '';
@@ -1092,9 +1109,10 @@
     if (!here && !others) return '';
 
     return '<div class="tq-results">'
-      + '<button type="button" class="tq-res-h" aria-expanded="false">My results'
+      + '<button type="button" class="tq-res-h' + (resultsOpen ? ' open' : '')
+      + '" aria-expanded="' + (resultsOpen ? 'true' : 'false') + '">My results'
       + '<span class="tq-res-cv" aria-hidden="true">\u25be</span></button>'
-      + '<div class="tq-res-b" hidden>'
+      + '<div class="tq-res-b"' + (resultsOpen ? '' : ' hidden') + '>'
       + (here ? '<div class="tq-res-u"><p class="mlab">This unit</p>' + here + '</div>' : '')
       + (others ? '<p class="mlab tq-res-sep">Everywhere else</p>' + others : '')
       + '</div></div>';
@@ -1176,6 +1194,7 @@
       var b = sheet.querySelector('.tq-res-b');
       var open = b.hidden;
       b.hidden = !open;
+      resultsOpen = open;          /* ⛔ remembered across repaints — see resultsOpen's note */
       h.setAttribute('aria-expanded', open ? 'true' : 'false');
       h.classList.toggle('open', open);
     };

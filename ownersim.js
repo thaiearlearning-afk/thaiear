@@ -312,6 +312,7 @@
           '<button type="button" id="ownersim-rej-flush" style="' + SWBTN + '">Sync now</button>' +
           '<button type="button" id="ownersim-rej-dump" style="' + SWBTN + '">Show the last 50</button>' +
         '</div>' +
+        '<div id="ownersim-rej-said" style="margin-top:6px;font-weight:500"></div>' +
         (function () {
           /* ⛔ THE REASON THE QUEUE WILL NOT DRAIN, when there is one. Without this the panel
              says "5 queued" for ever and the owner has nothing to act on — which is exactly
@@ -333,9 +334,53 @@
         ' Builder answers rejected with the network off, watch <i>queued</i> rise, reconnect and' +
         ' watch it fall to zero while the account count rises by the same amount.</span>';
       rej.querySelector('#ownersim-rej-refresh').addEventListener('click', function () { loadRej(); });
+      /* ⛔⛔ THE BUTTON SAYS WHAT IT DID. Owner, 2026-09-22: "im pressing sync now on quiz
+         rejection log and its doing nothing".
+         ⚠⚠ IT WAS SILENT IN EVERY SINGLE OUTCOME, which in a panel whose entire job is to answer
+         "why will this not sync" is the defect. qzFlush() returns false immediately and says
+         nothing when the outbox is EMPTY, when the browser reports offline, when there is no
+         signed-in user, and when a previous flush is still in flight — and returns true on a
+         clean drain, which also rendered identically. "Nothing happened" was four different
+         facts wearing the same face.
+         ⚠ The states are read BEFORE the flush, because a successful drain empties the outbox
+         and afterwards "0 queued" cannot be told from "there was never anything to send".
+         ⚠ ownersim.js is NOT precached (CLAUDE.md), so this reaches a device network-first with
+         no VERSION bump and no new cache — which is the whole reason diagnostics live here. */
       rej.querySelector('#ownersim-rej-flush').addEventListener('click', function () {
         var S2 = QS();
-        if (S2 && S2.flush) S2.flush().then(function () { loadRej(); });
+        var note = function (msg, bad) {
+          var el = rej.querySelector('#ownersim-rej-said');
+          if (!el) return;
+          el.style.color = bad ? '#7A1F1F' : '#1F5D3A';
+          el.textContent = msg;
+        };
+        if (!S2 || !S2.flush) { note('No quiz store on this page.', true); return; }
+        var before = (S2.pending ? S2.pending() : 0);
+        var rejBefore = (S2.pendingRejections ? S2.pendingRejections() : 0);
+        var online = !(typeof navigator !== 'undefined' && navigator.onLine === false);
+        if (!before) {
+          note('Nothing queued — the outbox is empty, so there is nothing to send. ('
+             + rejBefore + ' of it rejections.)', false);
+          loadRej();
+          return;
+        }
+        if (!online) { note('The browser reports OFFLINE, so the flush was not attempted.', true); return; }
+        note('Syncing ' + before + ' queued op(s)…', false);
+        S2.flush().then(function (ok) {
+          var after = (S2.pending ? S2.pending() : 0);
+          var e = (S2.lastError ? S2.lastError() : null);
+          if (ok && !after) note('Synced. ' + before + ' op(s) sent, outbox now empty.', false);
+          else if (after < before) note('Partly synced: ' + (before - after) + ' sent, ' + after
+             + ' still queued' + (e ? ' — ' + (e.k || '?') + ': ' + e.msg : '.'), true);
+          else note('Nothing drained; ' + after + ' still queued'
+             + (e ? ' — ' + (e.k || '?') + ': ' + e.msg
+                  : '. No error was recorded, which points at the flush being skipped rather than'
+                  + ' failing: not signed in, or another flush already in flight.'), true);
+          loadRej();
+        }, function (err) {
+          note('The flush threw: ' + String((err && err.message) || err), true);
+          loadRej();
+        });
       });
       rej.querySelector('#ownersim-rej-dump').addEventListener('click', function () {
         var ta = document.createElement('textarea');

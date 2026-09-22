@@ -44,17 +44,29 @@ html.te-pl-boot #pl-list-wrap{display:none}
 html.te-quiz-boot #pl-qload{display:flex}
 #pl-qload{display:none;position:fixed;inset:0;align-items:center;justify-content:center;
   padding:24px;text-align:center;font-size:calc(15px * var(--te-ui,1));line-height:1.5;
-  color:#1F5D3A;font-weight:500}
+  color:#261B65;font-weight:500}
 /* ⚠⚠ THE ELLIPSIS IS WIDTH-CLIPPED, NOT TEXT THAT GROWS, AND THAT IS DELIBERATE. A peer session
    measured an animated "..." breaking over THREE LINES at 200% text because an inherited
    overflow-wrap reached it (TEXT_SCALING.md §11). nowrap + overflow:hidden + a ch-based width
    makes this immune to any wrap rule an ancestor ever gains, and ch is the character's own
    width so 1/2/3 dots land exactly whatever the font. */
-#pl-qload i{display:inline-block;width:3ch;overflow:hidden;white-space:nowrap;
-  font-style:normal;text-align:left;vertical-align:bottom;
+/* ⛔⛔ THE SENTENCE MUST NOT MOVE — ONLY THE DOTS (owner, 2026-09-22: "as the ellipsis to the
+   right of playlist animates, playlist actually slides backwards and forwards. the writing
+   should be static in place, and only the ellipsis is the movement").
+   ⚠⚠ THE FIRST VERSION ANIMATED THE WIDTH OF THE ELLIPSIS ITSELF, and the line is CENTRED — so
+   every width change re-centred the whole sentence and shoved it left and right. Correct dots,
+   moving text.
+   ✅ TWO BOXES: the outer <i> is a CONSTANT 3ch and is the only thing layout ever sees, so the
+   line cannot reflow; the inner span is what animates, and its overflow does the clipping. The
+   movement is real but invisible to layout — which is the only way a centred line stays still.
+   ⚠ ch units because ch IS the character's own advance width, so 1/2/3 dots land exactly
+   whatever the font or text-scaling factor. */
+#pl-qload i{display:inline-block;width:3ch;font-style:normal;text-align:left;
+  vertical-align:bottom;overflow:hidden;white-space:nowrap}
+#pl-qload i span{display:inline-block;width:3ch;overflow:hidden;white-space:nowrap;
   animation:te-qdots 1.2s steps(1,end) infinite}
 @keyframes te-qdots{0%,33%{width:1ch}34%,66%{width:2ch}67%,100%{width:3ch}}
-@media (prefers-reduced-motion:reduce){#pl-qload i{animation:none;width:3ch}}
+@media (prefers-reduced-motion:reduce){#pl-qload i span{animation:none;width:3ch}}
 </style>
 <style>.te-embed #site-nav-root,.te-embed nav.site-nav{display:none!important}
 .te-embed .wrap{padding-top:0}/* r128: panel title sits the same distance below the switcher as the topics title */
@@ -114,7 +126,7 @@ html.te-quiz-boot #pl-qload{display:flex}
 <!-- dyncss:end -->
 </head>
 <body>
-<div id="pl-qload" role="status" aria-live="polite"><span>Constructing quiz space from your custom playlist<i>...</i></span></div>
+<div id="pl-qload" role="status" aria-live="polite"><span>Constructing quiz space from your custom playlist<i><span>...</span></i></span></div>
 
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 

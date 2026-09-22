@@ -33,7 +33,25 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v631';   // v631: the playlist quiz loading screen is the HOUSE NAVY and its
+const VERSION = 'v632';   // v632: ⛔ THE CODE v631's NOTE DESCRIBES SHIPS **HERE**, NOT THERE.
+                          // v631 went out carrying that note and NONE of the files it talks
+                          // about: two sessions derived v631 from v630 at the same instant,
+                          // and an update-index on the SHARED index landed this blob inside a
+                          // peer's commit while the quiz.js/playlists.html/ownersim.js edits
+                          // stayed dirty on disk. So v631 is SPENT and its note runs one
+                          // version early; this is where the loading-screen colour+motion fix
+                          // and the "My results" fix actually reach a device.
+                          // ⚠⚠ THE LESSON, SINCE IT HAS NOW BITTEN BOTH WAYS IN ONE DAY:
+                          // `--only <path>` and `update-index` stop you including files you
+                          // did not INTEND; neither protects the INDEX, which is shared. A
+                          // peer staging between your stage and your commit silently swaps
+                          // your blob, and `git commit` reports success either way. The check
+                          // that catches it is `git show --stat HEAD` against what you staged
+                          // -- the FILE COUNT and the VERSION -- run before the push, not
+                          // after. CLAUDE.md already says to check the file count; the index
+                          // is the reason it is not merely belt-and-braces.
+                          //
+                          // v631: the playlist quiz loading screen is the HOUSE NAVY and its
                           // TEXT NO LONGER MOVES, plus "My results" survives the score pull.
                           // (1) Owner: "as the ellipsis to the right of playlist animates,
                           // playlist actually slides backwards and forwards. the writing
