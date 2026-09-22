@@ -33,7 +33,17 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v624';   // v624: THE "KEEP" BUTTON ON A DELETE-DOWNLOAD CONFIRM ACTUALLY
+const VERSION = 'v626';   // v626: EVERY UNIT NOW HAS QUIZ DATA — quiz-data/index.json
+                          // lists all 113 (93 topic + 20 grammar), up from 27. THAT FILE
+                          // IS PRECACHED AND SERVED CACHE-FIRST, so without this bump a
+                          // returning device keeps the 27-unit manifest indefinitely and
+                          // every playlist spanning the other 86 silently believes they
+                          // have no quizzes. The unit PAGES are not precached and need no
+                          // bump; this is for the manifest alone.
+                          // ⚠ v625 is a PEER SESSION's (quiz.css/quiz.js text-scaling).
+                          // Agreed split, not a skipped number.
+                          //
+                          // v624: THE "KEEP" BUTTON ON A DELETE-DOWNLOAD CONFIRM ACTUALLY
                           // BACKS OUT. It did nothing: confirmDelete() repainted the bar's
                           // innerHTML but left BOTH idempotence guards (data-dlsig and
                           // data-sig) still claiming the old state, so the repaint Keep asked
