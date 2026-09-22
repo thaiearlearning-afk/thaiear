@@ -363,6 +363,19 @@
       text-decoration: none; padding: 8px 12px; border-radius: var(--radius-sm); white-space: nowrap; }
     .nav-menu-drop a:hover { background: var(--accent-light); color: var(--accent); }
     .nav-menu-drop a.active { color: var(--accent); }
+
+    /* ⚠ iOS PAINTS ITS OWN TAP FLASH AND IT IS NOT OUR BLUE. Safari/the PWA default
+       -webkit-tap-highlight-color to a translucent blue-grey, so every menu tap flashed a
+       colour from outside the palette (owner, 2026-09-22, on the iPhone PWA: "a sort of
+       blue/purple select color"). Eight other files already suppress it; the nav never did.
+       ⛔ SUPPRESS IT AND REPLACE IT - do not just set it to transparent. Killing the flash
+       with nothing in its place makes a tap feel dead on a control that has no hover on
+       touch, which is worse than the wrong colour. :active gives the same accent-light
+       ground the pointer hover uses, so the two input modes agree. */
+    .site-nav a, .site-nav button { -webkit-tap-highlight-color: transparent; }
+    .nav-menu-drop a:active { background: var(--accent-light); color: var(--accent); }
+    .nav-links a:active, .nav-menu-btn:active { color: var(--accent); }
+    .nav-person:active { background: var(--accent-light); color: var(--accent); }
     .nav-menu-drop[hidden] { display: none; }
 
     @media (max-width: 600px) {
