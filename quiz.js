@@ -1011,7 +1011,24 @@
   function unitLabel(key) {
     var T = window.ThaiEarTopics;
     if (key === ctx.unit && ctx.unitName) return ctx.unitName;
-    if (/^pl:/.test(key)) return 'A playlist';
+    /* ⭐ NAME THE PLAYLIST (owner, 2026-09-22: "it just says 'a playlist' rather than naming
+       the playlist i used to get the result - can we get specific names going in there").
+       ⚠ THE ORIGINAL REASONING WAS HALF RIGHT: a pl: key genuinely resolves to nothing through
+       topics.js, and the raw uuid is unreadable. What it missed is that the playlists API has
+       TWO SYNCHRONOUS readers, so no async and no re-render is needed here.
+       ⚠ peek() BEFORE get() MATTERS: get() is the in-memory cache and is empty until load()
+       has resolved, while peek() reads the localStorage copy — so on a cold open the name is
+       there immediately instead of one paint later. Offline it is the only one that answers.
+       ⚠ The generic label REMAINS the fallback, for a playlist since deleted: its results are
+       still real and must still be listed, just without a name we no longer have. */
+    if (/^pl:/.test(key)) {
+      var id = key.slice(3), A = window.ThaiEarAuth, P = A && A.playlists, lists = null;
+      try { lists = (P && (P.peek() || P.get())) || null; } catch (_) { lists = null; }
+      for (var li = 0; lists && li < lists.length; li++) {
+        if (String(lists[li].id) === id && lists[li].name) return lists[li].name;
+      }
+      return 'A playlist';
+    }
     try {
       var f = T && T.findByPage && T.findByPage(key + '.html');
       if (f && f.unit && f.unit.name) return f.unit.name;

@@ -32,7 +32,30 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
 if(/[?&]quiz=/.test(_s))document.documentElement.className+=' te-quiz-boot';
 if(/[?&]pl=/.test(_s))document.documentElement.className+=' te-pl-boot';}catch(e){}</script>
 <style>html.te-quiz-boot #pl-player-wrap,html.te-quiz-boot #pl-list-wrap{visibility:hidden}
-html.te-pl-boot #pl-list-wrap{display:none}</style>
+html.te-pl-boot #pl-list-wrap{display:none}
+/* ⭐ THE WAIT IS NO LONGER A BLANK PAGE (owner, 2026-09-22: playlist quizzes "are slow to load
+   ... can we have a loading screen"). te-quiz-boot hides BOTH views, so until now a ?quiz=
+   arrival showed nothing at all while the side-cars and the engine were fetched.
+   ⛔ IT LIVES IN THE BLOCKING HEAD STYLE, WITH THE CLASS THAT CAUSES THE BLANK. Anything that
+   decided later could only ever cover a blank the learner had already seen -- the same reasoning
+   that put te-quiz-boot itself here (v602). And it is bound to that one class, so every exit
+   path that calls unhide() removes the message for free: it can never outlive the thing it
+   explains. */
+html.te-quiz-boot #pl-qload{display:flex}
+#pl-qload{display:none;position:fixed;inset:0;align-items:center;justify-content:center;
+  padding:24px;text-align:center;font-size:calc(15px * var(--te-ui,1));line-height:1.5;
+  color:#1F5D3A;font-weight:500}
+/* ⚠⚠ THE ELLIPSIS IS WIDTH-CLIPPED, NOT TEXT THAT GROWS, AND THAT IS DELIBERATE. A peer session
+   measured an animated "..." breaking over THREE LINES at 200% text because an inherited
+   overflow-wrap reached it (TEXT_SCALING.md §11). nowrap + overflow:hidden + a ch-based width
+   makes this immune to any wrap rule an ancestor ever gains, and ch is the character's own
+   width so 1/2/3 dots land exactly whatever the font. */
+#pl-qload i{display:inline-block;width:3ch;overflow:hidden;white-space:nowrap;
+  font-style:normal;text-align:left;vertical-align:bottom;
+  animation:te-qdots 1.2s steps(1,end) infinite}
+@keyframes te-qdots{0%,33%{width:1ch}34%,66%{width:2ch}67%,100%{width:3ch}}
+@media (prefers-reduced-motion:reduce){#pl-qload i{animation:none;width:3ch}}
+</style>
 <style>.te-embed #site-nav-root,.te-embed nav.site-nav{display:none!important}
 .te-embed .wrap{padding-top:0}/* r128: panel title sits the same distance below the switcher as the topics title */
 </style>
@@ -91,6 +114,7 @@ html.te-pl-boot #pl-list-wrap{display:none}</style>
 <!-- dyncss:end -->
 </head>
 <body>
+<div id="pl-qload" role="status" aria-live="polite"><span>Constructing quiz space from your custom playlist<i>...</i></span></div>
 
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 

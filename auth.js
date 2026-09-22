@@ -2365,9 +2365,20 @@
     }
     if (op.k === 'excl') {
       return op.on
+        /* ⛔⛔ ignoreDuplicates IS LOAD-BEARING, NOT AN OPTIMISATION — WITHOUT IT THIS ROW
+           IS "permission denied for table quiz_exclusions" (owner, 2026-09-22). A plain
+           upsert compiles to INSERT ... ON CONFLICT DO UPDATE and therefore needs the UPDATE
+           privilege, and quiz_schema.sql deliberately grants only `select, insert, delete`
+           here. ⚠ AND THE GRANT IS RIGHT, so the fix belongs on this side: the primary key
+           IS the whole meaningful row (user_id, unit_key, quiz_type, item) and the only other
+           column is created_at, so the UPDATE branch could never do anything worth doing.
+           ON CONFLICT DO NOTHING is what "the toggle is idempotent" actually means.
+           ⚠ One failing op reports as the whole outbox flush failing, which is why this
+           surfaced as a REJECTION-LOG sync error although quiz_rejections was never at fault —
+           it already passes ignoreDuplicates, and this now matches it. */
         ? client.from('quiz_exclusions').upsert(
             { user_id: uid, unit_key: op.unit, quiz_type: op.type, item: op.item },
-            { onConflict: 'user_id,unit_key,quiz_type,item' })
+            { onConflict: 'user_id,unit_key,quiz_type,item', ignoreDuplicates: true })
         : client.from('quiz_exclusions').delete()
             .eq('user_id', uid).eq('unit_key', op.unit)
             .eq('quiz_type', op.type).eq('item', op.item);

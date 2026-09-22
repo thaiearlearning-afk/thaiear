@@ -33,7 +33,41 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v628';   // v628: ⭐ THE QUIZ ARM AT 200% SYSTEM TEXT, plus two headline quiz
+const VERSION = 'v630';   // v630: FOUR PLAYLIST-QUIZ FIXES, all owner-reported 2026-09-22.
+                          // (1) "they are slow to load" -- the ENGINE was loaded STRICTLY
+                          // AFTER the side-cars: `return loadEngine()` sat in the .then
+                          // following Promise.all(loadUnit), so 164 KB of quiz.js+quiz.css
+                          // did not begin downloading until the last side-car landed. It
+                          // reads none of that data, so nothing required the ordering. Now
+                          // parallel -- and started only once a unit is known to have data,
+                          // so the no-quiz branch still spends nothing.
+                          // (2) "can we have a loading screen" -- te-quiz-boot hides BOTH
+                          // views, so a ?quiz= arrival showed a BLANK page for the whole
+                          // wait. The message lives in the same blocking head style as the
+                          // class that causes the blank (deciding later can only cover a
+                          // blank already seen), and is bound to that one class, so every
+                          // unhide() path removes it for free. ⚠ The animated ellipsis is
+                          // WIDTH-CLIPPED in ch units, not growing text: a peer measured an
+                          // animated "..." breaking over three lines at 200% text when an
+                          // inherited overflow-wrap reached it (TEXT_SCALING.md §11).
+                          // (3) "my results ... just says 'a playlist'" -- unitLabel() only
+                          // resolved the CURRENT playlist via ctx.unitName. The playlists
+                          // API has two SYNCHRONOUS readers, so every playlist can be named
+                          // with no async and no re-render; peek() first because get() is
+                          // empty until load() resolves and is the only one that answers
+                          // offline. The generic label remains for a deleted playlist.
+                          // (4) "sync error ... permission denied for table quiz_exclusions"
+                          // -- a plain .upsert() is INSERT ON CONFLICT DO UPDATE and needs
+                          // UPDATE, which quiz_schema.sql deliberately does not grant. The
+                          // GRANT IS RIGHT: the primary key is the whole meaningful row, so
+                          // the UPDATE branch could never do anything. ignoreDuplicates now
+                          // matches quiz_rejections. ⚠ One failing op reports as the whole
+                          // outbox failing, which is why it surfaced as a REJECTION-LOG
+                          // error although that table was never at fault. NO SQL NEEDED.
+                          // auth.js, quiz.js, pl-quiz.js and playlists.html are precached.
+                          // ⚠ v629 is a PEER SESSION's, uncommitted at the time of writing.
+                          //
+                          // v628: ⭐ THE QUIZ ARM AT 200% SYSTEM TEXT, plus two headline quiz
                           // cards on Progress and uniform topic-card heights. Owner, 2026-09-22:
                           // "no mishaping or text overspilling on font size up to 200% ... on
                           // all surfaces within the quizzes, quiz menu and on the quiz results

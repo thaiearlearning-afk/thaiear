@@ -284,11 +284,27 @@
       /* ⛔ ONLY when the manifest ANSWERED. `have === null` means it could not be read, and then
          `want` is the full list and the old fetch-and-tolerate-404 behaviour stands. */
       if (have && !want.length) { unhide(); return STOP; }
-      return Promise.all(want.map(loadUnit));
+      /* ⭐⭐ THE ENGINE LOADS IN PARALLEL WITH THE DATA, NOT AFTER IT (owner, 2026-09-22:
+         playlist quizzes "are slow to load").
+         ⚠⚠ IT USED TO BE STRICTLY SERIAL — `return loadEngine()` sat in the .then AFTER
+         Promise.all(loadUnit), so 164 KB of quiz.js + quiz.css did not start downloading until
+         the last side-car had landed. The engine does not read the side-cars, so nothing ever
+         required that ordering; it was just the shape the chain happened to have. On a playlist
+         spanning ten units that is ten round trips of dead time before the biggest asset even
+         starts.
+         ⚠ STARTED HERE, NOT AT THE TOP OF build(): the STOP branch above means "no unit in this
+         playlist has quiz data", and there the engine would be 164 KB fetched for a block that
+         is never mounted. Now that all 113 units have data that branch is nearly unreachable,
+         but "nearly" is not a reason to spend it.
+         ⚠ quiz.js is safe to load early — its own boot() returns immediately on playlistMode
+         (v602), so it does nothing until this file calls mountEntry(). */
+      var engineP = loadEngine();
+      return Promise.all([Promise.all(want.map(loadUnit)), engineP])
+        .then(function (both) { return both[0]; });
     }).then(function (cars) {
       if (cars === STOP) return STOP;
       t.quiz = assemble(t.sentences, cars);
-      return loadEngine();
+      return null;                 /* the engine was already awaited above */
     }).then(function (r) {
       if (r === STOP) return;
       if (!window.ThaiEarQuiz || !window.ThaiEarQuiz.mountEntry) { unhide(); return; }
