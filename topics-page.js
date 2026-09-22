@@ -126,7 +126,7 @@
     'stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
     '</span></span>';
   var UPDATE =
-    '<span class="dl-select dl-update" title="Update available" aria-label="Audio update available">' +
+    '<span class="dl-select dl-update" title="Update available" aria-label="Update available">' +
     '<span class="dl-dot"></span></span>';
 
   /* ⚠ THESE TWO PREDICATES ARE COPIED VERBATIM FROM index.html, NOT REWRITTEN.

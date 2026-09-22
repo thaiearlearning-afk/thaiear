@@ -787,6 +787,41 @@
     } catch (_) {}
   }
 
+  /* ── r213: TWO UPDATE SIGNALS, ONE PAINT ──────────────────────────────────────────────────
+     Owner, 2026-09-23: "there may also be cases where the audio update path and 'page update
+     available' path both are firing. page update should supersede the audio update message …
+     but please dont let there be a render race / ugly button flash on load or something."
+     ⚠⚠ THE RACE WAS REAL AND THE PRIORITY ALONE WOULD NOT HAVE FIXED IT. The audio check is
+     async (it awaits audio-versions.json) and used to write bar.innerHTML DIRECTLY — so "which
+     message wins" would have been decided by which fetch resolved last, differently on each load.
+     Ranking the two messages at the point of painting cannot settle that; whoever paints SECOND
+     wins whatever the ranking says.
+     ✅ So neither check paints. Each raises a FLAG and asks this one function, which reads both
+     and renders the winner. Arrival order stops mattering entirely — a late audio flag re-renders
+     the page message unchanged rather than replacing it.
+     ✅ AND NO FLASH: the two messages share their buttons, so the only thing that can differ is
+     the label — and an identical render is skipped outright, so a second signal landing touches
+     no DOM at all. The page check is SYNCHRONOUS (the page is right here in front of us), so on a
+     stale topic the correct message is on screen in the first paint and nothing overwrites it. */
+  var updPage = false, updAudio = false, updHtml = '';
+  function paintUpdatePrompt() {
+    /* ⚠ Same hold as the old direct paint: a check that started before the tap must not land on
+       top of "5 of 50". Kept here rather than at the call sites so it cannot be forgotten. */
+    if (downloadingNow) return;
+    if (!updPage && !updAudio) return;
+    var bar = $('offline-bar'); if (!bar) return;
+    /* ⛔ 'Page update available' OUTRANKS the audio wording whenever both are true — the owner's
+       call, and the right one: a learner told only about audio would not know the page itself had
+       gained anything. The ACTION is identical either way (dynUpdateAudio re-fetches and
+       re-stamps both baselines through markDownloaded), so this is purely what to say. */
+    var html = '<span class="offline-status">⟳ ' +
+      (updPage ? 'Page update available' : 'Download audio update?') + '</span>' +
+      '<button class="offline-btn" onclick="dynUpdateAudio()">Update</button>' +
+      '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
+    if (html === updHtml && bar.innerHTML === html) return;    // nothing to do: no churn, no flash
+    updHtml = html;
+    bar.innerHTML = html;
+  }
   // A JS-driven download stops if the page unloads, so warn before leaving mid-download.
   var downloadingNow = false;
   /* ⚠⚠ THE OFFLINE-BAR LOCK. downloadingNow is read by half a dozen places and cleared on every
@@ -831,16 +866,34 @@
   function removeDownloaded(prefix) { var m = getManifest(); delete m[prefix]; setManifest(m); }
   function downloadedTier(prefix) { var e = getManifest()[prefix]; return e ? e.tier : null; }
 
-  // Content fingerprint of the CURRENT page's sentences (num + thai + english). This is the
-  // can't-drift backstop: the text lives in the page, which self-heals online, so any change to the
-  // sentences is caught even if audio-versions.json is ever missed. It does NOT see a pure audio
-  // re-render with unchanged text (e.g. an English TE/ET fix, or a voice swap) — that's what the
+  // Content fingerprint of the CURRENT page: its sentences (num + thai + english) AND its quiz
+  // block. This is the can't-drift backstop: both live in the page, which self-heals online, so a
+  // change to either is caught even if audio-versions.json is ever missed. It does NOT see a pure
+  // audio re-render with unchanged text (an English TE/ET fix, a voice swap) — that is what the
   // audio stamp (loadAudioVers/currentAv) covers. Stored in the manifest at download time and
   // compared on each open. cyrb53 — fast, dependency-free, plenty for change-detection.
   function contentHash() {
     var str = sentences.map(function (x) {
       return [x.num, x.thai || '', x.english || ''].join('');
     }).join('');
+    /* ⭐⭐ THE QUIZ COUNTS AS CONTENT (owner, 2026-09-22: "for people who have downloaded topic
+       pages, they won't be able to see the quiz — they will see just the old topic page").
+       It did not count, and that omission was the fault: this hashed num + thai + english only, so
+       a page that gained an entire quiz arm hashed IDENTICALLY to the page before it and no
+       update was ever offered. ⚠ Be precise about the harm — cachePage() does re-persist the page
+       on an online open, so the cached HTML is not necessarily frozen; what was missing is the
+       OFFER. Nothing told the learner their download was superseded, so offline they sat on
+       whatever they had and had no route to anything better.
+       ⚠⚠ IT ALSO COVERS THE ANSWER KEY, which is the durable half. `quiz.orders` is in this
+       block, so a Solution-Finder acceptance now MOVES THE HASH: without that, a downloaded device
+       keeps rejecting an order the site has since accepted, and nothing anywhere would say why.
+       Same for every C3 prompt rewrite, which changes `quiz.enq` and never `english`.
+       ⚠⚠ ADDING THIS RE-FLAGS EVERY EXISTING TOPIC DOWNLOAD ONCE. That is correct rather than a
+       side effect — every one of them genuinely is missing the quizzes — and it is ONE prompt per
+       downloaded unit, not a recurring one, because the new hash is recorded as soon as they update.
+       ⚠ Serialised from the page's OWN object, so it cannot drift from what is served; key order
+       comes from the generator and is stable. A unit with no quiz hashes as '' and is unaffected. */
+    try { str += '' + JSON.stringify((cfg && cfg.quiz) || ''); } catch (_) {}
     var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
     for (var i = 0, ch; i < str.length; i++) {
       ch = str.charCodeAt(i);
@@ -1545,11 +1598,117 @@
          straight over "5 of 50" — the bar flickered back to buttons mid-download and Update could
          be pressed a second time (owner, 2026-09-16, Android app). Same class as r210, reached by
          the one path that does not go through the shared painter. */
-      if (downloadingNow) return;
-      var bar = $('offline-bar'); if (!bar) return;
-      bar.innerHTML = '<span class="offline-status">⟳ Download audio update?</span>' +
-        '<button class="offline-btn" onclick="dynUpdateAudio()">Update</button>' +
-        '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
+      /* r213 — RAISE THE FLAG, DO NOT PAINT. The downloadingNow hold and the whole message
+         decision now live in paintUpdatePrompt(); see the note on it for why ranking the two
+         messages at paint time is the only thing that makes arrival order irrelevant. */
+      updAudio = true;
+      paintUpdatePrompt();
+    }).catch(function () {});
+  }
+  /* ── r213: IS THE DOWNLOADED PAGE ITSELF SUPERSEDED? ──────────────────────────────────────
+     Owner, 2026-09-22: "for people who have downloaded topic pages, they won't be able to see the
+     quiz — they will see just the old topic page … we could build a differential messenger via
+     the download button so it says 'page update available'".
+     ⚠⚠ THE DYN BRANCH HAD NO CONTENT CHECK AT ALL, AND EVERY UNIT IS dyn. contentHash() was
+     computed at download time and compared only in the CLASSIC branch of refreshOfflineState(),
+     which no live topic reaches — so a downloaded topic answered exactly one question, "has the
+     AUDIO moved", and a page that gained an entire quiz arm was invisible to it. Widening
+     contentHash() to see the quiz block was necessary and did nothing by itself; this is the half
+     that reads it.
+     ✅ SYNCHRONOUS, which is what keeps the first paint honest (see paintUpdatePrompt).
+     ⚠ Offline this correctly says nothing: the page rendering is the CACHED one, so its hash
+     equals the recorded baseline and there is nothing to report — and nothing could be fetched
+     to act on it anyway.
+     ⚠ NO BASELINE, NO NAG. A download predating the feature has no `ver`; markDownloaded stamps
+     one on the next update. (The PLAYLIST side deliberately takes the opposite view of an absent
+     baseline — see dynPlQzStale.) */
+  function dynCheckPageUpdate() {
+    if (PLMODE) { dynCheckPlQuizUpdate(); return; }
+    var e = getManifest()[PREFIX];
+    if (!e || !e.ver) return;
+    if (e.ver === contentHash()) return;
+    updPage = true;
+    paintUpdatePrompt();
+  }
+  /* A PLAYLIST's quiz is not in the page — it is fetched per unit from quiz-data/<unit>.json and
+     saved into the durable `thaiear-dl` cache at download time. pl-quiz.js's loadUnit() reads that
+     copy FIRST and UNCONDITIONALLY, which is right (a playlist quiz must work offline) and means
+     nothing in the product would ever replace it. So this prompt is the ONLY delivery route for a
+     re-published answer key on a downloaded playlist.
+     📌 The same comparison as pl-list.js's dlQzStale(), against the same per-playlist record, so
+     the row and the player cannot disagree — the standing rule for this pair (§B8 lesson 3).
+     ⚠ Async, and that is exactly the case paintUpdatePrompt() exists for. */
+  var dynQzSig = null;
+  /* ⛔ RESOLVED BY SENTENCE NUMBER, NOT BY AUDIO PREFIX — a split topic's parts SHARE a prefix
+     (topic-13a and topic-13b are both "…_LI1"), so a prefix cannot name a unit and a lookup built
+     on one would quietly fetch the wrong half's questions. ONE call into pl-quiz.js, which owns
+     this inversion for the read side; never a second copy of it here. */
+  function dynPlQzUnits() {
+    var Q = window.ThaiEarPlQuiz;
+    if (!Q || !Q._unitsFor) return null;
+    return Q._unitsFor(sentences.map(function (s) {
+      return { clipNum: (s.clipNum != null ? s.clipNum : s.num) };
+    }));
+  }
+  // The published per-unit quiz stamps (gen_quiz_data.js writes them beside the side-cars).
+  function dynQzSigLoad() {
+    if (dynQzSig) return Promise.resolve(dynQzSig);
+    return fetch('/quiz-data/index.json').then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (m) { dynQzSig = (m && m.sig) || null; return dynQzSig; })
+      .catch(function () { return null; });
+  }
+  function dynCheckPlQuizUpdate() {
+    var id = dynPlKeyId(); if (!id) return;
+    var rec = dynPlRecMap()[id]; if (!rec) return;
+    var units = dynPlQzUnits();
+    if (!units || !units.length) return;
+    dynQzSigLoad().then(function (sig) {
+      if (!sig) return;                                    // no published map: say nothing
+      var cur = {}, u;
+      units.forEach(function (x) { if (sig[x] != null) cur[x] = sig[x]; });
+      var base = rec.qz, stale;
+      /* ⚠⚠ AN ABSENT BASELINE IS STALE HERE, and that is deliberate — it is the owner's actual
+         case. A playlist downloaded before any of this existed holds no quiz at all; treating
+         "no record" as "fine" (which is right for AUDIO, where the bytes are already correct)
+         would strand every one of them for ever. Self-clearing: the update writes `qz`. */
+      if (base == null) stale = Object.keys(cur).length > 0;
+      else { stale = false; for (u in cur) if (cur[u] !== base[u]) stale = true; }
+      if (!stale) return;
+      updPage = true;
+      paintUpdatePrompt();
+    });
+  }
+  /* Save this playlist's quiz side-cars into the DURABLE cache and record the baseline they were
+     saved at. The two belong together: a stamp without the files would claim a quiz we do not
+     hold, and files without a stamp read as "no baseline" and nag for ever (dynCheckPlQuizUpdate
+     treats an absent one as stale on purpose — see the note there). */
+  function dynPlSaveQuiz() {
+    var id = dynPlKeyId(); if (!id) return;
+    var units = dynPlQzUnits();
+    if (!units || !units.length || !window.caches || !caches.open) return;
+    /* ⚠ The DURABLE cache, not the version-keyed one: activate() wipes every thaiear-v<N> cache
+       on the next deploy, which is exactly the case that matters — downloaded, then a release,
+       then offline. Same cache pl-quiz.js reads and pl-list.js writes. */
+    caches.open(AUDIO_DL_CACHE).then(function (c) {
+      var chain = Promise.resolve();
+      units.forEach(function (u) {
+        chain = chain.then(function () {
+          var url = '/quiz-data/' + u + '.json';
+          return fetch(url).then(function (r) { if (r && r.ok) return c.put(url, r.clone()); })
+                           .catch(function () {});
+        });
+      });
+      return chain;
+    }).then(dynQzSigLoad).then(function (sig) {
+      if (!sig) return;                       // nothing published: leave the record without a stamp
+      var snap = {};
+      units.forEach(function (u) { if (sig[u] != null) snap[u] = sig[u]; });
+      try {
+        var pm = dynPlRecMap(), r = pm[id];
+        if (!r) return;                       // the record went away under us; nothing to stamp
+        r.qz = snap;
+        localStorage.setItem('thaiear_offline_pl', JSON.stringify(pm));
+      } catch (_) {}
     }).catch(function () {});
   }
   function dynUpdateAudio() {
@@ -1996,6 +2155,15 @@
            partial holding is a whole topic — the very confusion this field exists to end. Written
            at finalize, where every file has landed, so the number is true when it is written. */
         if (!PLMODE && ref === 'topic') e.need = by[pfx].files.length;
+        /* ⭐ r213 — AND THE CONTENT BASELINE. It was NEVER RECORDED ON THIS PATH: markDownloaded()
+           stamps `ver` and only the CLASSIC download calls it, so every dyn download — which is
+           every download on the site — landed with `ver: ''`. refreshOfflineState()'s text check
+           reads `if (ent.ver && …)`, so it was not merely wrong, it was UNREACHABLE, and a
+           downloaded topic could answer exactly one question: has the AUDIO moved.
+           ⚠ Same guard as `need` above and for the same reason: a PLAYLIST holds a SUBSET of
+           this prefix's clips and its page is not this page, so stamping a prefix-level content
+           hash from a playlist download would claim the whole topic page is current. */
+        if (!PLMODE && ref === 'topic') e.ver = contentHash();
         /* D0c (rollout P1): this topic's OWN dyn download now covers everything the player needs
            (mainSrcFor/ensureMainSrc never touch the combined file once DYN is true — see
            dynEnsureMainSrc), so the classic TE/ET pair is dead weight the moment the per-sentence
@@ -2036,6 +2204,14 @@
           var pm = JSON.parse(localStorage.getItem('thaiear_offline_pl') || '{}');
           pm[String(DYN_KEY_NS).replace(/^pl-/, '')] = { prefixes: prefixes, at: Date.now(), av: snap };
           localStorage.setItem('thaiear_offline_pl', JSON.stringify(pm));
+          /* ⭐ r213 — …and its QUIZ, which this path did not save at all. pl-list.js's batch
+             download has done it since v600 (dlSaveQuizData); the PLAYER's own "Download for
+             offline" never did, so a playlist downloaded from the ?pl= page had every clip and no
+             questions the moment it went offline. Same two writes as the list page makes, in the
+             same shapes, so a playlist downloaded from either surface is indistinguishable
+             afterwards — which is the standing rule for this pair, not a nicety.
+             ⚠ NEVER FAILS THE DOWNLOAD: the audio is what was asked for and is already saved. */
+          dynPlSaveQuiz();
         } catch (_) {}
       }
       stampVerified();
@@ -2701,6 +2877,12 @@
       cachePage();
       setOfflineState('downloaded');
       dynPaintOfflineSize();
+      /* r213 — the PAGE question first, and synchronously. Ordering the calls is not what decides
+         the message (paintUpdatePrompt does), but running the sync check before the async one
+         means a stale page shows the right wording in the very first paint rather than correcting
+         itself a moment later. */
+      updPage = false; updAudio = false;
+      dynCheckPageUpdate();
       dynCheckAudioUpdate();   // async; upgrades the bar only if the CLIPS on R2 have changed
       return;
     }
@@ -9987,8 +10169,9 @@
      too, and it is fresh on the next navigation regardless. In the two DOWNLOAD cases, though,
      `player.js` is precached and therefore CURRENT while the HTML is not — and that asymmetry is
      the whole point: the half of the pair that is guaranteed fresh repairs the half that isn't.
-     Nothing else will: contentHash() hashes num+thai+english only (on purpose — the hint pass must
-     not stale every download), so a saved page is never flagged for re-download over this.
+     Nothing else will: contentHash() does not see the preview hints (⚠ it DOES now see the quiz
+     block, r213 — but hints live in the sentences, not there, and the reasoning is unchanged: the
+     hint pass must not stale every download), so a saved page is never flagged over this.
      Source is /sentence-hints.json — the same generated {globalNum: [thai, english]} lookup the
      playlist rows read (gen_sentence_hints.js), precached so it resolves offline too.
      One-shot and feature-detected: a current page carries .pv-th and this returns before it

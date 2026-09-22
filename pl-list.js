@@ -536,6 +536,75 @@
         .then(function (m) { DL_AV = m; dlAvLoaded = true; return DL_AV; })
         .catch(function () { DL_AV = null; dlAvLoaded = true; return null; });
     }
+    /* ── r213: QUIZ-VERSION AWARENESS FOR PLAYLISTS ───────────────────────────
+       Owner, 2026-09-22: "for people who have downloaded topic pages, they won't be able to see
+       the quiz — they will see just the old topic page … we could build a differential messenger
+       via the download button so it says 'page update available'??? … that would also solve the
+       playlist problem incidentally."
+       ⚠⚠ ON A PLAYLIST IT IS NOT MERELY A STALE COPY — IT NEVER SELF-HEALS. A topic page is a
+       navigation and navigations are network-first, so a downloaded topic at least refreshes its
+       quiz the next time it is opened online. pl-quiz.js's loadUnit() checks the `thaiear-dl`
+       cache FIRST and UNCONDITIONALLY, which is right (a playlist quiz must work offline) and
+       means a side-car saved at download time is served for ever, online or not. Nothing in the
+       product could ever have replaced it.
+       ⚠ WHAT THIS ACTUALLY DELIVERS is the answer key. A Solution-Finder acceptance changes
+       `orders` in the side-car and nothing else; without this, a device goes on rejecting an
+       order the site now accepts, and no surface anywhere would say why. Same for a C3 prompt
+       rewrite, which changes `enq`.
+       ⚠ MIRRORS r137 RATHER THAN INVENTING A SECOND MECHANISM — same per-playlist record, same
+       conservative defaults, same one extra key. The stamps come from `quiz-data/index.json`'s
+       `sig` map, which gen_quiz_data.js writes in the same pass as the side-cars, so a stamp
+       cannot drift from the file it fingerprints.
+       ⚠ THE PUBLISHED COPY, NEVER THE DOWNLOADED ONE. haveList() in pl-quiz.js deliberately
+       prefers the `thaiear-dl` copy because it is READING; this is MEASURING, and reading the
+       downloaded copy would compare a stamp against itself and never report anything. index.json
+       is precached, so a plain fetch resolves from the version cache offline and still answers. */
+    var DL_QZ = null, dlQzLoaded = false;
+    function dlQzLoad() {
+      if (dlQzLoaded) return Promise.resolve(DL_QZ);
+      return fetch('/quiz-data/index.json').then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (m) { DL_QZ = (m && m.sig) || null; dlQzLoaded = true; return DL_QZ; })
+        .catch(function () { DL_QZ = null; dlQzLoaded = true; return null; });
+    }
+    /* The units this playlist's sentences belong to, or null while the lookup is still loading.
+       ⛔ RESOLVED BY SENTENCE NUMBER, NOT BY AUDIO PREFIX — a split topic's parts share a prefix
+       (topic-13a and topic-13b are both "…_LI1"), so a prefix cannot name a unit. One call into
+       pl-quiz.js, which owns this inversion for the read side; never a second copy of it. */
+    function dlQzUnits(p) {
+      var Q = window.ThaiEarPlQuiz;
+      if (!Q || !Q._unitsFor) return null;
+      return Q._unitsFor((p.items || []).map(function (it) { return { clipNum: it.num }; }));
+    }
+    // The live stamp of every unit whose quiz this playlist draws on.
+    function dlQzSnapshot(units) {
+      var out = {};
+      if (!DL_QZ || !units) return out;
+      units.forEach(function (u) { if (DL_QZ[u] != null) out[u] = DL_QZ[u]; });
+      return out;
+    }
+    /* Has any unit's quiz data been re-published since this playlist was downloaded?
+       Conservative on every unknown, exactly as dlAvStale is: no published map, or a lookup that
+       has not loaded yet, both mean "not stale".
+       ⚠⚠ ONE DELIBERATE EXCEPTION, AND IT IS THE WHOLE POINT OF THE JOB: a download record with
+       NO `qz` baseline reads as STALE when quiz data exists for its units. Those are precisely
+       the devices the owner was asking about — downloaded before any of this shipped, holding no
+       quiz at all. Treating an absent baseline as "fine" (which is what r137 does for audio, and
+       is right there) would leave every one of them stranded for ever.
+       ✅ IT IS SELF-CLEARING AND CANNOT NAG: the update writes `qz`, and from then on the
+       playlist is judged by comparison like any other. A playlist whose units have no quiz data
+       at all snapshots to {} and is never flagged, so the exception cannot fire where there is
+       nothing to deliver. */
+    function dlQzStale(p) {
+      if (!DL_QZ) return false;
+      var units = dlQzUnits(p);
+      if (!units) return false;
+      var rec = dlPlMap()[p.id], cur = dlQzSnapshot(units);
+      if (!rec) return false;
+      var base = rec.qz;
+      if (base == null) return Object.keys(cur).length > 0;
+      for (var u in cur) if (cur[u] !== base[u]) return true;
+      return false;
+    }
     // The stamps this playlist's clips were fetched against, or null if it has no record yet.
     function dlPlAv(id) { var r = dlPlMap()[id]; return (r && r.av) || null; }
     // Build the baseline to record for a run: the live stamp of every prefix it just fetched.
@@ -629,7 +698,11 @@
          own.all branch only: a playlist that doesn't own everything already reads 'update', and one
          that owns nothing has nothing to be stale. Note the all-locked branch ABOVE deliberately
          never reaches here — r97's rule, an update is a FETCH and that visitor may not. */
-      if (own.all) return dlAvStale(p) ? 'update' : 'downloaded';
+      /* r213 — a re-published quiz counts here too, and for the same reason: the download
+         is superseded. Deliberately the same 'update' verdict rather than a third state —
+         the remedy is identical (re-download), and a state the buttons do not know about
+         would render a row the learner cannot act on. */
+      if (own.all) return (dlAvStale(p) || dlQzStale(p)) ? 'update' : 'downloaded';
       if (own.some) return 'update';                    // genuinely downloaded, then extended
       if (dlHasAll(p)) return 'available';              // owns none of it; the bytes are borrowed
       /* ⚠ NO D0 / looksLikeTopicClaim FALLBACK HERE — REMOVED 2026-08-13, DO NOT REINSTATE.
@@ -695,8 +768,11 @@
          flow's dlClearOne() path, and restoring a download button here should not mean
          rewriting it. */
       if (st === 'update') {
-        return '<span class="dl-select dl-update" title="Audio update available"' +
-          ' aria-label="Audio update available"><span class="dl-dot"></span></span>';
+        /* r213 — NOT "Audio update available" any more. This mark now also answers a
+           re-published quiz (dlQzStale), and a label that names audio would send a learner
+           looking for a change in the recordings that has not happened. */
+        return '<span class="dl-select dl-update" title="Update available"' +
+          ' aria-label="Update available"><span class="dl-dot"></span></span>';
       }
       if (st === 'downloaded') {
         return '<span class="dl-badge" title="Downloaded" aria-label="Downloaded">' +
@@ -920,7 +996,11 @@
            ⚠ NEVER FAILS THE DOWNLOAD. A missing side-car costs that unit's quiz-1 questions
            and nothing else — the audio, which is what the user asked for, is already saved. */
         chain = chain.then(function () { return dlSaveQuizData(p); });
-        chain.then(function () { return dlAvLoad(); }).then(function () {
+        /* r213 — dlQzLoad() too, and it must be AWAITED before the record is written a few
+           lines below: dlQzSnapshot() reads DL_QZ synchronously and would store {} on a
+           first-ever download, which dlQzStale() then reads as "no baseline" and flags as
+           an update the instant the download finishes. */
+        chain.then(function () { return Promise.all([dlAvLoad(), dlQzLoad()]); }).then(function () {
           var m = dlManifest();
           prefixes.forEach(function (pfx) {
             // NOT ['topic'] — a playlist pulls only the sentences IT uses.
@@ -947,7 +1027,10 @@
              and claiming the whole topic is current would suppress a genuine update prompt on the
              index card and the topic page. */
           var pm = dlPlMap();
-          pm[p.id] = { prefixes: prefixes, at: Date.now(), av: dlAvSnapshot(prefixes) };
+          /* r213 — and the quiz baseline, recorded here for the same reason: dlSaveQuizData()
+             has just written these side-cars into the cache, so the stamps are true as stored. */
+          pm[p.id] = { prefixes: prefixes, at: Date.now(), av: dlAvSnapshot(prefixes),
+                       qz: dlQzSnapshot(dlQzUnits(p)) };
           dlSetPlMap(pm);
           dlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
           console.log('[dl] playlist ' + p.id + ': ' + total + ' clips in ' + dlSecs + 's');
@@ -1499,7 +1582,16 @@
          first paint can legitimately miss a stale playlist. Repaint once it lands (same pattern as
          the index's loadAv().then(renderGrid)). Offline this simply resolves to null and nothing
          is ever flagged — the conservative default dlAvStale() is built on. */
-      dlAvLoad().then(function () { render(); }).catch(function () {});
+      /* r213 — the quiz stamp map and the sentence-number lookup arrive async too, and
+         dlQzStale() reads BOTH synchronously, so the first paint can legitimately miss a
+         playlist whose quiz has moved. One repaint once everything has landed; each leg
+         degrades to "not stale" on its own, so an offline boot simply flags nothing. */
+      var TT = window.ThaiEarTopics;
+      Promise.all([
+        dlAvLoad().catch(function () {}),
+        dlQzLoad().catch(function () {}),
+        (TT && TT.loadSentenceNums) ? TT.loadSentenceNums().catch(function () {}) : null
+      ]).then(function () { render(); }).catch(function () {});
     })();
 
     (function () {
