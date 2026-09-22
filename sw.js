@@ -33,7 +33,34 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v630';   // v630: FOUR PLAYLIST-QUIZ FIXES, all owner-reported 2026-09-22.
+const VERSION = 'v631';   // v631: the playlist quiz loading screen is the HOUSE NAVY and its
+                          // TEXT NO LONGER MOVES, plus "My results" survives the score pull.
+                          // (1) Owner: "as the ellipsis to the right of playlist animates,
+                          // playlist actually slides backwards and forwards. the writing
+                          // should be static in place". ⚠⚠ v630 animated the WIDTH of the
+                          // ellipsis itself and the line is CENTRED, so every width change
+                          // re-centred the sentence: correct dots, moving text. Now TWO
+                          // boxes -- the outer <i> is a constant 3ch and is all layout ever
+                          // sees, the inner span animates and its overflow clips. The
+                          // movement is real but invisible to layout, which is the only way
+                          // a centred line stays still. Colour #261B65, the arm's own navy.
+                          // (2) Owner: "i open 'my results' then it closes and i have to
+                          // open it again shortly after entering the quiz menu - seems like
+                          // if things are still loading in in background". He had the cause
+                          // right: syncScores() repaints the picker when the network score
+                          // pull lands, openPicker() rebuilds the panel, and a dropdown
+                          // opened in the second before that round trip was destroyed. It is
+                          // LATCHED, so it happens exactly once -- as described. ⚠ The
+                          // repaint is RIGHT; it is what puts the pulled scores on screen.
+                          // What was wrong was rebuilding UI state the learner had set, so
+                          // the open state is remembered rather than the repaint suppressed.
+                          // ⚠ ownersim.js also changed -- "Sync now" now REPORTS its outcome
+                          // (owner: "its doing nothing"); it was silent on empty outbox,
+                          // offline, signed out and success alike. It is NOT precached and
+                          // needs no bump; only playlists.html and quiz.js do.
+                          // ⚠ v629 belongs to a peer session and is still uncommitted.
+                          //
+                          // v630: FOUR PLAYLIST-QUIZ FIXES, all owner-reported 2026-09-22.
                           // (1) "they are slow to load" -- the ENGINE was loaded STRICTLY
                           // AFTER the side-cars: `return loadEngine()` sat in the .then
                           // following Promise.all(loadUnit), so 164 KB of quiz.js+quiz.css

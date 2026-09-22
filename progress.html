@@ -134,7 +134,41 @@
      left. Nothing about the minutes changed; the row gained a sibling.
      ✅ With the name growing, the free space is all inside the name and the two right-hand
      columns are measured from the right edge. Do not reintroduce space-between here. */
-  .prog-row-name { font-size: 13.5px; min-width: 0; overflow-wrap: break-word; flex: 1 1 auto; }
+  /* ⛔⛔ THE NAME TRUNCATES WITH AN ELLIPSIS — IT NEVER WRAPS, AND THAT IS WHAT KEEPS THE TWO
+     RIGHT-HAND COLUMNS FIXED. Owner, 2026-09-22: "short topics have their listening time much
+     closer to them, to the left of the four quiz results. they should be fixed in place on the
+     right hand side ... 'Because & so...' is very long, and its listening time ends up being
+     moved as well and sits on the second row!! I think if a name is too long it should be cut
+     off with an ... after a certain number of characters."
+     ⚠⚠ BOTH HALVES OF THAT REPORT ARE ONE CAUSE. The row is `flex-wrap: wrap` (it has to be —
+     see the note on .prog-row-q), and a name allowed to wrap could push the minutes and the
+     scores onto a second line. On a wrapped row the minutes then sit hard right instead of in
+     their column, so the SHORT rows look wrong beside them even though the short rows never
+     moved. Measured at 1265px: 111 rows aligned at exactly one x, and the two longest names
+     wrapped.
+     ✅ With `white-space: nowrap` + `min-width: 0` the name is the item that gives way — it
+     shrinks and ellipses rather than forcing a line break, so a wrap can now only happen when
+     the minutes and the four cells TOGETHER do not fit, which is the case the wrap exists for.
+     ⛔ NOT a character count, though that is how it was asked for. A fixed cut is wrong at every
+     width but one — it would clip a short name on a wide desktop and still overflow a phone.
+     `text-overflow: ellipsis` cuts at exactly the space available, per width, for free.
+     ⚠ All three properties are load-bearing: `overflow: hidden` is what makes `text-overflow`
+     apply at all, and without `min-width: 0` a flex item cannot shrink below its content. */
+  .prog-row-name {
+    /* ⛔⛔ BASIS 0, NOT `auto`, AND THIS IS THE HALF THAT ACTUALLY STOPS THE WRAP.
+       ⚠⚠ A FLEX LINE BREAKS ON THE BASE SIZE, BEFORE ANY SHRINKING HAPPENS. With `flex-basis:
+       auto` the name's base size is its full text width, so a long name overflowed the line and
+       the browser wrapped the minutes and the scores onto a second row — and `min-width: 0`,
+       `nowrap` and the ellipsis were all powerless, because shrinking only ever applies WITHIN a
+       line that has already been decided. Measured: the ellipsis rules alone left the same two
+       rows wrapped and clipped nothing at all.
+       ✅ A zero basis means the name contributes nothing to the line's size, so it can never
+       force a break; `flex-grow: 1` still hands it every pixel of slack, which is what keeps the
+       minutes and the scores measured from the right edge (the 2026-09-22 "columns must be
+       straight" fix — that reasoning is unchanged, only the basis moves). */
+    font-size: 13.5px; min-width: 0; flex: 1 1 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   /* Same green as the index card and .reveal-all-btn on a premium topic — the one number on the
      row that is about the reader rather than about the topic. */
   /* ⚠ CAPPED, like the quiz cells beside it and for the same reason: this is a compact
@@ -159,6 +193,22 @@
   /* the quiz headline pair - revealed by the same one class as the columns */
   .stat-grid-q { display: none; }
   .prog-q-on .stat-grid-q { display: grid; }
+  /* ⛔⛔ THE THIRD ROW SITS AT THE GRID'S OWN GAP, NOT AT THE BLOCK'S BOTTOM MARGIN.
+     Owner, 2026-09-22: "the two new boxes are far apart from the existing four - theres a gap -
+     distance between the third row of two new additions should be the same as the distance
+     between existing boxes."
+     ⚠ THE CAUSE IS THAT THEY ARE TWO GRIDS, WHICH IS ITSELF DELIBERATE (see quizStatGrid): six
+     cells in ONE 2-column grid would put the quiz pair alongside "days in a row" instead of
+     below the four. The price is that the space between row 2 and row 3 is a MARGIN between two
+     blocks (1.75rem = 28px) where every other row boundary is the grid's `gap` (10px) - so the
+     pair reads as a separate section rather than as two more of the same cards.
+     ✅ Scoped to .prog-q-on, so with the pair hidden the four keep their full 1.75rem above
+     "Your listening time" and nothing moves. .stat-grid-q carries .stat-grid too, so it inherits
+     that 1.75rem and the space BELOW the block is unchanged - only the seam inside it closes.
+     ⚠ 10px, in px, to match the `gap` it is standing in for. A rem here would inflate under
+     Android textZoom while the gap it must equal would not, and the seam would reopen at large
+     text (TEXT_SCALING.md §1). */
+  .prog-q-on .stat-grid:not(.stat-grid-q) { margin-bottom: 10px; }
   .prog-row-q { display: none; }
   /* ⛔⛔ `margin-left: auto` PLUS the wrap below, and the pair is what keeps the columns straight.
      At 320px with the system text at 200% the row simply cannot hold a name, the minutes and four
@@ -231,7 +281,29 @@
   /* ⚠ font-size only - the WIDTH comes from --pq-w so the header cannot drift off the rows */
   .prog-q-on .prog-qhead .pq-c { font-size: calc(10.5px * var(--te-ui, 1)); color: inherit; }
   @media (max-width: 480px) {
-    .prog-q-on .prog-row-q { gap: 4px; }
+    /* ⭐⭐ ON A PHONE THE SCORES GET THEIR OWN LINE, DELIBERATELY AND ON EVERY ROW.
+       Owner, 2026-09-22: "it should all look good on mobile too."
+       ⚠⚠ MEASURED, BECAUSE THE ARITHMETIC DECIDES THIS AND NOTHING ELSE DOES. At 390px the row
+       is 343px. The four cells need 34px each ("100%" measures 32.3px at 11px, so there is 1.7px
+       of slack and they cannot be trimmed) plus 3×4px of gap = 148px; the minutes need 53px
+       ("1h 23min" measures 52.4px). With the padding and the column gaps that leaves the unit
+       NAME 88px of 343 — 26% of the row for the one thing the row is about, and 100 of 113 names
+       truncated to an ellipsis. There is no width to find: every other column is already at its
+       content.
+       ✅ So line 1 is the name and its minutes, and line 2 is the four scores, right-aligned
+       under them. The name gets ~250px back and almost nothing truncates.
+       ⛔ THIS IS NOT THE WRAP THE OWNER COMPLAINED ABOUT. That one was ACCIDENTAL and
+       INCONSISTENT — two long names wrapped on desktop while 111 short ones did not, so the
+       minutes sat in a different place depending on the title ("their listening time ends up
+       being moved as well and sits on the second row!!"). This fires on EVERY row at this width,
+       because .prog-row-q is a single fixed-width child and `flex-basis: 100%` decides it rather
+       than the title length. Uniform is the whole point.
+       ⚠ The header follows the same rule, so V/L/B/S stay over their columns. Its empty name and
+       minutes spacers are hidden here — on two lines they would reserve a blank first line above
+       the letters, where on one line they are load-bearing (see quizHead()). */
+    .prog-q-on .prog-row-q { gap: 4px; flex-basis: 100%; justify-content: flex-end; margin-top: 1px; }
+    .prog-q-on .prog-qhead .prog-row-name,
+    .prog-q-on .prog-qhead .prog-row-plays { display: none; }
     .prog-q-on .prog-row, .prog-q-on .prog-qhead {
       --pq-w: calc(34px * var(--te-grow) + (var(--te-grow) - 1) * 16px);
     }
