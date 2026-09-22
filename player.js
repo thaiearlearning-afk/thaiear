@@ -2900,16 +2900,12 @@
        here for prominence, not to warn — do not infer from this that red now means "safe". */
     .reveal-all-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: #B00020; background: #FDF1F2; border: 0.5px solid #E8C4C8; border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
     .reveal-all-btn:hover { background: #FBE4E7; }
-    /* PREMIUM TOPICS GET GREEN, NOT RED (owner, 2026-08-15). The red sits badly beside the gold
-       palette; green and gold is the classic warm/cool pairing and keeps the button just as loud.
-       Deliberately NOT the free-topic purple either — a premium page should not borrow the free
-       accent, and --accent is the bright gold here so it could not be used anyway.
-       ⚠ Literal hex like its base rule, for the same reason: --accent is gold inside
-       #player-root / #sentence-list, so any var() here would make the button disappear into it.
-       Contrast measured, not eyeballed: #1F5D3A on #EEF6F0 is 7.10:1, comfortably past WCAG AA's
-       4.5:1 for normal text (the red it replaces is 6.64:1). Re-measure if either tone changes. */
-    body.premium-topic .reveal-all-btn { color: #1F5D3A; background: #EEF6F0; border-color: #C6DFD0; }
-    body.premium-topic .reveal-all-btn:hover { background: #E3F0E7; }
+    /* ⛔ THE PREMIUM GREEN VARIANT IS RETIRED (A6, 2026-09-22). It existed for ONE stated
+       reason - "the red sits badly beside the gold palette" - and A6 removed the gold palette, so
+       keeping it would leave premium pages differing from free for no reason anyone could name.
+       Both tiers now show the base red (#B00020 on #FDF1F2, 6.64:1). If a dark accent turns out
+       to clash with the red too, the fix is to change the BASE rule for both tiers, not to
+       reintroduce a per-tier variant. Retired: #1F5D3A on #EEF6F0, 7.10:1. */
     /* ---- transliteration toggle (topics shipping per-sentence translit, currently 01–03) ----
        Default ON (new visitors should see it exists); .translit-off on #sentence-list hides both
        the under-Thai line and the chips' translit. Choice remembered per device via localStorage. */
@@ -2920,7 +2916,13 @@
        Transliteration lost its ก→a mark (2026-09-19) and why Font carries no glyph. */
     .translit-btn, .font-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
     .translit-btn:hover, .font-btn:hover { background: var(--surface); }
-    .translit-btn.on, .font-btn.on { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+    /* ⚠ SELECTED = THE DARK FILL WITH WHITE INK, not a light tint (owner, 2026-09-22): "the
+       'transliteration' and 'font' toggles above the sentences on playlists and topics and
+       grammar by ear topics when selected have the old color theme. ought to be navy with white
+       writing i reckon." It also makes the row internally consistent: .toggle-btn.active and
+       .xtra-toggle.active beside them were already accent-fill + white, so these two were the
+       odd ones out. Retired: background var(--accent-light) with var(--accent) ink. */
+    .translit-btn.on, .font-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
     .thai-translit { font-family: var(--font-ui); font-size: 13px; color: var(--text-tertiary); line-height: 1.55; margin-top: 1px; }
     .g-tl { color: var(--text-secondary); margin-left: 4px; }
     #sentence-list.translit-off .thai-translit, #sentence-list.translit-off .g-tl { display: none; }
@@ -3068,8 +3070,8 @@
     /* Colour the link by the PLAYED topic's tier, not the page's. The link sits inside #player-root,
        where a premium PAGE remaps --accent to gold — so member/free destinations are pinned to the
        literal brand purple here to defeat that, and premium destinations to the text-gold. */
-    .now-playing a.np-premium, .now-playing a.np-premium strong { color: #B29234; }
-    .now-playing a.np-member, .now-playing a.np-member strong { color: #4B41AD; }
+    .now-playing a.np-premium, .now-playing a.np-premium strong { color: var(--accent); }
+    .now-playing a.np-member, .now-playing a.np-member strong { color: var(--accent); }
     .now-playing a:hover { text-decoration: underline; }
     .now-playing a.np-return { color: #C0392B; font-weight: 600; margin-left: 8px; white-space: nowrap; }
     .offline-bar { display: flex; align-items: center; gap: 10px; margin: -0.75rem 0 1.25rem; flex-wrap: wrap; }
@@ -3103,44 +3105,21 @@
       .xtra-lbl-short { display: none; }   /* tightest phones: autoplay icon only */
       .xtra-icon { width: 26px; height: 26px; }
     }
-    /* ---- Premium topic skin: recolour the player + sentence controls purple → GOLD so it's clear
-       at a glance you're on a premium topic. Scoped to the player and sentence list (variable
-       override) so the rest of the page stays brand purple; the eyebrow is recoloured separately.
-       Light gold = unselected, brighter gold = selected/active. Web AND app; member topics stay
-       purple. ---- */
-    body.premium-topic #player-root, body.premium-topic #sentence-list {
-      --accent: #F0CC5C;        /* the hero Thai-script gold (homepage .hero-thai) */
-      --accent-mid: #E3BC48;    /* hover / darker */
-      --accent-light: #FBF5DC;  /* unselected — brand light gold (--gold-light) */
-      --purple-mid: #D4A82C;    /* sentence-flag outline (visible on the card) */
-    }
-    /* Bright-gold FILLS carry DARK text/icons (white/light washes out on the light gold). */
-    body.premium-topic .play-btn svg,
-    body.premium-topic .sent-play-btn.playing svg,
-    body.premium-topic .sent-play-btn:hover svg { fill: #3D2E00; }
-    body.premium-topic .toggle-btn.active,
-    body.premium-topic .xtra-toggle.active,
-    /* Added 2026-08-15 — every newly-FILLED control needs the same treatment. The signup CTA and
-       the two playlist buttons are accent-filled, so on a premium topic they sit on bright gold
-       and white text was reported as hard to read. Same #3D2E00 as the Thai-first/English-first
-       toggle beside them. (.te-endcta-cta is deliberately absent: the end-of-topic ask renders on
-       FREE topics only, so it never meets the gold palette.) */
-    body.premium-topic .te-signup-cta,
-    body.premium-topic .te-signup-cta:hover,
-    body.premium-topic .repeat-badge { color: #3D2E00; }
-    /* ⚠ The two .te-pl-row buttons are NOT overridden here. Their base rule lives in DYN_STYLES,
-       which player.js injects AFTER this block, and both selectors have identical specificity —
-       so a rule written here loses the tie and the buttons stayed white on gold. The override
-       sits next to its base rule in DYN_STYLES instead. Keep them together. */
-    /* The eyebrow, subheading and the small player TEXT (progress count + links) use the canonical
-       gold-TEXT tone #B29234 (the "Premium" index-pill colour) — readable on the pale page, distinct
-       from the brighter #F0CC5C used for FILLS/graphics. The eyebrow/subtitle sit OUTSIDE the player,
-       so they need explicit rules anyway. See the premium-gold-palette memory for the full standard. */
-    body.premium-topic .topic-eyebrow,
-    body.premium-topic .topic-subtitle,
-    body.premium-topic .orientation-text a,
-    body.premium-topic .offline-btn,
-    body.premium-topic .offline-status.offline-ok { color: #B29234; }
+    /* ---- THE PREMIUM GOLD SKIN IS RETIRED (A6, owner 2026-09-22): "you can change the premium
+       topics to navy as well i think", alongside A1's one-dark-across-both-tiers. A premium topic
+       page now wears the SAME single accent as a free one, so there is nothing to override here.
+       ⚠ What still says "premium", and deliberately: the per-sentence lock icon and the PREMIUM
+       group heading (#B29234), the Free/Premium card pill, and the subscribe CTAs. Those carry
+       INFORMATION; the skin only carried decoration.
+       ⚠ Everything the deleted rules existed for went with them: they flipped accent-filled
+       controls to dark ink (#3D2E00) because white washes out on bright gold. On a dark accent
+       white is correct, which is what the base rules already say.
+       To restore the skin, git show this commit — it removed, as whole rules: the
+       #player-root/#sentence-list gold palette, the two dark-ink selector lists, the #B29234
+       gold-TEXT list, the four body.premium-topic .te-mini* rules, and in DYN_STYLES the
+       .sentence-card.sent-premium palette + its two rules, .dyn-tick.on.gold, and the
+       body.premium-topic dyn-toast / dyn-sync-btn / dyn-info-box / te-intro-more / te-plays /
+       dyn-eq / te-pl-row overrides. ---- */
     /* ---- floating mini transport ----
        Slim play/pause + ±10 + progress bar that sticks under the nav once the user has started the
        TE/ET track and the real player is scrolled off. Fixed overlay (no layout shift). Hidden state =
@@ -3149,7 +3128,7 @@
       position: fixed; top: 54px; left: 0; right: 0; z-index: 60;
       display: flex; flex-direction: column;
       max-width: 640px; margin: 0 auto; padding: 8px 12px;
-      background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
+      background: var(--accent-light, #EAEAF4); color: var(--accent, #1C124E);
       border: 0.5px solid var(--border, rgba(0,0,0,0.1)); border-radius: 0 0 14px 14px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.12);
       font-family: var(--font-ui, system-ui, sans-serif);
@@ -3161,7 +3140,7 @@
     .te-mini button { border: 0; background: transparent; color: inherit; cursor: pointer;
       display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     .te-mini-play { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-      background: var(--accent, #4B41AD); color: #fff; }
+      background: var(--accent, #1C124E); color: #fff; }
     .te-mini-play svg { width: 15px; height: 15px; fill: #fff; }
     .te-mini-skip { position: relative; width: 30px; height: 30px; flex-shrink: 0; }
     .te-mini-skip svg { width: 22px; height: 22px; }
@@ -3173,7 +3152,7 @@
     .te-mini-scrub { flex: 1; min-width: 40px; min-height: 44px; align-self: stretch;
       display: flex; align-items: center; cursor: pointer; touch-action: pan-y; }
     .te-mini-bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(0,0,0,0.12); overflow: hidden; }
-    .te-mini-fill { height: 100%; width: 0%; border-radius: 2px; background: var(--accent, #4B41AD); }
+    .te-mini-fill { height: 100%; width: 0%; border-radius: 2px; background: var(--accent, #1C124E); }
     .te-mini-x { width: 26px; height: 26px; flex-shrink: 0; opacity: 0.55; font-size: 20px; line-height: 1; align-self: center; }
     .te-mini-x:hover { opacity: 1; }
     /* "Now playing <other topic>" caption — a separate row beneath the controls, its own click target. */
@@ -3182,10 +3161,6 @@
     .te-mini-np.show { display: block; }
     .te-mini-np strong { font-weight: 700; }
     .te-mini-np:hover strong { text-decoration: underline; }
-    body.premium-topic .te-mini { background: #FBF5DC; color: #B29234; }
-    body.premium-topic .te-mini-play { background: #F0CC5C; }
-    body.premium-topic .te-mini-play svg { fill: #3D2E00; }
-    body.premium-topic .te-mini-fill { background: #E3BC48; }
     @media (max-width: 480px) { .te-mini { border-radius: 0; } }
     @media (prefers-reduced-motion: reduce) { .te-mini { transition: opacity 0.15s ease; } }
   `;
@@ -3761,7 +3736,7 @@
       //     no button, just a neutral note stating their state. Both only ever explain, never sell.
       var signInBtn = signedIn ? '' :
         '<button id="te-ps-signin" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
-        'padding:11px 14px;border-radius:8px;border:0;background:#4B41AD;color:#fff;cursor:pointer;">Sign in</button>';
+        'padding:11px 14px;border-radius:8px;border:0;background:var(--accent,#1C124E);color:#fff;cursor:pointer;">Sign in</button>';
       /* The second sentence is a STATEMENT OF FACT, not a signpost (owner-approved, 2026-08-15):
          no destination, no price, no "subscribe", no "upgrade". It exists because a signed-in free
          user is the genuinely stuck one — they hunt for a control that is deliberately absent and
@@ -6167,7 +6142,7 @@
           'these settings to all topics/playlists when ' + escapeHtml(dynModeLabel()) + ' is selected — do you want to continue?</p>' +
         '<div style="display:flex;gap:8px;">' +
           '<button id="dyn-sync-go" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
-            'padding:11px 14px;border-radius:8px;border:0;background:#4B41AD;color:#fff;cursor:pointer;">Continue</button>' +
+            'padding:11px 14px;border-radius:8px;border:0;background:var(--accent,#1C124E);color:#fff;cursor:pointer;">Continue</button>' +
           '<button id="dyn-sync-back" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
             'padding:11px 14px;border-radius:8px;border:.5px solid rgba(0,0,0,.18);background:#fff;color:#5A5A5A;cursor:pointer;">Go back</button>' +
         '</div>' +
@@ -8185,7 +8160,6 @@
       'background:rgba(24,22,40,.92);color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.28);cursor:pointer;' +
       'opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}' +
     '.dyn-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}' +
-    'body.premium-topic .dyn-toast{background:#3D2E00;color:#F0CC5C}' +
     '@media (prefers-reduced-motion: reduce){.dyn-toast{transition:opacity .18s ease}' +
       '.dyn-toast,.dyn-toast.show{transform:translate(-50%,-50%)}}' +
     /* owner 2026-07-27: the ±10 buttons are clutter in dyn mode (sentence skip covers it) */
@@ -8321,14 +8295,11 @@
     'body.te-v2 .te-pl-row{display:flex;gap:9px;margin:14px 0 16px}' +
     /* FILLED, not outlined (owner, 2026-08-15): as white cards beside a white player they read as
        secondary and were easy to miss. Same treatment as the signup CTA.
-       ⚠ On a premium topic --accent is the BRIGHT gold, where white text washes out — the
-       body.premium-topic rule near the palette block flips these to #3D2E00. */
+       (Until A6 on 2026-09-22 a premium topic remapped --accent to the BRIGHT gold, on which
+       white text washed out, so a body.premium-topic rule flipped these to #3D2E00. There is now
+       ONE accent, it is dark, and white on it is correct on both tiers.) */
     'body.te-v2 .te-pl-row .dyn-addpl,body.te-v2 .te-pl-row .dyn-pl-link{flex:1;margin:0;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#fff;background:var(--accent);border:.5px solid var(--accent);border-radius:var(--radius-md);padding:7.35px 10px;text-decoration:none;text-align:center;cursor:pointer}' +
     'body.te-v2 .te-pl-row .dyn-addpl:hover,body.te-v2 .te-pl-row .dyn-pl-link:hover{background:var(--accent-mid);color:#fff}' +
-    /* Premium topics: --accent is the bright gold, on which white washes out. Same #3D2E00 as
-       the toggle beside them. Written HERE, not in STYLES, so it wins the cascade — see the
-       note in the premium palette block. */
-    'body.te-v2.premium-topic .te-pl-row .dyn-addpl,body.te-v2.premium-topic .te-pl-row .dyn-pl-link,body.te-v2.premium-topic .te-pl-row .dyn-addpl:hover,body.te-v2.premium-topic .te-pl-row .dyn-pl-link:hover{color:#3D2E00}' +
     /* per-sentence: tools to the right, reveal ornament gone */
     'body.te-v2 .sentence-header{display:flex;align-items:center;gap:8px}' +
     'body.te-v2 .prog-wrap{display:none}' +
@@ -8358,10 +8329,6 @@
        a playlist mixes tiers, so the same variable override is scoped to the CARD — free and
        member rows keep brand purple, premium rows go gold. Same tokens as body.premium-topic
        (bright #F0CC5C for fills, dark ink on them), so the two routes cannot drift apart. */
-    '.sentence-card.sent-premium{--accent:#F0CC5C;--accent-mid:#E3BC48;--accent-light:#FBF5DC;--purple-mid:#D4A82C}' +
-    '.sentence-card.sent-premium .sent-play-btn.playing svg,' +
-    '.sentence-card.sent-premium .sent-play-btn:hover svg{fill:#3D2E00}' +
-    '.sentence-card.sent-premium .sent-num{color:#B29234}' +
     '.sentence-card.sent-locked{opacity:.72;background:var(--surface)}' +
     '.sentence-card.sent-locked .sentence-header{cursor:pointer}' +
     '.sentence-card.sent-locked .sent-preview{color:var(--text-secondary)}' +
@@ -8394,10 +8361,7 @@
     '.dyn-sync-btn{width:28px;height:28px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}' +
     '.dyn-sync-btn svg{width:15px;height:15px}' +
     '.dyn-sync-btn:hover{color:var(--accent);border-color:var(--accent)}' +
-    'body.premium-topic .dyn-sync-btn:hover{color:#B29234;border-color:#B29234}' +
-    'body.premium-topic .dyn-info-box a{color:#B29234}' +   // text-gold, not the pale graphic gold --accent maps to
     // Read more / Show less sits OUTSIDE #player-root, so --accent is still purple there — pin to text-gold.
-    'body.premium-topic .te-intro-more{color:#B29234}' +
     '.sentence-card.dyn-off{opacity:.55;border-style:dashed}' +
     '.sentence-card.dyn-off .sent-preview{text-decoration:line-through}' +
     '.dyn-card-btn{width:26px;height:26px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}' +
@@ -8419,7 +8383,6 @@
       + 'font-size:calc(11px * var(--te-ui, 1));font-variant-numeric:tabular-nums;color:var(--text-tertiary)}' +
     '.te-plays.on{display:inline-flex}' +
     '.te-plays svg{width:8px;height:8px;fill:currentColor;flex-shrink:0}' +
-    'body.premium-topic .te-plays{color:#B29234}' +
     'body.te-v2 .te-plays{order:7}' +
 
     /* owner 2026-07-27: quiet card look (was a solid accent pill — garish next to its neighbours) */
@@ -8449,7 +8412,6 @@
     /* select mode: flag + exclude are out of play (the capture listener also swallows them) */
     '#sentence-list.dyn-selecting .dyn-card-btn{opacity:.35;pointer-events:none}' +
     '.dyn-tick.on{background:var(--accent);border-color:var(--accent)}' +
-    '.dyn-tick.on.gold{background:#B29234;border-color:#B29234}' +
     ".dyn-tick.on::after{content:'';position:absolute;left:6px;top:2.5px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}" +
     '#dyn-sel-bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:.5px solid var(--border);padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:12px;z-index:250}' +
     '#dyn-sel-bar.show{display:flex}' +
@@ -8481,7 +8443,6 @@
     '.dyn-eq i:nth-child(2){animation-delay:.3s}' +
     '.dyn-eq i:nth-child(3){animation-delay:.15s}' +
     '.dyn-eq i:nth-child(4){animation-delay:.45s}' +
-    'body.premium-topic .dyn-eq i{background:#B29234}' +
     '@keyframes te-eq-bounce{0%,100%{transform:scaleY(0.35)}50%{transform:scaleY(1)}}';
   /* ══ r18: DOWNLOADS FOR DYN UNITS ════════════════════════════════════════════════════
      A dyn unit downloads its SOURCE CLIPS (_TH + _EN), not a rendered file. That is the

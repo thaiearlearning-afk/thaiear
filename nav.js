@@ -713,7 +713,7 @@
       s.id = 'te-np-styles';
       s.textContent =
         '.te-np-bar{position:sticky;top:54px;z-index:40;display:none;align-items:center;gap:9px;' +
-        'background:var(--accent-light,#EEEDFE);color:var(--accent,#4B41AD);text-decoration:none;' +
+        'background:var(--accent-light,#EAEAF4);color:var(--accent,#1C124E);text-decoration:none;' +
         'padding:9px 14px;font-family:var(--font-ui,system-ui,sans-serif);font-size:calc(13px * var(--te-ui, 1));font-weight:500;' +
         'border-bottom:0.5px solid var(--border,rgba(0,0,0,0.1))}' +
         '.te-np-bar.show{display:flex}' +

@@ -108,11 +108,17 @@ body.tq-mode { background: var(--surface, #fff); }
    they carry a colon ("Food culture: Regional food & etiquette"). The eyebrow is one short
    phrase so it can be small; the unit name gets the room that frees up. */
 .tq-head.hero {
-  --tqh-ink: var(--accent, #4B41AD);
-  --tqh-bg: var(--accent-light, #EEEDFE);
+  --tqh-ink: var(--accent, #1C124E);
+  --tqh-bg: var(--accent-light, #EAEAF4);
   margin: 0 0 10px;
 }
-.tq-sheet.premium .tq-head.hero { --tqh-ink: #B29234; --tqh-bg: #FBF5DC; }
+/* ⛔⛔ THE QUIZ ARM HAS NO PREMIUM SKIN (A6/A9-A13, owner 2026-09-22: "quiz should also
+   adopt navy theme", and premium topics join the one accent). Every `.tq-sheet.premium` /
+   `.tq-entry.premium` rule below now restates the BASE pair rather than a gold one. They are
+   kept, not deleted, because the class is still applied by quiz.js and a future tier skin
+   would be written here - and because a deleted rule is invisible, whereas one that says
+   "same as base, deliberately" is not. Retired pair: text gold #B29234 on #FBF5DC. */
+.tq-sheet.premium .tq-head.hero { --tqh-ink: var(--accent, #1C124E); --tqh-bg: var(--accent-light, #EAEAF4); }
 /* ⚠ The gap under the eyebrow is 12px, not 7 (owner, 2026-09-20: "on quiz menu the topic
    title is too close to the 'test yourself' it is cramped"). The pill and the unit name are
    different enough in size and weight that a tight gap reads as one crowded block rather than
@@ -146,7 +152,7 @@ body.tq-mode { background: var(--surface, #fff); }
 .tq-head.has-ic .tq-head-ic {
   width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
-  background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
+  background: var(--accent-light, #EAEAF4); color: var(--accent, #1C124E);
 }
 /* ⛔⛔ SIZE THE SVG. Without this the chip rendered as an EMPTY TINTED BOX on iPhone (owner,
    2026-09-20: "the icons dont load on iphone within each individual quiz - they are empty
@@ -160,7 +166,7 @@ body.tq-mode { background: var(--surface, #fff); }
    ⚠ 17px against a 34px chip, matching .qpick .ic svg, because this chip is deliberately the
    same object as a picker row's. */
 .tq-head.has-ic .tq-head-ic svg { width: 17px; height: 17px; display: block; }
-.tq-sheet.premium .tq-head.has-ic .tq-head-ic { background: #FBF5DC; color: #B29234; }
+.tq-sheet.premium .tq-head.has-ic .tq-head-ic { background: var(--accent-light, #EAEAF4); color: var(--accent, #1C124E); }
 .tq-head.has-ic .tq-head-tx { min-width: 0; }
 
 /* ── quiz-type picker ────────────────────────────────────────────────────────────────── */
@@ -171,17 +177,17 @@ body.tq-mode { background: var(--surface, #fff); }
   border-radius: var(--radius-md, 10px); padding: 11px 13px; cursor: pointer;
   font-family: inherit; transition: border-color .15s, background .15s;
 }
-.qpick button:hover { border-color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); }
+.qpick button:hover { border-color: var(--accent, #1C124E); background: var(--accent-light, #EAEAF4); }
 .qpick .ic {
   width: 30px; height: 30px; border-radius: 9px;
-  background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
+  background: var(--accent-light, #EAEAF4); color: var(--accent, #1C124E);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 15px;
 }
 /* ⚠ The tile used to hold a single letter, so it needed no rule for its contents. The svg is
    sized here rather than on the element, because the four are one set and should not be able to
    drift apart. 17px in a 30px tile leaves the same optical padding the letters had. */
 .qpick .ic svg { width: 17px; height: 17px; display: block; }
-.tq-sheet.premium .qpick .ic { background: #FBF5DC; color: #B29234; }
+.tq-sheet.premium .qpick .ic { background: var(--accent-light, #EAEAF4); color: var(--accent, #1C124E); }
 .qpick .nm { font-size: 14px; font-weight: 500; color: var(--text-primary, #1A1A1A); display: block; line-height: 1.25; }
 .qpick .ds { font-size: 11.5px; color: var(--text-tertiary, #9A9A9A); display: block; line-height: 1.35; }
 .qpick .sc { margin-left: auto; font-size: 12px; font-weight: 600; color: #1F5D3A; font-variant-numeric: tabular-nums; }
@@ -200,42 +206,42 @@ body.tq-mode { background: var(--surface, #fff); }
   border: 0.5px solid var(--border-strong, rgba(0,0,0,.16)); background: var(--surface, #fff);
   cursor: pointer; font-family: inherit; color: var(--text-secondary, #5A5A5A);
 }
-.seg.on { background: var(--accent, #4B41AD); border-color: var(--accent, #4B41AD); color: #fff; }
+.seg.on { background: var(--accent, #1C124E); border-color: var(--accent, #1C124E); color: #fff; }
 .seg[disabled] { opacity: .34; cursor: default; }
 .radios { display: flex; flex-direction: column; gap: 5px; }
 .radio {
   display: flex; align-items: flex-start; gap: 9px; font-size: 13.5px;
   padding: 6px 8px; border-radius: var(--radius-sm, 6px); cursor: pointer;
 }
-.radio:hover { background: var(--accent-light, #EEEDFE); }
-.radio input { margin: 4px 0 0; accent-color: var(--accent, #4B41AD); flex-shrink: 0; }
+.radio:hover { background: var(--accent-light, #EAEAF4); }
+.radio input { margin: 4px 0 0; accent-color: var(--accent, #1C124E); flex-shrink: 0; }
 .radio .rt { line-height: 1.35; }
 .radio .rd { color: var(--text-tertiary, #9A9A9A); font-size: 12px; }
 .hint {
   font-size: 12px; color: var(--text-secondary, #5A5A5A);
-  background: var(--accent-light, #EEEDFE); border-radius: var(--radius-sm, 6px);
+  background: var(--accent-light, #EAEAF4); border-radius: var(--radius-sm, 6px);
   padding: 8px 10px; margin: 8px 0 0; line-height: 1.45;
 }
 .checkrow {
   display: flex; align-items: flex-start; gap: 9px; font-size: 13.5px;
   padding: 6px 8px; border-radius: var(--radius-sm, 6px); cursor: pointer;
 }
-.checkrow:hover { background: var(--accent-light, #EEEDFE); }
-.checkrow input { margin: 4px 0 0; accent-color: var(--accent, #4B41AD); flex-shrink: 0; }
+.checkrow:hover { background: var(--accent-light, #EAEAF4); }
+.checkrow input { margin: 4px 0 0; accent-color: var(--accent, #1C124E); flex-shrink: 0; }
 .exline {
   display: flex; align-items: center; justify-content: space-between; font-size: 13px;
   border: 0.5px solid var(--border-strong, rgba(0,0,0,.16)); border-radius: var(--radius-sm, 6px);
   padding: 9px 11px; color: var(--text-secondary, #5A5A5A); cursor: pointer;
   background: var(--surface, #fff); width: 100%; font-family: inherit; text-align: left;
 }
-.exline:hover { border-color: var(--accent, #4B41AD); }
+.exline:hover { border-color: var(--accent, #1C124E); }
 .exline b { color: var(--text-primary, #1A1A1A); font-weight: 500; }
 .startbtn {
-  width: 100%; background: var(--accent, #4B41AD); color: #fff; border: 0;
+  width: 100%; background: var(--accent, #1C124E); color: #fff; border: 0;
   border-radius: var(--radius-md, 10px); padding: 12px;
   font-size: 14.5px; font-weight: 600; font-family: inherit; cursor: pointer; margin-top: 4px;
 }
-.startbtn:hover { background: var(--accent-mid, #534AB7); }
+.startbtn:hover { background: var(--accent-mid, #2A1F6B); }
 
 /* Secondary actions under the start button — Return, and "use these settings everywhere". */
 .tq-minor {
@@ -246,7 +252,7 @@ body.tq-mode { background: var(--surface, #fff); }
   background: none; border: 0; padding: 4px; cursor: pointer; font-family: inherit;
   font-size: 12.5px; color: var(--text-secondary, #5A5A5A); text-align: left;
 }
-.tq-minor button:hover { color: var(--accent, #4B41AD); text-decoration: underline; }
+.tq-minor button:hover { color: var(--accent, #1C124E); text-decoration: underline; }
 
 /* ⭐ THE WAY OUT IS A CONTROL, NOT A FOOTNOTE (owner, 2026-09-20: "slightly larger/more
    prominent (not aggressively so)"). It sat in .tq-minor at 12.5px with no affordance, which is
@@ -269,12 +275,12 @@ body.tq-mode { background: var(--surface, #fff); }
 }
 .tq-minor .tq-return:hover,
 .tq-minor .tq-back:hover {
-  text-decoration: none; border-color: var(--accent, #4B41AD);
-  background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
+  text-decoration: none; border-color: var(--accent, #1C124E);
+  background: var(--accent-light, #EAEAF4); color: var(--accent, #1C124E);
 }
 .tq-sheet.premium .tq-minor .tq-return:hover,
 .tq-sheet.premium .tq-minor .tq-back:hover {
-  border-color: #B29234; background: #FBF5DC; color: #B29234;
+  border-color: var(--accent, #1C124E); background: var(--accent-light, #EAEAF4); color: var(--accent, #1C124E);
 }
 .tq-minor .done { color: #1F5D3A; text-decoration: none; cursor: default; }
 
@@ -284,8 +290,8 @@ body.tq-mode { background: var(--surface, #fff); }
   display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.4;
   padding: 7px 8px; border-radius: var(--radius-sm, 6px); cursor: pointer;
 }
-.tq-exitem:hover { background: var(--accent-light, #EEEDFE); }
-.tq-exitem input { margin: 3px 0 0; accent-color: var(--accent, #4B41AD); flex-shrink: 0; }
+.tq-exitem:hover { background: var(--accent-light, #EAEAF4); }
+.tq-exitem input { margin: 3px 0 0; accent-color: var(--accent, #1C124E); flex-shrink: 0; }
 .tq-exitem .x-th { font-family: var(--font-thai, 'Sarabun', sans-serif); }
 .tq-exitem .x-en { color: var(--text-tertiary, #9A9A9A); font-size: 12px; display: block; }
 
@@ -295,7 +301,7 @@ body.tq-mode { background: var(--surface, #fff); }
   font-size: 12px; color: var(--text-tertiary, #9A9A9A); margin-bottom: 10px;
 }
 .qprog { flex: 1; height: 3px; background: var(--border, rgba(0,0,0,.09)); border-radius: 2px; margin: 0 11px; overflow: hidden; }
-.qprog i { display: block; height: 100%; background: var(--accent, #4B41AD); border-radius: 2px; transition: width .2s; }
+.qprog i { display: block; height: 100%; background: var(--accent, #1C124E); border-radius: 2px; transition: width .2s; }
 .qx {
   background: none; border: 0; padding: 0 6px 0 0; cursor: pointer; line-height: 1;
   font-size: 18px; color: var(--text-tertiary, #9A9A9A); font-family: inherit;
@@ -313,10 +319,10 @@ body.tq-mode { background: var(--surface, #fff); }
   transition: background .15s, color .15s;
 }
 .qopts svg { width: 21px; height: 21px; fill: currentColor; }
-.qopts:hover { color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); }
+.qopts:hover { color: var(--accent, #1C124E); background: var(--accent-light, #EAEAF4); }
 .playbtn {
   display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%;
-  background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
+  background: var(--chip-accent-light, #EEEDFE); color: var(--chip-accent, #4B41AD);
   border: 0.5px solid rgba(75, 65, 173, .2); border-radius: var(--radius-md, 10px); padding: 15px;
   font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; margin-bottom: 14px;
 }
@@ -337,7 +343,7 @@ body.tq-mode { background: var(--surface, #fff); }
   padding: 11px 13px; font-size: 13.5px; font-family: inherit; cursor: pointer;
   margin-bottom: 7px; color: var(--text-primary, #1A1A1A); line-height: 1.4;
 }
-.opt:hover { border-color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); }
+.opt:hover { border-color: var(--accent, #1C124E); background: var(--accent-light, #EAEAF4); }
 .opt.right { border-color: #1F5D3A; background: #F1F7F3; color: #1F5D3A; font-weight: 500; }
 .opt.wrong { border-color: #B4342E; background: #FCF2F1; color: #B4342E; }
 
@@ -348,16 +354,30 @@ body.tq-mode { background: var(--surface, #fff); }
 .nextbtn.t-verdict.right { background: #F1F7F3; color: #1F5D3A; box-shadow: inset 0 0 0 1px #1F5D3A; }
 .nextbtn.t-verdict.wrong { background: #FCF2F1; color: #B4342E; box-shadow: inset 0 0 0 1px #B4342E; }
 .nextbtn.t-verdict[disabled] { opacity: 1; }
-.opt.picked { border-color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); font-weight: 500; }
+.opt.picked { border-color: var(--accent, #1C124E); background: var(--accent-light, #EAEAF4); font-weight: 500; }
 .opt .mk { float: right; font-weight: 600; }
 .opt[disabled] { cursor: default; }
 .opt .o-th { font-family: var(--font-thai, 'Sarabun', sans-serif); font-size: 17px; }
 
 .thaibig { font-family: var(--font-thai, 'Sarabun', sans-serif); font-size: 21px; line-height: 1.55; color: var(--text-primary, #1A1A1A); margin: 0 0 2px; }
 .tl { font-size: 12.5px; color: var(--text-tertiary, #9A9A9A); line-height: 1.5; margin: 0 0 10px; }
+/* ⛔⛔ THE TWO SURFACES THE OWNER ASKED TO LEAVE PURPLE (2026-09-22): "i think the gloss
+   chips as the light blue purple is fine as is, same for play the sentence." Everything else in
+   this arm went navy in the same breath, so these two need to be IMMUNE rather than merely
+   remembered - hence their own variables, which no palette change touches.
+   ⚠ NOT A CONTRADICTION with A4's "the ind sentence play buttons" going navy: that is
+   .sent-play-btn on a TOPIC page. This is .playbtn, the "Play the sentence" button inside a quiz
+   reveal - a different control on a different screen, and he named this one by its label.
+   ⚠ The topic page's own .gloss-chip needs nothing: it is built from --surface / --border /
+   --text-*, so it never carried the accent and the recolour could not reach it. These are the
+   quiz's reveal chips, which did. */
+:root {
+  --chip-accent: #4B41AD;
+  --chip-accent-light: #EEEDFE;
+}
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.chip { background: var(--accent-light, #EEEDFE); border-radius: var(--radius-sm, 6px); padding: 4px 8px; font-size: 12px; line-height: 1.35; }
-.chip .th { font-family: var(--font-thai, 'Sarabun', sans-serif); color: var(--accent, #4B41AD); font-weight: 500; }
+.chip { background: var(--chip-accent-light, #EEEDFE); border-radius: var(--radius-sm, 6px); padding: 4px 8px; font-size: 12px; line-height: 1.35; }
+.chip .th { font-family: var(--font-thai, 'Sarabun', sans-serif); color: var(--chip-accent, #4B41AD); font-weight: 500; }
 .chip .gl {
   color: var(--text-secondary, #5A5A5A); margin-left: 5px;
   /* ⚠ PER-CHARACTER FALLBACK, NOT A THAI FONT. A gloss can legitimately CONTAIN THAI SCRIPT: the
@@ -375,7 +395,7 @@ body.tq-mode { background: var(--surface, #fff); }
 /* ⚠ The chip the question was about. An outline rather than a different fill: the chips sit
    on the accent-light background already, so a second fill would fight it, and an outline
    survives both themes without a second colour token. */
-.chip.is-target { box-shadow: inset 0 0 0 1.5px var(--accent, #4B41AD); }
+.chip.is-target { box-shadow: inset 0 0 0 1.5px var(--chip-accent, #4B41AD); }
 
 /* ⚠ The published translation, under a prompt that was reworded to line up with the chips.
    Secondary by design: it says what the sentence MEANS, while the line above says how it is
@@ -464,7 +484,7 @@ body.tq-mode { background: var(--surface, #fff); }
 }
 /* the gap that opens where the tile would land */
 .tq-ghost {
-  background: transparent; border: 1.5px dashed var(--accent, #4B41AD);
+  background: transparent; border: 1.5px dashed var(--accent, #1C124E);
   border-radius: var(--radius-sm, 6px); box-sizing: border-box;
 }
 .chip.is-target .gl { color: var(--text-primary, #1A1A1A); }
@@ -483,11 +503,11 @@ body.tq-mode { background: var(--surface, #fff); }
 
 .reveal { border-top: 0.5px solid var(--border, rgba(0,0,0,.09)); margin-top: 14px; padding-top: 13px; }
 .nextbtn {
-  width: 100%; background: var(--accent, #4B41AD); color: #fff; border: 0;
+  width: 100%; background: var(--accent, #1C124E); color: #fff; border: 0;
   border-radius: var(--radius-md, 10px); padding: 11px;
   font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; margin-top: 13px;
 }
-.nextbtn:hover { background: var(--accent-mid, #534AB7); }
+.nextbtn:hover { background: var(--accent-mid, #2A1F6B); }
 
 /* ── Thai Builder: tray + answer box ─────────────────────────────────────────────────── */
 .enq { font-size: 15.5px; font-weight: 500; line-height: 1.4; margin: 0 0 13px; }
@@ -497,7 +517,7 @@ body.tq-mode { background: var(--surface, #fff); }
   display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start;
   margin-bottom: 13px; background: #FCFCFB;
 }
-.drop.filled { border-style: solid; border-color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); }
+.drop.filled { border-style: solid; border-color: var(--accent, #1C124E); background: var(--accent-light, #EAEAF4); }
 .tile {
   background: var(--surface, #fff); border: 0.5px solid var(--border-strong, rgba(0,0,0,.16));
   border-radius: var(--radius-sm, 6px); padding: 6px 10px;
@@ -505,7 +525,7 @@ body.tq-mode { background: var(--surface, #fff); }
   cursor: pointer; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,.04);
   font-weight: 400;
 }
-.tile.in { background: var(--accent, #4B41AD); border-color: var(--accent, #4B41AD); color: #fff; }
+.tile.in { background: var(--accent, #1C124E); border-color: var(--accent, #1C124E); color: #fff; }
 .tile .tt { display: block; font-family: var(--font-ui, 'Inter', sans-serif); font-size: 10.5px; color: var(--text-tertiary, #9A9A9A); line-height: 1.3; }
 .tile.in .tt { color: rgba(255,255,255,.72); }
 /* ⛔ A LOCKED head-start tile is not removable and must LOOK unremovable (§3A.6). */
@@ -514,9 +534,13 @@ body.tq-mode { background: var(--surface, #fff); }
 .tray { display: flex; flex-wrap: wrap; gap: 5px; }
 
 /* ── Speak Thai ──────────────────────────────────────────────────────────────────────── */
+/* ⚠ THE "Literally:" LINE KEEPS THE LIGHT PURPLE (owner, 2026-09-22): "the 'literally:'
+   messages in the vocab quiz can stay the same light purple as the answer gloss chips and the play
+   the sentence box." So it joins --chip-accent-light rather than following --accent. Those three
+   together are the quiz's deliberate purple family; everything else in the arm is navy. */
 .tq-say {
   font-size: 12.5px; color: var(--text-secondary, #5A5A5A);
-  background: var(--accent-light, #EEEDFE); border-radius: var(--radius-sm, 6px);
+  background: var(--chip-accent-light, #EEEDFE); border-radius: var(--radius-sm, 6px);
   padding: 9px 11px; margin: 0 0 14px; line-height: 1.45;
 }
 .tq-selfmark { display: flex; gap: 8px; margin-top: 13px; }
@@ -593,8 +617,8 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   flex: 1; border-radius: var(--radius-md, 10px); padding: 10px;
   font-size: 13.5px; font-weight: 600; font-family: inherit; cursor: pointer;
 }
-.tq-stay { background: var(--accent, #4B41AD); color: #fff; border: 0; }
-.tq-stay:hover { background: var(--accent-mid, #534AB7); }
+.tq-stay { background: var(--accent, #1C124E); color: #fff; border: 0; }
+.tq-stay:hover { background: var(--accent-mid, #2A1F6B); }
 .tq-leave { background: var(--surface, #fff); color: var(--text-secondary, #5A5A5A); border: 0.5px solid var(--border-strong, rgba(0,0,0,.16)); }
 .tq-leave:hover { border-color: #B4342E; color: #B4342E; }
 
@@ -612,8 +636,8 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 
 /* JOB 5 — a two-answer question must announce itself, and say so again mid-answer */
 .tq-need {
-  font-size: 13.5px; font-weight: 600; color: var(--accent, #4B41AD);
-  background: var(--accent-light, #EEEDFE); border-radius: var(--radius-sm, 6px);
+  font-size: 13.5px; font-weight: 600; color: var(--accent, #1C124E);
+  background: var(--accent-light, #EAEAF4); border-radius: var(--radius-sm, 6px);
   padding: 7px 11px; margin: 0 0 12px; display: inline-block;
 }
 .tq-need b { font-size: 15px; }
@@ -752,7 +776,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   border: 0.5px solid var(--border-strong, rgba(0,0,0,.16)); border-radius: var(--radius-sm, 6px);
   padding: 8px 4px; color: var(--text-secondary, #5A5A5A); line-height: 1; font-weight: 600;
 }
-.tq-fs.on { background: var(--accent, #4B41AD); border-color: var(--accent, #4B41AD); color: #fff; }
+.tq-fs.on { background: var(--accent, #1C124E); border-color: var(--accent, #1C124E); color: #fff; }
 
 /* JOB 12 — "use these settings for all X quizzes"
    ⚠ It needs to LOOK clickable: as plain text in a list of settings it read as a caption
@@ -766,7 +790,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   color: var(--text-secondary, #5A5A5A);
   transition: border-color .15s, color .15s, background .15s;
 }
-.tq-all:hover { border-color: var(--accent, #4B41AD); color: var(--accent, #4B41AD); background: var(--accent-light, #EEEDFE); }
+.tq-all:hover { border-color: var(--accent, #1C124E); color: var(--accent, #1C124E); background: var(--accent-light, #EAEAF4); }
 /* ⚠ STROKED, not filled — it is the dyn player's sync glyph, which is a stroke icon. A
    leftover `fill: currentColor` here would paint both arcs solid and make it a blob. */
 .tq-sync { width: 17px; height: 17px; fill: none; flex-shrink: 0; }
@@ -862,7 +886,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   font-family: inherit; font-size: calc(13.5px * var(--tq-scale, 1));
   color: var(--text-secondary, #5A5A5A); cursor: pointer; text-align: center;
 }
-.tq-acts .tq-exit:hover, .tq-acts .tq-return:hover { border-color: var(--accent, #4B41AD); color: var(--accent, #4B41AD); }
+.tq-acts .tq-exit:hover, .tq-acts .tq-return:hover { border-color: var(--accent, #1C124E); color: var(--accent, #1C124E); }
 
 /* ⚠ Only worth filling when the sheet actually IS the screen. On desktop the sheet is a 480px
    card in the middle of a backdrop, and stretching a card to the viewport looks broken. */
@@ -899,7 +923,8 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    JOB 10 — THE ENTRY BLOCK, TIER-COLOURED (owner, 2026-09-20)
    "the Test yourself button should be the color of the topic … please make it more prominent …
    its a great feature. and shouldnt be an afterthought."
-   ⛔ THE PREMIUM PAIR IS THE *TEXT* GOLD, #B29234 on #FBF5DC — not the graphic gold #F0CC5C.
+   ⛔ THERE IS NO PREMIUM PAIR ANY MORE (A6, 2026-09-22) — one accent, both tiers. Retired: the
+   TEXT gold #B29234 on #FBF5DC (never the graphic gold #F0CC5C).
    The standing palette rule is that the bright gold is for graphics and the darker one for
    anything carrying text, and the topic card's own premium pill already uses exactly this pair.
    Matching it is what makes the block read as part of the page rather than bolted on.
@@ -941,9 +966,10 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 }
 .tq-mascot-t {
   margin: 0; font-size: 14px; font-weight: 500; letter-spacing: .02em;
-  color: var(--accent, #4B41AD);
+  color: var(--accent, #1C124E);
 }
-.tq-sheet.premium .tq-mascot-t { color: #B29234; }
+/* A13: "all pictures on website have text under them e.g. stay sharp - these all need to update" */
+.tq-sheet.premium .tq-mascot-t { color: var(--accent, #1C124E); }
 /* ⛔ The ellipsis animates WIDTH, never `content`: the Android app's webview cannot animate
    `content`, and this is lifted from topics-page.css where that is already documented.
    steps(3, start) is what makes it 1 -> 2 -> 3 dots rather than a smooth slide. */
@@ -959,9 +985,9 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 }
 
 .tq-entry {
-  --tqe-ink: var(--accent, #4B41AD);
-  --tqe-bg: var(--accent-light, #EEEDFE);
-  --tqe-line: rgba(75, 65, 173, .22);
+  --tqe-ink: var(--accent, #1C124E);
+  --tqe-bg: var(--accent-light, #EAEAF4);
+  --tqe-line: rgba(28, 18, 78, .22);   /* the accent at 22% - keep in step with --accent */
   /* ⚠ 80%, CENTRED (owner, 2026-09-20: "reduce the width of the overall box they are
      contained in a bit as well to remove excessive dead space? maybe by like 20%"). It is a
      percentage rather than a fixed width so it stays 20% narrower at every size, and the 760px
@@ -974,7 +1000,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   border-radius: var(--radius-lg, 14px);
   font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
 }
-.tq-entry.premium { --tqe-ink: #B29234; --tqe-bg: #FBF5DC; --tqe-line: rgba(178,146,52,.26); }
+.tq-entry.premium { --tqe-ink: var(--accent, #1C124E); --tqe-bg: var(--accent-light, #EAEAF4); --tqe-line: rgba(28, 18, 78, .22); }
 
 .tqe-head { margin-bottom: 14px; }
 .tqe-t { margin: 0 0 3px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--tqe-ink); }
@@ -1016,7 +1042,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .tqe-tile:active { transform: none; }
 
 /* the four, from tints already in this stylesheet */
-.tqe-tile.t-v { --t-bg: #EEEDFE; --t-ink: #4B41AD; }   /* Vocab   — the accent */
+.tqe-tile.t-v { --t-bg: var(--accent-light); --t-ink: var(--accent); }   /* Vocab — the accent, themed */
 .tqe-tile.t-l { --t-bg: #F1F7F3; --t-ink: #1F5D3A; }   /* Listen  — the "right" green */
 .tqe-tile.t-b { --t-bg: #FCF2F1; --t-ink: #B4342E; }   /* Builder — the "wrong" clay */
 .tqe-tile.t-s { --t-bg: #EFEFF4; --t-ink: #44506B; }   /* Speak   — slate, NOT gold: see quiz.js */

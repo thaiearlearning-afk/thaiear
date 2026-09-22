@@ -22,13 +22,20 @@
     --text-primary: #1A1A1A;
     --text-secondary: #5A5A5A;
     --text-tertiary: #9A9A9A;
-    --accent: #4B41AD;
-    --accent-mid: #534AB7;
-    --accent-light: #EEEDFE;
+    --accent: #1C124E;
+    --accent-mid: #2A1F6B;
+    --accent-light: #EAEAF4;
     --gold: #F0CC5C;
     --gold-dark: #C8A030;
     --gold-light: #FBF5DC;
     --purple-mid: #7F77DD;
+    /* THE CARD TIER TINTS (owner 2026-09-22, mockup variant A: "do keep the tint as it appears
+       in A"). These are the ONLY tier signal on a card besides the pill's own word - the quiz
+       strip and the pill are one tier-neutral dark. Values are the mockup's, as approved.
+       The premium one is a CREAM: the gold family at near-white, which keeps a premium card
+       recognisable without putting gold back on the strip. */
+    --card-tint: #F3F4FA;
+    --card-tint-premium: #F7F4EC;
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 14px;
@@ -63,7 +70,7 @@
 
   /* ── HERO ── */
   .hero {
-    background: #4B41AD;
+    background: var(--accent);
     overflow: hidden;
     text-align: center;
   }
@@ -286,7 +293,10 @@
      Free, gold for Premium) instead of the default purple. Scoped :not(.active) so the
      selected pill keeps its solid styling. Member + All access stay purple by design. */
   .filter-tab.tab-free:not(.active):hover { border-color: var(--text-tertiary); color: var(--text-primary); }
-  .filter-tab.tab-premium:not(.active):hover { border-color: var(--gold-dark); color: #B29234; }
+  /* A2 (owner 2026-09-22): "change the 'all' 'free' and 'premium' filter pills at the top to the
+     navy color as well" - so the premium pill's gold hover goes too and all three behave alike.
+     Retired: border-color: var(--gold-dark); color: #B29234. */
+  .filter-tab.tab-premium:not(.active):hover { border-color: var(--accent); color: var(--accent); }
 
   /* ── GRID TOOLBAR ── pills + search in ONE quiet card instead of stacked loose rows
      (ported from index-mock.html). */
@@ -359,7 +369,8 @@
   }
   /* Cards ~30% shorter (owner 2026-08-02): tighter padding + gap. */
   .topic-card {
-    background: var(--surface);
+    /* the free/member tint; premium overrides it further down */
+    background: var(--card-tint, #F3F4FA);
     border: 0.5px solid var(--border);
     border-radius: var(--radius-lg);
     /* ⛔⛔ THE SIDE AND BOTTOM PADDING ARE CUSTOM PROPERTIES BECAUSE SOMETHING ELSE HAS TO
@@ -391,7 +402,8 @@
   .te-eq { position: absolute; top: 0.85rem; right: 1.05rem; display: none; align-items: flex-end;
            gap: 2px; height: 13px; pointer-events: none; }
   .topic-card.playing .te-eq { display: flex; }
-  .topic-card.premium .te-eq i { background: #F0CC5C; }
+  /* A6: no gold equaliser on a premium card - one accent, so the base rule is correct.
+     Retired: .topic-card.premium .te-eq i { background: #F0CC5C; } */
   .te-eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--accent);
              transform-origin: bottom; animation: te-eq-bounce 0.9s ease-in-out infinite; }
   .te-eq i:nth-child(2) { animation-delay: 0.3s; }
@@ -588,10 +600,11 @@
   .topic-fav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; }
   .topic-fav[aria-pressed="true"] svg { fill: currentColor; }
   .topic-fav:active { transform: translateY(-50%) scale(0.9); }
-  /* Premium cards use the GRAPHIC gold, matching .dl-badge[data-tier="premium"] .dl-tick —
-     the heart is the same kind of mark as the tick, so it must not read as a different
-     system. (Graphic gold #F0CC5C, not the text gold — see the premium palette.) */
-  .topic-card[data-tier="premium"] .topic-fav { color: #F0CC5C; }
+  /* A16 (owner 2026-09-22: "dont forget color of heart"). The heart used the GRAPHIC gold on a
+     premium card, to match the tick. Both are now the one accent, so the pairing still holds and
+     neither needs a tier rule. Retired: .topic-card[data-tier="premium"] .topic-fav { color:
+     #F0CC5C } - and if the heart is ever re-tiered, the tick must move with it, because the owner
+     reads them as one column of marks. */
   /* Devices that CAN download: the tick owns , so the heart sits 26px left of it and
      the two read as one column. Stamped on <html> in the page head before first paint (see
      gen_topics_pages.js), so this is settled per DEVICE, never per card — a per-card rule would
@@ -656,9 +669,11 @@
     margin: 0.5rem calc(-1 * var(--card-px, 1rem)) calc(-1 * var(--card-pb, 0.55rem));
     padding: 6px 1rem 7px;
     border: 0;
-    border-top: 0.5px solid var(--border);
+    /* ⛔ ONE TIER-NEUTRAL DARK, white ink. See the premium rule below for why it is restated
+       there rather than inherited. */
+    border-top-color: transparent;
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-    background: var(--accent-light);
+    background: var(--accent);
     /* ⛔ LONGHAND, never the `font` shorthand: `font: 500 11.5px/1.3 inherit` is illegal
        (inherit is not a legal family inside it) and the browser throws the WHOLE declaration
        away, falling back to the UA's 13.3px button default. That cost quiz.css a day. */
@@ -666,7 +681,7 @@
     font-size: calc(11.5px * var(--te-ui, 1));
     font-weight: 500;
     line-height: 1.3;
-    color: var(--accent);
+    color: #fff;
     text-align: left;
     cursor: pointer;
     position: relative;
@@ -713,19 +728,30 @@
   /* A fixed cell width so four scores and four dashes occupy the identical space — the
      columns must not jump as results arrive from the account pull. */
   .tqs-c { min-width: 2.7em; text-align: right; }
-  /* ⚠ TIER-KEYED, and the gold is the TEXT gold #B29234 on #FBF5DC — never the graphic gold
-     #F0CC5C, which is for graphics only. The card's own premium pill already uses this pair,
-     and matching it is what makes the strip look like part of the card. */
+  /* ⛔⛔ ONE DARK, BOTH TIERS. Owner, twice, after a gold variant shipped twice:
+     "the dark color should be the SAME for the premium pills and the free pills!!! idk how much
+     clearer i can be on this. you're still having the quiz bar be some variant of gold. it should
+     be the dark color, exactly same as for the free topics!"
+     ⚠ THIS RULE EXISTS ONLY TO WIN A SPECIFICITY FIGHT. `.topic-card[data-tier="premium"]
+     .topic-quiz` is two classes plus an attribute, so the base `.topic-quiz` above LOSES to
+     anything written at this weight - which is exactly how the gold kept coming back. Restating
+     the dark here at equal specificity is the fix; !important would have hidden the cause.
+     ⛔ Do not delete it as redundant: it is redundant only while nothing else is written at
+     this weight, and what used to be written here is the bug. */
   .topic-card[data-tier="premium"] .topic-quiz {
-    background: var(--gold-light, #FBF5DC);
-    color: #B29234;
-    border-top-color: rgba(178, 146, 52, 0.26);
+    background: var(--accent);
+    color: #fff;
+    border-top-color: transparent;
   }
+  /* the premium card's tint - the cream (see --card-tint-premium) */
+  .topic-card[data-tier="premium"] { background: var(--card-tint-premium, #F7F4EC); }
 
   /* ── PREMIUM (locked) CARD ── */
+  /* A6: the hover ring follows the one accent, like a member card's. Retired gold ring:
+     border-color: var(--gold-dark); box-shadow: 0 0 0 3px var(--gold-light). */
   .topic-card.premium:hover {
-    border-color: var(--gold-dark);
-    box-shadow: 0 0 0 3px var(--gold-light);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
   }
   .topic-premium {
     display: inline-flex;
@@ -736,9 +762,9 @@
     letter-spacing: 0.02em;
     /* Mellow gold: golder/less orange than the badge-li1 amber, a touch softer than the
        former intense --gold-dark, on the creamier --gold-light bg — the "coming soon" faded
-       vibe at full opacity (not washed out). */
-    color: #B29234;
-    background: #FBF5DC;
+       vibe at full opacity (not washed out). Retired 2026-09-22 - see the pill block below. */
+    color: #fff;
+    background: var(--accent);
     padding: 2px 9px 2px 7px;
     border-radius: 20px;
     white-space: nowrap;
@@ -749,8 +775,8 @@
   }
   /* Entitled view: owned/unlocked premium — same mellow gold, no padlock. */
   .topic-premium.unlocked {
-    background: #FBF5DC;
-    color: #B29234;
+    background: var(--accent);
+    color: #fff;
   }
 
   /* ── MEMBER (login-only) CARD — accent (purple), distinct from gold premium ── */
@@ -765,15 +791,15 @@
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.02em;
-    color: var(--accent);
-    background: var(--accent-light);
+    color: #fff;
+    background: var(--accent);
     padding: 2px 9px 2px 7px;
     border-radius: 20px;
     white-space: nowrap;
   }
   .topic-member svg { width: 11px; height: 11px; }
   /* Entitled view: same soft Beginner-pill palette, no padlock (was a strong solid purple). */
-  .topic-member.unlocked { background: var(--accent-light); color: var(--accent); }
+  .topic-member.unlocked { background: var(--accent); color: #fff; }
   /* ── NON-MEMBER (free, open) CARD — accent chip (de-greyed, owner 2026-08-02: reverted to the
      free-member accent scheme so it doesn't read as locked/disabled). ── */
   .topic-nonmember {
@@ -782,14 +808,18 @@
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.02em;
-    color: var(--accent);
-    background: var(--accent-light);
+    color: #fff;
+    background: var(--accent);
     padding: 2px 9px;
     border-radius: 20px;
     white-space: nowrap;
   }
   /* Slimmer tier pills (owner 2026-08-02): less card height. Same specificity as the three
      per-tier rules above and comes later in source order, so it wins on the shared properties. */
+  /* ⛔ ALL THREE PILLS ARE THE SAME DARK WITH WHITE INK (owner 2026-09-22, variant A). The
+     pill no longer colour-codes the tier - it SAYS it, in words, and the card tint carries the
+     rest. That is the point of the variant: the strip and the pill stop re-saying what the word
+     already says. ⚠ The padlock icon must be stroked white too, below. */
   .topic-premium, .topic-member, .topic-nonmember {
     font-size: 10px; padding: 1px 7px; gap: 3px; letter-spacing: 0.03em;
     /* Pull the pill left by its own left padding so its CONTENT starts in the same column as the
@@ -802,6 +832,8 @@
     margin-left: -7px;
   }
   .topic-premium svg, .topic-member svg { width: 10px; height: 10px; }
+  /* white ink means white icon: the padlock inherits `color`, but any explicit stroke would not */
+  .topic-premium svg, .topic-member svg { stroke: currentColor; }
   /* App-only selection controls. The OUTER span is a big, finger-friendly tap target; the inner
      dot/tick is the smaller visible mark — so they're easy to hit without catching the card link. */
   .dl-select, .dl-badge { position: relative; display: inline-flex; align-items: center; justify-content: center;
@@ -817,21 +849,20 @@
   .dl-select:active .dl-dot { transform: scale(0.92); }
   /* Premium topics: gold select circle (light gold → dark gold when selected) instead of purple. */
   .dl-select[data-tier="premium"] .dl-dot { background: var(--gold-light); border-color: var(--gold-light); }
-  .dl-select[data-tier="premium"]:hover .dl-dot { border-color: #F0CC5C; }
-  .dl-select[data-tier="premium"].selected .dl-dot { background: #F0CC5C; border-color: #F0CC5C; }
   /* Update ring (dl-core §D.1, ported from dyn-index.html r83): dashed border = "there is
      something to fetch" — a superseded download or a D0 legacy claim — distinct from a plain
      download circle at a glance. */
   .dl-select.dl-update .dl-dot { background: transparent; border-color: var(--accent); border-style: dashed; }
   .dl-select.dl-update.selected .dl-dot { background: var(--accent); border-style: solid; }
-  .dl-select[data-tier="premium"].dl-update .dl-dot { border-color: #F0CC5C; }
-  .dl-select[data-tier="premium"].dl-update.selected .dl-dot { background: #F0CC5C; border-style: solid; }
   /* Downloaded tick: a lavender ring appears when selected for removal. */
+  /* ⛔ A17 (owner 2026-09-22: "color of tick and dotted box"). The five
+     [data-tier="premium"] overrides that painted the tick and the update dot GOLD are gone: one
+     accent, so the base rules below are already right on both tiers. */
   .dl-tick { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px;
     border-radius: 50%; color: var(--accent); border: 2px solid transparent; transition: border-color 0.15s, background 0.15s; }
-  .dl-badge.clear-selected .dl-tick { border-color: #9d92e0; background: var(--accent-light); }
-  /* Premium downloaded topics: gold tick (graphic accent gold), not purple. */
-  .dl-badge[data-tier="premium"] .dl-tick { color: #F0CC5C; }
+  /* the "selected for removal" ring. Was a light lavender (#9d92e0) picked against the purple
+     accent; against a dark accent a pale ring disappears, so it takes --accent-mid. */
+  .dl-badge.clear-selected .dl-tick { border-color: var(--accent-mid); background: var(--accent-light); }
 
   /* ⚠ ON A TOPIC CARD THE TICK MUST NOT SET THE ROW'S HEIGHT (owner, 2026-08-22).
      .dl-badge is 30px because on the playlist list it is a real control with a tap target.

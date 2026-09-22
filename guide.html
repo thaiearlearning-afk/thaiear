@@ -27,7 +27,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- pwa:start (gen_pwa.js) -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#4B41AD">
+<meta name="theme-color" content="#1C124E">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -56,7 +56,21 @@
     --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
     --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
     --navy: #1C124E;
-    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --accent: #1C124E; --accent-light: #EAEAF4; --accent-mid: #2A1F6B;
+  /* ⛔⛔ THE LAVENDER PANELS KEEP THE OLD ACCENT TINT, DELIBERATELY (owner, 2026-09-22):
+     "the lavender box 'downloaded topics play with no internet -...' can stay lavender as is (same
+     as the quiz gloss chips) and same for the read thai box at the top of guide. i think that much
+     navy would be overpowering", and separately "the cycler under the mockup dynamic mp3 player -
+     its a lavender box which is fine".
+     ⚠ SO THEY MUST NOT FOLLOW --accent-light, which is now a cool grey. Pinned here as their own
+     pair, which is also what makes them findable: COLOR_THEME.md lists them.
+     ⚠ Same family as quiz.css's --chip-accent / --chip-accent-light - the quiz's reveal chips,
+     "Play the sentence" and the "Literally:" line. One deliberate second colour, four surfaces. */
+:root {
+  --lav-bg: #EEEDFE;
+  --lav-ink: #3B3488;
+}
+
     --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
     --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
@@ -82,8 +96,9 @@
   p a { color: var(--accent); text-decoration: none; }
   p a:hover { text-decoration: underline; }
   /* Read Thai callout — a deliberate aside from the article flow */
-  .readthai-box { background: var(--accent-light); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; margin-bottom: 0.95rem; }
-  .readthai-box p { margin: 0; color: #3B3488; }
+  /* ⛔ STAYS LAVENDER - see the --lav-bg note at the top of this file. */
+  .readthai-box { background: var(--lav-bg, #EEEDFE); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; margin-bottom: 0.95rem; }
+  .readthai-box p { margin: 0; color: var(--lav-ink, #3B3488); }
     /* ⚠ UNDERLINED ON PURPOSE (owner, 2026-08-29: "so its obvious it is a link"). The site's
        base rule is `a { text-decoration: none }`, and inside this box the link is ALSO bold and
        sitting on the accent-tinted background, so colour alone was doing all the work of saying
@@ -96,26 +111,111 @@
   @media (max-width: 600px) { .wrap { padding: 2rem 1.1rem 2.5rem; } h1 { font-size: 24px; } }
 </style>
 <style id="player-styles-copy">
-    /* Reserve the late-loading (auth-gated) progress card's slot on desktop/tablet too, so it
+    /* ══ THE PROGRESS CARD'S RESERVED SLOT (r139 — re-measured across the whole width range) ══
+       WHY IT IS ALWAYS THE LAST THING TO APPEAR, and why that is not about its size: renderProgress()
+       returns early until ThaiEarAuth.isReady, so this card waits on a Supabase auth round trip
+       (session restore / token refresh against auth.thaiear.com) and then on the user's progress
+       rows. Everything else on the page — the whole dyn player included — is local DOM and local
+       CSS and needs no network at all. On a slow connection the card can be seconds behind. That
+       is inherent; what must NOT happen is the page moving when it lands.
+       ⚠ ONE min-height CANNOT COVER THIS CARD — it has FOUR distinct heights, because the flex row
+       wraps at different points in each auth state. Measured (Chrome, real page, per viewport):
+           vw ≤374   logged-in 80.4   logged-out 93.4   ← label wraps to 3 lines
+           375–438   logged-in 80.4   logged-out 73.4   ← every current iPhone lives here
+           439–600   logged-in 46.9   logged-out 73.4
+           ≥601      logged-in 52.9   logged-out 44.7
+       The old flat 73px was taken from the logged-out card at phone width, so a SIGNED-IN user on
+       any iPhone got a 7.4px downshift of everything below when the card landed (owner-reported as
+       "downshifts a fraction", 2026-08-03) — and a signed-out user at ≤374 got 20.4px. Below 600 it
+       was also over-reserved by up to 26px at tablet widths, leaving a visible gap.
+       Each band now reserves its own local maximum, and the card STRETCHES to fill the reservation
+       (display:flex + flex:1 on the card) so an over-reserved band reads as a slightly roomier card
+       rather than a gap above the player. Net: no shift in any state at any width.
+       ⚠ Re-measure these four numbers if the card's copy, padding or type size changes — they are
+       measurements, not round numbers. The dyn-plmode display:none rule (2 classes) still beats
+       the display:flex here, so the playlist player is unaffected. */
+    /* Reserve dropped once the real player is in the DOM — see the note at the mount site.
+       Its own height is authoritative from then on, so the guess cannot leave a gap. */
+    body.te-player-mounted #player-root { min-height: 0; }
+    /* No min-height: with the bar gone this slot is either the signup card (which
+       carries its own .te-rsv-card reserve below) or empty. */
+    .progress-controls { margin-bottom: 0.9rem; display: flex; }
     @keyframes prog-bump { 0% { transform: scale(1); } 45% { transform: scale(1.35); } 100% { transform: scale(1); } }
-    /* ⚠ The two orphaned declaration blocks that used to sit here are GONE (2026-08-21) — the
-       same repair as player.js's STYLES, applied by hand BECAUSE gen_dyncss.js does not sync
-       this copy (it reports 'already matches' and writes nothing; TEXT_SCALING.md section 5).
-       Their stray closing braces made the CSS parser skip the next rule, which is how
-       .player-top lost its display:flex and this page's demo player collapsed into a
-       full-width column while every other surface looked fine. */
+    /* ⚠ TWO ORPHANED DECLARATION BLOCKS WERE REMOVED HERE (2026-08-21). When the progress bar
+       was retired (6905723) its SELECTORS were deleted and their bodies were left behind, so
+       STYLES contained two rule bodies with nothing to belong to — and each carried a closing
+       brace. A stray closing brace does not just do nothing: the CSS parser treats it as the end of a
+       block and skips to recover, swallowing the NEXT rule with it. That is why
+       ".player-top { display: flex }" was in the file but absent from the CSSOM, and why the
+       guide page's demo player collapsed into a full-width column while every other surface
+       looked fine — the dyn player uses .dyn-* classes, so the guide's classic markup was the
+       only thing still depending on the rules that were being eaten.
+       Found by counting braces, not by reading: the file looks completely normal. */
+    /* Signed out → renderProgress leaves this slot EMPTY (the signup card lives below the player,
+       in the offline-bar slot). Without this the measured reserve above becomes ~94px of blank gap
+       over the player on a phone. :empty rather than a body class so it tracks the actual render
+       with no JS and no ordering risk; the reserve still applies in full to the signed-in counter,
+       which is what it was measured for. */
+    /* The DEFAULT state now, not the signed-out-in-browser special case. */
+    .progress-controls.te-empty { min-height: 0; margin-bottom: 0; }
+    /* ⚠ AN EXPLICIT CLASS, NOT :empty. The :empty version was correct CSS and shipped in the
+       stylesheet, but measurement on the live page showed it simply not applying — the slot
+       matched :empty, had zero child nodes, and still computed margin-bottom: 14.4px. Rather
+       than keep chasing it through the cascade, renderProgress() now sets this class in the
+       same place it already toggles te-anon and te-rsv-card, so the collapse is decided by the
+       code that decides what renders. Deterministic and debuggable. */
+    /* ⚠ NO .te-anon REQUIREMENT ANY MORE. With the progress bar gone this slot is either
+       the signed-out signup card or genuinely empty, so an empty slot should ALWAYS
+       collapse — including in the window before auth resolves and sets any class at all.
+       Requiring te-anon left a bare 0.9rem margin between the sentence-count line and the
+       player on every load (owner: "almost a finger width on iphone"). */
+    /* ---- APP / INSTALLED PWA, SIGNED OUT: the signup card lands in THIS slot ----
+       ⚠ THIS SLOT IS THE FIRST CHILD OF #player-root, so when it grows the ENTIRE PLAYER moves
+       down. Collapsing it to 0 and then filling it with a 133px card shoved the play button and
+       the transport row off the screen — which reads as the player "flashing", because the
+       scrubber appears and is then displaced. Confirmed frame-by-frame from an iPhone PWA
+       recording, 2026-08-15: player paints, then the card is inserted above it and pushes it out
+       of view. In a BROWSER the card goes to the offline bar instead, so this slot really does
+       stay empty there and te-anon's collapse above is correct — do not merge the two cases.
+       ⚠ Measured, not rounded: swept width by width IN THE REAL PAGE, not a synthetic
+       container — 153 up to 337, 133 to 573, 114 above. A first pass measured the card in a
+       stand-alone box and got 559 as the upper breakpoint, which left a 19px shift at 560. Re-measure if its copy or padding changes. Higher specificity than the plain
+       .progress-controls rules, so it beats them inside their media queries too. */
+    /* ⚠ SPACING, MEASURED (owner, 2026-08-21: "very very close" on the app). In the app/PWA
+       signed-out case the card's top sat 1px below the "N sentences - Click each sentence..."
+       line, because the slot's only margin was on the BOTTOM. It now breathes above and sits a
+       little tighter to the player, which is what was asked for.
+       ⚠ BOTH MARGINS BELONG ON .te-rsv-card, NOT ON .progress-controls. The plain slot is EMPTY
+       in a browser and when signed in, and giving it a top margin there would push the player
+       down on every other surface — desktop and mobile web are both fine today and must stay
+       that way.
+       Net effect on the insertion shift is +9.6px on a 147.4px move (14.4 bottom-only, before;
+       14 top + 10 bottom, now), because the card and its margins arrive together with the class.
+       Measured at 390 CSS px in the real page: gap above 1px -> 14px, gap below 14px -> 10px. */
+    .progress-controls.te-rsv-card { min-height: 133px; margin-top: 14px; margin-bottom: 10px; }
+    @media (max-width: 337.98px) { .progress-controls.te-rsv-card { min-height: 153px; } }
+    @media (min-width: 574px)    { .progress-controls.te-rsv-card { min-height: 114px; } }
+    /* --- end-of-topic ask (2026-08-15). Sits between the last sentence and the prev/next nav.
+       No CLS reserve needed: it mounts far below the fold, so a late auth-gated insert there
+       shifts nothing the visitor is looking at. --- */
+    /* ⚠ ACCENT-LIGHT GROUND (owner, 2026-08-15) — on plain white this read as a block of text and
+       was easy to skip past on the way to the Next button. Matches the signup card above it. */
+    .te-endcta { background: var(--accent-light); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
+      padding: 0.9rem 1rem; margin: 1.5rem 0 0.5rem; }
+    .te-endcta-title { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.005em;
+      color: var(--text-primary); margin-bottom: 4px; }
+    .te-endcta-desc { display: block; font-size: 13px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 9px; }
+    .te-endcta-cta { display: inline-block; font-size: 13px; font-weight: 600; color: #fff; background: var(--accent);
+      border-radius: var(--radius-sm); padding: 8px 14px; text-decoration: none; transition: background 0.15s; }
+    .te-endcta-cta:hover { background: var(--accent-mid); color: #fff; }
     .prog-spin { display: inline-block; width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: prog-spin 0.6s linear infinite; }
     @keyframes prog-spin { to { transform: rotate(360deg); } }
     .prog-tick { display: inline-block; font-weight: 700; animation: prog-tick-pop 0.4s cubic-bezier(0.2,0.8,0.3,1.3) both; }
     @keyframes prog-tick-pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
     @media (max-width: 600px) {
-          }
+    }
     .player-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1rem; margin-bottom: 1.75rem; }
     .player-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
-    /* ⚠ HAND-COPIED FROM player.js's STYLES for the demo player. gen_dyncss.js syncs DYN_STYLES
-       into this page but NOT STYLES, so a change to .audio-toggle/.toggle-btn in player.js does
-       NOT reach here — it has to be mirrored by hand. (Missed exactly that on the first pass:
-       the topic + playlist players were fixed and the guide's demo still overflowed.) */
     .audio-toggle { display: flex; flex-wrap: wrap; max-width: 100%; gap: 2px; background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 2px; }
     .toggle-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); font-weight: 400; color: var(--text-secondary); background: none; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap; }
     .toggle-btn:hover { color: var(--text-primary); }
@@ -137,22 +237,44 @@
     .orientation-text { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 1.25rem; padding: 0.75rem 1rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-md); }
     .orientation-text strong { color: var(--text-primary); font-weight: 500; }
     .orientation-text a { color: var(--accent); font-weight: 500; text-decoration: none; }
-    .controls-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
-    .reveal-all-btn { font-size: 12px; font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
-    .reveal-all-btn:hover { background: var(--surface); }
+    .controls-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 6px; }
+    /* ⚠ DELIBERATELY LOUD (owner, 2026-08-15). As a grey outline it read as chrome and got
+       skipped, so people never discovered that every sentence carries a word-by-word breakdown —
+       the single most under-used thing on the page. It now wears the tone the "Remove all
+       downloads" button only shows on HOVER (pl-list.js .dl-removeall-btn:hover), permanently.
+       ⚠ Literal hex, not var(--accent): that keeps it identical on premium topics, where --accent
+       becomes the bright gold and this would otherwise disappear into it.
+       ⚠ #B00020 is the site's ERROR/danger tone (Remove, Delete playlist, payment failure). Used
+       here for prominence, not to warn — do not infer from this that red now means "safe". */
+    .reveal-all-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: #B00020; background: #FDF1F2; border: 0.5px solid #E8C4C8; border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background 0.15s; }
+    .reveal-all-btn:hover { background: #FBE4E7; }
+    /* ⛔ THE PREMIUM GREEN VARIANT IS RETIRED (A6, 2026-09-22). It existed for ONE stated
+       reason - "the red sits badly beside the gold palette" - and A6 removed the gold palette, so
+       keeping it would leave premium pages differing from free for no reason anyone could name.
+       Both tiers now show the base red (#B00020 on #FDF1F2, 6.64:1). If a dark accent turns out
+       to clash with the red too, the fix is to change the BASE rule for both tiers, not to
+       reintroduce a per-tier variant. Retired: #1F5D3A on #EEF6F0, 7.10:1. */
     /* ---- transliteration toggle (topics shipping per-sentence translit, currently 01–03) ----
        Default ON (new visitors should see it exists); .translit-off on #sentence-list hides both
        the under-Thai line and the chips' translit. Choice remembered per device via localStorage. */
     .controls-left { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .translit-btn { font-size: 12px; font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
-    .translit-btn:hover { background: var(--surface); }
-    .translit-btn.on { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 500; }
-    .translit-btn .tl-ico { font-size: 11px; }
-    .translit-btn .tl-ico .th { font-family: var(--font-thai); }
+    /* ⚠ THE ROW IS MEASURED, NOT EYEBALLED — at 360px there are 327px of content and the four
+       items come to 317 (Reveal all 87 + Transliteration 97 + Font 44 + "104 sentences" 71 +
+       gaps). Put an icon back on EITHER pill and the count wraps to a second line. That is why
+       Transliteration lost its ก→a mark (2026-09-19) and why Font carries no glyph. */
+    .translit-btn, .font-btn { font-size: calc(12px * var(--te-ui, 1)); font-family: var(--font-ui); color: var(--text-secondary); background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+    .translit-btn:hover, .font-btn:hover { background: var(--surface); }
+    /* ⚠ SELECTED = THE DARK FILL WITH WHITE INK, not a light tint (owner, 2026-09-22): "the
+       'transliteration' and 'font' toggles above the sentences on playlists and topics and
+       grammar by ear topics when selected have the old color theme. ought to be navy with white
+       writing i reckon." It also makes the row internally consistent: .toggle-btn.active and
+       .xtra-toggle.active beside them were already accent-fill + white, so these two were the
+       odd ones out. Retired: background var(--accent-light) with var(--accent) ink. */
+    .translit-btn.on, .font-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
     .thai-translit { font-family: var(--font-ui); font-size: 13px; color: var(--text-tertiary); line-height: 1.55; margin-top: 1px; }
     .g-tl { color: var(--text-secondary); margin-left: 4px; }
     #sentence-list.translit-off .thai-translit, #sentence-list.translit-off .g-tl { display: none; }
-    .sent-count-label { font-size: 12px; color: var(--text-tertiary); }
+    .sent-count-label { font-size: calc(12px * var(--te-ui, 1)); color: var(--text-tertiary); min-width: 0; }
     .sentence-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 7px; overflow: hidden; transition: border-color 0.15s; }
     .sentence-card:hover { border-color: var(--border-strong); }
     .sentence-header { display: flex; align-items: center; gap: 10px; padding: 0.7rem 1rem; cursor: pointer; user-select: none; -webkit-user-select: none; }
@@ -168,6 +290,28 @@
     .speed-toggle.active { background: var(--accent); }
     .sent-preview { font-family: var(--font-thai); font-size: 16px; color: var(--text-primary); flex: 1; line-height: 1.4; }
     .sent-preview .ell { color: var(--text-tertiary); }
+    /* ---- direction-aware PILL HINT (2026-08-18) ----
+       The collapsed pill's hint follows the chosen direction, like the reveal order above it:
+       Thai-first shows the Thai hint, English-first the authored English one. BOTH ship in the
+       markup and only their visibility swaps, so the static SSR card is never rebuilt and the
+       crawler still reads the same node the learner reveals.
+       Default (no dir class yet, e.g. before player.js runs) = Thai, which is what every page
+       shipped before this existed. A sentence with no English hint gets .pv-only on its Thai
+       span and no .pv-en at all, so it keeps showing Thai in BOTH directions rather than
+       rendering a blank pill — that is the fallback for any page not yet carrying previewEn.
+       NB: NO BACKTICKS in this comment. STYLES is a template literal, so one ends the string and
+       breaks the entire file — node --check player.js catches it, and so does gen_dyncss.js.
+       The html.te-dir-et half of each pair is the PRE-PAINT path: player.js is deferred, so
+       without it an English-first visitor would see every Thai hint for a beat and then watch them
+       all flip. A 3-line inline script in <head> (ssrify_topic.js) stamps that class from
+       localStorage before first paint, and applyDirClass() keeps it in sync afterwards — both
+       classes always agree, so switching back to Thai-first doesn't leave the html rule stuck on.
+       These rules reach the head via gen_dyncss.js, which extracts STYLES into a linked
+       stylesheet — so RE-RUN IT after touching them or the flash comes back for these rules. */
+    .sent-preview .pv-en { font-family: var(--font-ui); display: none; }
+    #sentence-list.dir-et .pv-th,          html.te-dir-et #sentence-list .pv-th { display: none; }
+    #sentence-list.dir-et .pv-th.pv-only,  html.te-dir-et #sentence-list .pv-th.pv-only { display: inline; }
+    #sentence-list.dir-et .pv-en,          html.te-dir-et #sentence-list .pv-en { display: inline; }
     .prog-wrap { display: flex; align-items: center; gap: 2.5px; flex-shrink: 0; padding: 2px 0; }
     .prog-seg { width: 5px; height: 16px; border-radius: 3px; background: var(--border); transition: background 0.2s ease; }
     .prog-seg.on { background: var(--accent); }
@@ -213,7 +357,11 @@
       min-width: 0; overflow-wrap: break-word; overflow-wrap: anywhere; }
     .g-thai { font-family: var(--font-thai); color: var(--text-primary); font-weight: 500; }
     .g-eq { color: var(--text-tertiary); margin: 0 2px; }
-    .g-eng { color: var(--text-secondary); }
+    /* --font-ui (Inter) carries no Thai glyphs, so a Thai NAMED PAIR inside a gloss
+       -- e.g. "owing to (เนื่องจาก…จึง)" on the grammar units -- would otherwise resolve in
+       whatever Thai face the OS supplies, beside the Sarabun of the .g-thai chip next
+       to it. Listing --font-thai second is per-character fallback: Latin stays Inter. */
+    .g-eng { font-family: var(--font-ui), var(--font-thai); color: var(--text-secondary); }
     .cultural-note { font-size: 11.5px; color: var(--text-tertiary); font-style: italic; margin-top: 5px; padding-top: 5px; border-top: 0.5px solid var(--border); line-height: 1.5; }
     @media (max-width: 800px) {
       .player-card { padding: 0.9rem 1rem 0.85rem; }
@@ -222,8 +370,8 @@
       .player-card { padding: 0.85rem 0.9rem 0.8rem; margin-bottom: 1.25rem; }
       .play-btn { width: 34px; height: 34px; }
       .controls-row { margin-bottom: 0.5rem; }
-      .reveal-all-btn { font-size: 11px; padding: 4px 10px; }
-      .translit-btn { font-size: 11px; padding: 4px 10px; }
+      .reveal-all-btn { font-size: calc(11px * var(--te-ui, 1)); padding: 4px 10px; }
+      .translit-btn, .font-btn { font-size: calc(11px * var(--te-ui, 1)); padding: 4px 10px; }
       .sentence-header { padding: 0.6rem 0.85rem; }
       .sent-preview { font-size: 15px; }
       .row-thai { font-size: 17px; }
@@ -270,8 +418,8 @@
     /* Colour the link by the PLAYED topic's tier, not the page's. The link sits inside #player-root,
        where a premium PAGE remaps --accent to gold — so member/free destinations are pinned to the
        literal brand purple here to defeat that, and premium destinations to the text-gold. */
-    .now-playing a.np-premium, .now-playing a.np-premium strong { color: #B29234; }
-    .now-playing a.np-member, .now-playing a.np-member strong { color: #4B41AD; }
+    .now-playing a.np-premium, .now-playing a.np-premium strong { color: var(--accent); }
+    .now-playing a.np-member, .now-playing a.np-member strong { color: var(--accent); }
     .now-playing a:hover { text-decoration: underline; }
     .now-playing a.np-return { color: #C0392B; font-weight: 600; margin-left: 8px; white-space: nowrap; }
     .offline-bar { display: flex; align-items: center; gap: 10px; margin: -0.75rem 0 1.25rem; flex-wrap: wrap; }
@@ -305,33 +453,21 @@
       .xtra-lbl-short { display: none; }   /* tightest phones: autoplay icon only */
       .xtra-icon { width: 26px; height: 26px; }
     }
-    /* ---- Premium topic skin: recolour the player + sentence controls purple → GOLD so it's clear
-       at a glance you're on a premium topic. Scoped to the player and sentence list (variable
-       override) so the rest of the page stays brand purple; the eyebrow is recoloured separately.
-       Light gold = unselected, brighter gold = selected/active. Web AND app; member topics stay
-       purple. ---- */
-    body.premium-topic #player-root, body.premium-topic #sentence-list {
-      --accent: #F0CC5C;        /* the hero Thai-script gold (homepage .hero-thai) */
-      --accent-mid: #E3BC48;    /* hover / darker */
-      --accent-light: #FBF5DC;  /* unselected — brand light gold (--gold-light) */
-      --purple-mid: #D4A82C;    /* sentence-flag outline (visible on the card) */
-    }
-    /* Bright-gold FILLS carry DARK text/icons (white/light washes out on the light gold). */
-    body.premium-topic .play-btn svg,
-    body.premium-topic .sent-play-btn.playing svg,
-    body.premium-topic .sent-play-btn:hover svg { fill: #3D2E00; }
-    body.premium-topic .toggle-btn.active,
-    body.premium-topic .xtra-toggle.active,
-    body.premium-topic .repeat-badge { color: #3D2E00; }
-    /* The eyebrow, subheading and the small player TEXT (progress count + links) use the canonical
-       gold-TEXT tone #B29234 (the "Premium" index-pill colour) — readable on the pale page, distinct
-       from the brighter #F0CC5C used for FILLS/graphics. The eyebrow/subtitle sit OUTSIDE the player,
-       so they need explicit rules anyway. See the premium-gold-palette memory for the full standard. */
-    body.premium-topic .topic-eyebrow,
-    body.premium-topic .topic-subtitle,
-    body.premium-topic .orientation-text a,
-    body.premium-topic .offline-btn,
-    body.premium-topic .offline-status.offline-ok { color: #B29234; }
+    /* ---- THE PREMIUM GOLD SKIN IS RETIRED (A6, owner 2026-09-22): "you can change the premium
+       topics to navy as well i think", alongside A1's one-dark-across-both-tiers. A premium topic
+       page now wears the SAME single accent as a free one, so there is nothing to override here.
+       ⚠ What still says "premium", and deliberately: the per-sentence lock icon and the PREMIUM
+       group heading (#B29234), the Free/Premium card pill, and the subscribe CTAs. Those carry
+       INFORMATION; the skin only carried decoration.
+       ⚠ Everything the deleted rules existed for went with them: they flipped accent-filled
+       controls to dark ink (#3D2E00) because white washes out on bright gold. On a dark accent
+       white is correct, which is what the base rules already say.
+       To restore the skin, git show this commit — it removed, as whole rules: the
+       #player-root/#sentence-list gold palette, the two dark-ink selector lists, the #B29234
+       gold-TEXT list, the four body.premium-topic .te-mini* rules, and in DYN_STYLES the
+       .sentence-card.sent-premium palette + its two rules, .dyn-tick.on.gold, and the
+       body.premium-topic dyn-toast / dyn-sync-btn / dyn-info-box / te-intro-more / te-plays /
+       dyn-eq / te-pl-row overrides. ---- */
     /* ---- floating mini transport ----
        Slim play/pause + ±10 + progress bar that sticks under the nav once the user has started the
        TE/ET track and the real player is scrolled off. Fixed overlay (no layout shift). Hidden state =
@@ -340,7 +476,7 @@
       position: fixed; top: 54px; left: 0; right: 0; z-index: 60;
       display: flex; flex-direction: column;
       max-width: 640px; margin: 0 auto; padding: 8px 12px;
-      background: var(--accent-light, #EEEDFE); color: var(--accent, #4B41AD);
+      background: var(--accent-light, #EAEAF4); color: var(--accent, #1C124E);
       border: 0.5px solid var(--border, rgba(0,0,0,0.1)); border-radius: 0 0 14px 14px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.12);
       font-family: var(--font-ui, system-ui, sans-serif);
@@ -352,7 +488,7 @@
     .te-mini button { border: 0; background: transparent; color: inherit; cursor: pointer;
       display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     .te-mini-play { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-      background: var(--accent, #4B41AD); color: #fff; }
+      background: var(--accent, #1C124E); color: #fff; }
     .te-mini-play svg { width: 15px; height: 15px; fill: #fff; }
     .te-mini-skip { position: relative; width: 30px; height: 30px; flex-shrink: 0; }
     .te-mini-skip svg { width: 22px; height: 22px; }
@@ -364,7 +500,7 @@
     .te-mini-scrub { flex: 1; min-width: 40px; min-height: 44px; align-self: stretch;
       display: flex; align-items: center; cursor: pointer; touch-action: pan-y; }
     .te-mini-bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(0,0,0,0.12); overflow: hidden; }
-    .te-mini-fill { height: 100%; width: 0%; border-radius: 2px; background: var(--accent, #4B41AD); }
+    .te-mini-fill { height: 100%; width: 0%; border-radius: 2px; background: var(--accent, #1C124E); }
     .te-mini-x { width: 26px; height: 26px; flex-shrink: 0; opacity: 0.55; font-size: 20px; line-height: 1; align-self: center; }
     .te-mini-x:hover { opacity: 1; }
     /* "Now playing <other topic>" caption — a separate row beneath the controls, its own click target. */
@@ -373,14 +509,10 @@
     .te-mini-np.show { display: block; }
     .te-mini-np strong { font-weight: 700; }
     .te-mini-np:hover strong { text-decoration: underline; }
-    body.premium-topic .te-mini { background: #FBF5DC; color: #B29234; }
-    body.premium-topic .te-mini-play { background: #F0CC5C; }
-    body.premium-topic .te-mini-play svg { fill: #3D2E00; }
-    body.premium-topic .te-mini-fill { background: #E3BC48; }
     @media (max-width: 480px) { .te-mini { border-radius: 0; } }
     @media (prefers-reduced-motion: reduce) { .te-mini { transition: opacity 0.15s ease; } }
   </style>
-<style id="dyn-styles-copy">.dyn-status{text-align:center;font-size:13px;font-weight:500;color:var(--accent);padding:4px 0;}.dyn-dots{display:inline-block;width:1.1em;text-align:left}.dyn-dots::after{content:'...';display:inline-block;width:0;overflow:hidden;vertical-align:bottom;animation:dyn-dots 1.2s steps(3,start) infinite}@keyframes dyn-dots{from{width:0}to{width:1.05em}}.dyn-sent-btn{width:34px;height:34px}.dyn-sent-off{opacity:.35;pointer-events:none}.dyn-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.96);z-index:9998;max-width:calc(100vw - 48px);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;line-height:1.3;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(24,22,40,.92);color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.28);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}.dyn-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}body.premium-topic .dyn-toast{background:#3D2E00;color:#F0CC5C}@media (prefers-reduced-motion: reduce){.dyn-toast{transition:opacity .18s ease}.dyn-toast,.dyn-toast.show{transform:translate(-50%,-50%)}}.audio-row button[onclick="skip(-10)"],.audio-row button[onclick="skip(10)"]{display:none}.scrubber{height:8px;border-radius:4px}.scrubber-fill{border-radius:4px}.scrubber-fill::after{width:18px;height:18px;right:-9px}.dyn-slider{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 8px;font-size:11.5px;color:var(--text-tertiary);margin-top:8px}.dyn-ctl-group{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:100%;min-width:0}#dyn-pf-val{display:inline-block;min-width:34px;text-align:left;font-variant-numeric:tabular-nums}.dyn-sp-end{font-size:11.5px;opacity:.72;padding:0 4px;white-space:nowrap}#dyn-sp{vertical-align:middle;max-width:88px}.dyn-slider input[type=range]{flex-shrink:0}.dyn-slider input[type=range]{width:105px;accent-color:var(--accent);height:3px;padding:9px 0;box-sizing:content-box;touch-action:none}.dyn-ctl-sep{color:var(--border-strong)}.dyn-reps{display:inline-flex;gap:3px}.dyn-rep-btn{width:1.905em;height:1.905em;border-radius:.476em;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);font:600 10.5px var(--font-ui);font-size:calc(10.5px * var(--te-ui, 1));cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}.dyn-rep-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}.dyn-en-lbl{display:inline-flex;align-items:center;gap:4px;cursor:pointer}.dyn-en-lbl input{accent-color:var(--accent);margin:0;width:13px;height:13px}.dyn-ep-row{margin-top:2px}.dyn-ep-boxes{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}.dyn-ep-th{font-size:calc(10.5px * var(--te-ui, 1));color:var(--text-tertiary);font-style:italic}.dyn-ep-box{width:16px;height:16px;border-radius:4px;border:.5px solid var(--border-strong);background:var(--surface);cursor:pointer;padding:0;position:relative}.dyn-ep-box.on{background:var(--accent);border-color:var(--accent)}.dyn-ep-box.on::after{content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}.dyn-pcdl{margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:5px}.dyn-pcdl-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 10px}.dyn-pcdl-btn{font:600 12.5px var(--font-ui);color:#fff;background:var(--accent);border:0;border-radius:8px;padding:9px 14px;cursor:pointer}.dyn-pcdl-btn:hover{filter:brightness(1.08)}.dyn-pcdl-btn:disabled{opacity:.55;cursor:default;filter:none}.dyn-pcdl-note{font-size:11.5px;line-height:1.5;color:var(--text-tertiary);text-align:center;max-width:34em}.dyn-pcdl-note.warn{color:#A33A2A}.dyn-pcdl-note.ok{color:#2E7D52}body.te-v2 .te-intro-wrap{position:relative;margin-bottom:0.3rem}body.te-v2 .te-intro-wrap .topic-intro{overflow:hidden;margin-bottom:0}body.te-v2 .te-intro-wrap:not(.open) .topic-intro{max-height:3.3em}body.te-v2 .te-intro-wrap:not(.open)::after{content:'';position:absolute;left:0;right:0;bottom:1.85em;height:2.1em;background:linear-gradient(to bottom,rgba(250,250,248,0),var(--bg));pointer-events:none}body.te-v2 .te-intro-more{margin-top:2px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:none;border:0;padding:2px 0;cursor:pointer}body.te-v2 .te-intro-more:hover{text-decoration:underline}body.te-v2 .dyn-set-wrap{margin-top:2px}body.te-v2 .dyn-set-wrap summary{list-style:none;cursor:pointer;font-family:var(--font-ui);font-size:12.5px;font-weight:500;color:var(--text-secondary);padding:9px 0 0;display:flex;align-items:center;gap:6px}body.te-v2 .dyn-set-wrap summary::-webkit-details-marker{display:none}body.te-v2 .dyn-set-wrap summary::after{content:'⌄';font-size:14px;transition:transform .18s;transform:rotate(180deg)}body.te-v2 .dyn-set-wrap[open] summary::after{transform:rotate(0deg)}body.te-v2 .dyn-set-wrap .dyn-slider{margin-top:9px}body.te-v2 .te-pl-row{display:flex;gap:9px;margin:14px 0 16px}body.te-v2 .te-pl-row .dyn-addpl,body.te-v2 .te-pl-row .dyn-pl-link{flex:1;margin:0;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#fff;background:var(--accent);border:.5px solid var(--accent);border-radius:var(--radius-md);padding:7.35px 10px;text-decoration:none;text-align:center;cursor:pointer}body.te-v2 .te-pl-row .dyn-addpl:hover,body.te-v2 .te-pl-row .dyn-pl-link:hover{background:var(--accent-mid);color:#fff}body.te-v2.premium-topic .te-pl-row .dyn-addpl,body.te-v2.premium-topic .te-pl-row .dyn-pl-link,body.te-v2.premium-topic .te-pl-row .dyn-addpl:hover,body.te-v2.premium-topic .te-pl-row .dyn-pl-link:hover{color:#3D2E00}body.te-v2 .sentence-header{display:flex;align-items:center;gap:8px}body.te-v2 .prog-wrap{display:none}body.te-v2 .dyn-tick{order:0}body.te-v2 .sent-num{order:1}body.te-v2 .dyn-eq{order:2}body.te-v2 .sent-play-btn{order:3}body.te-v2 .sent-preview{order:4;flex:1;min-width:0}body.te-v2 .speed-toggle{display:none}body.dyn-plmode .speed-toggle{display:none}body.te-v2 .dyn-x-btn{order:8}.sent-lock-group{display:flex;align-items:center;gap:7px;margin:22px 0 9px;font-family:var(--font-ui,system-ui,sans-serif);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#B29234}.sent-lock-group::after{content:"";flex:1;height:.5px;background:var(--border,rgba(0,0,0,.12))}.sentence-card.sent-premium{--accent:#F0CC5C;--accent-mid:#E3BC48;--accent-light:#FBF5DC;--purple-mid:#D4A82C}.sentence-card.sent-premium .sent-play-btn.playing svg,.sentence-card.sent-premium .sent-play-btn:hover svg{fill:#3D2E00}.sentence-card.sent-premium .sent-num{color:#B29234}.sentence-card.sent-locked{opacity:.72;background:var(--surface)}.sentence-card.sent-locked .sentence-header{cursor:pointer}.sentence-card.sent-locked .sent-preview{color:var(--text-secondary)}.sentence-card.sent-locked .sent-lock-ico{display:inline-flex;align-items:center;color:#B29234;flex-shrink:0}body.te-v2 .sentence-card.sent-locked .sent-lock-ico{order:3}.sentence-card.sent-nodl{opacity:.45;background:var(--surface)}.sentence-card.sent-nodl .sentence-header{cursor:pointer}.sentence-card.sent-nodl .sent-preview{color:var(--text-secondary)}.sentence-card.sent-nodl .sent-play-btn,.sentence-card.sent-nodl .speed-toggle{opacity:.5}.dyn-info-lbl{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-align:left}.dyn-info-lbl:hover{color:var(--accent)}.dyn-info-i{width:1.444em;height:1.444em;border-radius:50%;border:1px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font:italic 700 9px/1 Georgia,"Times New Roman",serif;font-size:calc(9px * var(--te-ui, 1));flex-shrink:0}.dyn-info-box{position:relative;margin:7px 0 2px;padding:9px 30px 9px 11px;border:.5px solid var(--border-strong);border-radius:var(--radius-md);background:var(--surface);color:var(--text-secondary);font-size:12px;line-height:1.55;max-width:520px}.dyn-info-box a{color:var(--accent);font-weight:500;text-decoration:none}.dyn-info-box a:hover{text-decoration:underline}.dyn-info-x{position:absolute;top:3px;right:4px;width:22px;height:22px;border:0;background:none;color:var(--text-tertiary);cursor:pointer;font-size:16px;line-height:1;padding:0}.dyn-info-x:hover{color:var(--accent)}.dyn-head{font-size:12px;font-weight:600;color:var(--text-secondary);margin:0 0 8px;letter-spacing:.01em}.dyn-sync-row{display:flex;align-items:center;justify-content:flex-start;margin:8px 0 2px}.dyn-fmt-tag{order:2;margin-left:auto;font-size:10.5px;color:var(--text-tertiary);font-variant-numeric:tabular-nums}.dyn-sync-btn{width:28px;height:28px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}.dyn-sync-btn svg{width:15px;height:15px}.dyn-sync-btn:hover{color:var(--accent);border-color:var(--accent)}body.premium-topic .dyn-sync-btn:hover{color:#B29234;border-color:#B29234}body.premium-topic .dyn-info-box a{color:#B29234}body.premium-topic .te-intro-more{color:#B29234}.sentence-card.dyn-off{opacity:.55;border-style:dashed}.sentence-card.dyn-off .sent-preview{text-decoration:line-through}.dyn-card-btn{width:26px;height:26px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}.dyn-card-btn svg{width:13px;height:13px}.dyn-card-btn:hover{color:var(--accent);border-color:var(--accent)}.sentence-card.dyn-live{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}.te-plays{display:none;align-items:center;gap:4px;flex-shrink:0;font-family:var(--font-ui);font-size:calc(11px * var(--te-ui, 1));font-variant-numeric:tabular-nums;color:var(--text-tertiary)}.te-plays.on{display:inline-flex}.te-plays svg{width:8px;height:8px;fill:currentColor;flex-shrink:0}body.premium-topic .te-plays{color:#B29234}body.te-v2 .te-plays{order:7}.dyn-addpl{display:block;margin:10px auto 0;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:7px 14px;cursor:pointer}.dyn-addpl:hover{background:var(--accent-light)}.dyn-pl-link{display:block;text-align:center;font-size:12px;margin:6px 0 14px;color:var(--text-tertiary);text-decoration:none}.dyn-pl-link:hover{color:var(--accent)}.dyn-tick{display:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border-strong);flex-shrink:0;margin-right:2px;position:relative;cursor:pointer}.dyn-tick::before{content:'';position:absolute;inset:-14px -24px -14px -16px}#sentence-list.dyn-selecting .dyn-tick{display:inline-block}#sentence-list.dyn-selecting .dyn-card-btn{opacity:.35;pointer-events:none}.dyn-tick.on{background:var(--accent);border-color:var(--accent)}.dyn-tick.on.gold{background:#B29234;border-color:#B29234}.dyn-tick.on::after{content:'';position:absolute;left:6px;top:2.5px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}#dyn-sel-bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:.5px solid var(--border);padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:12px;z-index:250}#dyn-sel-bar.show{display:flex}#dyn-sel-bar button{font-family:var(--font-ui);font-size:13px;font-weight:600;border-radius:18px;padding:8px 20px;cursor:pointer}#dyn-sel-bar .dyn-sel-done{color:#fff;background:var(--accent);border:none}#dyn-sel-bar .dyn-sel-cancel{color:var(--text-secondary);background:var(--surface);border:.5px solid var(--border-strong)}body.dyn-plsel #site-nav-root{display:none}body.dyn-plsel .topic-nav{display:none}body.dyn-plsel #player-root{display:none}body.dyn-plsel .topic-eyebrow{display:none}body.dyn-plsel .topic-title{display:none}body.dyn-plsel .topic-subtitle{display:none}body.dyn-plsel .topic-intro{display:none}body.dyn-plsel #btn-prev-topic,body.dyn-plsel #btn-next-topic{opacity:.35;pointer-events:none}#dyn-plsel-back{display:block;margin:10px 0 14px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:8px 14px;cursor:pointer}#dyn-plsel-back:hover{background:var(--accent-light)}.dyn-eq{display:none;align-items:flex-end;gap:2px;height:12px;width:16px;flex-shrink:0}body.dyn-playing .sentence-card.dyn-live .dyn-eq{display:inline-flex}.dyn-eq i{width:3px;height:100%;border-radius:2px;background:var(--accent);transform-origin:bottom;animation:te-eq-bounce 0.9s ease-in-out infinite}.dyn-eq i:nth-child(2){animation-delay:.3s}.dyn-eq i:nth-child(3){animation-delay:.15s}.dyn-eq i:nth-child(4){animation-delay:.45s}body.premium-topic .dyn-eq i{background:#B29234}@keyframes te-eq-bounce{0%,100%{transform:scaleY(0.35)}50%{transform:scaleY(1)}}</style>
+<style id="dyn-styles-copy">.dyn-status{text-align:center;font-size:13px;font-weight:500;color:var(--accent);padding:4px 0;}.dyn-dots{display:inline-block;width:1.1em;text-align:left}.dyn-dots::after{content:'...';display:inline-block;width:0;overflow:hidden;vertical-align:bottom;animation:dyn-dots 1.2s steps(3,start) infinite}@keyframes dyn-dots{from{width:0}to{width:1.05em}}.dyn-sent-btn{width:34px;height:34px}.dyn-sent-off{opacity:.35;pointer-events:none}.dyn-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.96);z-index:9998;max-width:calc(100vw - 48px);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;line-height:1.3;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(24,22,40,.92);color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.28);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}.dyn-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}@media (prefers-reduced-motion: reduce){.dyn-toast{transition:opacity .18s ease}.dyn-toast,.dyn-toast.show{transform:translate(-50%,-50%)}}.audio-row button[onclick="skip(-10)"],.audio-row button[onclick="skip(10)"]{display:none}.scrubber{height:8px;border-radius:4px}.scrubber-fill{border-radius:4px}.scrubber-fill::after{width:18px;height:18px;right:-9px}.dyn-slider{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 8px;font-size:11.5px;color:var(--text-tertiary);margin-top:8px}.dyn-ctl-group{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;max-width:100%;min-width:0}#dyn-pf-val{display:inline-block;min-width:34px;text-align:left;font-variant-numeric:tabular-nums}.dyn-sp-end{font-size:11.5px;opacity:.72;padding:0 4px;white-space:nowrap}#dyn-sp{vertical-align:middle;max-width:88px}.dyn-slider input[type=range]{flex-shrink:0}.dyn-slider input[type=range]{width:105px;accent-color:var(--accent);height:3px;padding:9px 0;box-sizing:content-box;touch-action:none;-webkit-appearance:none;appearance:none;background:transparent}.dyn-slider input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(to right,var(--accent) 0 var(--te-fill,50%),var(--border-strong,rgba(0,0,0,.18)) var(--te-fill,50%) 100%)}.dyn-slider input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;background:var(--accent);margin-top:-6px}.dyn-slider input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:var(--border-strong,rgba(0,0,0,.18))}.dyn-slider input[type=range]::-moz-range-progress{height:3px;border-radius:2px;background:var(--accent)}.dyn-slider input[type=range]::-moz-range-thumb{width:15px;height:15px;border:0;border-radius:50%;background:var(--accent)}.dyn-ctl-sep{color:var(--border-strong)}.dyn-reps{display:inline-flex;gap:3px}.dyn-rep-btn{width:1.905em;height:1.905em;border-radius:.476em;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);font:600 10.5px var(--font-ui);font-size:calc(10.5px * var(--te-ui, 1));cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}.dyn-rep-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}.dyn-en-lbl{display:inline-flex;align-items:center;gap:4px;cursor:pointer}.dyn-en-lbl input{accent-color:var(--accent);margin:0;width:13px;height:13px}.dyn-ep-row{margin-top:2px}.dyn-ep-boxes{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}.dyn-ep-th{font-size:calc(10.5px * var(--te-ui, 1));color:var(--text-tertiary);font-style:italic}.dyn-ep-box{width:16px;height:16px;border-radius:4px;border:.5px solid var(--border-strong);background:var(--surface);cursor:pointer;padding:0;position:relative}.dyn-ep-box.on{background:var(--accent);border-color:var(--accent)}.dyn-ep-box.on::after{content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}.dyn-pcdl{margin-top:10px;padding-top:10px;border-top:.5px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:5px}.dyn-pcdl-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 10px}.dyn-pcdl-btn{font:600 12.5px var(--font-ui);color:#fff;background:var(--accent);border:0;border-radius:8px;padding:9px 14px;cursor:pointer}.dyn-pcdl-btn:hover{filter:brightness(1.08)}.dyn-pcdl-btn:disabled{opacity:.55;cursor:default;filter:none}.dyn-pcdl-note{font-size:11.5px;line-height:1.5;color:var(--text-tertiary);text-align:center;max-width:34em}.dyn-pcdl-note.warn{color:#A33A2A}.dyn-pcdl-note.ok{color:#2E7D52}body.te-v2 .te-intro-wrap{position:relative;margin-bottom:0.3rem}body.te-v2 .te-intro-wrap .topic-intro{overflow:hidden;margin-bottom:0}body.te-v2 .te-intro-wrap:not(.open) .topic-intro{max-height:3.3em}body.te-v2 .te-intro-wrap:not(.open)::after{content:'';position:absolute;left:0;right:0;bottom:1.85em;height:2.1em;background:linear-gradient(to bottom,rgba(250,250,248,0),var(--bg));pointer-events:none}body.te-v2 .te-intro-more{margin-top:2px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:none;border:0;padding:2px 0;cursor:pointer}body.te-v2 .te-intro-more:hover{text-decoration:underline}body.te-v2 .dyn-set-wrap{margin-top:2px}body.te-v2 .dyn-set-wrap summary{list-style:none;cursor:pointer;font-family:var(--font-ui);font-size:12.5px;font-weight:500;color:var(--text-secondary);padding:9px 0 0;display:flex;align-items:center;gap:6px}body.te-v2 .dyn-set-wrap summary::-webkit-details-marker{display:none}body.te-v2 .dyn-set-wrap summary::after{content:'⌄';font-size:14px;transition:transform .18s;transform:rotate(180deg)}body.te-v2 .dyn-set-wrap[open] summary::after{transform:rotate(0deg)}body.te-v2 .dyn-set-wrap .dyn-slider{margin-top:9px}body.te-v2 .te-pl-row{display:flex;gap:9px;margin:14px 0 16px}body.te-v2 .te-pl-row .dyn-addpl,body.te-v2 .te-pl-row .dyn-pl-link{flex:1;margin:0;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:#fff;background:var(--accent);border:.5px solid var(--accent);border-radius:var(--radius-md);padding:7.35px 10px;text-decoration:none;text-align:center;cursor:pointer}body.te-v2 .te-pl-row .dyn-addpl:hover,body.te-v2 .te-pl-row .dyn-pl-link:hover{background:var(--accent-mid);color:#fff}body.te-v2 .sentence-header{display:flex;align-items:center;gap:8px}body.te-v2 .prog-wrap{display:none}body.te-v2 .dyn-tick{order:0}body.te-v2 .sent-num{order:1}body.te-v2 .dyn-eq{order:2}body.te-v2 .sent-play-btn{order:3}body.te-v2 .sent-preview{order:4;flex:1;min-width:0}body.te-v2 .speed-toggle{display:none}body.dyn-plmode .speed-toggle{display:none}body.te-v2 .dyn-x-btn{order:8}.sent-lock-group{display:flex;align-items:center;gap:7px;margin:22px 0 9px;font-family:var(--font-ui,system-ui,sans-serif);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#B29234}.sent-lock-group::after{content:"";flex:1;height:.5px;background:var(--border,rgba(0,0,0,.12))}.sentence-card.sent-locked{opacity:.72;background:var(--surface)}.sentence-card.sent-locked .sentence-header{cursor:pointer}.sentence-card.sent-locked .sent-preview{color:var(--text-secondary)}.sentence-card.sent-locked .sent-lock-ico{display:inline-flex;align-items:center;color:#B29234;flex-shrink:0}body.te-v2 .sentence-card.sent-locked .sent-lock-ico{order:3}.sentence-card.sent-nodl{opacity:.45;background:var(--surface)}.sentence-card.sent-nodl .sentence-header{cursor:pointer}.sentence-card.sent-nodl .sent-preview{color:var(--text-secondary)}.sentence-card.sent-nodl .sent-play-btn,.sentence-card.sent-nodl .speed-toggle{opacity:.5}.dyn-info-lbl{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-align:left}.dyn-info-lbl:hover{color:var(--accent)}.dyn-info-i{width:1.444em;height:1.444em;border-radius:50%;border:1px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font:italic 700 9px/1 Georgia,"Times New Roman",serif;font-size:calc(9px * var(--te-ui, 1));flex-shrink:0}.dyn-info-box{position:relative;margin:7px 0 2px;padding:9px 30px 9px 11px;border:.5px solid var(--border-strong);border-radius:var(--radius-md);background:var(--surface);color:var(--text-secondary);font-size:12px;line-height:1.55;max-width:520px}.dyn-info-box a{color:var(--accent);font-weight:500;text-decoration:none}.dyn-info-box a:hover{text-decoration:underline}.dyn-info-x{position:absolute;top:3px;right:4px;width:22px;height:22px;border:0;background:none;color:var(--text-tertiary);cursor:pointer;font-size:16px;line-height:1;padding:0}.dyn-info-x:hover{color:var(--accent)}.dyn-head{font-size:12px;font-weight:600;color:var(--text-secondary);margin:0 0 8px;letter-spacing:.01em}.dyn-sync-row{display:flex;align-items:center;justify-content:flex-start;margin:8px 0 2px}.dyn-fmt-tag{order:2;margin-left:auto;font-size:10.5px;color:var(--text-tertiary);font-variant-numeric:tabular-nums}.dyn-sync-btn{width:28px;height:28px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}.dyn-sync-btn svg{width:15px;height:15px}.dyn-sync-btn:hover{color:var(--accent);border-color:var(--accent)}.sentence-card.dyn-off{opacity:.55;border-style:dashed}.sentence-card.dyn-off .sent-preview{text-decoration:line-through}.dyn-card-btn{width:26px;height:26px;border-radius:50%;border:.5px solid var(--border-strong);background:var(--surface);color:var(--text-tertiary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}.dyn-card-btn svg{width:13px;height:13px}.dyn-card-btn:hover{color:var(--accent);border-color:var(--accent)}.sentence-card.dyn-live{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}.te-plays{display:none;align-items:center;gap:4px;flex-shrink:0;font-family:var(--font-ui);font-size:calc(11px * var(--te-ui, 1));font-variant-numeric:tabular-nums;color:var(--text-tertiary)}.te-plays.on{display:inline-flex}.te-plays svg{width:8px;height:8px;fill:currentColor;flex-shrink:0}body.te-v2 .te-plays{order:7}.dyn-addpl{display:block;margin:10px auto 0;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:7px 14px;cursor:pointer}.dyn-addpl:hover{background:var(--accent-light)}.dyn-pl-link{display:block;text-align:center;font-size:12px;margin:6px 0 14px;color:var(--text-tertiary);text-decoration:none}.dyn-pl-link:hover{color:var(--accent)}.dyn-tick{display:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border-strong);flex-shrink:0;margin-right:2px;position:relative;cursor:pointer}.dyn-tick::before{content:'';position:absolute;inset:-14px -24px -14px -16px}#sentence-list.dyn-selecting .dyn-tick{display:inline-block}#sentence-list.dyn-selecting .dyn-card-btn{opacity:.35;pointer-events:none}.dyn-tick.on{background:var(--accent);border-color:var(--accent)}.dyn-tick.on::after{content:'';position:absolute;left:6px;top:2.5px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}#dyn-sel-bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:.5px solid var(--border);padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:12px;z-index:250}#dyn-sel-bar.show{display:flex}#dyn-sel-bar button{font-family:var(--font-ui);font-size:13px;font-weight:600;border-radius:18px;padding:8px 20px;cursor:pointer}#dyn-sel-bar .dyn-sel-done{color:#fff;background:var(--accent);border:none}#dyn-sel-bar .dyn-sel-cancel{color:var(--text-secondary);background:var(--surface);border:.5px solid var(--border-strong)}body.dyn-plsel #site-nav-root{display:none}body.dyn-plsel .topic-nav{display:none}body.dyn-plsel #player-root{display:none}body.dyn-plsel .topic-eyebrow{display:none}body.dyn-plsel .topic-title{display:none}body.dyn-plsel .topic-subtitle{display:none}body.dyn-plsel .topic-intro{display:none}body.dyn-plsel #btn-prev-topic,body.dyn-plsel #btn-next-topic{opacity:.35;pointer-events:none}#dyn-plsel-back{display:block;margin:10px 0 14px;font-family:var(--font-ui);font-size:13px;font-weight:500;color:var(--accent);background:var(--surface);border:.5px solid var(--border-strong);border-radius:var(--radius-md);padding:8px 14px;cursor:pointer}#dyn-plsel-back:hover{background:var(--accent-light)}.dyn-eq{display:none;align-items:flex-end;gap:2px;height:12px;width:16px;flex-shrink:0}body.dyn-playing .sentence-card.dyn-live .dyn-eq{display:inline-flex}.dyn-eq i{width:3px;height:100%;border-radius:2px;background:var(--accent);transform-origin:bottom;animation:te-eq-bounce 0.9s ease-in-out infinite}.dyn-eq i:nth-child(2){animation-delay:.3s}.dyn-eq i:nth-child(3){animation-delay:.15s}.dyn-eq i:nth-child(4){animation-delay:.45s}@keyframes te-eq-bounce{0%,100%{transform:scaleY(0.35)}50%{transform:scaleY(1)}}</style>
 <style>
   /* section headings (owner, 2026-08-02) */
   h2.sect { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; color: var(--navy); margin: 2rem 0 0.85rem; }
@@ -390,8 +522,9 @@
   #demo-scrubber { touch-action: none; cursor: pointer; }
   .see-link { color: var(--accent) !important; text-decoration: underline !important; }
   .see-link strong { color: inherit; }
-  .dp-info { background: var(--accent-light); border-radius: var(--radius-md); padding: 0.85rem 1.05rem; margin: 0 0 1rem; }
-  .dp-info p { margin: 0; color: #3B3488; font-size: 13.5px; line-height: 1.6; }
+  /* ⛔ STAYS LAVENDER - the cycler box under the mock player. See --lav-bg above. */
+  .dp-info { background: var(--lav-bg, #EEEDFE); border-radius: var(--radius-md); padding: 0.85rem 1.05rem; margin: 0 0 1rem; }
+  .dp-info p { margin: 0; color: var(--lav-ink, #3B3488); font-size: 13.5px; line-height: 1.6; }
   .dp-info p strong { color: #2B2566; }
   /* the real pages define these tokens in their own CSS; guide.html lacks a couple the player CSS uses */
   :root { --gold-light: #FBF5DC; }

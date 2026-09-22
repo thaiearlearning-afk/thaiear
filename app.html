@@ -27,7 +27,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- pwa:start (gen_pwa.js) -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#4B41AD">
+<meta name="theme-color" content="#1C124E">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -49,7 +49,21 @@
   :root {
     --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
     --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
-    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --accent: #1C124E; --accent-light: #EAEAF4; --accent-mid: #2A1F6B;
+  /* ⛔⛔ THE LAVENDER PANELS KEEP THE OLD ACCENT TINT, DELIBERATELY (owner, 2026-09-22):
+     "the lavender box 'downloaded topics play with no internet -...' can stay lavender as is (same
+     as the quiz gloss chips) and same for the read thai box at the top of guide. i think that much
+     navy would be overpowering", and separately "the cycler under the mockup dynamic mp3 player -
+     its a lavender box which is fine".
+     ⚠ SO THEY MUST NOT FOLLOW --accent-light, which is now a cool grey. Pinned here as their own
+     pair, which is also what makes them findable: COLOR_THEME.md lists them.
+     ⚠ Same family as quiz.css's --chip-accent / --chip-accent-light - the quiz's reveal chips,
+     "Play the sentence" and the "Literally:" line. One deliberate second colour, four surfaces. */
+:root {
+  --lav-bg: #EEEDFE;
+  --lav-ink: #3B3488;
+}
+
     --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
     --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
@@ -99,15 +113,19 @@
   .ios-steps li::before {
     content: counter(step); position: absolute; left: 0; top: 0.05rem;
     width: 1.65rem; height: 1.65rem; border-radius: 50%;
-    background: var(--accent-light); color: var(--accent);
+    /* ⚠ A DARK CIRCLE WITH WHITE NUMERALS (owner, 2026-09-22: "the number icons for the
+       steps on the app page" go navy). Retired: an --accent-light circle with --accent ink, which
+       on the new palette read as a grey disc. */
+    background: var(--accent); color: #fff;
     font-size: 12.5px; font-weight: 700; line-height: 1.65rem; text-align: center;
   }
   .ios-steps strong { color: var(--text-primary); font-weight: 600; }
   .ios-share { display: inline-flex; vertical-align: -0.22em; width: 1.05em; height: 1.05em; color: var(--accent); }
   .ios-substep { margin-top: 0.35rem; font-size: 13.5px; color: var(--text-tertiary); }
+  /* ⛔ STAYS LAVENDER - see the --lav-bg note at the top of this file. */
   .ios-tip {
-    background: var(--accent-light); border-radius: var(--radius-md);
-    padding: 0.85rem 1rem; font-size: 13.5px; color: #3B3488; line-height: 1.6; margin: 0.25rem 0 0.5rem;
+    background: var(--lav-bg, #EEEDFE); border-radius: var(--radius-md);
+    padding: 0.85rem 1rem; font-size: 13.5px; color: var(--lav-ink, #3B3488); line-height: 1.6; margin: 0.25rem 0 0.5rem;
   }
   .ios-tip strong { color: #2A2470; }
 

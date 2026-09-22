@@ -24,6 +24,14 @@
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- pwa:start (gen_pwa.js) -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1C124E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ThaiEar">
+<!-- pwa:end -->
 <link rel="preload" href="/fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/inter-latin-500.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/sarabun-thai-400.woff2" as="font" type="font/woff2" crossorigin>
@@ -50,14 +58,16 @@
 })();
 </script>
 
-<!-- pwa:start (gen_pwa.js) -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#4B41AD">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="ThaiEar">
-<!-- pwa:end -->
+<!-- ⛔⛔ THE pwa BLOCK IS **NOT** WRITTEN HERE ANY MORE (2026-09-22). This template used to carry
+     its own hand-typed copy, complete with gen_pwa.js's own markers — so every index.html shipped
+     with TWO pwa blocks and TWO theme-colors, and gen_pwa.js could not fix it: its idempotency
+     strip is a NON-GLOBAL regex, so it rewrites the first block and leaves the second untouched
+     for ever. The navy recolour is how it surfaced: gen_pwa.js moved the real block to #1C124E
+     and this copy sat below it still saying #4B41AD, which is the value a browser can legitimately
+     use. One owner per tag: gen_pwa.js.
+     ⚠ SO THE RUN ORDER MATTERS. node gen_home_splash.js leaves index.html with no pwa block;
+     node gen_pwa.js puts it back. Run them in that order (gen_pwa.js takes no arguments and
+     sweeps every page, so a full pass always ends up correct). -->
 <!-- ⚠ THE SPLASH'S HEADINGS ARE INTER 600, AND 600 WAS NOT PRELOADED.
      Every @font-face here uses font-display: optional, which is what keeps this page at CLS 0 —
      but "optional" means a face that is not ready within a very short block period is NOT USED
@@ -85,13 +95,20 @@
     --text-primary: #1A1A1A;
     --text-secondary: #5A5A5A;
     --text-tertiary: #9A9A9A;
-    --accent: #4B41AD;
-    --accent-mid: #534AB7;
-    --accent-light: #EEEDFE;
+    --accent: #1C124E;
+    --accent-mid: #2A1F6B;
+    --accent-light: #EAEAF4;
     --gold: #F0CC5C;
     --gold-dark: #C8A030;
     --gold-light: #FBF5DC;
     --purple-mid: #7F77DD;
+    /* THE CARD TIER TINTS (owner 2026-09-22, mockup variant A: "do keep the tint as it appears
+       in A"). These are the ONLY tier signal on a card besides the pill's own word - the quiz
+       strip and the pill are one tier-neutral dark. Values are the mockup's, as approved.
+       The premium one is a CREAM: the gold family at near-white, which keeps a premium card
+       recognisable without putting gold back on the strip. */
+    --card-tint: #F3F4FA;
+    --card-tint-premium: #F7F4EC;
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 14px;
@@ -230,7 +247,10 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 .s3{ clip-path:polygon(50% 50%, 0 calc(var(--split-n) * 1%), 0 100%, 100% 100%, 100% calc(var(--split-n) * 1%)); }
 
 /* ── the three colours ─────────────────────────────────────────────────── */
-.c-purple{ background:linear-gradient(150deg,#5348BE 0%, #4B41AD 46%, #3B3391 100%); }
+/* THE TOPICS THIRD. Owner 2026-09-22: "the homepage topics third is blue/purple - that can be
+   navy." Same three-stop shape, hue moved: mid stop == --accent, so the third and the
+   [data-gt="purple"] welcome band still quote each other. */
+.c-purple{ background:linear-gradient(150deg,#2A1F6B 0%, #1C124E 46%, #130C36 100%); }
 .c-purple .s-title{ color:#fff; }
 .c-purple .s-sub{ color:rgba(255,255,255,.72); }
 .c-purple .s-meta{ color:var(--gold); }
@@ -249,12 +269,12 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 .c-white .s-sub{ color:var(--text-secondary); }
 .c-white .s-meta{ color:var(--gold-dark); }
 .c-white .s-ico{ color:var(--accent); }
-.c-white .s-go{ color:var(--accent); border-color:rgba(75,65,173,.4); }
+.c-white .s-go{ color:var(--accent); border-color:rgba(28,18,78,.4); }
 
 .sect:hover{ filter:brightness(1.05) saturate(1.04); }
 .sect:hover .s-label{ transform:translate(var(--tx),var(--ty)) scale(1.035); }
 .sect:focus-visible{ outline:none; filter:brightness(1.08); }
-.sect:focus-visible .s-go{ box-shadow:0 0 0 3px rgba(75,65,173,.35); }
+.sect:focus-visible .s-go{ box-shadow:0 0 0 3px rgba(28,18,78,.35); }
 
 /* ── the label inside each region ──────────────────────────────────────────
    Absolutely placed at the region's visual centre of mass, NOT flex-centred:
@@ -802,7 +822,9 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 /* ── the two inverted grounds: the text is LIGHTER than what it sits on ──────────── */
 /* purple — the Topics region's own blue-purple (var(--accent), the mid stop of .c-purple's
    gradient), so the band reads as a piece of the same page rather than a new colour */
-[data-gt="purple"] .te-hero-cta.has-welcome{ --gt-bg:#4B41AD; --gt-fg:#FFFFFF; --gt-sub:rgba(255,255,255,.78); --gt-line:rgba(255,255,255,.28); }
+/* A15 - the "Create an account" pill that becomes "Welcome back". The KEY stays "purple"
+   because it is a value stored in each visitor's localStorage; only the colour moves. */
+[data-gt="purple"] .te-hero-cta.has-welcome{ --gt-bg:#1C124E; --gt-fg:#FFFFFF; --gt-sub:rgba(255,255,255,.78); --gt-line:rgba(255,255,255,.28); }
 /* black — white on near-black. Not #000: a true black band against the cream page is a hole
    in it, and on an OLED phone the edge against the white region shimmers. */
 [data-gt="black"] .te-hero-cta.has-welcome{ --gt-bg:#0B0B0C; --gt-fg:#FFFFFF; --gt-sub:rgba(255,255,255,.72); --gt-line:rgba(255,255,255,.25); }

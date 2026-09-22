@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- pwa:start (gen_pwa.js) -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#4B41AD">
+<meta name="theme-color" content="#1C124E">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -41,7 +41,7 @@
   :root {
     --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
     --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
-    --accent: #4B41AD; --accent-light: #EEEDFE; --accent-mid: #534AB7;
+    --accent: #1C124E; --accent-light: #EAEAF4; --accent-mid: #2A1F6B;
     --gold: #F0CC5C; --gold-dark: #C8A030; --purple-mid: #7F77DD;
     --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
@@ -99,11 +99,21 @@
   .prog-row:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
   .prog-row:last-child  { border-radius: 0 0 var(--radius-md) var(--radius-md); }
   .prog-row:hover { border-color: var(--border-strong); }
-  .prog-row-name { font-size: 13.5px; min-width: 0; overflow-wrap: break-word; }
+  /* ⛔⛔ THE NAME TAKES ALL THE SLACK, AND THAT IS WHAT KEEPS THE OTHER COLUMNS STRAIGHT.
+     Owner, 2026-09-22: "the minutes listening column is now no longer straight - if a unit
+     title/ playlist title is shorter, the minutes are shifting left."
+     ⚠ THE CAUSE WAS `justify-content: space-between` MEETING A THIRD CHILD. With two children
+     it pins one left and one right, which is why this row was straight for months. The quiz cells
+     made it three, and space-between then puts the MIDDLE child at
+     `name + free/2` - so every character removed from a title moved the minutes half a character
+     left. Nothing about the minutes changed; the row gained a sibling.
+     ✅ With the name growing, the free space is all inside the name and the two right-hand
+     columns are measured from the right edge. Do not reintroduce space-between here. */
+  .prog-row-name { font-size: 13.5px; min-width: 0; overflow-wrap: break-word; flex: 1 1 auto; }
   /* Same green as the index card and .reveal-all-btn on a premium topic — the one number on the
      row that is about the reader rather than about the topic. */
   .prog-row-plays { font-size: 12.5px; font-weight: 500; color: #1F5D3A; white-space: nowrap;
-    font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    font-variant-numeric: tabular-nums; flex: 0 0 auto; width: 4.9em; text-align: right; }
 
   /* ── quiz best scores (QUIZ_GO_LIVE_PLAN.md §2.5) ──────────────────────────────────────
      ⛔⛔ HIDDEN UNTIL ThaiEarTopics.quizGate() SAYS OTHERWISE. The cells are rendered on every
@@ -116,9 +126,23 @@
      ⛔ The dash means "does not apply" here and "never tried" elsewhere. Both are honestly
      blank; 0% would be a lie in either — it reads as a failed attempt. */
   .prog-row-q { display: none; }
-  .prog-q-on .prog-row-q { display: flex; gap: 7px; flex-shrink: 0; }
+  .prog-q-on .prog-row-q { display: flex; gap: 7px; flex: 0 0 auto; }
+  /* ⛔ ONE CELL WIDTH, IN px, SHARED BY THE ROWS AND THE HEADER.
+     ⚠ It was `3.1em`, and em is relative to the ELEMENT's own font-size - so the header, which
+     sets 10.5px against the rows' 12px, silently got a 32.6px cell against their 37.2px and the
+     labels sat left of the numbers they label. A px variable cannot do that.
+     ⚠ And the box fits "100%" with room to spare: a cell that has to grow for its content is a
+     cell that shunts its neighbours, which is the other half of what the owner saw. */
+  .prog-q-on .prog-row, .prog-q-on .prog-qhead { --pq-w: 38px; }
   .pq-c {
-    width: 3.1em; text-align: right; font-size: 12px; font-weight: 600;
+    flex: 0 0 var(--pq-w, 38px); width: var(--pq-w, 38px);
+    /* ✅ CENTRED, not right-aligned. Owner, 2026-09-22: "the one result i've got in the
+       playlists section seems to not be centred on the '-' above and below it. its the rightmost
+       column and its very close to the '-' to the left of it." Right-aligning put a one-character
+       dash hard against the right edge of its box while a four-character score filled the box, so
+       the two never shared a visual centre and the score appeared to crowd the dash beside it.
+       Centring makes a dash and a score read as the same column. */
+    text-align: center; font-size: 12px; font-weight: 600;
     font-variant-numeric: tabular-nums; color: var(--accent);
   }
   /* the "never tried" / "does not apply" dash is quieter than a score — it is not a result */
@@ -131,11 +155,13 @@
     padding: 0 0.85rem 0.35rem; font-size: 10.5px; font-weight: 600;
     letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary);
   }
+  /* ⚠ font-size only - the WIDTH comes from --pq-w so the header cannot drift off the rows */
   .prog-q-on .prog-qhead .pq-c { font-size: 10.5px; color: inherit; }
   @media (max-width: 480px) {
     .prog-q-on .prog-row-q { gap: 4px; }
-    .prog-q-on .pq-c { width: 2.8em; font-size: 11px; }
-    .prog-q-on .prog-row-plays { font-size: 11.5px; }
+    .prog-q-on .prog-row, .prog-q-on .prog-qhead { --pq-w: 34px; }
+    .prog-q-on .pq-c { font-size: 11px; }
+    .prog-q-on .prog-row-plays { font-size: 11.5px; width: 4.6em; }
   }
   .prog-band { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
     color: var(--text-tertiary); margin: 1.4rem 0 0.5rem; }
@@ -411,7 +437,12 @@
     return keys.length + '/' + sum;
   }
   function quizHead() {
-    return '<div class="prog-qhead"><span class="prog-row-name"></span>' +
+    /* ⚠ THE SPACER IS LOAD-BEARING. The header must have the SAME THREE CHILDREN as a data
+       row - name, minutes, cells - or the two rows distribute their free space differently and
+       the labels sit off the numbers. It is empty and aria-hidden: there is no "minutes" label to
+       show, only a column to hold open. */
+    return '<div class="prog-qhead" aria-hidden="true"><span class="prog-row-name"></span>' +
+           '<span class="prog-row-plays"></span>' +
            '<span class="prog-row-q">' + Q_IDS.map(function (id) {
              return '<span class="pq-c" title="' + Q_NAME[id] + '">' + Q_ABBR[id] + '</span>';
            }).join('') + '</span></div>';

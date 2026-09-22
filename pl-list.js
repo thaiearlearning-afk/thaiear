@@ -214,7 +214,8 @@
     '.dl-select.dl-update .dl-dot { background: transparent; border-color: var(--accent); border-style: dashed; }' +
     '.dl-select.dl-update.selected .dl-dot { background: var(--accent); border-style: solid; }' +
     '.dl-tick { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 27px; border-radius: 50%; color: var(--accent); border: 2px solid transparent; transition: border-color .15s, background .15s; }' +
-    '.dl-badge.clear-selected .dl-tick { border-color: #9d92e0; background: var(--accent-light); }' +
+    // ⚠ keep in step with topics-page.css's copy: a pale ring vanishes on a dark accent
+    '.dl-badge.clear-selected .dl-tick { border-color: var(--accent-mid); background: var(--accent-light); }' +
     '.mode-download .dl-badge { opacity: .4; }' +
     '.mode-clear .dl-select { opacity: .4; }' +
     '.pl-dl-state { font-size: 12px; color: var(--accent); font-weight: 500; }' +
@@ -227,7 +228,14 @@
     '.fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }' +
     '.fluency-text .dots::after { animation-duration: 1.5s; }' +
     /* Layout B (owner-approved r101) — the full-width dashed "add playlist" card. */
-    '.pl-add-card { display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1.5px dashed var(--accent); border-radius: var(--radius-lg); background: var(--accent-light); padding: 14px 12px; margin: 0 1px 1.25rem; }' +
+    /* ⛔ A LAVENDER PANEL, AND THOSE ARE EXEMPT FROM THE PALETTE (owner, 2026-09-22): "the add
+       playlist button on the playlist page can be navy, but the box it sits in (lavender box) can
+       stay the same (lavender boxes are exempt if you cant already tell)". The BUTTON inside it
+       is .pl-add, which is var(--accent) and therefore already navy.
+       ⚠ The dashed border and the hint text below follow the accent, so button, border and hint
+       read as one colour on the lavender ground. Only the GROUND is pinned. */
+    ':root { --lav-bg: #EEEDFE; }' +
+    '.pl-add-card { display: flex; flex-direction: column; align-items: center; gap: 8px; border: 1.5px dashed var(--accent); border-radius: var(--radius-lg); background: var(--lav-bg, #EEEDFE); padding: 14px 12px; margin: 0 1px 1.25rem; }' +
     '.pl-add-card .pl-add { margin-bottom: 0; }' +
     '.pl-add-hint { font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--accent); text-align: center; line-height: 1.45; }';
 

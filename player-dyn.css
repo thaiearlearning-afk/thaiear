@@ -1,8 +1,11 @@
 /* player-dyn.css — dynamic player TEST SPACE styles (topic-test*.html, playlists.html).
-   Shares the site's CSS variables (pages define :root). tier-premium remaps the accent
-   to the canonical premium gold (text #B29234 / light #FBF5DC), mirroring the gold player
-   skin on premium topic pages. */
-.dyn-wrap.tier-premium { --accent: #B29234; --accent-light: #FBF5DC; --accent-mid: #C8A030; }
+   Shares the site's CSS variables (pages define :root).
+   ⛔ .tier-premium NO LONGER REMAPS ANYTHING (A6, owner 2026-09-22: premium topics and
+   playlists join the single dark accent). The rule is kept, restating the site palette, purely so
+   the class stays a legal hook - a premium playlist is meant to look exactly like a free one, and
+   the tier is carried by the lock icons. Retired gold: --accent #F0CC5C / light #FBF5DC / text
+   #B29234. */
+.dyn-wrap.tier-premium { --accent: #1C124E; --accent-light: #EAEAF4; --accent-mid: #2A1F6B; }
 
 /* ── player chrome — copied from player.js's dyn topic player (round-8 item 6: the two
    players must be side-by-side indistinguishable). Scoped under .dyn-wrap. ── */
@@ -103,7 +106,8 @@
 .dyn-pl-row.busy { opacity: 0.5; pointer-events: none; }
 .dyn-pl-tick { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--border-strong); flex-shrink: 0; position: relative; }
 .dyn-pl-row.on .dyn-pl-tick { background: var(--accent); border-color: var(--accent); }
-.dyn-pl-row.on.gold .dyn-pl-tick { background: #B29234; border-color: #B29234; }
+/* A17/A6: the .gold tick variant is retired - one tick colour on both tiers.
+   Retired: .dyn-pl-row.on.gold .dyn-pl-tick { background:#B29234; border-color:#B29234 } */
 .dyn-pl-row.on .dyn-pl-tick::after { content: ''; position: absolute; left: 6px; top: 2.5px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 .dyn-pl-name { flex: 1; font-size: 14px; color: var(--text-primary); font-weight: 500; }
 .dyn-pl-count { font-size: 12px; color: var(--text-tertiary); }
