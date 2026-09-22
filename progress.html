@@ -109,6 +109,13 @@
     font-size: 24px; font-weight: 600; color: var(--accent); line-height: 1.15;
     font-variant-numeric: tabular-nums;
   }
+  /* ⛔⛔ `visibility`, NOT `display` AND NOT AN EMPTY STRING. The box must keep its exact
+     height while the figures are unknown, or revealing them moves everything below — which is
+     a worse flash than the one being fixed, and the same reasoning as .tile.slot in quiz.css.
+     ⚠ It also takes the value out of the accessibility tree, so a screen reader is not read a
+     number the page is not yet willing to show. The LABEL stays visible throughout: "days
+     listened" is true before we know how many. */
+  .stat-pending .stat-val { visibility: hidden; }
   .stat-lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px;
     /* ⚠ `anywhere`, so the LABEL can no longer size the grid track - see .stat-card above.
        It only ever breaks a word that genuinely does not fit the column. */
@@ -547,6 +554,45 @@
 
   /* ── render ─────────────────────────────────────────────────────────────────────────────── */
 
+  /* ⭐⭐ NOTHING IS SHOWN UNTIL THE FIGURES HAVE SETTLED. Owner, 2026-09-22: "its about a
+     flash, not a zero versus a dash! just dont render anything until the conflict is resolved /
+     load storm passed - you could even put a simple 0.15s delay on their render."
+     ⚠ A DASH WAS THE WRONG ANSWER AND HE IS RIGHT. Swapping the false 0 for an em dash made the
+     value HONEST but left it CHANGING, and the change is what he can see. The only thing that
+     does not flash is a value that appears once, already correct.
+     ⚠⚠ BLANK, NOT ABSENT — the card, its label and its full height still render (see
+     .stat-pending in the CSS, which hides the VALUE with `visibility`). Removing the value would
+     collapse the box and trade a flashing number for a jumping layout, which is worse: the
+     numbers change once, the layout would change twice.
+     ⚠ NOT A FIXED DELAY, though he offered one. A timer races a fast connection into showing
+     nothing and a slow one into showing zeros anyway; the honest condition is whether the two
+     asynchronous inputs have ARRIVED. `durations` is the clip lookup the listening time is
+     summed from, and quizResults is the store the two quiz cards read.
+     ⛔ THE TIMER IS A CEILING, NOT THE MECHANISM. If a fetch fails the figures would otherwise
+     stay blank for ever, so after 2s we show what we have — a stale-but-visible page beats a
+     permanently empty one. It is armed once, on the first render that needs it. */
+  var figsTimedOut = false, figsTimer = null;
+  function figuresReady() {
+    if (figsTimedOut) return true;
+    if (!durations) return false;               // the listening-time lookup
+    /* ⚠⚠ ONLY WAIT FOR WHAT CAN ACTUALLY ARRIVE. Waiting on `quizResults` alone meant that a
+       page where ThaiEarQuizStore is absent or never answers hid ALL SIX figures until the 2s
+       ceiling — including the three that were known from the first frame. Caught by a probe,
+       not by reading: the render log showed `figsOk=false durations=true`, which is the shape of
+       waiting on something that is not coming.
+       ⛔ The store being missing is not an error state to wait out; it is an answer. */
+    if (quizOn && !quizResults && window.ThaiEarQuizStore) return false;   // the two quiz cards
+    return true;
+  }
+  function armFigureTimeout() {
+    if (figsTimer || figsTimedOut) return;
+    figsTimer = setTimeout(function () {
+      figsTimedOut = true; figsTimer = null;
+      painted = '';                             // force the repaint this unblocks
+      render();
+    }, 2000);
+  }
+
   function render() {
     var a = A(), t = T();
     if (!t) return;                                   // topics.js not in yet; the auth event repaints
@@ -571,6 +617,8 @@
        a DIFFERENT user, or to signed-out, would also not repaint, and the page would keep
        someone else's name on it. Cheap, and it makes the self-correction real rather than
        assumed. */
+    var figsOk = figuresReady();
+    if (!figsOk) armFigureTimeout();
     var guessed = guessUser();
     var sig = [user ? user.id : 'out', guessed ? guessed.id : 'out',
                tot.listens, Math.round(tot.seconds),
@@ -581,7 +629,10 @@
                /* ⚠ THE QUIZ COLUMNS ARE AN INPUT LIKE ANY OTHER. Left out of this signature
                   they would render once and then never update — the failure this comment
                   block warns about, one line above. */
-               quizOn ? 1 : 0, quizSig()
+               quizOn ? 1 : 0, quizSig(),
+               /* ⚠ IN THE SIGNATURE, or the page would stay blank: the repaint that reveals the
+                  figures happens when nothing else about them has changed. */
+               figsOk ? 1 : 0
               ].join('|');
     if (sig === painted) return;
     painted = sig;
@@ -621,7 +672,7 @@
         '<div class="fluency-text">Fluency loading<span class="dots" aria-hidden="true"></span></div>' +
       '</div>' +
 
-      '<div class="stat-grid">' +
+      '<div class="stat-grid' + (figsOk ? '' : ' stat-pending') + '">' +
         card(tot.listens.toLocaleString(), 'sentences listened to') +
         card(stats.daysListened, 'day' + (stats.daysListened === 1 ? '' : 's') + ' listened') +
         card(stats.streak, 'day' + (stats.streak === 1 ? '' : 's') + ' in a row',

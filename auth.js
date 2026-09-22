@@ -541,6 +541,29 @@
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
   function uid() { return currentUser && currentUser.id; }
+  /* ⭐⭐ READ-ONLY. WHO THE CACHED FIGURES BELONG TO, BEFORE THE SESSION RESOLVES.
+     Owner, 2026-09-22, on the Progress page: the six headline boxes flashed from 0 to the real
+     numbers. They read getPlayReps()/getPlayStats(), both of which answer "nothing" while
+     currentUser is null — and currentUser is null until supabase-js restores the session over
+     the NETWORK. The figures were already in localStorage the whole time; the only thing
+     stopping the page showing them was that we did not yet know whose they were.
+     ⛔⛔ uid() IS DELIBERATELY UNTOUCHED, AND THAT IS THE WHOLE SAFETY ARGUMENT. Every WRITE in
+     this file is guarded by `if (uid())`, so nothing is ever recorded, persisted or attributed on
+     a guess — a guessed identity may only be used to decide whose cached numbers to READ.
+     ⚠ AND READING IS SAFE BY CONSTRUCTION, not by care: every cache entry stores the uid it
+     belongs to and the readers compare it. Guess wrong and the comparison fails and you get the
+     blank record — which is exactly today's behaviour. It can show the last known figures to the
+     person they belong to, and it cannot show them to anyone else.
+     ⚠ Self-correcting: plysMerged() re-reads on every call, so when the session resolves to a
+     different user the next repaint replaces them. */
+  function readUid() {
+    if (currentUser) return currentUser.id;
+    try {
+      var I = window.ThaiEarIdentity;
+      var g = (I && I.guess) ? I.guess() : null;
+      return (g && g.state === 'in' && g.user) ? g.user.id : null;
+    } catch (_) { return null; }
+  }
 
   function persistProgress() { if (uid()) lsSet('thaiear_progress', { uid: uid(), data: currentProgress }); }
   function loadPersistedProgress() { var c = lsGet('thaiear_progress'); return (c && c.uid === uid()) ? c.data : null; }
@@ -666,7 +689,9 @@
   function plysBlank() { return { synced: {}, syncedReps: {}, pending: {}, pendingReps: {}, outbox: null }; }
   function plysRead() {
     var c = lsGet(PLYS_KEY);
-    return (c && c.uid === uid())
+    /* ⚠ readUid(), not uid() — see its note. This is a READ; the write in plysWrite() below is
+       still gated on uid() and so still cannot fire on a guess. */
+    return (c && c.uid === readUid())
       ? { synced: c.synced || {}, syncedReps: c.syncedReps || c.synced || {},
           pending: c.pending || {}, pendingReps: c.pendingReps || c.pending || {},
           outbox: c.outbox || null }
@@ -832,7 +857,8 @@
   function plysStatsGet() {
     if (plysStats) return plysStats;
     var c = lsGet(PLYS_STATS_KEY);
-    plysStats = (c && c.uid === uid()) ? c.data : { daysListened: 0, streak: 0, bestStreak: 0, lastListenDate: null };
+    /* ⚠ readUid() — a read. plysStatsSet() still writes under uid() only. */
+    plysStats = (c && c.uid === readUid()) ? c.data : { daysListened: 0, streak: 0, bestStreak: 0, lastListenDate: null };
     return plysStats;
   }
   function plysStatsSet(d) {
@@ -1273,7 +1299,9 @@
     /* REPETITIONS, not passes. getPlays() is what the pill and the topic/playlist minimum use;
        this is what the headline total and the listening time use. ⚠ They are different numbers on
        purpose — see plysBlank(). */
-    getPlayReps: function () { return currentUser ? plysMergedReps() : {}; },
+    /* ⚠ readUid(), not currentUser: the figures are in the local mirror before the session
+       resolves, and answering {} until then is what made the Progress boxes flash 0 → real. */
+    getPlayReps: function () { return readUid() ? plysMergedReps() : {}; },
     getPlayCount: function (num) {
       if (!currentUser) return 0;
       return plysMerged()[String(num)] || 0;
@@ -1304,7 +1332,7 @@
        lastListenDate }. Synchronous and always defined — the cached copy answers offline.
        ⚠ These are NOT computed client-side. /api/plays decides them from last_listen_date, in
        UTC days, so a streak can break at 07:00 Bangkok; the page says so in words. */
-    getPlayStats: function () { return currentUser ? plysStatsGet() : { daysListened: 0, streak: 0, bestStreak: 0, lastListenDate: null }; },
+    getPlayStats: function () { return readUid() ? plysStatsGet() : { daysListened: 0, streak: 0, bestStreak: 0, lastListenDate: null }; },
     /* Reset every counter to zero. ⚠ A RESET, NOT AN ERASURE — the row survives and tracking
        continues; deleting the account is what removes the record, via account.html. Clears the
        LOCAL store too, including any queued outbox, or the next flush resurrects what was just

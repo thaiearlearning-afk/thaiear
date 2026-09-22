@@ -33,7 +33,27 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v639';   // v639: THE THAI BUILDER SHOWS THE GLOSSED SENTENCE WHEN YOU ARE
+const VERSION = 'v640';   // v640: the six Progress figures appear ONCE, already correct.
+                          // Owner, 2026-09-22, twice: "the 6 boxes still flash ... the numbers
+                          // within them", then "its about a flash, not a zero versus a dash!
+                          // just dont render anything until the conflict is resolved".
+                          // ⚠ A DASH WAS MY FIRST ANSWER AND IT WAS WRONG: it made the value
+                          // honest while leaving it CHANGING, and the change is what he sees.
+                          // THREE ARE NOW KNOWN AT FIRST PAINT -- auth.js reads its cached plays
+                          // and streak blobs against the IDENTITY GUESS instead of the
+                          // unresolved session (readUid). ⛔ uid() is UNTOUCHED, so no write can
+                          // fire on a guess; and every cache entry stores the uid it belongs to,
+                          // so a wrong guess fails the comparison and yields the blank record --
+                          // it can show the last known figures to their owner and to nobody else.
+                          // THE OTHER THREE arrive by fetch and are HIDDEN until they land
+                          // (.stat-pending uses `visibility`, so the box keeps its height and the
+                          // reveal moves nothing). A 2s ceiling shows whatever we have if a
+                          // lookup never arrives.
+                          // ⚠⚠ AND A PROBE CAUGHT A REAL BUG IN THE FIRST CUT: readiness waited
+                          // on quizResults even when ThaiEarQuizStore was absent, so a page
+                          // without it hid ALL SIX figures for the full 2s -- including the three
+                          // that were known from the first frame. Only wait for what can arrive.
+                          // v639:   // v639: THE THAI BUILDER SHOWS THE GLOSSED SENTENCE WHEN YOU ARE
                           // RIGHT. Owner, 2026-09-22: "if you get the answer right, you dont
                           // see the model sentence ... which means you don't see the english
                           // gloss chips ... then in all circumstances they see the full
