@@ -33,7 +33,16 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v623';   // v623: THE QUIZ MENU STARTS AT THE TOP, AND THE BLOCK SITS
+const VERSION = 'v624';   // v624: THE "KEEP" BUTTON ON A DELETE-DOWNLOAD CONFIRM ACTUALLY
+                          // BACKS OUT. It did nothing: confirmDelete() repainted the bar's
+                          // innerHTML but left BOTH idempotence guards (data-dlsig and
+                          // data-sig) still claiming the old state, so the repaint Keep asked
+                          // for matched the stale signature and was skipped. Topic, grammar
+                          // and playlist pages alike - one function, three surfaces.
+                          // Also a 1px bottom-padding kicker on .pl-box-body: WebKit rounds
+                          // the overflow:hidden clip to device pixels and was swallowing the
+                          // first playlist's sub-pixel Delete border (iPhone PWA only).
+                          // v623: THE QUIZ MENU STARTS AT THE TOP, AND THE BLOCK SITS
                           // HIGHER. Two halves. (1) The guard on the corrective scroll
                           // was being tripped by the very restore it exists to undo —
                           // WebKit's restore fires a SCROLL EVENT, so `userScrolled`

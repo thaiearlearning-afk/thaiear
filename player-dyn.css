@@ -164,7 +164,17 @@
   min-height: 1.3em; }
 /* .pl-box-chev removed r31 — the whole .pl-box-head is a button, so the chevron was clutter that
    read as a sibling of the download circles/ticks. Its rules went with it. */
-.pl-box-body { display: none; padding: 0 1.15rem 1.15rem; }
+/* ⚠ THE BOTTOM PADDING CARRIES A 1px KICKER FOR WEBKIT, AND IT IS NOT ROUNDING-TO-TASTE.
+   .pl-box is `overflow: hidden` (it clips the head's background to the radius) and .pl-del's
+   border computes SUB-PIXEL (0.667px at dpr 1.5). WebKit rounds the clip rect to device
+   pixels, so at an unlucky fractional offset the button's bottom border is swallowed while
+   its text still shows — owner, 2026-09-22, on the iPhone PWA only; Android and desktop are
+   clean, and a Blink harness measured 19px of slack on all three boxes and could not
+   reproduce it. It hit the FIRST box because .pl-add-card above it sets that box's
+   fractional offset, and the boxes below inherit a different one.
+   ⛔ Do not 'simplify' this back to a round 1.15rem, and do not fix it by removing
+   overflow:hidden — that is what clips the head to the corner radius. */
+.pl-box-body { display: none; padding: 0 1.15rem calc(1.15rem + 1px); }
 .pl-box.open .pl-box-body { display: block; }
 /* "Remove sentences" (batch-remove entry) — quiet pill like .pl-del, accent-leaning */
 .pl-remsent { font-family: var(--font-ui); font-size: 12px; color: var(--accent); background: none; border: 0.5px solid var(--accent); border-radius: 14px; padding: 4px 12px; cursor: pointer; margin-top: 1rem; margin-right: 8px; }

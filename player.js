@@ -2218,6 +2218,23 @@
   // Confirm before deleting a download (parity with the grid's Clear-downloads warning).
   function confirmDelete() {
     var bar = $('offline-bar'); if (!bar) return;
+    /* ⛔⛔ CLEAR THE SIGNATURE. data-dlsig is setOfflineState()'s idempotence guard, and it is a
+       claim about WHAT IS CURRENTLY PAINTED. Overwriting innerHTML here falsifies that claim
+       while leaving the attribute saying "downloaded" — so pressing Keep re-derived 'downloaded',
+       built the identical signature, matched, and returned WITHOUT REPAINTING. The confirm stayed
+       on screen and the button did nothing (owner, 2026-09-22, on topic, grammar and playlist
+       pages alike — one function, three surfaces).
+       ⚠ THE GUARD WAS RIGHT ABOUT THE STATE AND WRONG ABOUT THE DOM, which is why nothing in the
+       state logic looked broken. Any code that paints this element outside setOfflineState() must
+       drop the attribute; line ~2517 already does it for the card branches.
+       ⚠ BOTH ATTRIBUTES, and the second one is not belt-and-braces. The bar has TWO idempotence
+       guards on the same element — data-dlsig for the download UI and data-sig for the signup /
+       app-card branches — and each clears the other on the way in. Which one repaints after
+       Keep depends on where the visitor is (app, installed PWA, or a plain tab), so clearing
+       only the one you happen to be thinking about leaves the other able to veto the repaint.
+       Measured: with data-dlsig alone cleared, a desktop tab still sat on the confirm. */
+    bar.removeAttribute('data-dlsig');
+    bar.removeAttribute('data-sig');
     bar.innerHTML = '<span class="offline-status">Delete this download?</span>' +
       '<button class="offline-btn offline-del" onclick="deleteTopic()">Delete</button>' +
       '<button class="offline-btn" onclick="cancelDelete()">Keep</button>';
