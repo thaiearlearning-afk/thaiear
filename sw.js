@@ -33,7 +33,16 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v621';   // v621: SEARCH RESULTS FINALLY REPLACE THE CATEGORY LIST. They were
+const VERSION = 'v622';   // v622: THE QUIZ MENU'S PHONE SPACING, TRIMMED. "My results" sat
+                          // half cut off; the owner named the three gaps (title->Vocab
+                          // Trainer, above the tiger, below it). ⚠ THE CAPS HE WAS SEEING
+                          // WERE THE TOP-LEVEL 56px/34px — the 30px/10px pair that reads
+                          // like the phone answer is inside @media (min-width: 480.02px),
+                          // the DESKTOP block, and a 390px phone has never matched it.
+                          // Measured in a 390px iframe: 29px off at a tall viewport, and
+                          // nothing at a short one, where the flexible gaps had already
+                          // shrunk below the cap. quiz.css IS PRECACHED, so without this
+                          // bump every returning device keeps the old spacing for ever.
                           // rendering BELOW all five band tiles, ~680px down, because
                           // `.tp-bands { display: grid }` silently defeated the [hidden]
                           // attribute the JS had been setting correctly all along - the same

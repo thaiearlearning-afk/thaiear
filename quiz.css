@@ -941,6 +941,27 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   .tq-fill { min-height: calc(100vh - 54px); }
   .tq-fill { min-height: calc(100dvh - 54px); }
   .tq-fill-res .tq-pct { font-size: calc(72px * var(--tq-scale, 1)); }
+
+  /* ⭐ A FINE TRIM SO "MY RESULTS" IS NOT HALF CUT OFF (owner, 2026-09-22, with a screenshot):
+     "we can get some space by making the space around the tiger slightly smaller (both above and
+     below) and reducing the space between the title and the vocab trainer (the top quiz choice) —
+     but you really dont have to take off much."
+     ⚠⚠ AND THE REASON IT HAD TO BE WRITTEN HERE: the caps he was actually looking at were the
+     TOP-LEVEL ones (56px / 34px, ~line 860). The 30px/10px pair that reads like the phone answer
+     — including the 2026-09-22 "space under the tiger, HALVED" fix — sits inside
+     `@media (min-width: 480.02px)`, which is the DESKTOP block. A phone at 390px has never seen
+     it. Measured in a 390px iframe against the shipped file: 66px title→picker, 58px above the
+     tiger, 39px below, with the computed max-height reading 56px, not 30px.
+     ⛔ So do NOT "consolidate" these with the 480.02px block's pair. They look like duplicates
+     and they serve opposite sides of the breakpoint.
+     ⚠ These are CAPS on flexible gaps, not sizes: on a tall screen the slack is still shared out,
+     and on a short one the gaps were already shrinking below the cap and this changes nothing.
+     That is the intended asymmetry — it only bites where there is slack to give back. */
+  .tq-fill:not(.tq-fill-res) > .tq-gap { max-height: 34px; }
+  .tq-fill:not(.tq-fill-res) > .tq-gap-s { max-height: 20px; }
+  /* the last few px come off the tiger's own box, so the picture keeps its breathing room */
+  .tq-mascot { margin-top: 0; }
+  .tq-mascot img { margin-bottom: 3px; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════
