@@ -204,3 +204,9 @@ _qcards.html
 _qdiag.html
 _qmark.html
 _theme-mock.html
+
+# Logo/mascot recolour review (J1, 2026-09-22) — candidate copies + the review page.
+# Local only, never deploy. Originals are untouched; these are copies.
+recolour-review.html
+recolour/
+logo-review.html

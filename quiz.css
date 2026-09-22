@@ -969,7 +969,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 /* ⚠ Bigger than the first pass (owner: "the tiger is too small currently"), and it can afford
    to be now that the rows above it are tighter. The two caps stay: a fixed width for intent, a
    percentage for the guard, so it cannot balloon on a wide sheet or overflow a narrow one. */
-/* ⚠ SIZED AGAINST THE SITE'S OTHER MASCOTS, not guessed. guide.html renders khwai.jpg at
+/* ⚠ SIZED AGAINST THE SITE'S OTHER MASCOTS, not guessed. guide.html renders khwai.png at
    200×177 — all but identical proportions to the tiger's 440×389 — and about.html's is 195px.
    172px looked small precisely because it was smaller than every other animal on the site.
    ⚠ It grows UPWARD: the top margin shrinks rather than the block pushing the exit down, which

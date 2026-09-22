@@ -33,7 +33,16 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v614';   // v614: THE GRAMMAR ARM GETS ITS QUIZZES. All 20 units are wired and
+const VERSION = 'v615';   // v615: THE BRAND RASTERS GO NAVY. 11 mascots + the whole round-logo
+                          // family (favicons, .ico, apple-touch, both app icons, both swirls,
+                          // og-image) recoloured from the retired purple onto --accent #261B65.
+                          // 17 of them are PRECACHED and served cache-first, so without this a
+                          // returning device keeps the purple art indefinitely - on a visit that
+                          // would otherwise show the navy CSS around it.
+                          // ALSO a PRECACHE key change: khwai.jpg / sakyantelephant.jpg are now
+                          // .png, rebuilt from the transparent masters (the JPEGs were a
+                          // flattened copy and were speckling the background). Net -187 KB.
+                          // v614: THE GRAMMAR ARM GETS ITS QUIZZES. All 20 units are wired and
                           // carry quiz data, so LIVE goes 6 -> 26 of 113. The bump is needed
                           // because quiz-data/index.json is PRECACHED: without it a device keeps
                           // the old manifest and a playlist would go on skipping every grammar
@@ -1237,7 +1246,7 @@ const PRECACHE = [
      2026-08-22; the real favicons are the .ico/.svg/-16/-32/-192 set below, which pages do link. */
   '/logo-hero.png', '/nav-swirl-2x.png', '/favicon.ico',
   '/favicon-16.png', '/favicon-32.png', '/favicon-192.png', '/apple-touch-icon.png',
-  '/khwai.jpg', '/meditator.png', '/muaythai.png', '/sakyantelephant.jpg', '/gecko.png', '/hornbill.png', '/yak.png', '/phi.png',
+  '/khwai.png', '/meditator.png', '/muaythai.png', '/sakyantelephant.png', '/gecko.png', '/hornbill.png', '/yak.png', '/phi.png',
   /* ⛔ THE QUIZ MASCOT, AND IT WAS THE ONLY ONE MISSING. Owner, 2026-09-22: "i got into the
      quiz menu but the tiger image was absent, (white space), only the css writing below was
      visible." Every other mascot on the site is on the line above; tiger.png was never added
