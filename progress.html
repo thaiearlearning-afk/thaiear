@@ -275,13 +275,50 @@
   .pq-c.pq-none { color: var(--text-tertiary); font-weight: 500; }
   /* One header, at the top of the one list. ⚠ Not a <th>: .prog-row is a flex row, not a
      table, so the head is another flex row using the identical cell widths. */
+  /* ── the quiz column caption + the head row ──────────────────────────────────
+     ⚠ "AND MAKE SURE NOT TOO CLOSE TO THE PARAGRAPH ABOVE ABOUT LISTENING TIME OR WILL LOOK
+     CRAMPED" (owner). The note above ends with a 0.9rem margin, which was enough when the next
+     thing was a row of four faint letters and is not enough now that it is a heading with a
+     caption. The air goes HERE rather than on the note, because it belongs to this block: the
+     note's spacing is right for the gated-off page, where this block does not exist at all. */
+  /* ⚠ Quieter and smaller than the letters it captions — it is a label for a label. NOT
+     uppercase: the letters below already are, and two uppercase lines stacked read as one
+     shouted block rather than as a heading over a row.
+     ⚠ `order: -1` + a full-width basis gives it a line of its own ABOVE the label and letters;
+     the phone block re-orders it onto the label's line. text-transform: none because the head
+     itself is uppercase and this must opt out. */
+  .prog-qcap-t {
+    flex: 0 0 100%; order: -1; text-align: right;
+    font-size: 10.5px; font-weight: 500; letter-spacing: 0.01em;
+    text-transform: none; color: var(--text-tertiary); padding-bottom: 3px;
+  }
   .prog-qhead { display: none; }
   .prog-q-on .prog-qhead {
     display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
     /* ⚠ px, in step with .prog-row's — the header holds the columns open and must keep the
        IDENTICAL horizontal padding or the labels sit off the numbers they label. */
+    /* ⚠ WRAPS AT EVERY WIDTH NOW, because the caption is a full-width child that must take a
+       line of its own. Line 2 is still name · minutes · cells, distributing exactly as a data
+       row does — which is the property this head exists to preserve. */
+    flex-wrap: wrap;
+    /* ⚠ "MAKE SURE NOT TOO CLOSE TO THE PARAGRAPH ABOVE ABOUT LISTENING TIME OR WILL LOOK
+       CRAMPED" (owner). The note above ends with a 0.9rem margin, which was enough when the next
+       thing was a row of four faint letters and is not now that it is a captioned heading. The
+       air belongs to THIS block, not to the note: the note's own spacing is right for the
+       gated-off page, where none of this exists. */
+    margin-top: 1.25rem;
     padding: 0 14px 6px; font-size: 10.5px; font-weight: 600;
     letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary);
+  }
+  /* ⛔ THE GROUP LABEL IN THE HEAD IS A .prog-band IN EVERYTHING BUT NAME, so it takes that
+     rule's type rather than inheriting the head's. Owner asked for the letters to sit "at the
+     same level as Grammar by ear" — they are on one line now, so the two must also LOOK like one
+     line: same size, same weight, same tracking, same colour, same baseline.
+     ⚠ `flex: 1 1 0` is inherited from .prog-row-name and is what keeps the letters measured from
+     the right edge, exactly as the minutes and scores are on a data row. */
+  .prog-q-on .prog-qhead .prog-row-name {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text-tertiary);
   }
   /* ⚠ font-size only - the WIDTH comes from --pq-w so the header cannot drift off the rows */
   .prog-q-on .prog-qhead .pq-c { font-size: calc(10.5px * var(--te-ui, 1)); color: inherit; }
@@ -307,8 +344,17 @@
        minutes spacers are hidden here — on two lines they would reserve a blank first line above
        the letters, where on one line they are load-bearing (see quizHead()). */
     .prog-q-on .prog-row-q { gap: 4px; flex-basis: 100%; justify-content: flex-end; margin-top: 1px; }
-    .prog-q-on .prog-qhead .prog-row-name,
+    /* ⚠ ONLY THE MINUTES SPACER GOES. It is empty and would reserve a blank column; the NAME
+       slot is no longer empty — it carries the group label — so hiding it here would delete
+       "Grammar by Ear" on exactly the screens where the page is mostly read. */
     .prog-q-on .prog-qhead .prog-row-plays { display: none; }
+    /* ⭐ THE CAPTION JOINS THE LABEL'S LINE. On a phone the letters already have a line of their
+       own, so a full-width caption would sit TWO lines above them with the group label in
+       between — captioning the wrong thing. Here it reads "GRAMMAR BY EAR ... Best quiz result"
+       with the letters directly beneath it. */
+    .prog-q-on .prog-qhead .prog-qcap-t {
+      flex: 0 1 auto; order: 0; margin-left: auto; padding-bottom: 0;
+    }
     .prog-q-on .prog-row, .prog-q-on .prog-qhead {
       --pq-w: calc(34px * var(--te-grow) + (var(--te-grow) - 1) * 16px);
     }
@@ -685,14 +731,37 @@
     }
     return keys.length + '/' + sum + '/' + ans + '/' + cor;
   }
-  function quizHead() {
+  function quizHead(lead) {
     /* ⚠ THE SPACER IS LOAD-BEARING. The header must have the SAME THREE CHILDREN as a data
        row - name, minutes, cells - or the two rows distribute their free space differently and
        the labels sit off the numbers. It is empty and aria-hidden: there is no "minutes" label to
        show, only a column to hold open. */
-    return '<div class="prog-qhead" aria-hidden="true"><span class="prog-row-name"></span>' +
+    /* ⭐ A CAPTION, BECAUSE FOUR LETTERS EXPLAIN NOTHING. Owner, 2026-09-22: "we have V L B S
+       but we dont explain what those are". V/L/B/S are the four quizzes in §1's display order and
+       the `title` on each cell has always named them — but a title is a hover, which does not
+       exist on a phone, and this page is mostly read on one. The caption says what the COLUMN
+       BLOCK is; the letters stay, because four words across four 34px cells cannot.
+       ⚠ It sits OVER the cells, not over the row, so it reads as their heading rather than as a
+       sentence about the table. ⚠ aria-hidden stays on the row of letters (they are decorative
+       once the caption is there) but the CAPTION is exposed — it is the only text that says what
+       the numbers below it mean.
+       ⛔ THE HEAD KEEPS THE SAME THREE CHILDREN AS A DATA ROW (name · minutes · cells) or the
+       two distribute their free space differently and the letters sit off the numbers they
+       label. The name slot is no longer empty — it carries the first group label — but it is
+       still the same slot doing the same job. */
+    /* ⚠⚠ THE CAPTION IS A CHILD OF THE HEAD, NOT A BLOCK ABOVE IT, and that is what makes it
+       work on a phone. As a separate block it always sat above the GROUP LABEL; but on a phone
+       the letters drop to their own line (see .prog-row-q's flex-basis), so the caption ended up
+       two lines away from the thing it captions, with the label in between. In the head it can
+       be re-ordered instead:
+         desktop → `order: -1` and a full-width basis, so it takes a line of its own above
+         phone   → same line as the label, pushed right, with the letters directly beneath it
+       One element, two layouts, and the caption is beside or above its own letters in both. */
+    return '<div class="prog-qhead"><span class="prog-row-name">' +
+           (lead ? esc(lead) : '') + '</span>' +
+           '<span class="prog-qcap-t">Best quiz result</span>' +
            '<span class="prog-row-plays"></span>' +
-           '<span class="prog-row-q">' + Q_IDS.map(function (id) {
+           '<span class="prog-row-q" aria-hidden="true">' + Q_IDS.map(function (id) {
              return '<span class="pq-c" title="' + Q_NAME[id] + '">' + Q_ABBR[id] + '</span>';
            }).join('') + '</span></div>';
   }
@@ -728,9 +797,23 @@
        Progress page is PUBLIC, and listing the units here while the arm was owner-gated and
        noindex would have shown every visitor that a hidden section existed and named all 20 of
        its units (plan §12.6). It went in the same release that made the section public. */
+    /* ⛔⛔ THE FIRST GROUP LABEL IS RENDERED BY quizHead(), NOT HERE, WHEN THE QUIZ COLUMNS ARE
+       ON. Owner, 2026-09-22: "they float a bit above the table whilst 'grammar by ear' sits
+       flatly on it. Can we have V L B S sitting at the same level as Grammar by ear."
+       They were two separate lines at two heights — the head above the list and the first band
+       label inside it — so the column letters read as detached from the table they label. Moving
+       the label into the head's own (previously empty) name slot puts them on ONE line, and it
+       aligns the letters over their columns for free, because the head already mirrors a row's
+       three children. ⚠ If the columns are OFF, the label is emitted here exactly as before. */
     var gram = t.liveSequence('structures');
+    /* ⚠ ONE OF THE TWO, NEVER BOTH. The head renders on every load and is revealed by CSS, so
+       without the quizOn test the label existed TWICE in the DOM — once hidden in the head and
+       once live in the list. Harmless to look at and wrong anyway: a duplicate that only one
+       stylesheet rule keeps invisible is a duplicate waiting for that rule to change. Caught by
+       the assertion that says "exactly once". */
+    var leadBand = (quizOn && gram && gram.length) ? 'Grammar by Ear' : null;
     if (gram && gram.length) {
-      rows += '<div class="prog-band">Grammar by Ear</div>';
+      if (!quizOn) rows += '<div class="prog-band">Grammar by Ear</div>';
       for (var g = 0; g < gram.length; g++) rows += unitRow(t, gram[g], reps);
     }
 
@@ -762,7 +845,7 @@
            /* ⚠ The head sits OUTSIDE .prog-list: `.prog-row:first-child` rounds the top of the
               list, and a head row inside it would take that radius and leave the first real
               row square. It is hidden with the cells, by the same one class. */
-           quizHead() +
+           quizHead(leadBand) +
            '<div class="prog-list">' + rows + '</div>';
   }
 

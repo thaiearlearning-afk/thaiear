@@ -33,7 +33,31 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v636';   // v636: ⚖ THE PRIVACY POLICY NAMES QUIZ DATA. Owner, 2026-09-22:
+const VERSION = 'v637';   // v637: the Progress quiz columns are CAPTIONED and sit on the group
+                          // label's line, plus three more pages brought into the text-scaling
+                          // register. ⚠ THIS IS THE OTHER HALF OF WHAT v636's MESSAGE CLAIMS:
+                          // a peer's privacy-policy commit and mine interleaved on the shared
+                          // index, so v636 shipped my privacy.html fix under my message with
+                          // their sw note, and left these four files behind. Nothing was lost;
+                          // the numbering just reads oddly.
+                          // (1) Owner, 2026-09-22: "we have V L B S but we dont explain what
+                          // those are ... they float a bit above the table whilst 'grammar by
+                          // ear' sits flatly on it ... immediately above it a line 'Best quiz
+                          // result' ... not too close to the paragraph above." The leading group
+                          // label now renders in the head's own (previously empty) name slot, so
+                          // label and letters are ONE line and the letters align over their
+                          // columns for free. ⚠ The caption is a CHILD of the head: on a phone
+                          // the letters take their own line, so a full-width caption would
+                          // caption the LABEL. It re-orders -- own line on desktop, beside the
+                          // label on a phone. ⚠ The per-cell `title` always named the quizzes,
+                          // but a title is a HOVER and this page is mostly read on a phone.
+                          // (2) terms +54px and refunds +46px of horizontal page scroll at
+                          // 320px/200%, on the 19-character support address in <strong> that
+                          // `overflow-wrap: normal` will not break -- the fault §7 fixed on
+                          // about and account in August and never brought to the legal pages.
+                          // start (the ads landing page) +8px from rem side-gutters. px gutters
+                          // + break-word; no-ops at default size. Register: TEXT_SCALING.md §10.
+                          // v636:   // v636: ⚖ THE PRIVACY POLICY NAMES QUIZ DATA. Owner, 2026-09-22:
                           // "we need to update the privacy policy just to state we now store
                           // people's quiz scores as a user feature ... as this is legal".
                           // The quiz arm went public today and began storing, against an

@@ -62,7 +62,19 @@
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.7; }
-  .legal-wrap { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; }
+  /* ⛔ AN ADDRESS IN <strong> CANNOT BREAK, AND AT LARGE SYSTEM TEXT IT LEAVES THE PAGE.
+     Measured 2026-09-22 at 320px with the OS text at 200%: privacy +88px of horizontal page
+     scroll, refunds +46, terms +54 — all three the same 19-character support address, which
+     `overflow-wrap: normal` will not break. The same fault TEXT_SCALING.md §7 fixed on about and
+     account in 2026-08; these three pages never got it.
+     ⚠ `break-word`, not `anywhere`: it breaks only a word that genuinely does not fit, so
+     ordinary prose is untouched, and it inherits to every child including <strong>.
+     ⚠ THE SIDE PADDING GOES TO px IN THE SAME EDIT. A rem gutter inflates with the text
+     (§1) — 1.5rem is 48px a side at 2×, 96px of a 320px viewport before a word is set — so
+     fixing the wrapping alone would still have left the column too narrow to be worth reading.
+     24px and 18px are the computed values at the default root, so both are no-ops at default. */
+  .legal-wrap { max-width: 720px; margin: 0 auto; padding: 2.5rem 24px 3rem;
+    overflow-wrap: break-word; }
   .legal-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.2; }
   .legal-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 2rem; }
@@ -75,7 +87,7 @@
   strong { color: var(--text-primary); font-weight: 600; }
   .legal-footer { border-top: 0.5px solid var(--border); margin-top: 2.5rem; padding-top: 1.25rem; font-size: 13px; color: var(--text-tertiary); display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
   .legal-footer a { color: var(--text-secondary); font-weight: 500; }
-  @media (max-width: 600px) { .legal-wrap { padding: 1.75rem 1.1rem 2.5rem; } h1 { font-size: 24px; } }
+  @media (max-width: 600px) { .legal-wrap { padding: 1.75rem 18px 2.5rem; } h1 { font-size: 24px; } }
 </style>
 <!-- identity.js: who is this, synchronously, before Supabase answers. Must be a plain
      blocking script in the head — nav.js mounts before auth.js is even appended, so
