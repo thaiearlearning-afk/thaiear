@@ -53,20 +53,32 @@ html.te-quiz-boot #pl-qload{display:flex}
 /* ⛔⛔ THE SENTENCE MUST NOT MOVE — ONLY THE DOTS (owner, 2026-09-22: "as the ellipsis to the
    right of playlist animates, playlist actually slides backwards and forwards. the writing
    should be static in place, and only the ellipsis is the movement").
-   ⚠⚠ THE FIRST VERSION ANIMATED THE WIDTH OF THE ELLIPSIS ITSELF, and the line is CENTRED — so
-   every width change re-centred the whole sentence and shoved it left and right. Correct dots,
-   moving text.
-   ✅ TWO BOXES: the outer <i> is a CONSTANT 3ch and is the only thing layout ever sees, so the
-   line cannot reflow; the inner span is what animates, and its overflow does the clipping. The
-   movement is real but invisible to layout — which is the only way a centred line stays still.
-   ⚠ ch units because ch IS the character's own advance width, so 1/2/3 dots land exactly
-   whatever the font or text-scaling factor. */
-#pl-qload i{display:inline-block;width:3ch;font-style:normal;text-align:left;
-  vertical-align:bottom;overflow:hidden;white-space:nowrap}
-#pl-qload i span{display:inline-block;width:3ch;overflow:hidden;white-space:nowrap;
-  animation:te-qdots 1.2s steps(1,end) infinite}
-@keyframes te-qdots{0%,33%{width:1ch}34%,66%{width:2ch}67%,100%{width:3ch}}
-@media (prefers-reduced-motion:reduce){#pl-qload i span{animation:none;width:3ch}}
+   ⚠⚠ AND THE FIX FOR THAT INTRODUCED A SECOND FAULT — "your ellipsis is high - it sits in
+   horizontal alignment with the top of the 's' in 'playlists'". Clipping the dots with an
+   inline-block + overflow:hidden works for layout and BREAKS THE BASELINE: an inline-block with
+   overflow other than visible has its baseline redefined to its bottom MARGIN EDGE rather than
+   its text baseline, so the whole box floats off the line. Stacking vertical-align on top only
+   moves the symptom around.
+   ✅ SO: NO CLIPPING AT ALL. Three dots that are always present and merely FADE. Each keeps its
+   own space whether visible or not, so the line can never reflow — which was the entire point of
+   the clipping — and because nothing is an inline-block and nothing has overflow, the dots sit on
+   the ordinary text baseline like any other character.
+   ⚠ Three separate keyframe sets rather than one animation with delays: a delayed copy of one
+   keyframe wraps past the end of the cycle and lights the dots in the wrong order. These give a
+   plain 1 -> 2 -> 3 -> repeat.
+   ⚠ It is also immune to the wrap trap that bit a peer session (TEXT_SCALING.md §11), where an
+   inherited overflow-wrap broke an animated ellipsis over three lines: these are three separate
+   inline characters with nothing to break. */
+#pl-qload i{font-style:normal}
+#pl-qload i b{font-weight:inherit;animation-duration:1.2s;animation-timing-function:steps(1,end);
+  animation-iteration-count:infinite}
+#pl-qload i b:nth-child(1){animation-name:te-qd1}
+#pl-qload i b:nth-child(2){animation-name:te-qd2}
+#pl-qload i b:nth-child(3){animation-name:te-qd3}
+@keyframes te-qd1{0%,100%{opacity:1}}
+@keyframes te-qd2{0%,32%{opacity:0}33%,100%{opacity:1}}
+@keyframes te-qd3{0%,65%{opacity:0}66%,100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){#pl-qload i b{animation:none;opacity:1}}
 </style>
 <style>.te-embed #site-nav-root,.te-embed nav.site-nav{display:none!important}
 .te-embed .wrap{padding-top:0}/* r128: panel title sits the same distance below the switcher as the topics title */
@@ -126,7 +138,7 @@ html.te-quiz-boot #pl-qload{display:flex}
 <!-- dyncss:end -->
 </head>
 <body>
-<div id="pl-qload" role="status" aria-live="polite"><span>Constructing quiz space from your custom playlist<i><span>...</span></i></span></div>
+<div id="pl-qload" role="status" aria-live="polite"><span>Constructing quiz space from your custom playlist<i><b>.</b><b>.</b><b>.</b></i></span></div>
 
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 

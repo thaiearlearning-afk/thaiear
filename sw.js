@@ -33,7 +33,23 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v632';   // v632: ⛔ THE CODE v631's NOTE DESCRIBES SHIPS **HERE**, NOT THERE.
+const VERSION = 'v634';   // v634: the loading ellipsis sits on the BASELINE again. Owner:
+                          // "your ellipsis is high - it sits in horizontal alignment with the
+                          // top of the 's' in 'playlists'".
+                          // ⚠⚠ MY OWN v632 FIX CAUSED IT. Clipping the dots with an
+                          // inline-block + overflow:hidden kept the centred line from
+                          // reflowing -- and redefined the box's BASELINE to its bottom
+                          // margin edge, which is what an inline-block with non-visible
+                          // overflow does, so the whole thing floated off the line.
+                          // ✅ No clipping now: three dots that are always PRESENT and merely
+                          // fade. Each keeps its space so the line still cannot reflow --
+                          // which was the whole point -- and with no inline-block and no
+                          // overflow there is no baseline left to break. Three keyframe sets
+                          // rather than one with delays, because a delayed copy wraps past
+                          // the cycle end and lights the dots out of order.
+                          // ⚠ v633 is a PEER SESSION's and was uncommitted when this was cut.
+                          //
+                          // v632:   // v632: ⛔ THE CODE v631's NOTE DESCRIBES SHIPS **HERE**, NOT THERE.
                           // v631 went out carrying that note and NONE of the files it talks
                           // about: two sessions derived v631 from v630 at the same instant,
                           // and an update-index on the SHARED index landed this blob inside a
