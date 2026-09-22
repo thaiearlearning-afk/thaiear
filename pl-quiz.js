@@ -70,6 +70,44 @@
      ⚠ NEVER REJECTS. A unit whose side-car is missing simply contributes no authored data;
      its sentences then fall out of quiz 1 at eligibility and still work in the Builder and in
      Speak Thai. A playlist that half-loads is worth much more than one that fails. */
+  /* ── which units actually HAVE a side-car ───────────────────────────────────
+     ⛔⛔ WITHOUT THIS, A PLAYLIST FETCHES ONE FILE PER SOURCE UNIT AND MOST OF THEM 404.
+     Owner, 2026-09-22: "the loading time to enter a quiz page via the playlist menu can be
+     extraordinarily long - i think especially for longer playlists", and he named the cause
+     himself: "the quiz is trying to pull quiz sentences that don't exist?" While 6 of 113 units
+     are built, a playlist spanning ten units pays ten round trips to learn nothing.
+     ⚠ THE COST IS NOT THE 404 ITSELF, IT IS THAT THERE ARE N OF THEM ON A COLD CONNECTION -
+     and on a metered or flaky link each one can take seconds before it fails.
+     ✅ The manifest is a few hundred bytes, precached, and generated from the directory by
+     gen_quiz_data.js - so it cannot drift from what actually exists.
+     ⚠ NEVER REJECTS, AND A MISSING MANIFEST MEANS "DO NOT FILTER". An older client, or one
+     whose precache predates this file, must keep working exactly as before - degraded to the old
+     404 behaviour, never to an empty quiz. That is why the failure value is `null` and not `[]`:
+     an empty list would read as "no unit has data" and silently kill every playlist quiz. */
+  var manifestP = null;
+  function haveList() {
+    if (manifestP) return manifestP;
+    var url = 'quiz-data/index.json';
+    manifestP = (function () {
+      var fromDl = (window.caches && caches.open)
+        ? caches.open(DL_CACHE).then(function (c) { return c.match('/' + url); })
+            .then(function (r) { return r ? r.json() : null; })
+            .catch(function () { return null; })
+        : Promise.resolve(null);
+      return fromDl.then(function (hit) {
+        if (hit) return hit;
+        return fetch(url).then(function (r) { return r.ok ? r.json() : null; })
+                         .catch(function () { return null; });
+      });
+    })().then(function (m) {
+      if (!m || !m.units || !m.units.length) return null;
+      var set = {};
+      m.units.forEach(function (u) { set[u] = 1; });
+      return set;
+    }).catch(function () { return null; });
+    return manifestP;
+  }
+
   function loadUnit(unit) {
     if (loaded[unit]) return loaded[unit];
     var url = 'quiz-data/' + unit + '.json';
@@ -234,10 +272,25 @@
       return;
     }
     if (!units.length) { unhide(); return; }
-    Promise.all(units.map(loadUnit)).then(function (cars) {
+    /* ⚠ ASK THE MANIFEST FIRST. A null answer means "could not tell" and the old behaviour
+       stands; a set means fetch only what exists. */
+    /* ⚠ AN EXPLICIT SENTINEL, NOT A FALSY VALUE. A `return null` here would still flow into
+       every later .then() in the chain, and the last of them MOUNTS THE ENTRY BLOCK - so "there is
+       nothing to ask" would have shipped an entry block over no data. An object identity cannot be
+       mistaken for a legitimate result the way null or undefined can. */
+    var STOP = {};
+    haveList().then(function (have) {
+      var want = have ? units.filter(function (u) { return have[u]; }) : units;
+      /* ⛔ ONLY when the manifest ANSWERED. `have === null` means it could not be read, and then
+         `want` is the full list and the old fetch-and-tolerate-404 behaviour stands. */
+      if (have && !want.length) { unhide(); return STOP; }
+      return Promise.all(want.map(loadUnit));
+    }).then(function (cars) {
+      if (cars === STOP) return STOP;
       t.quiz = assemble(t.sentences, cars);
       return loadEngine();
-    }).then(function () {
+    }).then(function (r) {
+      if (r === STOP) return;
       if (!window.ThaiEarQuiz || !window.ThaiEarQuiz.mountEntry) { unhide(); return; }
       /* ⛔ THE SAME COMPONENT, MOUNTED SOMEWHERE ELSE (§2.7b). Owner, 2026-09-21: "at the
          bottom of the playlist under all the sentences there should be the quizzes box (3
