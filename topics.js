@@ -987,7 +987,16 @@
                          : '<span class="topic-premium">' + CARD_LOCK_SVG + 'Premium</span>';
     const count = (typeof u.sentences === 'number' && u.sentences > 0)
       ? u.sentences + ' sentences' : '';
-    return '<div class="topic-card' + (premium ? ' premium' : '') + '"' +
+    /* ⚠⚠ `has-quiz` IS EMITTED HERE, NOT ADDED AT RUNTIME (r214). It used to be added only
+       by topics-page.js's paintQuizStrips(), inside its `if (!strip)` branch — so a card that
+       already SHIPPED with a strip never got it. That is every card on the five band pages and
+       the grammar hub since QUIZ_PUBLIC went true. The class is what re-centres the favourites
+       heart and the download tick (--strip-h), so both marks sat ~12px low, ON the strip, on
+       exactly the surfaces where the grid actually lives — the same fault v608 fixed for the
+       runtime path and never reached the static one. Emitting it beside the strip means the two
+       cannot come apart. */
+    return '<div class="topic-card' + (premium ? ' premium' : '') +
+             (opts.quiz ? ' has-quiz' : '') + '"' +
              ' data-audio="' + cardEsc(u.audio || '') + '"' +
              ' data-page="' + cardEsc(u.page) + '"' +
              ' data-tier="' + access + '">' +
@@ -1145,10 +1154,28 @@
          attempt when it means "never tried", which on a newly shipped feature is every card. */
       return '<span class="tqs-c" data-q="' + id + '" title="' + QUIZ_STRIP_NAME[id] + '">—</span>';
     }).join('');
-    return '<button type="button" class="topic-quiz" tabindex="0"' +
-           ' aria-label="Quizzes for ' + cardEsc((u && u.name) || 'this unit') + '">' +
-           '<span class="tqs-l">Quiz results:</span>' +
-           '<span class="tqs-cells">' + cells + '</span></button>';
+    /* ⭐ AN ANCHOR, NOT A BUTTON (r214, owner 2026-09-23: "make it clickable so you go to the
+       quiz section of that topic"). It WAS clickable — but only where topics-page.js had
+       attached the handler, which is the branch that runs for cards it builds itself. A card
+       that shipped with its strip already in the markup got no handler at all, so on the five
+       band pages and the grammar hub the strip did nothing when tapped.
+       ⛔ THE OLD COMMENT SAID AN href WOULD BE "a second link inside a card that already has a
+       stretched one". The nesting worry is real and this is not it: `.topic-card-link` CLOSES
+       before the strip, so the two are SIBLINGS, not nested — which is the same arrangement the
+       favourites heart already uses and which test_topics_page.js pins. What the stretched link
+       needs is to lose the z-index fight, and .topic-quiz already sets position:relative and
+       z-index:1 for exactly that reason.
+       ✅ Being an anchor is what makes it work by CONSTRUCTION on every surface, static or
+       runtime, with no handler to forget — plus middle-click, long-press and keyboard for free.
+       ⚠ Built by CONCATENATION: hrefFor() strips only a trailing ".html", and handed a whole
+       query string it silently does nothing and looks fixed.
+       ⛔ NO ARROW (owner, 2026-09-23, choosing variant D "but no arrow"). A chevron was mocked
+       up at the row's right edge and rejected; do not add one back. */
+    var href = hrefFor(page) + '?quiz=menu';
+    return '<a class="topic-quiz" href="' + cardEsc(href) + '"' +
+           ' aria-label="Quiz yourself on ' + cardEsc((u && u.name) || 'this unit') + '">' +
+           '<span class="tqs-l">Quiz yourself</span>' +
+           '<span class="tqs-cells">' + cells + '</span></a>';
   }
 
   window.ThaiEarTopics = {

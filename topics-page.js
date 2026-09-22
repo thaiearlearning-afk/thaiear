@@ -331,16 +331,14 @@
            positioned at 50% of the CARD, so the strip's height moved them down onto it; the
            CSS subtracts half the strip back out, but only for a card that actually has one. */
         card.classList.add('has-quiz');
-        /* ⚠ An href would be a second link inside a card that already has a stretched one, so
-           this is a button that navigates. Built by CONCATENATION — hrefFor() strips only a
-           trailing ".html", and handed the whole query string it silently does nothing. */
-        (function (c) {
-          strip.addEventListener('click', function (e) {
-            e.preventDefault(); e.stopPropagation();
-            var page = c.getAttribute('data-page');
-            location.href = T.hrefFor(page) + '?quiz=menu';
-          });
-        })(card);
+        /* ⛔ THE CLICK HANDLER THAT USED TO LIVE HERE IS GONE (r214). It was the bug: it sat
+           inside this `if (!strip)` branch, so it was attached only to strips THIS FUNCTION
+           built — never to one a page already shipped with. Since QUIZ_PUBLIC went true that
+           is every card on the five band pages and the grammar hub, where the strip simply did
+           nothing when tapped. quizStripHtml() emits an <a> now, so the navigation is a
+           property of the markup and cannot be missed on a surface again.
+           ⚠ This classList.add stays: a card built here is built WITHOUT opts.quiz (the strip
+           is appended separately, just above), so cardHtml's own has-quiz does not apply. */
       }
       var row = all[key] || {};
       var cells = strip.querySelectorAll('.tqs-c');

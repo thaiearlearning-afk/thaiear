@@ -1625,8 +1625,27 @@
   function dynCheckPageUpdate() {
     if (PLMODE) { dynCheckPlQuizUpdate(); return; }
     var e = getManifest()[PREFIX];
-    if (!e || !e.ver) return;
-    if (e.ver === contentHash()) return;
+    if (!e) return;
+    /* ⭐⭐ AN ABSENT BASELINE IS STALE HERE, AND v641 GOT THIS WRONG. It read
+       `if (!e.ver) return;` — "no baseline, no nag", copied from the AUDIO side where it is
+       right. It is exactly backwards here, because `ver` was NEVER WRITTEN BY THE DYN
+       DOWNLOAD PATH until v641: every download that existed when this shipped has ver:''.
+       So the guard skipped the entire population the feature was built for. Owner,
+       2026-09-23, on the Android app: "i went in to feelings and emotions 1 on v641 and its
+       showing me the old site page and 'downloaded' — im not seeing the page update
+       available". Confirmed by his device, and my own harness had PINNED the wrong
+       behaviour as correct.
+       ⚠ The two baselines are not symmetrical and that is the whole lesson: an absent AUDIO
+       stamp means "we have never watched this", and the bytes on disk are still fine. An
+       absent CONTENT stamp means the download predates the stamp — which is precisely when
+       the page is most likely to be missing something.
+       ✅ Self-clearing and it can only fire once: the update runs markDownloaded/finalize,
+       which records the hash. ⛔ And it cannot fire where there is nothing to deliver — a
+       page with no quiz block has nothing this could offer, so it stays silent rather than
+       nagging a unit whose text has not moved either. Same shape as dynCheckPlQuizUpdate. */
+    if (!e.ver) {
+      if (!(cfg && cfg.quiz)) return;
+    } else if (e.ver === contentHash()) return;
     updPage = true;
     paintUpdatePrompt();
   }
@@ -4032,9 +4051,9 @@
             (PLMODE ? 'These sentences are for Premium members.' : 'You’re previewing this topic.') +
             ' A ThaiEar Premium membership unlocks:</p>' +
           '<ul style="list-style:none;margin:0 0 16px;padding:0;font-size:14px;color:#1A1A1A;line-height:1.9;">' +
-            '<li>✓ Every topic and level</li>' +
-            '<li>✓ All sentence and full-topic audio</li>' +
-            '<li>✓ Offline downloads</li></ul>' +
+            '<li>✓ Every topic and level, with all its audio</li>' +
+            '<li>✓ All four quizzes on every topic</li>' +
+            '<li>✓ Offline downloads — audio and quizzes</li></ul>' +
           '<p style="font-size:13px;color:#9A9A9A;line-height:1.5;margin:0 0 14px;">' + stateNote + '</p>' +
           '<div style="display:flex;gap:8px;">' +
             signInBtn +

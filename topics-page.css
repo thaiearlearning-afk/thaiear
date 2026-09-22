@@ -710,7 +710,17 @@
        under Android textZoom (TEXT_SCALING.md §1). At 320@2.0× that is 64px of padding on a
        267px strip, leaving 203px for 260px of content: the strip burst its card by 25px and the
        band page side-scrolled. One source per breakpoint, for both properties. */
-    padding: 6px var(--card-px, 1rem) 7px;
+    /* ⭐ 25% TALLER (owner, 2026-09-23). The strip's own box was 6 + (11.5 × 1.3) + 7 =
+       27.95px, so +25% is +6.99px, taken as ~3.5px on each side → 34.95px. MEASURED in the
+       browser against the shipped card, not derived on paper.
+       ⚠⚠ --strip-h-on MOVES WITH IT, IN BOTH REGIMES (29 → 35.16, phone 25 → 30.95) — and both
+       are MEASURED net card growth, not this padding plus 6.99. Adding the delta gave 36 and 32,
+       which left the heart 0.42px and 0.53px high: an estimate wrong by less, not a fix. That
+       constant
+       is the card's NET growth, which the favourites heart and the download tick subtract half
+       of to stay centred on the CONTENT. Change this padding without it and both marks drop
+       onto the strip — the exact fault the owner reported on the live iPhone at v608. */
+    padding: 9.5px var(--card-px, 1rem) 10.5px;
     border: 0;
     /* ⛔ ONE TIER-NEUTRAL DARK, white ink. See the premium rule below for why it is restated
        there rather than inherited. */
@@ -726,6 +736,9 @@
     line-height: 1.3;
     color: #fff;
     text-align: left;
+    /* r214 — it is an <a> now (see quizStripHtml). The card's own colour rules do not reach a
+       link's UA defaults, so both are stated here rather than left to chance. */
+    text-decoration: none;
     cursor: pointer;
     position: relative;
     z-index: 1;
@@ -749,7 +762,7 @@
      ⚠ Breakpoint-dependent, because the padding it cancels is: the phone block sets 13px and
      the shared rule 0.55rem, so the two regimes grow by different amounts. Measured in both. */
   .topic-card { --strip-h: 0px; }
-  .topic-card.has-quiz { --strip-h: var(--strip-h-on, 29px); }
+  .topic-card.has-quiz { --strip-h: var(--strip-h-on, 35.16px); }
   .topic-card.has-quiz .topic-fav,
   .topic-card.has-quiz .dl-badge,
   .topic-card.has-quiz .dl-select { top: calc(50% - var(--strip-h) / 2); }
@@ -1135,8 +1148,11 @@
          make impossible. */
       --card-px: 16px;
       --card-pb: 13px;
-      /* net growth under the phone padding — see the note by --strip-h */
-      --strip-h-on: 25px;
+      /* net growth under the phone padding — see the note by --strip-h.
+         ⚠ r214: MEASURED at 340px, not derived — 30.95px, where 25 + the strip's own 6.99px
+         growth would have said 32. The two regimes cancel different card padding, which is why
+         this is not the desktop number and cannot be reasoned to from it. */
+      --strip-h-on: 30.95px;
       padding: 14px var(--card-px) var(--card-pb);
       min-width: 0;              /* grid item: stop min-content blowing past the 1fr column */
     }
