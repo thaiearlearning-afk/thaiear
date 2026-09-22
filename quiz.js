@@ -696,8 +696,59 @@
      nav above it — exactly what the learner should see on a new question. */
   function scrollToTop() {
     try { window.scrollTo(0, 0); } catch (_) { document.documentElement.scrollTop = 0; }
+    /* ⛔⛔ AND AGAIN ON THE NEXT FRAME, because the document GROWS after this runs. Owner,
+       2026-09-22: "when i scroll down to the bottom of the 22a topic and enter the quiz menu, i
+       actually START at the bottom of the quiz menu ... ought to start at the TOP."
+       The synchronous scroll above is correct and is not enough. Entering from the foot of a long
+       topic page, three things happen in order: the topic content is hidden (the document
+       collapses and the browser CLAMPS the scroll to the new height), this scrolls to 0, and then
+       the quiz sheet paints - the mascot's image box, the results panel, the four rows. The
+       document is taller again a frame later, and a browser that has kept an anchor or a clamped
+       offset from the collapse lands part-way down it.
+       ⚠ A SECOND SCROLL IS THE CHEAP HALF OF THE FIX; overflow-anchor: none on html.tq-mode is
+       the other, and stops scroll anchoring re-pinning the view as the sheet grows.
+       ⚠ Harmless on the in-quiz screen changes render() also drives: those already start at 0,
+       so the second call is a no-op, and it cannot fight doClose()'s restore because that runs
+       after the quiz view is gone. */
+    /* ⚠⚠ AND THE TWO HALVES OF THIS FIX COVER DIFFERENT BROWSERS - do not "simplify" it to one.
+       Owner, 2026-09-22: "i think it may not be the case for android app, but is for iphone pwa".
+       That split is the diagnosis, not a detail:
+         · overflow-anchor: none (quiz.css) is BLINK-ONLY. Safari has never implemented scroll
+           anchoring, so it is neither the cause nor the cure on iOS - it handles Android and
+           desktop Chrome, where anchoring re-pins the view as the sheet paints.
+         · THESE deferred scrolls are what reach iOS. WebKit clamps the scroll offset when the
+           document collapses (the topic content is hidden) and restores toward it as the document
+           grows again, so a single synchronous scrollTo lands correctly and is then undone.
+       ⚠ TWO passes, not one: a frame is enough for layout, but the mascot's box settles on image
+       decode, which on a cold cache is later than that. 80ms is comfortably inside the time it
+       takes to read the first line and far outside a deliberate scroll. */
+    try {
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(function () {
+          try { window.scrollTo(0, 0); } catch (_) {}
+        });
+      }
+      setTimeout(function () {
+        /* ⛔ only while the quiz is still the thing on screen, and only if nothing has moved -
+           yanking a learner who has deliberately scrolled would be worse than the bug. */
+        try {
+          if (root && !root.hidden && (window.pageYOffset || 0) > 0 && !userScrolled) {
+            window.scrollTo(0, 0);
+          }
+        } catch (_) {}
+      }, 80);
+    } catch (_) {}
   }
+  /* ⚠ Set by any real scroll the learner makes, cleared on every render - so the 80ms pass above
+     can tell "the browser put us here" from "they scrolled". */
+  var userScrolled = false;
+  try {
+    window.addEventListener('scroll', function () {
+      if (root && !root.hidden) userScrolled = true;
+    }, { passive: true });
+  } catch (_) {}
   function render(html) {
+    userScrolled = false;
     mount(); sheet.innerHTML = html;
     /* ⚠ Re-assert after every render: innerHTML wipes children, not the inline property, but a
        remount would lose it — and this is the one setting where a wrong value is visible. */

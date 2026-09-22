@@ -66,6 +66,17 @@ body.tq-mode > *:not(nav.site-nav):not(#tq-page):not(.te-consent) { display: non
    "Changes you made may not be saved" since 2016) and which a deliberate reload deserves anyway.
    ⚠ Needed on BOTH: the propagating element differs between engines. */
 html.tq-mode, body.tq-mode { overscroll-behavior-y: contain; }
+/* ⛔ SCROLL ANCHORING OFF INSIDE THE QUIZ. The browser re-pins the viewport to whatever element
+   was in view when content is inserted above it - which is exactly what the quiz does on every
+   render, and what put the learner part-way down the menu after entering from the foot of a long
+   topic page. There is nothing here worth anchoring: every screen is meant to start at the top.
+   ⚠⚠ THIS IS THE BLINK HALF OF THAT FIX AND IT DOES NOTHING ON iOS. Safari has never implemented
+   scroll anchoring, so on the iPhone PWA - which is where the owner actually saw the fault, and
+   not on the Android app - the cause is WebKit clamping the scroll offset when the document
+   collapses and restoring toward it as the sheet paints. quiz.js's scrollToTop() carries that half
+   with two deferred passes. ⛔ Neither half covers both browsers; removing either reopens the bug
+   on one of them. */
+html.tq-mode, body.tq-mode { overflow-anchor: none; }
 
 /* ⛔⛔ THE SURFACE COLOUR MUST COVER THE WHOLE VIEWPORT, NOT JUST THE SHEET — CAUGHT IN A BROWSER,
    NOT IN THE DIFF (2026-09-21).
