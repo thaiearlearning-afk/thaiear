@@ -327,6 +327,10 @@
         card.insertAdjacentHTML('beforeend', T.quizStripHtml({ page: key, name: name }));
         strip = card.querySelector('.topic-quiz');
         if (!strip) continue;
+        /* ⚠ THE CLASS IS WHAT RE-CENTRES THE HEART AND THE DOWNLOAD MARK. Both are absolutely
+           positioned at 50% of the CARD, so the strip's height moved them down onto it; the
+           CSS subtracts half the strip back out, but only for a card that actually has one. */
+        card.classList.add('has-quiz');
         /* ⚠ An href would be a second link inside a card that already has a stretched one, so
            this is a button that navigates. Built by CONCATENATION — hrefFor() strips only a
            trailing ".html", and handed the whole query string it silently does nothing. */

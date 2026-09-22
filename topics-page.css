@@ -673,6 +673,36 @@
     z-index: 1;
   }
   .topic-quiz:hover { filter: brightness(0.97); }
+  /* ⛔⛔ THE STRIP MADE THE CARD TALLER AND TWO ABSOLUTELY-POSITIONED MARKS WENT WITH IT.
+     Owner, 2026-09-22, on the live iPhone: "all my downloaded topics are showing as ticks …
+     when i go into these topics, it shows audio update available", and a grey tap highlight.
+     Both the favourites heart and the download tick / update dot are `top: 50%` of the CARD —
+     deliberately, because the owner asked for them "literally just in the middle" (2026-08-22)
+     — so adding ~37px of strip below them moved both down by ~18px, onto the strip.
+     ⚠ "THE MIDDLE OF THE CARD" WAS WRITTEN WHEN THE CARD WAS ONLY CONTENT. The marks belong to
+     the content, not to the quiz row, so the centring has to exclude the strip rather than the
+     rule be abandoned. --strip-h carries its measured height and the two marks subtract half of
+     it; a card with no strip keeps 0 and is byte-identical to before.
+     ⚠ MEASURED, not estimated — see the harness note in _qmeasure2.html. */
+  /* ⚠ THE NET CARD GROWTH, NOT THE STRIP'S OWN HEIGHT. The strip measures 36.9px including its
+     top margin, but its NEGATIVE bottom margin cancels the card's padding-bottom, so the card
+     only grows by 24.9px (measured at 420px). Subtracting half of 37 instead of half of 25 put
+     both marks 6px too HIGH — an estimate that was wrong by less rather than a fix.
+     ⚠ Breakpoint-dependent, because the padding it cancels is: the phone block sets 13px and
+     the shared rule 0.55rem, so the two regimes grow by different amounts. Measured in both. */
+  .topic-card { --strip-h: 0px; }
+  .topic-card.has-quiz { --strip-h: var(--strip-h-on, 29px); }
+  .topic-card.has-quiz .topic-fav,
+  .topic-card.has-quiz .dl-badge,
+  .topic-card.has-quiz .dl-select { top: calc(50% - var(--strip-h) / 2); }
+
+  /* ⚠ NOTHING ON A CARD SHOWS A TAP HIGHLIGHT (owner, same report: "when i click on the pill i
+     get an ugly grey highlight around the topic name. nothing should highlight on click").
+     iOS paints the highlight on the nearest interactive ancestor, and the card's stretched <a>
+     is one — it simply had no visible highlight to paint until the strip changed what a tap
+     landed on. Suppressed on the card and everything in it, which is what quiz.css already
+     does for the entry block. */
+  .topic-card, .topic-card * { -webkit-tap-highlight-color: transparent; }
   .tqs-l { flex-shrink: 0; }
   .tqs-cells {
     display: flex;
@@ -1030,6 +1060,8 @@
          make impossible. */
       --card-px: 16px;
       --card-pb: 13px;
+      /* net growth under the phone padding — see the note by --strip-h */
+      --strip-h-on: 25px;
       padding: 14px var(--card-px) var(--card-pb);
       min-width: 0;              /* grid item: stop min-content blowing past the 1fr column */
     }
