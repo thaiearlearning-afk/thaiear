@@ -33,7 +33,13 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v618';   // v618: NO MORE iOS TAP FLASH IN THE NAV. Safari and the PWA paint
+const VERSION = 'v619';   // v619: MASCOTS GO A SHADE LIGHTER. Owner reviewed all 11 at four
+                          // depths and took the lightest navy on every one - the deep pass in
+                          // v615 had pushed several below where the artwork wanted to sit.
+                          // Body fills now land within a couple of points of --accent L25.
+                          // The LOGO is unchanged and stays anchored on #261B65 exactly.
+                          // All 11 are precached and cache-first, so the bump is the delivery.
+                          // v618: NO MORE iOS TAP FLASH IN THE NAV. Safari and the PWA paint
                           // their own -webkit-tap-highlight-color, a translucent blue-grey that
                           // is not in the palette, and nav.js was the one interactive surface
                           // never suppressing it (eight other files already did). Suppressed AND
