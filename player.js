@@ -2235,6 +2235,11 @@
        Measured: with data-dlsig alone cleared, a desktop tab still sat on the confirm. */
     bar.removeAttribute('data-dlsig');
     bar.removeAttribute('data-sig');
+    /* ⛔ CLAIM THE BAR. Both signatures are now cleared (so Keep can repaint — v624), which
+       means nothing else is stopping a background repaint erasing this prompt. offBarConfirm is
+       what does. ⚠ Set it in the SAME edit as the innerHTML: a prompt on screen without the
+       flag is exactly the bug this pair exists to close. */
+    offBarConfirm = true;
     bar.innerHTML = '<span class="offline-status">Delete this download?</span>' +
       '<button class="offline-btn offline-del" onclick="deleteTopic()">Delete</button>' +
       '<button class="offline-btn" onclick="cancelDelete()">Keep</button>';
@@ -2245,7 +2250,12 @@
      stale, or only partly downloaded — came back showing a tick and "Downloaded". The update offer
      was silently lost and the bar was lying about what is on the device. renderOfflineBar() works
      the state out from the manifest instead of guessing. */
-  function cancelDelete() { renderOfflineBar(); }
+  function cancelDelete() {
+    /* ⚠ RELEASE BEFORE RE-DERIVING, or renderOfflineBar() stands off on our own guard and the
+       prompt never leaves — the v624 fault again, with a different cause. */
+    offBarConfirm = false;
+    renderOfflineBar();
+  }
   // Re-download after the content was regenerated online: wipe the stale folder (so files for any
   // removed sentences don't linger) then re-run the normal download, which re-stamps the new hash.
   function refreshTopic() {
@@ -2256,6 +2266,11 @@
       .then(function () { removeDownloaded(PREFIX); downloadTopic(); });
   }
   function deleteTopic() {
+    /* ⚠ RELEASED ON THIS PATH TOO, and FIRST — before the early return. A visitor who presses
+       Delete on a surface that cannot delete (neither OFFLINE nor WEB_DL) would otherwise leave
+       the flag set for the life of the page, and the bar would never repaint again for any
+       reason. A guard that can get stuck is worse than no guard. */
+    offBarConfirm = false;
     if (!OFFLINE && !WEB_DL && !(DYN && DYN_WEB_DL)) return;
     if (DYN) { dynDeleteHere(); return; }
     /* REF-AWARE, mirroring dynDeleteHere. This path used to rmdir the WHOLE prefix directory and
@@ -2320,6 +2335,23 @@
      number that says whether the clobber is still happening, and ~25 identical trace lines
      would bury the very sequence they were added to show (the r209 lesson, verbatim). */
   var offBarHeld = 0;
+  /* ⛔⛔ THE DELETE CONFIRM IS A HELD STATE, NOT JUST MARKUP — 2026-09-22, owner on the Android
+     app: "i hit delete, i get the are you sure message, then it reverts to 'downloaded'
+     automatically before i get a chance to respond."
+     ⚠⚠ THIS IS THE v624 KEEP FIX BITING BACK, and the mechanism is worth stating because the
+     two faults look opposite and share one cause. `confirmDelete()` paints the prompt by raw
+     innerHTML; `renderOfflineBar()` re-derives from disk on EVERY thaiear:auth, which fires ~25
+     times per page on a real device. What used to stop it erasing the prompt was an ACCIDENT:
+     data-dlsig still read "downloaded", so the repaint hit the idempotence guard and returned.
+     v624 cleared that attribute so the Keep button could repaint at all — correct, and it also
+     removed the only thing holding the prompt on screen. So Keep could not fire, and now the
+     prompt answers itself.
+     ✅ The file already has this shape twice: offBarLock (a download is running, only progress
+     may paint) and offBarHoldUntil (a message is up, stand off). A prompt awaiting an answer is
+     the same kind of claim on the bar, so it gets the same kind of guard rather than another
+     implicit one. ⛔ Do NOT go back to relying on a signature: a guard that works because a
+     stale attribute happens to match is a guard nobody can see. */
+  var offBarConfirm = false;
   function offlineBarFlash(state, arg, ms) {
     setOfflineState(state, arg);
     offBarHoldUntil = Date.now() + (ms || 4000);   // ← AFTER the paint: setOfflineState clears it
@@ -2331,6 +2363,11 @@
   function setOfflineState(state, done, total) {
     // While the bar is locked to a running download, only progress may paint. See offBarLock.
     if (offBarLock && state !== 'downloading') { offBarHeld++; return; }
+    /* ⛔ A PROMPT AWAITING AN ANSWER OWNS THE BAR. Nothing may paint over "Delete this
+       download?" until the visitor picks Delete or Keep — both clear the flag on their way in.
+       ⚠ Above the offBarSeq bump on purpose, so a suppressed paint cannot invalidate a pending
+       flash revert either; the prompt is the only thing on screen and it stays that way. */
+    if (offBarConfirm) { offBarHeld++; return; }
     offBarSeq++;                 // invalidates any pending flash revert — see offlineBarFlash
     offBarHoldUntil = 0;         // …and releases the message hold: a real state change always wins
     var bar = $('offline-bar'); if (!bar) return;
@@ -2397,29 +2434,25 @@
         '<button class="offline-btn" onclick="downloadTopic()">Update</button>' +
         '<button class="offline-btn offline-del" onclick="confirmDelete()">Delete</button>';
     } else { // idle
-      /* ⭐ §2.6 — "Download for offline — topic audio and quiz". ⚠ IT IS A PROMISE, so it is
-         made only where it is TRUE: the arm must be public (a gated visitor cannot open a quiz
-         at all) AND this unit must actually carry quiz data. A unit with no authored questions
-         says the plain thing, as it always has.
-         ⛔ NOT the owner gate. This is copy every visitor reads, so it follows QUIZ_PUBLIC —
-         the same one constant §2.1 flips — and not "am I the owner", which would put a promise
-         on the owner's screen that nobody else's download keeps. */
-      /* ⚠ THIS BAR SERVES BOTH A TOPIC PAGE AND playlists.html?pl= (PLMODE), so the noun has to
-         follow the surface — "topic audio" on a playlist would be wrong twice over, since a
-         playlist is neither a topic nor one topic's audio. Owner, 2026-09-22: "for playlists it
-         should be 'Playlist audio and quiz'."
-         ⚠ A PLAYLIST'S quiz DATA IS NOT IN cfg — pl-quiz.js derives it from the items AT IDLE,
-         after this bar has already painted, so cfg.quiz is empty here even when the playlist
-         will certainly have quizzes. The honest condition there is that the playlist HAS
-         sentences, which is the same thing: its quizzes are derived from them. */
-      var T2 = window.ThaiEarTopics;
-      var pub = !!(T2 && T2.quizPublic && T2.quizPublic());
-      var qz = pub && (PLMODE ? !!(cfg.sentences || []).length
-                              : !!(cfg && cfg.quiz && Object.keys(cfg.quiz).length));
+      /* ⛔⛔ THE LABEL IS THE PLAIN ONE. REVERTED 2026-09-22, SAME DAY IT SHIPPED.
+         Owner: "the new download button - in the playlist area it has the wording 'Download for
+         offline - playlist audio and quiz' ... can we revert to the old 'download for offline' -
+         it is really big and ugly now."
+         ⚠ REVERTED ON BOTH SURFACES, not just the playlist he named. It is one button with one
+         label and the topic wording was the LONGER of the two ("topic audio and quiz"), so
+         fixing only the playlist would have left the worse case in place and made the two
+         surfaces disagree for no reason. If he wants the topic promise back, it is the `qz`
+         branch below that returns — not a new one.
+         ⚠ WHAT THE LONG LABEL WAS FOR, so it is not lost: §2.6 made it a PROMISE that the
+         download includes the quiz data, made only where it was TRUE — gated on QUIZ_PUBLIC
+         (copy every visitor reads, so never on the owner gate) and on the unit actually carrying
+         questions; on a playlist the honest condition was that it HAS sentences, because
+         pl-quiz.js derives the quizzes from the items at idle, after this bar has painted.
+         ⚠ THE DOWNLOAD ITSELF IS UNCHANGED — only the wording went. Quiz data still comes down
+         with the audio, so the button under-promises now rather than over-promising. That is the
+         safe direction, and it is the owner's call. */
       bar.innerHTML = '<button class="offline-btn" onclick="downloadTopic()">' + DL_ICON_SVG +
-        (qz ? (PLMODE ? ' Download for offline — playlist audio and quiz'
-                      : ' Download for offline — topic audio and quiz')
-            : ' Download for offline') +
+        ' Download for offline' +
         '</button>';
     }
   }
@@ -2490,6 +2523,10 @@
        downloadTopic native, webDownloadTopic), and each one repaints the true state on the way
        out, so this can never leave the bar frozen. */
     if (downloadingNow) { offBarHeld++; return; }
+    /* ⛔ …and the same for a delete prompt awaiting an answer. This is the path that actually
+       erased it: renderOfflineBar() re-derives from disk, finds the files still there, and
+       paints "Downloaded" straight over the question. See offBarConfirm. */
+    if (offBarConfirm) { offBarHeld++; return; }
     /* ⚠ AND A TRANSIENT MESSAGE MUST OUTLIVE THE SAME EVENT. offlineBarFlash() puts up
        "You’re offline — reconnect" or "Download failed: …" for 4–6s and then re-derives; the
        auth storm above erased it in milliseconds, so a download failing for a REAL reason

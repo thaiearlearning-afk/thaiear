@@ -79,7 +79,18 @@
   .prog-sub { font-size: 13.5px; color: var(--text-tertiary); margin-bottom: 1.25rem; }
 
   /* ── the four headline figures ───────────────────────────────────────────────────────── */
-  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.75rem; }
+  /* ⛔⛔ EVERY ROW IS THE HEIGHT OF THE TALLEST. Owner, 2026-09-22: "the 6 boxes at top of
+     progress page ... match in row, but not between rows. all should take the tallest height so
+     uniformity achieved."
+     ⚠⚠ A GRID EQUALISES WITHIN A ROW AND NEVER ACROSS ROWS — the identical fact that made the
+     topic cards uneven, and the identical fix (see .topic-grid in topics-page.css). A card with
+     a note under it ("Best so far: 4", "85 of 114") is taller than one without, so row 2 or 3
+     set their own height and the block read as three separate pairs.
+     ⛔ A `min-height` reserve is NOT the alternative: it has to encode a line count, and the
+     label wraps at a different width on every screen and again under OS text scaling. `1fr` asks
+     the grid the question directly and needs no maintenance. */
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1.75rem;
+    grid-auto-rows: 1fr; }
   .stat-card {
     background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg);
     /* ⛔ A GRID ITEM IS FLOORED AT ITS MIN-CONTENT WIDTH. At large system text "sentences" alone
@@ -190,25 +201,19 @@
      other three sideways and the page would read as ragged rather than as shorter.
      ⛔ The dash means "does not apply" here and "never tried" elsewhere. Both are honestly
      blank; 0% would be a lie in either — it reads as a failed attempt. */
-  /* the quiz headline pair - revealed by the same one class as the columns */
-  .stat-grid-q { display: none; }
-  .prog-q-on .stat-grid-q { display: grid; }
-  /* ⛔⛔ THE THIRD ROW SITS AT THE GRID'S OWN GAP, NOT AT THE BLOCK'S BOTTOM MARGIN.
-     Owner, 2026-09-22: "the two new boxes are far apart from the existing four - theres a gap -
-     distance between the third row of two new additions should be the same as the distance
-     between existing boxes."
-     ⚠ THE CAUSE IS THAT THEY ARE TWO GRIDS, WHICH IS ITSELF DELIBERATE (see quizStatGrid): six
-     cells in ONE 2-column grid would put the quiz pair alongside "days in a row" instead of
-     below the four. The price is that the space between row 2 and row 3 is a MARGIN between two
-     blocks (1.75rem = 28px) where every other row boundary is the grid's `gap` (10px) - so the
-     pair reads as a separate section rather than as two more of the same cards.
-     ✅ Scoped to .prog-q-on, so with the pair hidden the four keep their full 1.75rem above
-     "Your listening time" and nothing moves. .stat-grid-q carries .stat-grid too, so it inherits
-     that 1.75rem and the space BELOW the block is unchanged - only the seam inside it closes.
-     ⚠ 10px, in px, to match the `gap` it is standing in for. A rem here would inflate under
-     Android textZoom while the gap it must equal would not, and the seam would reopen at large
-     text (TEXT_SCALING.md §1). */
-  .prog-q-on .stat-grid:not(.stat-grid-q) { margin-bottom: 10px; }
+  /* the quiz headline pair - revealed by the same one class as the columns, per CELL now that
+     they are two cells of the one grid. ⚠ `display: none` removes a grid item from the layout
+     entirely, so gated off the grid is four cells in two rows, exactly as before the pair
+     existed - there is no empty row and no reserved space. */
+  .stat-q { display: none; }
+  .prog-q-on .stat-q { display: block; }
+  /* ⛔ THE SEAM RULE IS GONE, AND DELIBERATELY SO. It set `margin-bottom: 10px` on the first
+     of TWO grids to make the space between rows 2 and 3 match the grid's own gap. With one grid
+     that space IS the gap, by construction, so the rule has nothing to do and a later reader
+     would have had to work out why a margin was being overridden to a number that already
+     matched. Owner's original report: "the two new boxes are far apart from the existing four -
+     theres a gap - distance between the third row of two new additions should be the same as the
+     distance between existing boxes." Still true; now true for free. */
   .prog-row-q { display: none; }
   /* ⛔⛔ `margin-left: auto` PLUS the wrap below, and the pair is what keeps the columns straight.
      At 320px with the system text at 200% the row simply cannot hold a name, the minutes and four
@@ -540,6 +545,7 @@
         card(stats.streak, 'day' + (stats.streak === 1 ? '' : 's') + ' in a row',
              stats.bestStreak > stats.streak ? 'Best so far: ' + stats.bestStreak : '') +
         card(humanTime(tot.seconds), 'Thai listening time') +
+        quizCards() +
       '</div>' +
 
       /* ⭐ THE QUIZ PAIR, A SECOND ROW OF THE SAME CARDS (owner, 2026-09-22: "can we add other
@@ -552,7 +558,6 @@
          surface. ⚠ It is a SEPARATE .stat-grid, not two more cells in the first: a 2-column grid
          with six cells would put the quiz pair alongside "days in a row", and the owner asked for
          them BELOW the existing four. */
-      quizStatGrid() +
 
       /* playlistRows() is folded into topicList()'s single list — see the note there. */
       topicList(repsMap) +
@@ -583,18 +588,33 @@
     }
     return { answered: answered, correct: correct };
   }
-  function quizStatGrid() {
+  /* ⛔⛔ TWO MORE CELLS OF THE ONE GRID — NOT A SECOND GRID. Owner, 2026-09-22: "the 6 boxes
+     at top of progress page ... match in row, but not between rows. all should take the tallest
+     height so uniformity achieved."
+     ⚠⚠ AND THE REASON THEY WERE EVER SPLIT WAS A MISTAKE OF MINE, worth naming so it is not
+     re-introduced: I wrote that "a 2-column grid with six cells would put the quiz pair alongside
+     'days in a row'". It does not. A grid fills in source order, so six cells in two columns are
+     rows (1,2) (3,4) (5,6) — the pair lands on row THREE, below the four, which is exactly what
+     was asked for. I never checked it, and the split then cost a spacing fix of its own (the
+     seam between the two blocks was a 1.75rem margin where every other row boundary was a 10px
+     gap) and made the heights impossible to equalise, because `grid-auto-rows: 1fr` can only
+     reach rows in ITS OWN grid.
+     ✅ One grid: the pair sits on row 3, the gap is the grid's own by construction, and one
+     `grid-auto-rows: 1fr` makes all three rows the height of the tallest.
+     ⚠ Hiding is now per CELL rather than per block. A `display: none` grid item leaves the grid
+     entirely, so when the arm is gated off the grid is four cells in two rows and is
+     byte-identical to what it was before the pair existed. */
+  function quizCards() {
     var q = quizTotals();
     var pct = q.answered ? Math.round(q.correct / q.answered * 100) + '%' : '—';
-    return '<div class="stat-grid stat-grid-q">' +
-      card(q.answered.toLocaleString(), 'quiz questions answered') +
+    return card(q.answered.toLocaleString(), 'quiz questions answered', '', 'stat-q') +
       card(pct, 'quiz questions correct',
-           q.answered ? q.correct.toLocaleString() + ' of ' + q.answered.toLocaleString() : '') +
-      '</div>';
+           q.answered ? q.correct.toLocaleString() + ' of ' + q.answered.toLocaleString() : '',
+           'stat-q');
   }
 
-  function card(val, lbl, note) {
-    return '<div class="stat-card">' +
+  function card(val, lbl, note, cls) {
+    return '<div class="stat-card' + (cls ? ' ' + cls : '') + '">' +
       '<div class="stat-val">' + esc(val) + '</div>' +
       '<div class="stat-lbl">' + esc(lbl) + '</div>' +
       (note ? '<div class="stat-note">' + note + '</div>' : '') +

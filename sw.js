@@ -33,7 +33,34 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v634';   // v634: the loading ellipsis sits on the BASELINE again. Owner:
+const VERSION = 'v635';   // v635: three owner reports, 2026-09-22.
+                          // (1) THE DELETE PROMPT ANSWERED ITSELF on the Android app: "i hit
+                          // delete, i get the are you sure message, then it reverts to
+                          // 'downloaded' automatically before i get a chance to respond."
+                          // ⚠⚠ IT IS v624 BITING BACK. confirmDelete() paints by innerHTML, and
+                          // renderOfflineBar() re-derives on every thaiear:auth (~25/page). What
+                          // used to protect the prompt was an ACCIDENT: data-dlsig still read
+                          // "downloaded", so the repaint hit the idempotence guard. v624 cleared
+                          // that attribute so KEEP could repaint -- correct -- and removed the
+                          // only shield. One fix, two opposite faults. Now an explicit held
+                          // state (offBarConfirm), like offBarLock and offBarHoldUntil beside it;
+                          // released by BOTH exits, and before Keep's re-derive or the prompt
+                          // becomes permanent. Proven both directions in test_offline_bar.js,
+                          // which had no coverage of this path at all -- which is how it
+                          // regressed into its own opposite inside a day.
+                          // (2) THE DOWNLOAD LABEL IS PLAIN AGAIN: "can we revert to the old
+                          // 'download for offline' - it is really big and ugly now." Reverted on
+                          // BOTH surfaces, not just the playlist he named -- one button, one
+                          // label, and the topic wording was the longer of the two. The download
+                          // still includes the quiz data, so it under-promises now.
+                          // (3) THE SIX PROGRESS BOXES ARE ONE GRID and every row is the height
+                          // of the tallest: "all should take the tallest height so uniformity
+                          // achieved". ⚠ Needed the two grids merged first -- `1fr` only reaches
+                          // rows in its own grid -- and the split was MY mistake in v628: I wrote
+                          // that six cells in two columns would sit "alongside days in a row".
+                          // They do not; a grid fills in source order, so cells 5-6 are row 3.
+                          // v631's 10px seam rule is deleted rather than left as a no-op.
+                          // v634:   // v634: the loading ellipsis sits on the BASELINE again. Owner:
                           // "your ellipsis is high - it sits in horizontal alignment with the
                           // top of the 's' in 'playlists'".
                           // ⚠⚠ MY OWN v632 FIX CAUSED IT. Clipping the dots with an
