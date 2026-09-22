@@ -33,7 +33,24 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v635';   // v635: three owner reports, 2026-09-22.
+const VERSION = 'v636';   // v636: ⚖ THE PRIVACY POLICY NAMES QUIZ DATA. Owner, 2026-09-22:
+                          // "we need to update the privacy policy just to state we now store
+                          // people's quiz scores as a user feature ... as this is legal".
+                          // The quiz arm went public today and began storing, against an
+                          // account, per-quiz best scores and attempt counts, per-question
+                          // seen/correct counts, quiz settings, excluded questions, and the
+                          // Thai Builder's REFUSED ANSWERS (the sentence, the word order the
+                          // learner built, and a timestamp). UK GDPR Art 13 requires the
+                          // notice to say so, and none of it was described.
+                          // ⚠ The refused-answer log is named EXPLICITLY rather than folded
+                          // into 'results': it stores something the learner composed, with a
+                          // time on it, which is the one item here a reader would not expect.
+                          // ⚠ 'Last updated' moved to 22 September 2026 — the policy's own
+                          // closing line promises that date tracks the latest version.
+                          // privacy.html is PRECACHED, so without this bump returning devices
+                          // would keep serving the notice that does not mention any of it.
+                          //
+                          // v635:   // v635: three owner reports, 2026-09-22.
                           // (1) THE DELETE PROMPT ANSWERED ITSELF on the Android app: "i hit
                           // delete, i get the are you sure message, then it reverts to
                           // 'downloaded' automatically before i get a chance to respond."

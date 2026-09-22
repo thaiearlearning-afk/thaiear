@@ -62,7 +62,19 @@
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.7; }
-  .legal-wrap { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; }
+  /* ⛔ AN ADDRESS IN <strong> CANNOT BREAK, AND AT LARGE SYSTEM TEXT IT LEAVES THE PAGE.
+     Measured 2026-09-22 at 320px with the OS text at 200%: privacy +88px of horizontal page
+     scroll, refunds +46, terms +54 — all three the same 19-character support address, which
+     `overflow-wrap: normal` will not break. The same fault TEXT_SCALING.md §7 fixed on about and
+     account in 2026-08; these three pages never got it.
+     ⚠ `break-word`, not `anywhere`: it breaks only a word that genuinely does not fit, so
+     ordinary prose is untouched, and it inherits to every child including <strong>.
+     ⚠ THE SIDE PADDING GOES TO px IN THE SAME EDIT. A rem gutter inflates with the text
+     (§1) — 1.5rem is 48px a side at 2×, 96px of a 320px viewport before a word is set — so
+     fixing the wrapping alone would still have left the column too narrow to be worth reading.
+     24px and 18px are the computed values at the default root, so both are no-ops at default. */
+  .legal-wrap { max-width: 720px; margin: 0 auto; padding: 2.5rem 24px 3rem;
+    overflow-wrap: break-word; }
   .legal-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.2; }
   .legal-meta { font-size: 13px; color: var(--text-tertiary); margin-bottom: 2rem; }
@@ -80,7 +92,7 @@
   .legal-note { background: var(--accent-light); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; font-size: 13.5px; color: var(--text-secondary); margin: 1.5rem 0; }
   .legal-footer { border-top: 0.5px solid var(--border); margin-top: 2.5rem; padding-top: 1.25rem; font-size: 13px; color: var(--text-tertiary); display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
   .legal-footer a { color: var(--text-secondary); font-weight: 500; }
-  @media (max-width: 600px) { .legal-wrap { padding: 1.75rem 1.1rem 2.5rem; } h1 { font-size: 24px; } }
+  @media (max-width: 600px) { .legal-wrap { padding: 1.75rem 18px 2.5rem; } h1 { font-size: 24px; } }
 </style>
 <!-- identity.js: who is this, synchronously, before Supabase answers. Must be a plain
      blocking script in the head — nav.js mounts before auth.js is even appended, so
@@ -95,7 +107,7 @@
 <div class="legal-wrap">
   <div class="legal-eyebrow">ThaiEar</div>
   <h1>Privacy Policy</h1>
-  <p class="legal-meta">Last updated: 20 August 2026</p>
+  <p class="legal-meta">Last updated: 22 September 2026</p>
 
   <p>This policy explains how <strong>ThaiEar</strong> ("we", "us") — a trading name of Toby Ralph, a sole trader with a business address at 4th Floor, Silverstream House, 45 Fitzroy Street, Fitzrovia, London W1T 6EB — collects and uses
     your personal data when you use <a href="https://thaiear.com">thaiear.com</a>. We are the data
@@ -140,6 +152,21 @@
       you played on which day</strong>, and no record of the order you listened in. It is part of
       the features you are using and is shown back to you, and it is deleted automatically if you
       delete your account.</li>
+    <li><strong>Your quiz results and settings</strong> — for each quiz you take we keep your
+      <strong>best score</strong> and how many times you have taken it, and for each individual
+      question how many times you have seen it and how many times you answered it correctly. These
+      are what the &ldquo;My results&rdquo; panel and the quiz columns on your progress page show
+      you. We also keep the <strong>settings you choose</strong> for a quiz &mdash; its length,
+      whether decoys are shown, and so on &mdash; and any questions you have chosen to leave out,
+      so that they are the same next time and on your other devices.
+      In the Thai Builder we additionally keep <strong>answers the checker refused</strong>: the
+      sentence, the word order you built, and when. We read these to find correct Thai that our
+      answer key was wrongly rejecting, which is how the quiz gets fixed. It is
+      <strong>your answer, not anything about you</strong>, and it is never shown to anyone else.
+      All of this is part of the features you are using, and all of it is deleted automatically if
+      you delete your account. The reset button on your progress page sets your scores and counts
+      back to zero; it deliberately leaves your quiz settings and exclusions alone, because those
+      are choices you made rather than results.</li>
     <li><strong>Signup country</strong> — when you create an account we record which
       <strong>country</strong> you were in, worked out from your internet connection.
       <strong>We do not store your IP address in this record</strong>. This tells us which
