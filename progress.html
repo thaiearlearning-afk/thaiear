@@ -505,6 +505,17 @@
      ⚠ ITS FALLBACK IS THE OPPOSITE OF THE HOME GREETING'S, deliberately: greetingName() returns
      '' rather than greet someone off their email prefix, but this heading would then read
      "'s progress", so here the prefix is better than nothing. */
+  /* ⚠ THE SAME READER EVERY OTHER PRE-AUTH SURFACE USES — never a second copy of the rules.
+     identity.js's header is explicit that app-cta.js, nav.js and home-cta.js each had their own
+     and that three chances to drift is not cosmetic on this question. Anything missing answers
+     null, which falls back to exactly today's behaviour. */
+  function guessUser() {
+    try {
+      var I = window.ThaiEarIdentity;
+      var g = (I && I.guess) ? I.guess() : null;
+      return (g && g.state === 'in' && g.user) ? g.user : null;
+    } catch (_) { return null; }
+  }
   function firstName(user) {
     var I = window.ThaiEarIdentity;
     var n = (I && I.greetingName) ? I.greetingName(user) : '';
@@ -555,7 +566,14 @@
        from it renders once and then never updates. The playlist count is here because the section
        appears only after playlists.load() resolves. */
     var pls = playlistsNow();
-    var sig = [user ? user.id : 'out', tot.listens, Math.round(tot.seconds),
+    /* ⚠ THE GUESS IS IN THE SIGNATURE TOO. Without it a page painted from the guess and then
+       resolved to the SAME user would not repaint — which is what we want — but one resolved to
+       a DIFFERENT user, or to signed-out, would also not repaint, and the page would keep
+       someone else's name on it. Cheap, and it makes the self-correction real rather than
+       assumed. */
+    var guessed = guessUser();
+    var sig = [user ? user.id : 'out', guessed ? guessed.id : 'out',
+               tot.listens, Math.round(tot.seconds),
                stats.daysListened, stats.streak, stats.bestStreak,
                sentNums ? 1 : 0, durations ? 1 : 0,
                pls ? pls.length : -1,
@@ -568,14 +586,32 @@
     if (sig === painted) return;
     painted = sig;
 
-    var heading = user
-      ? esc(firstName(user)) + '&rsquo;s progress'
+    /* ⭐⭐ THE HEADING AND ITS SUB-LINE COME FROM identity.js WHEN AUTH HAS NOT ANSWERED YET.
+       Owner, 2026-09-22: "im getting a render flash as my personal info populates it e.g. it
+       goes from 'sign in to track your progress' to 'Toby's progress' - can we wait until the
+       information exchange is resolved before rendering the objects that can change."
+       ⚠⚠ WAITING IS THE WRONG FIX, AND identity.js EXISTS BECAUSE OF THAT. Supabase's answer
+       arrives over the NETWORK; holding the first paint for it means a blank page for however
+       long that takes, and offline it may never come. auth.js therefore mirrors every resolved
+       session into localStorage, and identity.js reads it SYNCHRONOUSLY — so the honest first
+       paint is not "signed out", it is "the last thing we knew", which for a returning visitor
+       is right. The nav, the home CTA and the app card all already paint from it; this page was
+       the one that did not, which is why it alone flashed.
+       ⛔ PRESENTATION ONLY. `shown` names the heading and chooses the sub-line; it must NOT gate
+       the reset block or anything else that acts on an account — those keep using the RESOLVED
+       user, because a guess is a guess. The flash is a cosmetic problem and the fix stays
+       cosmetic.
+       ⚠ It is also self-correcting: the resolved id is in the repaint signature, so if the guess
+       is ever wrong the real answer repaints over it — exactly what happens today, just rarer. */
+    var shown = user || guessUser();
+    var heading = shown
+      ? esc(firstName(shown)) + '&rsquo;s progress'
       : 'Sign in to track progress';
 
     var html =
       '<div class="eyebrow">Progress</div>' +
       '<h1 class="prog-title">' + heading + '</h1>' +
-      '<p class="prog-sub">' + (user
+      '<p class="prog-sub">' + (shown
         ? 'Everything here is measured automatically as you listen.'
         : '<a href="' + (t.hrefFor ? t.hrefFor('join.html') : 'join.html') +
           '?feature=1&amp;next=progress.html">Create a free account</a> and your listening is tracked from then on.')

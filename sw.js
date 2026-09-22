@@ -33,7 +33,28 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v637';   // v637: the Progress quiz columns are CAPTIONED and sit on the group
+const VERSION = 'v638';   // v638: the Progress heading no longer flashes from "Sign in to track
+                          // progress" to the visitor's name. Owner, 2026-09-22: "im getting a
+                          // render flash as my personal info populates it ... can we wait until
+                          // the information exchange is resolved before rendering the objects
+                          // that can change."
+                          // ⚠⚠ WAITING IS THE WRONG FIX, AND identity.js EXISTS BECAUSE OF IT:
+                          // the answer arrives over the NETWORK, so holding the first paint means
+                          // a blank page for as long as that takes, and offline it may never
+                          // come. auth.js mirrors every resolved session into localStorage, so
+                          // the honest first paint is "the last thing we knew". The nav, the home
+                          // CTA and the app card all already paint from it; this page was the one
+                          // that did not, which is why it alone flashed.
+                          // ⛔ PRESENTATION ONLY -- it names the heading and picks the sub-line.
+                          // Anything that ACTS on an account (the reset control) still waits for
+                          // the resolved user, because a guess is a guess. Asserted.
+                          // ⚠⚠ AND IT CANNOT BE PROVED IN A BROWSER ON LOCALHOST: supabase-js is
+                          // absent there, auth falls back to the durable identity SYNCHRONOUSLY,
+                          // and getUser() is populated before the first paint -- so neither the
+                          // fixed nor the broken page flashes. The proof is in
+                          // test_progress_page.js, which models the live pre-resolve state
+                          // (mirror seeded, getUser() null) and goes red without the fix.
+                          // v637:   // v637: the Progress quiz columns are CAPTIONED and sit on the group
                           // label's line, plus three more pages brought into the text-scaling
                           // register. ⚠ THIS IS THE OTHER HALF OF WHAT v636's MESSAGE CLAIMS:
                           // a peer's privacy-policy commit and mine interleaved on the shared
