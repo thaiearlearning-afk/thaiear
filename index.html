@@ -506,6 +506,12 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
    collision and hide on the answer. NOT BUILT — logged as an open item in
    HOMEPAGE_REDESIGN_2026-08-21.md §12. */
 @media (max-width:700px) and (max-height:639px){ .s-sub{ display:none; } }
+/* ⭐ The measured half of the same rule. The media query above is the default-size /
+   no-JS path; this one fires when OS text scaling makes the descriptions collide at a
+   height the query calls safe. Set PRE-PAINT by the probe at the top of the stage --
+   see the long note there for why it cannot be CSS and cannot wait for nav.js.
+   ⚠ At default text the two conditions are identical, so this adds nothing at 1x. */
+html.te-nosub .s-sub{ display:none; }
 /* The other half of the nudge above. `home-cta.js` reads this SAME property and adds it back
    when it sizes the greeting block's lift, so the label moves and the block does not — which
    is what the owner asked for. One declaration, two readers; do not hard-code 19 in the JS. */
@@ -861,6 +867,56 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 <div id="site-nav-root" style="min-height:54px;background:var(--surface);border-bottom:0.5px solid var(--border)"></div>
 
 <main class="tri" id="stage">
+  <!-- ⚠⚠ THE ONE THING ON THIS PAGE THAT USED TO GUESS. A media query reads the VIEWPORT,
+       and Android textZoom / iOS Dynamic Type inflate TEXT without changing it, so
+       `max-height: 639px` could not see the case it exists to prevent. `var()` is not allowed in
+       a media query, so this cannot be expressed in CSS at all -- it has to be measured.
+       ⚠ PRE-PAINT, AND THAT IS WHY IT IS INLINE AND HERE. nav.js publishes --te-ui-raw already,
+       but it is DEFERRED: its answer lands after first paint, so using it would show the
+       descriptions and then snatch them away. This runs while <main> is still parsing, before
+       anything has been drawn, and reading offsetHeight forces the layout it needs synchronously.
+       ⚠ offsetHeight, NEVER getComputedStyle -- the latter reports the SPECIFIED size, not the
+       zoomed one (TEXT_SCALING.md §2). A 100px/1 box renders 140px tall at 1.4x; that ratio is
+       the whole measurement.
+       ⚠ THE CSS RULE BELOW IS KEPT AND IS NOT REDUNDANT. At raw = 1 this stamp fires on exactly
+       the same condition, so the two agree by construction and this is a provable no-op at default
+       size; the media query is what still works with JS off or if this throws.
+       ⚠ Re-measured on resize and visibilitychange for the same reason nav.js does it: the
+       setting can be changed while the app is backgrounded. -->
+  <script>
+  (function () {
+    var de = document.documentElement;
+    function raw() {
+      try {
+        var el = document.createElement('div');
+        el.style.cssText = 'position:absolute;top:-9999px;left:0;width:auto;height:auto;' +
+                           'font:100px/1 monospace;white-space:nowrap;';
+        el.textContent = 'M';
+        document.body.appendChild(el);
+        var r = el.offsetHeight / 100;
+        document.body.removeChild(el);
+        return (r > 0.5 && r < 6) ? r : 1;   /* anything absurd means "not measured" */
+      } catch (_) { return 1; }
+    }
+    /* 639 is the MEASURED default-size threshold this file already shipped; scaling it linearly
+       is how TEXT_SCALING.md treats every other reserve (`calc(379px * var(--te-ui-raw))`).
+       At raw 1 it is 639 and nothing changes. At 1.4 it is ~895, which covers the -1 measured at
+       640. At 2.0 it is ~1278, i.e. every phone -- correct, since nothing cleared at 2x below 844. */
+    function apply() {
+      try {
+        de.classList.toggle('te-nosub',
+          window.innerWidth <= 700 && window.innerHeight < 639 * raw());
+      } catch (_) {}
+    }
+    apply();
+    var t = null;
+    function requeue() { clearTimeout(t); t = setTimeout(apply, 250); }
+    try {
+      window.addEventListener('resize', requeue);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) requeue(); });
+    } catch (_) {}
+  })();
+  </script>
   <h1 class="visually-hidden">ThaiEar — learn Thai by listening</h1>
 
   <a class="sect s1 c-purple" href="topics">
