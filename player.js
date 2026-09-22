@@ -3128,7 +3128,7 @@
       position: fixed; top: 54px; left: 0; right: 0; z-index: 60;
       display: flex; flex-direction: column;
       max-width: 640px; margin: 0 auto; padding: 8px 12px;
-      background: var(--accent-light, #EAEAF4); color: var(--accent, #1C124E);
+      background: var(--accent-light, #ECEBFA); color: var(--accent, #261B65);
       border: 0.5px solid var(--border, rgba(0,0,0,0.1)); border-radius: 0 0 14px 14px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.12);
       font-family: var(--font-ui, system-ui, sans-serif);
@@ -3140,7 +3140,7 @@
     .te-mini button { border: 0; background: transparent; color: inherit; cursor: pointer;
       display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     .te-mini-play { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-      background: var(--accent, #1C124E); color: #fff; }
+      background: var(--accent, #261B65); color: #fff; }
     .te-mini-play svg { width: 15px; height: 15px; fill: #fff; }
     .te-mini-skip { position: relative; width: 30px; height: 30px; flex-shrink: 0; }
     .te-mini-skip svg { width: 22px; height: 22px; }
@@ -3152,7 +3152,7 @@
     .te-mini-scrub { flex: 1; min-width: 40px; min-height: 44px; align-self: stretch;
       display: flex; align-items: center; cursor: pointer; touch-action: pan-y; }
     .te-mini-bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(0,0,0,0.12); overflow: hidden; }
-    .te-mini-fill { height: 100%; width: 0%; border-radius: 2px; background: var(--accent, #1C124E); }
+    .te-mini-fill { height: 100%; width: 0%; border-radius: 2px; background: var(--accent, #261B65); }
     .te-mini-x { width: 26px; height: 26px; flex-shrink: 0; opacity: 0.55; font-size: 20px; line-height: 1; align-self: center; }
     .te-mini-x:hover { opacity: 1; }
     /* "Now playing <other topic>" caption — a separate row beneath the controls, its own click target. */
@@ -3736,7 +3736,7 @@
       //     no button, just a neutral note stating their state. Both only ever explain, never sell.
       var signInBtn = signedIn ? '' :
         '<button id="te-ps-signin" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
-        'padding:11px 14px;border-radius:8px;border:0;background:var(--accent,#1C124E);color:#fff;cursor:pointer;">Sign in</button>';
+        'padding:11px 14px;border-radius:8px;border:0;background:var(--accent,#261B65);color:#fff;cursor:pointer;">Sign in</button>';
       /* The second sentence is a STATEMENT OF FACT, not a signpost (owner-approved, 2026-08-15):
          no destination, no price, no "subscribe", no "upgrade". It exists because a signed-in free
          user is the genuinely stuck one — they hunt for a control that is deliberately absent and
@@ -6142,7 +6142,7 @@
           'these settings to all topics/playlists when ' + escapeHtml(dynModeLabel()) + ' is selected — do you want to continue?</p>' +
         '<div style="display:flex;gap:8px;">' +
           '<button id="dyn-sync-go" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
-            'padding:11px 14px;border-radius:8px;border:0;background:var(--accent,#1C124E);color:#fff;cursor:pointer;">Continue</button>' +
+            'padding:11px 14px;border-radius:8px;border:0;background:var(--accent,#261B65);color:#fff;cursor:pointer;">Continue</button>' +
           '<button id="dyn-sync-back" style="flex:1;font:600 14px var(--font-ui,system-ui,sans-serif);' +
             'padding:11px 14px;border-radius:8px;border:.5px solid rgba(0,0,0,.18);background:#fff;color:#5A5A5A;cursor:pointer;">Go back</button>' +
         '</div>' +

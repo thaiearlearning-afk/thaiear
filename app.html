@@ -27,7 +27,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- pwa:start (gen_pwa.js) -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#1C124E">
+<meta name="theme-color" content="#261B65">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -49,7 +49,7 @@
   :root {
     --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
     --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
-    --accent: #1C124E; --accent-light: #EAEAF4; --accent-mid: #2A1F6B;
+    --accent: #261B65; --accent-light: #ECEBFA; --accent-mid: #342682;
   /* ⛔⛔ THE LAVENDER PANELS KEEP THE OLD ACCENT TINT, DELIBERATELY (owner, 2026-09-22):
      "the lavender box 'downloaded topics play with no internet -...' can stay lavender as is (same
      as the quiz gloss chips) and same for the read thai box at the top of guide. i think that much
@@ -60,7 +60,16 @@
      ⚠ Same family as quiz.css's --chip-accent / --chip-accent-light - the quiz's reveal chips,
      "Play the sentence" and the "Literally:" line. One deliberate second colour, four surfaces. */
 :root {
-  --lav-bg: #EEEDFE;
+  /* ⛔⛔ THESE PANELS NOW TAKE THE SITE TINT (owner, 2026-09-22): "re all the lavender boxes i
+     mentioned (and others you find) incl the gloss chips in the quiz page answers, they now clash
+     with the overriding color theme so please apply the tint to those as well (the newer slightly
+     warmer/bluer variant)."
+     ⚠ THE EXEMPTION HELD ONLY WHILE THE TINT WAS GREY. They were pinned lavender because
+     --accent-light was then a cool grey they would have looked dead in; T3 is a saturated tint of
+     the same family, so the reason is gone and keeping them pinned is what would clash now.
+     ⚠ THE INK IS UNCHANGED, deliberately - he asked for the tint, and his instruction about these
+     same surfaces was "their text can stay same color as is". */
+  --lav-bg: var(--accent-light);
   --lav-ink: #3B3488;
 }
 
@@ -122,9 +131,9 @@
   .ios-steps strong { color: var(--text-primary); font-weight: 600; }
   .ios-share { display: inline-flex; vertical-align: -0.22em; width: 1.05em; height: 1.05em; color: var(--accent); }
   .ios-substep { margin-top: 0.35rem; font-size: 13.5px; color: var(--text-tertiary); }
-  /* ⛔ STAYS LAVENDER - see the --lav-bg note at the top of this file. */
+  /* ⛔ TAKES THE SITE TINT - see the --lav-bg note at the top of this file. */
   .ios-tip {
-    background: var(--lav-bg, #EEEDFE); border-radius: var(--radius-md);
+    background: var(--lav-bg, #ECEBFA); border-radius: var(--radius-md);
     padding: 0.85rem 1rem; font-size: 13.5px; color: var(--lav-ink, #3B3488); line-height: 1.6; margin: 0.25rem 0 0.5rem;
   }
   .ios-tip strong { color: #2A2470; }

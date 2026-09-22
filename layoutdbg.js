@@ -96,7 +96,7 @@
     var close = document.createElement('button');
     close.textContent = 'copy';
     close.style.cssText = 'position:fixed;right:8px;bottom:calc(45vh + 6px);z-index:2147483647;' +
-      'font:12px system-ui;padding:6px 12px;border-radius:6px;border:0;background:#1C124E;color:#fff';
+      'font:12px system-ui;padding:6px 12px;border-radius:6px;border:0;background:#261B65;color:#fff';
     close.onclick = function () {
       try { navigator.clipboard.writeText(lines().join('\n')); close.textContent = 'copied'; }
       catch (_) { close.textContent = 'select manually'; }

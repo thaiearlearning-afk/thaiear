@@ -15,6 +15,67 @@
 
 (function () {
   'use strict';
+  /* ═══ ?dbg=nav — WHY THE NAV IS SOMETIMES LATE ════════════════════════════════
+     ⛔⛔ A PROBE, NOT A FIX. Owner, 2026-09-22: "on android app when going into the about page,
+     the top nav disappears entirely ... i just sat on the page for 8 seconds or so and it appeared
+     actually", and "the nav remains the same across the site so it shouldnt need to drop off and
+     reload like that."
+
+     mount() is SYNCHRONOUS and runs on DOMContentLoaded, so an eight-second gap can only mean
+     nav.js itself arrived eight seconds late. There is a tempting suspect - sw.js's
+     INSTALL_BUDGET_MS is exactly 8000, and while a new worker installs it has not claimed the
+     page, so requests can bypass the service worker to the network - but 8000 matching 8000 is a
+     COINCIDENCE UNTIL MEASURED. On this project inference has lost to a ?dbg= probe every single
+     time, and shipping a fix for the wrong cause costs a release and teaches nothing.
+
+     ⚠ IT HAS TO RENDER ON THE PAGE. The Android app and the iPhone PWA have no console, which is
+     the same reason ownersim.js is built the way it is.
+
+     HOW TO USE IT: open the About page in the app with ?dbg=nav on the url, reproduce the delay,
+     then read the panel (tap it to dismiss). The decisive line is "nav.js fetch" - Resource Timing
+     knows whether the file came from cache (0 bytes transferred) or off the network, and how long
+     it took. If that duration is the missing seconds, the cause is DELIVERY; if it is instant and
+     "script ran at" is still late, the cause is upstream of the request and the service worker is
+     exonerated. */
+  var DBG_T0 = (function () { try { return performance.now(); } catch (_) { return 0; } })();
+  var DBG_CTRL = (function () {
+    try { return !!(navigator.serviceWorker && navigator.serviceWorker.controller); }
+    catch (_) { return null; }
+  })();
+  function dbgPanel() {
+    try {
+      if (location.search.indexOf('dbg=nav') < 0) return;
+      var rows = [];
+      function add(k, v) { rows.push(k + ': ' + v); }
+      add('script ran at', Math.round(DBG_T0) + ' ms');
+      add('SW controlling then', DBG_CTRL === null ? 'unknown' : (DBG_CTRL ? 'YES' : 'NO'));
+      try {
+        add('SW controlling now',
+            (navigator.serviceWorker && navigator.serviceWorker.controller) ? 'YES' : 'NO');
+      } catch (_) {}
+      add('mount() at', Math.round(performance.now()) + ' ms');
+      try {
+        var nt = performance.getEntriesByType('navigation')[0];
+        if (nt) add('DOMContentLoaded', Math.round(nt.domContentLoadedEventEnd) + ' ms');
+      } catch (_) {}
+      try {
+        var e = performance.getEntriesByType('resource').filter(function (r) {
+          return r.name.indexOf('nav.js') >= 0;
+        })[0];
+        add('nav.js fetch', e
+          ? (Math.round(e.startTime) + ' to ' + Math.round(e.responseEnd) + ' ms, '
+             + (e.transferSize === 0 ? 'FROM CACHE' : e.transferSize + ' bytes over the network'))
+          : 'no timing entry');
+      } catch (_) {}
+      var d = document.createElement('div');
+      d.setAttribute('style', 'position:fixed;left:6px;right:6px;bottom:6px;z-index:99999;'
+        + 'background:#1c1c1e;color:#f2f2f7;font:11px/1.55 ui-monospace,Menlo,Consolas,monospace;'
+        + 'padding:9px 11px;border-radius:8px;white-space:pre-wrap');
+      d.textContent = 'nav timing\n' + rows.join('\n');
+      d.addEventListener('click', function () { d.remove(); });
+      (document.body || document.documentElement).appendChild(d);
+    } catch (_) {}
+  }
 
   /* ---- app / installed-PWA only: kill DOUBLE-TAP zoom, KEEP PINCH ----
      An accidental double-tap zoom breaks the illusion of an app. Pinch-zoom is a different
@@ -266,8 +327,8 @@
     .nav-logo { display: flex; align-items: center; gap: 4px; text-decoration: none; flex-shrink: 0; }   /* tight to the swirl — one brand mark, not strangers (owner, 2026-08-02) */
     .nav-logo img { height: 26px; width: auto; display: block; }   /* swirl at 85% of the 31px size, gap unchanged at 4px so it stays tight to the wordmark (owner, 2026-08-02) */
     .nav-wordmark { font-family: var(--font-thai); font-size: calc(20px * var(--te-ui, 1)); font-weight: 600;
-      color: #1C124E; letter-spacing: 0.02em; white-space: nowrap; }
-    .nav-wordmark span { color: #1C124E; font-weight: 600; }
+      color: #261B65; letter-spacing: 0.02em; white-space: nowrap; }
+    .nav-wordmark span { color: #261B65; font-weight: 600; }
     .nav-links { display: flex; gap: 1.75rem; align-items: center; min-width: 0; }
     .nav-links a { font-size: calc(13px * var(--te-ui, 1)); font-weight: 500; color: var(--text-secondary);
       text-decoration: none; }
@@ -713,7 +774,7 @@
       s.id = 'te-np-styles';
       s.textContent =
         '.te-np-bar{position:sticky;top:54px;z-index:40;display:none;align-items:center;gap:9px;' +
-        'background:var(--accent-light,#EAEAF4);color:var(--accent,#1C124E);text-decoration:none;' +
+        'background:var(--accent-light,#ECEBFA);color:var(--accent,#261B65);text-decoration:none;' +
         'padding:9px 14px;font-family:var(--font-ui,system-ui,sans-serif);font-size:calc(13px * var(--te-ui, 1));font-weight:500;' +
         'border-bottom:0.5px solid var(--border,rgba(0,0,0,0.1))}' +
         '.te-np-bar.show{display:flex}' +
@@ -847,9 +908,9 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mount);
+    document.addEventListener('DOMContentLoaded', function () { mount(); dbgPanel(); });
   } else {
-    mount();
+    mount(); dbgPanel();
   }
 
   /* Let the auth layer refresh the nav after login/logout without a reload. */

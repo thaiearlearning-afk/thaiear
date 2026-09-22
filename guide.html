@@ -27,7 +27,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- pwa:start (gen_pwa.js) -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#1C124E">
+<meta name="theme-color" content="#261B65">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -56,7 +56,7 @@
     --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
     --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
     --navy: #1C124E;
-    --accent: #1C124E; --accent-light: #EAEAF4; --accent-mid: #2A1F6B;
+    --accent: #261B65; --accent-light: #ECEBFA; --accent-mid: #342682;
   /* ⛔⛔ THE LAVENDER PANELS KEEP THE OLD ACCENT TINT, DELIBERATELY (owner, 2026-09-22):
      "the lavender box 'downloaded topics play with no internet -...' can stay lavender as is (same
      as the quiz gloss chips) and same for the read thai box at the top of guide. i think that much
@@ -67,7 +67,16 @@
      ⚠ Same family as quiz.css's --chip-accent / --chip-accent-light - the quiz's reveal chips,
      "Play the sentence" and the "Literally:" line. One deliberate second colour, four surfaces. */
 :root {
-  --lav-bg: #EEEDFE;
+  /* ⛔⛔ THESE PANELS NOW TAKE THE SITE TINT (owner, 2026-09-22): "re all the lavender boxes i
+     mentioned (and others you find) incl the gloss chips in the quiz page answers, they now clash
+     with the overriding color theme so please apply the tint to those as well (the newer slightly
+     warmer/bluer variant)."
+     ⚠ THE EXEMPTION HELD ONLY WHILE THE TINT WAS GREY. They were pinned lavender because
+     --accent-light was then a cool grey they would have looked dead in; T3 is a saturated tint of
+     the same family, so the reason is gone and keeping them pinned is what would clash now.
+     ⚠ THE INK IS UNCHANGED, deliberately - he asked for the tint, and his instruction about these
+     same surfaces was "their text can stay same color as is". */
+  --lav-bg: var(--accent-light);
   --lav-ink: #3B3488;
 }
 
@@ -96,8 +105,8 @@
   p a { color: var(--accent); text-decoration: none; }
   p a:hover { text-decoration: underline; }
   /* Read Thai callout — a deliberate aside from the article flow */
-  /* ⛔ STAYS LAVENDER - see the --lav-bg note at the top of this file. */
-  .readthai-box { background: var(--lav-bg, #EEEDFE); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; margin-bottom: 0.95rem; }
+  /* ⛔ TAKES THE SITE TINT - see the --lav-bg note at the top of this file. */
+  .readthai-box { background: var(--lav-bg, #ECEBFA); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; margin-bottom: 0.95rem; }
   .readthai-box p { margin: 0; color: var(--lav-ink, #3B3488); }
     /* ⚠ UNDERLINED ON PURPOSE (owner, 2026-08-29: "so its obvious it is a link"). The site's
        base rule is `a { text-decoration: none }`, and inside this box the link is ALSO bold and
@@ -476,7 +485,7 @@
       position: fixed; top: 54px; left: 0; right: 0; z-index: 60;
       display: flex; flex-direction: column;
       max-width: 640px; margin: 0 auto; padding: 8px 12px;
-      background: var(--accent-light, #EAEAF4); color: var(--accent, #1C124E);
+      background: var(--accent-light, #ECEBFA); color: var(--accent, #261B65);
       border: 0.5px solid var(--border, rgba(0,0,0,0.1)); border-radius: 0 0 14px 14px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.12);
       font-family: var(--font-ui, system-ui, sans-serif);
@@ -488,7 +497,7 @@
     .te-mini button { border: 0; background: transparent; color: inherit; cursor: pointer;
       display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     .te-mini-play { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-      background: var(--accent, #1C124E); color: #fff; }
+      background: var(--accent, #261B65); color: #fff; }
     .te-mini-play svg { width: 15px; height: 15px; fill: #fff; }
     .te-mini-skip { position: relative; width: 30px; height: 30px; flex-shrink: 0; }
     .te-mini-skip svg { width: 22px; height: 22px; }
@@ -500,7 +509,7 @@
     .te-mini-scrub { flex: 1; min-width: 40px; min-height: 44px; align-self: stretch;
       display: flex; align-items: center; cursor: pointer; touch-action: pan-y; }
     .te-mini-bar { width: 100%; height: 4px; border-radius: 2px; background: rgba(0,0,0,0.12); overflow: hidden; }
-    .te-mini-fill { height: 100%; width: 0%; border-radius: 2px; background: var(--accent, #1C124E); }
+    .te-mini-fill { height: 100%; width: 0%; border-radius: 2px; background: var(--accent, #261B65); }
     .te-mini-x { width: 26px; height: 26px; flex-shrink: 0; opacity: 0.55; font-size: 20px; line-height: 1; align-self: center; }
     .te-mini-x:hover { opacity: 1; }
     /* "Now playing <other topic>" caption — a separate row beneath the controls, its own click target. */
@@ -522,8 +531,8 @@
   #demo-scrubber { touch-action: none; cursor: pointer; }
   .see-link { color: var(--accent) !important; text-decoration: underline !important; }
   .see-link strong { color: inherit; }
-  /* ⛔ STAYS LAVENDER - the cycler box under the mock player. See --lav-bg above. */
-  .dp-info { background: var(--lav-bg, #EEEDFE); border-radius: var(--radius-md); padding: 0.85rem 1.05rem; margin: 0 0 1rem; }
+  /* ⛔ TAKES THE SITE TINT - the cycler box under the mock player. See --lav-bg above. */
+  .dp-info { background: var(--lav-bg, #ECEBFA); border-radius: var(--radius-md); padding: 0.85rem 1.05rem; margin: 0 0 1rem; }
   .dp-info p { margin: 0; color: var(--lav-ink, #3B3488); font-size: 13.5px; line-height: 1.6; }
   .dp-info p strong { color: #2B2566; }
   /* the real pages define these tokens in their own CSS; guide.html lacks a couple the player CSS uses */

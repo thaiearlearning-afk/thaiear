@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v611';   // v611: the quiz mascot (tiger.png) was the ONE mascot never precached,
+const VERSION = 'v612';   // v612: THE NAVY BRIGHTENS. #1C124E read "almost black ... too somber
+                          // and funerial" against the whole site, so the accent moves to #261B65
+                          // (A2.5 off a rendered ladder) and the tint to #ECEBFA (T3) -- the tint
+                          // being a SEPARATE dial, because at 31% saturation it read grey however
+                          // good the accent was. The six band tiles become dark FAMILIES rather
+                          // than one navy, the level badges follow them, and the lavender panels
+                          // stop being pinned and take the tint. Every precached file changed
+                          // colour without changing its URL, so this bump is the delivery.
+                          // v611: the quiz mascot (tiger.png) was the ONE mascot never precached,
                           // so the quiz menu rendered white space where it should be; and a new
                           // quiz-data/index.json lets a playlist fetch only the units that have
                           // quiz data instead of one 404 per unbuilt unit. Both owner-reported.
@@ -979,8 +987,8 @@ function offlinePage() {
     'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#FAFAF8;color:#1A1A1A;text-align:center}' +
     '.b{padding:2rem;max-width:23rem}h1{font-size:1.25rem;margin:0 0 .5rem;font-weight:600}' +
     'p{color:#5A5A5A;line-height:1.6;margin:.25rem 0 1.4rem}' +
-    'button{display:inline-block;background:#1C124E;color:#fff;border:none;font:inherit;font-weight:500;padding:10px 18px;border-radius:8px;cursor:pointer}' +
-    '.alt{margin:1rem 0 0}.alt a{color:#1C124E;text-decoration:none;font-weight:500;font-size:.9rem}' +
+    'button{display:inline-block;background:#261B65;color:#fff;border:none;font:inherit;font-weight:500;padding:10px 18px;border-radius:8px;cursor:pointer}' +
+    '.alt{margin:1rem 0 0}.alt a{color:#261B65;text-decoration:none;font-weight:500;font-size:.9rem}' +
     '</style></head><body><div class="b"><h1>You’re offline</h1>' +
     '<p>This page isn’t available without a connection.</p>' +
     '<button onclick="if(history.length>1){history.back()}else{location.href=&#39;/index.html&#39;}">Go back</button>' +

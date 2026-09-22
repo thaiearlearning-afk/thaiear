@@ -26,7 +26,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- pwa:start (gen_pwa.js) -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#1C124E">
+<meta name="theme-color" content="#261B65">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -95,9 +95,9 @@
     --text-primary: #1A1A1A;
     --text-secondary: #5A5A5A;
     --text-tertiary: #9A9A9A;
-    --accent: #1C124E;
-    --accent-mid: #2A1F6B;
-    --accent-light: #EAEAF4;
+    --accent: #261B65;
+    --accent-mid: #342682;
+    --accent-light: #ECEBFA;
     --gold: #F0CC5C;
     --gold-dark: #C8A030;
     --gold-light: #FBF5DC;
@@ -107,7 +107,9 @@
        strip and the pill are one tier-neutral dark. Values are the mockup's, as approved.
        The premium one is a CREAM: the gold family at near-white, which keeps a premium card
        recognisable without putting gold back on the strip. */
-    --card-tint: #F3F4FA;
+    /* ⚠ DERIVED FROM THE TINT, not picked separately: the card body is --accent-light taken 55%
+       of the way to white, so it stays in the same hue family and a palette change carries it. */
+    --card-tint: #F6F6FD;
     --card-tint-premium: #F7F4EC;
     --radius-sm: 6px;
     --radius-md: 10px;
@@ -203,7 +205,7 @@
    ───────────────────────────────────────────────────────────────────────── */
 
 :root{
-  --navy:#1C124E;
+  --navy:#261B65;
   --cream:#FAF6EC;
   --line-w:3px;
   /* ⚠ ONE NUMBER, UNITLESS, FOR BOTH THE CLIP EDGES AND THE DRAWN LINES.
@@ -250,7 +252,7 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 /* THE TOPICS THIRD. Owner 2026-09-22: "the homepage topics third is blue/purple - that can be
    navy." Same three-stop shape, hue moved: mid stop == --accent, so the third and the
    [data-gt="purple"] welcome band still quote each other. */
-.c-purple{ background:linear-gradient(150deg,#2A1F6B 0%, #1C124E 46%, #130C36 100%); }
+.c-purple{ background:linear-gradient(150deg,#342682 0%, #261B65 46%, #1A1247 100%); }
 .c-purple .s-title{ color:#fff; }
 .c-purple .s-sub{ color:rgba(255,255,255,.72); }
 .c-purple .s-meta{ color:var(--gold); }
@@ -262,19 +264,19 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 .c-gold .s-sub{ color:rgba(28,18,78,.72); }
 .c-gold .s-meta{ color:#6E5410; }
 .c-gold .s-ico{ color:var(--navy); }
-.c-gold .s-go{ color:var(--navy); border-color:rgba(28,18,78,.35); }
+.c-gold .s-go{ color:var(--navy); border-color:rgba(38,27,101,.35); }
 
 .c-white{ background:linear-gradient(150deg,#FFFFFF 0%, #FCFAF4 55%, #F4EFE2 100%); }
 .c-white .s-title{ color:var(--navy); }
 .c-white .s-sub{ color:var(--text-secondary); }
 .c-white .s-meta{ color:var(--gold-dark); }
 .c-white .s-ico{ color:var(--accent); }
-.c-white .s-go{ color:var(--accent); border-color:rgba(28,18,78,.4); }
+.c-white .s-go{ color:var(--accent); border-color:rgba(38,27,101,.4); }
 
 .sect:hover{ filter:brightness(1.05) saturate(1.04); }
 .sect:hover .s-label{ transform:translate(var(--tx),var(--ty)) scale(1.035); }
 .sect:focus-visible{ outline:none; filter:brightness(1.08); }
-.sect:focus-visible .s-go{ box-shadow:0 0 0 3px rgba(28,18,78,.35); }
+.sect:focus-visible .s-go{ box-shadow:0 0 0 3px rgba(38,27,101,.35); }
 
 /* ── the label inside each region ──────────────────────────────────────────
    Absolutely placed at the region's visual centre of mass, NOT flex-centred:
@@ -622,7 +624,7 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 }
 /* Under the pill, not in it. var(--navy) is the colour "Playlists" is set in on this very
    page (`.c-gold .s-title`), asked for by name — taken from the token rather than re-typed
-   as #1C124E so the two cannot drift apart. */
+   as the accent so the two cannot drift apart. */
 .te-hero-cta.has-pill .cta-streak{
   display:block; font-weight:700;
   font-size:calc(12px * var(--te-ui, 1)); color:var(--navy); margin-top:7px;
@@ -818,13 +820,13 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 /* yellow — the Playlists region's own gold, with the Playlists title's navy on it. Both
    colours are lifted from `.c-gold` / `var(--navy)` rather than re-picked, so the band cannot
    drift away from the third of the page it is quoting. */
-[data-gt="yellow"] .te-hero-cta.has-welcome{ --gt-bg:#EFCB5E; --gt-fg:#1C124E; --gt-sub:#4A3A7A; --gt-line:rgba(28,18,78,.35); }
+[data-gt="yellow"] .te-hero-cta.has-welcome{ --gt-bg:#EFCB5E; --gt-fg:#261B65; --gt-sub:#4A3A7A; --gt-line:rgba(38,27,101,.35); }
 /* ── the two inverted grounds: the text is LIGHTER than what it sits on ──────────── */
 /* purple — the Topics region's own blue-purple (var(--accent), the mid stop of .c-purple's
    gradient), so the band reads as a piece of the same page rather than a new colour */
 /* A15 - the "Create an account" pill that becomes "Welcome back". The KEY stays "purple"
    because it is a value stored in each visitor's localStorage; only the colour moves. */
-[data-gt="purple"] .te-hero-cta.has-welcome{ --gt-bg:#1C124E; --gt-fg:#FFFFFF; --gt-sub:rgba(255,255,255,.78); --gt-line:rgba(255,255,255,.28); }
+[data-gt="purple"] .te-hero-cta.has-welcome{ --gt-bg:#261B65; --gt-fg:#FFFFFF; --gt-sub:rgba(255,255,255,.78); --gt-line:rgba(255,255,255,.28); }
 /* black — white on near-black. Not #000: a true black band against the cream page is a hole
    in it, and on an OLED phone the edge against the white region shimmers. */
 [data-gt="black"] .te-hero-cta.has-welcome{ --gt-bg:#0B0B0C; --gt-fg:#FFFFFF; --gt-sub:rgba(255,255,255,.72); --gt-line:rgba(255,255,255,.25); }

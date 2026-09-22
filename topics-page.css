@@ -22,9 +22,9 @@
     --text-primary: #1A1A1A;
     --text-secondary: #5A5A5A;
     --text-tertiary: #9A9A9A;
-    --accent: #1C124E;
-    --accent-mid: #2A1F6B;
-    --accent-light: #EAEAF4;
+    --accent: #261B65;
+    --accent-mid: #342682;
+    --accent-light: #ECEBFA;
     --gold: #F0CC5C;
     --gold-dark: #C8A030;
     --gold-light: #FBF5DC;
@@ -34,7 +34,9 @@
        strip and the pill are one tier-neutral dark. Values are the mockup's, as approved.
        The premium one is a CREAM: the gold family at near-white, which keeps a premium card
        recognisable without putting gold back on the strip. */
-    --card-tint: #F3F4FA;
+    /* ⚠ DERIVED FROM THE TINT, not picked separately: the card body is --accent-light taken 55%
+       of the way to white, so it stays in the same hue family and a palette change carries it. */
+    --card-tint: #F6F6FD;
     --card-tint-premium: #F7F4EC;
     --radius-sm: 6px;
     --radius-md: 10px;
@@ -463,7 +465,7 @@
     font-size: 17px;
     font-weight: 600;
     letter-spacing: -0.01em;
-    color: #1C124E;
+    color: var(--accent);
     margin: 1.4rem 0 0.7rem;
     padding-top: 1.1rem;
     border-top: 0.5px solid var(--border);
@@ -489,9 +491,14 @@
     background: var(--accent-light);
     color: var(--accent);
   }
+  /* ⚠ THE FIVE LEVEL BADGES ARE THE SAME DIFFICULTY SYSTEM AS .bc-* AND MUST MATCH IT.
+     They were light pastels with mid-tone ink; the bands went dark on 2026-09-22 and a badge left
+     on the old pastel would put two different answers to "what colour is Lower Intermediate" on
+     one screen. Ink = the band's new dark; ground = the one shared tint, exactly as .bc-soft now
+     is. Only .badge-beg needed nothing: it was already on the palette variables. */
   .badge-li1 {
-    background: #FEF6E7;
-    color: #B87A00;
+    background: var(--accent-light);
+    color: #70551A;
   }
   /* Intermediate — the 5th level, added 2026-08-21 when the 46-unit
      "Lower intermediate → Upper intermediate" band was split in three. A neutral slate
@@ -499,17 +506,17 @@
      it sits between are already a warm and a cool, so anything on that axis reads as one
      of them at 10px. Judgement call — one line to change. */
   .badge-int {
-    background: #EEF0F6;
-    color: #4A5578;
+    background: var(--accent-light);
+    color: #344365;
   }
   .badge-li2 {
-    background: #F0EFFD;
-    color: #534AB7;
+    background: var(--accent-light);
+    color: #4A2E70;
   }
   /* Advanced (tertiary / niche) — deep crimson, distinct from the cooler lower tiers. */
   .badge-adv {
-    background: #FBECEC;
-    color: #A23A3A;
+    background: var(--accent-light);
+    color: #702929;
   }
   .level-badges {
     display: flex;
@@ -1154,7 +1161,7 @@
 
 .tp-wrap { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 3rem; }
 .tp-wrap.tp-wide { max-width: 900px; padding-top: 1.5rem; }
-.tp-title { font-size: 30px; font-weight: 600; letter-spacing: -0.025em; color: #1C124E;
+.tp-title { font-size: 30px; font-weight: 600; letter-spacing: -0.025em; color: var(--accent);
   overflow-wrap: anywhere; }
 /* Copied value-for-value from index.html's retired .panel-sub, which is what playlists.html
    inlines for "Learn Thai by Your Ear". The two pages must look like siblings. */
@@ -1224,22 +1231,36 @@
    give those two the same colour and the strip would stop carrying information. */
 .tp-band::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--bc); }
 .tp-band:hover { border-color: var(--bc); box-shadow: 0 0 0 3px var(--bc-soft); transform: translateY(-1px); }
-.tp-band-name { flex: 1 1 auto; min-width: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.015em; color: #1C124E;
+.tp-band-name { flex: 1 1 auto; min-width: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.015em; color: var(--bc, var(--accent));
   overflow-wrap: anywhere; }
 .tp-band-count { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--text-tertiary); white-space: nowrap; }
 .tp-band-go { color: var(--bc); font-size: 19px; line-height: 1; opacity: 0.5; }
 .tp-band:hover .tp-band-go { opacity: 1; }
 
-.bc-beg { --bc: #4B41AD; --bc-soft: #EEEDFE; }
-.bc-li1 { --bc: #C8A030; --bc-soft: #FBF5DC; }
-.bc-int { --bc: #4A5578; --bc-soft: #EEF0F6; }
-.bc-li2 { --bc: #7F77DD; --bc-soft: #F0EFFD; }
-.bc-adv { --bc: #A23A3A; --bc-soft: #FBECEC; }
+/* ⛔⛔ THE BAND IDENTITY COLOURS - DARK FAMILIES, ONE SHARED PILL TINT (owner, 2026-09-22).
+   He asked for exactly this shape: "i think they shouldnt all be navy, but they should be other
+   dark color families in the same way that currently its a variation of light color families",
+   and "the pills should all get the same tint as the free topics".
+   ⚠ SO THE SIX HUES SURVIVE AND ONLY THEIR LIGHTNESS MOVES. These encode BAND, not tier, and a
+   reader uses them to tell one band from another - collapsing them into one navy would destroy the
+   only thing they do. What made them "bright and garish looking" was that they were LIGHT colours
+   sitting against a dark accent, so each is taken to ~L30 at its own hue.
+   ⚠ AND --bc-soft IS NOW THE ONE TINT, var(--accent-light), on every band: the pill ground is
+   shared and only the bar differs. That also makes the pills follow a palette change for free,
+   which six hard-coded pastels never did.
+   White on each: beg 12.8 - li1 7.0 - int 9.8 - li2 11.0 - adv 10.3 - fav 10.1, all past AA.
+   Retired: beg #4B41AD/#EEEDFE - li1 #C8A030/#FBF5DC - int #4A5578/#EEF0F6 - li2 #7F77DD/#F0EFFD
+   - adv #A23A3A/#FBECEC - fav #6C5CE7/#EFEDFE. */
+.bc-beg { --bc: #312574; --bc-soft: var(--accent-light); }
+.bc-li1 { --bc: #70551A; --bc-soft: var(--accent-light); }
+.bc-int { --bc: #344365; --bc-soft: var(--accent-light); }
+.bc-li2 { --bc: #4A2E70; --bc-soft: var(--accent-light); }
+.bc-adv { --bc: #702929; --bc-soft: var(--accent-light); }
 /* Favourites is a ROUTE, not a difficulty band, so it deliberately does not borrow any band's
    colour — it takes the site accent. Same tile shape and same grid row, so it cannot drift in
    height (.tp-bands is grid-auto-rows: 1fr). */
-.bc-fav { --bc: #6C5CE7; --bc-soft: #EFEDFE; }
+.bc-fav { --bc: #642B64; --bc-soft: var(--accent-light); }
 /* The heart in the tile is the SAME glyph the cards carry, at the same stroke weight. That is
    the whole mechanism by which the tile explains itself: nothing on it says "press the heart on
    a topic", the shape does. Filled, because the tile is the destination rather than a toggle. */
@@ -1259,8 +1280,8 @@
 /* ── a band page's own header ────────────────────────────────────────────── */
 .tp-head { display: flex; align-items: baseline; gap: 1rem; justify-content: space-between;
   flex-wrap: wrap;   /* the count drops under the title rather than squeezing it */
-  border-left: 5px solid var(--bc, #4B41AD); padding-left: 1rem; margin-bottom: 1.3rem; }
-.tp-head h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.025em; color: #1C124E; line-height: 1.15;
+  border-left: 5px solid var(--bc, var(--accent)); padding-left: 1rem; margin-bottom: 1.3rem; }
+.tp-head h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.025em; color: var(--bc, var(--accent)); line-height: 1.15;
   /* min-width:0 because a flex item will NOT shrink below its content's minimum width
      without it, whatever the wrapping rules say. Measured at 320@2.0x: +23px of page
      overflow before this pair. The type is deliberately NOT capped with --te-ui — this is
@@ -1277,7 +1298,15 @@
   border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text-secondary);
   text-decoration: none; white-space: nowrap; }
 .tp-tab:hover { border-color: var(--accent); color: var(--accent); }
-.tp-tab.on { background: #1C124E; border-color: #1C124E; color: #fff; }
+/* ⛔⛔ THESE WERE THE SOURCE OF THE NAVY AND THEY WERE HARD-CODED, WHICH IS HOW THEY NEARLY
+   GOT LEFT BEHIND. The first recolour took #1C124E *from* .tp-tab.on / .tp-title / .tp-band-name
+   because the owner said "the navy color is already used in the side scroll navigator ... make
+   sure it matches/ there is no discrepancy". They were literals, so gen_theme.py never touched
+   them - and when the accent brightened on 2026-09-22 they would have sat on the OLD navy while
+   everything else moved, recreating the exact discrepancy he asked me to prevent.
+   ✅ They are var(--accent) now, so "the scroller matches" is true by construction rather than by
+   two literals happening to agree. */
+.tp-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 /* Hidden by the tier filter. A CLASS, not a re-render: rebuilding the grid destroys the
    card under a finger mid-tap, which is the documented cause of the "have to click

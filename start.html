@@ -24,7 +24,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- pwa:start (gen_pwa.js) -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#1C124E">
+<meta name="theme-color" content="#261B65">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -64,7 +64,13 @@
   :root {
     --bg: #FAFAF8; --surface: #FFFFFF; --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.18);
     --text-primary: #1A1A1A; --text-secondary: #5A5A5A; --text-tertiary: #9A9A9A;
-    --accent: #1C124E; --accent-light: #EAEAF4; --accent-mid: #2A1F6B; --accent-deep: #1C124E;
+    --accent: #261B65; --accent-light: #ECEBFA; --accent-mid: #342682;
+    /* ⚠ A FOURTH TOKEN, ON THIS PAGE ONLY, AND IT IS NOT IN gen_theme.py's TABLE - so it does
+       not move with a palette change and has to be re-derived by hand. It is the accent taken
+       DARKER (the kicker above the landing headline). It happened to equal the first navy,
+       #1C124E, which is exactly why it went unnoticed: the value was right for one release
+       and stale the moment the accent moved. */
+    --accent-deep: #1A1247;
     --gold: #F0CC5C; --gold-dark: #C8A030; --gold-light: #FBF5DC;
     --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;

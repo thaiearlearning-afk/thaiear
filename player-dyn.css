@@ -5,7 +5,7 @@
    the class stays a legal hook - a premium playlist is meant to look exactly like a free one, and
    the tier is carried by the lock icons. Retired gold: --accent #F0CC5C / light #FBF5DC / text
    #B29234. */
-.dyn-wrap.tier-premium { --accent: #1C124E; --accent-light: #EAEAF4; --accent-mid: #2A1F6B; }
+.dyn-wrap.tier-premium { --accent: #261B65; --accent-light: #ECEBFA; --accent-mid: #342682; }
 
 /* ── player chrome — copied from player.js's dyn topic player (round-8 item 6: the two
    players must be side-by-side indistinguishable). Scoped under .dyn-wrap. ── */
