@@ -246,7 +246,8 @@ body.tq-mode { background: var(--surface, #fff); }
 /* Secondary actions under the start button — Return, and "use these settings everywhere". */
 .tq-minor {
   display: flex; flex-direction: column; gap: 7px; margin-top: 9px;
-  padding-top: 9px; border-top: 0.5px solid var(--border, rgba(0,0,0,.09));
+  /* ⚠ 6px, not 9px - one of the three stacked spacings under the tiger. See the gap-s note. */
+  padding-top: 6px; border-top: 0.5px solid var(--border, rgba(0,0,0,.09));
 }
 .tq-minor button {
   background: none; border: 0; padding: 4px; cursor: pointer; font-family: inherit;
@@ -765,7 +766,7 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
    padding each is invisible; making the tiger smaller is the thing the owner asked me to
    undo. An icon, a name and a one-line description do not need 83px of row. */
 .tq-fill { padding-bottom: 0; }
-.tq-fill .tq-minor { margin-top: 10px; }
+.tq-fill .tq-minor { margin-top: 5px; }
 .qpick .sc { font-size: calc(12px   * var(--tq-scale)); }
 .tq-sheet h3 { font-size: calc(16px * var(--tq-scale)); }
 /* ⛔ The hero header is the PICKER's, and the picker is not text-scaled (see applyFontScale).
@@ -1214,7 +1215,18 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 
   /* the sheet no longer needs to fill the viewport, so the flexible gaps stay modest */
   .tq-fill:not(.tq-fill-res) > .tq-gap { max-height: 30px; }
-  .tq-fill:not(.tq-fill-res) > .tq-gap-s { max-height: 20px; }
+  /* ⛔⛔ THE SPACE UNDER THE TIGER, HALVED (owner, 2026-09-22): "the 'my results' sits right at
+     the bottom of the page on mobile, almost falling off and not visible on first arrival ... there's
+     a good centimeter or so between stay sharp (the css) and the line above the 'back to topic'
+     pill. that space can maybe be halved."
+     ⚠ IT WAS THREE THINGS STACKED, not one: this gap's 20px cap, plus .tq-minor's 10px margin and
+     9px padding below - 39px, which at phone DPI is his centimetre. Halving any one of them alone
+     would have moved barely 5px, which is how a spacing complaint gets "fixed" twice.
+     ⚠ AND THE GAPS ARE FLEXIBLE, so this is a CAP and not a size: on a tall screen the slack is
+     still distributed, and on the short screen he is describing the whole block now fits where it
+     did not. That is the actual complaint - "My results" is only at the bottom edge because the
+     content overflows and the auto margins have nothing left to centre with. */
+  .tq-fill:not(.tq-fill-res) > .tq-gap-s { max-height: 10px; }
   .tq-mascot img { width: 168px; }
 
 }

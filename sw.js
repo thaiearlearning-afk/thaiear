@@ -33,7 +33,12 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v613';   // v613: ONE bump for six changes, deliberately. I shipped four bumps
+const VERSION = 'v614';   // v614: THE GRAMMAR ARM GETS ITS QUIZZES. All 20 units are wired and
+                          // carry quiz data, so LIVE goes 6 -> 26 of 113. The bump is needed
+                          // because quiz-data/index.json is PRECACHED: without it a device keeps
+                          // the old manifest and a playlist would go on skipping every grammar
+                          // unit as though it still had no data.
+                          // v613: ONE bump for six changes, deliberately. I shipped four bumps
                           // in two hours and the owner felt it: the precache is 97 entries and
                           // 4.12 MB, every bump re-fetches all of it, and while install is in
                           // flight the worker has not claimed the page so navigations bypass the
