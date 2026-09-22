@@ -33,7 +33,15 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v620';   // v620: A FINE TRIM ON THE QUIZ MENU. "My results" sat half cut
+const VERSION = 'v621';   // v621: SEARCH RESULTS FINALLY REPLACE THE CATEGORY LIST. They were
+                          // rendering BELOW all five band tiles, ~680px down, because
+                          // `.tp-bands { display: grid }` silently defeated the [hidden]
+                          // attribute the JS had been setting correctly all along - the same
+                          // UA-specificity trap already documented on .topic-fav[hidden] in
+                          // the very same stylesheet. Plus the on-screen keyboard now closes
+                          // on Enter (blur), so it stops covering the results it was pressed
+                          // to reveal. topics-page.css/.js and topics.html are all precached.
+                          // v620: A FINE TRIM ON THE QUIZ MENU. "My results" sat half cut
                           // off on a phone; the owner named the three gaps (title->Vocab
                           // Trainer, above the tiger, below it). 31px off in total, all in
                           // the <=481px block. quiz.css IS PRECACHED, so without this bump

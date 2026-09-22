@@ -437,6 +437,21 @@
        the DOM already says the right thing, and loadListenInputs() is guarded. */
     refresh();              // results are rebuilt from scratch, so every decoration is too
   }
+  /* ⚠ THE SOFT KEYBOARD ONLY CLOSES WHEN THE FIELD LOSES FOCUS. There is no <form> here, so
+     "Search" on the on-screen keyboard submits nothing and the keyboard just stays up, covering
+     the results the visitor pressed it to see (owner, 2026-09-22, on both the Android app and
+     the iPhone PWA — where the extra "Done" tick is iOS offering the blur we never asked for).
+     blur() is the whole fix and it works on both. Run FIRST so the results are already there
+     when the keyboard slides away, and cancel the debounce so it cannot fire again after.
+     ⛔ Do NOT blur on the `search` event instead: the native X also fires it, and that would
+     dismiss the keyboard the moment someone clears the box to retype. */
+  q.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.keyCode !== 13) return;
+    e.preventDefault();
+    clearTimeout(timer);
+    run();
+    q.blur();
+  });
   q.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(run, 120); });
   q.addEventListener('search', run);          // the native clear (Esc / the X on some browsers)
   if (clear) clear.addEventListener('click', function () { q.value = ''; run(); q.focus(); });

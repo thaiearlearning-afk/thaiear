@@ -1220,6 +1220,16 @@
    where the names wrap to different line counts. The rule below is the fallback for any row the
    template does not name. */
 .tp-bands { display: grid; gap: 10px; grid-auto-rows: 1fr; }
+/* ⚠⚠ THE SAME TRAP AS .topic-fav[hidden] ABOVE, AND IT WENT UNGUARDED HERE FOR MONTHS.
+   The UA hides [hidden] with a rule of the same specificity as a class selector, and an
+   AUTHOR sheet wins ties — so the `display: grid` on the line above silently defeated it.
+   topics-page.js has always done `bands.hidden = true` when a search runs; it has never had
+   any visual effect, which is why search results appeared BELOW the full category list
+   instead of replacing it (owner, 2026-09-22: "they are not really visible").
+   ⚠ Any future `display` declaration on .tp-bands must keep this rule below it.
+   ⚠⚠ AND VERIFY IT BY getComputedStyle().display OR A BOUNDING BOX, NEVER BY
+   el.hasAttribute("hidden") — the attribute was set correctly the whole time. */
+.tp-bands[hidden] { display: none; }
 .tp-band {
   display: flex; align-items: center; gap: 1rem; text-decoration: none; position: relative;
   background: var(--surface); border: 0.5px solid var(--border);
