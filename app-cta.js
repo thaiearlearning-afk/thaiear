@@ -53,9 +53,9 @@
   var TITLE = 'Study ThaiEar offline';
   var PLATFORMS = 'Free on the Android app, or add ThaiEar to your iPhone Home Screen.';
   var SURFACE = {
-    topic:    'Download this topic and listen with no internet.',
-    index:    'Download whole topics and listen with no internet.',
-    playlist: 'Download your playlists and listen with no internet.',
+    topic:    'Download this topic and its quizzes to listen with no internet.',
+    index:    'Download whole topics and their quizzes to listen with no internet.',
+    playlist: 'Download your playlists and their quizzes to listen with no internet.',
     read:     'Take the whole course offline and learn with no internet.'
   };
 
