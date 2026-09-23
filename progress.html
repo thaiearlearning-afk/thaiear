@@ -1020,10 +1020,22 @@
            ⚠ BOTH, AND THE PLAYS RESULT IS WHAT THE BUTTON REPORTS. The quiz reset is additive - a
            table that refuses must not make the whole delete look failed and send someone pressing
            it again - but a refusal is still surfaced, because "deleted" has to be true. */
-        Promise.all([A().resetPlays(), A().resetQuiz ? A().resetQuiz() : Promise.resolve({ ok: true, refused: [] })])
-          .then(function (both) {
+        /* ⚠ A 20 s CEILING (2026-09-23). Neither request has a timeout of its own, so on a
+           stalled connection the dialog sat on "Deleting…" indefinitely. Past the ceiling this
+           is reported as a failure. The delete may still land on the server, but both halves
+           are idempotent, so "try again" is always safe. */
+        var timedOut = false;
+        Promise.race([
+          Promise.all([A().resetPlays(), A().resetQuiz ? A().resetQuiz() : Promise.resolve({ ok: true, refused: [] })]),
+          new Promise(function (r) { setTimeout(function () { timedOut = true; r([false, { ok: false, refused: [] }]); }, 20000); })
+        ]).then(function (both) {
           var okd = both[0], qz = both[1] || { ok: true, refused: [] };
           close();
+          if (timedOut) {
+            btn.textContent = 'No response — check your connection and try again';
+            setTimeout(function () { btn.textContent = 'Reset progress data'; }, 4000);
+            return;
+          }
           if (okd && !qz.ok) {
             btn.textContent = 'Progress cleared — some quiz records could not be removed';
             setTimeout(function () { btn.textContent = 'Reset progress data'; }, 4000);

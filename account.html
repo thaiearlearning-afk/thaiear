@@ -446,13 +446,23 @@ function deleteAccount() {
     onConfirm: doDeleteAccount,
   });
 }
+/* ⚠ ONE REQUEST AT A TIME, AND A 20 s CEILING (2026-09-23). With no timeout, a stalled connection
+   left "Deleting your account…" on screen indefinitely while the button stayed pressable. A timeout
+   does NOT mean the delete failed — the server may still have finished — so the message says to
+   reload and check rather than claiming either outcome. */
+var deleteInFlight = false;
 function doDeleteAccount() {
+  if (deleteInFlight) return;
   var a = window.ThaiEarAuth;
   var token = a && a.getAccessToken && a.getAccessToken();
   if (!token) return;
   var st = document.getElementById('delete-status');
   if (st) st.textContent = 'Deleting your account…';
-  fetch('/api/delete-account', { method: 'POST', headers: { Authorization: 'Bearer ' + token } })
+  deleteInFlight = true;
+  var ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
+  var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
+  fetch('/api/delete-account', { method: 'POST', headers: { Authorization: 'Bearer ' + token },
+                                 signal: ctrl ? ctrl.signal : undefined })
     .then(function (r) { return r.text(); })
     .then(function (t) {
       var j = {}; try { j = JSON.parse(t); } catch (_) {}
@@ -466,7 +476,12 @@ function doDeleteAccount() {
       if (j && j.error === 'forbidden') { Promise.resolve(a.signOut()).catch(function () {}); if (st) st.textContent = 'Your session expired — please sign in again, then retry.'; return; }
       if (st) st.textContent = 'Error: ' + (j.detail || j.error || t || 'unknown');
     })
-    .catch(function (e) { if (st) st.textContent = 'Error: ' + e; });
+    .catch(function (e) {
+      if (st) st.textContent = (e && e.name === 'AbortError')
+        ? 'No response. Reload this page to check whether your account was deleted, then try again if it is still here.'
+        : 'Error: ' + e;
+    })
+    .then(function () { clearTimeout(timer); deleteInFlight = false; });
 }
 // Shared offline guard for the network-only membership actions. navigator.onLine can lie in the
 // webview, but when it's accurate this cleanly blocks the action with a message instead of failing.

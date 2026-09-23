@@ -1915,10 +1915,20 @@
            be true. */
         onConfirm: function () {
           var RS = window.ThaiEarReadStore;
+          /* ⚠ Disabled while pending, and a 20 s ceiling: on a stalled connection the button used
+             to sit on "Deleting…" indefinitely and stay pressable. The erase is idempotent, so
+             "try again" after a timeout is always safe. */
           clearBtn.textContent = 'Deleting…';
-          (RS && RS.erase ? RS.erase() : Promise.resolve(true)).then(function (ok) {
+          clearBtn.disabled = true;
+          var timedOut = false;
+          Promise.race([
+            RS && RS.erase ? RS.erase() : Promise.resolve(true),
+            new Promise(function (r) { setTimeout(function () { timedOut = true; r(false); }, 20000); })
+          ]).then(function (ok) {
             if (!ok) {
-              clearBtn.textContent = 'Could not delete — try again';
+              clearBtn.disabled = false;
+              clearBtn.textContent = timedOut ? 'No response — check your connection and try again'
+                                              : 'Could not delete — try again';
               setTimeout(function () { clearBtn.textContent = 'Clear my reading progress'; }, 3000);
               return;
             }
