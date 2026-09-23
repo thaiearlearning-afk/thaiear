@@ -1663,7 +1663,9 @@
   function dynQzSigLoad() {
     if (dynQzSig) return Promise.resolve(dynQzSig);
     return fetch('/quiz-data/index.json').then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (m) { dynQzSig = (m && m.sig) || null; return dynQzSig; })
+      /* r217: keep the WHOLE manifest. It now carries a published PAGE hash beside the quiz
+         sig, and the page needs both — see dynCheckUnitQzUpdate. */
+      .then(function (m) { dynQzSig = (m && m.sig) ? m : null; return dynQzSig; })
       .catch(function () { return null; });
   }
   /* The card's contentStale(), in player.js's words. Kept deliberately field-for-field identical
@@ -1677,14 +1679,29 @@
     if (!unit) return;
     var e = getManifest()[PREFIX];
     if (!e) return;
-    dynQzSigLoad().then(function (sig) {
+    dynQzSigLoad().then(function (map) {
+      var sig = map && map.sig;
       /* ⛔ No published stamp for this unit — say nothing. Also the guard that stops the two
          flips below firing where there is nothing to deliver. Conservative on every unknown,
          exactly as the audio side is, and exactly as the card is. */
       if (!sig || sig[unit] == null) return;
       /* Two one-time, self-clearing flips: no `ver` (predates v643) and no `qz` (updated on
          v643/v644). Both clear because finalize records `ver` AND `qz`. */
-      if (!e.ver || e.qz == null || e.qz !== sig[unit]) {
+      /* ⭐⭐ AND THE PUBLISHED PAGE HASH, WHICH IS AUTHORITATIVE WHERE contentHash() IS NOT.
+         v656 gave this comparison to the CARD and not to the page, and the fifth divergence
+         followed within the hour: time & numbers flagged on the card and read "downloaded"
+         inside. ⚠⚠ THE CARD WAS RIGHT. contentHash() measures THE DOCUMENT CURRENTLY RENDERED,
+         so when the stale cached copy is what is being served, its hash equals the stale `ver`
+         and the page concludes it is current — blind in precisely the case that matters. The
+         published value does not depend on which copy we happen to be looking at.
+         ✅ contentHash() is KEPT, as the earlier-warning superset: it fires the moment a fresh
+         page is served, without waiting for the map to be fetched.
+         ⛔ I BROKE §0 OF DOWNLOAD_UPDATE_PATH.md TO CAUSE THIS — "a new staleness signal goes into
+         EVERY surface in the same change, or into none". Adding it to one surface is the fault,
+         and it does not stop being the fault when the addition is itself a fix. */
+      var pver = map && map.ver;
+      var pageStale = !!(pver && pver[unit] != null && e.ver !== pver[unit]);
+      if (!e.ver || e.qz == null || e.qz !== sig[unit] || pageStale) {
         updPage = true;
         paintUpdatePrompt();
       }
@@ -1695,7 +1712,8 @@
     var rec = dynPlRecMap()[id]; if (!rec) return;
     var units = dynPlQzUnits();
     if (!units || !units.length) return;
-    dynQzSigLoad().then(function (sig) {
+    dynQzSigLoad().then(function (map) {
+      var sig = map && map.sig;
       if (!sig) return;                                    // no published map: say nothing
       var cur = {}, u;
       units.forEach(function (x) { if (sig[x] != null) cur[x] = sig[x]; });
@@ -1753,7 +1771,8 @@
   function dynStampUnitQz() {
     var unit = String(PAGE_FILE || '').replace(/\.html$/, '');
     if (!unit) return;
-    dynQzSigLoad().then(function (sig) {
+    dynQzSigLoad().then(function (map) {
+      var sig = map && map.sig;
       if (!sig || sig[unit] == null) return;
       try {
         var m = getManifest(), e = m[PREFIX];

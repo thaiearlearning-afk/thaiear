@@ -875,7 +875,7 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; })
       .then(function (j) {
-        var sig = (j && j.sig) || null;
+        var sig = (j && j.sig) || null, pver = (j && j.ver) || null;
         var all = T ? [].concat(T.topics || [], T.structures || []) : [];
         var rows = [], nStale = 0;
         prefixes.forEach(function (pfx) {
@@ -885,11 +885,16 @@
           for (var i = 0; i < all.length; i++) if (all[i].audio === pfx) { u = all[i]; break; }
           var unit = u ? String(u.page || '').replace(/\.html$/, '') : '?';
           var pub = (sig && sig[unit] != null) ? sig[unit] : null;
+          var pv = (pver && pver[unit] != null) ? pver[unit] : null;
           var verdict, why;
           if (pub == null) { verdict = 'quiet'; why = 'no published stamp for this unit'; }
           else if (!e.ver) { verdict = 'UPDATE'; why = 'no ver — predates the content stamp'; }
           else if (e.qz == null) { verdict = 'UPDATE'; why = 'no qz — updated before v645'; }
           else if (e.qz !== pub) { verdict = 'UPDATE'; why = 'qz differs — quiz re-published'; }
+          /* r217 — the PUBLISHED PAGE HASH as well. Without it this probe reported "quiet"
+             for a unit the card was correctly flagging, because it could only see the quiz
+             sig: a third opinion, which is the last thing this bug needed. */
+          else if (pv != null && e.ver !== pv) { verdict = 'UPDATE'; why = 'page differs — text or quiz block re-published'; }
           else { verdict = 'quiet'; why = 'current'; }
           if (verdict === 'UPDATE') nStale++;
           rows.push('<div style="margin:3px 0 0"><b>' + esc(unit) + '</b> — ' +
@@ -897,7 +902,8 @@
             ' <span style="color:#8A8A8A">(' + esc(why) + ')</span><br>' +
             '<span style="color:#8A8A8A;font-size:11px">ver:' + (e.ver ? esc(String(e.ver)) : '—') +
             '  qz:' + (e.qz == null ? '—' : esc(String(e.qz))) +
-            '  published:' + (pub == null ? '—' : esc(String(pub))) + '</span></div>');
+            '  sig:' + (pub == null ? '—' : esc(String(pub))) +
+            '  pageVer:' + (pv == null ? '—' : esc(String(pv))) + '</span></div>');
         });
         if (!rows.length) { el.innerHTML = 'downloads: <b>no topic downloads</b> (playlist clips only)'; return; }
         el.innerHTML = 'downloads: <b>' + rows.length + '</b>, ' +
