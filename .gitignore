@@ -223,3 +223,8 @@ home-logo-compare.html
 _tqzoom.html
 _quiz-head.css
 _prog-hint-probe.html
+
+# Quiz 2 decoy review, topic-22a/22b (2026-09-22) — local only, never deploy.
+# Verdicts live in the browser localStorage, not in the file; its decoys are published.
+# NOTE the bare name: the pattern above is quiz-q2-review-v6-*.html and needs the dash.
+quiz-q2-review-v6.html
