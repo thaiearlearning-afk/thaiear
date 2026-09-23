@@ -1273,6 +1273,25 @@
    where the names wrap to different line counts. The rule below is the fallback for any row the
    template does not name. */
 .tp-bands { display: grid; gap: 10px; grid-auto-rows: 1fr; }
+
+/* ⭐ FAVOURITES EQUALISES ACROSS SECTIONS, WHICH grid-auto-rows CANNOT DO (owner, 2026-09-23).
+   That page renders ONE .topic-grid PER SECTION -- Grammar by Ear, then a grid per difficulty
+   band -- and a grid equalises rows within itself and never across two grids. So the cards
+   agreed inside each section and disagreed between them, on a single screen where the
+   difference is obvious.
+   ⛔ MERGING THEM INTO ONE GRID DOES NOT WORK, and this was measured before it was written off:
+   the band headings are interleaved, and a full-width <h2> inside `grid-auto-rows: 1fr` is
+   STRETCHED to a whole card row (59px against 59px cards in a test grid), because 1fr sizes
+   every implicit row to the largest one. One grid would leave a card-sized hole under every
+   heading.
+   ✅ So the grids stay separate and share a MEASURED height, published by topics-fav.js as
+   --tp-fav-card-h on #tp-fav-root.
+   ⚠ NOT the hand-written min-height this file forbids on .topic-name. That one encodes a line
+   count and is wrong at every width except the one it was tested at; this is the real rendered
+   maximum, re-measured on resize, on visibilitychange and after every decoration pass.
+   ⚠ The fallback is 0 rather than a guess: if the script never runs, the cards simply keep
+   their natural heights and the page looks exactly as it did before. */
+#tp-fav-root .topic-card { min-height: var(--tp-fav-card-h, 0); }
 /* ⚠⚠ THE SAME TRAP AS .topic-fav[hidden] ABOVE, AND IT WENT UNGUARDED HERE FOR MONTHS.
    The UA hides [hidden] with a rule of the same specificity as a class selector, and an
    AUTHOR sheet wins ties — so the `display: grid` on the line above silently defeated it.

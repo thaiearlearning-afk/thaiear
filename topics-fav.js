@@ -245,7 +245,49 @@
        band card, so a favourites card cannot look different from the real thing. */
     var tp = window.ThaiEarTopicsPage;
     if (tp && tp.decorate) tp.decorate();
+    equalise();
   }
+
+  /* ⭐ ONE CARD HEIGHT FOR THE WHOLE PAGE (owner, 2026-09-23: the pills "are same as each other
+     but DIFFERENT between sections"). Each section is its own .topic-grid, and grid-auto-rows:1fr
+     equalises rows WITHIN a grid only -- see the long note in topics-page.css for why merging the
+     sections into one grid is not available (the interleaved <h2> headings get stretched to a
+     full card row).
+     ⚠ RELEASE BEFORE MEASURING. The property is set to 0 first, or every measurement after the
+     first returns the height THIS FUNCTION last imposed and the card can only ever grow.
+     ⚠ AFTER decorate(), never before: the tick, the entitlement pill and the listening caption
+     all change a card's height, and they arrive later than the markup.
+     ⚠ Rounded UP. A fractional min-height against a fractional natural height leaves a 1px
+     disagreement that reads as the exact bug this fixes. */
+  function equalise() {
+    var root = document.getElementById('tp-fav-root');
+    if (!root) return;
+    var cards = root.querySelectorAll('.topic-card');
+    if (!cards.length) { root.style.removeProperty('--tp-fav-card-h'); return; }
+    root.style.setProperty('--tp-fav-card-h', '0px');
+    var max = 0, i;
+    for (i = 0; i < cards.length; i++) {
+      var h = cards[i].getBoundingClientRect().height;
+      if (h > max) max = h;
+    }
+    if (max > 0) root.style.setProperty('--tp-fav-card-h', Math.ceil(max) + 'px');
+  }
+
+  /* Re-measure whenever the layout could have moved under us: a width change re-wraps the
+     names, and the OS text size can be changed while the app is backgrounded -- the same two
+     signals nav.js re-measures --te-ui on, and for the same reason. Debounced, because resize
+     fires continuously and each pass forces two layouts.
+     ⚠ ALSO on thaiear:auth: decorate() adds the entitlement pill and the listening caption on
+     that event, and both change card height AFTER this has already run once. */
+  var eqT = null;
+  function requeueEqualise() { clearTimeout(eqT); eqT = setTimeout(equalise, 200); }
+  try {
+    window.addEventListener('resize', requeueEqualise);
+    window.addEventListener('thaiear:auth', requeueEqualise);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) requeueEqualise();
+    });
+  } catch (_) {}
 
   /* ── wiring ─────────────────────────────────────────────────────────────────────────── */
   function refresh() {
