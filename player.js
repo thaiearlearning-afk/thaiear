@@ -776,13 +776,43 @@
      They were never needed here: all five are PRECACHE entries, so the version cache already holds
      them and activate() repairs any gap. The page and audio-versions.json are NOT precached (there
      are ~93 topic pages), which is exactly why those two belong in this durable cache. */
+  /* ⛔⛔ r226 — A TOPIC PAGE IS SAVED UNDER ITS CLEAN KEY, NEVER UNDER location.href.
+     This used to c.add(location.href), and the quiz arm made that a silent failure: the card
+     strip opens a unit at `/topic-01?quiz=menu`, so an online open (the self-heal below) or an
+     Update pressed from there saved a SECOND entry beside the clean `/topic-01` one and never
+     touched it. Offline the card asks for `/topic-01`, so the original copy answered for ever.
+     Owner, 2026-09-24, Android app: Greetings and Getting to know you read "Page update
+     available" inside offline only, while the card ticked and every stamp in the owner panel
+     was current — and the panel's saved-copy probe showed 21 of 48 downloads holding an OLD
+     page under a CURRENT stamp (topic-13b still on 10leyuhmzty, the hash from before its
+     Update). An old two-option vocab question surfaced offline the same way.
+     ✅ The key is the pathname with any .html dropped — what sw.js's fallbacks look up first
+     (FALLBACK_CACHES / positiveCacheMatch; "thaiear-dl holds topic pages under their clean
+     /topic-NN key"). A query is read by the page's own JS, never the server, so the bytes
+     are the same.
+     ✅ Strays under the same path (any ?query, or the .html form) are deleted AFTER the clean
+     copy has saved, never before — an offline fallback is only ever removed once its
+     replacement exists. That is also what repairs devices already holding a frozen copy: their
+     next online open of the unit, from anywhere, rewrites the clean key.
+     ⚠ PLAYLIST pages keep location.href: a playlist is IDENTIFIED by its ?pl= query, so
+     stripping it would collapse every playlist onto one entry. */
   function cachePage() {
     if (!window.caches || !navigator.onLine) return;
     try {
       caches.open(DL_PAGE_CACHE).then(function (c) {
-        [location.href, '/audio-versions.json'].forEach(function (u) {
-          c.add(u).catch(function () {});
-        });
+        c.add('/audio-versions.json').catch(function () {});
+        if (PLMODE) { c.add(location.href).catch(function () {}); return; }
+        var key = location.pathname.replace(/\.html$/, '');
+        c.add(key).then(function () {
+          return c.keys().then(function (reqs) {
+            reqs.forEach(function (q) {
+              var u = new URL(q.url);
+              if (u.pathname !== key && u.pathname !== key + '.html') return;
+              if (u.pathname === key && !u.search) return;   // the entry just written
+              c.delete(q).catch(function () {});
+            });
+          });
+        }).catch(function () {});
       }).catch(function () {});
     } catch (_) {}
   }
