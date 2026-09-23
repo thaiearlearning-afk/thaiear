@@ -913,9 +913,15 @@
       return by;
     }
     /* r85 — one clip, recorded, on first use. §D.1: mechanics live in dl-core.js as ThaiEarDL.noteClip. */
-    /* ⛔ THE UNIT IS RESOLVED BY SENTENCE NUMBER, NOT BY AUDIO PREFIX — a split topic's parts
-       SHARE a prefix (topic-13a and topic-13b are both "…_LI1"), so a prefix cannot name a
-       unit and a lookup built on one would quietly save the wrong half's questions.
+    /* ⛔ THE UNIT IS RESOLVED BY SENTENCE NUMBER, NOT BY AUDIO PREFIX — a PLAYLIST spans units,
+       so no single prefix can name the unit a given sentence's questions live in, and a lookup
+       built on one would quietly save the wrong unit's questions.
+       ⚠ THE ORIGINAL REASON GIVEN HERE WAS FALSE and is corrected rather than deleted, because
+       a future session would otherwise re-derive it: it said "a split topic's parts SHARE a
+       prefix (topic-13a and topic-13b are both …_LI1)". They do not. MEASURED 2026-09-23:
+       113 units, 113 DISTINCT prefixes — topic-13a is BodyHealth_BEG, 13b is Health_BEG, 13c is
+       Health_LI1. The conclusion was right for the wrong reason, which is the most durable kind
+       of wrong; the real reason is the one above.
        topic-sentences.json is the authoritative {page:[nums]} map and is precached.
        ⚠ pl-quiz.js owns the same resolution for the READ side; this is deliberately the one
        call into it rather than a second inversion written here. */
