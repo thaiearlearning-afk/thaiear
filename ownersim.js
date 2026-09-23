@@ -287,6 +287,68 @@
     paintLat();
     d.appendChild(lat);
 
+    /* ── AUTH TRACE (2026-09-23) ────────────────────────────────────────────
+       auth.js records the account-switch bug; this is the only way to reach it. Owner, 2026-09-23,
+       when handed `ThaiEarAuth.trace(true)`: "i cant do this!! nowhere to type you that" — correct,
+       and the mistake was mine. The Android WebView and the iPhone PWA have no console and no
+       address bar, which is the whole reason this panel exists (see the ?lat=1 note above).
+       ✅ ownersim.js is NOT precached, so this arrives with NO VERSION BUMP.
+       ⚠ THE PANEL ONLY LOADS WHEN SIGNED IN (nav.js injects it for a signed-in user), and the bug
+       leaves you signed OUT — so it cannot be read DURING the failure. It does not need to be: the
+       ring is in localStorage and survives. Arm it signed in, reproduce, sign in again, read it.
+       ⚠ A TEXTAREA, NOT THE CLIPBOARD. A WebView clipboard write can be refused or silently no-op,
+       and a trace the owner cannot get off the device is not a measurement — the same reasoning
+       the latency probe above already follows. */
+    var atr = document.createElement('div');
+    atr.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px dashed #d8c8c8;' +
+      'font-size:12px;line-height:1.65';
+    function authApi() { return window.ThaiEarAuth && window.ThaiEarAuth.trace ? window.ThaiEarAuth : null; }
+    function trArmed() { return get('thaiear_authtrace_on') === '1'; }
+    function trRows() {
+      try { return (JSON.parse(localStorage.getItem('thaiear_authtrace') || '[]') || []).length; }
+      catch (_) { return 0; }
+    }
+    function paintTr() {
+      var A = authApi();
+      if (!A) {
+        atr.innerHTML = '<strong style="color:#7A1F1F">Auth trace</strong><br>' +
+          '<span>Not available on this build — auth.js predates the trace (needs v653+).</span>';
+        return;
+      }
+      var n = trRows();
+      atr.innerHTML = '<strong style="color:#7A1F1F">Auth trace</strong> — the account-switch bug<br>' +
+        '<span>' + (trArmed()
+          ? ('ON, ' + n + ' event' + (n === 1 ? '' : 's') + ' recorded. Now: sign out, sign in with the ' +
+             'OTHER Google account, let it fail, then sign back in and press Show.')
+          : 'Off. Press Arm, then reproduce the account switch.') + '</span>' +
+        '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
+          '<button type="button" id="ownersim-tr-arm" style="' + SWBTN + '">' +
+            (trArmed() ? 'Disarm + clear' : 'Arm') + '</button>' +
+          '<button type="button" id="ownersim-tr-show" style="' + SWBTN + '">Show (' + n + ')</button>' +
+        '</div>' +
+        '<textarea id="ownersim-tr-out" readonly style="width:100%;box-sizing:border-box;' +
+          'margin-top:8px;height:150px;font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;' +
+          'border:1px solid #c9c0b0;border-radius:6px;padding:6px;display:none"></textarea>' +
+        '<span style="display:block;margin-top:6px;color:#7A1F1F">Select the text and copy it — ' +
+        'a WebView clipboard button cannot be trusted. No tokens, emails or user ids are recorded; ' +
+        'accounts appear only as a 6-character hash.</span>';
+
+      atr.querySelector('#ownersim-tr-arm').addEventListener('click', function () {
+        var B = authApi(); if (!B) return;
+        B.trace(trArmed() ? false : true);
+        paintTr();
+      });
+      atr.querySelector('#ownersim-tr-show').addEventListener('click', function () {
+        var B = authApi(); if (!B) return;
+        var ta = atr.querySelector('#ownersim-tr-out');
+        ta.value = B.trace() || '(empty)';
+        ta.style.display = 'block';
+        try { ta.focus(); ta.select(); } catch (_) {}
+      });
+    }
+    paintTr();
+    d.appendChild(atr);
+
     /* ── QUIZ REJECTION LOG (QUIZ_GO_LIVE_PLAN.md §2.10, 2026-09-22) ────────────────────────
        ⭐⭐ WHY THIS READER IS WORTH A PANEL. SOLUTION_FINDER.md §6c: the precision/recall
        asymmetry means a wrongly-ACCEPTED answer NEVER comes back — a learner told they are
