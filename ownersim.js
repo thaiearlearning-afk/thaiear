@@ -912,7 +912,25 @@
           (nStale ? '<b style="color:#B00">' + nStale + ' should offer an update</b>'
                   : '<b>all current</b>') +
           (sig ? '' : ' <span style="color:#B00">⚠ stamp map did not load — every row reads quiet</span>') +
+          '<div data-pjs style="color:#8A8A8A;font-size:11px">player.js: …</div>' +
           rows.join('');
+        /* 2026-09-24 — WHICH player.js WILL A TOPIC PAGE RUN? The r226 cachePage() fix deletes
+           same-path strays, and the phone re-saved /topic-01 with the strays still there; this
+           tells "the old code ran" from "the delete failed" without inference. */
+        var pj = el.querySelector('[data-pjs]');
+        caches.keys().then(function (ks) {
+          var act = ks.filter(function (k) { return /^thaiear-v\d+$/.test(k); }).pop();
+          if (!act) { pj.textContent = 'player.js: no version cache'; return; }
+          return caches.open(act).then(function (c) { return c.match('/player.js'); }).then(function (r) {
+            if (!r) { pj.textContent = 'player.js: not in ' + act; return; }
+            var d = (r.headers.get('date') || '').replace(/^\w+, /, '').replace(/ GMT$/, '');
+            return r.text().then(function (t) {
+              var has = t.indexOf('r226') !== -1;
+              pj.innerHTML = 'player.js in ' + esc(act) + ': ' + (has ? 'HAS the r226 page-key fix ✓'
+                : '<b style="color:#B00">OLD — no r226 fix</b>') + ' (' + esc(d) + ', ' + t.length + ' chars)';
+            });
+          });
+        }).catch(function () { pj.textContent = 'player.js: read failed'; });
         var spans = el.querySelectorAll('[data-saved]');
         for (var k = 0; k < spans.length; k++) savedCopies(spans[k]);
       });
