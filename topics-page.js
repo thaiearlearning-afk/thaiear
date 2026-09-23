@@ -235,6 +235,80 @@
     if (pver && pver[unit] != null && e.ver !== pver[unit]) return true;
     return false;
   }
+  /* ── r218: SCROLL POSITION ACROSS A BACK NAVIGATION ────────────────────────────
+     Owner, 2026-09-23: "on android app (not iphone pwa - this is fine). when i go into a topic,
+     then back swipe gesture, i am always deposited at the top of that given menu … annoying for
+     users trying to explore and browse topics to have to keep rescrolling and refinding their
+     position." Affects every listing surface, which is why it lives here: the five band pages,
+     /topics, the grammar hub and Favourites all run this file.
+     ⚠⚠ NOT DIAGNOSED AS A WEBVIEW QUIRK, AND DELIBERATELY NOT FIXED AS ONE. iOS restores and
+     Android does not, which is a difference in bfcache behaviour — WebKit restores the whole
+     document, the Android WebView reloads and leans on scroll restoration that is only best
+     effort once fonts and late layout have moved things. Chasing which of those it is would be a
+     day, and the answer would still be "do it ourselves". So this stops depending on the browser
+     rather than trying to make the browser behave.
+     ✅ ADDITIVE AND IDEMPOTENT. It never sets history.scrollRestoration — quiz.js's notes record
+     how easily that setting gets stuck, and a stuck 'manual' would break scroll everywhere. If
+     the browser already restored correctly, scrolling to the same offset is a no-op; if it landed
+     at 0, this corrects it.
+     ⛔ ONLY ON A BACK/FORWARD NAVIGATION. A fresh visit or a reload must start at the top, or a
+     shared link would drop a stranger into the middle of the grid. */
+  var SCROLL_KEY = 'thaiear_tp_scroll';
+  function scrollMap() {
+    try { return JSON.parse(sessionStorage.getItem(SCROLL_KEY) || '{}'); } catch (_) { return {}; }
+  }
+  function scrollSave() {
+    try {
+      var m = scrollMap();
+      m[location.pathname] = Math.round(window.pageYOffset || document.documentElement.scrollTop || 0);
+      /* sessionStorage, not localStorage: a position is meaningful for this browsing session and
+         nothing else, and it must not survive a relaunch into a grid that has since been
+         re-ordered. Capped so a long session cannot grow it without bound. */
+      var keys = Object.keys(m);
+      while (keys.length > 12) { delete m[keys.shift()]; }
+      sessionStorage.setItem(SCROLL_KEY, JSON.stringify(m));
+    } catch (_) {}
+  }
+  function isBackForward() {
+    try {
+      var e = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      if (e && e.type) return e.type === 'back_forward';
+      /* Older WebViews only have the legacy API; 2 === TYPE_BACK_FORWARD. */
+      return !!(performance.navigation && performance.navigation.type === 2);
+    } catch (_) { return false; }
+  }
+  function scrollRestore() {
+    if (!isBackForward()) return;
+    var y = scrollMap()[location.pathname];
+    if (!y) return;
+    /* ⚠ THREE ATTEMPTS, BECAUSE THE DOCUMENT GROWS AFTER PARSE. The cards are static HTML so the
+       height is broadly right immediately, but the Thai face loads late and decorate() adds the
+       tick, the entitlement pill and the listening caption — any of which can move the target.
+       Re-applying costs nothing when it is already correct, and the last one is after `load`,
+       by which point nothing else changes the height. */
+    var go = function () { try { window.scrollTo(0, y); } catch (_) {} };
+    go();
+    try { requestAnimationFrame(function () { requestAnimationFrame(go); }); } catch (_) { setTimeout(go, 0); }
+    window.addEventListener('load', function () { setTimeout(go, 0); });
+  }
+  /* pagehide AND visibilitychange: iOS frequently gives no pagehide when the user switches away,
+     and the Android app can be backgrounded straight out of a scroll. auth.js's play-count flush
+     learned the same lesson and pairs them for the same reason. */
+  window.addEventListener('pagehide', scrollSave);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') scrollSave();
+  });
+  /* ✅ AND ON THE WAY OUT THROUGH A CARD, which is the navigation that actually matters here.
+     A click is the last moment the position is certainly correct — pagehide can be skipped
+     entirely on a fast WebView navigation. Capture-phase so it runs whatever the card does next. */
+  document.addEventListener('click', function (ev) {
+    try {
+      var t = ev && ev.target;
+      if (t && t.closest && t.closest('.topic-card, .topic-card-link, .topic-quiz')) scrollSave();
+    } catch (_) {}
+  }, true);
+  scrollRestore();
+
   function applyDownloadState() {
     /* dl-core is not on a plain browser tab, and that is correct — download UI is app +
        installed-PWA only, so there is simply nothing to report. */
