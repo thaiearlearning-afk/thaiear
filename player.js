@@ -1626,41 +1626,29 @@
     if (PLMODE) { dynCheckPlQuizUpdate(); return; }
     var e = getManifest()[PREFIX];
     if (!e) return;
-    /* ⭐⭐ AN ABSENT BASELINE IS STALE HERE, AND v641 GOT THIS WRONG. It read
-       `if (!e.ver) return;` — "no baseline, no nag", copied from the AUDIO side where it is
-       right. It is exactly backwards here, because `ver` was NEVER WRITTEN BY THE DYN
-       DOWNLOAD PATH until v641: every download that existed when this shipped has ver:''.
-       So the guard skipped the entire population the feature was built for. Owner,
-       2026-09-23, on the Android app: "i went in to feelings and emotions 1 on v641 and its
-       showing me the old site page and 'downloaded' — im not seeing the page update
-       available". Confirmed by his device, and my own harness had PINNED the wrong
-       behaviour as correct.
-       ⚠ The two baselines are not symmetrical and that is the whole lesson: an absent AUDIO
-       stamp means "we have never watched this", and the bytes on disk are still fine. An
-       absent CONTENT stamp means the download predates the stamp — which is precisely when
-       the page is most likely to be missing something.
-       ✅ Self-clearing and it can only fire once: the update runs markDownloaded/finalize,
-       which records the hash. ⛔ And it cannot fire where there is nothing to deliver — a
-       page with no quiz block has nothing this could offer, so it stays silent rather than
-       nagging a unit whose text has not moved either. Same shape as dynCheckPlQuizUpdate. */
-    if (!e.ver) {
-      if (!(cfg && cfg.quiz)) return;
-    } else if (e.ver === contentHash()) return;
-    updPage = true;
-    paintUpdatePrompt();
+    /* ⭐ THE ONE CHECK THE CARD CANNOT MAKE, so it goes first and alone. contentHash() covers the
+       page's sentences AND its quiz block, but computing it requires being ON the page — a card
+       cannot hash a document it does not have. A sentence-TEXT edit is therefore page-only by
+       construction, and that asymmetry is documented in stale_matrix.js rather than papered over.
+       ⚠ Only meaningful when a baseline exists; `ver: ''` means the download predates the stamp,
+       which is the shared question below, not this one. */
+    if (e.ver && e.ver !== contentHash()) { updPage = true; paintUpdatePrompt(); return; }
+    /* ⛔⛔ EVERYTHING ELSE IS THE **SHARED** QUESTION AND MUST BE ASKED THE SAME WAY THE CARD
+       ASKS IT — same manifest fields, same published map, same answer. Three times in two days a
+       staleness signal was added to one surface and not the other, and each time the owner saw
+       two parts of the site contradict each other:
+         v643 the page learned it and the card did not; v645 the card gained the `qz` flip and the
+         page did not ("getting to know you is showing the update circle, but when i go in its
+         showing downloaded"); and this version, where the page gated its no-baseline flip on
+         `cfg.quiz` while the card gated it on the published stamp — so with no readable map the
+         page flagged and the card stayed silent. THE THIRD ONE WAS FOUND BY stale_matrix.js, not
+         by a user, which is the entire point of that table.
+       ⚠ THE RULE THIS EARNS: a new staleness signal goes into EVERY surface that reports
+       staleness, in the same change, or into none of them. The axis it is added on is irrelevant. */
+    dynCheckUnitQzUpdate();
   }
-  /* A PLAYLIST's quiz is not in the page — it is fetched per unit from quiz-data/<unit>.json and
-     saved into the durable `thaiear-dl` cache at download time. pl-quiz.js's loadUnit() reads that
-     copy FIRST and UNCONDITIONALLY, which is right (a playlist quiz must work offline) and means
-     nothing in the product would ever replace it. So this prompt is the ONLY delivery route for a
-     re-published answer key on a downloaded playlist.
-     📌 The same comparison as pl-list.js's dlQzStale(), against the same per-playlist record, so
-     the row and the player cannot disagree — the standing rule for this pair (§B8 lesson 3).
-     ⚠ Async, and that is exactly the case paintUpdatePrompt() exists for. */
   var dynQzSig = null;
-  /* ⛔ RESOLVED BY SENTENCE NUMBER, NOT BY AUDIO PREFIX — a split topic's parts SHARE a prefix
-     (topic-13a and topic-13b are both "…_LI1"), so a prefix cannot name a unit and a lookup built
-     on one would quietly fetch the wrong half's questions. ONE call into pl-quiz.js, which owns
+  /* ⛔ RESOLVED BY SENTENCE NUMBER, NOT BY AUDIO PREFIX — one call into pl-quiz.js, which owns
      this inversion for the read side; never a second copy of it here. */
   function dynPlQzUnits() {
     var Q = window.ThaiEarPlQuiz;
@@ -1669,12 +1657,38 @@
       return { clipNum: (s.clipNum != null ? s.clipNum : s.num) };
     }));
   }
-  // The published per-unit quiz stamps (gen_quiz_data.js writes them beside the side-cars).
+  /* The published per-unit quiz stamps, written by gen_quiz_data.js in the same pass as the
+     side-cars so a stamp cannot drift from the file it fingerprints. Precached, so it resolves
+     offline too. Failure is null, which every caller reads as "say nothing". */
   function dynQzSigLoad() {
     if (dynQzSig) return Promise.resolve(dynQzSig);
     return fetch('/quiz-data/index.json').then(function (r) { return r.ok ? r.json() : null; })
       .then(function (m) { dynQzSig = (m && m.sig) || null; return dynQzSig; })
       .catch(function () { return null; });
+  }
+  /* The card's contentStale(), in player.js's words. Kept deliberately field-for-field identical
+     to topics-page.js's copy rather than merged into one function, because the two run in
+     different files with different data to hand — stale_matrix.js is what holds them together,
+     and it asserts them against the same table from both harnesses.
+     ⚠ Async because the stamp map is fetched. paintUpdatePrompt() absorbs that: it reads both
+     flags and renders the winner, so arrival order still cannot decide the message. */
+  function dynCheckUnitQzUpdate() {
+    var unit = String(PAGE_FILE || '').replace(/\.html$/, '');
+    if (!unit) return;
+    var e = getManifest()[PREFIX];
+    if (!e) return;
+    dynQzSigLoad().then(function (sig) {
+      /* ⛔ No published stamp for this unit — say nothing. Also the guard that stops the two
+         flips below firing where there is nothing to deliver. Conservative on every unknown,
+         exactly as the audio side is, and exactly as the card is. */
+      if (!sig || sig[unit] == null) return;
+      /* Two one-time, self-clearing flips: no `ver` (predates v643) and no `qz` (updated on
+         v643/v644). Both clear because finalize records `ver` AND `qz`. */
+      if (!e.ver || e.qz == null || e.qz !== sig[unit]) {
+        updPage = true;
+        paintUpdatePrompt();
+      }
+    }).catch(function () {});
   }
   function dynCheckPlQuizUpdate() {
     var id = dynPlKeyId(); if (!id) return;
