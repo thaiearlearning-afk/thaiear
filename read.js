@@ -557,7 +557,87 @@
     rec.lastCorrect = correct; rec.lastTotal = total; rec.lastDate = new Date().toISOString().slice(0, 10);
     p[key] = rec;
     saveProg(p);
+    /* ⭐ ACCOUNT COPY (2026-09-23). Local first, always — the course works signed out and
+       offline, and that must not change. The queue entry is what carries it to the account
+       when there is a session and a network; until then it sits in the shared outbox.
+       ⚠ attempts/correct/total are the DELTA for this one attempt. best_* is the local best
+       sent whole, which is safe because apply_read_scores() compares the PAIR and takes it only
+       if strictly better — re-sending the same best is a no-op. */
+    try {
+      var RS = window.ThaiEarReadStore;
+      if (RS && RS.queueDelta) {
+        RS.queueDelta([{ key: key, attempts: 1, correct: correct, total: total,
+                         best_correct: rec.bestCorrect, best_total: rec.bestTotal }]);
+      }
+    } catch (_) {}
   }
+
+  /* ⭐⭐ PULL THE ACCOUNT COPY DOWN, and migrate anything this device recorded before the
+     account existed.
+
+     ⚠⚠ THE MIGRATION RUNS ONCE PER DEVICE AND IS GUARDED BY A FLAG, because these are
+     COUNTERS: queueing the local totals twice would double this learner's attempt count, and
+     nothing downstream could tell that from genuinely having taken the test twice as often.
+     ⚠ Two devices that each hold pre-account history will each migrate, and the totals add.
+     That is correct rather than a bug — the tests really were taken on both — but it is worth
+     knowing before anyone reads an attempt count as "sessions".
+     ⚠ An ABSENT server row leaves the local one untouched. The server is authoritative only
+     for keys it actually knows, which is what stops the first sign-in wiping local history.
+     ⚠ ThaiEarReadStore.pull() flushes the outbox BEFORE reading, so a queued attempt is
+     already counted server-side by the time we copy the totals down. */
+  var MIG_KEY = 'thaiear_read_migrated_v1';
+  var readSyncing = false;
+  function syncReadScores() {
+    var RS = window.ThaiEarReadStore;
+    if (readSyncing || !RS || !RS.pull || !RS.signedIn || !RS.signedIn()) return;
+    readSyncing = true;
+    try {
+      if (!localStorage.getItem(MIG_KEY)) {
+        var local = loadProg(), rows = [];
+        Object.keys(local).forEach(function (k) {
+          var r = local[k] || {};
+          if (!r.attempts) return;
+          rows.push({ key: k, attempts: r.attempts,
+                      correct: r.sumCorrect || 0, total: r.sumTotal || 0,
+                      best_correct: r.bestCorrect || 0, best_total: r.bestTotal || 0 });
+        });
+        if (rows.length && RS.queueDelta) RS.queueDelta(rows);
+        localStorage.setItem(MIG_KEY, '1');
+      }
+    } catch (_) {}
+    RS.pull().then(function (rows) {
+      readSyncing = false;
+      if (!rows) return;                      /* null = no answer, NOT "no results" */
+      var p = loadProg(), changed = false;
+      rows.forEach(function (r) {
+        if (!r || !r.key) return;
+        p[r.key] = { attempts: r.attempts || 0,
+                     sumCorrect: r.sum_correct || 0, sumTotal: r.sum_total || 0,
+                     bestCorrect: r.best_correct || 0, bestTotal: r.best_total || 0 };
+        changed = true;
+      });
+      if (changed) saveProg(p);
+      /* ⛔ NO FORCED REPAINT, AND THAT IS DELIBERATE.
+         boot() would re-render the page from #read-root and is in scope here — but it rebuilds
+         the view from scratch, so a pull landing while someone is part-way through a test would
+         throw their run away. A stale record for a few seconds is a far smaller cost.
+         ⚠ In practice the timing is already right: `thaiear:auth` fires during startup, before
+         the learner has begun anything, so the records are correct on first paint. A pull that
+         lands later shows at the next navigation, which is when the records are next read.
+         ⚠ The first version of this called `render()` behind a typeof guard. Both of read.js's
+         `render` functions are INNER, so that guard was false at module scope and the call was
+         dead — a repaint that could never fire looks exactly like one that works. */
+    }).catch(function () { readSyncing = false; });
+  }
+  /* auth resolves after first paint, so the sync hangs off the event rather than load. Latched
+     by readSyncing, and the migration by its own flag, so the ~25 auth events a real device
+     fires on startup cost one pull, not 25. */
+  try {
+    window.addEventListener('thaiear:auth', syncReadScores);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) syncReadScores();
+    });
+  } catch (_) {}
   function sectionStats(sectionKey) {
     var p = loadProg(), attempts = 0, best = null;
     Object.keys(p).forEach(function (k) {
