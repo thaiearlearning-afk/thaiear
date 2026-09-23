@@ -903,7 +903,9 @@
             '<span style="color:#8A8A8A;font-size:11px">ver:' + (e.ver ? esc(String(e.ver)) : '—') +
             '  qz:' + (e.qz == null ? '—' : esc(String(e.qz))) +
             '  sig:' + (pub == null ? '—' : esc(String(pub))) +
-            '  pageVer:' + (pv == null ? '—' : esc(String(pv))) + '</span></div>');
+            '  pageVer:' + (pv == null ? '—' : esc(String(pv))) + '</span>' +
+            (unit !== '?' ? '<br><span data-saved="' + esc(unit) + '" data-pv="' + esc(pv == null ? '' : String(pv)) +
+              '" style="color:#8A8A8A;font-size:11px">saved copies: …</span>' : '') + '</div>');
         });
         if (!rows.length) { el.innerHTML = 'downloads: <b>no topic downloads</b> (playlist clips only)'; return; }
         el.innerHTML = 'downloads: <b>' + rows.length + '</b>, ' +
@@ -911,7 +913,66 @@
                   : '<b>all current</b>') +
           (sig ? '' : ' <span style="color:#B00">⚠ stamp map did not load — every row reads quiet</span>') +
           rows.join('');
+        var spans = el.querySelectorAll('[data-saved]');
+        for (var k = 0; k < spans.length; k++) savedCopies(spans[k]);
       });
+  }
+  /* 2026-09-24 — THE PAGE BYTES THEMSELVES, which the rows above cannot see. Owner, on the
+     Android app: topic-01, topic-02 and topic-36b read "Page update available" INSIDE the page
+     OFFLINE only, "downloaded" online, and a tick on the card — while every row above reads
+     quiet (ver == pageVer, qz == sig). With the stamps current, the only comparison left that
+     can raise the page prompt is dynCheckPageUpdate()'s `e.ver !== contentHash()`: the COPY
+     BEING RENDERED hashes differently from the published page. Offline the SW answers a topic
+     navigation from the version cache first, then thaiear-dl (sw.js FALLBACK_CACHES), so this
+     hashes BOTH copies with player.js's exact construction and prints when each was fetched.
+     ⚠ Read-only: a probe that repaired what it measured would destroy the evidence. */
+  function savedCopies(span) {
+    var unit = span.getAttribute('data-saved'), pv = span.getAttribute('data-pv');
+    if (!window.caches) { span.textContent = 'saved copies: caches API unavailable'; return; }
+    function h53(t) {
+      var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+      for (var i = 0, ch; i < t.length; i++) {
+        ch = t.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+      return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+    }
+    function pageHash(html) {
+      var m = html.replace(/\r\n/g, '\n').match(/window\.ThaiEarTopic\s*=\s*(\{[\s\S]*?\});\s*<\/script>/);
+      if (!m) return 'no data block';
+      var pg; try { pg = (new Function('return (' + m[1] + ')'))(); } catch (_) { return 'unparseable'; }
+      var S1 = String.fromCharCode(1), S2 = String.fromCharCode(2), S3 = String.fromCharCode(3);
+      var base = (pg.sentences || []).map(function (x) {
+        return [x.num, x.thai || '', x.english || ''].join(S1);
+      }).join(S2);
+      return h53(base + S3 + JSON.stringify(pg.quiz || ''));
+    }
+    function one(name) {
+      return caches.open(name).then(function (c) {
+        return c.match('/' + unit, { ignoreSearch: true }).then(function (r) {
+          return r || c.match('/' + unit + '.html', { ignoreSearch: true });
+        });
+      }).then(function (r) {
+        if (!r) return name + ': none';
+        var d = r.headers.get('date') || '';
+        return r.text().then(function (t) {
+          var hv = pageHash(t);
+          return name + ': ' + hv + (pv ? (hv === pv ? ' ✓' : ' ✗ OLD') : '') +
+            (d ? ' (' + d.replace(/^\w+, /, '').replace(/ GMT$/, '') + ')' : '');
+        });
+      }).catch(function () { return name + ': read failed'; });
+    }
+    caches.keys().then(function (ks) {
+      var list = ks.filter(function (k) { return /^thaiear-v\d+$/.test(k) || k === 'thaiear-dl'; });
+      return Promise.all(list.map(one));
+    }).then(function (parts) {
+      span.innerHTML = 'saved copies — ' + parts.map(function (p) {
+        return /✗/.test(p) ? '<b style="color:#B00">' + esc(p) + '</b>' : esc(p);
+      }).join(' · ');
+    }).catch(function () { span.textContent = 'saved copies: read failed'; });
   }
   function esc(x) {
     return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;')
