@@ -201,6 +201,52 @@
   // Boot trace (test build only; inert without sim.js) — see sim.js BOOT TRACE.
   var ID_KEY = 'thaiear_identity';
   var SIGNED_OUT_KEY = 'thaiear_signed_out';
+  /* ── AUTH TRACE (2026-09-23) ──────────────────────────────────────────────
+     Owner, 2026-09-23: switching Google accounts leaves the app signed OUT after the round trip
+     ("dropped back to homepage with create an account and log in"), on BOTH the Android WebView
+     and the iPhone PWA, and a force-close does NOT restore the session — it only makes the NEXT
+     sign-in work. So the session is never established, and the failure is in ORDERING, on a real
+     device, under a timing this machine cannot reproduce.
+     ⚠⚠ TWO OF MY OWN DEDUCTIONS ABOUT THIS BUG WERE ALREADY WRONG before a line was written:
+     first that storage must be intact (it is not), then that a resume-time reseed would fix it
+     (there is nothing to reseed). That is precisely why this records instead of guessing.
+     ⛔ READ-ONLY AND BEHAVIOURALLY INERT. Every call site is a bare `trace(...)` in a try/catch;
+     it branches nothing, returns nothing anyone reads, and awaits nothing. Off by default for
+     every user — the first line returns unless the flag is set by hand.
+     ⚠ NO TOKENS, NO EMAILS, NO user_id. Only a 6-char hash of the uid, so two events can be told
+     to be the same account or different ones without the id itself ever being written down
+     (Golden Rule 0 — a truncated user_id is still personal data, a salt-free hash of one is not
+     something we can join back to a person, and nothing here needs more than "same or different").
+     ✅ Read it with ThaiEarAuth.trace() once signed back in — it survives the failed attempt. */
+  var TRACE_KEY = 'thaiear_authtrace';
+  var traceOn = null;
+  function uidTag(u) {
+    if (!u) return '-';
+    var h = 0, x = String(u);
+    for (var i = 0; i < x.length; i++) { h = (Math.imul(h ^ x.charCodeAt(i), 2654435761) >>> 0); }
+    return h.toString(36).slice(0, 6);
+  }
+  function trace(tag, extra) {
+    try {
+      if (traceOn === null) traceOn = (localStorage.getItem(TRACE_KEY + '_on') === '1');
+      if (!traceOn) return;
+      var row = { t: Date.now(), tag: tag };
+      if (extra) for (var k in extra) row[k] = extra[k];
+      /* The three facts every line needs, because the bug is about them disagreeing. */
+      row.mk = (localStorage.getItem(SIGNED_OUT_KEY) === '1') ? 'OUT' : '-';
+      row.id = localStorage.getItem(ID_KEY) ? 'y' : 'n';
+      var sb = 'n';
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var kk = localStorage.key(i);
+        if (kk && kk.indexOf('sb-') === 0 && kk.indexOf('-auth-token') !== -1) { sb = 'y'; break; }
+      }
+      row.sb = sb;
+      var arr = JSON.parse(localStorage.getItem(TRACE_KEY) || '[]');
+      arr.push(row);
+      while (arr.length > 120) arr.shift();          // capped: a ring, never a leak
+      localStorage.setItem(TRACE_KEY, JSON.stringify(arr));
+    } catch (_) {}
+  }
   function readIdentity() {
     try {
       if (localStorage.getItem(SIGNED_OUT_KEY) === '1') return null;  // they really did log out
@@ -221,9 +267,11 @@
       }));
       localStorage.removeItem(SIGNED_OUT_KEY);
     } catch (_) {}
+    trace('writeIdentity', { u: uidTag(session && session.user && session.user.id) });
   }
   function clearIdentity() {
     try { localStorage.removeItem(ID_KEY); localStorage.setItem(SIGNED_OUT_KEY, '1'); } catch (_) {}
+    trace('clearIdentity');
   }
   /* Any durable evidence this device is signed in — ours first (survives a supabase purge), then
      supabase's own copy for accounts that signed in before this mechanism existed.
@@ -1074,6 +1122,7 @@
   // flows: implicit (tokens in the URL hash) and PKCE (?code= exchanged here).
   function handleAuthDeepLink(url) {
     if (!url || url.indexOf('auth-callback') === -1) return;
+    trace('deepLink');
     var Browser = capPlugin('Browser');
     var close = function () { try { if (Browser && Browser.close) Browser.close(); } catch (_) {} };
     try {
@@ -1096,7 +1145,28 @@
 
   // Public API. getUser() is synchronous; the rest are no-ops until the
   // Supabase client has loaded (avoids errors if a button is hit very early).
+  /* ✅ THE READER. `ThaiEarAuth.trace()` prints the ring as text; `trace(true)` arms it and
+     `trace(false)` disarms and clears. Owner-facing and deliberately plain — a WebView clipboard
+     write can silently no-op (the same reason ownersim delivers traces in a textarea), so this
+     returns a STRING the caller can read or select rather than writing anywhere. */
+  function traceDump(arm) {
+    try {
+      if (arm === true) { localStorage.setItem(TRACE_KEY + '_on', '1'); traceOn = true; return 'auth trace ARMED — reproduce the account switch, then call ThaiEarAuth.trace()'; }
+      if (arm === false) { localStorage.removeItem(TRACE_KEY + '_on'); localStorage.removeItem(TRACE_KEY); traceOn = false; return 'auth trace OFF and cleared'; }
+      var arr = JSON.parse(localStorage.getItem(TRACE_KEY) || '[]');
+      if (!arr.length) return 'auth trace empty (armed? ' + (localStorage.getItem(TRACE_KEY + '_on') === '1') + ')';
+      var t0 = arr[0].t;
+      return arr.map(function (r) {
+        var ms = String(r.t - t0).padStart(7, ' ');
+        return ms + 'ms  ' + String(r.tag).padEnd(22, ' ') +
+               ' mk=' + r.mk + ' id=' + r.id + ' sb=' + r.sb +
+               (r.ev ? ' ev=' + r.ev : '') + (r.s ? ' sess=' + r.s : '') +
+               (r.u && r.u !== '-' ? ' acct=' + r.u : '') + (r.w ? ' via=' + r.w : '');
+      }).join('\n');
+    } catch (e) { return 'trace unavailable: ' + e; }
+  }
   window.ThaiEarAuth = {
+    trace: traceDump,
     isReady: false,
     getUser: function () { return currentUser; },
     // The Supabase session JWT, for authorising premium-audio requests to /api/audio.
@@ -1602,9 +1672,20 @@
         clearIdentity();
         notify();   // re-render nav + account page as logged-out
       };
-      var attempt = client.auth.signOut({ scope: 'local' }).catch(function () {});
+      trace('signOut:start');
+      /* ⚠ THE LOSER OF THIS RACE IS NOT CANCELLED. If the network sign-out is slow the timeout
+         wins, the UI logs out, and supabase's own signOut is STILL IN FLIGHT — free to complete
+         its teardown later, after a new session may already exist. Whether that is what bites the
+         owner is exactly what these two marks are here to show: if 'signOut:late' appears AFTER a
+         'writeIdentity' for a different account, the race is the bug. */
+      var attempt = client.auth.signOut({ scope: 'local' })
+        .then(function () { trace('signOut:late', { w: 'attempt' }); })
+        .catch(function () { trace('signOut:late', { w: 'attempt-err' }); });
       var timeout = new Promise(function (res) { setTimeout(res, 1500); });
-      return Promise.race([attempt, timeout]).then(forceLocal);
+      return Promise.race([attempt, timeout]).then(function () {
+        trace('signOut:forceLocal');
+        forceLocal();
+      });
     }
   };
 
@@ -2363,6 +2444,20 @@
     return { unit: k.slice(0, i), type: t };
   }
 
+  /* Does this error mean "that function is not in this database"? PostgREST answers a missing
+     RPC with PGRST202 and a 404; Postgres itself with 42883 (undefined_function) if the call
+     ever reaches it. ⚠ Matched on CODE first and only then on wording, because messages are not
+     a contract — and narrowed to the named function so a missing function elsewhere in a future
+     op can never be swallowed by this. */
+  function qzMissingFn(e) {
+    if (!e) return false;
+    var code = String(e.code || '');
+    if (code === 'PGRST202' || code === '42883') return true;
+    var msg = String(e.message || e.msg || '');
+    return /apply_read_scores/.test(msg) &&
+           /(could not find|does not exist|unknown function)/i.test(msg);
+  }
+
   function qzUuid() {
     try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (_) {}
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -2415,6 +2510,33 @@
       /* ⛔ Deltas via the rpc, keyed on a batch id the SERVER dedupes. Absolute values here
          would lose every answer given on a second device. */
       return client.rpc('apply_quiz_stats', { p_batch: op.batch, p_rows: op.rows });
+    }
+    if (op.k === 'readsc') {
+      /* ⭐ Read Thai test results (2026-09-23). Same delta-plus-batch-id shape as `stats`
+         directly above, and deliberately on THIS outbox rather than a second one: the retry,
+         the partial-failure keep and the error surfacing are all here already, and a parallel
+         queue would be a second thing to notice was stuck.
+         ⚠ attempts/correct/total are DELTAS the server adds; best_correct/best_total are the
+         local best sent whole, which is safe because apply_read_scores() takes the better PAIR
+         and never a column at a time.
+
+         ⛔⛔ A MISSING FUNCTION IS TREATED AS SUCCESS, AND THE OP IS DROPPED. This op kind can
+         reach a database where read_scores_schema.sql has not been applied — a client updates
+         the moment it is deployed, a migration is applied by hand. Retrying then is not
+         resilience, it is a JAM: qzFlush keeps a failed op, so every further test would add
+         another permanently-failing entry, growing localStorage without bound and pinning
+         `lastErr` so the owner panel reports a stuck outbox — on the queue that also carries
+         quiz scores, prefs, exclusions, item stats and Builder rejections (the v617 fault).
+         ⚠ Dropping costs exactly the feature that does not exist yet: the results stay on the
+         device, which is what the course did before today. ⛔ Only a MISSING FUNCTION is
+         swallowed — a network failure, an RLS refusal or a bad row still retries and still
+         keeps the learner's data. */
+      return client.rpc('apply_read_scores', { p_batch: op.batch, p_rows: op.rows })
+        .then(function (r) {
+          var e = r && r.error;
+          if (e && qzMissingFn(e)) return { error: null };
+          return r;
+        });
     }
     if (op.k === 'rej') {
       /* ⛔⛔ THE ID COMES FROM THE CLIENT AND THE INSERT IGNORES CONFLICTS. A flush can be
@@ -2489,6 +2611,36 @@
       return keep.length === 0;
     }).catch(function () { qzFlushing = false; return false; });
   }
+
+  /* ⭐⭐ READ THAI RESULTS ON THE ACCOUNT (2026-09-23). read.js keeps its own localStorage
+     copy (thaiear_read_v1) and that stays the source of truth ON THE DEVICE — this is only the
+     account half, so nothing here duplicates that state.
+     ⚠ THE ORDER IS FLUSH, THEN PULL. A pull that overwrote local while a delta was still
+     queued would discard the queued attempt; flushing first means the server already holds it,
+     so its totals are then authoritative and can be copied down safely.
+     ⚠ Absent rows are NOT written as zeros — a key the server has never seen must leave the
+     device's own history alone, which is what makes the first sign-in after this shipped
+     non-destructive. */
+  window.ThaiEarReadStore = {
+    queueDelta: function (rows) {
+      if (!rows || !rows.length) return;
+      qzQueue({ k: 'readsc', batch: qzUuid(), rows: rows });
+    },
+    /* Resolves to an array of server rows, or null when we cannot ask (signed out, offline,
+       or the table is not there yet). null means "no answer", never "no results" — the caller
+       must not clear anything on it. */
+    pull: function () {
+      if (!client || !currentUser) return Promise.resolve(null);
+      return qzFlush().then(function () {
+        return client.from('read_scores')
+          .select('key,attempts,sum_correct,sum_total,best_correct,best_total')
+          .eq('user_id', currentUser.id);
+      }).then(function (r) {
+        return (r && !r.error && r.data) ? r.data : null;
+      }).catch(function () { return null; });
+    },
+    signedIn: function () { return !!(client && currentUser); }
+  };
 
   window.ThaiEarQuizStore = {
     /* ---- scores ---------------------------------------------------------------------- */
@@ -2918,7 +3070,8 @@
         // that happened the guard could not fire and the user was logged out for good. anySignedIn()
         // consults our own record first, so only a real signOut() (which clears it and sets the
         // signed-out marker) can now reach the logout path.
-        if (!user && anySignedIn()) { return; }
+        trace('authChange', { ev: String(_event || ''), s: session ? 'y' : 'n', u: uidTag(user && user.id) });
+        if (!user && anySignedIn()) { trace('authChange:GUARDED'); return; }
         currentSession = session || null;
         currentUser = user;
         if (session && session.access_token) { writeIdentity(session); }
