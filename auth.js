@@ -226,6 +226,24 @@
     for (var i = 0; i < x.length; i++) { h = (Math.imul(h ^ x.charCodeAt(i), 2654435761) >>> 0); }
     return h.toString(36).slice(0, 6);
   }
+  /* Is supabase's PKCE code verifier on disk right now? Supabase stores it as
+     `sb-<ref>-auth-token-code-verifier`, and ⚠⚠ THAT KEY MATCHES signOut()'s forceLocal filter
+     (`sb-` prefix AND contains `-auth-token`), so a sign-out deletes it along with the session.
+     Whether that is what breaks the next sign-in is exactly what this reports. */
+  function hasVerifier() {
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('sb-') === 0 && k.indexOf('code-verifier') !== -1) return 'y';
+      }
+    } catch (_) {}
+    return 'n';
+  }
+  /* Supabase error text only — never a token, never the callback URL (which carries them). */
+  function errTag(e) {
+    try { return String((e && (e.message || e.error_description || e.name)) || e).slice(0, 90); }
+    catch (_) { return '?'; }
+  }
   function trace(tag, extra) {
     try {
       if (traceOn === null) traceOn = (localStorage.getItem(TRACE_KEY + '_on') === '1');
@@ -1122,25 +1140,46 @@
   // flows: implicit (tokens in the URL hash) and PKCE (?code= exchanged here).
   function handleAuthDeepLink(url) {
     if (!url || url.indexOf('auth-callback') === -1) return;
-    trace('deepLink');
     var Browser = capPlugin('Browser');
     var close = function () { try { if (Browser && Browser.close) Browser.close(); } catch (_) {} };
     try {
       var hp = new URLSearchParams(url.split('#')[1] || '');
       var at = hp.get('access_token'), rt = hp.get('refresh_token');
+      var code = new URLSearchParams((url.split('?')[1] || '').split('#')[0]).get('code');
+      var err = new URLSearchParams((url.split('?')[1] || '').split('#')[0]).get('error') ||
+                hp.get('error') || '';
+      /* ⚠ THE BRANCH, NOT THE URL. The callback carries the tokens themselves, so only which
+         path was taken is recorded — plus whether the PKCE verifier survived the sign-out. */
+      trace('deepLink', {
+        br: (at && rt) ? 'tokens' : (code ? 'code' : (err ? 'error' : 'none')),
+        cv: hasVerifier(),
+        e: err ? String(err).slice(0, 40) : undefined
+      });
       if (at && rt) {
         client.auth.setSession({ access_token: at, refresh_token: rt })
-          .then(close).catch(function (e) { console.error('[native-auth] setSession', e); close(); });
+          .then(function (r) {
+            trace('deepLink:setSession', { ok: (r && r.data && r.data.session) ? 'y' : 'n',
+                                           e: (r && r.error) ? errTag(r.error) : undefined });
+            close();
+          })
+          .catch(function (e) { trace('deepLink:setSession', { ok: 'throw', e: errTag(e) }); console.error('[native-auth] setSession', e); close(); });
         return;
       }
-      var code = new URLSearchParams((url.split('?')[1] || '').split('#')[0]).get('code');
       if (code) {
         client.auth.exchangeCodeForSession(code)
-          .then(close).catch(function (e) { console.error('[native-auth] exchangeCode', e); close(); });
+          .then(function (r) {
+            trace('deepLink:exchange', { ok: (r && r.data && r.data.session) ? 'y' : 'n',
+                                         e: (r && r.error) ? errTag(r.error) : undefined });
+            close();
+          })
+          .catch(function (e) { trace('deepLink:exchange', { ok: 'throw', e: errTag(e) }); console.error('[native-auth] exchangeCode', e); close(); });
         return;
       }
-      console.warn('[native-auth] deep link had no token or code:', url);
-    } catch (e) { console.error('[native-auth] deep link parse failed', e); }
+      /* ⛔ THE SILENT PATH. A deep link with neither tokens nor a code used to warn to a console
+         that does not exist on either of the owner's devices, and the sign-in simply did nothing. */
+      trace('deepLink:empty');
+      console.warn('[native-auth] deep link had no token or code');
+    } catch (e) { trace('deepLink:parseFail', { e: errTag(e) }); console.error('[native-auth] deep link parse failed', e); }
   }
 
   // Public API. getUser() is synchronous; the rest are no-ops until the
@@ -1161,7 +1200,9 @@
         return ms + 'ms  ' + String(r.tag).padEnd(22, ' ') +
                ' mk=' + r.mk + ' id=' + r.id + ' sb=' + r.sb +
                (r.ev ? ' ev=' + r.ev : '') + (r.s ? ' sess=' + r.s : '') +
-               (r.u && r.u !== '-' ? ' acct=' + r.u : '') + (r.w ? ' via=' + r.w : '');
+               (r.u && r.u !== '-' ? ' acct=' + r.u : '') + (r.w ? ' via=' + r.w : '') +
+               (r.br ? ' branch=' + r.br : '') + (r.cv ? ' verifier=' + r.cv : '') +
+               (r.ok ? ' ok=' + r.ok : '') + (r.e ? ' err=' + r.e : '');
       }).join('\n');
     } catch (e) { return 'trace unavailable: ' + e; }
   }
