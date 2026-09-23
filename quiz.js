@@ -251,6 +251,10 @@
   function headGloss(g) {
     return bareGloss(g).toLowerCase().replace(/\.$/, '');
   }
+  /* The WHOLE gloss, normalised the same way — the §6.3 twin test (see qVocab). */
+  function fullGloss(g) {
+    return String(g || '').trim().toLowerCase().replace(/\.$/, '');
+  }
 
   /* ── eligibility: what this quiz can ask about, net of BOTH kinds of exclusion ──────────── */
   function eligible(qid) {
@@ -2342,8 +2346,15 @@
     var it = run.items[run.i], w = it.word;
     var list = QD().q3 || [], pool = QD().q3x || [];
 
-    /* §6.3 — if another word on THIS list answers the same prompt, the question asks for TWO. */
-    var twins = list.filter(function (x) { return x.th !== w.th && headGloss(x.en) === headGloss(w.en); });
+    /* §6.3 — if another word on THIS list answers the same prompt, the question asks for TWO.
+       ⛔⛔ "THE SAME PROMPT" MEANS THE WHOLE GLOSS, PARENTHETICAL INCLUDED (owner, 2026-09-22,
+       OWNER_TASK_REGISTER H1, applied 2026-09-24). food ("rice dishes") and food ("things to
+       eat") used to merge into one "Select 2" question on the bare head "food" — and a vocab
+       card carries ONE "Appears in" sentence, so one of the two senses always shipped with an
+       example that did not illustrate it. Now each sense is its own one-answer question.
+       ✅ The distractor filter below still excludes a same-HEAD word, so a sense-twin is never
+       offered as a WRONG answer on the other's question. */
+    var twins = list.filter(function (x) { return x.th !== w.th && fullGloss(x.en) === fullGloss(w.en); });
     /* ⚠⚠ EVERY TWIN, NOT TWO (2026-09-22). This was `twins.length ? 2 : 1` with only twins[0]
        pushed as a second correct option — so on a list where THREE words share a prompt, the
        question asked for 2, offered one of the three, and the third could never appear at all:
