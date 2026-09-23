@@ -691,14 +691,20 @@
           esc(out.gaps.slice(0, 4).join(', ')) + (out.gaps.length > 4 ? ' …' : '') +
           '<br>(running old copies inside the current cache; a navigation online should clear it)</span>');
       } else if (out.gaps !== undefined) {
-        rows.push('<span style="color:#1F5D3A">precache: no stale files outstanding</span>');
+        /* ⚠ 2026-09-24 — THIS LINE USED TO CLAIM MORE THAN IT KNOWS. It said "no stale files
+           outstanding" while the owner's phone ran v671 holding v670's player.js: the record it
+           reads had been lost (the v672 fix in sw.js), so its absence proved nothing. It now says
+           only what it measures, and the byte check below says the rest. */
+        rows.push('<span style="color:#1F5D3A">re-fetch record: none pending</span>');
       }
+      rows.push('<span data-pcverify style="opacity:.75">precache vs live: checking…</span>');
       var v = swVerdict(out.caches, activeCache);
       var tone = (v.code === 'stuck' || v.code === 'undeleted') ? 'color:#7A1F1F'
                : v.code === 'unknown' ? 'opacity:.75' : 'color:#1F5D3A';
       rows.push('<span style="' + tone + '">' + v.html + '</span>');
     }
     if (window.ThaiEarPlayerBuild) rows.push('player: ' + esc(window.ThaiEarPlayerBuild));
+    rows.push('<span data-swdiag style="color:#8A8A8A;font-size:11px">update log: …</span>');
 
     el.innerHTML = rows.join('<br>') +
       '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
@@ -714,6 +720,9 @@
         '<button type="button" id="ownersim-dbg" style="' + SWBTN + '">' +
           (layoutDbgOn() ? 'Layout debugger: ON' : 'Layout debugger: off') + '</button>' +
       '</div>';
+
+    pcVerify(el.querySelector('[data-pcverify]'), activeCache, esc);
+    swDiag(el.querySelector('[data-swdiag]'), esc);
 
     var dbg = el.querySelector('#ownersim-dbg');
     if (dbg) dbg.addEventListener('click', function () {
@@ -859,6 +868,91 @@
      lifetime. A probe for one specific bug belongs behind a toggle, as the layout debugger now
      is, or it belongs deleted with the bug. Do not re-add this one; write a fresh one against
      whatever fault is actually in hand. */
+
+  /* ⭐ 2026-09-24 — DO THE FILES IN THE ACTIVE CACHE MATCH THE LIVE SITE? Compared by ETag, which
+     Cloudflare Pages derives from the content, via a HEAD request per file. The owner's phone read
+     "no stale files outstanding" on v671 while its player.js was v670's; this is the check that
+     would have said so.
+     ⚠ The URL is BUSTED (?te-verify=…), or the service worker answers cache-first and we compare
+     the cache with itself — the same trap the Re-download button documents. A HEAD is never
+     stored by the worker (Cache.put refuses non-GET), so this leaves nothing behind.
+     ⚠ A cached entry with no ETag (e.g. a rescued copy from an old worker) is reported as
+     UNVERIFIABLE, never as a match. Read-only; the Re-download button is the remedy. */
+  function pcVerify(span, activeCache, esc) {
+    if (!span) return;
+    if (!activeCache || !window.caches) { span.textContent = 'precache vs live: no active cache'; return; }
+    var bust = 'te-verify=' + Date.now();
+    caches.open(activeCache).then(function (c) {
+      return c.keys().then(function (reqs) {
+        reqs = reqs.filter(function (q) {
+          return q.url.indexOf(location.origin) === 0 && q.url.indexOf('te-refresh=') === -1;
+        });
+        var same = 0, stale = [], unk = 0, failed = 0, i = 0;
+        function lane() {
+          if (i >= reqs.length) return Promise.resolve();
+          var q = reqs[i++];
+          return c.match(q).then(function (r) {
+            var mine = r && r.headers.get('etag');
+            if (!mine) { unk++; return; }
+            var u = q.url + (q.url.indexOf('?') > -1 ? '&' : '?') + bust;
+            return fetch(u, { method: 'HEAD', cache: 'no-store', credentials: 'same-origin' })
+              .then(function (res) {
+                var live = res && res.ok && res.headers.get('etag');
+                if (!live) { failed++; return; }
+                var norm = function (t) { return String(t).replace(/^W\//, ''); };
+                if (norm(live) === norm(mine)) same++;
+                else stale.push(new URL(q.url).pathname + ' (' +
+                  String(r.headers.get('date') || '?').replace(/^\w+, /, '').replace(/ GMT$/, '') + ')');
+              }, function () { failed++; });
+          }).catch(function () { failed++; }).then(lane);
+        }
+        var lanes = [];
+        for (var n = 0; n < Math.min(6, reqs.length); n++) lanes.push(lane());
+        return Promise.all(lanes).then(function () {
+          /* Measured 2026-09-24: the no-ETag entries are the precached HTML pages (Cloudflare
+             sends none for HTML). They are served stale-while-revalidate, so each visit refreshes
+             them — unlike a script, which cache-first never re-checks. */
+          var tail = (unk ? ' · ' + unk + ' pages without an ETag (they refresh on each visit)' : '') +
+                     (failed ? ' · ' + failed + ' could not be checked (offline?)' : '');
+          if (stale.length) {
+            span.style.opacity = '1';
+            span.innerHTML = '<b style="color:#7A1F1F">⚠ precache vs live: ' + stale.length +
+              ' file' + (stale.length === 1 ? '' : 's') + ' OLD — ' + esc(stale.slice(0, 5).join(', ')) +
+              (stale.length > 5 ? ' …' : '') + '</b><br>(tap Re-download app files) ' +
+              esc(same + ' match' + tail);
+          } else {
+            span.innerHTML = '<span style="color:#1F5D3A">precache vs live: all ' + same +
+              ' checked files match</span>' + esc(tail);
+          }
+        });
+      });
+    }).catch(function () { span.textContent = 'precache vs live: check failed'; });
+  }
+  /* The sw.js v672 breadcrumbs (thaiear-diag): what each recent update actually did — install
+     entry count and timing, which files activate had to rescue from the old version, and whether
+     the re-fetch landed. Read-only. */
+  function swDiag(span, esc) {
+    if (!span || !window.caches) return;
+    caches.has('thaiear-diag').then(function (yes) {
+      if (!yes) { span.textContent = 'update log: none yet (written from sw v672 on)'; return; }
+      return caches.open('thaiear-diag').then(function (dc) { return dc.match('/__te_diag'); })
+        .then(function (r) { return r ? r.json() : null; })
+        .then(function (log) {
+          if (!log) { span.textContent = 'update log: empty'; return; }
+          var vs = Object.keys(log).sort(function (a, b) { return (+b.slice(1)) - (+a.slice(1)); });
+          span.innerHTML = 'update log:' + vs.map(function (v) {
+            return '<br><b>' + esc(v) + '</b> ' + (log[v] || []).map(function (row) {
+              var d = row[2];
+              var txt = d && typeof d === 'object'
+                ? Object.keys(d).filter(function (k) { return d[k] !== '' && d[k] != null; })
+                    .map(function (k) { return k + ':' + d[k]; }).join(',')
+                : '';
+              return esc(row[1] + (txt ? '[' + txt + ']' : '') + '@' + (row[0] / 1000).toFixed(1) + 's');
+            }).join(' › ');
+          }).join('');
+        });
+    }).catch(function () { span.textContent = 'update log: read failed'; });
+  }
 
   /* Print, per downloaded unit, the three values that decide whether it is offered an update,
      and the verdict each surface reaches from them. ⛔ The verdict is RE-DERIVED here rather than

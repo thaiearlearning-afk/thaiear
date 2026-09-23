@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v671';   // v671: player.js cachePage() saves a topic page under its CLEAN key (pathname, .html dropped) and removes same-path ?query strays only after that save succeeds. It used c.add(location.href), so every re-save from the quiz strip's /topic-NN?quiz=menu landed in a second entry while the clean one an offline card tap is answered from stayed frozen: owner panel measured 21 of 48 downloads holding an OLD page under a CURRENT stamp ("Page update available" offline only; an old two-option vocab question). Playlist pages keep location.href (?pl= identifies them). Guard: test_cachepage_key.js, RED on the pre-fix source. v670: v663: privacy.html -- the reset/clear buttons now DELETE (DATA_PROTECTION.md §4a, open action 6); Last updated 23 Sep. v662: 20 s timeouts + no double-submit on the three delete controls (Progress reset, Read Thai clear, Delete account). v661: progress.html reloads after a fully successful 'Reset progress data', because the in-place repaint kept showing the old quiz scores. v660: auth.js resetQuiz() now erases quiz records through ONE security-definer rpc (erase_quiz_records, erase_progress_records.sql) and treats success as 'rows left === 0'. The per-table DELETEs it replaced were refused by missing grants, so the Progress page's reset never removed a quiz score. read.js's 'Clear my reading progress' likewise now erases read_scores via erase_read_scores() before clearing local (it only ever cleared localStorage). v659: a COMMENT-ONLY correction in pl-list.js, bumped because the file is precached and the rule for that is unconditional. The comment above dlSaveQuizData said a split topic's parts SHARE an audio prefix (topic-13a and 13b 'both ..._LI1'). THEY DO NOT -- MEASURED 2026-09-23: 113 units, 113 DISTINCT prefixes; 13a is BodyHealth_BEG, 13b Health_BEG, 13c Health_LI1. Its CONCLUSION (resolve a unit by sentence number, never by prefix) is still right, for the real reason: a PLAYLIST spans units, so no single prefix can name the unit a given sentence belongs to. ⚠ Corrected in place rather than deleted, because right-for-the-wrong-reason is the most durable kind of wrong -- a later session would re-derive the false premise and might act on it. That premise also underwrote today's prefix-keyed ver/qz baselines, which is why it was measured rather than assumed. v658 is spent.
+const VERSION = 'v672';   // v672: activate() writes the re-fetch record (thaiear-gaps) BEFORE deleting the old caches, awaited, and the sweep now keeps thaiear-gaps + thaiear-diag. It used to be written after the deletes, fire-and-forget, so a worker torn down in that window kept the rescued OLD bytes with no record to re-fetch them: the owner's Android app ran v671 holding v670's player.js with an empty record until 'Re-download app files'. Plus BREADCRUMBS (SW_ACTIVATE_FIX_PLAN.md §7 Phase 3): install/activate stages, entry counts, timings, rescued paths and each re-fetch's outcome go to thaiear-diag for the owner panel. Counts and paths only. v671: v671: player.js cachePage() saves a topic page under its CLEAN key (pathname, .html dropped) and removes same-path ?query strays only after that save succeeds. It used c.add(location.href), so every re-save from the quiz strip's /topic-NN?quiz=menu landed in a second entry while the clean one an offline card tap is answered from stayed frozen: owner panel measured 21 of 48 downloads holding an OLD page under a CURRENT stamp ("Page update available" offline only; an old two-option vocab question). Playlist pages keep location.href (?pl= identifies them). Guard: test_cachepage_key.js, RED on the pre-fix source. v670: v663: privacy.html -- the reset/clear buttons now DELETE (DATA_PROTECTION.md §4a, open action 6); Last updated 23 Sep. v662: 20 s timeouts + no double-submit on the three delete controls (Progress reset, Read Thai clear, Delete account). v661: progress.html reloads after a fully successful 'Reset progress data', because the in-place repaint kept showing the old quiz scores. v660: auth.js resetQuiz() now erases quiz records through ONE security-definer rpc (erase_quiz_records, erase_progress_records.sql) and treats success as 'rows left === 0'. The per-table DELETEs it replaced were refused by missing grants, so the Progress page's reset never removed a quiz score. read.js's 'Clear my reading progress' likewise now erases read_scores via erase_read_scores() before clearing local (it only ever cleared localStorage). v659: a COMMENT-ONLY correction in pl-list.js, bumped because the file is precached and the rule for that is unconditional. The comment above dlSaveQuizData said a split topic's parts SHARE an audio prefix (topic-13a and 13b 'both ..._LI1'). THEY DO NOT -- MEASURED 2026-09-23: 113 units, 113 DISTINCT prefixes; 13a is BodyHealth_BEG, 13b Health_BEG, 13c Health_LI1. Its CONCLUSION (resolve a unit by sentence number, never by prefix) is still right, for the real reason: a PLAYLIST spans units, so no single prefix can name the unit a given sentence belongs to. ⚠ Corrected in place rather than deleted, because right-for-the-wrong-reason is the most durable kind of wrong -- a later session would re-derive the false premise and might act on it. That premise also underwrote today's prefix-keyed ver/qz baselines, which is why it was measured rather than assumed. v658 is spent.
                           // Owner, 2026-09-22, twice: "the 6 boxes still flash ... the numbers
                           // within them", then "its about a flash, not a zero versus a dash!
                           // just dont render anything until the conflict is resolved".
@@ -1649,12 +1649,57 @@ const PRECACHE_PATHS = new Set(PRECACHE);
    "the 8 s budget expired". A diagnostic that reads 94/93 is worse than no diagnostic.
    Its own cache is invisible to both: the panel lists only /^thaiear-v\d+$/, and nothing serves
    from it (it is not in FALLBACK_CACHES, so a fetch can never resolve against it).
-   ⚠ activate()'s sweep DELETES it, because it is not in the keep-list — deliberately left that
-   way rather than adding an entry to a keep-list SW_ACTIVATE_FIX_PLAN.md §12 warns about at
-   length. The record is per-version state, and activate rewrites it AFTER the sweep in the same
-   chain, so the deletion is correct rather than tolerated. */
+   ⛔⛔ v672 — IT IS NOW KEPT BY THE SWEEP AND WRITTEN *BEFORE* IT, AWAITED. Until v671 the sweep
+   deleted this cache and the record was rewritten AFTER the deletes, inside the fire-and-forget
+   re-fetch chain — i.e. outside waitUntil. A worker torn down between activate settling and that
+   write (swiping the app away right after an update is enough) therefore lost the record while the
+   rescued OLD bytes stayed, and nothing would ever re-fetch them. Owner's Android app, 2026-09-24:
+   v671 active, v670 gone, player.js in v671 still v670's copy (Date = v670's install), and NO
+   record — only the panel's "Re-download app files" got the fix onto the phone.
+   Keeping it is safe where §12's sweep was not: it ADDS a name to what survives, deletes nothing,
+   and activate() overwrites or clears the key on every run, so a stale list cannot outlive a
+   version. */
 const GAPS_CACHE = 'thaiear-gaps';
 const GAPS_KEY = '/__te_gaps';   // synthetic: never in PRECACHE, never requested by a page
+
+/* ── BREADCRUMBS: WHAT DID THIS UPDATE ACTUALLY DO? (v672, SW_ACTIVATE_FIX_PLAN.md §7 Phase 3) ──
+   Every open question about stranded files (§6: did install finish? how far did activate get?
+   terminated or rejected?) has been answered by inference until now. This records the stages of
+   install and activate, and the outcome of each re-fetch, into a small never-swept cache the owner
+   panel reads — the only route into the phone, which has no console.
+   ⛔ Counts, versions, timings and PRECACHE paths ONLY — no user data (Golden Rule 0).
+   ⚠ Awaited at stage boundaries (a fire-and-forget write is exactly what is lost in the case being
+   measured), but raced against DIAG_WAIT_MS and swallowed, so a diagnostic can never delay or
+   break activation. Writes are serialised within a boot; the last three versions are kept. */
+const DIAG_CACHE = 'thaiear-diag';
+const DIAG_KEY = '/__te_diag';
+const DIAG_WAIT_MS = 500;
+const DIAG_T0 = Date.now();
+let diagQ = Promise.resolve();
+function diag(stage, detail) {
+  try {
+    var step = diagQ.then(function () {
+      return caches.open(DIAG_CACHE).then(function (dc) {
+        return dc.match(DIAG_KEY).then(function (r) { return r ? r.json() : {}; })
+          .catch(function () { return {}; })
+          .then(function (log) {
+            if (!log || typeof log !== 'object' || Array.isArray(log)) log = {};
+            var row = [Date.now() - DIAG_T0, stage];
+            if (detail !== undefined) row.push(detail);
+            (log[VERSION] = log[VERSION] || []).push(row);
+            if (log[VERSION].length > 40) log[VERSION] = log[VERSION].slice(-40);
+            var vs = Object.keys(log).sort(function (a, b) { return (+a.slice(1)) - (+b.slice(1)); });
+            while (vs.length > 3) delete log[vs.shift()];
+            return dc.put(DIAG_KEY, new Response(JSON.stringify(log),
+              { headers: { 'Content-Type': 'application/json' } }));
+          });
+      });
+    }).catch(function () {});
+    diagQ = step;
+    return Promise.race([step, new Promise(function (r) { setTimeout(r, DIAG_WAIT_MS); })]);
+  } catch (_) { return Promise.resolve(); }
+}
+function diagPaths(list) { return (list || []).slice(0, 12).join(' '); }
 /* Module scope, so it resets when the worker is torn down and re-booted — which is how the retry
    gets more than one chance without costing anything on a healthy device. */
 let gapsRetriedThisBoot = false;
@@ -1675,7 +1720,7 @@ function readPendingGaps() {
 /* Re-fetch outstanding gaps, tick off the ones that land, and persist what is left. Replaces the
    fire-and-forget addBatched() on the activate path so that a failure is REMEMBERED rather than
    dropped. Same batching, same per-item swallow — the only new behaviour is the bookkeeping. */
-function retryGaps(c, gaps, width) {
+function retryGaps(c, gaps, width, label) {
   if (!gaps || !gaps.length) return putPendingGaps([]);
   var left = gaps.slice(), i = 0;
   function lane() {
@@ -1688,7 +1733,10 @@ function retryGaps(c, gaps, width) {
   }
   var lanes = [];
   for (var n = 0; n < Math.min(width || 6, gaps.length); n++) lanes.push(lane());
-  return Promise.all(lanes).then(function () { return putPendingGaps(left); });
+  return Promise.all(lanes).then(function () {
+    diag(label || 'retry', { tried: gaps.length, left: left.length, still: diagPaths(left) });
+    return putPendingGaps(left);
+  });
 }
 function addBatched(c, urls, width) {
   var i = 0;
@@ -1770,13 +1818,22 @@ function migrateGaps(c, gaps, olds) {
 const INSTALL_BUDGET_MS = 8000;
 
 self.addEventListener('install', function (e) {
+  var t0 = Date.now(), timedOut = false;
   e.waitUntil(
-    Promise.race([
+    diag('install-start', { precache: PRECACHE.length }).then(function () { return Promise.race([
       caches.open(CACHE).then(function (c) { return addBatched(c, PRECACHE, 6); }),
-      new Promise(function (res) { setTimeout(res, INSTALL_BUDGET_MS); })
-    ])
+      new Promise(function (res) { setTimeout(function () { timedOut = true; res(); }, INSTALL_BUDGET_MS); })
+    ]); })
       // ⚠ Swallow EVERYTHING. A rejection here used to mean the version could never install.
       .catch(function () {})
+      .then(function () {
+        return caches.open(CACHE).then(function (c) { return c.keys(); })
+          .then(function (ks) { return ks.length; }, function () { return -1; })
+          .then(function (n) {
+            return diag(timedOut ? 'install-timeout' : 'install-done',
+              { entries: n, of: PRECACHE.length, ms: Date.now() - t0 });
+          });
+      })
       .then(function () { return self.skipWaiting(); })
   );
 });
@@ -1789,9 +1846,10 @@ self.addEventListener('activate', function (e) {
       // downloads cache is ever version-wiped, so offline content survives an SW update.
       .then(function (keys) {
         var doomed = keys.filter(function (k) {
-          return k !== CACHE && k !== VENDOR_CACHE && k !== 'thaiear-dl' && k !== 'thaiear-audio-dl';
+          return k !== CACHE && k !== VENDOR_CACHE && k !== 'thaiear-dl' && k !== 'thaiear-audio-dl' &&
+                 k !== GAPS_CACHE && k !== DIAG_CACHE;   // v672: both are rewritten below, never swept
         });
-        return caches.open(CACHE).then(function (c) {
+        return diag('activate-start', { old: doomed.join(' ') }).then(function () { return caches.open(CACHE); }).then(function (c) {
           return precacheGaps(c)
             // 1. rescue what the install missed from the cache we are about to delete (no network)
             .then(function (gaps) { return migrateGaps(c, gaps, doomed); })
@@ -1803,6 +1861,19 @@ self.addEventListener('activate', function (e) {
                ⚠ This does NOT address the other suspect, a worker TERMINATED mid-copy: nothing
                rejects there, execution simply stops. See SW_ACTIVATE_FIX_PLAN.md §6. */
             .catch(function () { return []; })
+            /* ⛔⛔ v672 — WRITE THE HOLE LIST DOWN *BEFORE* THE OLD CACHES GO, AND AWAIT IT.
+               It used to be written after the deletes, fire-and-forget: a worker torn down in that
+               window kept the rescued OLD bytes and lost the only note that they needed re-fetching
+               (see the GAPS_CACHE note). A cache write, not the network, so it is allowed here;
+               raced and swallowed all the same, so it cannot hold activation. */
+            .then(function (gaps) {
+              return diag('gaps', { n: gaps.length, rescued: diagPaths(gaps) })
+                .then(function () {
+                  return Promise.race([putPendingGaps(gaps),
+                    new Promise(function (r) { setTimeout(r, 1000); })]);
+                })
+                .then(function () { return gaps; }, function () { return gaps; });
+            })
             // 2. only now is it safe to drop the old versions
             .then(function (gaps) {
               /* ⚠ PER-ITEM catch (2026-08-22). This was a bare Promise.all, so ONE rejecting
@@ -1833,8 +1904,8 @@ self.addEventListener('activate', function (e) {
                      does not land here is retried on a later navigation (see the fetch handler).
                      Still not returned, still opportunistic — the change is that a failure is now
                      remembered instead of dropped. */
-                  putPendingGaps(gaps)
-                    .then(function () { return retryGaps(c, gaps, 6); })
+                  diag('deletes-done');
+                  retryGaps(c, gaps, 6, 'activate-retry')
                     /* ⚠ A TRAILING CATCH, THOUGH NOTHING HERE IS AWAITED. This chain is
                        fire-and-forget, so a rejection has no one to handle it and would surface
                        as an unhandled rejection inside the worker — noise at best, and on some
@@ -1894,6 +1965,7 @@ self.addEventListener('activate', function (e) {
         }
       })
       .then(function () { return self.clients.claim(); })
+      .then(function () { return diag('claimed'); }, function () { return diag('claim-failed'); })
   );
 });
 
@@ -2040,7 +2112,7 @@ self.addEventListener('fetch', function (e) {
     try {
       e.waitUntil(readPendingGaps().then(function (g) {
         if (!g.length) return null;                       // the healthy case: one miss, no network
-        return caches.open(CACHE).then(function (c) { return retryGaps(c, g, 3); });
+        return caches.open(CACHE).then(function (c) { return retryGaps(c, g, 3, 'nav-retry'); });
       }).catch(function () {}));
     } catch (_) {}
   }
