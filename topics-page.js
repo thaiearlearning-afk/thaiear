@@ -197,7 +197,8 @@
      the side-car: the page catches that and the card does not. Under-reporting, never over-, and
      stated here so nobody reads the card as authoritative. */
   function contentStale(unit, prefix) {
-    var sig = window.__teQuizSig;
+    var M = window.__teQuizMap;
+    var sig = M && M.sig;
     /* No published stamp for this unit — say nothing. Also the guard that stops the two
        one-time flips below firing on a unit that has no quiz to be missing, which is what
        keeps them from nagging where there is nothing to deliver (player.js does the same with
@@ -217,7 +218,22 @@
          stale download current.
        Both clear the moment the update runs, because finalize now records `ver` AND `qz`. */
     if (!e.ver || e.qz == null) return true;
-    return e.qz !== sig[unit];
+    if (e.qz !== sig[unit]) return true;
+    /* ⭐ AND THE PAGE ITSELF, against a PUBLISHED hash (r216). Until this existed the card could
+       only see the QUIZ move, so a text-only edit was invisible to it — and worse, the two
+       baselines were written from different epochs: finalize hashes the page IN MEMORY, which can
+       be a stale cached copy, while the quiz stamp is fetched and current. Owner, 2026-09-23, on
+       topic-04b: `qz` matched published so the card said downloaded, while `ver` did not match
+       the live page so the page said update available. Both were right about the only field they
+       could see; the disagreement was in what each was allowed to look at.
+       ⚠ Published by gen_quiz_data.js with the SAME construction as player.js contentHash(), and
+       test_quiz_engine asserts they agree on every unit — if they ever drift, every downloaded
+       device nags for ever, so that assertion is the thing standing between us and that.
+       ⚠ Absent for a unit (an older index.json) means say nothing, exactly as a missing quiz
+       stamp does. Conservative on every unknown. */
+    var pver = M && M.ver;
+    if (pver && pver[unit] != null && e.ver !== pver[unit]) return true;
+    return false;
   }
   function applyDownloadState() {
     /* dl-core is not on a plain browser tab, and that is correct — download UI is app +
@@ -258,10 +274,10 @@
      and fetched once per page. Failure is silent and means "flag nothing", exactly as a missing
      audio-versions.json does. */
   function loadQz() {
-    if (window.__teQuizSig) return Promise.resolve();
+    if (window.__teQuizMap) return Promise.resolve();
     return fetch('quiz-data/index.json', { cache: 'no-cache' })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) { if (j && j.sig) window.__teQuizSig = j.sig; })
+      .then(function (j) { if (j && j.sig) window.__teQuizMap = j; })
       .catch(function () {});
   }
   function loadAv() {
