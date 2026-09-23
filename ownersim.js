@@ -950,18 +950,32 @@
       }).join(S2);
       return h53(base + S3 + JSON.stringify(pg.quiz || ''));
     }
+    /* ⚠ EVERY ENTRY, not the first match. The first cut used c.match(), which returns ONE entry —
+       and the question it raised (topic-13b's copy survived an Update unchanged) is whether a
+       re-save lands under a DIFFERENT key (query string, .html) beside the old one, which a
+       single match cannot show. keys() is in insertion order, which is also match() order, so
+       the first entry listed is the one an offline lookup is answered with. */
     function one(name) {
       return caches.open(name).then(function (c) {
-        return c.match('/' + unit, { ignoreSearch: true }).then(function (r) {
-          return r || c.match('/' + unit + '.html', { ignoreSearch: true });
-        });
-      }).then(function (r) {
-        if (!r) return name + ': none';
-        var d = r.headers.get('date') || '';
-        return r.text().then(function (t) {
-          var hv = pageHash(t);
-          return name + ': ' + hv + (pv ? (hv === pv ? ' ✓' : ' ✗ OLD') : '') +
-            (d ? ' (' + d.replace(/^\w+, /, '').replace(/ GMT$/, '') + ')' : '');
+        return c.keys().then(function (reqs) {
+          var mine = reqs.filter(function (q) {
+            var p = new URL(q.url).pathname;
+            return p === '/' + unit || p === '/' + unit + '.html';
+          });
+          if (!mine.length) return name + ': none';
+          return Promise.all(mine.map(function (q) {
+            var u = new URL(q.url);
+            return c.match(q).then(function (r) {
+              if (!r) return u.pathname + u.search + ' → gone';
+              var d = r.headers.get('date') || '';
+              return r.text().then(function (t) {
+                var hv = pageHash(t);
+                return u.pathname + u.search + ' ' + hv + (pv ? (hv === pv ? ' ✓' : ' ✗ OLD') : '') +
+                  (d ? ' (' + d.replace(/^\w+, /, '').replace(/ GMT$/, '') + ')' : '') +
+                  (r.redirected ? ' [redirected]' : '');
+              });
+            });
+          })).then(function (ls) { return name + ' [' + mine.length + ']: ' + ls.join(' | '); });
         });
       }).catch(function () { return name + ': read failed'; });
     }
