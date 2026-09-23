@@ -228,3 +228,9 @@ _prog-hint-probe.html
 # Verdicts live in the browser localStorage, not in the file; its decoys are published.
 # NOTE the bare name: the pattern above is quiz-q2-review-v6-*.html and needs the dash.
 quiz-q2-review-v6.html
+
+# Dyn audio capability probe — LOCAL DEV ONLY, never deploy.
+# It carries a hardcoded prompt() password and was publicly reachable at /dyn-probe until
+# 2026-09-23. Kept on disk: DYNAMIC_PLAYER_PLAN.md cites it as the reference implementation
+# the Opus/AAC muxers were lifted from (player.js r17 comment).
+dyn-probe.html
