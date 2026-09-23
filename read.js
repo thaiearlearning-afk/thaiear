@@ -1909,9 +1909,22 @@
           'attempt, best score and average, across every section.<br>' +
           '<strong>This cannot be undone.</strong>',
         confirm: 'Delete',
+        /* ⛔⛔ THE ACCOUNT COPY GOES TOO (2026-09-23). Removing only LS_KEY left read_scores
+           intact, and the reload's pull() copied every result straight back. Erase the server
+           rows FIRST; if that fails, say so and keep the local copy, because "deleted" has to
+           be true. */
         onConfirm: function () {
-          try { localStorage.removeItem(LS_KEY); } catch (_) {}
-          location.reload();
+          var RS = window.ThaiEarReadStore;
+          clearBtn.textContent = 'Deleting…';
+          (RS && RS.erase ? RS.erase() : Promise.resolve(true)).then(function (ok) {
+            if (!ok) {
+              clearBtn.textContent = 'Could not delete — try again';
+              setTimeout(function () { clearBtn.textContent = 'Clear my reading progress'; }, 3000);
+              return;
+            }
+            try { localStorage.removeItem(LS_KEY); } catch (_) {}
+            location.reload();
+          });
         }
       });
     });

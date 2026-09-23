@@ -1465,19 +1465,29 @@
        ⚠ EACH TABLE IS SWALLOWED SEPARATELY. One table refusing (quiz_rejections had no delete
        policy until the migration in quiz_rejections.sql) must not abandon the other four
        half-deleted. The result reports which, if any, refused. */
+    /* ⛔⛔ AND THAT PER-TABLE VERSION NEVER DELETED ANYTHING (found 2026-09-23). quiz_scores,
+       quiz_item_stats and quiz_stat_batches grant `authenticated` no DELETE, so all three were
+       refused and the owner's 14 score rows survived the button. Now ONE security-definer rpc
+       (erase_progress_records.sql) erases all five tables in one transaction, keyed on auth.uid(),
+       and RETURNS THE ROWS LEFT. ⚠ Success means that number is 0 — never "no error", because a
+       delete that RLS filters to nothing also reports no error. */
     resetQuiz: function () {
       var uid = currentUser && currentUser.id;
       if (!client || !uid) return Promise.resolve({ ok: false, refused: [] });
-      var TABLES = ['quiz_scores', 'quiz_item_stats', 'quiz_stat_batches',
-                    'quiz_exclusions', 'quiz_rejections'];
-      return Promise.all(TABLES.map(function (t) {
-        return client.from(t).delete().eq('user_id', uid)
-          .then(function (res) { return (res && res.error) ? t : null; })
-          .catch(function () { return t; });
-      })).then(function (results) {
-        var refused = results.filter(Boolean);
+      /* ⚠ WAIT OUT AN IN-FLIGHT FLUSH FIRST: it ends by re-queuing the ops that failed, which
+         would put deleted records back in the outbox of a blank store. */
+      return qzIdle().then(function () { return client.rpc('erase_quiz_records'); })
+        .then(function (res) {
+          return (res && !res.error && res.data === 0) ? [] : ['erase_quiz_records'];
+        })
+        .catch(function () { return ['erase_quiz_records']; })
+        .then(function (refused) {
         try {
+          /* ⚠ Pending READ THAI results share this outbox and are not the quiz's to delete —
+             that is the Read Thai page's own button (ThaiEarReadStore.erase). Keep them. */
+          var readOps = qzLoadLocal().outbox.filter(function (op) { return op.k === 'readsc'; });
           qzCache = qzBlank();
+          qzCache.outbox = readOps;
           localStorage.setItem(QZ_LS, JSON.stringify(qzCache));
         } catch (_) {}
         notify();
@@ -2510,6 +2520,14 @@
   /* The outbox is the whole offline story: every write lands locally AND is queued, and the
      queue drains whenever we are online with a user. ⚠ Every entry must be idempotent on the
      server, because a flush can be interrupted and replayed. */
+  /* Resolves once no flush is in flight (capped at ~5 s so a hung request cannot block a reset). */
+  function qzIdle() {
+    return new Promise(function (done) {
+      (function wait(n) {
+        if (!qzFlushing || n > 50) done(); else setTimeout(function () { wait(n + 1); }, 100);
+      })(0);
+    });
+  }
   function qzQueue(op) { var d = qzLoadLocal(); d.outbox.push(op); qzSave(); qzFlush(); }
 
   function qzSend(op, uid) {
@@ -2679,6 +2697,21 @@
       }).then(function (r) {
         return (r && !r.error && r.data) ? r.data : null;
       }).catch(function () { return null; });
+    },
+    /* ⛔⛔ ERASE THIS ACCOUNT'S READ THAI RESULTS (2026-09-23). The "Clear my reading progress"
+       button removed only read.js's localStorage copy, so the next pull() copied the server rows
+       straight back. This drops any queued result first (or the next flush re-uploads it), then
+       calls the security-definer rpc in erase_progress_records.sql, which RETURNS THE ROWS LEFT.
+       Resolves true only when that is 0. Signed out there is nothing on the server: true. */
+    erase: function () {
+      if (!client || !currentUser) return Promise.resolve(true);
+      return qzIdle().then(function () {
+        var d = qzLoadLocal();
+        d.outbox = d.outbox.filter(function (op) { return op.k !== 'readsc'; });
+        qzSave();
+        return client.rpc('erase_read_scores');
+      }).then(function (r) { return !!(r && !r.error && r.data === 0); })
+        .catch(function () { return false; });
     },
     signedIn: function () { return !!(client && currentUser); }
   };
