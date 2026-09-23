@@ -237,6 +237,22 @@
     d.appendChild(ver);
     swReport(ver);
 
+    /* ── DOWNLOAD STALENESS PROBE (2026-09-23) ─────────────────────────────────
+       WHY IT IS HERE AND NOT IN A CONSOLE. "Is this download superseded?" is now decided by three
+       values a device holds privately — the manifest's `ver` and `qz`, and the published per-unit
+       quiz stamp — and the owner's devices are an Android WebView and an iPhone PWA, neither of
+       which has a console or an address bar. Every wrong answer on this subject so far has come
+       from reasoning about what those values PROBABLY are. This prints them.
+       ⚠ ownersim.js is deliberately NOT precached, so this reaches a device with no VERSION bump
+       and no new cache — the only diagnostic route into the app that does not need a release.
+       ⚠ READ-ONLY. It never writes the manifest: a probe that repaired what it measured would
+       destroy the evidence it exists to collect. */
+    var stale = document.createElement('div');
+    stale.style.cssText = 'margin-top:10px;font-size:12px;color:#7A1F1F;line-height:1.65';
+    stale.innerHTML = 'downloads: checking\u2026';
+    d.appendChild(stale);
+    staleReport(stale);
+
     /* ── AUDIO LATENCY PROBE (2026-08-26) ───────────────────────────────────────────────────
        player.js records when the prewarm ran, whether the clip you tapped was already warm, and
        how long the tap took to make a sound. It is armed with ?lat=1 — WHICH DOES NOT EXIST IN
@@ -782,6 +798,57 @@
      is, or it belongs deleted with the bug. Do not re-add this one; write a fresh one against
      whatever fault is actually in hand. */
 
+  /* Print, per downloaded unit, the three values that decide whether it is offered an update,
+     and the verdict each surface reaches from them. ⛔ The verdict is RE-DERIVED here rather than
+     imported, because the point is to compare it against what the page and the card actually
+     show — a probe that called the same function would agree with a broken one by construction. */
+  function staleReport(el) {
+    var T = window.ThaiEarTopics;
+    var man = {};
+    try { man = JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) {}
+    var prefixes = Object.keys(man);
+    if (!prefixes.length) { el.innerHTML = 'downloads: <b>none on this device</b>'; return; }
+
+    fetch('/quiz-data/index.json', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
+      .then(function (j) {
+        var sig = (j && j.sig) || null;
+        var all = T ? [].concat(T.topics || [], T.structures || []) : [];
+        var rows = [], nStale = 0;
+        prefixes.forEach(function (pfx) {
+          var e = man[pfx] || {};
+          if (!e.refs || e.refs.indexOf('topic') === -1) return;   // not a topic's own download
+          var u = null;
+          for (var i = 0; i < all.length; i++) if (all[i].audio === pfx) { u = all[i]; break; }
+          var unit = u ? String(u.page || '').replace(/\.html$/, '') : '?';
+          var pub = (sig && sig[unit] != null) ? sig[unit] : null;
+          var verdict, why;
+          if (pub == null) { verdict = 'quiet'; why = 'no published stamp for this unit'; }
+          else if (!e.ver) { verdict = 'UPDATE'; why = 'no ver — predates the content stamp'; }
+          else if (e.qz == null) { verdict = 'UPDATE'; why = 'no qz — updated before v645'; }
+          else if (e.qz !== pub) { verdict = 'UPDATE'; why = 'qz differs — quiz re-published'; }
+          else { verdict = 'quiet'; why = 'current'; }
+          if (verdict === 'UPDATE') nStale++;
+          rows.push('<div style="margin:3px 0 0"><b>' + esc(unit) + '</b> — ' +
+            (verdict === 'UPDATE' ? '<b style="color:#B00">UPDATE</b>' : 'quiet') +
+            ' <span style="color:#8A8A8A">(' + esc(why) + ')</span><br>' +
+            '<span style="color:#8A8A8A;font-size:11px">ver:' + (e.ver ? esc(String(e.ver)) : '—') +
+            '  qz:' + (e.qz == null ? '—' : esc(String(e.qz))) +
+            '  published:' + (pub == null ? '—' : esc(String(pub))) + '</span></div>');
+        });
+        if (!rows.length) { el.innerHTML = 'downloads: <b>no topic downloads</b> (playlist clips only)'; return; }
+        el.innerHTML = 'downloads: <b>' + rows.length + '</b>, ' +
+          (nStale ? '<b style="color:#B00">' + nStale + ' should offer an update</b>'
+                  : '<b>all current</b>') +
+          (sig ? '' : ' <span style="color:#B00">⚠ stamp map did not load — every row reads quiet</span>') +
+          rows.join('');
+      });
+  }
+  function esc(x) {
+    return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
   function paint() { banner(); picker(); }
   function ui() {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paint);
