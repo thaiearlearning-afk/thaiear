@@ -354,50 +354,125 @@
     });
   }
 
-  /* ── LEAVE GUARD while the course is downloading ──────────────────────────────
-     Duplicated from player.js's installLeaveGuard, which has covered topic downloads since the dyn
-     rollout — this arm had no warning at all, so a tap on the nav mid-download silently abandoned
-     208 clips. Two halves, exactly as there:
-     ⚠ `beforeunload`'s dialog CANNOT be styled or reworded — every major browser has ignored
-     author-supplied text since ~2016 and renders its own generic wording in browser chrome, by
-     design — so it stays only as the un-stylable backstop for tab close, the URL bar and gestures
-     we cannot see. The realistic route out on a phone is a click on an INTERNAL LINK (the nav, a
-     lesson card, the footer), and that one we intercept and answer with the site's own dialog.
-     Not covered, deliberately and for the same reasons as on the topic side: `location.href = …`
-     assignments in JS (no event to hook) and the Android hardware back button.
+  /* ── LEAVE GUARD: a course download, a lesson test, or the reading quiz ───────
+     ⭐ THE MAP OF EVERY GUARD ON THE SITE IS `LEAVE_GUARDS.md` (project root). Read it before
+     adding a new "in progress" state anywhere — a state with half its guards is how every gap
+     below was found.
+     Originally download-only and link-only, duplicated from player.js's installLeaveGuard. The
+     2026-09-24 audit (owner: "anywhere where you are mid progress … are they all covered") found
+     the Read arm had THREE unguarded states and no back-swipe cover at all:
+       · the course download — link tap guarded, back swipe fell through to the grey native box;
+       · a lesson test (startTest / runCustomTest) — nothing: its own Exit and Restart buttons, a
+         link tap and a back swipe all silently discarded the run, and a run records only at the
+         end (recordResult in renderResult / result);
+       · the reading quiz (read-quiz) — marks are kept only in memory until Submit, and Shuffle,
+         the Part tabs, a link tap and a back swipe all dropped them without a word.
+     So one guard now reads busyReason() and covers all three, in three halves:
+       1. LINK TAP — capture-phase click on any internal <a href>, answered with readModal.
+       2. BACK SWIPE — a same-URL SENTINEL history entry while busy (pl-list.js r93 / player.js
+          r226 mechanism): the swipe pops it inside the same document, so nothing unloads, and we
+          put it back and ask. "Leave anyway" goes back past both. The scroll is tracked and
+          re-applied after every sentinel pop, because scrollRestoration 'auto' would otherwise
+          jump the learner to where they were when the guard armed.
+       3. beforeunload — the un-stylable backstop, DOWNLOAD ONLY. A test run is deliberately not
+          given one, matching quiz.js (owner, 2026-09-21: the generic browser wording is exactly
+          the vague box the styled modal exists to replace).
+     A test counts as in progress from its FIRST ANSWER until its result is recorded — before
+     the first answer there is nothing to lose, so no nag.
      ⚠ `dlBusy` is module-scope rather than mountDlCard's local `busy` because the listeners
      outlive the card's closure; the two are set and cleared together. */
   var dlBusy = false;
+  var busyTests = [];          // panels whose test run has >=1 answer and no recorded result
+  var quizMarking = false;     // reading-quiz marks not yet submitted
   var dlGuardOn = false;
-  function installDlLeaveGuard() {
+  var leaveOk = false;         // "Leave anyway" was chosen: stand every guard down
+  function busyReason() {
+    if (dlBusy) return 'dl';
+    if (busyTests.length || quizMarking) return 'test';
+    return '';
+  }
+  function askLeave(reason, proceed) {
+    readModal(reason === 'dl' ? {
+      body: '<strong>Download in progress</strong><br><br>If you leave now, this download won’t ' +
+        'finish. You can start it again any time.',
+      cancel: 'Leave anyway', confirm: 'Keep downloading', tone: 'primary',
+      onCancel: function () { leaveOk = true; proceed(); }
+    } : {
+      body: '<strong>Leave this test?</strong><br><br>You’re part-way through. ' +
+        'If you leave now, this attempt won’t be saved.',
+      cancel: 'Leave anyway', confirm: 'Keep going', tone: 'primary',
+      onCancel: function () { proceed(); }
+    });
+  }
+  /* In-page exits (a test's Exit / Restart, the quiz's Shuffle / Part tabs) go through here, so
+     they ask the same question a link tap does. Not mid-test → straight through. */
+  function guardedExit(proceed) {
+    if (busyReason() !== 'test') { proceed(); return; }
+    askLeave('test', proceed);
+  }
+  function setTestBusy(panel, b) {
+    var i = busyTests.indexOf(panel);
+    if (b && i < 0) busyTests.push(panel);
+    if (!b && i >= 0) busyTests.splice(i, 1);
+    leaveGuardSync();
+  }
+  function setQuizMarking(b) { quizMarking = !!b; leaveGuardSync(); }
+
+  var sgArmed = false, sgSkip = false, sgStale = false, sgY = 0;
+  function sgOurs() { try { return !!(history.state && history.state.teReadGuard); } catch (_) { return false; } }
+  function sgPush() { try { history.pushState({ teReadGuard: 1 }, '', location.href); } catch (_) {} }
+  function leaveGuardSync() {
+    installLeaveGuard();
+    var busy = !!busyReason() && !leaveOk;
+    if (busy && !sgArmed) {
+      sgArmed = true; sgStale = false; sgY = window.pageYOffset || 0;
+      if (!sgOurs()) sgPush();                      // an orphan on top is reused
+    } else if (!busy && sgArmed) {
+      sgArmed = false;
+      if (sgOurs()) { sgSkip = true; try { history.back(); } catch (_) { sgSkip = false; } }
+      else sgStale = true;
+    }
+  }
+  function installLeaveGuard() {
     if (dlGuardOn) return;
     dlGuardOn = true;
-    var bypass = false;
     document.addEventListener('click', function (e) {
-      if (bypass || !dlBusy) return;
+      var r = busyReason();
+      if (leaveOk || !r) return;
+      if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
       if (!a) return;
       var href = a.getAttribute('href') || '';
       // In-page anchors, protocol links and new-tab links leave the page where it is.
       if (!href || href.charAt(0) === '#' || /^(mailto:|tel:|javascript:)/i.test(href)) return;
       if (a.target && a.target !== '_self') return;
+      if (a.hasAttribute('download')) return;
       var dest = a.href;
       e.preventDefault(); e.stopPropagation();
-      readModal({
-        body: '<strong>Download in progress</strong><br><br>If you leave now, this download won’t ' +
-          'finish. You can start it again any time.',
-        cancel: 'Leave anyway',
-        confirm: 'Keep downloading',
-        tone: 'primary',
-        onCancel: function () { bypass = true; window.location.href = dest; }
-      });
+      askLeave(r, function () { leaveOk = true; window.location.href = dest; });
     }, true);   // capture: run before the page's own link handlers
-    /* ⚠ `bypass` is honoured HERE TOO, which player.js does not do: once the visitor has answered
-       our own dialog with "Leave anyway", the browser's generic box on top of it is a second ask
-       for a decision already made. Everything else — tab close, the URL bar, a gesture — never
-       sets bypass and still gets the backstop. */
+    window.addEventListener('scroll', function () { if (sgArmed || sgSkip) sgY = window.pageYOffset || 0; }, { passive: true });
+    window.addEventListener('popstate', function () {
+      var keepY = function () { var y = sgY; try { window.scrollTo(0, y); requestAnimationFrame(function () { window.scrollTo(0, y); }); } catch (_) {} };
+      if (sgSkip) { sgSkip = false; keepY(); return; }
+      if (sgOurs()) return;
+      if (sgStale) { sgStale = false; try { history.back(); } catch (_) {} return; }
+      var r = busyReason();
+      if (!sgArmed || !r || leaveOk) return;
+      sgPush();                                     // cancel the gesture: back onto the sentinel
+      keepY();
+      askLeave(r, function () {
+        leaveOk = true; sgArmed = false;
+        try { history.go(sgOurs() ? -2 : -1); } catch (_) {}
+      });
+    });
+    /* ⚠ `leaveOk` is honoured HERE TOO: once the visitor has answered our own dialog with "Leave
+       anyway", the browser's generic box on top of it is a second ask for a decision already
+       made. Download only — see the header. */
+    /* A bfcache restore (iOS) brings the page back with leaveOk still set — re-arm. */
+    window.addEventListener('pageshow', function (e) { if (e && e.persisted) leaveOk = false; });
     window.addEventListener('beforeunload', function (e) {
-      if (bypass || !dlBusy) return;
+      if (leaveOk || !dlBusy) return;
       e.preventDefault(); e.returnValue = '';
     });
   }
@@ -500,13 +575,14 @@
     }
     function startDownload() {
       if (busy) return;
-      busy = dlBusy = true;   // dlBusy is what the leave guard reads — see installDlLeaveGuard
+      busy = dlBusy = true;   // dlBusy is what the leave guard reads — see installLeaveGuard
+      leaveGuardSync();
       render('busy');
       dlDownload(function (done, total) {
         desc.textContent = 'Saving audio… ' + done + ' of ' + total;
         bar.style.width = Math.round(done / total * 100) + '%';
-      }).then(function () { busy = dlBusy = false; render('done'); })
-        .catch(function () { busy = dlBusy = false; render('error'); });
+      }).then(function () { busy = dlBusy = false; leaveGuardSync(); render('done'); })
+        .catch(function () { busy = dlBusy = false; leaveGuardSync(); render('error'); });
     }
     btn.addEventListener('click', function () {
       var state = card.getAttribute('data-state');
@@ -526,7 +602,7 @@
         startDownload();
       }
     });
-    installDlLeaveGuard();
+    installLeaveGuard();
 
     var m = dlManifest();
     if (!m) render('none');
@@ -1098,6 +1174,7 @@
         });
         choiceEls[chosenIdx].classList.add(right ? 'correct' : 'wrong');
         if (right) score++;
+        setTestBusy(panel, true);
         fb.innerHTML = (right
           ? '<span class="ok">Correct — ' + esc(target.name) + '</span>'
           : '<span class="no">Not quite — this is ' + esc(target.name) + '</span>') + HINT;
@@ -1126,8 +1203,8 @@
           });
         });
       }
-      panel.querySelector('#tq-refresh').addEventListener('click', function () { startTest(panel, sec, mode); });
-      panel.querySelector('#tq-exit').addEventListener('click', function () { renderTestHome(panel, sec); });
+      panel.querySelector('#tq-refresh').addEventListener('click', function () { guardedExit(function () { setTestBusy(panel, false); startTest(panel, sec, mode); }); });
+      panel.querySelector('#tq-exit').addEventListener('click', function () { guardedExit(function () { setTestBusy(panel, false); renderTestHome(panel, sec); }); });
     }
     function nextQuestion() {
       qi++;
@@ -1136,6 +1213,7 @@
     }
     function renderResult() {
       recordResult(sec.key, mode, score, order.length);
+      setTestBusy(panel, false);
       var pct = score / order.length;
       var verdict = pct === 1 ? 'Perfect — you own this set.' :
         pct >= 0.8 ? 'Strong — a couple more runs and it’s automatic.' :
@@ -1219,6 +1297,7 @@
     }
     function result() {
       recordResult(sec.key, mode, score, qs.length);
+      setTestBusy(panel, false);
       var pct = score / qs.length;
       var verdict = pct === 1 ? 'Perfect — you own this.' :
         pct >= 0.8 ? 'Strong — a couple more runs and it’s automatic.' :
@@ -1308,6 +1387,7 @@
         });
         tiles[i].classList.add(right ? 'correct' : 'wrong');
         lockTiles();
+        setTestBusy(panel, true);
         if (right) { score++; paintCount(); }
         fb.innerHTML = (right
           ? '<span class="ok">Correct — ' + esc(q.answerText) + '</span>'
@@ -1330,6 +1410,7 @@
         var sub = panel.querySelector('#tq-submit');
         if (sub) sub.style.display = 'none';
         lockTiles();
+        setTestBusy(panel, true);
         if (right) { score++; paintCount(); }
         fb.innerHTML = (right
           ? '<span class="ok">Correct — ' + esc(q.answerText) + '</span>'
@@ -1356,8 +1437,8 @@
         });
       });
       if (q.multi) panel.querySelector('#tq-submit').addEventListener('click', gradeMulti);
-      panel.querySelector('#tq-refresh').addEventListener('click', function () { runCustomTest(panel, sec, mode, buildFn, homeFn); });
-      panel.querySelector('#tq-exit').addEventListener('click', function () { homeFn(panel, sec); });
+      panel.querySelector('#tq-refresh').addEventListener('click', function () { guardedExit(function () { setTestBusy(panel, false); runCustomTest(panel, sec, mode, buildFn, homeFn); }); });
+      panel.querySelector('#tq-exit').addEventListener('click', function () { guardedExit(function () { setTestBusy(panel, false); homeFn(panel, sec); }); });
     }
     render();
   }
@@ -1772,6 +1853,7 @@
     var order = shuffle(words);
     var marks = {}; // audio id -> 'got' | 'missed'
     var attemptRecorded = false;
+    setQuizMarking(false);   // a fresh render starts clean; the first mark arms the guard
 
     function summaryHtml() {
       var done = Object.keys(marks).length;
@@ -1842,14 +1924,15 @@
       var got = Object.keys(marks).filter(function (k) { return marks[k] === 'got'; }).length;
       recordResult('quiz', 'part' + part, got, order.length);
       attemptRecorded = true;
+      setQuizMarking(false);
       submitMsg.innerHTML = 'Score: <strong>' + got + ' / ' + order.length + '</strong> (' +
         Math.round(100 * got / order.length) + '%) — saved to <a href="' + pageHref('read-results.html') + '">Your results</a>.';
     });
 
-    root.querySelector('#quiz-shuffle').addEventListener('click', function () { renderQuizPart(root, part); });
-    root.querySelector('#qp-a').addEventListener('click', function () { renderQuizPart(root, 'A'); });
-    root.querySelector('#qp-b').addEventListener('click', function () { renderQuizPart(root, 'B'); });
-    root.querySelector('#qp-c').addEventListener('click', function () { renderQuizPart(root, 'C'); });
+    root.querySelector('#quiz-shuffle').addEventListener('click', function () { guardedExit(function () { renderQuizPart(root, part); }); });
+    root.querySelector('#qp-a').addEventListener('click', function () { guardedExit(function () { renderQuizPart(root, 'A'); }); });
+    root.querySelector('#qp-b').addEventListener('click', function () { guardedExit(function () { renderQuizPart(root, 'B'); }); });
+    root.querySelector('#qp-c').addEventListener('click', function () { guardedExit(function () { renderQuizPart(root, 'C'); }); });
     root.querySelectorAll('.quiz-card').forEach(function (card) {
       var id = card.getAttribute('data-audio');
       var playBtn = card.querySelector('.qc-play');
@@ -1858,9 +1941,11 @@
       var gotBtn = card.querySelector('.got'), missBtn = card.querySelector('.missed');
       gotBtn.addEventListener('click', function () {
         marks[id] = 'got'; gotBtn.classList.add('on'); missBtn.classList.remove('on'); updateSummary();
+        if (!attemptRecorded) setQuizMarking(true);
       });
       missBtn.addEventListener('click', function () {
         marks[id] = 'missed'; missBtn.classList.add('on'); gotBtn.classList.remove('on'); updateSummary();
+        if (!attemptRecorded) setQuizMarking(true);
       });
     });
   }

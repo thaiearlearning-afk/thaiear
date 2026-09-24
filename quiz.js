@@ -474,7 +474,44 @@
     } catch (_) {}
   }
 
+  /* ⛔⛔ THE RUN GUARD FOR A QUIZ THE LEARNER ARRIVED AT BY URL (2026-09-24 audit, sw v685).
+     The swipe warning below works by popping OUR te_quiz entry — but a quiz opened FROM THE URL
+     (every PLAYLIST quiz, via pl-quiz.js, and any /topic-NN?quiz=… link) deliberately pushes no
+     entry (the one-entry rule above). So mid-run there was nothing of ours to pop: a back swipe
+     left the document outright, no popstate fired, and the run was silently lost. Link taps and
+     the × were covered; the swipe was not.
+     ✅ So for a url-arrival quiz only, a same-url { te_run } SENTINEL is pushed when a RUN starts
+     (not when the quiz opens — browsing the picker and menus must still be one swipe back to
+     where the learner came from, which is what the one-entry rule protects). A swipe mid-run
+     pops it, we put it back and ask; "Exit without saving" then leaves past both, exactly where
+     the swipe was going.
+     ⚠ It is NEVER popped when the run ends — finishing or exiting just leaves it STALE, and the
+     next swipe onto it simply carries on backwards (runGuardStale), so a finished run still costs
+     one swipe, not two. Popping it on finish would fire this same handler mid-results and need
+     a skip flag threaded through every run = null site; the stale hop needs none.
+     Map of every guard on the site: LEAVE_GUARDS.md (project root). */
+  var runGuard = false;
+  function runGuardOurs() { try { return !!(history.state && history.state.te_run); } catch (_) { return false; } }
+  function armRunGuard() {
+    if (!urlEntry || pushedEntry) return;             /* an in-page quiz already has its entry */
+    if (!runGuardOurs()) { try { history.pushState({ te_run: 1 }, '', location.href); } catch (_) { return; } }
+    runGuard = true;
+  }
   window.addEventListener('popstate', function () {
+    if (runGuard && !runGuardOurs()) {                /* our run sentinel was just popped */
+      if (root && !root.hidden && runInProgress()) {
+        try { history.pushState({ te_run: 1 }, '', location.href); } catch (_) {}
+        confirmExit(function () {
+          runGuard = false;
+          backToQuizMenu();                           /* a bfcache restore lands on the menu, not a dead run */
+          try { history.go(-2); } catch (_) {}
+        });
+        return;
+      }
+      runGuard = false;                               /* stale: the run is over, keep going back */
+      try { history.back(); } catch (_) {}
+      return;
+    }
     if (!root || root.hidden) return;
     /* ⛔⛔ A SWIPE MID-RUN STILL WARNS. It is exactly the case the warning exists for — an
        unfinished run records nothing (§8.2) — and an edge-swipe is the easiest of all the exits
@@ -1608,6 +1645,7 @@
     var items = pick(eligible(qid), prefs.len, prefs.mode, qid);
     if (!items.length) { openMenu(qid); return; }
     run = { q: quizById(qid), prefs: prefs, items: items, i: 0, right: 0, answers: [] };
+    armRunGuard();
     question();
   }
 
