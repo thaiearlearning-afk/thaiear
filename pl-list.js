@@ -929,21 +929,21 @@
       var Q = window.ThaiEarPlQuiz, T = window.ThaiEarTopics;
       if (!Q || !Q._unitsFor || !window.caches || !caches.open) return Promise.resolve();
       var items = (p.items || []).map(function (it) { return { clipNum: it.num }; });
+      /* ⛔⛔ sw v693 — THROUGH THE ONE VERIFIED HELPER, and it RETURNS what it saved. This fetched
+         each side-car THROUGH sw.js (the fault 9 shape: a 2 s fallback can answer from
+         thaiear-audio-dl itself) and the caller then stamped every unit from the published map
+         whether or not the file on disk was that one. Stamps are not bytes. Now the stamp the
+         caller records is exactly { unit: sig } for the files verified and written. */
       function go() {
         var units = Q._unitsFor(items);
-        if (!units || !units.length) return Promise.resolve();
-        return caches.open(DL_CACHE).then(function (c) {
-          return ThaiEarDL.pool(units, 4, function (u) {
-            var url = '/quiz-data/' + u + '.json';
-            return fetch(url).then(function (r) {
-              if (r && r.ok) return c.put(url, r.clone());
-            }).catch(function () {});
-          });
-        }).catch(function () {});
+        if (!units || !units.length) return Promise.resolve({});
+        return dlQzLoad().then(function () {
+          return ThaiEarDL.saveQuizSidecars(DL_CACHE, units, DL_QZ);
+        }).catch(function () { return {}; });
       }
       if (Q._unitsFor(items)) return go();
-      if (T && T.loadSentenceNums) return T.loadSentenceNums().then(go).catch(function () {});
-      return Promise.resolve();
+      if (T && T.loadSentenceNums) return T.loadSentenceNums().then(go).catch(function () { return {}; });
+      return Promise.resolve({});
     }
 
     function dlNoteClip(pfx, tier, file, ref) {
@@ -1001,7 +1001,8 @@
            a device that downloaded a playlist, then took a deploy, then went offline.
            ⚠ NEVER FAILS THE DOWNLOAD. A missing side-car costs that unit's quiz-1 questions
            and nothing else — the audio, which is what the user asked for, is already saved. */
-        chain = chain.then(function () { return dlSaveQuizData(p); });
+        var qzSaved = {};
+        chain = chain.then(function () { return dlSaveQuizData(p).then(function (s) { qzSaved = s || {}; }); });
         /* r213 — dlQzLoad() too, and it must be AWAITED before the record is written a few
            lines below: dlQzSnapshot() reads DL_QZ synchronously and would store {} on a
            first-ever download, which dlQzStale() then reads as "no baseline" and flags as
@@ -1035,8 +1036,11 @@
           var pm = dlPlMap();
           /* r213 — and the quiz baseline, recorded here for the same reason: dlSaveQuizData()
              has just written these side-cars into the cache, so the stamps are true as stored. */
+          /* ⛔ sw v693: qz is what dlSaveQuizData() VERIFIED AND WROTE, never a snapshot of the
+             published map. A unit whose side-car did not save is left out, so dlQzStale() keeps
+             offering the update until one does. */
           pm[p.id] = { prefixes: prefixes, at: Date.now(), av: dlAvSnapshot(prefixes),
-                       qz: dlQzSnapshot(dlQzUnits(p)) };
+                       qz: qzSaved };
           dlSetPlMap(pm);
           dlSecs = ((Date.now() - tDl0) / 1000).toFixed(1);
           console.log('[dl] playlist ' + p.id + ': ' + total + ' clips in ' + dlSecs + 's');

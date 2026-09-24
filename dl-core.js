@@ -358,7 +358,50 @@
                                { canStoreOffline: !!canStoreOffline });
   }
 
+  /* ⛔⛔ 2026-09-24 (sw v693) — SAVE A UNIT'S QUIZ SIDE-CAR ONLY IF ITS BYTES ARE THE PUBLISHED ONES.
+     The playlist twin of player.js r227's page fix (DOWNLOAD_UPDATE_PATH.md, faults 9 and 10).
+     Both playlist writers used fetch('/quiz-data/<u>.json') THROUGH sw.js, whose 2 s timeout
+     fallback answers from caches — thaiear-audio-dl, the cache being written, included — and then
+     recorded the published stamp whether or not the saved file was that one. Stamps are not bytes.
+     ✅ ?te-save= is not intercepted by sw.js (network or failure), cache no-store skips the HTTP
+     cache, and the text is hashed with gen_quiz_data.js's construction (cyrb53 of the side-car
+     TEXT) and compared with the published sig. Only a match is written, under the clean URL.
+     Resolves to { unit: sig } for exactly the units saved — the ONLY units a caller may stamp.
+     A unit left out stays unstamped, so the row keeps saying "update" until a save succeeds,
+     which is the truth. Never rejects. */
+  function quizTextHash(t) {
+    var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (var i = 0, ch; i < t.length; i++) {
+      ch = t.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
+  function saveQuizSidecars(cacheName, units, sig) {
+    var saved = {};
+    if (!units || !units.length || !sig || !window.caches || !caches.open) return Promise.resolve(saved);
+    return caches.open(cacheName).then(function (c) {
+      return pool(units, 4, function (u) {
+        if (sig[u] == null) return Promise.resolve();
+        var url = '/quiz-data/' + u + '.json';
+        return fetch(url + '?te-save=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' })
+          .then(function (r) { if (!r || !r.ok) throw new Error('sidecar ' + u); return r.text(); })
+          .then(function (t) {
+            if (quizTextHash(t) !== sig[u]) return;          // not the published bytes: write nothing
+            return c.put(url, new Response(t, { headers: { 'Content-Type': 'application/json' } }))
+              .then(function () { saved[u] = sig[u]; });
+          })
+          .catch(function () {});
+      });
+    }).then(function () { return saved; }, function () { return saved; });
+  }
+
   window.ThaiEarDL = {
+    saveQuizSidecars: saveQuizSidecars,
+    quizTextHash: quizTextHash,
     getManifest: getManifest,
     setManifest: setManifest,
     noteClip: noteClip,
