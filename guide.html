@@ -855,11 +855,21 @@
       epRender(); say('reps');
     });
   });
+  // The copied slider CSS paints its track from --te-fill, which player.js's dynFillSlider()
+  // sets on the real page. This mock has no player.js, so it must set it too, on load and on
+  // every input — without it the dark-blue part sat at the CSS default and ignored the drag.
+  function fillSlider(el) {
+    var min = parseFloat(el.min), max = parseFloat(el.max), v = parseFloat(el.value);
+    if (!isFinite(min) || !isFinite(max) || !isFinite(v) || max === min) return;
+    el.style.setProperty('--te-fill', Math.max(0, Math.min(100, (v - min) / (max - min) * 100)) + '%');
+  }
   var pf = $('dyn-pf'), pv = $('dyn-pf-val');
-  pf.addEventListener('input', function () { pv.textContent = (parseFloat(pf.value) || 1) + '×'; say('pauses'); });
+  fillSlider(pf);
+  pf.addEventListener('input', function () { pv.textContent = (parseFloat(pf.value) || 1) + '×'; fillSlider(pf); say('pauses'); });
   $('demo-pauses').addEventListener('click', function () { say('pauses'); });
   var spDemo = $('dyn-sp');
-  spDemo.addEventListener('input', function () { say('speed'); });
+  fillSlider(spDemo);
+  spDemo.addEventListener('input', function () { fillSlider(spDemo); say('speed'); });
   $('demo-speed').addEventListener('click', function () { say('speed'); });
   $('dyn-en').addEventListener('change', function () { english = this.checked; epRender(); say('english'); });
   $('demo-sync').addEventListener('click', function () { say('sync'); });

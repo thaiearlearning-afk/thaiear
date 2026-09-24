@@ -570,7 +570,7 @@
      `eq: false` preserves this surface's existing output — search results have never carried
      the .te-eq now-playing bars. No `static`, because unlike a generated band page this runs
      in the visitor's own browser, so the "unlocked" premium pill is correct here. */
-  function cardHtml(u) { return T.cardHtml(u, { eq: false }); }
+  function cardHtml(u) { return T.cardHtml(u, { eq: false, quiz: !!(T.quizPublic && T.quizPublic()) }); }
 
   function run() {
     var v = q.value.trim();

@@ -641,9 +641,21 @@
     justify-content: space-between;
     gap: 6px;
   }
+  /* ⚠ ONE LINE, ALWAYS (2026-09-25, owner: "whether or not a topic is downloaded doesn't affect
+     pill height"). applyDownloadState() appends " · downloaded" / " · update available" to this
+     line in the app/PWA. Measured: at 320px "23 sentences · update available" wrapped to a
+     second line and, because the grid is grid-auto-rows:1fr, ONE such card grew EVERY card in
+     the grid by 19px (157 → 176) the moment the download manifest resolved. nowrap + ellipsis
+     means the status can be clipped at the narrowest widths / largest text, but never moves
+     the layout; the tick/update mark beside it still states the same thing in full.
+     min-width:0 is what lets a flex item shrink below its text (TEXT_SCALING.md rule 2). */
   .topic-sent-count {
     font-size: 12px;
     color: var(--text-tertiary);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   /* The play count gets its OWN line at the bottom of the card (owner, 2026-08-20): on one line
      with the sentence count and the download caption it was three things competing in 12px grey.

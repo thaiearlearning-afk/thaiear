@@ -33,7 +33,39 @@
   var loaded = false;      // the latch — see the ~25x note above
   var loading = false;
 
-  function signedIn() { var a = A(); return !!(a && a.getUser && a.getUser()); }
+  function authReady() { var a = A(); return !!(a && a.isReady); }
+  /* ⭐ FIRST-PAINT GUESS (2026-09-25, owner: the Favourites pills "jump as it loads in").
+     auth.js is injected late by nav.js, so for the first ~0.5–1 s of every load getUser() is
+     null. Until then this view painted "Sign in to keep a list…" and the grid only arrived
+     after the session AND the favourites fetch resolved — the whole list popping in under the
+     heading. The hearts on the band pages likewise appeared late, empty.
+     ✅ Until auth.js has resolved, trust identity.js's synchronous guess PLUS the favourites
+     mirror auth.js keeps in localStorage — but ONLY when that mirror was written for the same
+     user the guess names (FAV_UID_KEY, written below after every confirmed load). The mirror
+     is not cleared on sign-out, so without the uid check the next person to sign in on this
+     browser would see the previous one's list flash up. Once auth is ready this returns null
+     and the real answer rules, so a stale guess heals on the first auth event. */
+  var FAV_UID_KEY = 'thaiear_favourites_uid';
+  function earlyFavs() {
+    if (authReady()) return null;
+    try {
+      var I = window.ThaiEarIdentity, g = I && I.guess && I.guess();
+      var uid = g && g.state === 'in' && g.user && g.user.id;
+      if (!uid || localStorage.getItem(FAV_UID_KEY) !== String(uid)) return null;
+      var m = JSON.parse(localStorage.getItem('thaiear_favourites') || 'null');
+      return (m && typeof m === 'object') ? m : null;
+    } catch (_) { return null; }
+  }
+  function signedIn() {
+    var a = A();
+    if (a && a.getUser && a.getUser()) return true;
+    return earlyFavs() !== null;
+  }
+  function peekFavs() {
+    var a = A();
+    if (a && a.favourites && (authReady() || !earlyFavs())) return a.favourites.peek();
+    return earlyFavs() || {};
+  }
 
   /* ── paint ──────────────────────────────────────────────────────────────────────────
      Hearts ship in the markup with `hidden` and are revealed here, never created. Creating
@@ -41,8 +73,7 @@
      is identical for every visitor and only its visibility is per-user, which is the same
      rule .topic-plays follows. */
   function paint(root) {
-    var a = A();
-    var favs = (a && a.favourites) ? a.favourites.peek() : {};
+    var favs = peekFavs();
     var show = signedIn();
     var btns = (root || document).querySelectorAll('.topic-fav');
     for (var i = 0; i < btns.length; i++) {
@@ -86,10 +117,10 @@
      because topics.js is a JS file and not a foreign key — favourites_schema.sql says the same
      from the other side. */
   function favUnits() {
-    var t = T(), a = A();
+    var t = T();
     var out = { grammar: [], topics: [] };
-    if (!t || !a || !a.favourites) return out;
-    var favs = a.favourites.peek();
+    if (!t) return out;
+    var favs = peekFavs();
     var pick = function (arr) {
       return (arr || []).filter(function (u) { return u && u.page && favs[u.page]; });
     };
@@ -193,6 +224,11 @@
       return;
     }
     var html = '';
+    /* The quiz strip goes IN THE MARKUP, exactly as gen_topics_pages.js emits it for the band
+       cards — not inserted afterwards by topics-page.js. Inserted later, each card was built at
+       109px and grew to 139px once the gate resolved (2026-09-25 measurement), and equalise()
+       had already measured the short one. */
+    var opts = { quiz: !!(t.quizPublic && t.quizPublic()) };
 
     /* GRAMMAR FIRST, under one heading of its own (owner, 2026-08-27). Not merged into the
        difficulty bands: every structure unit is `li1`, so merging would scatter them through
@@ -202,7 +238,7 @@
        no band subdivision, units in `structures` order. */
     if (groups.grammar.length) {
       html += '<h2 class="tp-fav-band">Grammar by Ear</h2><div class="topic-grid">';
-      groups.grammar.forEach(function (u) { html += t.cardHtml(u); });
+      groups.grammar.forEach(function (u) { html += t.cardHtml(u, opts); });
       html += '</div>';
     }
 
@@ -220,7 +256,7 @@
                 '<div class="topic-grid">';
         open = true;
       }
-      html += t.cardHtml(u);
+      html += t.cardHtml(u, opts);
     });
     if (open) html += '</div>';
 
@@ -294,10 +330,16 @@
     var a = A();
     if (!a || !a.favourites) return;
     if (!signedIn()) { loaded = false; paint(); renderFavPage(); return; }
+    /* Signed in on the GUESS only (earlyFavs): paint from the mirror, but never call load()
+       yet — with no real user it resolves an EMPTY set and caches it, and the latch below would
+       then keep "no favourites yet" on screen after auth confirmed the real list. */
+    if (!(a.getUser && a.getUser())) { paint(); renderFavPage(); return; }
     if (loaded || loading) { paint(); renderFavPage(); return; }
     loading = true;
     a.favourites.load().then(function () {
       loaded = true; loading = false;
+      /* Record whose list the mirror now holds, for earlyFavs() on the next load. */
+      try { var u = a.getUser && a.getUser(); if (u && u.id) localStorage.setItem(FAV_UID_KEY, String(u.id)); } catch (_) {}
       paint(); renderFavPage();
     }).catch(function () { loading = false; });
   }
