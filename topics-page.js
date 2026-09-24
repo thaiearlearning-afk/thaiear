@@ -286,10 +286,32 @@
        tick, the entitlement pill and the listening caption — any of which can move the target.
        Re-applying costs nothing when it is already correct, and the last one is after `load`,
        by which point nothing else changes the height. */
-    var go = function () { try { window.scrollTo(0, y); } catch (_) {} };
+    /* ⛔⛔ r226 — THE FIRST TOUCH ENDS THE RESTORE. Owner, 2026-09-24, Android app: "i'm in the
+       right position, i start scrolling up, and then it returns me back to the position of that
+       topic a second or two later". That was the third attempt: `load` waits for EVERY
+       sub-resource (the Thai face, images, anything slow), so on a slow link it fires seconds
+       after the first two attempts had already put the page in the right place, and yanked the
+       learner back from wherever they had since scrolled to. It was never two restores; it was
+       one correct restore and one stale re-apply of it.
+       So any sign of the user driving the scroll — touch, pointer, wheel, key — cancels every
+       attempt still pending. Passive listeners, so they cost the scroll nothing. The late
+       re-apply is kept for the untouched case, where it is still the thing that corrects a
+       layout shift from a late font. */
+    var cancelled = false;
+    var CANCEL_ON = ['touchstart', 'pointerdown', 'wheel', 'keydown'];
+    var cancel = function () {
+      cancelled = true;
+      for (var i = 0; i < CANCEL_ON.length; i++) {
+        try { window.removeEventListener(CANCEL_ON[i], cancel, { capture: true, passive: true }); } catch (_) {}
+      }
+    };
+    for (var i = 0; i < CANCEL_ON.length; i++) {
+      try { window.addEventListener(CANCEL_ON[i], cancel, { capture: true, passive: true }); } catch (_) {}
+    }
+    var go = function () { if (cancelled) return; try { window.scrollTo(0, y); } catch (_) {} };
     go();
     try { requestAnimationFrame(function () { requestAnimationFrame(go); }); } catch (_) { setTimeout(go, 0); }
-    window.addEventListener('load', function () { setTimeout(go, 0); });
+    window.addEventListener('load', function () { setTimeout(function () { go(); cancel(); }, 0); });
   }
   /* pagehide AND visibilitychange: iOS frequently gives no pagehide when the user switches away,
      and the Android app can be backgrounded straight out of a scroll. auth.js's play-count flush
