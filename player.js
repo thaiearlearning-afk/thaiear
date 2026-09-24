@@ -796,6 +796,17 @@
      next online open of the unit, from anywhere, rewrites the clean key.
      ⚠ PLAYLIST pages keep location.href: a playlist is IDENTIFIED by its ?pl= query, so
      stripping it would collapse every playlist onto one entry. */
+  /* r227: the hash of a page's BYTES — its window.ThaiEarTopic block, hashed exactly as the
+     rendered page is. Same extraction as gen_quiz_data.js's pageVer (verified 113/113 on the panel
+     probe). Null when the block cannot be read, which cachePage treats as a mismatch. */
+  function savedDocHash(html) {
+    try {
+      var m = String(html).replace(/\r\n/g, '\n').match(/window\.ThaiEarTopic\s*=\s*(\{[\s\S]*?\});\s*<\/script>/);
+      if (!m) return null;
+      var pg = (new Function('return (' + m[1] + ')'))();
+      return pageDataHash(pg.sentences || [], pg.quiz);
+    } catch (_) { return null; }
+  }
   function cachePage() {
     if (!window.caches || !navigator.onLine) return;
     try {
@@ -803,16 +814,44 @@
         c.add('/audio-versions.json').catch(function () {});
         if (PLMODE) { c.add(location.href).catch(function () {}); return; }
         var key = location.pathname.replace(/\.html$/, '');
-        c.add(key).then(function () {
-          return c.keys().then(function (reqs) {
-            reqs.forEach(function (q) {
-              var u = new URL(q.url);
-              if (u.pathname !== key && u.pathname !== key + '.html') return;
-              if (u.pathname === key && !u.search) return;   // the entry just written
-              c.delete(q).catch(function () {});
+        var unit = key.replace(/^\//, '');
+        /* ⛔⛔ r227 — FETCH PAST THE WORKER, AND WRITE ONLY BYTES THAT MATCH THE PUBLISHED HASH.
+           r226 used c.add(key), which fetches THROUGH sw.js: after NET_TIMEOUT_MS (2 s) the
+           worker answers from its caches with ignoreSearch — thaiear-dl included — so on a slow
+           link the "save" copied an OLD saved page back into the clean key, then removed the
+           strays as if it had succeeded. Owner's Android app, 2026-09-24: Hotels & accommodation
+           (42a) and Health (13b) held ONE saved copy under a CURRENT stamp, and its bytes were the
+           old ?quiz=menu copy's; Getting to know you (topic-02) never saved at all.
+           ✅ `te-save` is a query sw.js does not intercept (network or nothing), `no-store` skips
+           the HTTP cache, and the body is hashed with the SAME construction as contentHash() and
+           compared to the published pageVer (the rendered page's own hash when the map cannot
+           be read). A mismatch writes nothing and deletes nothing — the page's "update available"
+           then stays truthful and the next online open tries again. Stamps are not bytes; this
+           is where the two are made to agree. */
+        fetch(key + '?te-save=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' })
+          .then(function (res) {
+            if (!res || !res.ok) throw new Error('save fetch ' + (res && res.status));
+            var ct = res.headers.get('content-type') || 'text/html; charset=utf-8';
+            return res.text().then(function (t) { return { t: t, ct: ct }; });
+          })
+          .then(function (got) {
+            var h = savedDocHash(got.t);
+            return dynQzSigLoad().then(function (map) {
+              var want = (map && map.ver && map.ver[unit] != null) ? map.ver[unit] : contentHash();
+              if (!h || h !== want) { try { window.ThaiEarLastSave = unit + ' skipped: ' + h + ' != ' + want; } catch (_) {} return; }
+              return c.put(key, new Response(got.t, { headers: { 'Content-Type': got.ct } })).then(function () {
+                try { window.ThaiEarLastSave = unit + ' saved ' + h; } catch (_) {}
+                return c.keys().then(function (reqs) {
+                  reqs.forEach(function (q) {
+                    var u = new URL(q.url);
+                    if (u.pathname !== key && u.pathname !== key + '.html') return;
+                    if (u.pathname === key && !u.search) return;   // the entry just written
+                    c.delete(q).catch(function () {});
+                  });
+                });
+              });
             });
-          });
-        }).catch(function () {});
+          }).catch(function () {});
       }).catch(function () {});
     } catch (_) {}
   }
@@ -902,8 +941,8 @@
   // audio re-render with unchanged text (an English TE/ET fix, a voice swap) — that is what the
   // audio stamp (loadAudioVers/currentAv) covers. Stored in the manifest at download time and
   // compared on each open. cyrb53 — fast, dependency-free, plenty for change-detection.
-  function contentHash() {
-    var str = sentences.map(function (x) {
+  function pageDataHash(sents, quiz) {
+    var str = (sents || []).map(function (x) {
       return [x.num, x.thai || '', x.english || ''].join('');
     }).join('');
     /* ⭐⭐ THE QUIZ COUNTS AS CONTENT (owner, 2026-09-22: "for people who have downloaded topic
@@ -923,7 +962,7 @@
        downloaded unit, not a recurring one, because the new hash is recorded as soon as they update.
        ⚠ Serialised from the page's OWN object, so it cannot drift from what is served; key order
        comes from the generator and is stable. A unit with no quiz hashes as '' and is unaffected. */
-    try { str += '' + JSON.stringify((cfg && cfg.quiz) || ''); } catch (_) {}
+    try { str += '' + JSON.stringify(quiz || ''); } catch (_) {}
     var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
     for (var i = 0, ch; i < str.length; i++) {
       ch = str.charCodeAt(i);
@@ -934,6 +973,10 @@
     h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
   }
+  /* r227: ONE construction for the rendered page AND for page bytes about to be saved offline
+     (cachePage verifies what it fetched against the published hash), so the two cannot drift. */
+  function contentHash() { return pageDataHash(sentences, cfg && cfg.quiz); }
+
 
   // audio-versions.json (written by generate_topic_audio.py, keyed by {Short}_{Level}) fingerprints
   // each topic's COMBINED audio. It catches the one thing contentHash can't: a pure audio re-render
