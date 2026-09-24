@@ -1805,7 +1805,7 @@
     /* ⚠ `target` marks the chip the question was ABOUT. Without it the learner has to find
        their word again in a row of a dozen chips, which is the opposite of what a breakdown is
        for. It is a highlight, not a different chip — same markup, one class. */
-    var hit = (target && g[0] === target) ? ' is-target' : '';
+    var hit = (target === true || (target && g[0] === target)) ? ' is-target' : '';
     return '<span class="chip' + hit + '"><span class="th">' + esc(b.main) + '</span>'
       + '<span class="gl">' + esc(g[1]) + '</span>' + tl + '</span>';
   }
@@ -2514,6 +2514,25 @@
       }
       return null;
     })();
+    /* ⭐ WHICH CHIPS TO HIGHLIGHT (2026-09-24, QUIZ_REFINEMENT.md thread 8). A vocab word is not
+       always ONE chip of its example sentence: the chip-split pass broke compounds after the lists
+       were built (แปดโมงเช้า → แปดโมง · เช้า), and a month is a word INSIDE a chip (มกราคม in
+       เดือนมกราคม). An exact-match-only test left 232 of 3,368 cards with nothing highlighted.
+       So, in order: the chip that IS the word; else the contiguous run that spells it; else the
+       one chip that contains it. `test_quiz_distractors.py` asserts every published card resolves. */
+    var hits = (function () {
+      var ch = s ? chipsOf(s).map(function (g) { return g[0]; }) : [], out = {}, i, j, acc;
+      for (i = 0; i < ch.length; i++) if (ch[i] === w.th) { out[i] = true; return out; }
+      for (i = 0; i < ch.length; i++) {
+        acc = '';
+        for (j = i; j < ch.length && acc.length < w.th.length; j++) {
+          acc += ch[j];
+          if (acc === w.th) { for (var k = i; k <= j; k++) out[k] = true; return out; }
+        }
+      }
+      for (i = 0; i < ch.length; i++) if (ch[i].indexOf(w.th) >= 0) { out[i] = true; return out; }
+      return out;
+    })();
     var d = sheet.querySelector('.t-rev');
     /* ⚠ `first` guards the AUTOPLAY. A script change redraws this block, and the clip must not
        restart every time the learner changes a display setting — the reveal is re-rendered, not
@@ -2537,7 +2556,7 @@
         + '<p class="cen">' + esc(s.english) + '</p>'
         + (chipsOf(s).length
             ? '<div class="chips vchips">'
-              + chipsOf(s).map(function (g) { return chipHtml(g, w.th); }).join('') + '</div>'
+              + chipsOf(s).map(function (g, i) { return chipHtml(g, hits[i] === true); }).join('') + '</div>'
             : '')
         + '<button class="playbtn" type="button"><span class="tri"></span>Play the sentence</button>';
     }
