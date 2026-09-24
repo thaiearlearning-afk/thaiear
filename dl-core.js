@@ -387,13 +387,21 @@
       return pool(units, 4, function (u) {
         if (sig[u] == null) return Promise.resolve();
         var url = '/quiz-data/' + u + '.json';
-        return fetch(url + '?te-save=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' })
+        /* v694: a copy already on disk that hashes to the sig IS the published file — count it and
+           skip the network. On the owner's link a premium playlist spans many units, and a retry
+           that re-fetched every one of them is what made Update "stubborn". */
+        return Promise.resolve().then(function () { return c.match(url); })
+          .then(function (have) { return have ? have.text() : null; })
+          .then(function (t) {
+            if (t != null && quizTextHash(t) === sig[u]) { saved[u] = sig[u]; return 'kept'; }
+          }, function () {})
+          .then(function (kept) { if (kept) return; return fetch(url + '?te-save=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' })
           .then(function (r) { if (!r || !r.ok) throw new Error('sidecar ' + u); return r.text(); })
           .then(function (t) {
             if (quizTextHash(t) !== sig[u]) return;          // not the published bytes: write nothing
             return c.put(url, new Response(t, { headers: { 'Content-Type': 'application/json' } }))
               .then(function () { saved[u] = sig[u]; });
-          })
+          }); })
           .catch(function () {});
       });
     }).then(function () { return saved; }, function () { return saved; });
