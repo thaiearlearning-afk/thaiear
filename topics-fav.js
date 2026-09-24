@@ -1,8 +1,15 @@
 /* topics-fav.js — the favourites heart, and the Favourites view. (2026-08-27)
  * ---------------------------------------------------------------------------------------
- * Two jobs, one module because they are the same concern:
- *   1. the heart on every topic card, wherever a topic card appears;
- *   2. /topics-favourites — the favourited units, grouped by band, in grid order.
+ * ⚠ THE HEART ITSELF IS NOT HERE ANY MORE (2026-09-25). Its markup, state, painter, click
+ * handler, account load and bfcache restore live ONCE in topics.js (see the block above
+ * cardHtml), because the same button now also sits in every unit page's header, where this
+ * file is not loaded — and the owner's rule is that the two "cannot diverge by code".
+ * What this module owns:
+ *   1. /topics-favourites — the favourited units, grouped by band, in grid order;
+ *   2. the Favourites tile count on /topics;
+ *   3. entering/leaving the favourites circuit.
+ * It repaints on `thaiear:favchange`, which topics.js fires after every toggle, load and
+ * restore — so nothing here needs to know how a favourite changed.
  *
  * DATA lives in auth.js (ThaiEarAuth.favourites, table public.favourites). This file is
  * presentation only. See favourites_schema.sql for why it is a row per favourite and not a
@@ -30,64 +37,14 @@
   function T() { return window.ThaiEarTopics; }
   function A() { return window.ThaiEarAuth; }
 
-  var loaded = false;      // the latch — see the ~25x note above
-  var loading = false;
+  /* THE state — topics.js favState(): { show, ready, favs }. Read it, never re-derive it. */
+  function st() { var t = T(); return (t && t.favState) ? t.favState() : { show: false, ready: false, favs: {} }; }
+  function signedIn() { return st().show; }
 
-  function authReady() { var a = A(); return !!(a && a.isReady); }
-  /* ⭐ FIRST-PAINT GUESS (2026-09-25, owner: the Favourites pills "jump as it loads in").
-     auth.js is injected late by nav.js, so for the first ~0.5–1 s of every load getUser() is
-     null. Until then this view painted "Sign in to keep a list…" and the grid only arrived
-     after the session AND the favourites fetch resolved — the whole list popping in under the
-     heading. The hearts on the band pages likewise appeared late, empty.
-     ✅ Until auth.js has resolved, trust identity.js's synchronous guess PLUS the favourites
-     mirror auth.js keeps in localStorage — but ONLY when that mirror was written for the same
-     user the guess names (FAV_UID_KEY, written below after every confirmed load). The mirror
-     is not cleared on sign-out, so without the uid check the next person to sign in on this
-     browser would see the previous one's list flash up. Once auth is ready this returns null
-     and the real answer rules, so a stale guess heals on the first auth event. */
-  var FAV_UID_KEY = 'thaiear_favourites_uid';
-  function earlyFavs() {
-    if (authReady()) return null;
-    try {
-      var I = window.ThaiEarIdentity, g = I && I.guess && I.guess();
-      var uid = g && g.state === 'in' && g.user && g.user.id;
-      if (!uid || localStorage.getItem(FAV_UID_KEY) !== String(uid)) return null;
-      var m = JSON.parse(localStorage.getItem('thaiear_favourites') || 'null');
-      return (m && typeof m === 'object') ? m : null;
-    } catch (_) { return null; }
-  }
-  function signedIn() {
-    var a = A();
-    if (a && a.getUser && a.getUser()) return true;
-    return earlyFavs() !== null;
-  }
-  function peekFavs() {
-    var a = A();
-    if (a && a.favourites && (authReady() || !earlyFavs())) return a.favourites.peek();
-    return earlyFavs() || {};
-  }
-
-  /* ── paint ──────────────────────────────────────────────────────────────────────────
-     Hearts ship in the markup with `hidden` and are revealed here, never created. Creating
-     them on demand would move the card's other contents on a late auth resolve; the markup
-     is identical for every visitor and only its visibility is per-user, which is the same
-     rule .topic-plays follows. */
+  /* Hearts (via topics.js, the one painter) and the tile count. */
   function paint(root) {
-    var favs = peekFavs();
-    var show = signedIn();
-    var btns = (root || document).querySelectorAll('.topic-fav');
-    for (var i = 0; i < btns.length; i++) {
-      var btn = btns[i];
-      var card = btn.closest ? btn.closest('.topic-card') : null;
-      var page = card && card.getAttribute('data-page');
-      if (!page) continue;
-      if (show) btn.removeAttribute('hidden'); else btn.setAttribute('hidden', '');
-      var on = !!favs[page];
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.setAttribute('aria-label', (on ? 'Remove ' : 'Add ') +
-        (card.querySelector('.topic-name') || {}).textContent +
-        (on ? ' from favourites' : ' to favourites'));
-    }
+    var t = T();
+    if (t && t.paintFavHearts) t.paintFavHearts(root);
     paintCount();
   }
 
@@ -120,7 +77,7 @@
     var t = T();
     var out = { grammar: [], topics: [] };
     if (!t) return out;
-    var favs = peekFavs();
+    var favs = st().favs;
     var pick = function (arr) {
       return (arr || []).filter(function (u) { return u && u.page && favs[u.page]; });
     };
@@ -135,24 +92,7 @@
     return g.grammar.concat(g.topics);
   }
 
-  /* ── the heart ──────────────────────────────────────────────────────────────────────── */
-  document.addEventListener('click', function (e) {
-    var btn = e.target.closest ? e.target.closest('.topic-fav') : null;
-    if (!btn) return;
-    /* The card is a <div> with a stretched <a> overlay, so without these the tap would also
-       follow the link. preventDefault alone is not enough — the anchor's ::after is a sibling
-       overlay, so the click must not bubble to it either. */
-    e.preventDefault();
-    e.stopPropagation();
-    var card = btn.closest('.topic-card');
-    var page = card && card.getAttribute('data-page');
-    var a = A();
-    if (!page || !a || !a.favourites || !signedIn()) return;
-    var on = a.favourites.toggle(page);
-    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    paintCount();
-    renderFavPage();          // no-op unless we are ON the favourites page
-  });
+  /* ── the heart: see topics.js. One click handler for every heart on every surface. ── */
 
   /* ── entering and leaving the favourites circuit ────────────────────────────────────────
      Opening a topic FROM the Favourites view puts the tab into favourites mode: prev/next on
@@ -207,7 +147,12 @@
        rebuild would be skipped, and the view would sit on "You haven't added any favourite
        topics yet" while the tile said 4. Distinct sentinels, so signed-out and empty-but-signed-
        in cannot collide either. */
-    var groups = signedIn() ? favUnits() : null;
+    var state = st();
+    /* Not yet known whether anyone is signed in, or whose list the mirror is: paint nothing
+       rather than "Sign in…" — that sentence flashing up for a signed-in visitor, then being
+       replaced by the grid, was the jump the owner saw (2026-09-25). */
+    if (!state.ready) return;
+    var groups = state.show ? favUnits() : null;
     var sig = groups
       ? groups.grammar.concat(groups.topics).map(function (u) { return u.page; }).join(',')
       : ' signed-out';
@@ -325,58 +270,17 @@
     });
   } catch (_) {}
 
-  /* ── wiring ─────────────────────────────────────────────────────────────────────────── */
-  function refresh() {
-    var a = A();
-    if (!a || !a.favourites) return;
-    if (!signedIn()) { loaded = false; paint(); renderFavPage(); return; }
-    /* Signed in on the GUESS only (earlyFavs): paint from the mirror, but never call load()
-       yet — with no real user it resolves an EMPTY set and caches it, and the latch below would
-       then keep "no favourites yet" on screen after auth confirmed the real list. */
-    if (!(a.getUser && a.getUser())) { paint(); renderFavPage(); return; }
-    if (loaded || loading) { paint(); renderFavPage(); return; }
-    loading = true;
-    a.favourites.load().then(function () {
-      loaded = true; loading = false;
-      /* Record whose list the mirror now holds, for earlyFavs() on the next load. */
-      try { var u = a.getUser && a.getUser(); if (u && u.id) localStorage.setItem(FAV_UID_KEY, String(u.id)); } catch (_) {}
-      paint(); renderFavPage();
-    }).catch(function () { loading = false; });
-  }
-
+  /* ── wiring ─────────────────────────────────────────────────────────────────────────────
+     topics.js owns the account load (latched), the toggle and the bfcache/visibility restore
+     (resync() BEFORE the repaint — the in-memory cache belongs to the document that was
+     restored and is stale by construction). It fires thaiear:favchange after each, and auth
+     events can change `show`/`ready`, so both repaint the view and the count. */
+  function refresh() { paint(); renderFavPage(); }
   window.addEventListener('thaiear:auth', refresh);
+  window.addEventListener('thaiear:favchange', refresh);
 
-  /* ── returning to a page that was never re-run ────────────────────────────────────────
-     ⚠ iOS BACK-SWIPE DOES NOT RE-EXECUTE THE PAGE (owner, 2026-08-27). It restores the
-     document from the back/forward cache: no DOMContentLoaded, no script re-run, no
-     thaiear:auth. So favouriting on /topics-favourites and swiping back to /topics left the
-     tile count frozen at whatever it said when the page was last painted — "0 topics" after
-     adding four, and a manual reload was the only cure. The hearts on a band page had the
-     same fault for the same reason.
-
-     Two signals, because they cover different restores:
-       pageshow + event.persisted  the bfcache restore itself (back-swipe, back button)
-       visibilitychange            returning to a backgrounded tab or a re-foregrounded PWA,
-                                   which on iOS is where the worker runs at all
-     resync() first, always: the in-memory cache belongs to THIS document and is stale by
-     construction after time spent in another one. The localStorage mirror is written on every
-     toggle, so it is already right — the cache in front of it is the only thing that is not.
-     Then unlatch so the next auth event re-reads the server; the repaint below is instant and
-     does not wait for it. */
-  function restored() {
-    var a = A();
-    if (a && a.favourites && a.favourites.resync) a.favourites.resync();
-    loaded = false;                     // let the next refresh() re-read the account copy
-    paint();
-    renderFavPage();
-    refresh();
-  }
-  window.addEventListener('pageshow', function (e) { if (e && e.persisted) restored(); });
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') restored();
-  });
   /* Repaint cards that appear after load (search results, and this page's own grid). Scoped to
-     childList+subtree on body; the callback is cheap and only touches .topic-fav nodes. */
+     childList+subtree on body; the callback is cheap and only touches heart nodes. */
   if (window.MutationObserver) {
     var pending = null;
     new MutationObserver(function () {
@@ -386,9 +290,7 @@
   }
 
   /* Paint immediately from the local mirror so a returning visitor's hearts are filled on
-     FIRST PAINT rather than after the network answers, then refresh once auth resolves. */
-  paint();
-  renderFavPage();
+     FIRST PAINT rather than after the network answers; favchange repaints once it does. */
   refresh();
 
   window.ThaiEarFav = { paint: paint, list: liveFavourites, refresh: refresh };

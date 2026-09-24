@@ -158,9 +158,11 @@ html.te-quiz-boot #pl-qload{display:flex}
 <!-- Player view (?pl={id}): the playlist rendered AS a dyn topic page — player.js itself,
      injected by the bootstrap below once window.ThaiEarTopic is built from the playlist. -->
 <div class="wrap" id="pl-player-wrap" hidden>
-  <div class="eyebrow">Playlist</div>
+  <!-- The "Playlist" eyebrow and the "← All playlists" link under the title became ONE button in the
+       eyebrow slot (owner, 2026-09-25) — the same .te-back the unit pages carry (player-dyn.css).
+       Static markup here, so it is in the first paint and nothing moves. -->
+  <div class="te-hdr-row"><a class="te-back" href="playlists"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M9.5 3.5 5 8l4.5 4.5M5.5 8H13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Back to playlists</span></a></div>
   <h1 id="pl-player-title">Loading…</h1>
-  <p style="font-size:12.5px;margin:-2px 0 16px"><a href="playlists" style="color:var(--accent);text-decoration:none;font-weight:500">← All playlists</a></p>
   <div id="player-root"></div>
   <!-- ⭐ The quiz block mounts HERE, under every sentence (owner, 2026-09-21: "at the bottom of
        the playlist under all the sentences there should be the quizzes box"). Empty and inert

@@ -974,6 +974,115 @@
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
+
+  /* ══ THE FAVOURITES HEART — ONE BUTTON, EVERY PLACE IT APPEARS (owner, 2026-09-25) ══════════
+     "the hearts are intrinsically wired to sync i.e. they cannot diverge by code. so its just
+     same exact button but in two places."
+     So there is ONE of each: favHeartHtml() is the markup, favState() the answer to "signed in,
+     and which pages are favourites", paintFavHearts() the painter, and ONE delegated click
+     handler below. The topic card (class topic-fav) and the unit-page header (class te-hfav)
+     are two PLACEMENTS of this button — the class only positions it. Both carry data-fav-page,
+     which is the unit's `page` from this file, i.e. the favourites row key.
+     topics-fav.js no longer paints or toggles hearts at all: it owns the Favourites VIEW, the
+     tile count and the circuit, and repaints them on `thaiear:favchange`, fired here after
+     every toggle, account load and restore. test_favourites.js pins that split.
+     DATA lives in auth.js (ThaiEarAuth.favourites → public.favourites + a localStorage mirror).
+     ⚠ auth.js is injected late by nav.js. Until it is ready, identity.js's synchronous guess is
+     trusted only when the mirror was written for that same user (thaiear_favourites_uid,
+     written after every confirmed load) — the mirror survives sign-out, so without the uid
+     check the next person on that browser would see the previous one's hearts. */
+  const FAV_UID_KEY = 'thaiear_favourites_uid';
+  let favLoaded = false, favLoading = false, favTouched = false;
+
+  function favHeartHtml(u, cls) {
+    return '<button class="' + cls + '" type="button" data-fav-page="' + cardEsc(u.page) + '"' +
+           ' aria-pressed="false" hidden aria-label="Add ' + cardEsc(u.name) + ' to favourites">' +
+           HEART_SVG + '</button>';
+  }
+  function favMirrorFor(uid) {
+    try {
+      if (!uid || localStorage.getItem(FAV_UID_KEY) !== String(uid)) return null;
+      const m = JSON.parse(localStorage.getItem('thaiear_favourites') || 'null');
+      return (m && typeof m === 'object') ? m : null;
+    } catch (_) { return null; }
+  }
+  /* { show, ready, favs }. `show` — offer the heart (signed in). `ready` — `favs` can be
+     trusted enough to paint a LIST from (the Favourites view waits for it; a heart need not). */
+  function favState() {
+    const A = window.ThaiEarAuth;
+    const user = A && A.getUser && A.getUser();
+    if (user && A.favourites) {
+      if (favLoaded || favTouched) return { show: true, ready: true, favs: A.favourites.peek() || {} };
+      const m = favMirrorFor(user.id);
+      return m ? { show: true, ready: true, favs: m } : { show: true, ready: false, favs: {} };
+    }
+    if (A && A.isReady) return { show: false, ready: true, favs: {} };
+    let g = null;
+    try { g = window.ThaiEarIdentity && window.ThaiEarIdentity.guess(); } catch (_) {}
+    if (!g) return { show: false, ready: false, favs: {} };
+    if (g.state !== 'in') return { show: false, ready: true, favs: {} };
+    const m = favMirrorFor(g.user && g.user.id);
+    return m ? { show: true, ready: true, favs: m } : { show: false, ready: false, favs: {} };
+  }
+  function paintFavHearts(root) {
+    const st = favState();
+    const btns = (root || document).querySelectorAll('[data-fav-page]');
+    for (let i = 0; i < btns.length; i++) {
+      const btn = btns[i];
+      const page = btn.getAttribute('data-fav-page');
+      if (st.show) btn.removeAttribute('hidden'); else btn.setAttribute('hidden', '');
+      const on = !!st.favs[page];
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      const found = findByPage(page);
+      const name = found ? found.unit.name : '';
+      btn.setAttribute('aria-label', (on ? 'Remove ' : 'Add ') + name + (on ? ' from favourites' : ' to favourites'));
+    }
+  }
+  function favChanged() {
+    paintFavHearts();
+    try { window.dispatchEvent(new CustomEvent('thaiear:favchange')); } catch (_) {}
+  }
+  /* The account copy, read ONCE per page. Latched: thaiear:auth fires ~25 times on a device. */
+  function favEnsureLoaded() {
+    const A = window.ThaiEarAuth;
+    const user = A && A.getUser && A.getUser();
+    if (!user || !A.favourites || favLoaded || favLoading) return;
+    favLoading = true;
+    A.favourites.load().then(function () {
+      favLoaded = true; favLoading = false;
+      try { localStorage.setItem(FAV_UID_KEY, String(A.getUser().id)); } catch (_) {}
+      favChanged();
+    }).catch(function () { favLoading = false; });
+  }
+  /* ONE click handler for every heart on every surface. Delegated, so a heart created after load
+     (search results, the Favourites view) works with nothing to re-bind. The card is a <div>
+     with a stretched link over it, so the tap must neither navigate nor bubble to that link. */
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest ? e.target.closest('[data-fav-page]') : null;
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const A = window.ThaiEarAuth;
+    if (!A || !A.favourites || !A.getUser || !A.getUser()) return;
+    A.favourites.toggle(btn.getAttribute('data-fav-page'));
+    favTouched = true;
+    favChanged();
+  });
+  window.addEventListener('thaiear:auth', function () { favEnsureLoaded(); favChanged(); });
+  /* ⚠ iOS BACK-SWIPE DOES NOT RE-RUN THE PAGE (bfcache), and a heart may have been toggled on
+     another page meanwhile. resync() re-reads the mirror (written on EVERY toggle, so already
+     right) into the in-memory cache, which belongs to this document and is stale by
+     construction; THEN repaint. A re-foregrounded PWA is the visibilitychange half. */
+  function favRestore() {
+    const A = window.ThaiEarAuth;
+    if (A && A.favourites && A.favourites.resync) A.favourites.resync();
+    favChanged();
+  }
+  window.addEventListener('pageshow', function (e) { if (e && e.persisted) favRestore(); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') favRestore();
+  });
+
   function cardHtml(u, opts) {
     opts = opts || {};
     const access = accessFor(u);
@@ -1017,9 +1126,7 @@
          height. Signed-out visitors get no heart at all (favourites are account-backed), which
          topics-fav.js decides at runtime — the markup is always emitted so the static page
          stays one shared document. */
-      (opts.fav === false ? ''
-        : '<button class="topic-fav" type="button" aria-pressed="false" hidden' +
-          ' aria-label="Add ' + cardEsc(u.name) + ' to favourites">' + HEART_SVG + '</button>') +
+      (opts.fav === false ? '' : favHeartHtml(u, 'topic-fav')) +
       /* ⭐ THE QUIZ STRIP (§9.1). Emitted only when the caller asks for it, and EMPTY — the
          figures are filled by topics-page.js decorate(), exactly as the listening caption is.
          ⚠ "Reserve, do not grow into it": every card that gets a strip gets it at the same
@@ -1178,8 +1285,33 @@
            '<span class="tqs-cells">' + cells + '</span></a>';
   }
 
+  /* ── THE BAND PAGE A UNIT LIVES ON — ONE definition ─────────────────────────────────────
+     gen_topics_pages.js names the five band pages from this map, and the unit-page "Back to
+     menu" button (fillEyebrow below) links back to them from it, so the two cannot disagree.
+     Keyed by levelBounds(): floor alone when floor == ceiling, else "floor-ceil".
+     ⛔ The slugs are published URLs — frozen. Changing one orphans an indexed page. */
+  const BAND_SLUG = {
+    'beg'      : 'beginner',
+    'beg-li1'  : 'beginner-to-lower-intermediate',
+    'li1-int'  : 'lower-intermediate-to-intermediate',
+    'int-li2'  : 'intermediate-to-upper-intermediate',
+    'li2-adv'  : 'upper-intermediate-to-advanced'
+  };
+  function bandKey(levels) {
+    const b = levelBounds(levels);
+    return b[0] === b[1] ? b[0] : b[0] + '-' + b[1];
+  }
+  /* 'topics-beginner.html' for a topic unit; null for a unit with no band page (the generator
+     aborts on an unmapped range, so that cannot ship). */
+  function bandPageFor(unit) {
+    const slug = unit && BAND_SLUG[bandKey(unit.levels)];
+    return slug ? 'topics-' + slug + '.html' : null;
+  }
+
   window.ThaiEarTopics = {
     topics, structures, liveTopics, total: topics.length,
+    BAND_SLUG, bandKey, bandPageFor,
+    favState, paintFavHearts,   // ⚠ THE heart — see the block above cardHtml; never a second painter
     sectionOf,
     cardHtml,   // ⚠ the ONE topic-card renderer — generator and browser both call this
     isLive, liveTopicCount,
@@ -1210,15 +1342,36 @@
   function currentPage() {
     return (location.pathname.split('/').pop() || 'index.html').toLowerCase();
   }
+  /* ⭐ THE EYEBROW IS A "← Back to menu" BUTTON, plus the favourites heart (owner, 2026-09-25).
+     It used to be the difficulty band in small caps ("BEGINNER", "STRUCTURE 3 OF 20"). One
+     label everywhere — "Back to menu" — with the DESTINATION chosen by how you got here:
+       · the favourites loop is loaded (inFavCircuit: opened from the Favourites view, or walked
+         there by its prev/next)          → /topics-favourites
+       · a grammar unit                   → /grammar
+       · a topic                          → its band page (bandPageFor)
+     That is the same condition sequenceFor() uses for prev/next and the dyn chain, so the button
+     always leads back to whichever list is actually loaded on the page.
+     ⚠ The slot is RESERVED in player-dyn.css (#topic-eyebrow min-height), which is render-
+     blocking in every unit page's head — so the button fills a box that already exists and
+     nothing below it moves when this deferred script runs. PILL_RENDER_MAP.md §7.
+     ⛔ Not tier-coloured: premium and free units look the same inside (owner, 2026-09-25). */
+  const EYEBROW_ARROW =
+    '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M9.5 3.5 5 8l4.5 4.5M5.5 8H13" ' +
+    'fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function eyebrowTarget(found) {
+    if (inFavCircuit(currentPage())) return 'topics-favourites.html';
+    if (found.section === 'structures') return 'grammar.html';
+    return bandPageFor(found.unit) || 'topics.html';
+  }
   function fillEyebrow() {
     const el = document.getElementById('topic-eyebrow');
-    if (!el) return; // not a topic page (e.g. index) — nothing to fill
+    if (!el) return; // not a unit page (e.g. index) — nothing to fill
     const found = findByPage(currentPage());
     if (!found) return; // page not in the list yet — leave the element as-is
-    // A grammar unit says where it sits in its own arm; a topic keeps the difficulty band.
-    el.textContent = found.section === 'structures'
-      ? ('STRUCTURE ' + found.pos + ' OF ' + structures.length)
-      : levelText(found.unit.levels);
+    el.innerHTML =
+      '<a class="te-back" href="' + cardEsc(hrefFor(eyebrowTarget(found))) + '">' + EYEBROW_ARROW +
+      '<span>Back to menu</span></a>' + favHeartHtml(found.unit, 'te-hfav');
+    paintFavHearts(el);
   }
 
   // ---- prev/next nav: normalise each button's destination (no padlocks — gating is object-level) ----

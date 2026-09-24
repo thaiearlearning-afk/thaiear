@@ -358,7 +358,7 @@
       var node = holder.firstChild;
       node.setAttribute('data-state', want);
       slot.appendChild(node);
-      if (cap) cap.textContent += ' · ' + (want === 'dl' ? 'downloaded' : 'update available');
+      if (cap) cap.textContent += ' · ' + (want === 'dl' ? 'downloaded' : 'update');
     }
   }
 
