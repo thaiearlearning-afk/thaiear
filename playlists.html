@@ -196,6 +196,12 @@ html.te-quiz-boot #pl-qload{display:flex}
      ThaiEarTopics for the gate and the sentence-number lookup, so it must come after it. -->
 <script src="pl-quiz.js"></script>
 <script>
+/* Scroll position kept across back-swipes AND the "← Back to playlists" button — the shared
+   keeper in topics.js (loaded, blocking, just above). The list and each ?pl= player view are
+   keyed separately, so the player never overwrites the list's position. */
+try { if (window.ThaiEarTopics && ThaiEarTopics.scrollKeeper) ThaiEarTopics.scrollKeeper.install(); } catch (_) {}
+</script>
+<script>
 (function () {
   // ?pl={id} → PLAYER VIEW: render this playlist as a dyn topic page via player.js (round-10).
   var PLID = (function () {

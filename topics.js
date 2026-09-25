@@ -1329,6 +1329,7 @@
        the chain for the current page and silently falls back to index 0 when it is absent, which
        would give the wrong lock-screen title and make ↩ Return play the wrong unit. */
     sequenceFor, inFavCircuit, favSequence,
+    scrollKeeper: { install: function () { scrollKeeperInstall(); }, save: function () { scrollSave(); } },   // ⚠ THE list-page scroll keeper — see its block
     searchUnits, tokenize,
     /* the quiz arm's ONE gate and ONE strip renderer — see the block above cardHtml's exports.
        ⛔ QUIZ_PUBLIC is exposed as a FUNCTION, not a captured boolean: a generator reads it at
@@ -1528,6 +1529,135 @@
       window.location.href = hrefFor(target);
     }
   });
+
+
+  /* ══ THE SCROLL KEEPER — one copy for every LIST surface (2026-09-25) ═════════════════════════
+     Keeps a list page's scroll position when you come back to it. Moved here from topics-page.js
+     (where it was written for the back-swipe, 2026-09-24) so the playlist list can use the SAME
+     code: the owner asked for the "← Back to menu" / "← Back to playlists" buttons to land where
+     he left, "there is already code for doing this that works in both android and iphone pwa re
+     backswiping". Users: topics-page.js (the five band pages, /topics, /grammar, Favourites) and
+     playlists.html (the list, and the ?pl= player view under its own key).
+     WHEN IT RESTORES — exactly two cases, never a fresh visit or a reload (a shared link must
+     start at the top):
+       1. a back/forward navigation (the back-swipe) — the original behaviour;
+       2. arriving via a "← Back to …" button (`a.te-back`): its click leaves a one-shot note
+          naming the destination, honoured only within 10s and only by that page. The button is
+          a normal link on purpose (a plain history.back() would be wrong after prev/next has
+          walked you through other units), so without the note case 1 never fires for it.
+     KEY = the page's bare name + its query string: 'topics-beginner', 'playlists',
+     'playlists?pl=…' — so the playlist PLAYER never overwrites the playlist LIST's position.
+     sessionStorage, capped at 12 — meaningful for this session only, and a relaunch into a
+     re-ordered grid must not reuse it.
+     ⚠ ADDITIVE AND IDEMPOTENT. It never sets history.scrollRestoration (quiz.js records how easily
+     that gets stuck). If the browser already restored, scrolling to the same offset is a no-op.
+     ⛔⛔ THE FIRST TOUCH ENDS THE RESTORE (r226, owner 2026-09-24: "it returns me back to the
+     position … a second or two later"). Any touch / pointer / wheel / key cancels every attempt
+     still pending, so a late re-apply can never yank the learner back.
+     ⚠ CONTENT CAN ARRIVE LATE (the playlist list paints from its mirror, then re-renders; the
+     Favourites grid is built at runtime), so while the page is still too short to reach the
+     saved offset it re-tries on every DOM change, for up to 5s, then stops. */
+  const SCROLL_KEY = 'thaiear_tp_scroll';
+  const SCROLL_PENDING_KEY = 'thaiear_scroll_restore';
+  function scrollKeyFor(pathname, search) {
+    return bare(String(pathname || '').replace(/^.*\//, '') || 'index') + (search || '');
+  }
+  function scrollHere() { return scrollKeyFor(location.pathname, location.search); }
+  function scrollMap() {
+    try { return JSON.parse(sessionStorage.getItem(SCROLL_KEY) || '{}') || {}; } catch (_) { return {}; }
+  }
+  function scrollSave() {
+    try {
+      const m = scrollMap();
+      const k = scrollHere();
+      delete m[k];                       // re-insert last, so the cap evicts the oldest
+      m[k] = Math.round(window.pageYOffset || document.documentElement.scrollTop || 0);
+      const keys = Object.keys(m);
+      while (keys.length > 12) { delete m[keys.shift()]; }
+      sessionStorage.setItem(SCROLL_KEY, JSON.stringify(m));
+    } catch (_) {}
+  }
+  function scrollIsBackForward() {
+    try {
+      const e = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      if (e && e.type) return e.type === 'back_forward';
+      return !!(performance.navigation && performance.navigation.type === 2);   // legacy WebViews
+    } catch (_) { return false; }
+  }
+  /* The one-shot note from a back button: consumed on read, whatever it names. */
+  function scrollPendingIsHere() {
+    try {
+      const raw = sessionStorage.getItem(SCROLL_PENDING_KEY);
+      if (!raw) return false;
+      sessionStorage.removeItem(SCROLL_PENDING_KEY);
+      const p = JSON.parse(raw);
+      return !!(p && p.k === scrollHere() && (Date.now() - p.t) < 10000);
+    } catch (_) { return false; }
+  }
+  function scrollRestore() {
+    const viaButton = scrollPendingIsHere();
+    if (!viaButton && !scrollIsBackForward()) return;
+    const y = scrollMap()[scrollHere()];
+    if (!y) return;
+    let done = false, mo = null, stopT = null;
+    const CANCEL_ON = ['touchstart', 'pointerdown', 'wheel', 'keydown'];
+    const finish = function () {
+      done = true;
+      if (mo) { try { mo.disconnect(); } catch (_) {} mo = null; }
+      if (stopT) { clearTimeout(stopT); stopT = null; }
+      for (let i = 0; i < CANCEL_ON.length; i++) {
+        try { window.removeEventListener(CANCEL_ON[i], finish, { capture: true, passive: true }); } catch (_) {}
+      }
+    };
+    for (let i = 0; i < CANCEL_ON.length; i++) {
+      try { window.addEventListener(CANCEL_ON[i], finish, { capture: true, passive: true }); } catch (_) {}
+    }
+    const reachable = function () {
+      const el = document.documentElement;
+      return (el.scrollHeight - window.innerHeight) >= y - 2;
+    };
+    const go = function () { if (done) return; try { window.scrollTo(0, y); } catch (_) {} };
+    go();
+    try { requestAnimationFrame(function () { requestAnimationFrame(go); }); } catch (_) { setTimeout(go, 0); }
+    /* Too short yet? Follow the content in as it arrives. */
+    if (!reachable() && window.MutationObserver) {
+      mo = new MutationObserver(function () { go(); if (reachable() && mo) { mo.disconnect(); mo = null; } });
+      try { mo.observe(document.body || document.documentElement, { childList: true, subtree: true }); } catch (_) {}
+    }
+    stopT = setTimeout(finish, 5000);
+    /* The late re-apply after `load` corrects a late font shift, for the untouched case only. */
+    window.addEventListener('load', function () { setTimeout(function () { go(); }, 0); });
+  }
+  let scrollInstalled = false;
+  function scrollKeeperInstall() {
+    if (scrollInstalled) return;
+    scrollInstalled = true;
+    /* pagehide AND visibilitychange: iOS often gives no pagehide when the user switches away, and
+       the Android app can be backgrounded straight out of a scroll. */
+    window.addEventListener('pagehide', scrollSave);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') scrollSave();
+    });
+    /* ✅ And on the way OUT through anything tappable that leaves — the last moment the position
+       is certainly right (a fast WebView navigation can skip pagehide). Capture phase. */
+    document.addEventListener('click', function (ev) {
+      try {
+        const t = ev && ev.target;
+        if (t && t.closest && t.closest('a[href], .topic-card, .topic-card-link, .topic-quiz')) scrollSave();
+      } catch (_) {}
+    }, true);
+    scrollRestore();
+  }
+  /* Every "← Back to …" button, on any page: leave the one-shot note for its destination. */
+  document.addEventListener('click', function (ev) {
+    try {
+      const a = ev && ev.target && ev.target.closest ? ev.target.closest('a.te-back[href]') : null;
+      if (!a) return;
+      const u = new URL(a.getAttribute('href'), location.href);
+      sessionStorage.setItem(SCROLL_PENDING_KEY,
+        JSON.stringify({ k: scrollKeyFor(u.pathname, u.search), t: Date.now() }));
+    } catch (_) {}
+  }, true);
 
   function init() { fillEyebrow(); decorateTopicNav(); }
   if (document.readyState === 'loading') {
