@@ -2615,7 +2615,12 @@
         + '<p class="cen">' + esc(s.english) + '</p>'
         + (chipsOf(s).length
             ? '<div class="chips vchips">'
-              + chipsOf(s).map(function (g, i) { return chipHtml(g, hits[i] === true); }).join('') + '</div>'
+              + chipsOf(s).map(function (g, i) {
+                  /* ⭐ VCHIP (QUIZ_REFINEMENT W27): the word's standalone gloss on this card only,
+                     on an EXACT chip; the page and the Builder keep the sentence-bound corpus chip. */
+                  var gg = (hits[i] === true && w.vg && g[0] === w.th) ? [g[0], w.vg, g[2]] : g;
+                  return chipHtml(gg, hits[i] === true);
+                }).join('') + '</div>'
             : '')
         + '<button class="playbtn" type="button"><span class="tri"></span>Play the sentence</button>';
     }
