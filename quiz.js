@@ -2261,7 +2261,7 @@
       if (ok) {
         d.innerHTML = '<div class="reveal">'
           + modelAnswer(s, canon, p, exact ? 'exact' : 'variant')
-          + replay
+          + kaHint(canon, p) + replay
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       } else {
@@ -2271,7 +2271,7 @@
            is the easiest thing here to get wrong. */
         d.innerHTML = '<div class="reveal">'
           + modelAnswer(s, canon, p, 'wrong')
-          + replay
+          + kaHint(canon, p) + replay
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       }
@@ -2311,6 +2311,27 @@
      and the better they did, the less they were shown, which is backwards.
      ⚠ §5.1's asymmetry is unaffected and still holds: an exact answer gets no CORRECTION. It
      gets to read what it wrote, now with the glosses attached. Only the HEADING changes. */
+  /* ⭐ THE นะ/คะ HINT (owner-approved, 2026-09-25; QUIZ_REFINEMENT.md W25). A statement closes on
+     falling ค่ะ; นะ lifts it to high คะ. The tray holds only คะ, so since W24 an answer that drops
+     นะ from นะคะ is marked wrong — and "khá" alone does not tell a learner why. Shown on EVERY
+     answer to such a sentence, right or wrong (owner: "for simplicity"). Only when นะ directly
+     precedes a คะ in the canonical order. It follows the three-way script setting like every other
+     Thai on the reveal. */
+  function kaHint(canon, p) {
+    var hit = canon.some(function (g, k) { return g[0] === 'คะ' && k > 0 && canon[k - 1][0] === 'นะ'; });
+    if (!hit) return '';
+    function w(th, tl, note) {
+      var inner = note ? tl + ', ' + note : tl;
+      if (p.script === 'tl') return '<b class="t-hint-rom">' + esc(tl) + '</b>' + (note ? ' <span class="t-hint-tl">(' + esc(note) + ')</span>' : '');
+      if (p.script === 'thai') return '<b>' + esc(th) + '</b>' + (note ? ' <span class="t-hint-tl">(' + esc(note) + ')</span>' : '');
+      return '<b>' + esc(th) + '</b> <span class="t-hint-tl">(' + esc(inner) + ')</span>';
+    }
+    return '<div class="t-hint"><span class="t-hint-k">' + (p.script === 'tl' ? 'ná and khá' : 'นะ and คะ') + '</span>'
+      + 'Keep ' + w('นะ', 'ná') + ' here. Without it, a statement ends on '
+      + w('ค่ะ', 'khâ', 'falling tone') + ' — and ' + w('นะ', 'ná') + ' is what lifts it to '
+      + w('คะ', 'khá', 'high tone') + '.</div>';
+  }
+
   function modelAnswer(s, canon, p, mode) {
     var b = scriptBits(stripBars(s.thai), stripBars(s.translit), p.script);
     var lab = (mode === 'wrong') ? 'The correct order'
