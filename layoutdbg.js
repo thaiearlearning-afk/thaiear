@@ -69,7 +69,70 @@
      This file is injected by nav.js, which runs LAST on a topic page, so by the time it exists
      auth has already resolved and any flash is over. It renders window.__teLayoutLog, which was
      being filled from before the player mounted. Do not move recording back into this file. */
-  function lines() { return window.__teLayoutLog || []; }
+  /* ── SHIFTS + TEXT SCALE (2026-09-25) ───────────────────────────────────────────────────
+     For "it loads, then gets a few px taller" on surfaces with no recorder of their own (the
+     band pages, Favourites, the grammar hub — the player.js recorder exists only on unit
+     pages). Chromium keeps a BUFFERED record of every layout shift since navigation start, so a
+     late-injected file like this one still sees the first paint: `buffered: true` replays them.
+     Each source says which element moved and its box before → after, so a card growing reads as
+     its own height changing and everything below it moving down.
+     ⚠ Android WebView / Chrome only — WebKit has no layout-shift entries, so the iPhone shows
+     "(no layout-shift API)". Shifts within 500ms of a tap are flagged `input` and are not bugs.
+     The scale line is what nav.js's uiScale() measured: --te-ui below 1 means every card was
+     first painted at 1 and then re-sized when nav.js (deferred) ran — TEXT_SCALING.md §2. */
+  var shifts = [];
+  function nodeName(n) {
+    if (!n || !n.tagName) return '?';
+    var s = n.tagName.toLowerCase();
+    if (n.id) s += '#' + n.id;
+    else if (typeof n.className === 'string' && n.className.trim()) s += '.' + n.className.trim().split(/\s+/).slice(0, 2).join('.');
+    var page = n.getAttribute && n.getAttribute('data-page');
+    if (page) s += '[' + page.replace(/\.html$/, '') + ']';
+    return s;
+  }
+  function r4(r) { return r ? Math.round(r.y) + '/' + Math.round(r.height) + 'h' : '-'; }
+  try {
+    new PerformanceObserver(function (list) {
+      list.getEntries().forEach(function (e) {
+        /* The overlay grows as it fills and would log itself — drop its own nodes. */
+        var real = (e.sources || []).filter(function (s) {
+          return !(s.node && s.node.closest && s.node.closest('#te-layout-dbg'));
+        });
+        if (e.sources && e.sources.length && !real.length) return;
+        var src = real.slice(0, 4).map(function (s) {
+          return '      ' + nodeName(s.node) + '  y/h ' + r4(s.previousRect) + ' -> ' + r4(s.currentRect);
+        });
+        shifts.push('SHIFT +' + String(Math.round(e.startTime)).padStart(5) + 'ms  score ' +
+          e.value.toFixed(4) + (e.hadRecentInput ? '  (input)' : ''));
+        shifts = shifts.concat(src);
+      });
+    }).observe({ type: 'layout-shift', buffered: true });
+  } catch (_) { shifts.push('(no layout-shift API on this browser)'); }
+  function scaleLine() {
+    try {
+      var cs = getComputedStyle(document.documentElement);
+      var U = window.ThaiEarUIScale;
+      return 'SCALE  measured ' + (U ? U.raw().toFixed(3) : '?') +
+        '  --te-ui ' + (cs.getPropertyValue('--te-ui').trim() || 'unset(=1)') +
+        '  --te-ui-raw ' + (cs.getPropertyValue('--te-ui-raw').trim() || 'unset(=1)') +
+        '  width ' + window.innerWidth + '  dpr ' + window.devicePixelRatio;
+    } catch (_) { return 'SCALE ?'; }
+  }
+  function cardLine() {
+    var cards = document.querySelectorAll('.topic-grid .topic-card');
+    if (!cards.length) return null;
+    var hs = {};
+    for (var i = 0; i < cards.length; i++) hs[Math.round(cards[i].getBoundingClientRect().height * 10) / 10] = 1;
+    return 'CARDS  ' + cards.length + ' now, heights ' + Object.keys(hs).join(' / ') + 'px';
+  }
+
+  function lines() {
+    var out = (window.__teLayoutLog || []).slice();
+    out.push(scaleLine());
+    var c = cardLine(); if (c) out.push(c);
+    out.push(shifts.length ? '--- layout shifts since page start ---' : '--- no layout shifts recorded ---');
+    return out.concat(shifts);
+  }
   var box = null;
 
   function paint() {
