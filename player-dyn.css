@@ -247,6 +247,11 @@ html.te-thai-modern .g-eng { font-family: var(--font-ui), 'Noto Sans Thai', var(
   font-size: 12.5px; line-height: 1.3; letter-spacing: 0; text-transform: none;
 }
 body.dyn-plsel #topic-eyebrow { display: none; }
+/* ⚠ The same Android trap as .topic-plays:empty in topics-page.css: the text autosizer enlarges
+   only elements with text, so this EMPTY reserve resolved its em against the unscaled size and
+   the row grew ~2.4px when the button's text arrived (Pixel 7a at 115%). A non-breaking space
+   while empty makes it text from first paint. */
+#topic-eyebrow:empty::before { content: '\00a0'; }
 .te-back {
   display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px;
   /* EXACTLY the reserve's height (same calc, same font-size), so filling the slot moves nothing

@@ -681,6 +681,19 @@
   html.te-plays .topic-plays {
     min-height: 1.3em;
   }
+  /* ⚠⚠ AN EMPTY RESERVE IS NOT SCALED ON ANDROID (measured on the owner's Pixel 7a, 2026-09-25).
+     Android's font-size setting reaches the WebView through Chromium's TEXT AUTOSIZER, which
+     enlarges only elements that CONTAIN TEXT. The slot above ships empty, so its 1.3em resolved
+     against the UNSCALED 12px (15.6px) — and when "Thai listening time: …" arrived at ~220ms the
+     line was autosized to 115% (17.9px) and every card in the 1fr grid grew ~2.3px after paint.
+     A non-breaking space while empty makes it a text line from first paint, so it is scaled the
+     same way as the caption that replaces it. `:empty` stops matching the moment the caption is
+     written (applyListenTime sets textContent) and matches again when it is cleared.
+     ⚠ The TEXT_SCALING harness cannot show this: its __zoom inflates EVERY element, empty ones
+     included. Only a device reading can (layoutdbg.js part log). TEXT_SCALING.md §4. */
+  html.te-plays .topic-plays:empty::before {
+    content: '\00a0';
+  }
 
   /* ── THE QUIZ STRIP (QUIZ_PROJECT.md §9.1) ────────────────────────────────────────────
      "A slightly taller card with the quiz strip in a different colour, APPENDED to the bottom
