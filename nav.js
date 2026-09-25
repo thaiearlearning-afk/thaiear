@@ -791,9 +791,13 @@
         'padding:9px 14px;font-family:var(--font-ui,system-ui,sans-serif);font-size:calc(13px * var(--te-ui, 1));font-weight:500;' +
         'border-bottom:0.5px solid var(--border,rgba(0,0,0,0.1))}' +
         '.te-np-bar.show{display:flex}' +
-        // Premium playing topic → gold bar (eq bars use currentColor, so they follow). Keyed on the
-        // played topic's tier stored in thaiear_np, NOT the current page.
-        '.te-np-bar.te-np-premium{background:#FBF5DC;color:#B29234}' +
+        // Premium playing topic → the premium CARD tint, exactly as a premium topic card shows it
+        // (COLOR_THEME.md §1b: the cream tint is the tier signal, the ink stays the one navy).
+        // Owner 2026-09-25: the old gold bar (#FBF5DC ground, #B29234 ink) was the last of the
+        // retired premium skin; bring it "in line with the new tint". The eq bars use
+        // currentColor, so they follow the ink. Keyed on the PLAYED topic's tier (thaiear_np),
+        // not the current page.
+        '.te-np-bar.te-np-premium{background:var(--card-tint-premium,#F7F4EC);color:var(--accent,#261B65)}' +
         '.te-np-eq{display:inline-flex;align-items:flex-end;gap:2px;height:13px;flex-shrink:0}' +
         '.te-np-eq i{width:3px;background:currentColor;border-radius:1px;animation:te-np-eq 0.9s ease-in-out infinite}' +
         '.te-np-eq i:nth-child(1){height:6px}.te-np-eq i:nth-child(2){height:12px;animation-delay:0.2s}.te-np-eq i:nth-child(3){height:8px;animation-delay:0.4s}' +
