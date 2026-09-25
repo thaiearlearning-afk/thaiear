@@ -126,10 +126,61 @@
     return 'CARDS  ' + cards.length + ' now, heights ' + Object.keys(hs).join(' / ') + 'px';
   }
 
+  /* ── WHICH PART OF A CARD MOVED (2026-09-25, Pixel 7a: every card +2.6px at ~370ms) ──────
+     A shift entry names the elements that MOVED, not the one that grew. So: the first card's
+     parts, re-measured on every DOM change and every frame for 6s, one line per distinct state.
+     Plus the facts that decide the theories — when this file started (if AFTER the shift, the
+     part log begins in the settled state and says so), first paint, and when each font file
+     arrived and whether it is in use (font-display:optional can paint the fallback first). */
+  var t0 = Math.round(performance.now());
+  var partLog = [], lastParts = '';
+  var PARTS = [['pill', '.topic-card-top'], ['name', '.topic-card-link'], ['meta', '.topic-meta-row'],
+               ['plays', '.topic-plays'], ['strip', '.topic-quiz']];
+  function partSnap(tag) {
+    var card = document.querySelector('.topic-grid .topic-card');
+    if (!card) return;
+    var h = function (el) { return el ? (Math.round(el.getBoundingClientRect().height * 10) / 10) : '-'; };
+    var s = 'card ' + h(card) + ' = ' + PARTS.map(function (p) { return p[0] + ' ' + h(card.querySelector(p[1])); }).join(' · ') +
+      ' | html ' + ['te-dl', 'te-plays'].filter(function (c) { return document.documentElement.classList.contains(c); }).join(',');
+    if (s === lastParts) return;
+    lastParts = s;
+    partLog.push('+' + String(Math.round(performance.now())).padStart(5) + 'ms ' + s + (tag ? '  <' + tag + '>' : ''));
+  }
+  try {
+    partSnap('probe start');
+    new MutationObserver(function () { partSnap(''); })
+      .observe(document.documentElement, { childList: true, subtree: true, attributes: true, characterData: true });
+    var tEnd = performance.now() + 6000;
+    (function loop() { partSnap(''); if (performance.now() < tEnd) requestAnimationFrame(loop); })();
+    if (document.fonts && document.fonts.addEventListener) {
+      document.fonts.addEventListener('loadingdone', function () { partSnap('fonts loadingdone'); });
+    }
+  } catch (_) {}
+  function timingLines() {
+    var out = [];
+    try {
+      var fcp = performance.getEntriesByType('paint').filter(function (e) { return e.name === 'first-contentful-paint'; })[0];
+      out.push('TIMING probe started +' + t0 + 'ms · first paint ' + (fcp ? '+' + Math.round(fcp.startTime) + 'ms' : '?'));
+      performance.getEntriesByType('resource').filter(function (e) { return /\.woff2?(\?|$)/.test(e.name); })
+        .forEach(function (e) {
+          out.push('FONT   ' + e.name.split('/').pop().split('?')[0] + ' done +' + Math.round(e.responseEnd) + 'ms' +
+            (e.transferSize === 0 ? ' (cache)' : ''));
+        });
+      if (document.fonts) {
+        var used = [];
+        document.fonts.forEach(function (f) { if (f.status === 'loaded') used.push(f.family.replace(/"/g, '') + ' ' + f.weight); });
+        out.push('FONTS  loaded: ' + (used.join(', ') || 'none') + ' · status ' + document.fonts.status);
+      }
+    } catch (_) {}
+    return out;
+  }
+
   function lines() {
     var out = (window.__teLayoutLog || []).slice();
     out.push(scaleLine());
     var c = cardLine(); if (c) out.push(c);
+    out = out.concat(timingLines());
+    if (partLog.length) out = out.concat(['--- first card, part heights (px) ---'], partLog);
     out.push(shifts.length ? '--- layout shifts since page start ---' : '--- no layout shifts recorded ---');
     return out.concat(shifts);
   }
