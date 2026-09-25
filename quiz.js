@@ -233,9 +233,9 @@
      ✅ But a single draggable TILE cannot occupy two positions, so the Builder gets its own list
      from gen_builder_chips.py, published as topic.quiz.bchips keyed by sentence number and
      ALREADY ORDERED to spell the sentence — the two halves are not adjacent.
-     ⚠ TRAY AND TRAY-COUNT ONLY. Every reveal/teaching surface still calls chipsOf(): the
-     learner should meet ลอง...ดู as one construction there, which is the whole reason the
-     corpus was left alone. */
+     ⚠ TRAY, TRAY-COUNT AND THE BUILDER'S "correct order" ROW (modelAnswer gets canon = this
+     list, so that row mixes split tiles with corpus glosses — W32 read all 26). Every other
+     reveal still calls chipsOf(), where ลอง...ดู stays one construction. */
   function buildChipsOf(s) {
     var b = s && QD().bchips && QD().bchips[String(s.num)];
     return (b && b.length) ? b.filter(function (g) { return g && g[0]; }) : chipsOf(s);
