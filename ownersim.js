@@ -958,7 +958,24 @@
      and the verdict each surface reaches from them. ⛔ The verdict is RE-DERIVED here rather than
      imported, because the point is to compare it against what the page and the card actually
      show — a probe that called the same function would agree with a broken one by construction. */
-  function staleReport(el) {
+  /* ⚠ 2026-09-26 — THE PANEL LIVES ON THE HOME SPLASH, AND THE SPLASH DOES NOT LOAD topics.js.
+     Only nav.js's Android-app now-playing bar injects it there (Capacitor-gated), so on Android
+     this probe worked and on the iPhone PWA every row read "? — quiet (no published stamp)": no
+     topic list → no unit name → no sig lookup → a silent all-clear. Load it on demand, and if it
+     still is not there, say so rather than print a verdict. */
+  function withTopics(cb) {
+    if (window.ThaiEarTopics) return cb();
+    var s = document.getElementById('te-topics-js'), done = false;
+    function fin() { if (!done) { done = true; cb(); } }
+    if (!s) {
+      s = document.createElement('script'); s.id = 'te-topics-js'; s.src = '/topics.js';
+      document.head.appendChild(s);
+    }
+    s.addEventListener('load', fin); s.addEventListener('error', fin);
+    setTimeout(fin, 5000);
+  }
+  function staleReport(el) { withTopics(function () { staleReportNow(el); }); }
+  function staleReportNow(el) {
     var T = window.ThaiEarTopics;
     var man = {};
     try { man = JSON.parse(localStorage.getItem('thaiear_offline') || '{}'); } catch (_) {}
@@ -1006,6 +1023,7 @@
           (nStale ? '<b style="color:#B00">' + nStale + ' should offer an update</b>'
                   : '<b>all current</b>') +
           (sig ? '' : ' <span style="color:#B00">⚠ stamp map did not load — every row reads quiet</span>') +
+          (all.length ? '' : ' <span style="color:#B00">⚠ topic list did not load — units show as ? and every row reads quiet</span>') +
           '<div data-pjs style="color:#8A8A8A;font-size:11px">player.js: …</div>' +
           rows.join('');
         /* 2026-09-24 — WHICH player.js WILL A TOPIC PAGE RUN? The r226 cachePage() fix deletes
