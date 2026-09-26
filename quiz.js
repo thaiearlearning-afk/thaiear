@@ -2261,7 +2261,7 @@
       if (ok) {
         d.innerHTML = '<div class="reveal">'
           + modelAnswer(s, canon, p, exact ? 'exact' : 'variant')
-          + kaHint(canon, p) + replay
+          + kaHint(canon, p, built) + replay
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       } else {
@@ -2271,7 +2271,7 @@
            is the easiest thing here to get wrong. */
         d.innerHTML = '<div class="reveal">'
           + modelAnswer(s, canon, p, 'wrong')
-          + kaHint(canon, p) + replay
+          + kaHint(canon, p, built) + replay
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       }
@@ -2316,10 +2316,22 @@
      นะ from นะคะ is marked wrong — and "khá" alone does not tell a learner why. Shown on EVERY
      answer to such a sentence, right or wrong (owner: "for simplicity"). Only when นะ directly
      precedes a คะ in the canonical order. It follows the three-way script setting like every other
-     Thai on the reveal. */
-  function kaHint(canon, p) {
+     Thai on the reveal.
+     ⭐⭐ W53 (owner, 2026-09-26): ONLY WHEN THE LEARNER MADE THE MISTAKE IT EXPLAINS. Shown on every
+     answer it was "too egregiously common" — the line sat under every correct นะคะ answer too. It
+     now fires only when the learner's own tiles hold MORE bare คะ (a คะ with no นะ right before it)
+     than the model answer does: a นะ·คะ pair lost its นะ and kept its high-tone คะ, which is the
+     answer W24 rejects. Counting bare คะ on BOTH sides keeps a question คะ (ไหมคะ) out of it.
+     ⛔ `built` is the WHOLE box, locked chips included, exactly as the check sees it. */
+  function kaHint(canon, p, built) {
     var hit = canon.some(function (g, k) { return g[0] === 'คะ' && k > 0 && canon[k - 1][0] === 'นะ'; });
     if (!hit) return '';
+    function bareKa(ws) {
+      var n = 0;
+      ws.forEach(function (w, k) { if (w === 'คะ' && !(k > 0 && ws[k - 1] === 'นะ')) n++; });
+      return n;
+    }
+    if (bareKa(built || []) <= bareKa(canon.map(function (g) { return g[0]; }))) return '';
     function w(th, tl, note) {
       var inner = note ? tl + ', ' + note : tl;
       if (p.script === 'tl') return '<b class="t-hint-rom">' + esc(tl) + '</b>' + (note ? ' <span class="t-hint-tl">(' + esc(note) + ')</span>' : '');
