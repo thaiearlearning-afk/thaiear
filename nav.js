@@ -244,6 +244,45 @@
     };
   })();
 
+  /* ---- KEEP THE SCREEN AWAKE WHILE A DOWNLOAD RUNS (owner, 2026-09-28) ----
+     Downloads are driven by page JS, and in the Android app that JS stops about a minute after the
+     screen locks (DYN_ROLLOUT.md §5f) — on the iPhone PWA a locked page is suspended too — so a
+     download left to the phone's AUTO-lock stalled until unlock. A Screen Wake Lock stops the auto
+     lock while one runs; a deliberate power-button lock still ends it, and the leave warnings cover
+     leaving the page. Chosen over a native download manager (a big, risky second writer of the
+     offline store). ONE implementation, here because nav.js loads on every page; the three download
+     surfaces hold it by name — player.js 'topic-dl', pl-list.js 'playlist-dl', read.js 'read-dl'.
+     The browser drops a wake lock whenever the page is hidden, so it is re-requested on return
+     while still held. A no-op where the API is missing or refused (power saving, low battery). */
+  (function () {
+    var holds = {}, lock = null, pending = false;
+    function wanted() { for (var k in holds) { if (holds[k]) return true; } return false; }
+    function acquire() {
+      if (lock || pending || !wanted() || document.visibilityState !== 'visible') return;
+      if (!navigator.wakeLock || typeof navigator.wakeLock.request !== 'function') return;
+      pending = true;
+      navigator.wakeLock.request('screen').then(function (l) {
+        pending = false;
+        if (!wanted()) { try { l.release(); } catch (_) {} return; }   // released while we waited
+        lock = l;
+        try { l.addEventListener('release', function () { if (lock === l) lock = null; }); } catch (_) {}
+      }, function () { pending = false; });
+    }
+    function releaseIfIdle() {
+      if (wanted() || !lock) return;
+      var l = lock; lock = null;
+      try { l.release(); } catch (_) {}
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') acquire();
+    });
+    window.ThaiEarAwake = {
+      hold: function (why) { holds[why || 'any'] = true; acquire(); },
+      release: function (why) { delete holds[why || 'any']; releaseIfIdle(); },
+      held: function () { return !!lock; }
+    };
+  })();
+
   /* ---- offline: register the service worker (caches the app shell + pages) ----
      Runs on every page since nav.js loads everywhere. Enables offline browse/play
      in the app (and PWA offline on the web). Audio is handled separately. */

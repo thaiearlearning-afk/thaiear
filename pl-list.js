@@ -829,6 +829,8 @@
     function dlSetBusy(b) {
       /* r93: the swipe guard is armed exactly while a batch runs. */
       try { if (b) window.__teArmLeaveGuard(); else window.__teDisarmLeaveGuard(); } catch (_) {}
+      // 2026-09-28: no auto-lock mid-batch — the page's JS stops soon after one (nav.js ThaiEarAwake).
+      try { if (window.ThaiEarAwake) window.ThaiEarAwake[b ? 'hold' : 'release']('playlist-dl'); } catch (_) {}
       dlBusy = b;
       dlKeepOpen(b);
       /* r85: all THREE buttons lock while a job runs — Remove All included. */

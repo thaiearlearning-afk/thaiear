@@ -423,6 +423,9 @@
   function sgPush() { try { history.pushState({ teReadGuard: 1 }, '', location.href); } catch (_) {} }
   function leaveGuardSync() {
     installLeaveGuard();
+    // 2026-09-28: the course DOWNLOAD (only) keeps the screen from auto-locking (nav.js ThaiEarAwake);
+    // every dlBusy change passes through here.
+    try { if (window.ThaiEarAwake) window.ThaiEarAwake[dlBusy ? 'hold' : 'release']('read-dl'); } catch (_) {}
     var busy = !!busyReason() && !leaveOk;
     if (busy && !sgArmed) {
       sgArmed = true; sgStale = false; sgY = window.pageYOffset || 0;
