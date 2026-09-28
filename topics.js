@@ -96,7 +96,7 @@
       keywords: ['animal','สัตว์','dog','หมา','cat','แมว','pet','elephant','ช้าง','bird','นก','fish','zoo','wildlife','buffalo','ควาย'] },
     { id: 4, part: 1, name: "Colours", levels: ['beg'], sentences: 21, page: "topic-04a.html", audio: "ColoursAndDescriptions_BEG", access: "premium",
       keywords: ['colour','color','red','blue','green','สี','describe','description','adjective','big','small','แดง'] },
-    { id: 4, part: 2, name: "Everyday descriptions", levels: ['beg'], sentences: 22, page: "topic-04b.html", audio: "ColoursAndDescriptions2_BEG", access: "premium",
+    { id: 4, part: 2, name: "Describing things", levels: ['beg'], sentences: 22, page: "topic-04b.html", audio: "ColoursAndDescriptions2_BEG", access: "premium",
       keywords: ['colour','color','shade','describe','description','adjective','pattern','dark','light','สี','bright'] },
     { id: 6, name: "Time & numbers", levels: ['beg'], sentences: 30, page: "topic-06.html", audio: "Time_BEG", access: "premium",
       keywords: ['time','number','clock','hour','นาฬิกา','เวลา','count','counting','นับ','oclock','minute','how many','เลข'] },
