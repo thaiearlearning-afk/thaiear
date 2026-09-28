@@ -23,26 +23,12 @@
     return now > START_YEAR ? START_YEAR + '–' + now : String(START_YEAR);
   }
 
-  /* ⚠ CLEAN URLS. Cloudflare Pages 308-redirects /x.html -> /x; that redirect is
-     cf-cache-status: DYNAMIC (an uncached origin round trip, 127-1315 ms measured) and it lands
-     BEFORE the service worker starts, so Navigation Preload cannot cover it. This footer is on
-     nearly every page, so it was one of the most-served copies of the slow form on the site.
-     Mirrors hrefFor() in topics.js; local, so footer.js never depends on topics.js load order. */
-  const LOCAL_HOST = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
-  function pageHref(p) {
-    const t = String(p || '');
-    if (/^(https?:|mailto:|#|\/)/.test(t)) return t;      // external, anchor, or already rooted
-    const b = t.replace(/\.html$/i, '');
-    return (LOCAL_HOST && b) ? b + '.html' : b;           // localhost has no clean-URL resolution
-  }
-
-  /* ---- social links (single source; mirrored on socials.html + the index footer) ---- */
-  const SOCIALS = [
-    { label: 'Instagram', href: 'https://www.instagram.com/thaiear.co' },
-    { label: 'TikTok',    href: 'https://www.tiktok.com/@thaiear' },
-    { label: 'YouTube',   href: 'https://www.youtube.com/@ThaiEar' },
-    { label: 'Socials',   href: 'socials.html' },
-  ];
+  /* ---- NO social links (owner, 2026-09-29) ----------------------------------------------
+     Instagram · TikTok · YouTube · Socials used to sit above the © line here. The posts do not
+     suit the brand yet, so the socials page is unplugged: no footer links, no menu entry (nav.js),
+     noindex, out of the sitemap. socials.html stays live for anyone holding the URL. To restore,
+     take this file's SOCIALS list, pageHref() and .site-copyright-socials styles back from git
+     (before sw v748), along with the static footers in gen_topics_pages.js / gen_home_splash.js. */
 
   /* ---- styles (own them here so it's truly single-source) --------------
      Uses the page's design tokens, which every page defines in :root. */
@@ -54,14 +40,6 @@
       color: var(--text-secondary);
       border-top: 0.5px solid var(--border);
     }
-    .site-copyright-socials {
-      display: flex; justify-content: center; flex-wrap: wrap;
-      gap: 0.4rem 1.1rem; margin-bottom: 0.6rem;
-    }
-    .site-copyright-socials a {
-      font-size: 12px; font-weight: 500; color: var(--text-secondary); text-decoration: none;
-    }
-    .site-copyright-socials a:hover { color: var(--accent); }
   `;
 
   function mount() {
@@ -78,15 +56,7 @@
     const el = document.createElement('footer');
     el.className = 'site-copyright';
     el.id = 'site-copyright';
-    const socials = SOCIALS.map(function (s) {
-      const ext = /^https?:/.test(s.href) ? ' target="_blank" rel="noopener"' : '';
-      /* ⚠ INTERNAL hrefs go through pageHref(); the four external ones are returned untouched
-         by it anyway (no trailing .html), so there is no branch to keep in step. */
-      return '<a href="' + pageHref(s.href) + '"' + ext + '>' + s.label + '</a>';
-    }).join('');
-    el.innerHTML =
-      '<nav class="site-copyright-socials">' + socials + '</nav>' +
-      '© ' + yearLabel() + ' ' + OWNER + '. All rights reserved.';
+    el.textContent = '© ' + yearLabel() + ' ' + OWNER + '. All rights reserved.';
     document.body.appendChild(el);
   }
 

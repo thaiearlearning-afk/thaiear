@@ -502,7 +502,9 @@
        show it at all. Routing it through join.html would hide the feature from the people
        it is meant to sell. */
     { label: 'Progress', page: 'progress.html', public: true },
-    { label: 'Socials', page: 'socials.html', public: true },
+    /* ⚠ NO Socials entry (owner, 2026-09-29): the posts do not suit the brand yet, so the page
+       is unplugged — no menu entry, no footer link, noindex, out of the sitemap. socials.html
+       itself stays live for anyone holding the URL. Restore all five together. */
     // Visible everywhere INCLUDING inside the Capacitor app (owner, 2026-08-02 — the page now
     // documents offline downloads/playlists, useful in-app; supersedes the old fourth-wall hide).
     { label: 'App', page: 'app.html', public: true },
