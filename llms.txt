@@ -11,8 +11,8 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Communication survival in Thai](https://thaiear.com/topic-03): Beginner, 25 sentences
 - [Shopping & money: Prices & paying in Thai](https://thaiear.com/topic-11a): Beginner, 22 sentences
 - [Animals in Thai](https://thaiear.com/topic-40): Beginner, 37 sentences
-- [Colours & descriptions: Colours in Thai](https://thaiear.com/topic-04a): Beginner, 21 sentences
-- [Colours & descriptions: Everyday qualities in Thai](https://thaiear.com/topic-04b): Beginner, 22 sentences
+- [Colours in Thai](https://thaiear.com/topic-04a): Beginner, 21 sentences
+- [Everyday descriptions in Thai](https://thaiear.com/topic-04b): Beginner, 22 sentences
 - [Time & numbers in Thai](https://thaiear.com/topic-06): Beginner, 30 sentences
 - [Food & drink: Ordering & dishes in Thai](https://thaiear.com/topic-09a): Beginner, 42 sentences
 - [Emergencies: Calling for help in Thai](https://thaiear.com/topic-37): Beginner, 21 sentences
@@ -24,7 +24,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Getting around: Modes & tickets in Thai](https://thaiear.com/topic-12a): Beginner, 27 sentences
 - [Idioms in Thai](https://thaiear.com/topic-38): Beginner, 27 sentences
 - [Tongue twisters in Thai](https://thaiear.com/topic-39): Beginner, 19 sentences
-- [Occupations: Everyday jobs in Thai](https://thaiear.com/topic-42a): Beginner → Lower intermediate, 30 sentences
+- [Occupations 1 in Thai](https://thaiear.com/topic-42a): Beginner → Lower intermediate, 30 sentences
 - [Body & health: Symptoms & feeling ill in Thai](https://thaiear.com/topic-13b): Beginner → Lower intermediate, 30 sentences
 - [Places around town: Shops & errands in Thai](https://thaiear.com/topic-41b): Beginner → Lower intermediate, 29 sentences
 - [Weather & seasons in Thai](https://thaiear.com/topic-05): Beginner → Lower intermediate, 32 sentences
@@ -39,7 +39,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Home & daily routine: Routine & rooms in Thai](https://thaiear.com/topic-10a): Beginner → Lower intermediate, 32 sentences
 - [Body & health: Body parts in Thai](https://thaiear.com/topic-13a): Beginner → Lower intermediate, 26 sentences
 - [Plans & future: Arranging & changing plans in Thai](https://thaiear.com/topic-17a): Beginner → Lower intermediate, 28 sentences
-- [Occupations: Professions & careers in Thai](https://thaiear.com/topic-42b): Beginner → Lower intermediate, 32 sentences
+- [Occupations 2 in Thai](https://thaiear.com/topic-42b): Beginner → Lower intermediate, 32 sentences
 - [Clothing & appearance: Accessories & looks in Thai](https://thaiear.com/topic-18c): Beginner → Lower intermediate, 23 sentences
 - [Compliments & opinions: Criticism & disagreement in Thai](https://thaiear.com/topic-49b): Beginner → Lower intermediate, 34 sentences
 - [Working life: On the job in Thai](https://thaiear.com/topic-20a): Beginner → Lower intermediate, 24 sentences
