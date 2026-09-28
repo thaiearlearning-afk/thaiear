@@ -705,6 +705,7 @@
     }
     if (window.ThaiEarPlayerBuild) rows.push('player: ' + esc(window.ThaiEarPlayerBuild));
     rows.push('<span data-swdiag style="color:#8A8A8A;font-size:11px">update log: …</span>');
+    rows.push('<span data-tailtrace style="color:#555;font-size:11px">lock-screen trace: …</span>');
 
     el.innerHTML = rows.join('<br>') +
       '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
@@ -723,6 +724,7 @@
 
     pcVerify(el.querySelector('[data-pcverify]'), activeCache, esc);
     swDiag(el.querySelector('[data-swdiag]'), esc);
+    tailTracePaint(el.querySelector('[data-tailtrace]'), esc);
 
     var dbg = el.querySelector('#ownersim-dbg');
     if (dbg) dbg.addEventListener('click', function () {
@@ -928,6 +930,35 @@
       });
     }).catch(function () { span.textContent = 'precache vs live: check failed'; });
   }
+  /* player.js r233's lock-screen tail trace (te_tail_trace, Android app only): what the page's JS
+     did around the end of a track, stamped with WHEN it ran. Events bunched at the unlock time mean
+     JS was not running while locked; events at the track's end mean it was. DYN_ROLLOUT.md §5f. */
+  function tailTracePaint(span, esc) {
+    if (!span) return;
+    var a = null;
+    try { a = JSON.parse(localStorage.getItem('te_tail_trace') || 'null'); } catch (_) {}
+    if (!Array.isArray(a) || !a.length) {
+      span.textContent = 'lock-screen trace: empty (the Android app writes it while a topic plays)';
+      return;
+    }
+    var pad = function (n) { return ('0' + n).slice(-2); };
+    var prev = 0;
+    span.innerHTML = '<b>lock-screen trace</b> (' + a.length + ' lines, oldest first) ' +
+      '<button type="button" data-tailclear style="' + SWBTN + ';padding:1px 6px;font-size:11px">Clear</button>' +
+      a.map(function (r) {
+        var d = new Date(r[0]);
+        var step = prev ? ' +' + ((r[0] - prev) / 1000).toFixed(1) + 's' : '';
+        prev = r[0];
+        return '<br>' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) +
+          esc(step) + ' ' + esc(r[1]);
+      }).join('');
+    var b = span.querySelector('[data-tailclear]');
+    if (b) b.addEventListener('click', function () {
+      try { localStorage.removeItem('te_tail_trace'); } catch (_) {}
+      tailTracePaint(span, esc);
+    });
+  }
+
   /* The sw.js v672 breadcrumbs (thaiear-diag): what each recent update actually did — install
      entry count and timing, which files activate had to rescue from the old version, and whether
      the re-fetch landed. Read-only. */
