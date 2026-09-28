@@ -48,7 +48,7 @@
   var CONVERSIONS = {
     activation:   '2yhQCOv9quAcEKbN4L1E',            // Page view · Primary · the Smart Bidding target
     signup:       'KY8OCLiJmuAcEKbN4L1E',            // Sign-up · Primary (its goal is not an account default)
-    subscription: 'ado3CLuJmuAcEKbN4L1E',            // Subscribe · £5.55 GBP · Secondary where allowed
+    subscription: 'ado3CLuJmuAcEKbN4L1E',            // Subscribe · £6.99 GBP · Secondary where allowed
   };
 
   var loaded = false;
@@ -104,7 +104,7 @@
     if (!label || !window.ThaiEarConsent.granted('advertising')) return false;
 
     var payload = { send_to: ADS_ID + '/' + label };
-    if (name === 'subscription') { payload.value = 5.55; payload.currency = 'GBP'; }
+    if (name === 'subscription') { payload.value = 6.99; payload.currency = 'GBP'; }
     window.gtag('event', 'conversion', payload);
     return true;
   }
