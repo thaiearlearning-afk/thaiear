@@ -20,7 +20,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Food & drink: Tastes & preferences in Thai](https://thaiear.com/topic-09b): Beginner, 27 sentences
 - [Cooking & recipes: Techniques & kit in Thai](https://thaiear.com/topic-19a): Beginner, 34 sentences
 - [Groceries in Thai](https://thaiear.com/topic-46): Beginner, 38 sentences
-- [Family & relationships in Thai](https://thaiear.com/topic-08): Beginner, 38 sentences
+- [Family & relationships in Thai](https://thaiear.com/topic-08): Beginner, 40 sentences
 - [Getting around: Modes & tickets in Thai](https://thaiear.com/topic-12a): Beginner, 27 sentences
 - [Idioms in Thai](https://thaiear.com/topic-38): Beginner, 27 sentences
 - [Tongue twisters in Thai](https://thaiear.com/topic-39): Beginner, 19 sentences
@@ -29,7 +29,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Every to
 - [Places around town: Shops & errands in Thai](https://thaiear.com/topic-41b): Beginner → Lower intermediate, 29 sentences
 - [Weather & seasons in Thai](https://thaiear.com/topic-05): Beginner → Lower intermediate, 32 sentences
 - [Romance & dating: Crushes & flirting in Thai](https://thaiear.com/topic-36b): Beginner → Lower intermediate, 29 sentences
-- [Feelings & emotions 1 in Thai](https://thaiear.com/topic-14a): Beginner → Lower intermediate, 35 sentences
+- [Feelings & emotions 1 in Thai](https://thaiear.com/topic-14a): Beginner → Lower intermediate, 36 sentences
 - [Clothing & appearance: Everyday clothes & sizes in Thai](https://thaiear.com/topic-18a): Beginner → Lower intermediate, 26 sentences
 - [Days & months in Thai](https://thaiear.com/topic-07): Beginner → Lower intermediate, 37 sentences
 - [Compliments & opinions: Praise & warmth in Thai](https://thaiear.com/topic-49a): Beginner → Lower intermediate, 33 sentences
