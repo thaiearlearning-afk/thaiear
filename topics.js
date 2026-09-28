@@ -86,7 +86,7 @@
     // ── BEGINNER ──────────────────────────────────────────
     { id: 1, name: "Greetings & farewells", levels: ['beg'], sentences: 23, page: "topic-01.html", audio: "Greetings_BEG",
       keywords: ['hello','hi','goodbye','greeting','sawasdee','สวัสดี','polite','thanks','ขอบคุณ','sorry','bye','wai','introduction'] },
-    { id: 2, name: "Getting to know you", levels: ['beg'], sentences: 29, page: "topic-02.html", audio: "GettingToKnow_BEG",
+    { id: 2, name: "Getting to know you", levels: ['beg'], sentences: 30, page: "topic-02.html", audio: "GettingToKnow_BEG",
       keywords: ['introduce','name','nationality','age','where from','meeting people','small talk','ชื่อ','อายุ','getting acquainted'] },
     { id: 3, name: "Communication survival", levels: ['beg'], sentences: 25, page: "topic-03.html", audio: "CommSurvival_BEG",
       keywords: ['survival','understand','repeat','slowly','dont understand','ไม่เข้าใจ','help me','speak','พูด','translate','confused','again'] },

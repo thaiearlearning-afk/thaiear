@@ -2242,6 +2242,12 @@
          lectures after the textbook answer is a quiz people stop taking. The comparison is
          against the canonical chip order, which is the one the corpus actually records. */
       var exact = built.join('\u0001') === canon.map(function (g) { return g[0]; }).join('\u0001');
+      /* ⭐ THE STRUCTURAL HINT (2026-09-28) is CHOSEN AND RECORDED ONCE PER ANSWER, here — drawRev()
+         re-runs on every script change and must not count a showing twice. None when the นะ/คะ hint
+         fires (its result does not depend on the script setting). */
+      var hUnit = (ctx && ctx.unit) || 'unit';
+      var sHint = kaHint(canon, p, built) ? null : pickStructHint(canon, built, ok, exact, hUnit);
+      if (sHint) bhNote(sHint.id, hUnit);
 
       /* ⭐ A REPLAY BUTTON, like the other three quizzes (owner, 2026-09-20). The Thai plays
          once automatically on submit (§5.1) and there was no way to hear it again — which is
@@ -2261,7 +2267,7 @@
       if (ok) {
         d.innerHTML = '<div class="reveal">'
           + modelAnswer(s, canon, p, exact ? 'exact' : 'variant')
-          + kaHint(canon, p, built) + replay
+          + kaHint(canon, p, built) + (sHint ? renderStructHint(sHint, p) : '') + replay
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       } else {
@@ -2271,7 +2277,7 @@
            is the easiest thing here to get wrong. */
         d.innerHTML = '<div class="reveal">'
           + modelAnswer(s, canon, p, 'wrong')
-          + kaHint(canon, p, built) + replay
+          + kaHint(canon, p, built) + (sHint ? renderStructHint(sHint, p) : '') + replay
           + '<button class="nextbtn" type="button">'
           + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
       }
@@ -2342,6 +2348,91 @@
       + 'Keep ' + w('นะ', 'ná') + ' here. Without it, a statement ends on '
       + w('ค่ะ', 'khâ', 'falling tone') + ' — and ' + w('นะ', 'ná') + ' is what lifts it to '
       + w('คะ', 'khá', 'high tone') + '.</div>';
+  }
+
+  /* ⭐ STRUCTURAL HINTS (owner-approved, 2026-09-28). Six short notes on how Thai builds a sentence,
+     taken from the Builder key's own rules (SOLUTION_FINDER.md). When they appear (owner):
+     - ONLY when the learner's own answer shows the pattern, never because the sentence merely contains
+       it — the W53 lesson of the นะ/คะ hint above;
+     - AT MOST ONE per answer, and none when the นะ/คะ hint fires;
+     - each hint ONCE PER UNIT, retired for good once it has been shown in 3 units; the ครับ/ค่ะ hint
+       ONCE EVER (it could fire on most sentences).
+     Order: a mistake it explains first (question word fronted, ไหม not last, ไม่ split off), then
+     "yours also works" (a pronoun left out, a time word at the other end), then ครับ/ค่ะ left out.
+     ⚠ The pronoun and time-word lists mirror gen_quiz_orders.js DROP_PRONOUNS / MOBILE_BOTH. They only
+     choose WHICH note to show — the key has already marked the answer — so a word missing here costs a
+     note, never a mark. */
+  var BH_PRON = ['ผม', 'ฉัน', 'ดิฉัน', 'เรา', 'เขา', 'เธอ', 'พวกเขา', 'พวกเรา', 'ท่าน', 'คุณ', 'มัน', 'หนู',
+                 'พวกคุณ', 'เค้า'];
+  var BH_POLITE = ['ครับ', 'ค่ะ', 'คะ'];
+  var BH_TIME = ['ตอนนี้', 'พรุ่งนี้', 'เมื่อวาน', 'ทุกวัน', 'เดี๋ยวนี้', 'วันนี้', 'คืนนี้', 'เย็นนี้', 'ช่วงนี้',
+                 'เมื่อเช้า', 'ตอนเย็น', 'ตอนเช้า', 'สมัยนี้', 'ทุกที', 'ทุกมื้อ', 'มื้อนี้', 'เย็นวันนี้', 'เช้านี้'];
+  var BH_QWORD = ['อะไร', 'ที่ไหน', 'ใคร', 'เมื่อไหร่', 'เมื่อไร', 'ยังไง', 'อย่างไร', 'ทำไม', 'ไหน'];
+  var BH_KEY = 'thaiear_bhints_v1';
+  function bhLoad() { try { return JSON.parse(localStorage.getItem(BH_KEY) || '{}') || {}; } catch (_) { return {}; } }
+  function bhFree(S, id, unit) { var r = S[id]; return !r || (!r.done && (r.u || []).indexOf(unit) < 0); }
+  function bhNote(id, unit) {
+    var S = bhLoad(), r = S[id] || (S[id] = { u: [] });
+    if (r.u.indexOf(unit) < 0) r.u.push(unit);
+    if (id === 'polite' || r.u.length >= 3) r.done = 1;
+    try { localStorage.setItem(BH_KEY, JSON.stringify(S)); } catch (_) {}
+  }
+  /* → { id, g } (g = the model-answer chip it is about) or null. `built` is the WHOLE box. */
+  function pickStructHint(canon, built, ok, exact, unit) {
+    var cw = canon.map(function (g) { return g[0]; });
+    function n(ws, w) { return ws.filter(function (x) { return x === w; }).length; }
+    function lastWord(ws) { var k = ws.length - 1; while (k > 0 && BH_POLITE.indexOf(ws[k]) >= 0) k--; return k; }
+    function end(ws, i) { return i === 0 ? 'start' : (i === lastWord(ws) ? 'end' : 'mid'); }
+    var found = [];
+    if (!ok) {
+      if (built.length && BH_QWORD.indexOf(built[0]) >= 0 && cw.indexOf(built[0]) > 0)
+        found.push({ id: 'qword', g: canon[cw.indexOf(built[0])] });
+      var mi = cw.indexOf('ไหม'), bi = built.indexOf('ไหม');
+      if (mi >= 0 && mi === lastWord(cw) && bi >= 0 && bi !== lastWord(built)) found.push({ id: 'maiq', g: canon[mi] });
+      cw.forEach(function (w, i) {
+        if (w !== 'ไม่' || i + 1 >= cw.length) return;
+        var nx = cw[i + 1];
+        if (built.indexOf('ไม่') < 0 || built.indexOf(nx) < 0) return;
+        if (!built.some(function (b, j) { return b === 'ไม่' && built[j + 1] === nx; })) found.push({ id: 'maineg', g: canon[i] });
+      });
+    } else if (!exact) {
+      canon.forEach(function (g) { if (BH_PRON.indexOf(g[0]) >= 0 && n(built, g[0]) < n(cw, g[0])) found.push({ id: 'pron', g: g }); });
+      canon.forEach(function (g, i) {
+        var j = built.indexOf(g[0]);
+        if (BH_TIME.indexOf(g[0]) < 0 || j < 0) return;
+        var b = end(built, j);
+        if (b !== 'mid' && b !== end(cw, i)) found.push({ id: 'time', g: g });
+      });
+      canon.forEach(function (g) { if (BH_POLITE.indexOf(g[0]) >= 0 && n(built, g[0]) < n(cw, g[0])) found.push({ id: 'polite', g: g }); });
+    }
+    var S = bhLoad();
+    for (var k = 0; k < found.length; k++) if (bhFree(S, found[k].id, unit)) return found[k];
+    return null;
+  }
+  function renderStructHint(h, p) {
+    function w(th, tl, note) {       /* the นะ/คะ hint's rendering, so the two read alike in every script mode */
+      var inner = note ? tl + ', ' + note : tl;
+      if (p.script === 'tl') return '<b class="t-hint-rom">' + esc(tl) + '</b>' + (note ? ' <span class="t-hint-tl">(' + esc(note) + ')</span>' : '');
+      if (p.script === 'thai') return '<b>' + esc(th) + '</b>' + (note ? ' <span class="t-hint-tl">(' + esc(note) + ')</span>' : '');
+      return '<b>' + esc(th) + '</b> <span class="t-hint-tl">(' + esc(inner) + ')</span>';
+    }
+    var g = h.g, tl = g[2] || '', gl = bareGloss(g[1]);
+    var key = { qword: 'Question words', maiq: p.script === 'tl' ? 'mǎi' : 'ไหม', maineg: p.script === 'tl' ? 'mâi (not)' : 'ไม่ (not)',
+                pron: 'Leaving out "I", "you", "we"…', time: 'Time words', polite: 'Being polite' }[h.id];
+    var body = {
+      qword: 'Thai keeps the question word where the answer would go: ' + w('คุณชื่ออะไร', 'khun chûue à-rai')
+        + ' = "you name what?". No need to move it to the front like English.',
+      maiq: w('ไหม', 'mǎi') + ' turns a sentence into a question, and it goes at the very end. Only '
+        + w('ครับ', 'khráp') + ' or ' + w('คะ', 'khá') + ' can come after it.',
+      maineg: w('ไม่', 'mâi', 'not') + ' goes directly in front of the word it cancels: ' + w('ไม่ชอบ', 'mâi châwp')
+        + ' = don\'t like, ' + w('ไม่แพง', 'mâi phaaeng') + ' = not expensive.',
+      pron: 'You left out ' + w(g[0], tl, gl) + ', and that\'s fine. Thai often drops "I", "you", "we" or "they" once '
+        + 'it\'s clear who\'s meant. Keep it when you want to be clear or add emphasis.',
+      time: 'Time words like ' + w(g[0], tl, gl) + ' can go at the start or the end of the sentence. Both are natural.',
+      polite: 'Correct without ' + w(g[0], tl) + ', but ' + w('ครับ', 'khráp') + ' and ' + w('ค่ะ', 'khâ')
+        + ' are what make Thai polite. Drop them with friends; keep them with strangers, staff or anyone older.'
+    }[h.id];
+    return '<div class="t-hint t-hint-s" data-hint="' + h.id + '"><span class="t-hint-k">' + esc(key) + '</span>' + body + '</div>';
   }
 
   function modelAnswer(s, canon, p, mode) {
