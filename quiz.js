@@ -2246,7 +2246,9 @@
          re-runs on every script change and must not count a showing twice. None when the นะ/คะ hint
          fires (its result does not depend on the script setting). */
       var hUnit = (ctx && ctx.unit) || 'unit';
-      var sHint = kaHint(canon, p, built) ? null : pickStructHint(canon, built, ok, exact, hUnit);
+      var bhT = QD().bh, bhRow = bhT ? (bhT[String(s.num)] || {}) : null;
+      var sHint = kaHint(canon, p, built) ? null
+        : pickStructHint(canon, built, ok, exact, hUnit, bhRow, (QD().orders || {})[String(s.num)] || null);
       if (sHint) bhNote(sHint.id, hUnit);
 
       /* ⭐ A REPLAY BUTTON, like the other three quizzes (owner, 2026-09-20). The Thai plays
@@ -2350,51 +2352,134 @@
       + w('คะ', 'khá', 'high tone') + '.</div>';
   }
 
-  /* ⭐ STRUCTURAL HINTS (owner-approved, 2026-09-28). Six short notes on how Thai builds a sentence,
-     taken from the Builder key's own rules (SOLUTION_FINDER.md). When they appear (owner):
-     - ONLY when the learner's own answer shows the pattern, never because the sentence merely contains
-       it — the W53 lesson of the นะ/คะ hint above;
+  /* ⭐ STRUCTURAL HINTS (owner-approved 2026-09-28; the HINT TABLE, W64 H, approved 2026-09-30 — QUIZ_PROJECT.md §5.2a).
+     Short notes on how Thai builds a sentence, taken from the Builder key's own rules (SOLUTION_FINDER.md). Three kinds:
+     - MISTAKE (a wrong answer that shows the pattern): the rule it broke;
+     - "YOURS ALSO WORKS" (an accepted answer that is not the model): the variant it used;
+     - "YOU COULD ALSO…" (the model answer itself): ONE real accepted alternative, one change away.
+     When they appear (owner):
+     - ONLY when the learner's own answer shows the pattern, never because the sentence merely contains it (W53);
      - AT MOST ONE per answer, and none when the นะ/คะ hint fires;
-     - each hint ONCE PER UNIT, retired for good once it has been shown in 3 units; the ครับ/ค่ะ hint
-       ONCE EVER (it could fire on most sentences).
-     Order: a mistake it explains first (question word fronted, ไหม not last, ไม่ split off), then
-     "yours also works" (a pronoun left out, a time word at the other end), then ครับ/ค่ะ left out.
-     ⚠ The pronoun and time-word lists mirror gen_quiz_orders.js DROP_PRONOUNS / MOBILE_BOTH. They only
-     choose WHICH note to show — the key has already marked the answer — so a word missing here costs a
-     note, never a mark. */
+     - a MISTAKE hint at most once per unit and NEVER retired (P26: "if a learner has learnt to avoid that mistake, they
+       wont see the hint anyway");
+     - a NOTE or INVITE once per unit, retired for good after 3 units (per device: `thaiear_bhints_v1`, never sent — no
+       privacy change, owner 2026-09-30), the ครับ/ค่ะ note once ever — AND at most TWO notes/invites of any kind per
+       unit ("a learner getting lots of stuff right would see over and over").
+     ⭐ THE TABLE (QD().bh, per sentence) is PRECOMPUTED by gen_builder_hints.py and READ entry by entry; the owner chose it
+     over runtime detection ("former seems more reliable"). This code does no Thai analysis: it matches the learner's
+     tiles against the stored pattern. Indices point into the model answer orders[0]. Its guarantees are proven against the
+     live key by the gate (`gen_builder_hints.py --check`): a mistake entry never fires on an accepted answer; a note fires
+     on a real accepted answer and never on the model; an invite's alternative IS an accepted answer.
+     ⛔ AND AN INVITE IS RE-CHECKED HERE against the answers this page accepts before it is shown (owner: "if solutions get
+     removed in future and they have a hint attached, a solution could be marked wrong, with an old hint saying it is
+     valid") — so even a stale table can never recommend an answer the key rejects.
+     ⚠ No table (an older cached page or side-car): the six original detectors run as before. The pronoun and time-word
+     lists mirror gen_quiz_orders.js DROP_PRONOUNS / MOBILE_BOTH; they only choose WHICH note to show — the key has
+     already marked the answer — so a word missing here costs a note, never a mark. */
   var BH_PRON = ['ผม', 'ฉัน', 'ดิฉัน', 'เรา', 'เขา', 'เธอ', 'พวกเขา', 'พวกเรา', 'ท่าน', 'คุณ', 'มัน', 'หนู',
                  'พวกคุณ', 'เค้า'];
   var BH_POLITE = ['ครับ', 'ค่ะ', 'คะ'];
+  var BH_PART = ['ครับ', 'ค่ะ', 'คะ', 'นะ', 'จ้ะ', 'จ้า', 'ฮะ', 'นะคะ', 'นะครับ', 'จ๊ะ', 'ค่า', 'ขา'];
   var BH_TIME = ['ตอนนี้', 'พรุ่งนี้', 'เมื่อวาน', 'ทุกวัน', 'เดี๋ยวนี้', 'วันนี้', 'คืนนี้', 'เย็นนี้', 'ช่วงนี้',
                  'เมื่อเช้า', 'ตอนเย็น', 'ตอนเช้า', 'สมัยนี้', 'ทุกที', 'ทุกมื้อ', 'มื้อนี้', 'เย็นวันนี้', 'เช้านี้'];
   var BH_QWORD = ['อะไร', 'ที่ไหน', 'ใคร', 'เมื่อไหร่', 'เมื่อไร', 'ยังไง', 'อย่างไร', 'ทำไม', 'ไหน'];
   var BH_KEY = 'thaiear_bhints_v1';
+  var BH_SEP = '\u0001';
+  function bhIsNote(id) { return id === 'pron' || id === 'time' || id === 'polite' || /^[wi]_/.test(id); }
   function bhLoad() { try { return JSON.parse(localStorage.getItem(BH_KEY) || '{}') || {}; } catch (_) { return {}; } }
-  function bhFree(S, id, unit) { var r = S[id]; return !r || (!r.done && (r.u || []).indexOf(unit) < 0); }
+  function bhFree(S, id, unit) {
+    var r = S[id];
+    if (!r) return true;
+    if ((r.u || []).indexOf(unit) >= 0) return false;         /* once per unit, every kind */
+    return bhIsNote(id) ? !r.done : true;                      /* a mistake hint is never retired (P26) */
+  }
+  /* notes + invites already shown in this unit — the owner's two-per-unit budget */
+  function bhSpent(S, unit) {
+    var n = 0;
+    for (var id in S) if (bhIsNote(id) && S[id] && (S[id].u || []).indexOf(unit) >= 0) n++;
+    return n;
+  }
   function bhNote(id, unit) {
     var S = bhLoad(), r = S[id] || (S[id] = { u: [] });
     if (r.u.indexOf(unit) < 0) r.u.push(unit);
-    if (id === 'polite' || r.u.length >= 3) r.done = 1;
+    if (bhIsNote(id) && (id === 'polite' || r.u.length >= 3)) r.done = 1;
     try { localStorage.setItem(BH_KEY, JSON.stringify(S)); } catch (_) {}
   }
-  /* → { id, g } (g = the model-answer chip it is about) or null. `built` is the WHOLE box. */
-  function pickStructHint(canon, built, ok, exact, unit) {
+  /* ── the pattern language: the same kinds as gen_builder_hints.py fires() ── */
+  function bhOcc(cw, i) { var n = 0; for (var k = 0; k <= i; k++) if (cw[k] === cw[i]) n++; return [cw[i], n]; }
+  function bhPos(ans, key) {
+    var n = 0;
+    for (var j = 0; j < ans.length; j++) if (ans[j] === key[0] && ++n === key[1]) return j;
+    return -1;
+  }
+  function bhLast(ans) { var j = ans.length - 1; while (j > 0 && BH_PART.indexOf(ans[j]) >= 0) j--; return j; }
+  function bhCore(ans) { return ans.filter(function (x) { return BH_PART.indexOf(x) < 0; }); }
+  function bhPoliteMid(ans) { return ans.slice(0, bhLast(ans)).some(function (x) { return BH_POLITE.indexOf(x) >= 0; }); }
+  function bhFires(e, ans, cw) {
+    var A = e.a != null ? bhPos(ans, bhOcc(cw, e.a)) : -1;
+    var B = e.b != null ? bhPos(ans, bhOcc(cw, e.b)) : -1;
+    switch (e.k) {
+      case 'before': return A >= 0 && B >= 0 && B < A;
+      case 'adjacent': return A >= 0 && B >= 0 && B !== A + 1;
+      case 'adjbad': return A >= 0 && B >= 0 && B === A + 1;
+      case 'missing': return A < 0;
+      case 'last': return A >= 0 && A !== bhLast(ans);
+      case 'lastbad': return A >= 0 && A === bhLast(ans);
+      case 'first': return ans.length > 0 && ans[0] === cw[e.a];
+      case 'bare':
+        return bhPos(ans, bhOcc(cw, e.deg)) < 0 && A >= 0 && A + 1 < ans.length
+          && BH_PART.indexOf(ans[A + 1]) < 0 && ans[A + 1] !== 'ที่';
+      case 'moved':
+        if (A < 0) return false;
+        var endOf = function (p, t) { return p === 0 ? 'start' : (p === bhLast(t) ? 'end' : 'mid'); };
+        return endOf(A, ans) !== 'mid' && endOf(A, ans) !== endOf(e.a, cw);
+      case 'starts': return ans.length > 0 && (e.t || []).indexOf(ans[0]) >= 0;
+      case 'pmid': return bhPoliteMid(ans);
+      case 'pmid_same': return bhCore(ans).join(BH_SEP) === bhCore(cw).join(BH_SEP) && bhPoliteMid(ans);
+      case 'oneof': return (e.v || []).indexOf(bhCore(ans).join(' ')) >= 0;
+    }
+    return false;
+  }
+  /* the model-answer chips an entry names: one tile, or (a time phrase) the tiles that spell it */
+  function bhSpan(canon, e) {
+    if (e.g == null || !canon[e.g]) return null;
+    if (!e.w || e.w === canon[e.g][0]) return [canon[e.g]];
+    var out = [], s = '';
+    for (var k = e.g; k < canon.length && s.length < e.w.length; k++) { out.push(canon[k]); s += canon[k][0]; }
+    return s === e.w ? out : [canon[e.g]];
+  }
+  /* an alternative answer's tiles, as the model's chips (occurrence by occurrence, so glosses and translits follow) */
+  function bhChips(canon, str) {
+    var q = {};
+    canon.forEach(function (g) { (q[g[0]] = q[g[0]] || []).push(g); });
+    return str.split(BH_SEP).map(function (t) { return (q[t] && q[t].length) ? q[t].shift() : [t, '', '']; });
+  }
+  /* → { id, g (chip), span?, alt? } or null. `built` is the WHOLE box. `row` = this sentence's table row ({} = none;
+     null = the page carries no table at all); `accepted` = the stored accepted answers. */
+  function pickStructHint(canon, built, ok, exact, unit, row, accepted) {
     var cw = canon.map(function (g) { return g[0]; });
     function n(ws, w) { return ws.filter(function (x) { return x === w; }).length; }
-    function lastWord(ws) { var k = ws.length - 1; while (k > 0 && BH_POLITE.indexOf(ws[k]) >= 0) k--; return k; }
-    function end(ws, i) { return i === 0 ? 'start' : (i === lastWord(ws) ? 'end' : 'mid'); }
+    function end(ws, i) { return i === 0 ? 'start' : (i === bhLast(ws) ? 'end' : 'mid'); }
+    /* the table's indices are into orders[0]; if that is not this tray's model order, the table is not used */
+    var table = row && (!accepted || !accepted.length || accepted[0] === cw.join(BH_SEP)) ? row : null;
     var found = [];
     if (!ok) {
-      if (built.length && BH_QWORD.indexOf(built[0]) >= 0 && cw.indexOf(built[0]) > 0)
-        found.push({ id: 'qword', g: canon[cw.indexOf(built[0])] });
-      var mi = cw.indexOf('ไหม'), bi = built.indexOf('ไหม');
-      if (mi >= 0 && mi === lastWord(cw) && bi >= 0 && bi !== lastWord(built)) found.push({ id: 'maiq', g: canon[mi] });
-      cw.forEach(function (w, i) {
-        if (w !== 'ไม่' || i + 1 >= cw.length) return;
-        var nx = cw[i + 1];
-        if (built.indexOf('ไม่') < 0 || built.indexOf(nx) < 0) return;
-        if (!built.some(function (b, j) { return b === 'ไม่' && built[j + 1] === nx; })) found.push({ id: 'maineg', g: canon[i] });
-      });
+      if (table) {
+        (table.m || []).forEach(function (e) {
+          if (bhFires(e, built, cw)) found.push({ id: e.id, g: canon[e.g] || null, span: bhSpan(canon, e) });
+        });
+      } else {
+        if (built.length && BH_QWORD.indexOf(built[0]) >= 0 && cw.indexOf(built[0]) > 0)
+          found.push({ id: 'qword', g: canon[cw.indexOf(built[0])] });
+        var mi = cw.indexOf('ไหม'), bi = built.indexOf('ไหม');
+        if (mi >= 0 && mi === bhLast(cw) && bi >= 0 && bi !== bhLast(built)) found.push({ id: 'maiq', g: canon[mi] });
+        cw.forEach(function (w, i) {
+          if (w !== 'ไม่' || i + 1 >= cw.length) return;
+          var nx = cw[i + 1];
+          if (built.indexOf('ไม่') < 0 || built.indexOf(nx) < 0) return;
+          if (!built.some(function (b, j) { return b === 'ไม่' && built[j + 1] === nx; })) found.push({ id: 'maineg', g: canon[i] });
+        });
+      }
     } else if (!exact) {
       canon.forEach(function (g) { if (BH_PRON.indexOf(g[0]) >= 0 && n(built, g[0]) < n(cw, g[0])) found.push({ id: 'pron', g: g }); });
       canon.forEach(function (g, i) {
@@ -2403,12 +2488,113 @@
         var b = end(built, j);
         if (b !== 'mid' && b !== end(cw, i)) found.push({ id: 'time', g: g });
       });
+      if (table) (table.w || []).forEach(function (e) {
+        if (bhFires(e, built, cw)) found.push({ id: e.id, g: canon[e.g] || null });
+      });
       canon.forEach(function (g) { if (BH_POLITE.indexOf(g[0]) >= 0 && n(built, g[0]) < n(cw, g[0])) found.push({ id: 'polite', g: g }); });
+    } else if (table) {
+      (table.i || []).forEach(function (e) {
+        /* ⛔ the alternative must still be an answer this page ACCEPTS — never recommend what the key now rejects */
+        if (!accepted || accepted.indexOf(e.alt) < 0) return;
+        found.push({ id: e.id, g: canon[e.g] || null, span: bhSpan(canon, e), alt: bhChips(canon, e.alt) });
+      });
     }
     var S = bhLoad();
-    for (var k = 0; k < found.length; k++) if (bhFree(S, found[k].id, unit)) return found[k];
+    var budget = bhSpent(S, unit) < 2;
+    for (var k = 0; k < found.length; k++) {
+      if (bhIsNote(found[k].id) && !budget) continue;
+      if (bhFree(S, found[k].id, unit)) return found[k];
+    }
     return null;
   }
+  /* The approved wording (QUIZ_PROJECT.md §5.2a). [label, body]. {{th|tl}} or {{th|tl|note}} is Thai shown per the
+     learner's script setting; {g} is the word the hint is about; {alt} is the real accepted alternative.
+     ⛔ Owner's wording rule (2026-09-30): "adjective", never "describing word"; "person or noun", never "someone or
+     something". ⚠ Every translit here is the corpus's own (test_builder_hints.js checks them against the chips). */
+  var BH_TEXT = {
+    qword: ['Question words', 'Thai keeps the question word where the answer would go: {{คุณชื่ออะไร|khun chûue à-rai}}'
+      + ' = "you name what?". No need to move it to the front like English.'],
+    maiq: ['{{ไหม|mǎi}}', '{{ไหม|mǎi}} turns a sentence into a question, and it goes at the very end. Only '
+      + '{{ครับ|khráp}} or {{คะ|khá}} can come after it.'],
+    maineg: ['{{ไม่|mâi}} (not)', '{{ไม่|mâi|not}} goes directly in front of the word it cancels: {{ไม่ชอบ|mâi châwp}}'
+      + ' = don\'t like, {{ไม่แพง|mâi phaaeng}} = not expensive.'],
+    loei_a: ['{{เลย|loei}}: "really" or "so"', 'At the end of a phrase, {{เลย|loei}} adds emphasis: {{ดังมากเลย|dang mâak loei}}'
+      + ' = really loud. Straight before the next part of the sentence, it means "so, therefore": '
+      + '{{ดังเลย ทำให้นอนไม่หลับ|dang loei, tham-hâi nawn mâi làp}} = it was loud, so I couldn\'t sleep. Keep {g} and '
+      + '{{เลย|loei}} stays "really".'],
+    loei_b: ['{{เลย|loei}}: "so"', 'Here {{เลย|loei}} means "so, therefore", and it goes at the start of the result: '
+      + '{{ว่ายน้ำทั้งวัน เลยเหนื่อยมาก|wâai-nám tháng wan, loei nùeai mâak}} = I swam all day, so I\'m really tired. At '
+      + 'the very end, {{เลย|loei}} only adds emphasis.'],
+    maidai: ['{{ไม่ได้|mâi dâi}}', 'In front of a verb it means "didn\'t / not": {{ไม่ได้ไป|mâi dâi bpai}} = didn\'t go. '
+      + 'After the verb it means "can\'t": {{ไปไม่ได้|bpai mâi dâi}} = can\'t go.'],
+    laeo: ['{{แล้ว|láaeo}}', 'Its place changes the meaning. At the end it means "already": {{เจอกันแล้ว|juhr gan láaeo}}'
+      + ' = we\'ve already met. At the start it means "then": {{แล้วเจอกัน|láaeo juhr gan}} = see you then.'],
+    num: ['Numbers', 'The number comes before its counting word, and both follow the thing counted: '
+      + '{{น้ำสามขวด|nám sǎam khùat}} = water, three bottles.'],
+    num1: ['{{หนึ่ง|nùeng}}', 'After the counting word it means "a": {{บริษัทแห่งหนึ่ง|baw-rí-sàt hàaeng nùeng}} = a company. '
+      + 'Before it, it means exactly "one": {{หนึ่งปี|nùeng bpii}} = one year.'],
+    pen: ['{{เป็น|bpen}}', '{{เป็น|bpen}} links a person or noun to what it is: {{ผมเป็นครู|phǒm bpen khruu}} = I\'m a '
+      + 'teacher. An adjective needs no {{เป็น|bpen}}: {{เขาสูง|khǎo sǔung}} = he\'s tall.'],
+    too: ['Too / as well', '{{ด้วย|dûai}}, {{เหมือนกัน|mǔean-gan}} and {{เช่นกัน|chên-gan}} go at the end: '
+      + '{{ฉันคิดถึงเหมือนกัน|chǎn khít-thǔeng mǔean-gan}} = I\'ve missed you too.'],
+    loeinot: ['{{ไม่|mâi}}…{{เลย|loei}}', '"Not … at all": {{ไม่|mâi}} goes in front of the word and {{เลย|loei}} at the '
+      + 'end: {{ไม่เข้าใจเลย|mâi khâo-jai loei}} = I don\'t understand at all.'],
+    anyko: ['Question word + {{ก็|gâw}}', 'A question word with {{ก็|gâw}} means "any- / whatever": '
+      + '{{ใส่สีไหนก็สวย|sài sǐi nǎi gâw sǔai}} = any colour looks good on you. Without {{ก็|gâw}} it reads as a question.'],
+    degree: ['Very, too, a bit', '{{มาก|mâak|very}}, {{เกินไป|gern bpai|too}} and {{นิดหน่อย|nít-nòi|a bit}} come after '
+      + 'the word they change: {{เก่งมาก|gèng mâak}} = very good at it, {{สายเกินไป|sǎai gern bpai}} = too late.'],
+    demo: ['This and that', '{{นี้|níi|this}} and {{นั้น|nán|that}} come after the thing, and after its counting word if '
+      + 'it has one: {{ร้านนั้น|ráan nán}} = that shop, {{ถนนสายนี้|thà-nǒn sǎai níi}} = this road.'],
+    poss: ['Whose?', 'The owner comes after the thing: {{แมวของคุณ|maaeo khǎwng khun}} = your cat ("cat of you").'],
+    canafter: ['{{ได้|dâi}} = can', '{{ได้|dâi}} meaning "can" goes after the verb and what follows it: '
+      + '{{พูดภาษาไทยได้|phûut phaa-sǎa thai dâi}} = can speak Thai. In front of a verb, {{ได้|dâi}} means "got to".'],
+    kwa: ['{{กว่า|gwàa}}', '"More … than" comes after the adjective: {{เร็วกว่า|reo gwàa}} = faster.'],
+    passive: ['{{โดน|doon}} / {{ถูก|thùuk}} (passive)', 'The passive puts {{โดน|doon}} or {{ถูก|thùuk}} before whoever '
+      + 'did it and the action: {{โดนหัวหน้าตำหนิ|doon hǔa-nâa dtam-nì}} = got told off by the boss. '
+      + '{{หัวหน้าโดนตำหนิ|hǔa-nâa doon dtam-nì}} would mean the boss got told off.'],
+    result: ['Verb + {{ไม่|mâi}} + result', 'With result words like {{ออก|àwk}}, {{หลับ|làp}} and {{ไหว|wǎi}}, '
+      + '{{ไม่|mâi}} goes between the verb and the result: {{นอนไม่หลับ|nawn mâi làp}} = can\'t get to sleep, '
+      + '{{อ่านไม่ออก|àan mâi àwk}} = can\'t read it. {{ไม่นอน|mâi nawn}} would mean "don\'t sleep".'],
+    haifor: ['{{ให้|hâi}} = for', '{{ให้|hâi}} after the action means "for (someone)": '
+      + '{{ซื้ออาหารให้คุณ|súue aa-hǎan hâi khun}} = bought food for you. At the front, {{ให้คุณ|hâi khun}}… means '
+      + '"let you / have you …".'],
+    dir: ['{{ไป|bpai}} / {{มา|maa}} (direction)', 'After a verb, {{ไป|bpai|away}} and {{มา|maa|towards the speaker}} '
+      + 'show direction, and they come after the object: {{เอาร่มมา|ao rôm maa}} = bring an umbrella, '
+      + '{{พกร่มไป|phók rôm bpai}} = take an umbrella along.'],
+    yangmai: ['{{ยังไม่|yang mâi}} (not yet)', '"Not yet" and "still not" are {{ยังไม่|yang mâi}}, with {{ยัง|yang}} '
+      + 'first: {{ยังไม่ได้กิน|yang mâi dâi gin}} = haven\'t eaten yet.'],
+    waa: ['{{ว่า|wâa}} ("that")', 'After say, think, know or feel, Thai keeps {{ว่า|wâa}} even when English drops '
+      + '"that": {{คิดว่า|khít wâa}}… = think (that)…, {{รู้ว่าผิด|rúu wâa phìt}} = know it\'s wrong.'],
+    kamlang: ['{{กำลัง|gam-lang}} … {{อยู่|yùu}}', 'The "-ing" frame wraps the action: {{กำลัง|gam-lang}} before the '
+      + 'verb, {{อยู่|yùu}} after the verb and its object: '
+      + '{{กำลังเรียนมหาวิทยาลัยอยู่|gam-lang rian má-hǎa-wít-thá-yaa-lai yùu}} = is studying at university.'],
+    kaw: ['{{ก็|gâw}} after the subject', '{{ก็|gâw}} goes after the subject, not before it: '
+      + '{{ผมก็ไปคนเดียว|phǒm gâw bpai khon diao}} = so I went alone; {{ฉันก็อยากไป|chǎn gâw yàak bpai}} = I want to go too.'],
+    pron: ['Leaving out "I", "you", "we"…', 'You left out {g}, and that\'s fine. Thai often drops "I", "you", "we" or '
+      + '"they" once it\'s clear who\'s meant. Keep it when you want to be clear or add emphasis.'],
+    time: ['Time words', 'Time words like {g} can go at the start or the end of the sentence. Both are natural.'],
+    polite: ['Being polite', 'Correct without {g}, but {{ครับ|khráp}} and {{ค่ะ|khâ}} are what make Thai polite. Drop '
+      + 'them with friends; keep them with strangers, staff or anyone older.'],
+    w_topic: ['Topic first', 'Thai often opens with what the sentence is about, then says the rest: '
+      + '{{ภาษาไทย ผมพูดได้|phaa-sǎa thai, phǒm phûut dâi}} = "Thai, I can speak it". Yours is natural Thai.'],
+    w_pclause: ['{{ครับ|khráp}} / {{ค่ะ|khâ}} in the middle', 'A polite particle can close either half of a two-part '
+      + 'sentence: {{ขอโทษครับ ตั๋วอยู่ที่ไหน|khǎw-thôot khráp, dtǔa yùu thîi-nǎi}} and '
+      + '{{ขอโทษ ตั๋วอยู่ที่ไหนครับ|khǎw-thôot, dtǔa yùu thîi-nǎi khráp}} are both polite.'],
+    w_dir: ['{{ไป|bpai}} / {{มา|maa}} can go', 'After a verb, {{ไป|bpai}} and {{มา|maa}} add direction ("away", "here"). '
+      + 'When the direction is obvious they can be left out: {{เขาออกก่อน|khǎo àwk gàwn}} = '
+      + '{{เขาออกไปก่อน|khǎo àwk bpai gàwn}}, he left early.'],
+    w_ko: ['{{ก็|gâw}} can go', '{{ก็|gâw}} smooths the link to what follows ("then", "so"), but the sentence works '
+      + 'without it: {{งั้นปล่อยไปแล้วกัน|ngán bplòi bpai láaeo gan}} = {{งั้นก็ปล่อยไปแล้วกัน|ngán gâw bplòi bpai '
+      + 'láaeo gan}}, in that case let\'s just leave it.'],
+    w_kan: ['{{กัน|gan}} can go', '{{กัน|gan}} adds "together" or "each other"; in an invitation the meaning is already '
+      + 'there: {{ไปกินข้าวไหม|bpai gin khâao mǎi}} = {{ไปกินข้าวกันไหม|bpai gin khâao gan mǎi}}, shall we go and eat?'],
+    i_topic: ['You could also…', 'open with the topic: {alt}. Thai often puts what the sentence is about first.'],
+    i_pron: ['You could also…', 'leave out {g} — Thai drops it once it\'s clear who\'s meant: {alt}.'],
+    i_pclause: ['You could also…', 'close the first half with {g}: {alt}. Either place is polite.'],
+    i_time: ['You could also…', 'put {g} at the other end: {alt}.'],
+    i_time_start: ['You could also…', 'put {g} at the start: {alt}.'],
+    i_opt: ['You could also…', 'leave out {g} — it\'s optional here: {alt}.']
+  };
   function renderStructHint(h, p) {
     function w(th, tl, note) {       /* the นะ/คะ hint's rendering, so the two read alike in every script mode */
       var inner = note ? tl + ', ' + note : tl;
@@ -2416,23 +2602,39 @@
       if (p.script === 'thai') return '<b>' + esc(th) + '</b>' + (note ? ' <span class="t-hint-tl">(' + esc(note) + ')</span>' : '');
       return '<b>' + esc(th) + '</b> <span class="t-hint-tl">(' + esc(inner) + ')</span>';
     }
-    var g = h.g, tl = g[2] || '', gl = bareGloss(g[1]);
-    var key = { qword: 'Question words', maiq: p.script === 'tl' ? 'mǎi' : 'ไหม', maineg: p.script === 'tl' ? 'mâi (not)' : 'ไม่ (not)',
-                pron: 'Leaving out "I", "you", "we"…', time: 'Time words', polite: 'Being polite' }[h.id];
-    var body = {
-      qword: 'Thai keeps the question word where the answer would go: ' + w('คุณชื่ออะไร', 'khun chûue à-rai')
-        + ' = "you name what?". No need to move it to the front like English.',
-      maiq: w('ไหม', 'mǎi') + ' turns a sentence into a question, and it goes at the very end. Only '
-        + w('ครับ', 'khráp') + ' or ' + w('คะ', 'khá') + ' can come after it.',
-      maineg: w('ไม่', 'mâi', 'not') + ' goes directly in front of the word it cancels: ' + w('ไม่ชอบ', 'mâi châwp')
-        + ' = don\'t like, ' + w('ไม่แพง', 'mâi phaaeng') + ' = not expensive.',
-      pron: 'You left out ' + w(g[0], tl, gl) + ', and that\'s fine. Thai often drops "I", "you", "we" or "they" once '
-        + 'it\'s clear who\'s meant. Keep it when you want to be clear or add emphasis.',
-      time: 'Time words like ' + w(g[0], tl, gl) + ' can go at the start or the end of the sentence. Both are natural.',
-      polite: 'Correct without ' + w(g[0], tl) + ', but ' + w('ครับ', 'khráp') + ' and ' + w('ค่ะ', 'khâ')
-        + ' are what make Thai polite. Drop them with friends; keep them with strangers, staff or anyone older.'
-    }[h.id];
-    return '<div class="t-hint t-hint-s" data-hint="' + h.id + '"><span class="t-hint-k">' + esc(key) + '</span>' + body + '</div>';
+    var t = BH_TEXT[h.id];
+    if (!t) return '';
+    /* {g}: the word (with its gloss when it is one tile, but never for a polite particle); a time phrase is spelt whole */
+    function gWord() {
+      var sp = h.span || (h.g ? [h.g] : null);
+      if (!sp || !sp.length) return '';
+      var th = sp.map(function (c) { return c[0]; }).join(''), tl = sp.map(function (c) { return c[2] || ''; }).join(' ');
+      var one = sp.length === 1 && BH_PART.indexOf(sp[0][0]) < 0;
+      return w(th, tl, one ? bareGloss(sp[0][1]) : '');
+    }
+    /* {alt}: the accepted alternative, in the learner's script; a polite particle closing the first half keeps a space */
+    function altLine() {
+      var a = h.alt || [], th = '', tl = [];
+      a.forEach(function (c, k) {
+        th += c[0] + (k < a.length - 1 && BH_POLITE.indexOf(c[0]) >= 0 ? ' ' : '');
+        tl.push(c[2] || c[0]);
+      });
+      return w(th, tl.join(' '));
+    }
+    function fill(s, label) {
+      var out = '', re = /\{\{([^|}]+)\|([^|}]+)(?:\|([^}]+))?\}\}|\{g\}|\{alt\}/g, last = 0, m;
+      while ((m = re.exec(s))) {
+        out += esc(s.slice(last, m.index));
+        if (m[0] === '{g}') out += gWord();
+        else if (m[0] === '{alt}') out += altLine();
+        else if (label) out += esc(p.script === 'tl' ? m[2] : m[1]);
+        else out += w(m[1], m[2], m[3]);
+        last = re.lastIndex;
+      }
+      return out + esc(s.slice(last));
+    }
+    return '<div class="t-hint t-hint-s" data-hint="' + h.id + '"><span class="t-hint-k">' + fill(t[0], true) + '</span>'
+      + fill(t[1], false) + '</div>';
   }
 
   function modelAnswer(s, canon, p, mode) {

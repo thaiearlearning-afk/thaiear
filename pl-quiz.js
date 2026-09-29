@@ -135,14 +135,14 @@
      both copies filled from the one side-car entry, which is right: they are two cards and two
      questions about the same sentence, and the learner sees them as such. */
   function assemble(sentences, cars) {
-    var q1 = {}, q2 = {}, enq = {}, bchips = {}, orders = {};
+    var q1 = {}, q2 = {}, enq = {}, bchips = {}, orders = {}, bh = {};
     var byReal = {};
     cars.forEach(function (c) { if (c) byReal[c.unit] = c; });
     /* one flat index over every loaded unit, keyed by the REAL number */
-    var flat = { q1: {}, q2: {}, enq: {}, bchips: {}, orders: {} };
+    var flat = { q1: {}, q2: {}, enq: {}, bchips: {}, orders: {}, bh: {} };
     Object.keys(byReal).forEach(function (u) {
       var c = byReal[u];
-      ['q1', 'q2', 'enq', 'bchips', 'orders'].forEach(function (k) {
+      ['q1', 'q2', 'enq', 'bchips', 'orders', 'bh'].forEach(function (k) {
         var src = c[k]; if (!src) return;
         Object.keys(src).forEach(function (n) { flat[k][n] = src[n]; });
       });
@@ -155,11 +155,13 @@
       if (flat.enq[real]) enq[mine] = flat.enq[real];
       if (flat.bchips[real]) bchips[mine] = flat.bchips[real];
       if (flat.orders[real]) orders[mine] = flat.orders[real];
+      if (flat.bh[real]) bh[mine] = flat.bh[real];     /* the Builder hint row (W64 H): indices into orders[0], so it travels with them */
     });
     var out = { q1: q1, q2: q2 };
     if (Object.keys(enq).length) out.enq = enq;
     if (Object.keys(bchips).length) out.bchips = bchips;
     if (Object.keys(orders).length) out.orders = orders;
+    if (Object.keys(bh).length) out.bh = bh;
     return out;
   }
 
