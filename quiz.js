@@ -1517,7 +1517,7 @@
       var dk = String(decoyCount(p));
       html += '<div class="mgroup"><p class="mlab">Decoy tiles</p><div class="radios">'
         + radio('decoys', '4', dk, 'Up to 4', '')
-        + radio('decoys', '2', dk, 'Up to 2', 'keeps the trickiest two')
+        + radio('decoys', '2', dk, 'Up to 2', '')
         + radio('decoys', '0', dk, 'None', 'every tile belongs in the answer — just place them in the correct order')
         + '</div></div>';
       if (showHead) {
@@ -1609,11 +1609,25 @@
       allBtn.querySelector('.tq-all-t').textContent =
         '\u2713 Applied to every ' + q.name + ' quiz';
     };
-    /* every control that feeds readPrefs() un-latches it */
+    /* every control that feeds readPrefs() un-latches it — AND SAVES AT ONCE.
+       ⛔ Owner, 2026-10-03 (on v756): "if i set to random and 5, then do backswipe, then re enter,
+       its back to default settings". Settings were written only by Start and "use for all", so
+       any other way out of the menu threw the changes away (measured: 0 writes before Start).
+       Like the dyn player, a change is saved the moment it is made; coalesced to one write per
+       tap, because a control fires both click and change. Harness: test_quiz_deeplink_prefs.js §4. */
+    var saveSoon = null;
+    function saveNow() {
+      if (saveSoon) return;
+      saveSoon = setTimeout(function () { saveSoon = null; savePrefs(qid, readPrefs()); }, 0);
+    }
     sheet.querySelectorAll('.seg, .tq-fs, input[name=mode], input[name=script], input[name=head], '
                          + 'input[name=decoys], .c-hide, .c-tf').forEach(function (el) {
       el.addEventListener('click', resetAllBtn);
       el.addEventListener('change', resetAllBtn);
+      if (!el.classList.contains('tq-fs')) {     /* text size has its own store (setFontScale) */
+        el.addEventListener('click', saveNow);
+        el.addEventListener('change', saveNow);
+      }
     });
     sheet.querySelector('.tq-back').onclick = openPicker;
     sheet.querySelector('.tq-return').onclick = goBack;
