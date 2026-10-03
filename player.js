@@ -5853,88 +5853,12 @@
   // Parametrised stitcher (round-11): the chain can BUILD a FOREIGN playlist's session in
   // place (foreground only) from the local playlist cache — sents/keyNs/key come from the
   // caller instead of this page's own state.
-  function dynBuildSessionFor(inc, keyNs, key, onProg, st, opts) {
-    if (!inc.length) return Promise.reject({ code: 'empty' });
-    var mode = currentMode;   // captured: the key/filename must match the mode this build is FOR
-    st = st || dynCurrentSet();   // r16: settings are per unit — a foreign build passes ITS unit's
-    var stEp = (st.ep >= 1 && st.ep <= st.rp) ? st.ep : st.rp;
-    var needEn = (mode === 'et') || st.en;   // TE with English off never touches the _EN clips
-    var files = [];
-    inc.forEach(function (s) { files.push(dynClipRef(s, 'TH')); if (needEn) files.push(dynClipRef(s, 'EN')); });
-    var done = 0;
-    // r19: phase timings. "It feels slow" is not a diagnosis - these turn it into numbers,
-    // and they cost nothing when the log is off.
-    var tFetch0 = Date.now(), tFetch = 0, tStitch = 0, cached0 = 0;
-    files.forEach(function (f) { if (dynClipCache[f.file]) cached0++; });
-    /* Per-clip DENIAL must not kill the whole build. dynPool has no per-item catch, so one
-       rejected lane used to reject the Promise.all and lose every other clip with it. A gate
-       code (401/402/403/'licence') now drops just that sentence and the stitch carries on —
-       defence in depth behind dynIncluded()'s filter, for when the SERVER disagrees with the
-       client's view of entitlement (sub lapsed mid-session, tier list changed, clip missing).
-       Real faults (network, decode) still reject, and an all-denied build rejects with the gate
-       code so the visitor still gets the paywall/sheet rather than silence. */
-    dynTallyReset();          // count where this build's clips come from (see dynSrcTally)
-    var denied = {}, lastGate = null, missedOffline = 0;
-    /* LAYER 2 of the not-downloaded handling (Part B, 2026-08-09). dynIncluded() already drops the
-       rows we KNOW are absent, but it can only act when navigator.onLine admits to being offline —
-       and in this WebView it reports *online* in airplane mode. So a clip can still fail here as a
-       plain network error, which used to re-throw and kill the entire build: the owner's "if some
-       of the playlist is not downloaded, the entire playlist won't play".
-       A network failure on a PLAYLIST clip is therefore skippable in the same way a gate denial is,
-       and tracked separately so the caller can say "not downloaded" rather than "premium".
-       ⚠ PLMODE ONLY. On a topic page a network error still re-throws — one missing clip there means
-       a broken or half-finished download, which should surface, not be silently stitched around. */
-    function isMissingOffline(e) {
-      if (!PLMODE) return false;
-      var c = e && e.code;
-      if (isGateCode(c)) return false;             // a denial is a denial, not an absence
-      return true;                                 // network/decode failure on a playlist clip
-    }
-    /* r238: a build-ahead (opts.ahead) is somebody else's unit built in the background while they
-       listen: three lanes instead of six, each clip waits while a sentence tap is loading, and its
-       clips never enter sentBlobs (dynFetchClip). dynBuildsActive counts every build in flight. */
-    var ahead = !!(opts && opts.ahead);
-    if (ahead) files.forEach(function (f) { f.ahead = true; });
-    dynBuildsActive++;
-    return dynPremint(files).then(function () { return dynPool(files, function (f) {
-      return (ahead ? dynAheadGate() : Promise.resolve()).then(function () { return dynFetchClip(f); })
-        .then(function (b) { done++; if (onProg) onProg(done, files.length); return b; })
-        .catch(function (e) {
-          var gated = isGateCode(e && e.code);
-          if (!gated && !isMissingOffline(e)) throw e;
-          denied[f.prefix + '|' + f.file.replace(/_(TH|EN)\.mp3$/, '')] = true;
-          /* Remember the MEASURED absence so the cards can grey too. Without this the row looked
-             perfectly playable (the manifest still claims the file) while being silently absent
-             from the mix — the exact mismatch layer 2 exists to catch. Covers both the lying
-             navigator.onLine and a present-but-corrupt clip that r123's self-heal cannot repair
-             offline. */
-          if (gated) lastGate = e; else { missedOffline++; dynNoDlSeen[dynNoDlKey(f)] = true; }
-          done++; if (onProg) onProg(done, files.length);
-          return null;
-        });
-    }, ahead ? DYN_AHEAD_POOL : 0); }).then(function () {
-      /* E9 INSTRUMENTATION (2026-07-31) — the owner reports the server-denial case failing both
-         online and offline, and dynLog does NOT reach the boot trace, so the failure was invisible.
-         T() puts the three facts that distinguish the possible causes into the trace: did ANY clip
-         come back with a gate code, how many sentences survived, and was the build re-thrown.
-         Instrument before theorising — every bug on this build attempted by inference first was
-         solved wrong. */
-      if (lastGate || missedOffline) {
-        var kept = inc.filter(function (s) {
-          var r = dynClipRef(s, 'TH');
-          return !denied[r.prefix + '|' + r.file.replace(/_(TH|EN)\.mp3$/, '')];
-        });
-        /* Nothing survived. A denial still reports the gate (the visitor needs the paywall/sheet);
-           otherwise every clip was simply absent, which is its own message, not a network fault. */
-        if (!kept.length) { return Promise.reject(lastGate || { code: 'nodl' }); }
-        if (kept.length !== inc.length) {
-          dynLog('build: ' + (inc.length - kept.length) + ' sentence(s) skipped (' +
-            (missedOffline ? missedOffline + ' unavailable' : '') + (lastGate ? ' denied' : '') +
-            ') — stitching ' + kept.length);
-          inc = kept;
-        }
-      }
-      tFetch = Date.now() - tFetch0;
+  /* ⚠ HOISTED OUT OF dynBuildSessionFor (W75, 2026-10-04). This block used to sit INSIDE that
+     function's promise callback (indented as if it were top-level), so nothing else could call
+     dynStretch: the slowed sentence tap (sentSlowSrc) threw "dynStretch is not defined" and fell
+     back to the browser's robotic stretch, measured on the live site with ?dbg=1. It uses nothing
+     local to that function. A side effect: dynPeriodCache now lives for the page, as its own
+     comment always said ("a rebuild must not re-measure"). */
   /* ── THAI-ONLY TIME STRETCH (WSOLA) ─────────────────────────────────────────────────────
      Slow a mono speech buffer WITHOUT dropping its pitch. Resampling — the obvious one-liner —
      lowers the pitch with the rate and is exactly the "drunken" sound the owner ruled out; this
@@ -6079,6 +6003,89 @@
     var pcm = out.subarray(0, used);
     return { length: used, getChannelData: function () { return pcm; } };
   }
+
+  function dynBuildSessionFor(inc, keyNs, key, onProg, st, opts) {
+    if (!inc.length) return Promise.reject({ code: 'empty' });
+    var mode = currentMode;   // captured: the key/filename must match the mode this build is FOR
+    st = st || dynCurrentSet();   // r16: settings are per unit — a foreign build passes ITS unit's
+    var stEp = (st.ep >= 1 && st.ep <= st.rp) ? st.ep : st.rp;
+    var needEn = (mode === 'et') || st.en;   // TE with English off never touches the _EN clips
+    var files = [];
+    inc.forEach(function (s) { files.push(dynClipRef(s, 'TH')); if (needEn) files.push(dynClipRef(s, 'EN')); });
+    var done = 0;
+    // r19: phase timings. "It feels slow" is not a diagnosis - these turn it into numbers,
+    // and they cost nothing when the log is off.
+    var tFetch0 = Date.now(), tFetch = 0, tStitch = 0, cached0 = 0;
+    files.forEach(function (f) { if (dynClipCache[f.file]) cached0++; });
+    /* Per-clip DENIAL must not kill the whole build. dynPool has no per-item catch, so one
+       rejected lane used to reject the Promise.all and lose every other clip with it. A gate
+       code (401/402/403/'licence') now drops just that sentence and the stitch carries on —
+       defence in depth behind dynIncluded()'s filter, for when the SERVER disagrees with the
+       client's view of entitlement (sub lapsed mid-session, tier list changed, clip missing).
+       Real faults (network, decode) still reject, and an all-denied build rejects with the gate
+       code so the visitor still gets the paywall/sheet rather than silence. */
+    dynTallyReset();          // count where this build's clips come from (see dynSrcTally)
+    var denied = {}, lastGate = null, missedOffline = 0;
+    /* LAYER 2 of the not-downloaded handling (Part B, 2026-08-09). dynIncluded() already drops the
+       rows we KNOW are absent, but it can only act when navigator.onLine admits to being offline —
+       and in this WebView it reports *online* in airplane mode. So a clip can still fail here as a
+       plain network error, which used to re-throw and kill the entire build: the owner's "if some
+       of the playlist is not downloaded, the entire playlist won't play".
+       A network failure on a PLAYLIST clip is therefore skippable in the same way a gate denial is,
+       and tracked separately so the caller can say "not downloaded" rather than "premium".
+       ⚠ PLMODE ONLY. On a topic page a network error still re-throws — one missing clip there means
+       a broken or half-finished download, which should surface, not be silently stitched around. */
+    function isMissingOffline(e) {
+      if (!PLMODE) return false;
+      var c = e && e.code;
+      if (isGateCode(c)) return false;             // a denial is a denial, not an absence
+      return true;                                 // network/decode failure on a playlist clip
+    }
+    /* r238: a build-ahead (opts.ahead) is somebody else's unit built in the background while they
+       listen: three lanes instead of six, each clip waits while a sentence tap is loading, and its
+       clips never enter sentBlobs (dynFetchClip). dynBuildsActive counts every build in flight. */
+    var ahead = !!(opts && opts.ahead);
+    if (ahead) files.forEach(function (f) { f.ahead = true; });
+    dynBuildsActive++;
+    return dynPremint(files).then(function () { return dynPool(files, function (f) {
+      return (ahead ? dynAheadGate() : Promise.resolve()).then(function () { return dynFetchClip(f); })
+        .then(function (b) { done++; if (onProg) onProg(done, files.length); return b; })
+        .catch(function (e) {
+          var gated = isGateCode(e && e.code);
+          if (!gated && !isMissingOffline(e)) throw e;
+          denied[f.prefix + '|' + f.file.replace(/_(TH|EN)\.mp3$/, '')] = true;
+          /* Remember the MEASURED absence so the cards can grey too. Without this the row looked
+             perfectly playable (the manifest still claims the file) while being silently absent
+             from the mix — the exact mismatch layer 2 exists to catch. Covers both the lying
+             navigator.onLine and a present-but-corrupt clip that r123's self-heal cannot repair
+             offline. */
+          if (gated) lastGate = e; else { missedOffline++; dynNoDlSeen[dynNoDlKey(f)] = true; }
+          done++; if (onProg) onProg(done, files.length);
+          return null;
+        });
+    }, ahead ? DYN_AHEAD_POOL : 0); }).then(function () {
+      /* E9 INSTRUMENTATION (2026-07-31) — the owner reports the server-denial case failing both
+         online and offline, and dynLog does NOT reach the boot trace, so the failure was invisible.
+         T() puts the three facts that distinguish the possible causes into the trace: did ANY clip
+         come back with a gate code, how many sentences survived, and was the build re-thrown.
+         Instrument before theorising — every bug on this build attempted by inference first was
+         solved wrong. */
+      if (lastGate || missedOffline) {
+        var kept = inc.filter(function (s) {
+          var r = dynClipRef(s, 'TH');
+          return !denied[r.prefix + '|' + r.file.replace(/_(TH|EN)\.mp3$/, '')];
+        });
+        /* Nothing survived. A denial still reports the gate (the visitor needs the paywall/sheet);
+           otherwise every clip was simply absent, which is its own message, not a network fault. */
+        if (!kept.length) { return Promise.reject(lastGate || { code: 'nodl' }); }
+        if (kept.length !== inc.length) {
+          dynLog('build: ' + (inc.length - kept.length) + ' sentence(s) skipped (' +
+            (missedOffline ? missedOffline + ' unavailable' : '') + (lastGate ? ' denied' : '') +
+            ') — stitching ' + kept.length);
+          inc = kept;
+        }
+      }
+      tFetch = Date.now() - tFetch0;
 
 
       var parts = [];   // AudioBuffer, or a number = silence length in samples
