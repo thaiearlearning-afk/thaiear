@@ -58,6 +58,9 @@
     <button class="tp-clear" id="tp-clear" type="button" hidden aria-label="Clear search">&#10005;</button>
   </div>
 
+  <a class="tp-newhere" id="tp-newhere" href="guide#suggested-sequence"><span class="tp-newhere-t"><span class="tp-newhere-q">New here?</span> Read our suggested study sequence</span><span class="tp-newhere-go" aria-hidden="true">&rsaquo;</span></a>
+  <script>(function(){var a=document.getElementById('tp-newhere');try{if(localStorage.getItem('te-newhere-done')==='1')a.hidden=true}catch(e){}a.addEventListener('click',function(){try{localStorage.setItem('te-newhere-done','1')}catch(e){}});function s(){var b=document.getElementById('tp-bands');if(b)a.classList.toggle('tp-newhere-off',b.hidden)}document.addEventListener('DOMContentLoaded',function(){s();var b=document.getElementById('tp-bands');if(b)new MutationObserver(s).observe(b,{attributes:true,attributeFilter:['hidden']})})})();</script>
+
   <div class="tp-bands" id="tp-bands" style="grid-template-rows: auto 1fr auto 1fr auto repeat(5, 1fr)">
   <div class="tp-fav-band">Favourites</div>
   <a class="tp-band bc-fav" id="tp-fav-tile" href="topics-favourites"><span class="tp-band-name">Favourites</span><span class="tp-band-count" id="tp-fav-count"></span><span class="tp-band-go" aria-hidden="true">&rsaquo;</span></a>

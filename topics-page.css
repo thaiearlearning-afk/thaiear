@@ -1510,3 +1510,16 @@
 .tp-intro { margin: 0.15rem 0 1.1rem; font-size: 15px; line-height: 1.6;
   color: var(--text-secondary); }
 @media (max-width: 800px) { .tp-intro { font-size: 14px; margin-bottom: 0.9rem; } }
+
+/* ⭐ W71 "New here?" — topics.html only (gen_topics_pages.js). Horizontal padding and gaps in px
+   (TEXT_SCALING rule 1); the text block is flex 1 1 0 + min-width 0 so it wraps under OS text
+   scaling instead of pushing the chevron off the edge. Hidden once tapped, and during a search. */
+.tp-newhere { display: flex; align-items: center; gap: 8px; max-width: 440px; box-sizing: border-box;
+  margin: -0.9rem 0 1.8rem; padding: 11px 14px; border-radius: var(--radius-md);
+  background: var(--accent-light); border: 0.5px solid var(--border-strong);
+  color: var(--accent); text-decoration: none; font-size: 14px; line-height: 1.35; }
+.tp-newhere:hover { background: #E2E0F6; }
+.tp-newhere-q { font-weight: 600; }
+.tp-newhere-t { flex: 1 1 0; min-width: 0; }
+.tp-newhere-go { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.tp-newhere[hidden], .tp-newhere.tp-newhere-off { display: none; }

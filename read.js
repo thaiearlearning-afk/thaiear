@@ -617,11 +617,48 @@
   }
 
   /* ── progress store ────────────────────────────────────── */
+  /* ⛔⛔ ONE ACCOUNT'S RESULTS — NOTHING CROSSES ACCOUNTS (W72, owner 2026-10-03: "no quiz data
+     should not transfer cross account please"; on Read Thai: "yes, do it now - you need to login
+     to take the quizzes anyway"). This copy used to belong to no one: the next person to sign in
+     on the device saw the last one's results, and the one-time migration below uploaded them into
+     whichever account signed in first. Now it is stamped with its account (OWNER_KEY), exactly
+     like auth.js's quiz and plays stores: another account reads it as empty, and its first save
+     replaces it. An UNSTAMPED copy predates this and is adopted by the first signed-in reader.
+     Signed out the tests are gated, so ANON_KEY only ever serves the localhost ?testauth=1
+     preview, and is never synced or migrated. Harness: test_read_store.js. */
   var LS_KEY = 'thaiear_read_v1';
-  function loadProg() {
-    try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch (_) { return {}; }
+  var OWNER_KEY = 'thaiear_read_owner_v1';
+  var ANON_KEY = 'thaiear_read_anon_v1';
+  /* Who is signed in, before auth.js has resolved too: identity.js's guess is a blocking head
+     script on every Read Thai page, so the results page paints the right account's records. */
+  function readOwner() {
+    try {
+      var A = window.ThaiEarAuth, u = A && A.getUser && A.getUser();
+      if (u && u.id) return u.id;
+    } catch (_) {}
+    try {
+      var I = window.ThaiEarIdentity, g = (I && I.guess) ? I.guess() : null;
+      if (g && g.state === 'in' && g.user && g.user.id) return g.user.id;
+    } catch (_) {}
+    return null;
   }
-  function saveProg(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch (_) {} }
+  function loadProg() {
+    var who = readOwner();
+    try {
+      if (!who) return JSON.parse(localStorage.getItem(ANON_KEY) || '{}');
+      var owner = localStorage.getItem(OWNER_KEY);
+      if (owner && owner !== who) return {};                 // another account's results
+      return JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+    } catch (_) { return {}; }
+  }
+  function saveProg(p) {
+    var who = readOwner();
+    try {
+      if (!who) { localStorage.setItem(ANON_KEY, JSON.stringify(p)); return; }
+      localStorage.setItem(LS_KEY, JSON.stringify(p));
+      localStorage.setItem(OWNER_KEY, who);
+    } catch (_) {}
+  }
   function recordResult(section, mode, correct, total) {
     var p = loadProg();
     var key = section + ':' + mode;
@@ -682,6 +719,10 @@
         });
         if (rows.length && RS.queueDelta) RS.queueDelta(rows);
         localStorage.setItem(MIG_KEY, '1');
+        /* ⛔ The copy just migrated is now THIS account's (W72): stamp it, so no later account
+           reads or re-migrates it. loadProg() already returned {} if another account owned it. */
+        var mine = readOwner();
+        if (mine && !localStorage.getItem(OWNER_KEY)) localStorage.setItem(OWNER_KEY, mine);
       }
     } catch (_) {}
     RS.pull().then(function (rows) {
@@ -1991,7 +2032,26 @@
        window.confirm". It was not — the download card a few hundred lines up still did, and
        went on doing so for three weeks, which is exactly the shape of thing a comment asserting
        a site-wide fact gets wrong. Both now share readModal(). */
+    /* ⛔ OFFLINE: SAY SO BEFORE THE CONFIRM BOX (W72, owner 2026-10-03: "make sure that all delete
+       progress buttons … prompt user to go online"). ThaiEarAuth.checkOnline() asks the network —
+       navigator.onLine alone reads "online" in the Android WebView's airplane mode. */
+    var CLEAR_OFFLINE = 'You\u2019re offline \u2014 reconnect to clear your reading progress';
+    var clearChecking = false;
+    function clearSay(msg, ms) {
+      clearBtn.textContent = msg;
+      setTimeout(function () { clearBtn.textContent = 'Clear my reading progress'; }, ms);
+    }
     if (clearBtn) clearBtn.addEventListener('click', function () {
+      if (clearChecking) return;
+      var au = window.ThaiEarAuth;
+      if (!au || !au.checkOnline) { openClear(); return; }
+      clearChecking = true;
+      au.checkOnline().then(function (on) {
+        clearChecking = false;
+        if (on) openClear(); else clearSay(CLEAR_OFFLINE, 4000);
+      });
+    });
+    function openClear() {
       readModal({
         body: 'This permanently deletes <strong>all</strong> your Read Thai test history — every ' +
           'attempt, best score and average, across every section.<br>' +
@@ -2015,9 +2075,11 @@
           ]).then(function (ok) {
             if (!ok) {
               clearBtn.disabled = false;
-              clearBtn.textContent = timedOut ? 'No response — check your connection and try again'
-                                              : 'Could not delete — try again';
-              setTimeout(function () { clearBtn.textContent = 'Clear my reading progress'; }, 3000);
+              var msg = timedOut ? 'No response — check your connection and try again'
+                                 : 'Could not delete — try again';
+              var au = window.ThaiEarAuth;
+              if (!au || !au.checkOnline) { clearSay(msg, 3000); return; }
+              au.checkOnline().then(function (on) { clearSay(on ? msg : CLEAR_OFFLINE, on ? 3000 : 4000); });
               return;
             }
             try { localStorage.removeItem(LS_KEY); } catch (_) {}
@@ -2025,7 +2087,7 @@
           });
         }
       });
-    });
+    }
   }
 
   /* ── hub page ──────────────────────────────────────────── */

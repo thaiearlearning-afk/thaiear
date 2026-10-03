@@ -433,12 +433,27 @@ function confirmLogout() {
     onConfirm: function () { ThaiEarAuth.signOut(); },
   });
 }
+/* ⛔ OFFLINE IS ASKED OF THE NETWORK, NOT OF navigator.onLine ALONE (W72, owner 2026-10-03: "make
+   sure that all delete progress buttons/ delete account button prompt user to go online"). The
+   Android WebView reports onLine true in airplane mode, so the old check let the box open and the
+   delete fail with a raw "Error: TypeError". ThaiEarAuth.checkOnline() answers from a real request. */
+var deleteChecking = false;
 function deleteAccount() {
-  if (!navigator.onLine) {
-    var st = document.getElementById('delete-status');
+  if (deleteChecking) return;
+  var a = window.ThaiEarAuth;
+  var st = document.getElementById('delete-status');
+  var offline = function () {
     if (st) { st.style.color = '#B00020'; st.textContent = 'You’re offline — reconnect to delete your account.'; }
-    return;
-  }
+  };
+  if (!navigator.onLine) { offline(); return; }
+  if (!a || !a.checkOnline) { openDeleteModal(); return; }
+  deleteChecking = true;
+  a.checkOnline().then(function (on) {
+    deleteChecking = false;
+    if (on) { if (st) st.textContent = ''; openDeleteModal(); } else offline();
+  });
+}
+function openDeleteModal() {
   showModal({
     title: 'Delete your account?',
     body: 'This cancels any membership immediately and permanently erases your data. It cannot be undone.',
@@ -454,15 +469,19 @@ var deleteInFlight = false;
 function doDeleteAccount() {
   if (deleteInFlight) return;
   var a = window.ThaiEarAuth;
-  var token = a && a.getAccessToken && a.getAccessToken();
-  if (!token) return;
+  if (!a || !a.getAccessToken || !a.getAccessToken()) return;
   var st = document.getElementById('delete-status');
   if (st) st.textContent = 'Deleting your account…';
   deleteInFlight = true;
   var ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
   var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
-  fetch('/api/delete-account', { method: 'POST', headers: { Authorization: 'Bearer ' + token },
-                                 signal: ctrl ? ctrl.signal : undefined })
+  /* ⚠ A RENEWED token (W72): one that expired while offline answered 403 'forbidden', which the
+     branch below reads as "session expired" and signs the person out mid-delete. */
+  (a.freshToken ? a.freshToken() : Promise.resolve(a.getAccessToken()))
+    .then(function (token) {
+      return fetch('/api/delete-account', { method: 'POST', headers: { Authorization: 'Bearer ' + token },
+                                            signal: ctrl ? ctrl.signal : undefined });
+    })
     .then(function (r) { return r.text(); })
     .then(function (t) {
       var j = {}; try { j = JSON.parse(t); } catch (_) {}
@@ -477,9 +496,18 @@ function doDeleteAccount() {
       if (st) st.textContent = 'Error: ' + (j.detail || j.error || t || 'unknown');
     })
     .catch(function (e) {
-      if (st) st.textContent = (e && e.name === 'AbortError')
-        ? 'No response. Reload this page to check whether your account was deleted, then try again if it is still here.'
-        : 'Error: ' + e;
+      if (!st) return;
+      if (e && e.name === 'AbortError') {
+        st.textContent = 'No response. Reload this page to check whether your account was deleted, then try again if it is still here.';
+        return;
+      }
+      /* A network failure is the connection, not the account: say so in words (W72). */
+      if (a.checkOnline) {
+        return a.checkOnline().then(function (on) {
+          st.textContent = on ? 'Error: ' + e : 'You’re offline — reconnect to delete your account.';
+        });
+      }
+      st.textContent = 'Error: ' + e;
     })
     .then(function () { clearTimeout(timer); deleteInFlight = false; });
 }

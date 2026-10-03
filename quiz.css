@@ -53,7 +53,15 @@
    ⚠ .te-consent is exempt: it is a UK GDPR obligation and must stay reachable. It is
    position:fixed at z-index 9999, so it already sat above the old overlay — no change either way.
    ⚠ Scripts are children too; display:none on a <script> is inert. */
-body.tq-mode > *:not(nav.site-nav):not(#tq-page):not(.te-consent) { display: none !important; }
+/* ⛔⛔ AND IT HIDES ANYTHING ELSE A SCRIPT APPENDS TO <body> WHILE A QUIZ IS OPEN (W73, measured
+   2026-10-03). It hid the Builder's dragged tile for twelve days (fixed: the flyer now lives in the
+   sheet), and it hides two messages the audio gate can open IN quiz mode — the gate fires from
+   openMenu(), before the settings screen: player.js premiumInfoSheet() (the app, a non-subscriber
+   on a premium unit) and showLicenceOverlay() (a subscriber offline for more than 50 days). Both
+   append to body, so a tap on the quiz did nothing visible. They are exempt by id below.
+   ⚠ A new body-level message that can open during a quiz must be added here, or rendered inside
+   #tq-page. test_quiz_engine.js pins both exemptions. */
+body.tq-mode > *:not(nav.site-nav):not(#tq-page):not(.te-consent):not(#te-premium-sheet):not(#te-licence-overlay) { display: none !important; }
 
 /* ⛔⛔ PULL-TO-REFRESH MUST NOT BE ABLE TO DESTROY A RUN (owner, 2026-09-21, agreed explicitly).
    The overlay was its own scroll container with `overscroll-behavior: contain` and the document
@@ -544,7 +552,10 @@ body.tq-mode { background: var(--surface, #fff); }
    would collapse the box and bring the sliding back, and opacity would leave it clickable and
    readable as a faded chip the learner could try to take twice. */
 .tile.slot { visibility: hidden; }
-.tq-flyer {
+/* ⚠ `.tile.tq-flyer`, not `.tq-flyer` (W73, measured 2026-10-03): the plain `.tile` rule further
+   down has the same specificity and comes later, so its faint 1px shadow won and the "lifted"
+   shadow below never showed, even when the flyer was visible (v568). */
+.tile.tq-flyer {
   opacity: .95; box-shadow: 0 6px 18px rgba(0,0,0,.22);
   transform-origin: top left; will-change: transform;
 }

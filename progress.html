@@ -994,13 +994,40 @@
   function wireReset() {
     var btn = document.getElementById('prog-reset');
     if (!btn) return;
+    /* ⛔ OFFLINE: SAY SO BEFORE THE CONFIRM BOX, NOT AFTER IT TIMES OUT (W72, owner 2026-10-03:
+       "if you press it offline on the progress page, it doesn't prompt you to go online. it just
+       says try again later"). checkOnline() asks the network, because the Android WebView reports
+       navigator.onLine true in airplane mode. A failure after confirming re-asks, so a connection
+       that dropped mid-delete gets the same message. */
+    var OFFLINE_MSG = 'You\u2019re offline \u2014 reconnect to reset your progress';
+    var checking = false;
+    function say(msg, ms) {
+      btn.textContent = msg;
+      setTimeout(function () { btn.textContent = 'Reset progress data'; }, ms);
+    }
+    function failSay(msg, ms) {
+      var a = A();
+      if (!a || !a.checkOnline) { say(msg, ms); return; }
+      a.checkOnline().then(function (on) { say(on ? msg : OFFLINE_MSG, on ? ms : 4000); });
+    }
     btn.addEventListener('click', function () {
+      if (checking) return;
+      var a = A();
+      if (!a || !a.checkOnline) { openReset(); return; }
+      checking = true;
+      a.checkOnline().then(function (on) {
+        checking = false;
+        if (on) openReset(); else say(OFFLINE_MSG, 4000);
+      });
+    });
+    function openReset() {
       var ov = document.createElement('div');
       ov.className = 'te-modal';
       ov.innerHTML = '<div class="te-modal-card" role="dialog" aria-modal="true">' +
-        /* ⚠ SAY WHAT IT TAKES. It clears listening counts AND every quiz record - scores, the
-           per-question right/wrong behind them, exclusions and the Builder rejection log - so the
-           wording has to cover that or the control over-delivers silently. */
+        /* ⚠ SAY WHAT IT TAKES. It clears listening counts AND every quiz record - scores and the
+           per-question right/wrong behind them, and the Builder rejection log - so the wording
+           has to cover that or the control over-delivers silently. Exclusions and quiz settings
+           are KEPT (owner, 2026-10-03, W72): they are settings, not progress. */
         '<p>Are you sure you want to delete your progress data?<br>' +
         'This clears your listening counts <strong>and every quiz score</strong>.<br>' +
         '<strong>This cannot be undone.</strong></p>' +
@@ -1032,8 +1059,7 @@
           var okd = both[0], qz = both[1] || { ok: true, refused: [] };
           close();
           if (timedOut) {
-            btn.textContent = 'No response — check your connection and try again';
-            setTimeout(function () { btn.textContent = 'Reset progress data'; }, 4000);
+            failSay('No response — check your connection and try again', 4000);
             return;
           }
           if (okd && !qz.ok) {
@@ -1041,8 +1067,7 @@
             setTimeout(function () { btn.textContent = 'Reset progress data'; }, 4000);
           }
           if (!okd) {
-            btn.textContent = 'Could not reset — try again';
-            setTimeout(function () { btn.textContent = 'Reset progress data'; }, 2500);
+            failSay('Could not reset — try again', 2500);
             return;
           }
           /* ⚠ RELOAD ON FULL SUCCESS (owner, 2026-09-23): an in-place repaint left the quiz
@@ -1054,7 +1079,7 @@
           render();
         });
       });
-    });
+    }
   }
 
   /* ── boot ───────────────────────────────────────────────────────────────────────────────── */

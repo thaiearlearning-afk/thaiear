@@ -111,7 +111,31 @@
   var DROPPABLE = { 'ครับ':1,'ค่ะ':1,'คะ':1,'นะ':1,'นะคะ':1,'นะครับ':1,'ค่ะนะ':1,'จ้ะ':1,'จ้า':1,
                     'ผม':1,'ฉัน':1,'ดิฉัน':1,'เรา':1 };
 
-  var DEFAULTS = { len: 10, mode: 'even', hide: false, script: 'both', head: 'partial', nodecoy: false };
+  /* ⚠ `nodecoy` STAYS, AS A MIRROR OF `decoys === 0` (W73). A device still running an older
+     quiz.js (an offline app copy, a stale precache) reads only `nodecoy`, so a learner who picks
+     0 here must still get no decoys there. prefsFor() migrates an old `nodecoy: true` to 0. */
+  var DEFAULTS = { len: 10, mode: 'even', hide: false, script: 'both', head: 'partial', nodecoy: false, decoys: 4 };
+
+  /* ⭐⭐ DECOY TILES: 0, 2 OR 4 — AND "2" KEEPS THE STRONGEST TWO (W73, owner 2026-10-02/03: "can
+     we please have a selection of 0, 2 or four? … idk if all sentences have four decoys … we can
+     just say in wording it is the max number of decoys"; on which two: "strongest two is fine").
+     Each decoy carries its rank as the 4th element (gen_quiz_data.js decoyRank: 0 sound-alike,
+     1 near-miss meaning, 2 on-topic filler — QUIZ_PROJECT §5.3's classes in order). Shuffle first,
+     then a STABLE sort by rank, so ties fall in a fresh random order every run. A page built
+     before the rank existed has none: every decoy then ranks 1 and the pick is simply random.
+     ⚠ It never changes the answer key or the score (§3A.5a). */
+  var DECOY_STOPS = [4, 2, 0];
+  function decoyCount(p) {
+    var n = parseInt(p && p.decoys, 10);
+    return DECOY_STOPS.indexOf(n) >= 0 ? n : MAX_DECOYS;
+  }
+  function decoyRank(d) { return (Array.isArray(d) && typeof d[3] === 'number') ? d[3] : 1; }
+  function pickDecoys(list, n) {
+    if (!n) return [];
+    var pool = shuffle((list || []).slice(0, MAX_DECOYS));
+    pool.sort(function (a, b) { return decoyRank(a) - decoyRank(b); });
+    return pool.slice(0, n);
+  }
 
   /* ── state ─────────────────────────────────────────────────────────────────────────────── */
   var root = null, sheet = null;   /* the quiz PAGE root (#tq-page), not an overlay */
@@ -206,6 +230,17 @@
   function T() { return window.ThaiEarTopic || null; }
   function QD() { var t = T(); return (t && t.quiz) || {}; }
   function store() { return window.ThaiEarQuizStore || null; }
+  /* Run fn once the settings store exists, or after STORE_WAIT_MS if it never does. Immediate when
+     it is already there, which is every quiz opened from a tile after load. See ThaiEarQuiz.open. */
+  var STORE_WAIT_MS = 4000;
+  function whenStore(fn) {
+    if (store()) { fn(); return; }
+    var deadline = Date.now() + STORE_WAIT_MS;   /* a clock, not a tick count: timers drift */
+    (function poll() {
+      if (store() || Date.now() >= deadline) { fn(); return; }
+      setTimeout(poll, 50);
+    })();
+  }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -382,6 +417,10 @@
     var p = st ? st.prefs(ctx.unit, qid) : {};
     var out = {};
     Object.keys(DEFAULTS).forEach(function (k) { out[k] = (p && p[k] != null) ? p[k] : DEFAULTS[k]; });
+    /* W73: a saved "No decoy tiles" (before the 0 / 2 / 4 choice) means 0. */
+    if (p && p.decoys == null && p.nodecoy) out.decoys = 0;
+    out.decoys = decoyCount(out);
+    out.nodecoy = out.decoys === 0;
     return out;
   }
   function savePrefs(qid, p) { var st = store(); if (st) st.setPrefs(ctx.unit, qid, p); }
@@ -1474,10 +1513,13 @@
       + '</div></div>';
 
     if (qid === 2) {
-      html += '<div class="mgroup"><label class="checkrow"><input type="checkbox" class="c-nodecoy"'
-        + (p.nodecoy ? ' checked' : '') + '><span>No decoy tiles<br>'
-        + '<span class="rd" style="color:var(--text-tertiary);font-size:12px">'
-        + 'Every tile belongs in the answer — just place them in the correct order.</span></span></label></div>';
+      /* W73: was a "No decoy tiles" checkbox. "Up to", because a few short sentences have fewer. */
+      var dk = String(decoyCount(p));
+      html += '<div class="mgroup"><p class="mlab">Decoy tiles</p><div class="radios">'
+        + radio('decoys', '4', dk, 'Up to 4', '')
+        + radio('decoys', '2', dk, 'Up to 2', 'keeps the trickiest two')
+        + radio('decoys', '0', dk, 'None', 'every tile belongs in the answer — just place them in the correct order')
+        + '</div></div>';
       if (showHead) {
         var hk = headKey(p.head);
         html += '<div class="mgroup"><p class="mlab">Head start</p><div class="radios">'
@@ -1521,7 +1563,8 @@
 
     function readPrefs() {
       var cur = {
-        len: p.len, mode: p.mode, hide: p.hide, script: p.script, head: p.head, nodecoy: p.nodecoy
+        len: p.len, mode: p.mode, hide: p.hide, script: p.script, head: p.head,
+        decoys: decoyCount(p), nodecoy: decoyCount(p) === 0
       };
       var on = sheet.querySelector('.seg.on');
       cur.len = on ? (on.dataset.len === 'all' ? 'all' : parseInt(on.dataset.len, 10)) : 'all';
@@ -1529,7 +1572,8 @@
       var sc = sheet.querySelector('input[name=script]:checked'); if (sc) cur.script = sc.value;
       var hd = sheet.querySelector('input[name=head]:checked'); if (hd) cur.head = hd.value;
       var hi = sheet.querySelector('.c-hide'); if (hi) cur.hide = hi.checked;
-      var nd = sheet.querySelector('.c-nodecoy'); if (nd) cur.nodecoy = nd.checked;
+      var dc = sheet.querySelector('input[name=decoys]:checked');
+      if (dc) { cur.decoys = decoyCount({ decoys: dc.value }); cur.nodecoy = cur.decoys === 0; }
       return cur;
     }
 
@@ -1567,7 +1611,7 @@
     };
     /* every control that feeds readPrefs() un-latches it */
     sheet.querySelectorAll('.seg, .tq-fs, input[name=mode], input[name=script], input[name=head], '
-                         + '.c-hide, .c-nodecoy, .c-tf').forEach(function (el) {
+                         + 'input[name=decoys], .c-hide, .c-tf').forEach(function (el) {
       el.addEventListener('click', resetAllBtn);
       el.addEventListener('change', resetAllBtn);
     });
@@ -1680,7 +1724,8 @@
     b.classList.toggle('done', !!on);
     b.innerHTML = on
       ? '✓ Excluded from ' + esc(run.q.name)
-        + '<span class="tq-skip-sub">from your next run — tap to undo</span>'
+        /* W73 (owner, 2026-10-02): "from future runs", because it is not a one-off. */
+        + '<span class="tq-skip-sub">from future runs — tap to undo</span>'
       : "Don't test me on this again"
         + '<span class="tq-skip-sub">'
         + (answered ? 'removes it from ' + esc(run.q.name) + ' only'
@@ -1860,7 +1905,7 @@
     var locked = canon.slice(0, lockN);
     var buildable = canon.slice(lockN);
 
-    var decoys = p.nodecoy ? [] : (QD().q2[String(s.num)] || []).slice(0, MAX_DECOYS);
+    var decoys = pickDecoys(QD().q2[String(s.num)], decoyCount(p));
     /* ⚠ A decoy is stored as [thai, translit, gloss] — the SAME SHAPE as a real chip, so the tray
        renderer cannot tell them apart and therefore cannot render them differently. That is the
        point: a decoy that looks different from a real tile is not a decoy. */
@@ -2040,7 +2085,17 @@
           flyer.className = node.className + ' tq-flyer';
           flyer.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:2147483000;'
             + 'width:' + r.width + 'px;margin:0';
-          document.body.appendChild(flyer);
+          /* ⛔⛔ INSIDE THE QUIZ SHEET, NEVER ON <body> (W73, measured 2026-10-03). v589 made the
+             quiz a view on the topic page and hides every OTHER body child with
+             `body.tq-mode > *:not(…) { display: none !important }` — so a flyer appended to
+             body had computed display:none in every quiz from then on: the learner saw the tile
+             fade and the dashed gap appear, never the tile itself (owner: "I don't visibly pick
+             them up, I just see their shadow"). It had worked for one day (v568). Inside the
+             sheet it also keeps --tq-scale, so it is the real tile's size and padding (outside,
+             its padding computed to 0). position:fixed still works: no ancestor is transformed.
+             ⚠ Any body-level element that must show DURING a quiz needs the same thought — see
+             the exemptions on that rule in quiz.css. */
+          (sheet || document.body).appendChild(flyer);
           /* a placeholder of the same size, so the layout does not jump as the tile leaves */
           var ghost = document.createElement('span');
           ghost.className = 'tile tq-ghost';
@@ -3528,7 +3583,17 @@
       captureScroll();
       /* ⚠ A tile on the entry block is a SHORTCUT into one quiz; the block's own button opens
          the picker. Both land in the same component (§9.2) — this only chooses the first screen. */
-      if (opts.start) openMenu(opts.start); else openPicker();
+      /* ⛔⛔ NOT BEFORE THE SETTINGS STORE EXISTS (found verifying W73, owner 2026-10-03: "fix bug
+         now"). On a `?quiz=` link this runs as the page loads, but auth.js — which defines
+         ThaiEarQuizStore — is injected LAST by nav.js. The menu then read no store and drew every
+         setting at its DEFAULT (measured in Chrome: saved 5 questions showed 10, saved Random showed
+         Even coverage), and Start saved those defaults over the learner's real settings, synced to
+         the account. Tiles tapped after load were never affected. So the first screen waits for
+         the store: normally a few milliseconds (auth.js is precached), with a ceiling so a page
+         where it never arrives still opens. Harness: test_quiz_deeplink_prefs.js. */
+      whenStore(function () {
+        if (opts.start) openMenu(opts.start); else openPicker();
+      });
       return true;
     },
     close: close,

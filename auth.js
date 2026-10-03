@@ -791,6 +791,56 @@
       outbox: plysCache.outbox });
   }
 
+  /* ⛔⛔ A DEAD TOKEN IS A REASON TO RENEW, NEVER TO DISCARD (W72, owner 2026-10-02: "if I listen
+     offline … the number … go[es] up, but then if I reconnect online, it all gets wiped!").
+     An hour offline expires the access token. The 'online' listener flushed with it before
+     anything renewed it, /api/plays answered 403, and the 4xx branch below read that as
+     "malformed" and deleted the whole offline batch. So: never SEND a token whose `exp` has
+     passed, and treat a 401/403 as "renew and retry" — the batch keeps its id throughout.
+     ⚠ An undecodable token (no `exp`) counts as live: the server is the judge, and a 403 then
+     routes here anyway. `badToken` is the one the server last refused, so a token that still
+     looks live by its clock cannot loop. Harness: test_plays.js §15. */
+  var badToken = null;
+  var freshing = null;
+  function jwtExpMs(t) {
+    try {
+      var p = String(t).split('.')[1];
+      if (!p || typeof atob !== 'function') return null;
+      p = p.replace(/-/g, '+').replace(/_/g, '/');
+      while (p.length % 4) p += '=';
+      var e = JSON.parse(atob(p)).exp;
+      return (typeof e === 'number') ? e * 1000 : null;
+    } catch (_) { return null; }
+  }
+  function tokenLive(t) {
+    if (!t || t === badToken) return false;
+    var exp = jwtExpMs(t);
+    return exp === null || exp > Date.now() + 30000;
+  }
+  /* Resolves true once currentSession holds a token worth sending. supabase-js's getSession()
+     renews an expired token itself (over the network); when supabase has no session of its own,
+     our durable identity record re-seeds it (reseedSession). Shared, so concurrent callers make
+     one attempt. Never throws. */
+  function ensureFreshToken() {
+    if (!client || !currentUser) return Promise.resolve(false);
+    if (!restoredFromIdentity && tokenLive(currentSession && currentSession.access_token)) return Promise.resolve(true);
+    if (freshing) return freshing;
+    freshing = Promise.resolve().then(function () {
+      if (restoredFromIdentity) return reseedSession();
+      return client.auth.getSession().then(function (r) {
+        var s = r && r.data && r.data.session;
+        if (s && s.user && tokenLive(s.access_token)) { currentSession = s; writeIdentity(s); return true; }
+        return reseedSession();
+      });
+    }).catch(function () { return false; })
+      .then(function (ok) {
+        freshing = null;
+        return !!ok && tokenLive(currentSession && currentSession.access_token);
+      });
+    return freshing;
+  }
+  var plysRenew = false;       // a 401/403 asked for a renewal once the flush has settled
+
   function plysAddInto(target, src) {
     Object.keys(src || {}).forEach(function (k) { target[k] = (target[k] || 0) + src[k]; });
     return target;
@@ -859,6 +909,12 @@
     if (!st.outbox) return Promise.resolve();
     var tok = currentSession && currentSession.access_token;
     if (!tok || !navigator.onLine) return Promise.resolve();   // stays queued; 'online' retries
+    if (!tokenLive(tok)) {
+      /* Expired (or just refused): renew first, then come back. Never post a token we know is
+         dead — that is the 403 that used to delete the batch (see ensureFreshToken). */
+      ensureFreshToken().then(function (ok) { if (ok) plysFlush(); });
+      return Promise.resolve();
+    }
 
     plysFlushing = true;
     var sending = st.outbox;
@@ -899,7 +955,14 @@
          5xx / offline - transient; keep it, with its id, and try again. There is deliberately no
          age cap (unlike the playlist outbox, where a stuck op disables download GC): nothing here
          is gated on the queue being empty, so a stuck batch is harmless, and discarding it would
-         silently delete real listening. */
+         silently delete real listening.
+         ⛔⛔ EXCEPT 401/403, WHICH SAY NOTHING ABOUT THE BATCH — only about the token (W72). Keep
+         it, mark the token refused, and renew once the flush has settled. */
+      if (res.status === 401 || res.status === 403) {
+        badToken = tok;
+        plysRenew = true;
+        return;
+      }
       if (res.status >= 400 && res.status < 500) {
         console.warn('[plays] dropped an unsyncable batch (' + res.status + ')');
         plysMutate(function (cur) { cur.outbox = null; });
@@ -911,6 +974,11 @@
       /* Re-read AFTER the flush has settled, never inside it: plysLoad() calls plysFlush(), and
          doing that while plysFlushing is still true would silently no-op. */
       if (plysResync) { plysResync = false; plysLoad(); }
+      if (plysRenew) {
+        plysRenew = false;
+        ensureFreshToken().then(function (ok) { if (ok) plysFlush(); });
+        return;
+      }
       // More arrived while that was in flight - deliver it too rather than waiting 20s.
       if (Object.keys(st.pending).length && navigator.onLine) plysFlush();
     });
@@ -1456,10 +1524,11 @@
        its records in FIVE separate tables plus its own localStorage blob, and none of them was
        touched. A delete control that leaves records behind is worse than none, because the person
        has been told the data is gone.
-       ⚠ WHAT IS DELETED: scores, per-item stats, the stat batches, exclusions ("stop asking me
-       this"), and the Builder rejection log. WHAT IS NOT: quiz_prefs, which holds display settings
-       (script mode, English on/off) rather than any record of what was done - the same reason the
-       site pill and the font choice survive a reset.
+       ⚠ WHAT IS DELETED: scores, per-item stats, the stat batches and the Builder rejection log
+       (it carries the account id, so it goes with the account's progress). WHAT IS NOT:
+       quiz_prefs and, since 2026-10-03 (owner, W72), exclusions ("stop asking me this") — both are
+       SETTINGS, not a record of what was done, the same reason the site pill and the font choice
+       survive a reset.
        ⚠ THE LOCAL BLOB IS CLEARED LAST AND INCLUDES THE OUTBOX. Miss the outbox and the next flush
        re-uploads what was just deleted - exactly the trap resetPlays' own comment records.
        ⚠ EACH TABLE IS SWALLOWED SEPARATELY. One table refusing (quiz_rejections had no delete
@@ -1484,20 +1553,58 @@
         .then(function (refused) {
         try {
           /* ⚠ Pending READ THAI results share this outbox and are not the quiz's to delete —
-             that is the Read Thai page's own button (ThaiEarReadStore.erase). Keep them. */
-          var readOps = qzLoadLocal().outbox.filter(function (op) { return op.k === 'readsc'; });
+             that is the Read Thai page's own button (ThaiEarReadStore.erase). Keep them.
+             ⛔ AND KEEP THE SETTINGS: exclusions and prefs, with their queued changes (owner,
+             2026-10-03, W72: reset takes progress, not exclusions). The account keeps them too —
+             erase_quiz_records() no longer deletes quiz_exclusions. Blanking them here would
+             leave this device disagreeing with the account until the next pull. */
+          var old = qzLoadLocal();
+          var keepOps = old.outbox.filter(function (op) {
+            return op.k === 'readsc' || op.k === 'excl' || op.k === 'prefs' || op.k === 'prefsAll';
+          });
           qzCache = qzBlank();
-          qzCache.outbox = readOps;
-          localStorage.setItem(QZ_LS, JSON.stringify(qzCache));
+          qzCache.excl = old.excl || {};
+          qzCache.prefs = old.prefs || {};
+          qzCache.outbox = keepOps;
+          qzSave();                    /* stamps the account's uid (W72) — never a bare setItem */
         } catch (_) {}
         notify();
         return { ok: refused.length === 0, refused: refused };
       });
     },
+    /* ⛔ IS THE SERVER REACHABLE? (W72, owner 2026-10-03: "the reset progress data button, if you
+       press it offline … doesn't prompt you to go online. it just says try again later … make sure
+       that all delete progress buttons/ delete account button prompt user to go online").
+       navigator.onLine alone cannot answer it: the Android WebView reports "online" in airplane
+       mode (see OFFLINE_FALLBACK_MS). So: false when the browser says offline, else ask. A GET to
+       /api/plays with no token answers 401 straight away without touching Supabase, and sw.js
+       never caches /api/, so ANY response means reachable; only a network failure or 5 s of
+       silence means offline. Resolves true/false, never rejects. Used by the three erase buttons
+       (progress.html, read.js, account.html) BEFORE their confirm box opens. */
+    checkOnline: function () {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(false);
+      return new Promise(function (done) {
+        var t = setTimeout(function () { done(false); }, 5000);
+        fetch('/api/plays', { cache: 'no-store' }).then(
+          function () { clearTimeout(t); done(true); },
+          function () { clearTimeout(t); done(false); });
+      });
+    },
+    /* A token the server will accept, renewed first if it expired while offline (W72). A stale one
+       turned "Delete my account" into "Your session expired" and a sign-out. Resolves null when
+       there is no session at all. */
+    freshToken: function () {
+      return ensureFreshToken().then(function () {
+        return (currentSession && currentSession.access_token) || null;
+      });
+    },
     resetPlays: function () {
-      var tok = currentSession && currentSession.access_token;
-      if (!currentUser || !tok) return Promise.resolve(false);
-      return fetch('/api/plays', { method: 'DELETE', headers: { Authorization: 'Bearer ' + tok } })
+      if (!currentUser || !currentSession) return Promise.resolve(false);
+      return ensureFreshToken().then(function () {
+        var tok = currentSession && currentSession.access_token;
+        if (!tok) return { ok: false };
+        return fetch('/api/plays', { method: 'DELETE', headers: { Authorization: 'Bearer ' + tok } });
+      })
         .then(function (res) {
           if (!res.ok) return false;
           plysCache = plysBlank();
@@ -2464,9 +2571,23 @@
      a sync target, not a prerequisite — a quiz must be fully playable with no network and no
      user, which is also what makes a downloaded topic's quizzes work (§8.5). */
 
-  var QZ_LS   = 'thaiear_quiz_v1';        /* { scores, prefs, excl, stats, outbox } */
+  /* ⛔⛔ ONE ACCOUNT'S QUIZ DATA, STAMPED WITH ITS uid — NOTHING CROSSES ACCOUNTS (W72, owner
+     2026-10-03: "no quiz data should not transfer cross account please"). Until then this blob
+     belonged to no one: sign-out did not clear it, so the next person to sign in on the device saw
+     the last one's scores and exclusions, and the last one's QUEUED ops flushed into the new
+     account. Now, exactly like the plays store (plysRead): a blob stamped for another uid reads as
+     blank, and the first write overwrites it. Signed out uses its own key, is never queued and is
+     never synced or merged into an account that signs in later.
+     ⚠ An UNSTAMPED blob predates this and is adopted by the first SIGNED-IN reader (it was that
+     device's account's data in every ordinary case); a signed-out reader does not adopt it.
+     ⚠ readUid(), not uid(): auth resolves after first paint, and a quiz opened at load must read
+     the right account's settings before then. Harness: test_quiz_sync.js §L. */
+  var QZ_LS   = 'thaiear_quiz_v1';        /* { uid, scores, prefs, excl, stats, rej, outbox } */
+  var QZ_LS_ANON = 'thaiear_quiz_anon_v1';   /* signed out: same shape, no uid, no outbox use */
   var qzCache = null;
+  var qzCacheUid = null;                  /* whose blob qzCache is; null = signed out */
   var qzFlushing = false;
+  var qzFlushGen = 0;
 
   /* ⚠ qzLoadLocal() back-fills every key of this shape onto a stored blob, so adding one here
      is also the migration for a device that already holds the old shape — `rej` simply appears
@@ -2475,14 +2596,25 @@
   function qzBlank() { return { scores: {}, prefs: {}, excl: {}, stats: {}, rej: [], outbox: [] }; }
 
   function qzLoadLocal() {
-    if (qzCache) return qzCache;
-    try { qzCache = JSON.parse(localStorage.getItem(QZ_LS) || 'null') || qzBlank(); }
-    catch (_) { qzCache = qzBlank(); }
+    var who = readUid() || null;
+    if (qzCache && qzCacheUid === who) return qzCache;
+    var raw = null;
+    try { raw = JSON.parse(localStorage.getItem(who ? QZ_LS : QZ_LS_ANON) || 'null'); } catch (_) {}
+    if (raw && who && raw.uid !== undefined && raw.uid !== who) raw = null;   // another account's
+    qzCache = raw || qzBlank();
+    qzCacheUid = who;
     var b = qzBlank();
     Object.keys(b).forEach(function (k) { if (!qzCache[k]) qzCache[k] = b[k]; });
+    if (!who) qzCache.outbox = [];        // signed out never syncs, so nothing may sit queued
     return qzCache;
   }
-  function qzSave() { try { localStorage.setItem(QZ_LS, JSON.stringify(qzLoadLocal())); } catch (_) {} }
+  function qzSave() {
+    var d = qzLoadLocal();
+    try {
+      if (qzCacheUid) { d.uid = qzCacheUid; localStorage.setItem(QZ_LS, JSON.stringify(d)); }
+      else localStorage.setItem(QZ_LS_ANON, JSON.stringify(d));
+    } catch (_) {}
+  }
   function qzKey(unit, type) { return unit + '|' + type; }
   /* ⚠ Split from the RIGHT. A unit_key is free-form text — a playlist's is "pl:<uuid>" and a
      uuid contains no pipe today, but nothing guarantees a future key will not. The quiz type is
@@ -2528,7 +2660,8 @@
       })(0);
     });
   }
-  function qzQueue(op) { var d = qzLoadLocal(); d.outbox.push(op); qzSave(); qzFlush(); }
+  /* ⛔ Signed out: the change stays on this device only (W72 — see QZ_LS). */
+  function qzQueue(op) { var d = qzLoadLocal(); if (!qzCacheUid) return; d.outbox.push(op); qzSave(); qzFlush(); }
 
   function qzSend(op, uid) {
     if (op.k === 'score') {
@@ -2631,8 +2764,11 @@
   function qzFlush() {
     var d = qzLoadLocal();
     if (qzFlushing || !client || !currentUser || !d.outbox.length) return Promise.resolve(false);
+    /* ⛔ Only this account's queue, ever (W72): the blob in hand must be the signed-in user's. */
+    if (qzCacheUid !== currentUser.id) return Promise.resolve(false);
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(false);
     qzFlushing = true;
+    qzFlushGen++;                      /* pull() reads this to see a flush cross its read (W72) */
     var batch = d.outbox.slice();
     var uid = currentUser.id;
 
@@ -2663,6 +2799,9 @@
         }
       });
       var cur = qzLoadLocal();
+      /* ⚠ The account changed while this was in flight: `cur` is someone else's blob now, and
+         slicing its outbox by this batch's length would delete their queued work. Leave it. */
+      if (qzCacheUid !== uid) { qzFlushing = false; return false; }
       cur.outbox = keep.concat(cur.outbox.slice(batch.length));
       cur.lastErr = firstErr;          /* cleared by a clean flush, below */
       qzSave();
@@ -2892,17 +3031,58 @@
       return qzLoadLocal().outbox.filter(function (o) { return o.k === 'rej'; }).length;
     },
 
-    /* Pull the account copy over the local one, keeping anything still queued. */
+    /* Bring the account copy down. ⛔⛔ THE ACCOUNT IS THE TRUTH, EXCEPT FOR WHAT IS STILL QUEUED
+       HERE (W72, owner 2026-10-02: "should really be wired like the dyn player is … when return
+       to online, latest change determines the state … at account level irrespective of
+       device"). Three faults in the version this replaced, all found reading it:
+         · it did not flush first, so a reconnect's pull raced the flush;
+         · item stats were OVERWRITTEN by the server row, so answers still queued here vanished
+           from the counts until the next pull (and "even coverage" picked on wrong numbers);
+         · "a local pref that exists wins" and exclusions merged only units the server had — so a
+           change on another device, "use these settings for all", or clearing a unit's last
+           exclusion elsewhere NEVER reached a device that already held a copy.
+       Now: wait out any flush, flush, read; if a flush crossed the read, read again (the queued
+       set is only meaningful against a server read that cannot have half-applied it). Then each
+       store takes the account value, and the queued ops are laid back on top:
+         scores  max both ways (a best only rises; unchanged)
+         prefs   the account row, unless a prefs op for that key (or a "for all" op for that
+                 quiz type) is still queued
+         excl    the account set per unit, then queued toggles replayed in order — every unit,
+                 including ones the account has none for
+         stats   the account counts PLUS the deltas still queued (they are not on the server yet)
+       Harness: test_quiz_sync.js. */
     pull: function () {
       if (!client || !currentUser) return Promise.resolve(false);
       var uid = currentUser.id;
-      return Promise.all([
-        client.from('quiz_scores').select('unit_key,quiz_type,best,taken').eq('user_id', uid),
-        client.from('quiz_prefs').select('unit_key,quiz_type,data').eq('user_id', uid),
-        client.from('quiz_exclusions').select('unit_key,quiz_type,item').eq('user_id', uid),
-        client.from('quiz_item_stats').select('unit_key,quiz_type,item,seen,correct').eq('user_id', uid)
-      ]).then(function (r) {
+      var tries = 0;
+      function read() {
+        return qzIdle().then(function () { return qzFlush(); }).then(qzIdle).then(function () {
+          var gen = qzFlushGen;
+          return Promise.all([
+            client.from('quiz_scores').select('unit_key,quiz_type,best,taken').eq('user_id', uid),
+            client.from('quiz_prefs').select('unit_key,quiz_type,data').eq('user_id', uid),
+            client.from('quiz_exclusions').select('unit_key,quiz_type,item').eq('user_id', uid),
+            client.from('quiz_item_stats').select('unit_key,quiz_type,item,seen,correct').eq('user_id', uid)
+          ]).then(function (r) {
+            if ((qzFlushing || qzFlushGen !== gen) && ++tries < 3) return read();
+            return r;
+          });
+        });
+      }
+      return read().then(function (r) {
+        if (!currentUser || currentUser.id !== uid) return false;   // the account changed mid-read
         var d = qzLoadLocal();
+        var qPrefs = {}, qAll = {}, qExcl = {}, qStats = {};
+        d.outbox.forEach(function (op) {
+          if (op.k === 'prefs') qPrefs[qzKey(op.unit, op.type)] = 1;
+          else if (op.k === 'prefsAll') qAll[op.type] = 1;
+          else if (op.k === 'excl') (qExcl[qzKey(op.unit, op.type)] = qExcl[qzKey(op.unit, op.type)] || []).push(op);
+          else if (op.k === 'stats') (op.rows || []).forEach(function (rw) {
+            var m = qStats[qzKey(rw.unit_key, rw.quiz_type)] = qStats[qzKey(rw.unit_key, rw.quiz_type)] || {};
+            var c = m[rw.item] = m[rw.item] || { seen: 0, correct: 0 };
+            c.seen += rw.seen || 0; c.correct += rw.correct || 0;
+          });
+        });
         if (r[0] && !r[0].error) (r[0].data || []).forEach(function (x) {
           var k = qzKey(x.unit_key, x.quiz_type), cur = d.scores[k];
           /* ⚠ MAX both ways: an offline run recorded here must not be lost to the server copy. */
@@ -2911,20 +3091,31 @@
         });
         if (r[1] && !r[1].error) (r[1].data || []).forEach(function (x) {
           var k = qzKey(x.unit_key, x.quiz_type);
-          /* ⚠ A local pref that exists wins — it may be newer and still queued. */
-          if (!d.prefs[k] || !Object.keys(d.prefs[k]).length) d.prefs[k] = x.data || {};
+          if (qPrefs[k] || qAll[x.quiz_type]) return;    // a newer change here is still on its way up
+          d.prefs[k] = x.data || {};
         });
+        /* ⚠ Only on a GOOD read. A failed select must never be taken as "the account has none". */
         if (r[2] && !r[2].error) {
           var ex = {};
           (r[2].data || []).forEach(function (x) {
             var k = qzKey(x.unit_key, x.quiz_type);
-            (ex[k] = ex[k] || {})[x.item] = 1;
+            (ex[k] = ex[k] || {})[String(x.item)] = 1;
           });
-          Object.keys(ex).forEach(function (k) { d.excl[k] = ex[k]; });
+          var keys = {};
+          Object.keys(d.excl).concat(Object.keys(ex), Object.keys(qExcl)).forEach(function (k) { keys[k] = 1; });
+          Object.keys(keys).forEach(function (k) {
+            var set = {};
+            Object.keys(ex[k] || {}).forEach(function (it) { set[it] = 1; });
+            (qExcl[k] || []).forEach(function (op) {
+              if (op.on) set[String(op.item)] = 1; else delete set[String(op.item)];
+            });
+            if (Object.keys(set).length) d.excl[k] = set; else delete d.excl[k];
+          });
         }
         if (r[3] && !r[3].error) (r[3].data || []).forEach(function (x) {
-          var k = qzKey(x.unit_key, x.quiz_type);
-          (d.stats[k] = d.stats[k] || {})[x.item] = { seen: x.seen || 0, correct: x.correct || 0 };
+          var k = qzKey(x.unit_key, x.quiz_type), it = String(x.item);
+          var q = (qStats[k] || {})[it] || { seen: 0, correct: 0 };
+          (d.stats[k] = d.stats[k] || {})[it] = { seen: (x.seen || 0) + q.seen, correct: (x.correct || 0) + q.correct };
         });
         qzSave();
         return true;
@@ -3168,6 +3359,9 @@
         refreshDesktopDl();
         dpFlush();
         fvFlush();
+        /* A renewed token (TOKEN_REFRESHED, or a re-seed's SIGNED_IN) is the moment listens held
+           back by an expired one can go (W72). A no-op when nothing is queued. */
+        if (session) plysFlush();
       });
       /* Back online → if supabase lost its session while we were away, hand our tokens back so
          the user is silently restored instead of facing a sign-in screen. Also runs once at
@@ -3180,6 +3374,11 @@
       window.addEventListener('online', function () {
         refreshSubscription();          // get a real answer again before anything relies on one
         if (restoredFromIdentity || !currentSession || !currentSession.access_token) reseedSession();
+        /* ⚠ And a session that is still OURS but expired while offline (the guarded null-session
+           blip keeps the old one): renew it now, or nothing sends until the next page load (W72). */
+        else if (!tokenLive(currentSession.access_token)) {
+          ensureFreshToken().then(function (ok) { if (ok) plysFlush(); });
+        }
       });
       // And immediately, if we booted on our own record while a network is available — otherwise
       // supabase stays sessionless for the whole visit and gated audio 401s behind a signed-in UI.
