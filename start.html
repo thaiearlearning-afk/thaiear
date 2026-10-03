@@ -109,8 +109,8 @@
   @media (max-width: 899.98px) {
     .lp-col  { display: contents; }
     .lp-card { order: -1; }
-    .lp-box-a { order: 1; } .lp-box-b { order: 2; }
-    .lp-box-c { order: 3; } .lp-box-d { order: 4; }
+    .lp-box-c { order: 1; } .lp-box-q { order: 2; }
+    .lp-box-a { order: 3; } .lp-box-b { order: 4; }
   }
   @media (min-width: 900px) {
     /* ⚠ The 40ch cap on .lp-head is a MOBILE measure. Left in place on desktop it wrapped
@@ -212,6 +212,47 @@
   .lp-jump { display: block; text-align: center; margin-top: 1.25rem; text-decoration: none; }
   @media (min-width: 900px) { .lp-jump { display: none; } }
 
+  /* ⭐ HEAR IT FIRST (owner, 2026-10-04): three real recordings, playable SIGNED OUT, on this page
+     only — the deliberate exception to "playing audio needs a free account". Public free-bucket
+     clips from Greetings (topic-01). Horizontal sizes in px (TEXT_SCALING rule 1). */
+  .lp-samples { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
+                max-width: 760px; margin: 1.1rem auto 0; }
+  .lp-sample { display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer;
+               background: var(--surface); border: 0.5px solid var(--border-strong);
+               border-radius: var(--radius-md); padding: 10px 12px; font: inherit; color: inherit; width: 100%; }
+  .lp-sample:hover { border-color: var(--accent); }
+  .lp-sample.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .lp-play { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--accent);
+             color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+  .lp-play svg { width: 14px; height: 14px; }
+  .lp-sample-t { flex: 1 1 0; min-width: 0; }
+  .lp-sample-th { display: block; font-family: var(--font-thai); font-size: calc(17px * var(--te-ui, 1));
+                  line-height: 1.35; color: var(--text-primary); }
+  .lp-sample-en { display: block; font-size: calc(12.5px * var(--te-ui, 1)); color: var(--text-secondary); line-height: 1.35; }
+  @media (max-width: 899.98px) { .lp-samples { grid-template-columns: 1fr; max-width: 420px; gap: 8px; } }
+
+  /* The Thai Builder, drawn: a static picture of the real tiles so the quizzes read as
+     something you DO, not a list. Not interactive. */
+  .lp-quiz-pic { border: 0.5px solid var(--border); border-radius: var(--radius-md); background: var(--bg);
+                 padding: 10px 12px; margin: 0.2rem 0 0.9rem; }
+  .lp-quiz-cap { font-size: calc(11px * var(--te-ui, 1)); font-weight: 600; letter-spacing: 0.04em;
+                 text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .lp-quiz-q { font-size: calc(14px * var(--te-ui, 1)); font-weight: 500; color: var(--text-primary); margin-bottom: 8px; }
+  .lp-quiz-lab { font-size: calc(10.5px * var(--te-ui, 1)); font-weight: 600; letter-spacing: 0.06em;
+                 text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 3px; }
+  .lp-quiz-ans { min-height: 44px; border: 1.5px dashed var(--accent); background: var(--accent-light);
+                 border-radius: 8px; padding: 5px; display: flex; flex-wrap: wrap; align-items: center;
+                 gap: 4px; margin-bottom: 9px; }
+  .lp-quiz-tray { display: flex; flex-wrap: wrap; gap: 4px; }
+  .lp-tile { display: inline-flex; flex-direction: column; align-items: center; padding: 3px 8px;
+             border-radius: 6px; border: 0.5px solid var(--border-strong); background: var(--surface);
+             font-family: var(--font-thai); font-size: calc(15px * var(--te-ui, 1)); line-height: 1.25; }
+  .lp-tile i { font-style: normal; font-family: var(--font-ui); font-size: calc(9.5px * var(--te-ui, 1)); color: var(--text-tertiary); }
+  .lp-tile.in { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .lp-tile.in i { color: rgba(255,255,255,.72); }
+  .lp-tile.used { opacity: 0.25; }
+  .lp-pathline { font-size: calc(13px * var(--te-ui, 1)); color: var(--text-secondary); margin-top: 0.8rem; }
+
   .lp-foot { text-align: center; margin-top: 2.2rem; font-size: 13px; color: var(--text-tertiary); }
   .lp-foot a { color: var(--text-secondary); text-decoration: none; }
   .lp-foot a:hover { color: var(--accent); }
@@ -250,7 +291,12 @@
 
   <div class="lp-head">
     <h1 class="lp-h1">Learn Thai in whole sentences, not word lists</h1>
-    <p class="lp-lede">Create your free account to start listening. No payment, no card.</p>
+    <p class="lp-lede">Every sentence recorded by native Thai speakers. Hear it for yourself:</p>
+    <div class="lp-samples" id="lp-samples">
+      <button class="lp-sample" type="button" data-clip="https://audio.thaiear.com/Greetings_BEG_S10_TH.mp3"><span class="lp-play"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><polygon points="5,2 14,8 5,14"/></svg></span><span class="lp-sample-t"><span class="lp-sample-th">ยินดีที่ได้รู้จักครับ</span><span class="lp-sample-en">Pleased to meet you.</span></span></button>
+      <button class="lp-sample" type="button" data-clip="https://audio.thaiear.com/Greetings_BEG_S13_TH.mp3"><span class="lp-play"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><polygon points="5,2 14,8 5,14"/></svg></span><span class="lp-sample-t"><span class="lp-sample-th">กินข้าวยังคะ</span><span class="lp-sample-en">Have you eaten yet?</span></span></button>
+      <button class="lp-sample" type="button" data-clip="https://audio.thaiear.com/Greetings_BEG_S21_TH.mp3"><span class="lp-play"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><polygon points="5,2 14,8 5,14"/></svg></span><span class="lp-sample-t"><span class="lp-sample-th">เดินทางปลอดภัยนะคะ</span><span class="lp-sample-en">Safe travels.</span></span></button>
+    </div>
   </div>
 
   <div class="lp-grid">
@@ -264,18 +310,6 @@
          ⚠ On mobile the columns become `display: contents` and `order` restores the flat
             sequence with the card FIRST — see the stylesheet. -->
     <div class="lp-col lp-col-l">
-      <div class="lp-box lp-box-a">
-        <div class="lp-box-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h7M8 11h7"/></svg>
-          Learn to read Thai<span class="lp-free">Free</span>
-        </div>
-        <p class="lp-stat">12-step course &middot; 208 audio examples</p>
-        <ul class="lp-list">
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Consonant classes, vowels and final sounds, step by step</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>The <strong>tone rules</strong> explained in plain English, with audio to guide pronunciation</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Tests at every step, and a three-part reading quiz at the end</li>
-        </ul>
-      </div>
       <div class="lp-box lp-box-c">
         <div class="lp-box-title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4M7 7v10M11 4v16M15 8v8M19 11v2"/></svg>
@@ -292,8 +326,32 @@
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>Two ways to practise:</strong> hear the Thai and repeat it, or hear the English first and try to produce the Thai yourself</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Real situations &mdash; ordering food, getting around, work, health, family</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Cultural notes and language tips across all topics</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>Four quizzes on every topic:</strong> vocab, listening comprehension, building sentences and speaking</li>
         </ul>
+      </div>
+      <div class="lp-box lp-box-q">
+        <div class="lp-box-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h4M7 13h10M7 17h6"/></svg>
+          Then test yourself
+        </div>
+        <p class="lp-stat">Four quizzes on every topic</p>
+        <!-- Owner, 2026-10-04, on the first draft: "not clear what is happening ... there's no answer
+             box - i think a new arrival might be stumped". Every part is now LABELLED, the way the real
+             quiz screen labels it. -->
+        <div class="lp-quiz-pic" aria-hidden="true">
+          <p class="lp-quiz-cap">Thai Builder: build the English sentence in Thai</p>
+          <p class="lp-quiz-q">&ldquo;Until we meet again.&rdquo;</p>
+          <p class="lp-quiz-lab">Your answer</p>
+          <div class="lp-quiz-ans"><span class="lp-tile in">แล้ว<i>láaeo</i></span><span class="lp-tile in">พบ<i>phóp</i></span></div>
+          <p class="lp-quiz-lab">Tap the tiles in order</p>
+          <div class="lp-quiz-tray"><span class="lp-tile used">แล้ว<i>láaeo</i></span><span class="lp-tile">นะ<i>ná</i></span><span class="lp-tile">กัน<i>gan</i></span><span class="lp-tile used">พบ<i>phóp</i></span><span class="lp-tile">คะ<i>khá</i></span><span class="lp-tile">ใหม่<i>mài</i></span><span class="lp-tile">เจอ<i>juhr</i></span></div>
+        </div>
+        <ul class="lp-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Vocab Trainer &mdash; learn the topic&rsquo;s key words</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Listening comprehension &mdash; hear the Thai, pick what it means</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Thai Builder &mdash; build each sentence in Thai from the English</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Speak Thai &mdash; say it from the English alone, then check yourself</li>
+        </ul>
+        <p class="lp-pathline">Step by step, from a topic&rsquo;s words to <strong>speaking every sentence</strong> with only the English as a prompt.</p>
       </div>
     </div>
 
@@ -330,34 +388,39 @@
       </div>
 
       <p id="lp-status" class="lp-status"></p>
+      <!-- ⚠ CLAIM SAFETY (ADS_OPERATIONS §7 decision 15): this line names what is free AND says the
+           library is Premium, so "free" is never read as applying to the 110+ units. -->
+      <p class="lp-note"><strong style="color:var(--text-secondary);font-weight:500">Free with your account:</strong>
+        the complete Read Thai course, the first three topics with all their quizzes, and your own playlists.
+        The full library of 110+ units comes with Premium.</p>
       <p class="lp-note">By continuing you agree to our <a href="terms">Terms</a> and
         <a href="privacy">Privacy Policy</a>.</p>
     </div>
 
     <!-- ── BOX A — reading course. "Free" is CORRECT here. ──────────────────── -->
     <div class="lp-col lp-col-r">
+      <div class="lp-box lp-box-a">
+        <div class="lp-box-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h7M8 11h7"/></svg>
+          Learn to read Thai<span class="lp-free">Free</span>
+        </div>
+        <p class="lp-stat">12-step course &middot; 208 audio examples</p>
+        <ul class="lp-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Consonant classes, vowels and final sounds, step by step</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>The <strong>tone rules</strong> explained in plain English, with audio to guide pronunciation</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Tests at every step, and a three-part reading quiz at the end</li>
+        </ul>
+      </div>
       <div class="lp-box lp-box-b">
         <div class="lp-box-title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><circle cx="18" cy="16" r="3"/><path d="M21 16V7"/></svg>
-          Your own playlists<span class="lp-free">Free</span>
+          Make it yours
         </div>
-        <p class="lp-stat">Build them from any topic</p>
+        <p class="lp-stat">Your playlists, your pace</p>
         <ul class="lp-list">
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Pick the sentences <strong>you keep getting wrong</strong> and drill just those</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Combine sentences <strong>across multiple topics and themes</strong> to suit you</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Build <strong>your own playlists</strong> &mdash; drill the sentences you keep getting wrong, across any topics</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Set sentence repeats, pause lengths and how fast the Thai is read</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Your progress and listening streak are saved to your account</li>
-        </ul>
-      </div>
-      <div class="lp-box lp-box-d">
-        <div class="lp-box-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M6 9h12M6 15h12"/></svg>
-          Set your own pace
-        </div>
-        <p class="lp-stat">You decide how much thinking time you get</p>
-        <ul class="lp-list">
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Set <strong>sentence repeats</strong> anywhere from one to four times</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Adjust pause lengths to suit your speed</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Or play sentences individually &mdash; each comes with <strong>word-by-word breakdowns</strong>, so you can see how the sentence is built</li>
         </ul>
       </div>
     </div>
@@ -633,6 +696,28 @@
   if (einp) einp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendLink(false); } });
   var cinp = document.getElementById('login-code-input');
   if (cinp) cinp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); signInWithCode(); } });
+
+  /* ⭐ The three samples (owner, 2026-10-04): playable signed out, on this page only. One element,
+     so starting one stops the other; a second tap on the playing one stops it. */
+  var sampleAudio = null, sampleOn = null;
+  function stopSample() {
+    if (sampleAudio) { try { sampleAudio.pause(); } catch (_) {} }
+    if (sampleOn) sampleOn.classList.remove('on');
+    sampleOn = null;
+  }
+  [].forEach.call(document.querySelectorAll('.lp-sample'), function (b) {
+    b.addEventListener('click', function () {
+      if (sampleOn === b) { stopSample(); return; }
+      stopSample();
+      if (!sampleAudio) {
+        sampleAudio = new Audio();
+        sampleAudio.addEventListener('ended', stopSample);
+      }
+      sampleAudio.src = b.getAttribute('data-clip');
+      sampleOn = b; b.classList.add('on');
+      sampleAudio.play().catch(stopSample);
+    });
+  });
 
   window.addEventListener('thaiear:auth', render);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
