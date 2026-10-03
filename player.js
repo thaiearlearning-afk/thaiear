@@ -4598,6 +4598,48 @@
   var sentLock = null;
   var sentBlobUrl = null;   // object URL of the clip currently in the sentence <audio>; revoked on swap/stop
   function revokeSentBlob() { if (sentBlobUrl) { try { URL.revokeObjectURL(sentBlobUrl); } catch (_) {} sentBlobUrl = null; } }
+
+  /* ⛔⛔ A SLOWED SENTENCE TAP USES OUR STRETCH, NOT THE BROWSER'S (W75, owner 2026-10-04).
+     A pill tap used to play the clip at <audio>.playbackRate = dynSpeed with preservesPitch, i.e.
+     the BROWSER's own time-stretch. Chromium's (Chrome, Edge, the Android WebView) sounds robotic
+     on these recordings; WebKit's (iPhone) does not. Owner: "on google chrome on phone browser too
+     and on desktop. also on edge on desktop - all these robotic"; confirmed by ear on a localhost
+     page holding both versions side by side: "seems like its sentence tap that is whole issue".
+     The dyn session never had the fault because its stretch is dynStretch at build time.
+     So a slowed tap now decodes the clip at DYN_SR, runs the SAME dynStretch, and plays the result
+     as a WAV at rate 1. Cached per (clip, speed), capped, so a repeat tap costs nothing.
+     ⚠ Any failure falls back to the old playbackRate path: a tap must never go silent for this.
+     ⚠ slowMode (the hidden 0.75 tortoise) keeps the old path; it cannot be switched on. */
+  var sentStretchCache = {}, sentStretchKeys = [], SENT_STRETCH_MAX = 30;
+  var sentStretchedUrl = null;      // the src the current tap got from this, so it plays at rate 1
+  function sentSlowSrc(u, file) {
+    var rate = dynSpeed || 1;
+    if (slowMode || !(rate > 0 && rate < 1) || !u || typeof OfflineAudioContext === 'undefined') return Promise.resolve(u);
+    var key = file + '@' + rate;
+    function out(blob) {
+      try { var url = URL.createObjectURL(blob); sentStretchedUrl = url; return url; } catch (_) { return u; }
+    }
+    if (sentStretchCache[key]) {
+      if (u.indexOf('blob:') === 0) { try { URL.revokeObjectURL(u); } catch (_) {} }
+      return Promise.resolve(out(sentStretchCache[key]));
+    }
+    return fetch(u).then(function (r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.arrayBuffer(); })
+      .then(function (ab) {
+        return new Promise(function (resolve, reject) {
+          var octx = new OfflineAudioContext(1, 1, DYN_SR);
+          octx.decodeAudioData(ab, resolve, reject);
+        });
+      })
+      .then(function (buf) {
+        var st = dynStretch(buf, rate, file);
+        var blob = dynEncodeWav(st.getChannelData(0));
+        sentStretchCache[key] = blob; sentStretchKeys.push(key);
+        while (sentStretchKeys.length > SENT_STRETCH_MAX) delete sentStretchCache[sentStretchKeys.shift()];
+        if (u.indexOf('blob:') === 0) { try { URL.revokeObjectURL(u); } catch (_) {} }
+        return out(blob);
+      })
+      .catch(function (e) { dynLog('sent stretch failed, browser rate used: ' + ((e && e.message) || e)); return u; });
+  }
   var slowMode = false;
   var resumeMainAfter = false;   // main-pause coordination: was the top player playing when a sentence took over?
 
@@ -11050,7 +11092,10 @@
     if (sentResetTimer) { clearTimeout(sentResetTimer); sentResetTimer = null; }
     // Resolve the src: local copy if downloaded, else free CDN / signed-URL fetch. Then play.
     // Pass the sentence's OWN prefix/tier — on a playlist the page-level ones are ''/'free'.
+    sentStretchedUrl = null;
     sentSrcFor(file, sentGated, (sObj && sObj.prefix) || null, (sObj && sObj.tier) || null).then(function (u) {
+      return sentSlowSrc(u, file);          // W75: slowed taps use dynStretch (see sentSlowSrc)
+    }).then(function (u) {
       // user stopped/switched while the URL was resolving → drop the freshly-made blob to avoid a leak
       if (gen !== sentGen || sentPlaying !== num) { if (u && u.indexOf('blob:') === 0) { try { URL.revokeObjectURL(u); } catch (_) {} } return; }
       revokeSentBlob();                                    // free the previous clip's object URL
@@ -11085,7 +11130,8 @@
       sa.preservesPitch = spKeep;
       sa.mozPreservesPitch = spKeep;
       sa.webkitPreservesPitch = spKeep;
-      sa.playbackRate = slowMode ? 0.75 : (dynSpeed || 1);
+      /* W75: a src from sentSlowSrc is ALREADY slowed by dynStretch — play it as recorded. */
+      sa.playbackRate = slowMode ? 0.75 : (u === sentStretchedUrl ? 1 : (dynSpeed || 1));
       return sa.play();
     }).catch(function (err) {
       if (gen !== sentGen) return;   // superseded — the newer tap owns the button now
