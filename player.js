@@ -4407,7 +4407,7 @@
             ' A ThaiEar Premium membership unlocks:</p>' +
           '<ul style="list-style:none;margin:0 0 16px;padding:0;font-size:14px;color:#1A1A1A;line-height:1.9;">' +
             '<li>✓ Every topic and level, with all its audio</li>' +
-            '<li>✓ All four quizzes on every topic</li>' +
+            '<li>✓ All four quiz types</li>' +
             '<li>✓ Offline downloads — audio and quizzes</li></ul>' +
           '<p style="font-size:13px;color:#9A9A9A;line-height:1.5;margin:0 0 14px;">' + stateNote + '</p>' +
           '<div style="display:flex;gap:8px;">' +
