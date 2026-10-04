@@ -1,7 +1,7 @@
 /* ============================================================
    functions/api/attrib.js — record the ad click that made an account
    ------------------------------------------------------------
-   POST /api/attrib  { gclid, utm_*, landing_page, referrer, first_seen }
+   POST /api/attrib  { gclid, rdt_cid, utm_*, landing_page, referrer, first_seen }
    (called by attrib.js the first time a NEW user's session appears).
 
    Verifies the caller's Supabase token, then writes ONE row per user
@@ -16,8 +16,10 @@
    Errors are returned for debugging but attrib.js ignores them.
    ============================================================ */
 
+// rdt_cid = Reddit's click id (2026-10-04). Listed here, it inherits the carve-out below for free.
+// ⚠ The column must exist (ad_attribution_rdt_cid.sql) BEFORE this deploys — every listed field is inserted.
 const FIELDS = [
-  'gclid', 'utm_source', 'utm_medium', 'utm_campaign',
+  'gclid', 'rdt_cid', 'utm_source', 'utm_medium', 'utm_campaign',
   'utm_term', 'utm_content', 'landing_page', 'referrer',
 ];
 

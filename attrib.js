@@ -58,7 +58,10 @@
      matches Supabase's own link expiry. It cannot create false positives: a returning
      user's created_at is days old under either figure. */
   var NEW_USER_MS = 60 * 60 * 1000;
-  var PARAMS = ['gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+  /* rdt_cid (2026-10-04): Reddit's advert-click id, appended to the ad's landing URL. Same rules as the
+     gclid in every respect — read from the URL on /start, stripped server-side for UK/EEA/CH — and
+     sent to Reddit's Conversions API by reddit_upload_conversions.py (ADS_Q4_2026.md §5 item C). */
+  var PARAMS = ['gclid', 'rdt_cid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
 
   function ls(fn, dflt) { try { return fn(); } catch (_) { return dflt; } }
 
