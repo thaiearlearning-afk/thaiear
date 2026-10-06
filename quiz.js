@@ -2932,6 +2932,8 @@
         if (en) x.appendChild(en);
       });
     });
+    /* The private area's meaning language, switched mid-question (vaultLangRepaint). */
+    if (typeof vaultLangRepaint === 'function') vaultLangRepaint(w, need, opts);
 
     var chosen = [];
     /* ⭐ THE OWNER GOT STUCK ON A TWO-ANSWER QUESTION: he picked one, nothing happened, and
@@ -2998,6 +3000,37 @@
     var o = {}; w.hl.forEach(function (x) { o[x] = true; }); return o;
   }
   function vaultExtra(w) { return (VT() && w.xt) ? '<p class="tq-say">' + esc(w.xt) + '</p>' : ''; }
+  /* ⭐ THE MEANING LANGUAGE SWITCHES MID-QUESTION (owner, 2026-10-06, sw v777: "if my friend is
+     doing the vocab quiz in english, and she doesnt know the english word, she could just tap the
+     in-quiz settings icon and switch to thai"). The in-quiz menu calls v.setLang(), which rewrites
+     the SHARED word and sentence objects in place; these redraw what the question copied at render
+     time. The reveal needs nothing: its own repaint re-reads the sentence. Off the area: no-ops. */
+  function vaultEnOf(th) {
+    var d = QD(), lists = [d.q3 || [], d.q3x || []];
+    for (var a = 0; a < lists.length; a++)
+      for (var i = 0; i < lists[a].length; i++) if (lists[a][i].th === th) return lists[a][i].en;
+    return null;
+  }
+  function vaultLangRepaint(w, need, opts) {
+    if (!VT()) return;
+    onRepaint(function () {
+      var e = sheet.querySelector('.enq');
+      if (e) e.textContent = (need > 1) ? bareGloss(w.en) : w.en;
+      (opts || []).forEach(function (o) { var en = vaultEnOf(o.th); if (en != null) o.en = en; });
+      sheet.querySelectorAll('.opt').forEach(function (x, xi) {
+        var en = x.querySelector('.o-en');
+        if (en && opts[xi]) en.textContent = opts[xi].en || '';
+      });
+    });
+  }
+  function vaultPromptRepaint(s) {
+    if (!VT()) return;
+    onRepaint(function () {
+      var e = sheet.querySelector('.enq'), nat = sheet.querySelector('.enq-nat');
+      if (nat) nat.remove();
+      if (e) e.outerHTML = promptFor(s);
+    });
+  }
   function vaultWhere(w) {
     if (!VT() || !w.appears || !w.appears.length) return '';
     return ' ' + esc(w.appears[0]) + (w.appears.length > 1 ? ' · also ' + esc(w.appears.slice(1).join(', ')) : '');
@@ -3095,6 +3128,7 @@
       + '<button class="startbtn t-reveal" type="button">Reveal answer</button>'
       + '<div class="t-rev"></div>' + foot());
     wireBar(); wireFoot();
+    if (typeof vaultPromptRepaint === 'function') vaultPromptRepaint(s);
 
     sheet.querySelector('.t-reveal').onclick = function () {
       this.remove();
@@ -3148,12 +3182,22 @@
     while (sheet.firstChild) keep.appendChild(sheet.firstChild);
     var relayout = run.relayout, repaint = run.repaint;
     var scriptBefore = p.script;
+    var vq = VT(), langBefore = vq && vq.glossKey;
     /* ⚠ The subtitle used to read "Applies from the next question", which was true when every
        one of these settings was baked in at render time. It is not true any more — the text
        size, the font, the transliteration pill and now the three-way script setting all reach
        the question you came from. Only the QUESTION COUNT and the question MIX cannot, because
        the run they describe is already under way. */
     var html = head('Options', 'Most of these apply straight away');
+    /* The private area's meaning language, here as well as on the quiz's own menu, and applied
+       to the question you came from (vaultLangRepaint / vaultPromptRepaint). */
+    if (vq && vq.setLang) {
+      var ql = VUI('quizLang', {});
+      html += '<div class="mgroup"><p class="mlab">' + esc(VUI('quizLangLabel', 'Language')) + '</p><div class="radios">'
+        + radio('vlang', 'th', vq.glossKey, ql.th || 'th', '')
+        + radio('vlang', 'en', vq.glossKey, ql.en || 'en', '')
+        + '</div></div>';
+    }
     if (!VT()) html += '<div class="mgroup"><p class="mlab">Thai script</p><div class="radios">'
       + radio('script', 'both', p.script, 'Thai + transliteration', '')
       + radio('script', 'thai', p.script, 'Thai only', '')
@@ -3188,6 +3232,8 @@
       /* ⚠ SITE-wide, not a quiz pref — deliberately not in run.prefs and not synced to
          quiz_prefs, because the learner set it for the whole site. */
       var tf = sheet.querySelector('.c-tf'); if (tf) setThaiModern(tf.checked);
+      var vl = sheet.querySelector('input[name=vlang]:checked');
+      if (vl && vq && vq.setLang && vl.value !== langBefore) vq.setLang(vl.value);
       savePrefs(qid, run.prefs);
       restoreQuestion();
     };
@@ -3202,7 +3248,7 @@
       /* ⚠ Only when it CHANGED. paint() rewrites innerHTML and re-wires every tile, so firing
          it on a menu visit that touched nothing would drop any in-flight pointer capture for no
          reason at all. */
-      if (repaint && run.prefs.script !== scriptBefore) repaint();
+      if (repaint && (run.prefs.script !== scriptBefore || (vq && vq.glossKey !== langBefore))) repaint();
       /* ⚠ A text-size change re-flows the question that is coming back, so anything holding a
          measured height has to re-measure at the size it is now being drawn at. */
       if (relayout && fontScale() !== scaleBefore) relayout();
