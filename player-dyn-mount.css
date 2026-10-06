@@ -384,7 +384,10 @@
     .te-mini-row { display: flex; align-items: center; gap: 10px; }
     .te-mini button { border: 0; background: transparent; color: inherit; cursor: pointer;
       display: inline-flex; align-items: center; justify-content: center; padding: 0; }
-    .te-mini-play { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    /* .te-mini .te-mini-play, NOT bare .te-mini-play: the reset above (.te-mini button, class +
+       element) outranked a lone class, so from 2026-07-04 to v774 the play button drew a white icon
+       on the pale bar with no navy circle - near-invisible, and it is the quiz menus' only pause. */
+    .te-mini .te-mini-play { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
       background: var(--accent, #261B65); color: #fff; }
     .te-mini-play svg { width: 15px; height: 15px; fill: #fff; }
     .te-mini-skip { position: relative; width: 30px; height: 30px; flex-shrink: 0; }
