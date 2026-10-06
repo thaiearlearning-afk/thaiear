@@ -131,9 +131,30 @@
     return fetch(url, opts).then(function (r) { clearTimeout(timer); return r; },
       function (e) { clearTimeout(timer); throw e; });
   }
+  /* ⭐ THE SAVED SESSION'S TOKEN, so the data does not wait for the sign-in library (measured
+     2026-10-06: supabase-js arrives from esm.sh 5–9 s into a cold load, and the unit waited for it).
+     supabase-js keeps the session in localStorage `sb-<ref>-auth-token` (auth.js SB_STORAGE_KEY) —
+     the object itself, or { currentSession } in older builds. Used only while it has a minute left and
+     belongs to the account identity.js names; otherwise auth.js's own (refreshed) token is waited for.
+     The server checks it exactly as it checks any other: this changes WHEN we ask, not WHO may. */
+  function storedToken() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf('sb-') !== 0 || k.indexOf('-auth-token') === -1 || /verifier/.test(k)) continue;
+        var o = JSON.parse(localStorage.getItem(k) || 'null'), s = o && (o.currentSession || o);
+        if (!s || !s.access_token || !(s.expires_at * 1000 > Date.now() + 60000)) continue;
+        var g = guessUid();
+        if (g && s.user && s.user.id && s.user.id !== g) continue;
+        return s.access_token;
+      }
+    } catch (_) {}
+    return null;
+  }
   /* /api/ is never cached by sw.js, so this is the network or nothing. */
   function api(q) {
-    var a = A(), tok = (a && a.getAccessToken) ? a.getAccessToken() : null;
+    var a = A(), tok = (a && a.isReady && a.getAccessToken) ? a.getAccessToken() : null;
+    if (!tok) tok = storedToken();
     if (!tok) return Promise.resolve(null);
     return fetchT('/api/vault?' + q, { headers: { Authorization: 'Bearer ' + tok }, cache: 'no-store',
       credentials: 'same-origin' }, 9000)
@@ -415,7 +436,8 @@
   /* The menu file is the one place the published stamps live: refreshing it is how a unit opened
      from the device learns an update exists. Card and page then re-ask the ONE predicate. */
   function refreshMe() {
-    return waitAuth().then(function (u) {
+    var g = guessUid();
+    return ((g && storedToken()) ? Promise.resolve({ id: g }) : waitAuth()).then(function (u) {
       if (!u || !u.id) return;
       return api('q=me').then(function (t) {
         var me2 = parse(t);
@@ -429,7 +451,11 @@
     }).catch(function () {});
   }
   function fromNetwork() {
-    return waitAuth().then(function (u) {
+    /* With a saved, unexpired token for the account identity.js names, ask NOW; otherwise wait
+       for auth.js as before (an expired token needs its refresh). */
+    var g = guessUid();
+    var who = (g && storedToken()) ? Promise.resolve({ id: g }) : waitAuth();
+    return who.then(function (u) {
       if (!u || !u.id) return;                     // signed out: the shell stays empty
       return Promise.all([loadMe(u.id), tKey ? loadTopic(u.id, tKey) : null]).then(function (r) {
         if (r[0] && r[0].topics) show(r[0], r[1]); // not allowed, or nothing saved here: empty

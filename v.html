@@ -154,6 +154,13 @@
   .v-area .topic-fav { display: none !important; }
   /* the translation row carries Thai script when the page is in Thai mode */
   .v-th .row-english, .v-th .pv-en, .v-th .g-eng, .v-th .cultural-note { font-family: 'Sarabun', 'Inter', system-ui, sans-serif; }
+  /* Thai script reads far smaller than Latin at the same px (owner, 2026-10-06): in Thai mode the
+     translation gets the main site's THAI sizes, not its English ones. Quiz sizes keep --tq-scale. */
+  .v-th .row-english { font-size: 17px; line-height: 1.5; }
+  .v-th .pv-en { font-size: 1.08em; }
+  .v-th .tq-sheet .enq { font-family: 'Sarabun', 'Inter', system-ui, sans-serif; font-size: calc(19px * var(--tq-scale, 1)); }
+  .v-th .tq-sheet .cen { font-family: 'Sarabun', 'Inter', system-ui, sans-serif; font-size: calc(16px * var(--tq-scale, 1)); }
+  .v-th .tq-sheet .o-en { font-family: 'Sarabun', 'Inter', system-ui, sans-serif; font-size: calc(15px * var(--tq-scale, 1)); }
 </style>
 </head>
 <body class="te-v2 v-area">

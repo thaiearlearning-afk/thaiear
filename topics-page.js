@@ -582,7 +582,15 @@
   }
   function check() {
     var A = window.ThaiEarAuth;
-    if (!A || !A.isReady) return;
+    /* Before auth.js is ready (supabase-js can take seconds), paint the remembered entry for the
+       account identity.js already names — the same synchronous guess player.js uses. */
+    if (!A || !A.isReady) {
+      try {
+        var I = window.ThaiEarIdentity, g = (I && I.guess) ? I.guess() : null, h = get(KEY);
+        if (g && g.state === 'in' && g.user && h && h.u === g.user.id) paint(h.label);
+      } catch (_) {}
+      return;
+    }
     var u = A.getUser && A.getUser();
     if (!u || !u.id) { paint(null); doneFor = null; return; }
     var have = get(KEY);
