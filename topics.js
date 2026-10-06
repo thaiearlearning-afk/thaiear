@@ -94,8 +94,6 @@
       keywords: ['shopping','money','price','buy','cost','เท่าไหร่','how much','บาท','baht','cheap','expensive','pay','แพง'] },   // re-badged by the 2026-07-17 length audit
     { id: 9, part: 1, name: "Food & drink: Ordering & dishes", levels: ['beg'], sentences: 42, page: "topic-09a.html", audio: "Food_BEG", access: "premium",
       keywords: ['food','eat','drink','กิน','อาหาร','rice','ข้าว','water','น้ำ','hungry','หิว','delicious','อร่อย','meal','restaurant'] },   // re-badged by the 2026-07-17 length audit
-    { id: 37, part: 1, name: "Emergencies: Calling for help", levels: ['beg'], sentences: 21, page: "topic-37.html", audio: "Emergency_BEG", access: "premium",
-      keywords: ['help','emergency','ช่วย','ฉุกเฉิน','police','ตำรวจ','ambulance','accident','อุบัติเหตุ','fire','ไฟไหม้','danger','hospital','lost','urgent','สายด่วน'] },
     { id: 6, name: "Time & numbers", levels: ['beg'], sentences: 30, page: "topic-06.html", audio: "Time_BEG", access: "premium",
       keywords: ['time','number','clock','hour','นาฬิกา','เวลา','count','counting','นับ','oclock','minute','how many','เลข'] },
     { id: 9, part: 2, name: "Food & drink: Tastes & preferences", levels: ['beg'], sentences: 27, page: "topic-09b.html", audio: "Food_LI1", access: "premium",
@@ -116,6 +114,8 @@
       keywords: ['place','town','city','เมือง','where','bank','post office','market','ตลาด','shop','ร้าน','location','directions','around town'] },
     { id: 41, part: 2, name: "Places around town: Shops & errands", levels: ['beg'], sentences: 29, page: "topic-41b.html", audio: "Places2_BEG", access: "premium",
       keywords: ['place','town','city','เมือง','building','directions','ทาง','landmark','hospital','โรงพยาบาล','school','โรงเรียน','temple','วัด','around town'] },
+    { id: 37, part: 1, name: "Emergencies: Calling for help", levels: ['beg'], sentences: 21, page: "topic-37.html", audio: "Emergency_BEG", access: "premium",
+      keywords: ['help','emergency','ช่วย','ฉุกเฉิน','police','ตำรวจ','ambulance','accident','อุบัติเหตุ','fire','ไฟไหม้','danger','hospital','lost','urgent','สายด่วน'] },
     { id: 38, name: "Idioms", levels: ['beg'], sentences: 27, page: "topic-38.html", audio: "Idiom_BEG", access: "premium",
       keywords: ['idiom','สำนวน','saying','expression','proverb','figure of speech','phrase','metaphor','สุภาษิต','colloquial'] },
     { id: 39, name: "Tongue twisters", levels: ['beg'], sentences: 19, page: "topic-39.html", audio: "ToneTwister_LI1", access: "premium",

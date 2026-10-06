@@ -11,7 +11,6 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Topics a
 - [Communication survival in Thai](https://thaiear.com/topic-03): Beginner, 25 sentences
 - [Shopping & money: Prices & paying in Thai](https://thaiear.com/topic-11a): Beginner, 22 sentences
 - [Food & drink: Ordering & dishes in Thai](https://thaiear.com/topic-09a): Beginner, 42 sentences
-- [Emergencies: Calling for help in Thai](https://thaiear.com/topic-37): Beginner, 21 sentences
 - [Time & numbers in Thai](https://thaiear.com/topic-06): Beginner, 30 sentences
 - [Food & drink: Tastes & preferences in Thai](https://thaiear.com/topic-09b): Beginner, 27 sentences
 - [Family & relationships in Thai](https://thaiear.com/topic-08): Beginner, 40 sentences
@@ -22,6 +21,7 @@ ThaiEar teaches Thai through complete sentences (not vocabulary lists). Topics a
 - [Describing things in Thai](https://thaiear.com/topic-04b): Beginner, 22 sentences
 - [Places around town: Finding places & hours in Thai](https://thaiear.com/topic-41a): Beginner, 28 sentences
 - [Places around town: Shops & errands in Thai](https://thaiear.com/topic-41b): Beginner, 29 sentences
+- [Emergencies: Calling for help in Thai](https://thaiear.com/topic-37): Beginner, 21 sentences
 - [Idioms in Thai](https://thaiear.com/topic-38): Beginner, 27 sentences
 - [Tongue twisters in Thai](https://thaiear.com/topic-39): Beginner, 19 sentences
 - [Occupations 1 in Thai](https://thaiear.com/topic-42a): Lower intermediate, 30 sentences
