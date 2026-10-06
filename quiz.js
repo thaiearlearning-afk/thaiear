@@ -72,7 +72,7 @@
       ds: 'Hear Thai, pick the English', icon: ICONS.listen, step: 10 },
     { id: 2, key: 'build', name: 'Thai Builder', ds: 'See English, build the Thai',
       icon: ICONS.build, step: 5 },
-    { id: 4, key: 'speak', name: 'Speak Thai', ds: 'See English, say it aloud, mark yourself',
+    { id: 4, key: 'speak', name: 'Speak Thai', ds: 'See English, Speak Thai, mark yourself',
       icon: ICONS.speak, step: 5 }
   ];
   var vaultNamed = false;
