@@ -30,7 +30,7 @@ var _b=document.createElement('base');_b.target='_top';document.head.appendChild
      it takes the same one-line cure. -->
 <script>try{var _s=location.search;
 if(/[?&]quiz=/.test(_s))document.documentElement.className+=' te-quiz-boot';
-if(/[?&]pl=/.test(_s))document.documentElement.className+=' te-pl-boot';}catch(e){}</script>
+if(/[?&]pl=/.test(_s)){document.documentElement.className+=' te-pl-boot';window.ThaiEarPlayerPage=true;}}catch(e){}</script>
 <style>html.te-quiz-boot #pl-player-wrap,html.te-quiz-boot #pl-list-wrap{visibility:hidden}
 html.te-pl-boot #pl-list-wrap{display:none}
 /* ⭐ THE WAIT IS NO LONGER A BLANK PAGE (owner, 2026-09-22: playlist quizzes "are slow to load

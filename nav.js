@@ -818,9 +818,17 @@
   /* ---- "Now playing" bar (Capacitor app only) ----
      The native player keeps going as you move around the app, so on NON-topic pages (index, account,
      etc.) show a small bar with the playing topic that links back to it. Topic pages already show it
-     in their player. Liveness comes from the engine's own time ticks, so it works on any page. */
+     in their player. Liveness comes from the engine's own time ticks, so it works on any page.
+     ⚠ "A PAGE WITH A PLAYER" IS NOT ONLY "window.ThaiEarTopic IS SET WHEN THIS RUNS" (owner,
+     2026-10-06: the bar sat on top of a playing unit in the playlist player and the allow-listed
+     area, Android). Those pages build ThaiEarTopic LATE (after a data load, or the hints wait), so
+     this deferred script saw a bare page: it drew the bar AND registered the lock-screen
+     ⏮/⏭/repeat/autoplay handlers below beside player.js's own — two handlers per press, so repeat
+     toggled twice (a no-op). Such a page declares itself synchronously (window.ThaiEarPlayerPage),
+     and every handler here also stands down once a player exists, for any page that builds later. */
+  function hasPlayer() { return !!(window.ThaiEarTopic || window.ThaiEarPlayerPage); }
   function setupNowPlayingBar(navEl) {
-    if (window.ThaiEarTopic) return;          // topic pages display now-playing in the player
+    if (hasPlayer()) return;                  // pages with a player display now-playing in the player
     const NA = (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins.NativeAudio : null;
     if (!NA || document.getElementById('te-np-bar')) return;   // app only; once
     if (!document.getElementById('te-np-styles')) {
@@ -856,7 +864,7 @@
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
     function update() {
       let np; try { np = JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { np = null; }
-      if (!np || !np.page || !np.name) { bar.classList.remove('show'); return; }
+      if (hasPlayer() || !np || !np.page || !np.name) { bar.classList.remove('show'); return; }
       // Clean URL, never topic-NN.html — the 308 is an uncached origin round trip that runs before
       // the SW starts (see hrefFor() in topics.js). Local strip: nav.js must not depend on
       // topics.js's load order.
@@ -952,12 +960,14 @@
       }).catch(function () {});
     }
     NA.addListener('command', function (d) {
+      if (hasPlayer()) return;                  // player.js took over on this page
       const a = d && d.action;
       if (a === 'thaiear.NEXT') navAdvance(1);
       else if (a === 'thaiear.PREV') navAdvance(-1);
       else if (a === 'thaiear.REPEAT') { try { localStorage.setItem('thaiear_repeat', localStorage.getItem('thaiear_repeat') === '1' ? '0' : '1'); } catch (_) {} }
     });
     NA.addListener('ended', function () {
+      if (hasPlayer()) return;                  // player.js took over on this page
       let rep = false, auto = false;
       try { rep = localStorage.getItem('thaiear_repeat') === '1'; auto = localStorage.getItem('thaiear_autoplay') === '1'; } catch (_) {}
       if (rep) { NA.seekTo({ seconds: 0 }).then(function () { NA.play(); }).catch(function () {}); }   // repeat-one

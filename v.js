@@ -32,6 +32,9 @@
   var LOCAL = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
   function href(q) { return (LOCAL ? '/v.html' : '/v') + (q || ''); }
   var tKey = (/[?&]t=(\d+)/.exec(location.search) || [])[1] || null;
+  /* A unit page builds ThaiEarTopic only after its data arrives; say NOW that it will have a player,
+     so the deferred nav.js draws no app "Now playing" bar and adds no lock-screen handlers of its own. */
+  if (tKey) window.ThaiEarPlayerPage = true;
 
   function lsGet(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
