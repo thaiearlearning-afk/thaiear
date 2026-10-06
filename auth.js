@@ -311,9 +311,14 @@
      normally succeeds the moment the network returns. */
   // The actual OAuth kick-off, factored out of signInWithGoogle so the offline recovery path
   // above can fall through to it. Native app → deep-link flow; web → ordinary page redirect.
+  function displayTag() {   // pwa = installed web app, tab = browser tab (trace only)
+    try { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone ? 'pwa' : 'tab'; }
+    catch (_) { return '?'; }
+  }
   function startGoogleSignIn() {
     if (!client) return;
     if (isNative()) { nativeGoogleSignIn(); return; }
+    trace('oauth:start', { p: location.pathname, w: displayTag() });   // the return lands on this path
     client.auth.signInWithOAuth({
       provider: 'google',
       // prompt=select_account → Google always shows the account chooser, so signing
@@ -3245,6 +3250,19 @@
      A page wanting nicer treatment can listen for `thaiear:autherror` and call preventDefault().
      ─────────────────────────────────────────────────────────────────────────────────────────── */
 
+  /* 🔎 TRACE (AUTH_SIGNIN_INTERMITTENT.md §6) — THE WEB RETURN PATH, which the recorder never saw
+     (it covered only the app's deep link). Owner, 2026-10-06, iPhone PWA fresh install: "Log in" →
+     Google twice → back on /account signed OUT, no message; "Create account" → Google worked.
+     Read-only, flag-gated, recorded ONLY when the URL carries an auth return — never the URL, never
+     a token: just WHICH kind arrived. No `landing` line after an `oauth:start` = nothing came back
+     to THIS window (e.g. the session landed in iOS's separate sign-in browser). */
+  try {
+    var _lh = String(location.hash || ''), _lq = String(location.search || '');
+    if (/access_token=|[?&]code=|error=/.test(_lh + _lq)) {
+      trace('landing', { p: location.pathname, tok: /access_token=/.test(_lh) ? 'y' : 'n',
+        code: /[?&]code=/.test(_lq) ? 'y' : 'n', err: /error=/.test(_lh + _lq) ? 'y' : 'n', w: displayTag() });
+    }
+  } catch (_) {}
   var authErr = (function readAuthError() {
     var found = null;
     function scan(s) {
