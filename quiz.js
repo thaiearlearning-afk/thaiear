@@ -1932,13 +1932,9 @@
        repainted here rather than in four engines that would each have to remember. */
     refreshFoot();
     if (!d || !d.scrollIntoView) return;
-    /* ⚠ INSTANT ON A TOUCH SCREEN (owner, 2026-10-06, iPhone PWA: "Next" sometimes needed a second
-       tap, on every quiz). iOS spends a tap that lands while the page is still
-       gliding on STOPPING the scroll, not on the button — and a tall reveal glides for a while.
-       Desktop keeps the smooth scroll, where a click is never eaten. Hit zones were measured fine. */
-    var touch = false;
-    try { touch = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches); } catch (_) {}
-    try { d.scrollIntoView({ block: 'nearest', behavior: touch ? 'auto' : 'smooth' }); } catch (_) {
+    /* Smooth on every device. v771 made it instant on touch screens (an iPhone "Next" that sometimes
+       needed a second tap); the owner disliked the jump and had it reverted (2026-10-06, v780). */
+    try { d.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {
       try { d.scrollIntoView(false); } catch (_) {}
     }
   }
