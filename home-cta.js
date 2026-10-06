@@ -629,6 +629,9 @@
   /* auth.js notifies several times during startup, and the play stats arrive after it — apply()
      is idempotent, so extra calls cost nothing and the block settles on the right state. */
   window.addEventListener('thaiear:auth', apply);
+  /* auth.js earlyDispName(): the account's chosen name reached a new device before auth resolved.
+     The pre-auth guess reads it from the mirror, so a repaint is all it takes. */
+  window.addEventListener('thaiear:name', apply);
   window.addEventListener('resize', apply);
   window.addEventListener('orientationchange', apply);
   /* nav.js's uiScale() probe sets --te-ui AFTER this runs, and the cap it applies gives chrome

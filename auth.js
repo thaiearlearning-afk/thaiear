@@ -3333,6 +3333,49 @@
     } catch (_) { return false; }
   }
   stashUrlSession();
+
+  /* ⭐ THE CHOSEN NAME ON A DEVICE THAT HAS NEVER SEEN IT (owner, 2026-10-06, sw v776: a fresh
+     PWA install said "Welcome Toby", his Google name, not "Khun Toby").
+     The name lives in `profiles.display_name` and every device mirrors it locally
+     (thaiear_dispname), which is what paints it instantly. A NEW device has no mirror, so it showed
+     the provider's name until refreshProfile() ran, and that waits for supabase-js (esm.sh) and
+     its session check: measured 5.7 s and 8.9 s on desktop Chrome with the mirror deleted.
+     So, when there is no mirror and we already hold a live token (ours or supabase's stored one),
+     read the one column straight from PostgREST now, in parallel with the import. RLS returns
+     only the caller's own row. It only FILLS an empty mirror: refreshProfile() stays the
+     authoritative read (it also clears a name removed elsewhere), and a rename still queued on
+     this device wins. Before auth is ready it repaints the nav and the home greeting, whose
+     pre-auth guess reads the mirror (identity.js chosenNameOf), via `thaiear:name`. */
+  function earlyDispName() {
+    try {
+      if (!window.fetch) return;
+      var s = readStoredSession(), id = readIdentity();
+      var src = (s && s.user && tokenLive(s.access_token)) ? s
+              : ((id && id.user && tokenLive(id.access_token)) ? id : null);
+      if (!src) return;
+      var u = src.user.id;
+      var queued = function () { var c = lsGet('thaiear_name_pending'); return !!(c && c.uid === u); };
+      if (dispNameFor(u) || queued()) return;
+      fetch(SUPABASE_URL + '/rest/v1/profiles?select=display_name&user_id=eq.' + encodeURIComponent(u), {
+        headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + src.access_token }
+      }).then(function (r) { return r.ok ? r.json() : null; }).then(function (rows) {
+        var name = rows && rows[0] && rows[0].display_name;
+        if (!name || dispNameFor(u) || queued()) return;   // none chosen, or the full read got there first
+        var cur = readIdentity();
+        if (!cur || !cur.user || cur.user.id !== u) return;   // signed out or switched meanwhile
+        persistDispName(u, name);
+        trace('name:early');
+        if (window.ThaiEarAuth && window.ThaiEarAuth.isReady) {
+          if (currentUser && currentUser.id === u) { applyChosenName(name); notify(); }
+        } else {
+          try { if (window.ThaiEarNav && window.ThaiEarNav.refresh) window.ThaiEarNav.refresh(); } catch (_) {}
+          try { window.dispatchEvent(new CustomEvent('thaiear:name')); } catch (_) {}
+        }
+      }).catch(function () {});
+    } catch (_) {}
+  }
+  earlyDispName();
+
   var authErr = (function readAuthError() {
     var found = null;
     function scan(s) {
