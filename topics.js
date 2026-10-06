@@ -306,22 +306,22 @@
   const structures = [
     { id: 1, name: "Dâi (ได้)", levels: ['li1'], sentences: 14, page: "grammar-01.html", audio: "GramDai_LI1",
       keywords: ["dai","ได้","can","able","ability","permission","got to","past"] },
-    { id: 2, name: "Maa (มา)", levels: ['li1'], sentences: 10, page: "grammar-02.html", audio: "GramMaa_LI1",
-      keywords: ["maa","มา","come","direction","toward","โทรมา","from"] },
-    { id: 3, name: "Yùu & thîi (อยู่ & ที่)", levels: ['li1'], sentences: 13, page: "grammar-03.html", audio: "GramYuu_LI1", access: "premium",
-      keywords: ["yuu","thii","อยู่","ที่","at","located","still","right now","progressive"] },
-    { id: 4, name: "Ao (เอา)", levels: ['li1'], sentences: 9, page: "grammar-04.html", audio: "GramAo_LI1", access: "premium",
-      keywords: ["ao","เอา","take","bring","want","order","ไว้"] },
-    { id: 5, name: "Gâw (ก็)", levels: ['li1'], sentences: 13, page: "grammar-05.html", audio: "GramGaw_LI1", access: "premium",
+    { id: 2, name: "Maa (มา)", levels: ['li1'], sentences: 9, page: "grammar-02.html", audio: "GramMaa_LI1",
+      keywords: ["maa","มา","come","direction","toward","โทรมา"] },
+    { id: 3, name: "Yùu & thîi (อยู่ & ที่)", levels: ['li1'], sentences: 11, page: "grammar-03.html", audio: "GramYuu_LI1", access: "premium",
+      keywords: ["yuu","thii","อยู่","ที่","at","located","still","right now","progressive","who","that"] },
+    { id: 4, name: "Ao (เอา)", levels: ['li1'], sentences: 7, page: "grammar-04.html", audio: "GramAo_LI1", access: "premium",
+      keywords: ["ao","เอา","take","bring","want","order","ไว้","just","instead"] },
+    { id: 5, name: "Gâw (ก็)", levels: ['li1'], sentences: 12, page: "grammar-05.html", audio: "GramGaw_LI1", access: "premium",
       keywords: ["gaw","ก็","if then","also","too","even so","well","ถ้า"] },
-    { id: 6, name: "Hâi (ให้)", levels: ['li1'], sentences: 13, page: "grammar-06.html", audio: "GramHai_LI1", access: "premium",
-      keywords: ["hai","ให้","give","for","so that","let","make","tell"] },
+    { id: 6, name: "Hâi (ให้)", levels: ['li1'], sentences: 11, page: "grammar-06.html", audio: "GramHai_LI1", access: "premium",
+      keywords: ["hai","ให้","give","for","so that","let","make","tell","ทำให้","cause"] },
     { id: 7, name: "Wái (ไว้)", levels: ['li1'], sentences: 8, page: "grammar-07.html", audio: "GramWai_LI1", access: "premium",
-      keywords: ["wai","ไว้","keep","leave","in advance","for later"] },
-    { id: 21, name: "Loei (เลย)", levels: ['li1'], sentences: 7, page: "grammar-21.html", audio: "GramLoei_LI1", access: "premium",
-      keywords: ["loei","เลย","go ahead","not at all","ไม่เลย","straight on","past","beyond","right away"] },
-    { id: 22, name: "Bpai (ไป)", levels: ['li1'], sentences: 8, page: "grammar-22.html", audio: "GramBpai_LI1", access: "premium",
-      keywords: ["bpai","ไป","go","away","direction","ไปมา","round trip","completive","too","เกินไป"] },
+      keywords: ["wai","ไว้","keep","leave","in advance","for later","another time"] },
+    { id: 21, name: "Loei (เลย)", levels: ['li1'], sentences: 8, page: "grammar-21.html", audio: "GramLoei_LI1", access: "premium",
+      keywords: ["loei","เลย","go ahead","not at all","ไม่เลย","straight on","past","beyond","right away","really","very"] },
+    { id: 22, name: "Bpai (ไป)", levels: ['li1'], sentences: 10, page: "grammar-22.html", audio: "GramBpai_LI1", access: "premium",
+      keywords: ["bpai","ไป","go","away","direction","ไปมา","round trip","completive","too","เกินไป","all over","at the same time","while"] },
     /* ⚠ id 8 "Serial verbs" was DROPPED on 2026-08-27 and there is no grammar-08.html.
        Owner: the sentences "dont actually serialise verbs" in two cases, and
        serialisation "occurs throughout the topic sentences corpus because its so
@@ -329,7 +329,7 @@
        two เผลอ sentences had a real home; the other 13 are in
        SENTENCES_PENDING_A_HOME.md. ⛔ Another deliberate id gap — do not renumber. */
     { id: 9, name: "Already, just & first", levels: ['li1'], sentences: 9, page: "grammar-09.html", audio: "GramTime_LI1", access: "premium",
-      keywords: ["laaeo","phoeng","sia gawn","แล้ว","เพิ่ง","เสียก่อน","already","just","first"] },
+      keywords: ["laaeo","phoeng","sia gawn","แล้ว","เพิ่ง","เสียก่อน","already","just","first","อย่าเพิ่ง","don't yet","and so"] },
     /* ⚠ G11 "But & however" was MERGED INTO THIS UNIT on 2026-08-27 and no longer exists.
        Its แต่…ก็ group carried three examples of what is, in the owner's words, "literally
        just แต่ with ก็ after it", while every other structure in the unit had one — so two
@@ -337,13 +337,13 @@
        they were always adjacent to. ⛔ There is no id 11 and no grammar-11.html; the gap is
        deliberate and ids are frozen, exactly as topic ids are (CLAUDE.md). Display position
        comes from array order, so the eyebrow still counts 1..19 with no hole. */
-    { id: 10, name: "Even though, but & however", levels: ['li1'], sentences: 16, page: "grammar-10.html", audio: "GramEvenThough_LI1", access: "premium",
-      keywords: ["maae waa","tang thii","mai waa ja","dtaae","yang rai gaw dtaam","แม้ว่า","ทั้งที่","ไม่ว่าจะ","แม้แต่","แต่","อย่างไรก็ตาม","แต่ทว่า","even though","no matter","despite","but","however","nevertheless"] },
-    { id: 12, name: "Went and, in vain, by accident", levels: ['li1'], sentences: 11, page: "grammar-12.html", audio: "GramDan_LI1", access: "premium",
+    { id: 10, name: "Even though, but & however", levels: ['li1'], sentences: 12, page: "grammar-10.html", audio: "GramEvenThough_LI1", access: "premium",
+      keywords: ["maae waa","tang thii","mai waa ja","dtaae","yang rai gaw dtaam","แม้ว่า","ทั้งที่","ไม่ว่าจะ","แม้แต่","แต่","อย่างไรก็ตาม","แต่ทว่า","even though","no matter","despite","but","however","nevertheless","ก็จริง","true but"] },
+    { id: 12, name: "Went and, in vain, by accident", levels: ['li1'], sentences: 8, page: "grammar-12.html", audio: "GramDan_LI1", access: "premium",
       keywords: ["dan","utsaa","phloe","ดัน","อุตส่าห์","เผลอ","went and","annoyed","trouble","accidentally","by accident","in vain"] },
-    { id: 13, name: "Gwàa (กว่า)", levels: ['li1'], sentences: 7, page: "grammar-13.html", audio: "GramGwaa_LI1", access: "premium",
-      keywords: ["gwaa","กว่า","than","comparison","by the time","ยิ่งกว่านั้น"] },
-    { id: 14, name: "Gâw dâi & mâi gâw (ก็ได้ & ไม่ก็)", levels: ['li1'], sentences: 7, page: "grammar-14.html", audio: "GramGawDai_LI1", access: "premium",
+    { id: 13, name: "Gwàa (กว่า)", levels: ['li1'], sentences: 6, page: "grammar-13.html", audio: "GramGwaa_LI1", access: "premium",
+      keywords: ["gwaa","กว่า","than","comparison","by the time","ยิ่งกว่านั้น","กว่าจะ","takes","how long"] },
+    { id: 14, name: "Gâw dâi & mâi gâw (ก็ได้ & ไม่ก็)", levels: ['li1'], sentences: 6, page: "grammar-14.html", audio: "GramGawDai_LI1", access: "premium",
       keywords: ["gaw dai","mai gaw","ก็ได้","ไม่ก็","either way","whatever","anyone","or"] },
     { id: 15, name: "Asking yes or no", levels: ['li1'], sentences: 10, page: "grammar-15.html", audio: "GramAsk_LI1", access: "premium",
       keywords: ["mai","rue plao","chai mai","rue yang","rer","ไหม","มั้ย","หรือเปล่า","ใช่ไหม","หรือยัง","เหรอ","question","yes no","right","yet"] },
@@ -353,9 +353,9 @@
        why keeping this one for symmetry was not an option. ⚠ Its 6 sentences are recorded in
        SENTENCES_PENDING_A_HOME.md.
        ⛔ A FOURTH deliberate id gap (8, 11, 15, 16) — ids are frozen, never renumber. */
-    { id: 17, name: "Moving the conversation on", levels: ['li1'], sentences: 8, page: "grammar-17.html", audio: "GramMoveOn_LI1", access: "premium",
+    { id: 17, name: "Moving the conversation on", levels: ['li1'], sentences: 6, page: "grammar-17.html", audio: "GramMoveOn_LI1", access: "premium",
       keywords: ["chang thoe","laaeo gan","waa dtaae","ช่างเถอะ","แล้วกัน","ว่าแต่","never mind","anyway","by the way"] },
-    { id: 18, name: "Because & so (เพราะ…เลย & เนื่องจาก…จึง)", levels: ['li1'], sentences: 6, page: "grammar-18.html", audio: "GramPhraw_LI1", access: "premium",
+    { id: 18, name: "Because & so (เพราะ…เลย & เนื่องจาก…จึง)", levels: ['li1'], sentences: 5, page: "grammar-18.html", audio: "GramPhraw_LI1", access: "premium",
       keywords: ["phraw","nueang jaak","เพราะ","เนื่องจาก","because","reason","จึง","เลย"] },
     { id: 19, name: "Khûen & long (ขึ้น & ลง)", levels: ['li1'], sentences: 5, page: "grammar-19.html", audio: "GramMaakKhuen_LI1", access: "premium",
       keywords: ["khuen","long","khuen maa","ขึ้น","ลง","ขึ้นมา","มากขึ้น","น้อยลง","more","less","better","suddenly","came to mind"] },
