@@ -253,7 +253,7 @@ function tierFor(file, env) {
 
 }
 
-function json(obj, status) {
+export function json(obj, status) {
   return new Response(JSON.stringify(obj), {
     status,
     headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
@@ -285,7 +285,7 @@ async function isSubscribed(env, token, uid) {
    pure waste: 47 clips cost 188 HMACs where 4 will do. Single-file callers omit it and get the
    old behaviour. The date is captured with the key so a batch that straddles midnight UTC can't
    sign with a stamp that disagrees with its own credential scope. */
-async function signerFor(env) {
+export async function signerFor(env) {
   const region = 'auto', service = 's3';
   const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, ''); // YYYYMMDDTHHMMSSZ
   const dateStamp = amzDate.slice(0, 8);
@@ -295,7 +295,7 @@ async function signerFor(env) {
   };
 }
 
-async function presignR2Get(env, key, expires, signer) {
+export async function presignR2Get(env, key, expires, signer) {
   const region = 'auto', service = 's3';
   const host = env.R2_ACCOUNT_ID + '.r2.cloudflarestorage.com';
   const bucket = env.R2_PREMIUM_BUCKET;

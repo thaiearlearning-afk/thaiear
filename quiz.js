@@ -75,7 +75,14 @@
     { id: 4, key: 'speak', name: 'Speak Thai', ds: 'See English, say it aloud, mark yourself',
       icon: ICONS.speak, step: 5 }
   ];
-  function quizById(id) { for (var i = 0; i < QUIZZES.length; i++) if (QUIZZES[i].id === id) return QUIZZES[i]; return null; }
+  var vaultNamed = false;
+  function vaultNames() {
+    var v = VT(), q = v && v.ui && v.ui.quiz;
+    if (!q || vaultNamed) return;
+    vaultNamed = true;
+    QUIZZES.forEach(function (x) { var u = q[String(x.id)]; if (u) { x.name = u.name; x.ds = u.ds; } });
+  }
+  function quizById(id) { vaultNames(); for (var i = 0; i < QUIZZES.length; i++) if (QUIZZES[i].id === id) return QUIZZES[i]; return null; }
 
   /* ── §3A.1a structural exclusions ──────────────────────────────────────────────────────── */
   var MIN_CHIPS_Q2 = 3;        /* owner: "less than 3 chips is fine" — 15 sentences corpus-wide */
@@ -228,6 +235,16 @@
 
   /* ── small helpers ─────────────────────────────────────────────────────────────────────── */
   function T() { return window.ThaiEarTopic || null; }
+  /* THE ALLOW-LISTED AREA (player.js cfg.vault). Every branch below is `if (VT())`, so a public
+     page runs exactly as before. Its quiz names, subtitles and prompts come from the PRIVATE data
+     (VT().ui) — the public code never names the area's language. */
+  function VT() { var t = T(); return (t && t.vault) || null; }
+  function VUI(k, d) { var v = VT(); return (v && v.ui && v.ui[k] != null) ? v.ui[k] : d; }
+  /* A page that hosts several units on ONE path (the area does) names its unit in cfg.quizUnit. */
+  function pageUnit() {
+    var t = T();
+    return (t && t.quizUnit) || location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
+  }
   function QD() { var t = T(); return (t && t.quiz) || {}; }
   function store() { return window.ThaiEarQuizStore || null; }
   /* Run fn once the settings store exists, or after STORE_WAIT_MS if it never does. Immediate when
@@ -1091,6 +1108,8 @@
   function unitLabel(key) {
     var T = window.ThaiEarTopics;
     if (key === ctx.unit && ctx.unitName) return ctx.unitName;
+    var vn = VT() && VT().names;
+    if (vn && vn[key]) return vn[key];
     /* ⭐ NAME THE PLAYLIST (owner, 2026-09-22: "it just says 'a playlist' rather than naming
        the playlist i used to get the result - can we get specific names going in there").
        ⚠ THE ORIGINAL REASONING WAS HALF RIGHT: a pl: key genuinely resolves to nothing through
@@ -1486,6 +1505,14 @@
        TITLE off the chip's centre line and the two stopped lining up. The count is not lost —
        the length row below says "All (N)". */
     var html = head(q.name, '', false, q.icon);
+    var vq = VT();
+    if (vq && vq.setLang) {
+      var ql = VUI('quizLang', {});
+      html += '<div class="mgroup"><p class="mlab">' + esc(VUI('quizLangLabel', 'Language')) + '</p><div class="radios">'
+        + radio('vlang', 'th', vq.glossKey, ql.th || 'th', '')
+        + radio('vlang', 'en', vq.glossKey, ql.en || 'en', '')
+        + '</div></div>';
+    }
 
     html += '<div class="mgroup"><p class="mlab">How many questions</p><div class="segs">' + segs + '</div></div>';
 
@@ -1506,7 +1533,7 @@
     /* ⛔ ALL FOUR QUIZZES, not just the two production ones — see curScript(). Every quiz puts
        Thai on the screen somewhere (quiz 1 and 4 in the reveal, quiz 3 in the options as well),
        so every quiz needs to be told how to write it. */
-    html += '<div class="mgroup"><p class="mlab">Thai script</p><div class="radios">'
+    if (!VT()) html += '<div class="mgroup"><p class="mlab">Thai script</p><div class="radios">'
       + radio('script', 'both', p.script, 'Thai + transliteration', '')
       + radio('script', 'thai', p.script, 'Thai only', 'the hard mode')
       + radio('script', 'tl',   p.script, 'Transliteration only', "if you can't read the script yet")
@@ -1585,6 +1612,9 @@
     });
     wireFontGroup();
     sheet.querySelector('.exline').onclick = function () { openExclusions(qid); };
+    sheet.querySelectorAll('input[name=vlang]').forEach(function (el) {
+      el.addEventListener('change', function () { var v = VT(); if (v && v.setLang && el.checked) v.setLang(el.value); });
+    });
     sheet.querySelector('.startbtn').onclick = function () {
       var cur = readPrefs(); savePrefs(qid, cur); start(qid, cur);
     };
@@ -2819,7 +2849,9 @@
       return x.th !== w.th && headGloss(x.en) !== headGloss(w.en) && x.pos === w.pos;
     })).concat(rank(list.filter(function (x) {
       return x.th !== w.th && headGloss(x.en) !== headGloss(w.en) && x.pos !== w.pos;
-    }))).concat(rank(pool.slice()));
+    }))).concat(rank(VT() ? pool.filter(function (x) {
+      return x.th !== w.th && headGloss(x.en) !== headGloss(w.en);
+    }) : pool.slice()));
 
     var opts = [{ th: w.th, en: w.en, tl: w.tl, ok: 1 }];
     twins.forEach(function (t) { opts.push({ th: t.th, en: t.en, tl: t.tl, ok: 1 }); });
@@ -2938,6 +2970,18 @@
       + (b.sub ? '<span class="o-tl">' + esc(b.sub) + '</span>' : '');
   }
 
+  /* The area's additions to the Vocab reveal (cfg.vault): its cards carry their resolved highlight
+     (`hl`), a grammar line (`xt`) and every sentence they appear in. Kept OUT of vocabReveal(),
+     which harnesses read on its own. Each returns the public behaviour (null / '') off the area. */
+  function vaultHits(w) {
+    if (!VT() || !Array.isArray(w.hl)) return null;
+    var o = {}; w.hl.forEach(function (x) { o[x] = true; }); return o;
+  }
+  function vaultExtra(w) { return (VT() && w.xt) ? '<p class="tq-say">' + esc(w.xt) + '</p>' : ''; }
+  function vaultWhere(w) {
+    if (!VT() || !w.appears || !w.appears.length) return '';
+    return ' ' + esc(w.appears[0]) + (w.appears.length > 1 ? ' · also ' + esc(w.appears.slice(1).join(', ')) : '');
+  }
   function vocabReveal(w, ok) {
     var s = sentByNum(w.num) || (function () {
       /* find any sentence containing the word, so the context is always real */
@@ -2954,6 +2998,8 @@
        So, in order: the chip that IS the word; else the contiguous run that spells it; else the
        one chip that contains it. `test_quiz_distractors.py` asserts every published card resolves. */
     var hits = (function () {
+      var vh = (typeof vaultHits === 'function') ? vaultHits(w) : null;
+      if (vh) return vh;
       var ch = s ? chipsOf(s).map(function (g) { return g[0]; }) : [], out = {}, i, j, acc;
       for (i = 0; i < ch.length; i++) if (ch[i] === w.th) { out[i] = true; return out; }
       for (i = 0; i < ch.length; i++) {
@@ -2973,6 +3019,7 @@
     function draw(first) {
     var html = '<div class="reveal">';
     if (w.lit) html += '<p class="tq-say"><b>Literally:</b> ' + esc(w.lit) + '</p>';
+    if (typeof vaultExtra === 'function') html += vaultExtra(w);
     if (s) {
       /* ⭐ THE BREAKDOWN, NOT JUST THE SENTENCE (owner, 2026-09-20: "you should see the gloss
          chip breakdown for the sentence as well in the answer. right now its just thai +
@@ -2983,7 +3030,7 @@
          ⚠ Under the English, not above it: read the sentence, read what it means, then take it
          apart. Putting the parts first makes the reveal open on a wall of small type. */
       var sb = scriptBits(stripBars(s.thai), stripBars(s.translit), curScript());
-      html += '<p class="mlab">Appears in</p>'
+      html += '<p class="mlab">Appears in' + ((typeof vaultWhere === 'function') ? vaultWhere(w) : '') + '</p>'
         + '<p class="thaibig">' + esc(sb.main) + '</p>'
         + (sb.sub ? '<p class="tl">' + esc(sb.sub) + '</p>' : '')
         + '<p class="cen">' + esc(s.english) + '</p>'
@@ -3024,7 +3071,7 @@
        same fault here, and marking yourself against it is if anything harsher. */
     render(bar()
       + promptFor(s)
-      + '<p class="tq-say">Say it in Thai, out loud. Then reveal and mark yourself — it is your own call.</p>'
+      + '<p class="tq-say">' + esc(VUI('say', 'Say it in Thai, out loud. Then reveal and mark yourself — it is your own call.')) + '</p>'
       + '<button class="startbtn t-reveal" type="button">Reveal answer</button>'
       + '<div class="t-rev"></div>' + foot());
     wireBar(); wireFoot();
@@ -3037,7 +3084,7 @@
         d.innerHTML = '<div class="reveal">'
           + '<p class="thaibig">' + esc(b.main) + '</p>'
           + (b.sub ? '<p class="tl">' + esc(b.sub) + '</p>' : '')
-          + '<button class="playbtn" type="button"><span class="tri"></span>Play the Thai</button>'
+          + '<button class="playbtn" type="button"><span class="tri"></span>' + esc(VUI('play', 'Play the Thai')) + '</button>'
           + '<div class="chips">' + chipsOf(s).map(function (g) { return chipHtml(g); }).join('') + '</div>'
           + '<div class="tq-selfmark">'
           + '<button type="button" class="tq-got">I got it</button>'
@@ -3087,7 +3134,7 @@
        the question you came from. Only the QUESTION COUNT and the question MIX cannot, because
        the run they describe is already under way. */
     var html = head('Options', 'Most of these apply straight away');
-    html += '<div class="mgroup"><p class="mlab">Thai script</p><div class="radios">'
+    if (!VT()) html += '<div class="mgroup"><p class="mlab">Thai script</p><div class="radios">'
       + radio('script', 'both', p.script, 'Thai + transliteration', '')
       + radio('script', 'thai', p.script, 'Thai only', '')
       + radio('script', 'tl',   p.script, 'Transliteration only', '')
@@ -3106,7 +3153,7 @@
        three-way and the SITE pill does not appear in here.
        ⚠ The Modern Thai font stays: it is genuinely site-wide and orthogonal — it says which
        FACE draws the Thai, not whether there is any. */
-    html += '<div class="mgroup"><p class="mlab">Display</p>'
+    if (!VT()) html += '<div class="mgroup"><p class="mlab">Display</p>'
       + '<label class="checkrow"><input type="checkbox" class="c-tf"'
       + (thaiModern() ? ' checked' : '') + '><span>Modern Thai font</span></label></div>';
     /* ⛔ The exclude control is NOT in this menu any more — it is a footer on the
@@ -3238,6 +3285,11 @@
     return 'topic';
   }
   function quizzesFor(kind) {
+    var v = VT();
+    if (v && Array.isArray(v.quizzes)) {
+      vaultNames();
+      return QUIZZES.filter(function (q) { return v.quizzes.indexOf(q.id) >= 0; });
+    }
     return QUIZZES.filter(function (q) { return !(q.topicOnly && kind !== 'topic'); });
   }
 
@@ -3270,7 +3322,7 @@
     var t = T();
     if (!t || !(t.sentences || []).length || !t.quiz) return;   /* no authored data: no block */
 
-    var unit = opts.unit || location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
+    var unit = opts.unit || pageUnit();
     var kind = kindOf(unit);
     var vis = quizzesFor(kind);
     /* ⛔⛔ THREE TILES ARE BARS, NOT A 2×2 WITH A HOLE (§9.2a, owner 2026-09-21). The `three`
@@ -3448,7 +3500,7 @@
     /* ⚠ The SAME context the entry block builds (unitName from the h1, not document.title —
        the <title> is the SEO pattern "<Name> in Thai — Audio Phrases" and would put that in the
        quiz header). Keep these two in step. */
-    var unit = location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
+    var unit = pageUnit();
     window.ThaiEarQuiz.open({
       unit: unit,
       unitName: (document.querySelector('h1') || {}).textContent || document.title,
@@ -3485,7 +3537,7 @@
     a.addEventListener('click', function (e) {
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button > 0) return;
       e.preventDefault();
-      var unit = location.pathname.replace(/^.*\//, '').replace(/\.html$/, '');
+      var unit = pageUnit();
       /* ⚠ The SAME context bootFromUrl() builds — unitName from the h1, never document.title,
          which is the SEO pattern "<Name> in Thai — Audio Phrases". Keep the three in step. */
       window.ThaiEarQuiz.open({
@@ -3576,7 +3628,7 @@
       opts = opts || {};
       if (!T() || !(T().sentences || []).length) return false;
       var unit = opts.unit
-        || (location.pathname.replace(/^.*\//, '').replace(/\.html$/, '') || 'unknown');
+        || pageUnit() || 'unknown';
       /* ⚠ Set BEFORE the first render, because openPicker()/openMenu() call show() -> pushEntry()
          on their way out. Deciding after would push the duplicate this flag exists to prevent. */
       urlEntry = !!opts.fromUrl;

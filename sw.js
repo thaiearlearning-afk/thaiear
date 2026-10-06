@@ -33,7 +33,7 @@
    this is LOAD-BEARING, not just tidy: change a precached file without bumping
    and clients keep serving the old copy.
    ============================================================ */
-const VERSION = 'v762';   // v762: Reddit conversion tracking — attrib.js reads Reddit's click id (rdt_cid) on /start like the gclid (stripped for UK/EEA/CH server-side); privacy.html names Reddit Ads. Both are precached.
+const VERSION = 'v763';   // v763: an allow-listed area (functions/api/vault.js, v.html + v.js precached as a shell, never its data; player/quiz cfg.vault; auth.js privateWipe + its own quiz store; topics-page entry). v762: Reddit conversion tracking — attrib.js reads Reddit's click id (rdt_cid) on /start like the gclid (stripped for UK/EEA/CH server-side); privacy.html names Reddit Ads. Both are precached.
                           // v759: W75 follow-up — v758's slowed-tap stretch never ran: dynStretch was declared INSIDE dynBuildSessionFor's promise callback, so sentSlowSrc threw "dynStretch is not defined" and fell back to the browser's robotic stretch (measured live with ?dbg=1; the owner heard no change). The stretch block is hoisted, unchanged, to the top level; test_dyn_speed now parses player.js and requires everything sentSlowSrc calls to be in scope (fails on v758). player.js is precached.
                           // v758: W75 — a slowed sentence TAP is stretched by dynStretch (our code, the one the dyn session uses) and played at rate 1, instead of <audio>.playbackRate: Chromium's built-in stretch sounded robotic (Chrome, Edge, the Android app; iPhone Safari was fine). Confirmed by ear on a side-by-side localhost page. Falls back to the browser rate on any failure. player.js is precached.
                           // v757: quiz menu settings save the moment they change (owner on v756: "if i set to random and 5, then do backswipe, then re enter, its back to default settings" — they were written only by Start); the "keeps the trickiest two" caption removed from Decoy tiles. quiz.js is precached.
@@ -1515,6 +1515,11 @@ const PRECACHE = [
   '/account.html', '/subscribe.html', '/join.html', '/about.html', '/guide.html', '/socials.html', '/app.html',
   '/progress.html',
   '/privacy.html', '/terms.html', '/refunds.html', '/deleted.html',
+  /* The allow-listed area's SHELL and controller (functions/api/vault.js). Public, holding nothing
+     private — so it opens offline for a downloaded unit. ⛔ Its data and audio are never precached:
+     /api/ is never cached here, and the only offline copy is the download (thaiear-dl
+     /v-data/…, wiped by auth.js privateWipe). test_vault.js §6. */
+  '/v.html', '/v.js',
   /* The /topics landing + its five difficulty bands (2026-08-21). They are the navigation
      spine of the redesigned site — every route to a topic page runs through one of them —
      so they must open offline like the rest of the shell. Their cards are static HTML, so

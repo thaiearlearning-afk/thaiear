@@ -1523,3 +1523,10 @@
 .tp-newhere-t { flex: 1 1 0; min-width: 0; }
 .tp-newhere-go { font-size: 20px; line-height: 1; flex-shrink: 0; }
 .tp-newhere[hidden], .tp-newhere.tp-newhere-off { display: none; }
+
+/* The allow-listed area's entry, under the fighter (topics-page.js, end of file). */
+.v-entry { display: inline-block; margin: 14px 0 0; padding: 8px 18px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--accent);
+  font-family: 'Sarabun', 'Inter', system-ui, sans-serif; font-size: calc(16px * var(--te-ui, 1));
+  font-weight: 500; text-decoration: none; }
+.v-entry:hover { border-color: var(--accent); }

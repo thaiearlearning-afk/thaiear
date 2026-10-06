@@ -344,7 +344,77 @@
       .catch(function () { reseeding = false; return false; });
   }
 
+  /* ⛔ THE ALLOW-LISTED AREA NEVER SURVIVES A SIGN-OUT OR A CHANGE OF ACCOUNT (functions/api/vault.js).
+     Its pages, data, clips, signed urls, plays, results and settings are one person's; on a shared
+     device the next account must find nothing. Two triggers, and NOT a third:
+       · signOut()'s forceLocal — a deliberate sign-out;
+       · notify() seeing a signed-in user who is not the one the area's data was saved for (`te_v_uid`).
+     ⚠ NOT a bare null session: supabase emits one when an expired token cannot refresh OFFLINE, which is
+       not a sign-out (see refreshSubscription), and wiping there would delete downloads mid-journey.
+     Everything the area writes is recognisable by NAME, so this needs no list kept in step:
+       localStorage `te_v_*` · download-manifest prefixes `X<n>` · te_mint_v1 / thaiear-audio-dl entries for
+       clips `X<n>_S9nnnn_<LANG>.mp3` · thaiear-dl entries under `/v`. test_vault.js pins the shapes. */
+  var VCLIP_RE = /X\d_S9\d{4}_(DE|EN|TH)\.mp3/;
+  // dyn settings, exclusions, session metas and the area's own 'apply to all' (player.js dynSetKey,
+  // DYN_EXCL_KEY, dynMetaLsKey, dynGdefKey): the namespace is the unit's prefix, X<n>, or X_ for defaults.
+  var VDYN_KEY_RE = /^te_dyn_[a-z]+_X(\d|_)/;
+  function privateWipe() {
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (k && (k.indexOf('te_v_') === 0 || VDYN_KEY_RE.test(k))) localStorage.removeItem(k);
+      }
+      var man = JSON.parse(localStorage.getItem('thaiear_offline') || 'null');
+      if (man && typeof man === 'object') {
+        var hit = false;
+        Object.keys(man).forEach(function (p) { if (/^X\d$/.test(p)) { delete man[p]; hit = true; } });
+        if (hit) localStorage.setItem('thaiear_offline', JSON.stringify(man));
+      }
+      var mint = JSON.parse(localStorage.getItem('te_mint_v1') || 'null');
+      if (mint && mint.m) {
+        var cut = false;
+        Object.keys(mint.m).forEach(function (f) { if (VCLIP_RE.test(f)) { delete mint.m[f]; cut = true; } });
+        if (cut) localStorage.setItem('te_mint_v1', JSON.stringify(mint));
+      }
+    } catch (_) {}
+    /* The Android app keeps downloads and built sessions as FILES, not in Cache Storage
+       (player.js offlineDir / dynNativeFile): offline/X<n>/… and dyn-X<n>-….  */
+    try {
+      var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+      if (FS) {
+        ['X1', 'X2', 'X3', 'X4', 'X5', 'X6'].forEach(function (p) {
+          FS.rmdir({ directory: 'DATA', path: 'offline/' + p, recursive: true }).catch(function () {});
+        });
+        FS.readdir({ path: '', directory: 'DATA' }).then(function (r) {
+          ((r && r.files) || []).forEach(function (f) {
+            var n = (typeof f === 'string') ? f : (f && f.name);
+            if (n && /^dyn-X\d-/.test(n)) FS.deleteFile({ path: n, directory: 'DATA' }).catch(function () {});
+          });
+        }).catch(function () {});
+      }
+    } catch (_) {}
+    try {
+      if (!window.caches) return;
+      ['thaiear-dl', 'thaiear-audio-dl'].forEach(function (name) {
+        caches.open(name).then(function (c) {
+          return c.keys().then(function (reqs) {
+            reqs.forEach(function (r) {
+              var p = '';
+              try { p = new URL(r.url).pathname; } catch (_) { return; }
+              if (VCLIP_RE.test(p) || p === '/v' || p === '/v.html' || p.indexOf('/v-') === 0 ||
+                  /^\/dyn\/X\d\//.test(p)) c.delete(r).catch(function () {});
+            });
+          });
+        }).catch(function () {});
+      });
+    } catch (_) {}
+  }
+
   function notify() {
+    try {
+      var vu = localStorage.getItem('te_v_uid');
+      if (vu && currentUser && currentUser.id && vu !== currentUser.id) privateWipe();
+    } catch (e) {}
     try { if (window.ThaiEarNav && window.ThaiEarNav.refresh) window.ThaiEarNav.refresh(); } catch (e) {}
     try { window.dispatchEvent(new CustomEvent('thaiear:auth', { detail: currentUser })); } catch (e) {}
   }
@@ -1828,6 +1898,7 @@
         // that may log a user out now, so it has to be unambiguous. Without it the offline
         // fallback would faithfully sign them straight back in.
         clearIdentity();
+        privateWipe();   // the allow-listed area never survives a sign-out — see privateWipe()
         notify();   // re-render nav + account page as logged-out
       };
       trace('signOut:start');
@@ -2582,8 +2653,14 @@
      device's account's data in every ordinary case); a signed-out reader does not adopt it.
      ⚠ readUid(), not uid(): auth resolves after first paint, and a quiz opened at load must read
      the right account's settings before then. Harness: test_quiz_sync.js §L. */
-  var QZ_LS   = 'thaiear_quiz_v1';        /* { uid, scores, prefs, excl, stats, rej, outbox } */
-  var QZ_LS_ANON = 'thaiear_quiz_anon_v1';   /* signed out: same shape, no uid, no outbox use */
+  /* ⛔ THE ALLOW-LISTED AREA HAS ITS OWN QUIZ STORE (functions/api/vault.js): same code, its OWN
+     localStorage key, NEVER queued, flushed or pulled — so its results never reach quiz_scores, the
+     Progress page or any main-site results panel, and the main site's never appear in it. A page
+     opts in by setting window.ThaiEarQuizScope = 'v' BEFORE this file runs (v.js does, in the head).
+     The `te_v_` keys are wiped by privateWipe() with the rest of the area. */
+  var QZ_V = (function () { try { return window.ThaiEarQuizScope === 'v'; } catch (_) { return false; } })();
+  var QZ_LS   = QZ_V ? 'te_v_quiz' : 'thaiear_quiz_v1';        /* { uid, scores, prefs, excl, stats, rej, outbox } */
+  var QZ_LS_ANON = QZ_V ? 'te_v_quiz_anon' : 'thaiear_quiz_anon_v1';   /* signed out: same shape, no uid, no outbox use */
   var qzCache = null;
   var qzCacheUid = null;                  /* whose blob qzCache is; null = signed out */
   var qzFlushing = false;
@@ -2661,7 +2738,7 @@
     });
   }
   /* ⛔ Signed out: the change stays on this device only (W72 — see QZ_LS). */
-  function qzQueue(op) { var d = qzLoadLocal(); if (!qzCacheUid) return; d.outbox.push(op); qzSave(); qzFlush(); }
+  function qzQueue(op) { if (QZ_V) return; var d = qzLoadLocal(); if (!qzCacheUid) return; d.outbox.push(op); qzSave(); qzFlush(); }
 
   function qzSend(op, uid) {
     if (op.k === 'score') {
@@ -2762,6 +2839,7 @@
   }
 
   function qzFlush() {
+    if (QZ_V) return Promise.resolve(false);   // the area's store never syncs — see QZ_V
     var d = qzLoadLocal();
     if (qzFlushing || !client || !currentUser || !d.outbox.length) return Promise.resolve(false);
     /* ⛔ Only this account's queue, ever (W72): the blob in hand must be the signed-in user's. */
@@ -3052,7 +3130,7 @@
          stats   the account counts PLUS the deltas still queued (they are not on the server yet)
        Harness: test_quiz_sync.js. */
     pull: function () {
-      if (!client || !currentUser) return Promise.resolve(false);
+      if (QZ_V || !client || !currentUser) return Promise.resolve(false);
       var uid = currentUser.id;
       var tries = 0;
       function read() {

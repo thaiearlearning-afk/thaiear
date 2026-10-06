@@ -1111,10 +1111,13 @@
              ' data-tier="' + access + '">' +
       (opts.eq === false ? ''
         : '<span class="te-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>') +
-      '<div class="topic-card-top">' + pill + '</div>' +
+      /* opts.pill === false: no tier chip (a unit outside the public tiers — see opts.href). */
+      '<div class="topic-card-top">' + (opts.pill === false ? '' : pill) + '</div>' +
       /* The stretched link. Its text is the topic name, so the anchor still carries real link
          text for a crawler — the SSR property the old <a>-wrapped card had. */
-      '<a class="topic-card-link" href="' + cardEsc(hrefFor(u.page)) + '">' +
+      /* opts.href: a caller-built CLEAN link for a unit that is not a page of its own (several
+         units served from one path); the caller owns its cleanliness, exactly as hrefFor() does. */
+      '<a class="topic-card-link" href="' + cardEsc(opts.href || hrefFor(u.page)) + '">' +
         '<span class="topic-name">' + cardEsc(u.name) + '</span></a>' +
       '<div class="topic-meta-row"><span class="topic-sent-count">' + count + '</span></div>' +
       /* Ships EMPTY on every card and is filled at runtime — see gen_topics_pages.js's note.
@@ -1132,7 +1135,7 @@
          ⚠ "Reserve, do not grow into it": every card that gets a strip gets it at the same
          height whether or not anyone has ever taken a quiz, so a grid of cards cannot end up
          with one card 16px taller than its neighbours (the 2026-08-22 caption measurement). */
-      (opts.quiz ? quizStripHtml(u) : '') +
+      (opts.quiz ? quizStripHtml(u, opts) : '') +
     '</div>';
   }
 
@@ -1252,10 +1255,11 @@
      topics-page.js decorate() inserts THIS SAME STRING into a card that came from a generated
      page. Two renderers is the bug §9.1 exists to prevent — a control added to one of them
      vanishes on the other, silently. */
-  function quizStripHtml(u) {
+  function quizStripHtml(u, o) {
     var page = (u && u.page) || '';
-    var cells = QUIZ_STRIP_IDS.filter(function (id) {
-      return id !== 3 || quizHasVocab(page);
+    /* o.quizIds / o.quizHref: a unit with its own quiz set and no page of its own (cardHtml opts). */
+    var cells = ((o && o.quizIds) || QUIZ_STRIP_IDS).filter(function (id) {
+      return (o && o.quizIds) || id !== 3 || quizHasVocab(page);
     }).map(function (id) {
       /* ⛔ THE EMPTY STATE IS AN EM DASH, NEVER 0% (owner, 2026-09-19). 0% reads as a failed
          attempt when it means "never tried", which on a newly shipped feature is every card. */
@@ -1278,7 +1282,7 @@
        query string it silently does nothing and looks fixed.
        ⛔ NO ARROW (owner, 2026-09-23, choosing variant D "but no arrow"). A chevron was mocked
        up at the row's right edge and rejected; do not add one back. */
-    var href = hrefFor(page) + '?quiz=menu';
+    var href = (o && o.quizHref) || (hrefFor(page) + '?quiz=menu');
     return '<a class="topic-quiz" href="' + cardEsc(href) + '"' +
            ' aria-label="Quiz yourself on ' + cardEsc((u && u.name) || 'this unit') + '">' +
            '<span class="tqs-l">Quiz yourself</span>' +

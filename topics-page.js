@@ -553,3 +553,63 @@
   q.addEventListener('search', run);          // the native clear (Esc / the X on some browsers)
   if (clear) clear.addEventListener('click', function () { q.value = ''; run(); q.focus(); });
 })();
+
+/* ── THE ALLOW-LISTED AREA'S ENTRY (functions/api/vault.js, v.js) ──────────────────────────────
+   Under the fighter on the topics page, for an allowed account only. Its label comes from the
+   PRIVATE data, never from this file. Nothing is requested signed out; a refused account is
+   remembered for a day (te_x_chk) so an ordinary visit does not ask again; an allowed one is
+   remembered on the device (te_v_entry, wiped with the area by auth.js privateWipe), so the entry
+   is there offline too. */
+(function () {
+  'use strict';
+  var KEY = 'te_v_entry', NO = 'te_x_chk', DAY = 86400000;
+  var LOCAL = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
+  var busy = false, doneFor = null;
+  function get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } }
+  function put(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} }
+  function paint(label) {
+    var block = document.querySelector('.fluency-block');
+    if (!block) return;
+    var a = block.querySelector('.v-entry');
+    if (!label) { if (a) a.parentNode.removeChild(a); return; }
+    if (!a) {
+      a = document.createElement('a');
+      a.className = 'v-entry';
+      a.href = LOCAL ? 'v.html' : 'v';
+      block.appendChild(a);
+    }
+    if (a.textContent !== label) a.textContent = label;
+  }
+  function check() {
+    var A = window.ThaiEarAuth;
+    if (!A || !A.isReady) return;
+    var u = A.getUser && A.getUser();
+    if (!u || !u.id) { paint(null); doneFor = null; return; }
+    var have = get(KEY);
+    paint(have && have.u === u.id ? have.label : null);
+    if (busy || doneFor === u.id) return;
+    var no = get(NO);
+    if (no && no.u === u.id && Date.now() - no.t < DAY) { doneFor = u.id; return; }
+    var tok = A.getAccessToken && A.getAccessToken();
+    if (!tok || navigator.onLine === false) return;
+    busy = true;
+    fetch('/api/vault?q=me', { headers: { Authorization: 'Bearer ' + tok }, cache: 'no-store' })
+      .then(function (r) {
+        if (r.status === 404) return { refused: true };
+        return r.ok ? r.json() : null;
+      })
+      .then(function (me) {
+        busy = false;
+        if (!me) return;                                   // a network fault: keep what we had
+        doneFor = u.id;
+        if (me.refused || !me.label) { put(KEY, null); put(NO, { u: u.id, t: Date.now() }); paint(null); return; }
+        put(NO, null);
+        put(KEY, { u: u.id, label: me.label });
+        try { localStorage.setItem('te_v_uid', u.id); } catch (_) {}
+        paint(me.label);
+      })
+      .catch(function () { busy = false; });
+  }
+  window.addEventListener('thaiear:auth', check);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', check); else check();
+})();
