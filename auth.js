@@ -273,7 +273,11 @@
     } catch (_) { return null; }
   }
   // Mirror a live session into our own store. Called on every auth resolution that has a user.
-  function writeIdentity(session) {
+  /* `pending` (2026-10-06): a record written from a Google return's URL BEFORE supabase has checked
+     it (stashUrlSession). It carries through a restore (the boot path re-writes the record it
+     restored) and is cleared by the first write of a session supabase itself produced. A pending
+     record supabase REJECTS is removed (dropPending), so a forged link cannot leave anyone signed in. */
+  function writeIdentity(session, pending) {
     try {
       var u = session && session.user;
       if (!u) return;
@@ -281,7 +285,8 @@
         user: u,
         access_token: session.access_token || null,
         refresh_token: session.refresh_token || null,
-        at: Date.now()
+        at: Date.now(),
+        pending: !!(pending || session.pending) || undefined
       }));
       localStorage.removeItem(SIGNED_OUT_KEY);
     } catch (_) {}
@@ -329,6 +334,24 @@
 
   var reseeding = false;
   var restoredFromIdentity = false;   // true while the app is running on OUR record, not supabase's
+  /* Did the server REFUSE the tokens (as opposed to the network failing)? Only a refusal may drop a
+     pending record; a network failure keeps it for the retry ('online', next load). */
+  function isRejection(e) {
+    if (!e) return false;
+    var st = Number(e.status);
+    return (st >= 400 && st < 500) || e.name === 'AuthInvalidTokenResponseError';
+  }
+  function dropPending() {
+    var cur = readIdentity();
+    if (!cur || !cur.pending) return;
+    clearIdentity();
+    trace('pending:dropped');
+    if (restoredFromIdentity) {
+      restoredFromIdentity = false;
+      currentSession = null; currentUser = null;
+      notify();
+    }
+  }
   function reseedSession() {
     if (reseeding || !client) return Promise.resolve(false);
     var id = readIdentity();
@@ -338,15 +361,22 @@
       .then(function (r) {
         reseeding = false;
         var s = r && r.data && r.data.session;
+        trace('reseed', { ok: s ? 'y' : 'n', e: (r && r.error) ? errTag(r.error) : '' });
         if (s) {
           writeIdentity(s);
           restoredFromIdentity = false;   // supabase owns a real session again
           currentSession = s;             // so getAccessToken() stops handing out the stale token
           return true;
         }
+        if (id.pending && isRejection(r && r.error)) dropPending();
         return false;
       })
-      .catch(function () { reseeding = false; return false; });
+      .catch(function (e) {
+        reseeding = false;
+        trace('reseed', { ok: 'throw', e: errTag(e) });
+        if (id.pending && isRejection(e)) dropPending();
+        return false;
+      });
   }
 
   /* ⛔ THE ALLOW-LISTED AREA NEVER SURVIVES A SIGN-OUT OR A CHANGE OF ACCOUNT (functions/api/vault.js).
@@ -3263,6 +3293,46 @@
         code: /[?&]code=/.test(_lq) ? 'y' : 'n', err: /error=/.test(_lh + _lq) ? 'y' : 'n', w: displayTag() });
     }
   } catch (_) {}
+
+  /* ⭐ KEEP A GOOGLE RETURN'S TOKENS THE MOMENT THEY LAND (owner, 2026-10-06, iPhone PWA).
+     MEASURED: Google returned to /account with the implicit-flow tokens (`landing tokens=y`) and then
+     nothing happened for ~7 s — the session waits on supabase-js (an esm.sh import, then its own
+     server check). The page still read "Log in", the owner tapped again, leaving the page aborted the
+     wait, and the tokens were lost. The "Use another account" + passkey route hit it every time; the
+     account-picker route was fast enough to escape it.
+     So, synchronously and before the import: decode the returned access token (no verification —
+     that is the server's job, and it still does it) and write OUR identity record, marked PENDING.
+       · identity.js now reads the visitor as signed in, so nav and pages stop saying "Log in";
+       · if supabase-js is slow, the 1.2 s boot fallback restores from this record and re-seeds;
+       · if the page is left mid-wait, the next load restores and re-seeds — nothing is lost;
+       · if supabase REFUSES the tokens, dropPending() removes the record (a forged link cannot leave
+         anyone looking signed in); a network failure keeps it for the retry.
+     ⚠ The URL is NOT touched: supabase-js's own detectSessionInUrl still reads it, and on the fast
+     path it wins exactly as before. test_auth_url_stash.js; AUTH_SIGNIN_INTERMITTENT.md §0. */
+  function stashUrlSession() {
+    try {
+      var h = String(location.hash || '').replace(/^#/, '');
+      if (h.indexOf('access_token=') === -1 || /(^|&)error(_code|_description)?=/.test(h)) return false;
+      var hp = new URLSearchParams(h);
+      var at = hp.get('access_token'), rt = hp.get('refresh_token');
+      if (!at || !rt) return false;
+      var seg = String(at.split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/');
+      while (seg.length % 4) seg += '=';
+      var bin = atob(seg), bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      var pl = JSON.parse(new TextDecoder().decode(bytes));
+      if (!pl || !pl.sub || pl.aud !== 'authenticated' || !(Number(pl.exp) * 1000 > Date.now())) return false;
+      var cur = readIdentity();
+      if (cur && cur.user && cur.user.id === pl.sub && !cur.pending) return false;   // already ours, confirmed
+      writeIdentity({ access_token: at, refresh_token: rt,
+        user: { id: pl.sub, email: pl.email || '', aud: pl.aud,
+                user_metadata: pl.user_metadata || {}, app_metadata: pl.app_metadata || {} } }, true);
+      trace('landing:stash', { u: uidTag(pl.sub) });
+      try { if (window.ThaiEarNav && window.ThaiEarNav.refresh) window.ThaiEarNav.refresh(); } catch (_) {}
+      return true;
+    } catch (_) { return false; }
+  }
+  stashUrlSession();
   var authErr = (function readAuthError() {
     var found = null;
     function scan(s) {
@@ -3384,8 +3454,18 @@
         function (res) { return (res && res.data && res.data.session) || null; },
         function () { return readStoredSession() || readIdentity(); }   // ours survives a purge
       );
+      trace('sb:imported');
+      /* ⚠ When the timer wins with OUR record (supabase holds no session of its own), say so: the
+         boot path below re-seeds only when restoredFromIdentity is set, and without this a slow
+         supabase left a pending Google return unconfirmed until the next 'online' event. */
       var timer = new Promise(function (resolve) {
-        setTimeout(function () { resolve(readStoredSession() || readIdentity()); }, OFFLINE_FALLBACK_MS);
+        setTimeout(function () {
+          var own = readStoredSession();
+          if (own) { resolve(own); return; }
+          var id = readIdentity();
+          if (id) { restoredFromIdentity = true; trace('sb:fallback', { s: 'identity' }); }
+          resolve(id);
+        }, OFFLINE_FALLBACK_MS);
       });
       return Promise.race([gs, timer]);
     })

@@ -1318,6 +1318,7 @@
     favState, paintFavHearts,   // ⚠ THE heart — see the block above cardHtml; never a second painter
     sectionOf,
     cardHtml,   // ⚠ the ONE topic-card renderer — generator and browser both call this
+    backLinkHtml: function (href) { return backLinkHtml(href); },   // the ONE "← Back to menu" link
     isLive, liveTopicCount,
     LEVEL_ORDER, LEVEL_CLASS, LEVEL_FULL, LEVEL_SHORT,
     levelBounds, levelText, levelBadge, matchesFilter, findByPage,
@@ -1368,14 +1369,17 @@
     if (found.section === 'structures') return 'grammar.html';
     return bandPageFor(found.unit) || 'topics.html';
   }
+  /* ONE "← Back to menu" link, for every unit page and for a caller whose units are not in this
+     list (v.js passes its own clean href). Never a second copy of the markup. */
+  function backLinkHtml(href) {
+    return '<a class="te-back" href="' + cardEsc(href) + '">' + EYEBROW_ARROW + '<span>Back to menu</span></a>';
+  }
   function fillEyebrow() {
     const el = document.getElementById('topic-eyebrow');
     if (!el) return; // not a unit page (e.g. index) — nothing to fill
     const found = findByPage(currentPage());
     if (!found) return; // page not in the list yet — leave the element as-is
-    el.innerHTML =
-      '<a class="te-back" href="' + cardEsc(hrefFor(eyebrowTarget(found))) + '">' + EYEBROW_ARROW +
-      '<span>Back to menu</span></a>' + favHeartHtml(found.unit, 'te-hfav');
+    el.innerHTML = backLinkHtml(hrefFor(eyebrowTarget(found))) + favHeartHtml(found.unit, 'te-hfav');
     paintFavHearts(el);
   }
 

@@ -415,7 +415,12 @@
         (dir > 0 ? '<span>→</span>' : '') + '</a>';
     }
     root.className = 'page-wrap';
-    root.innerHTML = '<h1 class="topic-title">' + esc(name) + '</h1>' +
+    /* "← Back to menu", the same link and slot every unit page has (topics.js backLinkHtml),
+       leading to this area's menu. No favourites heart here (owner, 2026-10-06). */
+    var T = window.ThaiEarTopics;
+    var back = (T && T.backLinkHtml) ? T.backLinkHtml(href('')) : '';
+    root.innerHTML = '<div class="topic-eyebrow" id="topic-eyebrow">' + back + '</div>' +
+      '<h1 class="topic-title">' + esc(name) + '</h1>' +
       '<p class="v-sub v-sub-h">' + esc(sub) + '</p>' +
       '<div class="v-toggle" role="group">' + tbtn('th') + tbtn('en') + '</div>' +
       '<div id="player-root"></div>' +             // player.js builds its own #sentence-list inside
