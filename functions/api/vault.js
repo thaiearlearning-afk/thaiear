@@ -18,7 +18,7 @@
 
    Routes (all GET, all need Authorization: Bearer <supabase access token>):
      ?q=me             → the small entry object (v-me.json): what the entry button shows.
-     ?q=data           → the area's data (v-data.json).
+     ?q=t<n>           → one unit's data (v-t<n>.json).
      ?file=a.mp3       → one presigned URL, the same contract as /api/audio?file= ({url, expiresIn}).
      ?files=a.mp3,b…   → presigned URLs for clips, the same contract as /api/audio?files=
                          ({urls, denied, expiresIn}); a name is mapped to its `v-` key here.
@@ -65,9 +65,9 @@ export async function onRequestGet(context) {
   if (!user) return nothing();
 
   const q = params.get('q');
-  if (q === 'me' || q === 'data') {
+  if (q === 'me' || /^t\d$/.test(q || '')) {
     let body = null;
-    try { body = await readObject(env, q === 'me' ? 'v-me.json' : 'v-data.json'); } catch (_) {}
+    try { body = await readObject(env, 'v-' + q + '.json'); } catch (_) {}
     if (body == null) return nothing();
     return new Response(body, {
       status: 200,
