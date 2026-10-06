@@ -342,6 +342,19 @@
         var B = authApi(); if (!B) return;
         var ta = atr.querySelector('#ownersim-tr-out');
         ta.value = B.trace() || '(empty)';
+        /* The web-return lines (auth.js oauth:start / landing, sw v768) carry fields the dump in
+           auth.js does not print: WHICH page, and WHAT came back (tokens / code / error, y/n).
+           Read raw here, because this file is not precached and reaches the phone at once. Never
+           a URL or a token — only those y/n flags are stored. */
+        try {
+          var rows = JSON.parse(localStorage.getItem('thaiear_authtrace') || '[]') || [];
+          var t0 = rows.length ? rows[0].t : 0;
+          var extra = rows.filter(function (r) { return r.p != null || r.tok != null; }).map(function (r) {
+            return String(r.t - t0).padStart(7, ' ') + 'ms  ' + r.tag + '  page=' + (r.p || '?') +
+              (r.tok != null ? '  tokens=' + r.tok + '  code=' + r.code + '  error=' + r.err : '');
+          });
+          if (extra.length) ta.value += '\n\n--- return path detail ---\n' + extra.join('\n');
+        } catch (_) {}
         ta.style.display = 'block';
         try { ta.focus(); ta.select(); } catch (_) {}
       });
