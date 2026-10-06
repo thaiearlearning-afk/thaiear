@@ -44,7 +44,15 @@
     });
   }
   function A() { return window.ThaiEarAuth || null; }
-  function uid() { var a = A(), u = a && a.getUser && a.getUser(); return (u && u.id) || null; }
+  /* identity.js answers synchronously, before auth.js has even loaded — which is what lets a
+     downloaded unit open from the device at once (player.js mintUid uses the same guess). */
+  function guessUid() {
+    try {
+      var I = window.ThaiEarIdentity, g = (I && I.guess) ? I.guess() : null;
+      return (g && g.state === 'in' && g.user && g.user.id) ? g.user.id : null;
+    } catch (_) { return null; }
+  }
+  function uid() { var a = A(), u = a && a.getUser && a.getUser(); return (u && u.id) || guessUid(); }
 
   /* ── 1. the account ─────────────────────────────────────────────────────────────────────── */
   function waitAuth() {
@@ -67,9 +75,19 @@
     if (!o || o.u !== me) o = { u: me, c: {}, r: {} };
     return o;
   }
-  function wrapAuth() {
-    var a = A();
-    if (!a || a.__vWrapped) return;
+  /* ⛔ WRAPPED THE MOMENT auth.js ASSIGNS IT, not after it is ready: a downloaded unit opens before
+     auth resolves, and not one play may reach the account's counters in between. auth.js attaches
+     playlists / dynPrefs / favourites AFTER creating the object (window.ThaiEarAuth.x = …), so those
+     three are accessors on the wrapper: reads answer "none here", writes go through to the real one. */
+  function interceptAuth() {
+    var real = window.ThaiEarAuth ? wrapAuth(window.ThaiEarAuth) : undefined;
+    try {
+      Object.defineProperty(window, 'ThaiEarAuth', { configurable: true, enumerable: true,
+        get: function () { return real; },
+        set: function (v) { real = (v && !v.__vWrapped) ? wrapAuth(v) : v; } });
+    } catch (_) {}
+  }
+  function wrapAuth(a) {
     var W = Object.create(a);
     W.__vWrapped = true;
     W.getPlays = function () { return uid() ? playsGet().c : {}; };
@@ -96,11 +114,14 @@
     ['addProgress', 'removeProgress', 'setProgressGoal', 'resetProgress'].forEach(function (m) {
       W[m] = function () { return Promise.resolve(P0); };
     });
-    W.dynPrefs = null;            // the area's player settings stay on this device
-    W.playlists = null;           // no playlists here
+    ['dynPrefs', 'playlists', 'favourites'].forEach(function (k) {   // settings stay on this device; no playlists
+      Object.defineProperty(W, k, { configurable: true, get: function () { return null; },
+        set: function (v) { a[k] = v; } });
+    });
     W.canDesktopDownload = function () { return false; };
-    window.ThaiEarAuth = W;
+    return W;
   }
+  interceptAuth();
 
   /* ── 2. the data ────────────────────────────────────────────────────────────────────────── */
   function fetchT(url, opts, ms) {
@@ -178,9 +199,50 @@
     });
   }
 
+  /* The translation-language switch, IN PLACE (owner, 2026-10-06: a reload was "very jarring").
+     player.js and quiz.js hold THE SAME sentence and card objects as cfg, so rewriting their fields
+     here is enough; player.js's ThaiEarPlayerRelang() then redraws, relabels and rebuilds the dyn
+     session exactly as a setting change does. Called by the page toggle and the quiz menu's radio. */
+  var D = null;                                    // the open unit's data, kept for the switch
   function setLang(l) {
-    lsSet(LS_LANG, l === 'en' ? 'en' : 'th');
-    location.reload();
+    l = (l === 'en') ? 'en' : 'th';
+    if (l === lang()) return;
+    lsSet(LS_LANG, l);
+    var cfg = window.ThaiEarTopic, v = cfg && cfg.vault;
+    if (!v || !D || !ME) return;                   // the menu has no switch
+    var gi = (l === 'en') ? 1 : 2, ui = ME.ui || {};
+    v.gloss = (l === 'en') ? 'EN' : 'TH';
+    v.glossAlt = (l === 'en') ? 'TH' : 'EN';
+    v.glossKey = l;
+    v.glossName = (ui.quizLang || {})[l];
+    ME.topics.forEach(function (t) { v.names[t.prefix] = t['name_' + l] || t.name_en; });
+    (cfg.dynChain || []).forEach(function (c) { c.name = v.names[c.prefix] || c.name; });
+    D.sentences.forEach(function (src, i) {
+      var s = cfg.sentences[i];
+      if (!s) return;
+      var pv = firstContent(src.chips, gi);
+      s.preview = pv[0]; s.previewEn = pv[1];
+      s.english = src[l];
+      s.gloss = src.chips.map(function (c) { return [c[0], c[gi], '']; });
+      s.cultural = src['note_' + l] || '';
+    });
+    D.vocab.forEach(function (c, i) { if (cfg.quiz.q3[i]) cfg.quiz.q3[i].en = c[l]; });
+    D.pool.forEach(function (c, i) { if (cfg.quiz.q3x[i]) cfg.quiz.q3x[i].en = c[l]; });
+    document.body.classList.toggle('v-th', l === 'th');
+    root.querySelectorAll('.v-toggle button').forEach(function (b) {
+      var on = b.getAttribute('data-l') === l;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var sub = root.querySelector('.v-sub-h');
+    if (sub) sub.textContent = D['name_' + l] || D.name_en;
+    root.querySelectorAll('.topic-nav-btn').forEach(function (a) {
+      var t = topicOf(ME, (/[?&]t=(\d+)/.exec(a.getAttribute('href')) || [])[1]);
+      var nm = a.querySelector('.topic-nav-name');
+      if (t && nm) nm.textContent = t['name_' + l] || t.name_en;
+    });
+    document.querySelectorAll('input[name=vlang]').forEach(function (r) { r.checked = (r.value === l); });
+    if (window.ThaiEarPlayerRelang) window.ThaiEarPlayerRelang();
   }
 
   /* ── 3a. the menu ───────────────────────────────────────────────────────────────────────── */
@@ -226,7 +288,7 @@
       if (nm) nm.insertAdjacentHTML('afterend', '<span class="v-sub">' + esc(t['name_' + L] || t.name_en) + '</span>');
     });
     paintMenu(me);
-    window.addEventListener('thaiear:auth', function () { paintMenu(me); });
+    window.addEventListener('thaiear:auth', function () { paintMenu(ME); });   // ME: refreshMe() may replace it
   }
   /* Listening time, the download mark and the quiz figures — the area's own, from its own stores. */
   function paintMenu(me) {
@@ -322,12 +384,14 @@
     root.innerHTML = '<h1 class="topic-title">' + esc(name) + '</h1>' +
       '<p class="v-sub v-sub-h">' + esc(sub) + '</p>' +
       '<div class="v-toggle" role="group">' + tbtn('th') + tbtn('en') + '</div>' +
-      '<div id="player-root"></div><div id="sentence-list"></div>' +
+      '<div id="player-root"></div>' +             // player.js builds its own #sentence-list inside
+
       '<nav class="topic-nav" aria-label="Topic navigation">' +
       navBtn(me.topics[idx - 1], -1) + navBtn(me.topics[idx + 1], 1) + '</nav>';
     root.querySelectorAll('.v-toggle button').forEach(function (b) {
-      b.onclick = function () { if (b.getAttribute('data-l') !== L) setLang(b.getAttribute('data-l')); };
+      b.onclick = function () { setLang(b.getAttribute('data-l')); };
     });
+    D = d;
     window.ThaiEarTopic = buildCfg(me, d, k);
     ['player.js', 'quiz.js'].forEach(function (src) {
       var s = document.createElement('script');
@@ -337,22 +401,55 @@
     });
   }
 
-  /* ── boot ───────────────────────────────────────────────────────────────────────────────── */
-  waitAuth().then(function (u) {
-    if (!u || !u.id) return;                       // signed out: the shell stays empty
-    /* ⛔ NOT html.te-plays (the band pages' caption reserve): player-dyn-mount.css, loaded here too,
-       has `.te-plays { display: none }` for its own element, which hides the whole document. */
-    return loadMe(u.id).then(function (me) {
-      if (!me || !me.topics) return;               // not allowed, or nothing saved here: empty
-      ME = me;
-      wrapAuth();
-      if (!tKey) { root.hidden = false; renderMenu(me); return; }
-      if (!topicOf(me, tKey)) return;
-      return loadTopic(u.id, tKey).then(function (d) {
-        if (!d || !d.sentences) return;
-        root.hidden = false;
-        renderTopic(me, d, tKey);
+  /* ── boot ───────────────────────────────────────────────────────────────────────────────────
+     ⛔ NOT html.te-plays (the band pages' caption reserve): player-dyn-mount.css, loaded here too,
+     has `.te-plays { display: none }` for its own element, which hides the whole document. */
+  function show(me, d) {
+    ME = me;
+    if (!tKey) { root.hidden = false; renderMenu(me); return true; }
+    if (!topicOf(me, tKey) || !d || !d.sentences) return false;
+    root.hidden = false;
+    renderTopic(me, d, tKey);
+    return true;
+  }
+  /* The menu file is the one place the published stamps live: refreshing it is how a unit opened
+     from the device learns an update exists. Card and page then re-ask the ONE predicate. */
+  function refreshMe() {
+    return waitAuth().then(function (u) {
+      if (!u || !u.id) return;
+      return api('q=me').then(function (t) {
+        var me2 = parse(t);
+        if (!me2 || !me2.topics) return;
+        lsSet(LS_UID, u.id);
+        cachePut(K_ME, t);
+        ME = me2;
+        if (!tKey) paintMenu(ME);
+        else if (window.ThaiEarPlayerRecheck) window.ThaiEarPlayerRecheck();
+      });
+    }).catch(function () {});
+  }
+  function fromNetwork() {
+    return waitAuth().then(function (u) {
+      if (!u || !u.id) return;                     // signed out: the shell stays empty
+      return Promise.all([loadMe(u.id), tKey ? loadTopic(u.id, tKey) : null]).then(function (r) {
+        if (r[0] && r[0].topics) show(r[0], r[1]); // not allowed, or nothing saved here: empty
       });
     });
-  }).catch(function () {});
+  }
+  /* ⭐ A DOWNLOADED UNIT OPENS FROM THE DEVICE AT ONCE (owner, 2026-10-06: "can it just retrieve from
+     downloads if downloaded rather than try online?"), like a downloaded topic page. Only for THIS
+     account's saved copy (te_v_uid), known synchronously from identity.js; the network is then asked
+     in the background, for nothing but the published stamps. The menu does the same with its file. */
+  (function boot() {
+    var g = guessUid(), e = tKey ? manifest()['X' + tKey] : null;
+    if (g && mine(g) && (!tKey || (e && (!e.refs || e.refs.indexOf('topic') >= 0)))) {
+      Promise.all([cacheText(K_ME), tKey ? cacheText(kT(tKey)) : null]).then(function (r) {
+        var me = parse(r[0]), d = parse(r[1]);
+        if (me && me.topics && show(me, d)) { refreshMe(); return; }
+        return fromNetwork();
+      }).catch(function () {});
+      return;
+    }
+    fromNetwork().catch(function () {});
+  })();
 })();
