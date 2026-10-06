@@ -56,3 +56,14 @@
 # was removed — a live page behind a 301 is unreachable.
 /grammar-16       /grammar     301
 /grammar-16.html  /grammar     301
+# 2026-10-06 (W87, sw v782): each difficulty band got ONE name, and its URL followed it.
+# The old range URLs are indexed, so they 301 to the renamed band. gen_topics_pages.js also
+# writes a redirect stub at each old path (Pages can serve a deleted file ahead of a rule).
+/topics-beginner-to-lower-intermediate          /topics-lower-intermediate  301
+/topics-beginner-to-lower-intermediate.html     /topics-lower-intermediate  301
+/topics-lower-intermediate-to-intermediate      /topics-intermediate        301
+/topics-lower-intermediate-to-intermediate.html /topics-intermediate        301
+/topics-intermediate-to-upper-intermediate      /topics-upper-intermediate  301
+/topics-intermediate-to-upper-intermediate.html /topics-upper-intermediate  301
+/topics-upper-intermediate-to-advanced          /topics-advanced            301
+/topics-upper-intermediate-to-advanced.html     /topics-advanced            301
