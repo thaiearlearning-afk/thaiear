@@ -710,6 +710,7 @@
      ⚠ Guarded on the quiz still being closed: a learner can reopen inside the timeout, and
      stripping the url or moving the scroll then would fight them. */
   function afterClose() {
+    setRunning(false);
     setTimeout(function () {
       if (!root || !root.hidden) return;          /* reopened in the meantime */
       try {
@@ -1335,6 +1336,7 @@
   }
 
   function openPicker() {
+    setRunning(false);
     scaleOff = true;                 /* ↑ see applyFontScale: the picker is not scaled */
     var st = store();
     /* ⛔ Vocab Trainer is topic-only (§1). A grammar unit or playlist shows three, not four —
@@ -1426,6 +1428,7 @@
      THE PRE-QUIZ MENU (§3A)
      ══════════════════════════════════════════════════════════════════════════════════════ */
   function openMenu(qid) {
+    setRunning(false);
     /* ⛔⛔ THE ENTITLEMENT GATE FIRES HERE — BEFORE THE SETTINGS SCREEN, NOT INSIDE THE RUN
        (DECISION 1, owner 2026-09-21: "they shouldnt be able to get into the quiz and then it
        just gates them as they set everything up. thats frustrating").
@@ -1729,10 +1732,21 @@
   /* ══════════════════════════════════════════════════════════════════════════════════════
      RUNNING A QUIZ
      ══════════════════════════════════════════════════════════════════════════════════════ */
+  /* ⭐ A RUN GETS THE SCREEN AND THE SILENCE (owner, 2026-10-06: "realistically you never want audio
+     playing during a quiz"). The quiz opens on the topic's own URL, so the topic's audio kept
+     playing under it. Starting a run pauses it (player.js ThaiEarQuizAudio.pauseMain, the player's
+     own pause) and marks <html class="tq-running">, which tells player.js to keep its mini player
+     hidden; the picker and a quiz's own menu still show it, so audio can be paused there too.
+     Cleared on every way out of a run: results, a menu, the picker, close. */
+  function setRunning(on) {
+    try { document.documentElement.classList.toggle('tq-running', !!on); } catch (_) {}
+    if (on) { var a = QA(); if (a && a.pauseMain) a.pauseMain(); }
+  }
   function start(qid, prefs) {
     var items = pick(eligible(qid), prefs.len, prefs.mode, qid);
     if (!items.length) { openMenu(qid); return; }
     run = { q: quizById(qid), prefs: prefs, items: items, i: 0, right: 0, answers: [] };
+    setRunning(true);
     armRunGuard();
     question();
   }
@@ -3197,6 +3211,7 @@
 
   /* ── results (§3B.1) ───────────────────────────────────────────────────────────────────── */
   function results() {
+    setRunning(false);
     scaleOff = false;
     var n = run.items.length, r = run.right;
     var pct = Math.round((r / n) * 100);

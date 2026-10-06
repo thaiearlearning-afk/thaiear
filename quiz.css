@@ -65,7 +65,11 @@
    append to body, so a tap on the quiz did nothing visible. They are exempt by id below.
    ⚠ A new body-level message that can open during a quiz must be added here, or rendered inside
    #tq-page. test_quiz_engine.js pins both exemptions. */
-body.tq-mode > *:not(nav.site-nav):not(#tq-page):not(.te-consent):not(#te-premium-sheet):not(#te-licence-overlay) { display: none !important; }
+body.tq-mode > *:not(nav.site-nav):not(#tq-page):not(.te-consent):not(#te-premium-sheet):not(#te-licence-overlay):not(#te-mini) { display: none !important; }
+/* The topic's mini player stays reachable in a quiz (owner, 2026-10-06): the quiz shares the topic's
+   URL, so audio started there keeps playing and this is the only way to pause it. It is fixed under
+   the nav, so the quiz is pushed below it (player.js updateMiniVisibility sets --te-mini-h). */
+html.te-mini-on body.tq-mode #tq-page { padding-top: var(--te-mini-h, 0px); }
 
 /* ⛔⛔ PULL-TO-REFRESH MUST NOT BE ABLE TO DESTROY A RUN (owner, 2026-09-21, agreed explicitly).
    The overlay was its own scroll container with `overscroll-behavior: contain` and the document
