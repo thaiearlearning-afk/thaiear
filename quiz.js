@@ -3624,7 +3624,16 @@
      window entirely. Not-'complete' means DOMContentLoaded is still to come and waiting for it
      is free; 'complete' means it has been and gone — the case where playlists.html injects
      this file itself — so boot at once. */
+  /* ⛔⛔ …BUT ONLY WAIT WHEN THE DEPENDENCY IS ACTUALLY MISSING (2026-10-06, sw v775, owner: the
+     quizzes on a downloaded unit of the private area "appeared sometime later"). A page that
+     INJECTS this file (v.js does, once its data is in) can run it AFTER DOMContentLoaded but
+     before 'complete' (images, fonts still loading) — so the listener below waited for an event
+     that had already fired, and only the later thaiear:auth rescued it. Measured live: quiz.js
+     arrived 15 ms before DOMContentLoaded on a session-copy open, with load 1.2 s later; a faster
+     open lands inside that window. topics.js is the only thing the wait protects, so when it is
+     already here, boot now. Topic pages load topics.js AFTER this file, so they keep the wait. */
   function bootWhenReady() {
+    if (window.ThaiEarTopics) { boot(); return; }
     if (document.readyState !== 'complete') {
       document.addEventListener('DOMContentLoaded', boot);
       return;

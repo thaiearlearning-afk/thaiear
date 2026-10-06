@@ -4534,6 +4534,7 @@
      shift (preserves the topic-page CLS). Web / PWA / app all load this file, so it lands on all three. */
   var miniActivated = false;   // has the main TE/ET been started this page-load? (latches on)
   var miniDismissed = false;   // did the user ✕ the bar this visit?
+  var miniDismissedQuiz = false;   // ✕ on a quiz menu: hidden until the quiz closes
   var mainInView = true;       // is #player-root currently on screen? (IntersectionObserver)
   /* The ONE place the mini progress bar moves. Every caller goes through here so the painted
      fill and the slider's aria-valuenow can never disagree — the accessibility audit found the
@@ -4560,13 +4561,17 @@
     /* ⭐ IN A QUIZ, THE MINI PLAYER IS THE ONLY CONTROL LEFT (owner, 2026-10-06, iPhone PWA): the quiz
        opens on the topic's own URL and hides the page, so audio started there kept playing with no
        way to pause it. While the quiz is open it shows whenever this page's audio was started — even
-       after a ✕ — and quiz.css exempts it from the quiz's hide rule and pads the quiz below it. */
+       after a ✕ ON THE PAGE — and quiz.css exempts it from the quiz's hide rule and pads the quiz below it. */
     /* …on the quiz picker and a quiz's own menu, NOT during a run: starting one pauses the audio
        (ThaiEarQuizAudio.pauseMain) and the questions get the whole screen (quiz.js tq-running). */
+    /* ✕ works in the quiz too (owner, 2026-10-06, sw v775: v773 ignored it there). It has its own
+       flag, cleared when the quiz closes, so a ✕ on the page never strands audio inside a quiz. */
     var hc = document.documentElement.classList;
     var quizRun = hc.contains('tq-mode') && hc.contains('tq-running');
     var quizOpen = hc.contains('tq-mode') && !quizRun;
-    var show = !quizRun && miniActivated && (!mainInView || quizOpen) && (!miniDismissed || quizOpen) && !(DYN && dynSel);   // select mode: yield to the bottom bar
+    if (!hc.contains('tq-mode')) miniDismissedQuiz = false;
+    var dismissed = quizOpen ? miniDismissedQuiz : miniDismissed;
+    var show = !quizRun && miniActivated && (!mainInView || quizOpen) && !dismissed && !(DYN && dynSel);   // select mode: yield to the bottom bar
     if (show) syncMini();   // make sure glyph/progress are current the moment it slides in
     bar.classList.toggle('show', show);
     try {
@@ -4649,7 +4654,10 @@
     $('te-mini-play').addEventListener('click', function () { togglePlay(); });
     $('te-mini-back').addEventListener('click', function () { skip(-10); });
     $('te-mini-fwd').addEventListener('click', function () { skip(10); });
-    $('te-mini-x').addEventListener('click', function () { miniDismissed = true; updateMiniVisibility(); });
+    $('te-mini-x').addEventListener('click', function () {
+      if (document.documentElement.classList.contains('tq-mode')) miniDismissedQuiz = true; else miniDismissed = true;
+      updateMiniVisibility();
+    });
     initMiniScrub();
     // Show the mini exactly when the real player leaves the viewport. The negative top rootMargin trips
     // it as the player tucks under the sticky nav (~54px), not only once it's fully off-screen.
