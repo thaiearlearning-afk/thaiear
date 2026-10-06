@@ -184,17 +184,30 @@
   function loadMe(u) {
     return api('q=me').then(function (t) {
       var me = parse(t);
-      if (me) { lsSet(LS_UID, u); cachePut(K_ME, t); return me; }
+      if (me) { lsSet(LS_UID, u); cachePut(K_ME, t); sessPut(u, 'me', t); return me; }
       return mine(u) ? cacheText(K_ME).then(parse) : null;
     });
   }
   function loadTopic(u, k) {
     return api('q=t' + k).then(function (t) {
       var d = parse(t);
-      if (d) return d;
+      if (d) { sessPut(u, 't' + k, t); return d; }
       return mine(u) ? cacheText(kT(k)).then(parse) : null;
     });
   }
+  /* ⭐ THIS TAB'S COPY of what it last fetched (owner, 2026-10-06: back from a quiz, a unit that is not
+     downloaded loaded slowly again). Every open is a page load, so without it each one re-asked the
+     network. sessionStorage: this tab only, gone when it closes; stamped with the account, and
+     `te_v_*` so auth.js privateWipe() clears it with the rest on sign-out or a change of account.
+     It is drawn at once and the network is still asked behind it — never instead of it. */
+  var SS = 'te_v_s_';
+  function sessGet(u, q) {
+    try {
+      var o = JSON.parse(sessionStorage.getItem(SS + q) || 'null');
+      return (o && o.u === u && o.t) ? o.t : null;
+    } catch (_) { return null; }
+  }
+  function sessPut(u, q, t) { try { sessionStorage.setItem(SS + q, JSON.stringify({ u: u, t: t })); } catch (_) {} }
 
   /* ⛔ THE ONE STALENESS PREDICATE (card + page). A download is stale when the stamp it recorded
      (`ver`, written by player.js cachePage() from data it saved and checked) is not the unit's
@@ -474,6 +487,13 @@
         if (me && me.topics && show(me, d)) { refreshMe(); return; }
         return fromNetwork();
       }).catch(function () {});
+      return;
+    }
+    /* Opened in this tab before: draw it now, and let the network refresh this tab's copy behind it. */
+    var sm = g && parse(sessGet(g, 'me')), sd = (g && tKey) ? parse(sessGet(g, 't' + tKey)) : null;
+    if (sm && sm.topics && (!tKey || sd) && show(sm, sd)) {
+      refreshMe();
+      if (tKey) loadTopic(g, tKey).catch(function () {});
       return;
     }
     fromNetwork().catch(function () {});

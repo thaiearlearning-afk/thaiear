@@ -370,6 +370,10 @@
         Object.keys(man).forEach(function (p) { if (/^X\d$/.test(p)) { delete man[p]; hit = true; } });
         if (hit) localStorage.setItem('thaiear_offline', JSON.stringify(man));
       }
+      for (var si = sessionStorage.length - 1; si >= 0; si--) {   // v.js keeps this tab's copy here too
+        var sk = sessionStorage.key(si);
+        if (sk && sk.indexOf('te_v_') === 0) sessionStorage.removeItem(sk);
+      }
       var mint = JSON.parse(localStorage.getItem('te_mint_v1') || 'null');
       if (mint && mint.m) {
         var cut = false;
