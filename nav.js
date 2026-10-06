@@ -880,6 +880,42 @@
     NA.addListener('ended', hide);
     NA.addListener('playing', function (d) { if (d && d.playing === false) hide(); });
 
+    /* ⚠⚠ r244 — THE BAR FOLLOWS THE ENGINE (owner, 2026-10-06, Android: it named one unit and opened
+       another, while the lock screen showed a third). The lock-screen ⏮/⏭ and autoplay move the
+       engine through the queue a player page left behind, with no JS; this page used to hear none of
+       it, so the bar kept the unit it was given. Now a transition renames it, and on mount and every
+       return to the foreground the engine is asked what it is on. A unit is named from the
+       identities player.js saves for everything it queues (thaiear_np_ids), else from topics.js by
+       its page id; one nobody can name HIDES the bar — never a name or link from another unit. */
+    function npIds() { try { return JSON.parse(localStorage.getItem('thaiear_np_ids') || 'null') || {}; } catch (_) { return {}; } }
+    function npFollow(key) {
+      key = String(key || '');
+      if (!key || hasPlayer()) return;
+      const np = npGet() || {};
+      if (np.key === key && np.page && np.name) return;
+      let id = npIds()[key];
+      if (!(id && id.page && id.name)) {
+        const T = window.ThaiEarTopics, u = (T && T.pageUnit) ? T.pageUnit(key) : null;
+        id = (u && u.name) ? { page: htmlPage(u.page), name: u.name, prefix: u.audio || '', access: u.access || 'free' } : null;
+      }
+      const rec = id ? { page: id.page, name: id.name, prefix: id.prefix || '', mode: np.mode || 'te', access: id.access || 'free', key: key }
+                     : { key: key, mode: np.mode || 'te' };
+      try { localStorage.setItem('thaiear_np', JSON.stringify(rec)); } catch (_) {}
+      update();
+    }
+    NA.addListener('transition', function (d) { if (d && d.reason !== 'repeat') npFollow(d.key); });
+    function npCheck() {
+      if (hasPlayer() || typeof NA.getCurrent !== 'function') return;
+      const np = npGet();
+      if (!np || !np.key) return;                // a record without a key (an older page wrote it): nothing to compare
+      try {
+        const p = NA.getCurrent();                // an app before v8 rejects: the bar stays as it was
+        if (p && p.then) p.then(function (d) { if (d && d.key && String(d.key) !== np.key) npFollow(d.key); }, function () {});
+      } catch (_) {}
+    }
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') npCheck(); });
+    npCheck();
+
     // ---- track control on NON-topic pages (no player.js here, so the lock-screen ⏮/⏭/autoplay would
     //      otherwise do nothing). Advances the persistent native player straight from this page. ----
     const AUDIO_BASE = 'https://audio.thaiear.com';
@@ -925,6 +961,7 @@
     }
     function npGet() { try { return JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { return null; } }
     function bareP(p) { return String(p || '').toLowerCase().replace(/\.html$/, ''); }
+    function htmlPage(p) { const b = bareP(p); return b ? b + '.html' : ''; }   // the record's page form ('topic-07.html')
     function playable(unit) {                       // genuinely playable now? (same rule as the topic player)
       if (!unit || !unit.audio) return false;
       const T = window.ThaiEarTopics;
@@ -950,12 +987,14 @@
       const unit = nextPlayable(np.page, dir);      // skip anything that can't actually play now
       if (!unit || !unit.audio) return;
       const file = unit.audio + '_' + (np.mode === 'et' ? 'ET' : 'TE') + '.mp3';
+      // r244: the engine item carries the unit's key (its page id, as player.js keys a topic) and so
+      // does the record — so a later engine check can tell whether the two still agree.
+      const key = bareP(unit.page);
       resolveUrl(file, unit.audio, unit.access).then(function (url) {
-        return NA.prepare({ url: url, title: unit.name || 'ThaiEar', subtitle: 'ThaiEar', artwork: 'https://thaiear.com/apple-touch-icon.png' })
+        return NA.prepare({ url: url, title: unit.name || 'ThaiEar', subtitle: 'ThaiEar', artwork: 'https://thaiear.com/apple-touch-icon.png', key: key })
           .then(function () { return NA.play(); })
           .then(function () {
-            let page = String(unit.page || '').toLowerCase(); if (page && !/\.html$/.test(page)) page += '.html';
-            try { localStorage.setItem('thaiear_np', JSON.stringify({ page: page, name: unit.name, prefix: unit.audio, mode: np.mode || 'te', access: unit.access || 'free' })); } catch (_) {}
+            try { localStorage.setItem('thaiear_np', JSON.stringify({ page: htmlPage(unit.page), name: unit.name, prefix: unit.audio, mode: np.mode || 'te', access: unit.access || 'free', key: key })); } catch (_) {}
           });
       }).catch(function () {});
     }
