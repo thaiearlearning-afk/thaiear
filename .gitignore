@@ -238,3 +238,6 @@ dyn-probe.html
 # Pronoun surgery checkpoint pages (2026-09-28) — premium audio, never deploy.
 pronoun-review*.html
 pronoun-clips/
+
+# W91 English audit review page (2026-10-07) — owner review only, never deploy.
+w91-english-review*.html
