@@ -662,6 +662,12 @@
   /* Exposed for the harness only. ownersim.js is a debug module that never loads for anyone but
      the owner, so this adds no surface to the real site. */
   try { window.__teSwVerdict = swVerdict; } catch (_) {}
+  // sw v794: the probes test_owner_panel.js mounts into a real DOM (the trace switch, the audio
+  // column, local times). Same reasoning: owner-only module, no surface on the real site.
+  try {
+    window.__teOwnerProbes = { tailTracePaint: tailTracePaint, swDiag: swDiag,
+                               staleReportNow: staleReportNow, localStamp: localStamp };
+  } catch (_) {}
 
   function swPaint(el, out) {
     var esc = function (t) { return String(t).replace(/[&<>]/g, function (c) {
@@ -867,6 +873,22 @@
   var SWBTN = 'border:1px solid #7A1F1F;background:#fff;color:#7A1F1F;border-radius:6px;' +
     'padding:4px 9px;font:12px/1.3 system-ui,-apple-system,sans-serif;cursor:pointer';
 
+  /* ⚠ 2026-10-09 — EVERY TIME THIS PANEL PRINTS IS THE DEVICE'S LOCAL TIME. The dates used to be the
+     server's Date header with " GMT" cut off, so they read as local while being 7 hours behind the
+     owner's clock: "22:17:41" was 05:17:41 his time, five seconds after he opened a unit, and read
+     as the previous evening it produced a wrong diagnosis (DOWNLOAD_UPDATE_PATH.md Step 1, Step 3a
+     row 9). Every printed time carries "local" so the two can never be confused again. */
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function clockAt(ms) {
+    var d = new Date(ms), p = function (n) { return ('0' + n).slice(-2); };
+    return p(d.getDate()) + ' ' + MONTHS[d.getMonth()] + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) +
+      ':' + p(d.getSeconds()) + ' local';
+  }
+  function localStamp(hdr) {
+    var t = Date.parse(hdr || '');
+    return isNaN(t) ? String(hdr || '?') : clockAt(t);
+  }
+
   /* The email hash IS the gate — K_ON is not consulted here any more. Requiring a URL-set flag
      made the picker unreachable in a standalone PWA / the Android app, which have no address bar
      and are exactly where the simulator is needed. */
@@ -916,8 +938,7 @@
                 if (!live) { failed++; return; }
                 var norm = function (t) { return String(t).replace(/^W\//, ''); };
                 if (norm(live) === norm(mine)) same++;
-                else stale.push(new URL(q.url).pathname + ' (' +
-                  String(r.headers.get('date') || '?').replace(/^\w+, /, '').replace(/ GMT$/, '') + ')');
+                else stale.push(new URL(q.url).pathname + ' (' + localStamp(r.headers.get('date')) + ')');
               }, function () { failed++; });
           }).catch(function () { failed++; }).then(lane);
         }
@@ -945,19 +966,29 @@
   }
   /* player.js r233's lock-screen tail trace (te_tail_trace, Android app only): what the page's JS
      did around the end of a track, stamped with WHEN it ran. Events bunched at the unlock time mean
-     JS was not running while locked; events at the track's end mean it was. DYN_ROLLOUT.md §5f. */
+     JS was not running while locked; events at the track's end mean it was. DYN_ROLLOUT.md §5f.
+     r245 (2026-10-09) — ARM / DISARM. Owner: "i have no way of pausing it and it just accumulates
+     lines endlessly - i have to manually clear it but cant stop it". Disarm sets te_tail_trace_off,
+     which player.js r245+ checks before every line; it KEEPS what was recorded, so a capture can
+     be read after stopping. Clear wipes the lines and leaves the switch as it is. Both buttons
+     show even when the trace is empty, so it can be switched off before it writes anything.
+     ⚠ An older player.js ignores the switch; the player.js line under "downloads" says which runs. */
+  var TAIL_OFF = 'te_tail_trace_off';
   function tailTracePaint(span, esc) {
     if (!span) return;
     var a = null;
     try { a = JSON.parse(localStorage.getItem('te_tail_trace') || 'null'); } catch (_) {}
-    if (!Array.isArray(a) || !a.length) {
-      span.textContent = 'lock-screen trace: empty (the Android app writes it while a topic plays)';
-      return;
-    }
+    if (!Array.isArray(a)) a = [];
+    var on = get(TAIL_OFF) !== '1';
     var pad = function (n) { return ('0' + n).slice(-2); };
     var prev = 0;
-    span.innerHTML = '<b>lock-screen trace</b> (' + a.length + ' lines, oldest first) ' +
-      '<button type="button" data-tailclear style="' + SWBTN + ';padding:1px 6px;font-size:11px">Clear</button>' +
+    var btn = SWBTN + ';padding:1px 6px;font-size:11px';
+    span.innerHTML = '<b>lock-screen trace</b>: ' +
+      (on ? '<b style="color:#1F5D3A">ON</b>, recording' : '<b style="color:#7A1F1F">OFF</b>, not recording') +
+      ' · ' + (a.length ? a.length + ' line' + (a.length === 1 ? '' : 's') + ', oldest first' : 'empty') + ' ' +
+      '<button type="button" data-tailarm style="' + btn + '">' + (on ? 'Disarm' : 'Arm') + '</button> ' +
+      '<button type="button" data-tailclear style="' + btn + '"' + (a.length ? '' : ' disabled') + '>Clear</button>' +
+      (a.length ? '' : '<br>(the Android app writes it while a topic plays)') +
       a.map(function (r) {
         var d = new Date(r[0]);
         var step = prev ? ' +' + ((r[0] - prev) / 1000).toFixed(1) + 's' : '';
@@ -965,6 +996,11 @@
         return '<br>' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) +
           esc(step) + ' ' + esc(r[1]);
       }).join('');
+    var arm = span.querySelector('[data-tailarm]');
+    if (arm) arm.addEventListener('click', function () {
+      set(TAIL_OFF, on ? '1' : null);
+      tailTracePaint(span, esc);
+    });
     var b = span.querySelector('[data-tailclear]');
     if (b) b.addEventListener('click', function () {
       try { localStorage.removeItem('te_tail_trace'); } catch (_) {}
@@ -985,13 +1021,21 @@
           if (!log) { span.textContent = 'update log: empty'; return; }
           var vs = Object.keys(log).sort(function (a, b) { return (+b.slice(1)) - (+a.slice(1)); });
           span.innerHTML = 'update log:' + vs.map(function (v) {
+            var prevRel = -1;
             return '<br><b>' + esc(v) + '</b> ' + (log[v] || []).map(function (row) {
               var d = row[2];
               var txt = d && typeof d === 'object'
                 ? Object.keys(d).filter(function (k) { return d[k] !== '' && d[k] != null; })
                     .map(function (k) { return k + ':' + d[k]; }).join(',')
                 : '';
-              return esc(row[1] + (txt ? '[' + txt + ']' : '') + '@' + (row[0] / 1000).toFixed(1) + 's');
+              /* sw v794: each row also carries its clock time (row[3]). It is printed where a
+                 worker boot begins (the first row, and wherever the seconds count restarts), so WHEN
+                 an update ran is read off the panel, not inferred from a file's Date header. Rows
+                 written before v794 have none and print as before. */
+              var at = (typeof row[3] === 'number' && (prevRel < 0 || row[0] < prevRel))
+                ? '(' + clockAt(row[3]) + ') ' : '';
+              prevRel = row[0];
+              return esc(at + row[1] + (txt ? '[' + txt + ']' : '') + '@' + (row[0] / 1000).toFixed(1) + 's');
             }).join(' › ');
           }).join('');
         });
@@ -1026,10 +1070,13 @@
     var prefixes = Object.keys(man);
     if (!prefixes.length) { el.innerHTML = 'downloads: <b>none on this device</b>'; return; }
 
-    fetch('/quiz-data/index.json', { cache: 'no-cache' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; })
-      .then(function (j) {
+    function getJson(u) {
+      return fetch(u, { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    }
+    Promise.all([getJson('/quiz-data/index.json'), getJson('/audio-versions.json')])
+      .then(function (got) {
+        var j = got[0], AV = (got[1] && typeof got[1] === 'object') ? got[1] : null;
         var sig = (j && j.sig) || null, pver = (j && j.ver) || null;
         var all = T ? [].concat(T.topics || [], T.structures || []) : [];
         var rows = [], nStale = 0;
@@ -1051,6 +1098,19 @@
              sig: a third opinion, which is the last thing this bug needed. */
           else if (pv != null && e.ver !== pv) { verdict = 'UPDATE'; why = 'page differs — text or quiz block re-published'; }
           else { verdict = 'quiet'; why = 'current'; }
+          /* sw v794 — AND THE AUDIO STAMP, asked exactly as the card asks it (topics-page.js
+             avStale): no published map or no recorded baseline means NOT stale. ⚠ topics.js avFor /
+             avMoved are CALLED, not re-derived: they are the one implementation of the two-scheme
+             rule that all three surfaces share, and a separate copy of that rule is how the card and
+             the page came to disagree on 2026-09-16. Before this, a re-recorded clip with nothing else
+             changed read "quiet" here while the card showed the dotted circle, and nothing here could
+             say whether an Update had finished (only a finished Update moves an existing `av`). */
+          var avPub = (AV && T && T.avFor) ? T.avFor(AV, pfx, e.av) : null;
+          var avStale = !!(AV && e.av != null && avPub != null && T && T.avMoved && T.avMoved(e.av, avPub));
+          if (avStale) {
+            if (verdict === 'UPDATE') why += '; audio differs too';
+            else { verdict = 'UPDATE'; why = 'audio differs — clips re-recorded'; }
+          }
           if (verdict === 'UPDATE') nStale++;
           rows.push('<div style="margin:3px 0 0"><b>' + esc(unit) + '</b> — ' +
             (verdict === 'UPDATE' ? '<b style="color:#B00">UPDATE</b>' : 'quiet') +
@@ -1058,7 +1118,9 @@
             '<span style="color:#8A8A8A;font-size:11px">ver:' + (e.ver ? esc(String(e.ver)) : '—') +
             '  qz:' + (e.qz == null ? '—' : esc(String(e.qz))) +
             '  sig:' + (pub == null ? '—' : esc(String(pub))) +
-            '  pageVer:' + (pv == null ? '—' : esc(String(pv))) + '</span>' +
+            '  pageVer:' + (pv == null ? '—' : esc(String(pv))) +
+            '  av:' + (e.av == null ? '—' : esc(String(e.av))) +
+            '  avPub:' + (avPub == null ? '—' : esc(String(avPub))) + '</span>' +
             (unit !== '?' ? '<br><span data-saved="' + esc(unit) + '" data-pv="' + esc(pv == null ? '' : String(pv)) +
               '" style="color:#8A8A8A;font-size:11px">saved copies: …</span>' : '') + '</div>');
         });
@@ -1067,6 +1129,7 @@
           (nStale ? '<b style="color:#B00">' + nStale + ' should offer an update</b>'
                   : '<b>all current</b>') +
           (sig ? '' : ' <span style="color:#B00">⚠ stamp map did not load — every row reads quiet</span>') +
+          (AV ? '' : ' <span style="color:#B00">⚠ audio map did not load — audio changes are not counted</span>') +
           (all.length ? '' : ' <span style="color:#B00">⚠ topic list did not load — units show as ? and every row reads quiet</span>') +
           '<div data-pjs style="color:#8A8A8A;font-size:11px">player.js: …</div>' +
           rows.join('');
@@ -1079,11 +1142,14 @@
           if (!act) { pj.textContent = 'player.js: no version cache'; return; }
           return caches.open(act).then(function (c) { return c.match('/player.js'); }).then(function (r) {
             if (!r) { pj.textContent = 'player.js: not in ' + act; return; }
-            var d = (r.headers.get('date') || '').replace(/^\w+, /, '').replace(/ GMT$/, '');
+            var d = localStamp(r.headers.get('date'));
             return r.text().then(function (t) {
-              var has = t.indexOf('r226') !== -1;
-              pj.innerHTML = 'player.js in ' + esc(act) + ': ' + (has ? 'HAS the r226 page-key fix ✓'
-                : '<b style="color:#B00">OLD — no r226 fix</b>') + ' (' + esc(d) + ', ' + t.length + ' chars)';
+              /* sw v794 — the marker is now the r245 fix (a download reads the quiz list past the
+                 worker, and the lock-screen trace obeys its switch): the next phone check needs to
+                 know that code is what a topic page will run. It was the r226 page-key fix. */
+              var has = t.indexOf('dynQzSigLoad(true)') !== -1;
+              pj.innerHTML = 'player.js in ' + esc(act) + ': ' + (has ? 'HAS the r245 quiz-list fix ✓'
+                : '<b style="color:#B00">OLD — no r245 fix</b>') + ' (' + esc(d) + ', ' + t.length + ' chars)';
             });
           });
         }).catch(function () { pj.textContent = 'player.js: read failed'; });
@@ -1145,7 +1211,7 @@
               return r.text().then(function (t) {
                 var hv = pageHash(t);
                 return u.pathname + u.search + ' ' + hv + (pv ? (hv === pv ? ' ✓' : ' ✗ OLD') : '') +
-                  (d ? ' (' + d.replace(/^\w+, /, '').replace(/ GMT$/, '') + ')' : '') +
+                  (d ? ' (' + localStamp(d) + ')' : '') +
                   (r.redirected ? ' [redirected]' : '');
               });
             });
