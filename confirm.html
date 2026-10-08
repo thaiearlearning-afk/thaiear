@@ -229,6 +229,17 @@
      later needs no code change. */
   var nextRaw = params.get('next') || '/';
   var next = (nextRaw.charAt(0) === '/' && nextRaw.charAt(1) !== '/') ? nextRaw : '/';
+  /* ⭐ 2026-10-08 — BACK TO THE PAGE THEY SIGNED IN FROM (owner). auth.js sendMagicLink records it as
+     te_return when the link is requested; used only when the link carries no `next`, only if under
+     2 hours old, only a bare page name, and removed once read. Absent (another browser, an old link)
+     → the home page, exactly as before. */
+  try {
+    var ret = JSON.parse(localStorage.getItem('te_return') || 'null');
+    localStorage.removeItem('te_return');
+    if (next === '/' && ret && /^[A-Za-z0-9_\-]+$/.test(ret.to || '') && Date.now() - (ret.at || 0) < 2 * 3600 * 1000) {
+      next = '/' + ret.to;
+    }
+  } catch (_) {}
 
   var btn = document.getElementById('cf-btn');
   var status = document.getElementById('cf-status');
@@ -270,7 +281,8 @@
 
   function done() {
     say(status, next === '/' ? 'Signed in — taking you to the topics...'
-                             : 'Signed in — taking you to your account...', 'ok');
+              : /^\/account(\.html)?$/.test(next) ? 'Signed in — taking you to your account...'
+              : 'Signed in — taking you back to where you were...', 'ok');
     /* Clean URL in production; re-add .html on localhost/LAN, because
        `python -m http.server` has no clean-URL resolution and the owner's own
        local test of this page would end on a 404. Same rule as hrefFor() in

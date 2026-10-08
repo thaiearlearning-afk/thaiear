@@ -1822,6 +1822,21 @@
         var at = window.ThaiEarAttrib, hit = at && at.url && at.url();
         if (hit) opts.data = { te_attrib: hit };
       } catch (_) {}
+      /* ⭐ 2026-10-08 — RETURN TO THE PAGE THEY SIGNED IN FROM (owner: "return to page they clicked
+         sign up on please"). The emailed link lands on confirm.html, which used to send everyone to
+         the home page. Remember where they were — on join.html that is its ?next=, anywhere else this
+         page — and confirm.html goes back there. A bare page name only, kept 2 hours, removed once
+         used. ⚠ It is device storage, but STRICTLY NECESSARY for what the visitor just asked for
+         (sign in and carry on where they were), so PECR reg 6's exemption covers it; it holds no
+         identifier. If the link opens in another browser it is simply absent → home, as before. */
+      try {
+        var page = location.pathname.split('/').pop().replace(/\.html$/, '');
+        if (page === 'join') page = new URLSearchParams(location.search).get('next') || '';
+        page = String(page).replace(/\.html$/, '');
+        if (/^[A-Za-z0-9_\-]+$/.test(page) && !/^(index|join|account|confirm|start|deleted)$/.test(page)) {
+          localStorage.setItem('te_return', JSON.stringify({ to: page, at: Date.now() }));
+        } else localStorage.removeItem('te_return');
+      } catch (_) {}
       return client.auth.signInWithOtp({ email: email, options: opts });
     },
     /* The click-side half of the interstitial. confirm.html calls this from its button

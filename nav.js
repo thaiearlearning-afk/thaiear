@@ -596,7 +596,7 @@
       if (guess && guess.state === 'in') {
         return `<span class="nav-username">${escapeHtml(guess.user.username)}</span>` + personMenuHtml();
       }
-      if (guess && guess.state === 'out') return `<a class="nav-auth" href="${pageHref('account.html')}">Log in</a>`;
+      if (guess && guess.state === 'out') return `<a class="nav-auth" href="${loginHref()}">Log in</a>`;
       return '<span class="nav-auth nav-auth-pending" aria-hidden="true" ' +
         'style="display:inline-block;min-width:48px;opacity:0"></span>';
     }
@@ -610,7 +610,18 @@
     }
     // Logged out: send to the account page, which shows the Terms/Privacy notice next
     // to the "Sign in with Google" button (rather than firing OAuth silently from the nav).
-    return `<a class="nav-auth" href="${pageHref('account.html')}">Log in</a>`;
+    return `<a class="nav-auth" href="${loginHref()}">Log in</a>`;
+  }
+  /* ⭐ 2026-10-08 (owner: "return to page they clicked sign up on please"). "Log in" goes to the
+     sign-in page (join.html) with ?next=<this page>, and join.html sends them back here once signed
+     in. It used to go to the account page and leave them there. The home page needs no next (join's
+     default IS home), nor do the sign-in / account pages themselves. join.html's nextUrl() accepts a
+     bare page name only, so a query on this page (?quiz=…, ?pl=…) is not carried. */
+  function loginHref() {
+    const here = currentPage();
+    const skip = { index: 1, join: 1, account: 1, confirm: 1, start: 1, deleted: 1 };
+    const join = pageHref('join.html');
+    return (!here || skip[here]) ? join : join + '?next=' + encodeURIComponent(here);
   }
 
   function navHtml() {

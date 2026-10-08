@@ -514,7 +514,14 @@ function render() {
   var user = a.getUser();
   if (user) {
     var next = nextUrl();
-    if (next) { window.location.replace(next); return; } // signed in → go where they wanted
+    if (next) {                                          // signed in → go where they wanted
+      /* 2026-10-08: an ad visitor's click params ride back with them (attrib.js §6 — ad params
+         ONLY, never the rest of this page's query), so their later pages still count for the
+         platform that brought them. A no-op for everyone else. */
+      var at = window.ThaiEarAttrib;
+      if (at && at.carry) { try { next = at.carry(next); } catch (_) {} }
+      window.location.replace(next); return;
+    }
     /* ⚠ WITHOUT THIS THE VISITOR IS STRANDED (fixed 2026-08-19). startGoogleSignIn() uses
        `redirectTo: window.location.href`, so Google returns them HERE as a fresh page load.
        They used to land back on "Create an account", see a tick, and have to work out that
