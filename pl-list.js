@@ -560,7 +560,33 @@
        downloaded copy would compare a stamp against itself and never report anything. index.json
        is precached, so a plain fetch resolves from the version cache offline and still answers. */
     var DL_QZ = null, dlQzLoaded = false;
-    function dlQzLoad() {
+    /* ⛔⛔ r245 (sw v794) — dlQzLoad(true): THE SERVER'S LIST, READ PAST THE WORKER, REPLACING THE
+       COPY THIS PAGE HOLDS. dlRunDownloads() calls it once per run, before any side-car is saved
+       and stamped. The plain load keeps the first copy it gets, and a page opened while the app is
+       switching to a new release gets the PREVIOUS release's list. saveQuizSidecars() then hashed
+       every NEW side-car against an OLD sig, saved none, and the playlist read "update" however
+       often it was retried on that visit. player.js dynQzSigLoad(true) is the twin and carries the
+       full account (DOWNLOAD_UPDATE_PATH.md §4b). `?te-save=` is the query sw.js never intercepts.
+       A failed or slow (10 s) read keeps the held copy, which is the old behaviour. */
+    function dlQzLoad(fresh) {
+      if (fresh) {
+        var ctl = null, timer = null, net;
+        try { ctl = new AbortController(); } catch (_) {}
+        try {   // a stub or an old engine can throw synchronously: then it is simply a failed read
+          net = fetch('/quiz-data/index.json?te-save=' + Date.now(),
+                      { cache: 'no-store', credentials: 'same-origin', signal: ctl ? ctl.signal : undefined })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function () { return null; });
+        } catch (_) { net = Promise.resolve(null); }
+        var cap = new Promise(function (res) {
+          timer = setTimeout(function () { try { if (ctl) ctl.abort(); } catch (_) {} res(null); }, 10000);
+        });
+        return Promise.race([net, cap]).then(function (m) {
+          clearTimeout(timer);
+          if (m && m.sig) { DL_QZ = m.sig; dlQzLoaded = true; }
+          return dlQzLoad();
+        });
+      }
       if (dlQzLoaded) return Promise.resolve(DL_QZ);
       return fetch('/quiz-data/index.json').then(function (r) { return r.ok ? r.json() : null; })
         .then(function (m) { DL_QZ = (m && m.sig) || null; dlQzLoaded = true; return DL_QZ; })
@@ -960,6 +986,8 @@
       if (!picked.length) { dlStatus('Select a playlist that needs downloading first.'); return; }
       if (!navigator.onLine) { dlStatus('You’re offline — reconnect to download playlists.', true); return; }
       dlSetBusy(true);
+      // r245: the server's quiz list, read once per run, before any side-car is saved and stamped.
+      var qzFreshP = dlQzLoad(true).catch(function () { return null; });
       var i = 0;
       (function next() {
         if (i >= picked.length) {
@@ -1004,6 +1032,7 @@
            ⚠ NEVER FAILS THE DOWNLOAD. A missing side-car costs that unit's quiz-1 questions
            and nothing else — the audio, which is what the user asked for, is already saved. */
         var qzSaved = {};
+        chain = chain.then(function () { return qzFreshP; });   // r245: the server's list, before any side-car is checked
         chain = chain.then(function () { return dlSaveQuizData(p).then(function (s) { qzSaved = s || {}; }); });
         /* r213 — dlQzLoad() too, and it must be AWAITED before the record is written a few
            lines below: dlQzSnapshot() reads DL_QZ synchronously and would store {} on a
