@@ -65,3 +65,11 @@
   Cache-Control: public, max-age=0, must-revalidate
 /topic-test2
   Cache-Control: public, max-age=0, must-revalidate
+# 2026-10-08: the ad landing aliases (_redirects) are the homepage under another path; keep them out
+# of search so the homepage is never indexed twice. Its canonical already points at "/".
+/from-reddit
+  X-Robots-Tag: noindex
+/from-google
+  X-Robots-Tag: noindex
+/from-youtube
+  X-Robots-Tag: noindex

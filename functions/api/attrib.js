@@ -49,7 +49,9 @@ const FIELDS = [
    ⚠ An UNKNOWN country (cf.country absent — local wrangler, or an edge that could not resolve it)
    FAILS CLOSED and is treated as consent-required. Recording nothing is recoverable; recording
    something we should not have is not. */
-const CONSENT_REQUIRED_COUNTRIES = new Set([
+/* ⚠ EXPORTED (2026-10-08): /api/lp imports this same Set for the click ids it holds on a `heard`
+   event. One list, so the two carve-outs cannot drift apart. */
+export const CONSENT_REQUIRED_COUNTRIES = new Set([
   // EU 27
   'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE',
   'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
@@ -81,8 +83,18 @@ export async function onRequestPost({ request, env }) {
   // Whitelist + clamp. Nothing here is displayed anywhere, but an
   // unbounded string from a URL is still not something to store.
   const row = { user_id: user.id };
+  /* ⭐ 2026-10-08 — THE EMAIL-LINK SIGNUP'S CLICK. auth.js sendMagicLink puts the ad click into the
+     new account's user_metadata.te_attrib, because the emailed link never lands back on the ad URL
+     the page would otherwise read it from. Used ONLY when the page itself sent no click, and then
+     erased below whatever happens (incl. the UK/EEA/CH strip), so the metadata never becomes a
+     second, unstripped home for a click id. */
+  const meta = (user.user_metadata && typeof user.user_metadata.te_attrib === 'object')
+    ? user.user_metadata.te_attrib : null;
+  const pageSent = FIELDS.some(f => f !== 'landing_page' && f !== 'referrer' &&
+                                    typeof body[f] === 'string' && body[f].trim());
+  const src = (!pageSent && meta) ? meta : body;
   for (const f of FIELDS) {
-    const v = body[f];
+    const v = src[f];
     if (typeof v === 'string' && v.trim()) row[f] = v.trim().slice(0, 512);
   }
   if (body.first_seen && typeof body.first_seen === 'string') {
@@ -125,6 +137,22 @@ export async function onRequestPost({ request, env }) {
      agree. */
 
   if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ ok: true, skipped: 'no_key' }, 200);
+  if (meta) {
+    /* Erase the metadata copy (see te_attrib above). Best effort: if this one request fails the copy
+       stays until a later /api/attrib call for the same user repeats the erase. gotrue MERGES user_metadata, so this overwrites only te_attrib
+       (with null) and leaves every other key as it was. */
+    try {
+      await fetch(env.SUPABASE_URL + '/auth/v1/admin/users/' + encodeURIComponent(user.id), {
+        method: 'PUT',
+        headers: {
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_metadata: { te_attrib: null } }),
+      });
+    } catch (_) {}
+  }
 
   try {
     // Plain insert, NOT upsert: the FIRST click that produced the account is

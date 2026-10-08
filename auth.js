@@ -1811,10 +1811,18 @@
     // Returns the Supabase promise ({ data, error }) so the caller can show feedback.
     sendMagicLink: function (email) {
       if (!client) return Promise.reject(new Error('auth still loading'));
-      return client.auth.signInWithOtp({
-        email: email,
-        options: { emailRedirectTo: window.location.origin + '/account.html' }
-      });
+      var opts = { emailRedirectTo: window.location.origin + '/account.html' };
+      /* ⭐ 2026-10-08 — AN EMAIL SIGNUP FROM AN AD KEEPS ITS CLICK. The link in the email lands on
+         confirm.html → /account, never back on the ad URL, so attrib.js's fromUrl() found nothing
+         and the signup recorded as organic (ADS_Q4_2026.md §4, "KNOWN LEAK"). The click now goes
+         into the NEW account's user_metadata (gotrue applies `data` only when it creates the
+         user), /api/attrib reads it from there, then ERASES it — it is a copy, never a second
+         home for a click id. Nothing is written to the device. */
+      try {
+        var at = window.ThaiEarAttrib, hit = at && at.url && at.url();
+        if (hit) opts.data = { te_attrib: hit };
+      } catch (_) {}
+      return client.auth.signInWithOtp({ email: email, options: opts });
     },
     /* The click-side half of the interstitial. confirm.html calls this from its button
        handler and NOWHERE ELSE — calling it on page load would hand the token straight

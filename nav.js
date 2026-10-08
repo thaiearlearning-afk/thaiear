@@ -452,7 +452,8 @@
     return (LOCAL_HOST && s) ? s + '.html' : s;
   }
   function currentPage() {
-    return bareName(location.pathname.split('/').pop() || 'index.html');
+    var p = bareName(location.pathname.split('/').pop() || 'index.html');
+    return /^from-[a-z]+$/.test(p) ? 'index' : p;   // the ad landing aliases ARE the homepage (_redirects)
   }
 
   // True when running inside the Capacitor native app (vs the website in a browser).

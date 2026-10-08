@@ -4,18 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ThaiEar — Free membership</title>
-<meta name="description" content="Create a free ThaiEar account to listen and take the quizzes — no payment, no card.">
+<meta name="description" content="Create a free ThaiEar account to save your progress and download topics to listen offline — no payment, no card.">
 <link rel="canonical" href="https://thaiear.com/join">
 <!-- og:start (gen_static_seo.js) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ThaiEar">
 <meta property="og:title" content="ThaiEar — Free membership">
-<meta property="og:description" content="Create a free ThaiEar account to listen and take the quizzes — no payment, no card.">
+<meta property="og:description" content="Create a free ThaiEar account to save your progress and download topics to listen offline — no payment, no card.">
 <meta property="og:url" content="https://thaiear.com/join">
 <meta property="og:image" content="https://thaiear.com/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ThaiEar — Free membership">
-<meta name="twitter:description" content="Create a free ThaiEar account to listen and take the quizzes — no payment, no card.">
+<meta name="twitter:description" content="Create a free ThaiEar account to save your progress and download topics to listen offline — no payment, no card.">
 <meta name="twitter:image" content="https://thaiear.com/og-image.png">
 <!-- og:end -->
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -158,9 +158,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>
     Free membership
   </span>
-  <h1 class="sub-title">Create an account or sign in to unlock — it’s free</h1>
-  <p class="sub-lede" id="join-lede">Create a free account or sign in to listen, take the quizzes, build playlists and use all
-    reading course material straight away. No payment or card required.</p>
+  <h1 class="sub-title">Save your progress — create a free account or sign in</h1>
+  <p class="sub-lede" id="join-lede">Free topics, their quizzes and the Read Thai tests are open to everyone.
+    A free account saves your listening and quiz results, lets you build playlists, and lets you download
+    to listen offline. No payment or card required.</p>
 
   <div class="sub-card">
     <ul class="benefits">
@@ -168,18 +169,19 @@
         <span class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
         <span class="benefit-text"><strong>One-tap Google sign-in</strong><span>No password to create or remember.</span></span>
       </li>
-      <!-- ⚠ ORDER IS DELIBERATE (owner, 2026-08-22): listening comes SECOND, playlists THIRD.
-           This card is what a signed-out visitor gets when they press play on a free topic, so the
-           first thing under "one-tap sign-in" has to be the thing they were just trying to do.
-           Playlists are a feature they have not asked about yet. Swapped from the original order,
-           where "Custom playlists" sat second and the listening line did not exist at all. -->
+      <!-- ⭐ 2026-10-08 (owner): free topics, their quizzes and the Read Thai tests no longer need an
+           account, so a visitor now arrives here to SAVE something, not to listen. The two benefits
+           of an account are saved progress and offline downloads — those are the bullets.
+           (Was 2026-08-22: "listening comes SECOND", when a play tap on a free topic landed here.)
+           ⚠ Name BOTH offline routes — there is no App Store app; the iPhone route is the home
+           screen (marketing-copy cluster, the iPhone overpromise). -->
       <li class="benefit">
         <span class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-        <span class="benefit-text"><strong>Listen, then test yourself</strong><span>Free topic sentences and their quizzes. An account costs nothing — signing in is all it takes.</span></span>
+        <span class="benefit-text"><strong>Your progress, saved</strong><span>What you’ve listened to and your quiz scores, kept on your account on every device.</span></span>
       </li>
       <li class="benefit">
         <span class="benefit-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-        <span class="benefit-text"><strong>Custom playlists</strong><span>Build custom playlists for any topic’s sentences and listen offline.</span></span>
+        <span class="benefit-text"><strong>Playlists and offline listening</strong><span>Build playlists from any topic’s sentences, and download topics and playlists to listen with no connection — in the Android app, or from your iPhone’s home screen.</span></span>
       </li>
     </ul>
 
@@ -204,9 +206,9 @@
 <script>
 /* The free sign-in page. ⚠ "MEMBER" IS A RETIRED WORD (tier retirement 2026-08-10, and the
    owner flagged it still showing here on 2026-08-21) — there are two tiers, Free and Premium,
-   and signing in is what an account gets you, not a tier. Since the 2026-08-21 access change
-   LISTENING itself needs an account on every tier, which is the main reason a visitor arrives
-   here. ?next=<page> sends them back to the topic they wanted once signed in. */
+   and signing in is what an account gets you, not a tier. Since 2026-10-08 free topics, their
+   quizzes and the Read Thai tests are open signed out, so a visitor arrives here to SAVE something
+   (progress, a playlist, a download) — the gateSignIn() callers in player.js. ?next=<page> sends them back to the topic they wanted once signed in. */
 
 // Reader-app compliance: in the Capacitor app, hide the "See premium membership" link (it leads to
 // the web checkout). Direct Capacitor check so it applies immediately, before auth.js resolves.

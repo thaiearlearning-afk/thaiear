@@ -4256,10 +4256,18 @@
      ⚠ Auth resolves a few hundred ms after paint and can be briefly null offline, so an
      unresolved state must never gate — a paying, downloaded, offline listener has to be able to
      press play. Same rule entitledForPage() already follows. */
+  /* ⭐ 2026-10-08 — FREE UNITS PLAY SIGNED OUT AGAIN (owner: "remove the sign in gate on free
+     topics … i think the only reason we gated it in first place was to help with ad capture").
+     The 2026-08-21 rule above existed so an ad click had to become an account before it could
+     hear anything; measured on the Q4 trial's first day it turned ~180 Reddit landings into one
+     signup. A signed-out visitor now hears a FREE unit; member/premium units still need an
+     account first, exactly as before. Saving (playlists, downloads, quiz results to the account)
+     still needs one — those gates are gateSignIn() callers and are untouched.
+     ⚠ Audio is unaffected server-side: a free unit's clips were always on the PUBLIC bucket. */
   function mayListen() {
     var a = window.ThaiEarAuth;
     if (!a || !a.isReady) return true;                 // still resolving → never wrongly refuse
-    if (!(a.getUser && a.getUser())) return false;     // no account → no audio, any tier
+    if (!(a.getUser && a.getUser())) return TIER !== 'member' && TIER !== 'premium';   // signed out: free units only
     return entitledForPage();
   }
 
@@ -4314,7 +4322,11 @@
       return TIER === 'premium' ? canUseOffline('premium')
                                 : !!(a.isSubscribed && a.isSubscribed());
     }
-    return !!(a.getUser && a.getUser());          /* free unit: an account is the bar */
+    /* free unit: OPEN, signed in or out (owner, 2026-10-08, superseding the 2026-09-22 "only logged
+       in users can enter the test menu" for FREE units only — premium units and the whole grammar
+       arm keep the bar above). A signed-out run's scores and settings stay on the device
+       (ThaiEarQuizStore keeps a local copy); only signing in puts them on the account. */
+    return true;
   }
   /* What a refused QUIZ tap should do: the paywall where premium is required, the free sign-in
      where an account is. ⛔ Without this a signed-out visitor refused on grammar-01 would be sent
@@ -4328,7 +4340,12 @@
      tier that no longer exists. Same behaviour, honest name — nothing here was ever about the
      member TIER, only about needing a login. */
   function gateSignIn() {
-    window.location.href = pageLinkHref('join.html') + '?feature=1&next=' + encodeURIComponent(PAGE_FILE);
+    var to = pageLinkHref('join.html') + '?feature=1&next=' + encodeURIComponent(PAGE_FILE);
+    /* 2026-10-08: an ad visitor's click params ride along, so a signup on join.html is still
+       attributed (attrib.js §6). No-op for everyone else. */
+    var at = window.ThaiEarAttrib;
+    if (at && at.carry) { try { to = at.carry(to); } catch (_) {} }
+    window.location.href = to;
   }
   // gate(): what a non-entitled tap does. Premium → the paywall on the WEBSITE, but in the APP an
   // informational sheet instead (Google Play forbids steering to outside payment). A tier that only
@@ -11689,15 +11706,10 @@
      Re-entrant: called on mount AND on thaiear:auth, so it must remove its own node when the
      visitor turns out to be signed in, and must not stack duplicates when called twice. */
   function mountEndCta() {
-    /* ⛔ RETIRED 2026-08-21. It said "That's all N sentences. Save what you've done — a free
-       account keeps your progress…" to a signed-out visitor on a free topic. Since audio needs
-       an account, that visitor has now listened to NOTHING, so both halves are false: they have
-       not reached the end of anything, and there is no work to save. The ask that belongs in
-       that moment is the play gate itself, which they will already have met.
-       Left as an early return rather than deleted: the markup, the styles and the placement were
-       all tuned, and if the ask comes back in another form this is where it goes. */
-    return;
-    /* eslint-disable no-unreachable */
+    /* ⭐ BACK 2026-10-08 (owner: "yes"), with the free units playable signed out again. It was
+       retired 2026-08-21 because audio then needed an account, so a signed-out visitor at the end
+       of a free topic had heard nothing and had nothing to save. Both halves are true again now.
+       Signed out + free topic only; a signed-in visitor or a paid topic never sees it. */
     if (PLMODE) return;
     var nav = document.querySelector('.topic-nav');
     if (!nav || !nav.parentNode) return;

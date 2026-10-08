@@ -67,3 +67,10 @@
 /topics-intermediate-to-upper-intermediate.html /topics-upper-intermediate  301
 /topics-upper-intermediate-to-advanced          /topics-advanced            301
 /topics-upper-intermediate-to-advanced.html     /topics-advanced            301
+# 2026-10-08 (ADS_Q4_2026.md §4): the ad LANDING aliases. Each serves the homepage itself (a 200
+# rewrite, not a copy, so it can never drift from "/"); attrib.js reads the platform from the path.
+# ⚠ ONE path segment on purpose: the homepage's links are RELATIVE ("topics", "read"), so a nested
+# alias like /go/reddit would send every link to /go/topics. noindex: _headers.
+/from-reddit    /   200
+/from-google    /   200
+/from-youtube   /   200

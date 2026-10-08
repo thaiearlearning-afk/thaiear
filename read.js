@@ -1103,9 +1103,12 @@
      account so progress is tracked — same tier as member topics. auth.js
      (loaded by nav.js) exposes window.ThaiEarAuth. `?testauth=1` bypasses
      the gate for localhost previewing. */
-  /* Sign-in gate is LIVE (free-member tier for all reading tests).
-     `?testauth=1` remains as the localhost preview bypass. */
-  var GATE_OFF = false;
+  /* ⭐ 2026-10-08 — THE GATE IS OFF (owner: "re the reading quizzes - i think they ought to be same
+     as topic quizzes - i.e. free to signed out users"). Signed out, a test runs and its results go
+     to ANON_KEY on this device only (never synced, never migrated into an account — W72, see the
+     progress store above); signed in, they are saved to the account as before. The gate code is
+     kept, so turning it back on is this one flag. ADS_Q4_2026.md (the landing release). */
+  var GATE_OFF = true;
   var AUTH_BYPASS = GATE_OFF || /[?&]testauth=1/.test(location.search);
   function isSignedIn() {
     try {

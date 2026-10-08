@@ -474,6 +474,105 @@
     }
   }
 
+  /* ---------- 6. ad landing: carry the tags, count the totals (2026-10-08) -----------------
+     ADS_Q4_2026.md §4. The ads land on an ALIAS of the homepage (/from-reddit, /from-google,
+     /from-youtube — _redirects serves "/" there, so the page is identical by construction) instead
+     of the /start signup wall. Two things then have to work without /start:
+
+     (a) CARRY. The click lives only in the URL (fromUrl above), so a visitor who taps through to a
+         topic and signs up THERE used to record as organic. A capturing click listener copies the
+         ad params onto every same-origin link at the moment it is followed, so they ride along
+         page to page and fromUrl() still finds them at signup. `carry(url)` does the same for the
+         few navigations made in code (player.js gateSignIn).
+     (b) COUNT. Per-source TOTALS — landings, later page views, topic pages opened, and visitors
+         who HEARD a sentence (the dwell-gated credit, not a tap). POST /api/lp {src, ev} bumps a
+         per-day counter; no id, no IP, nothing per person is kept in the totals.
+         ⚠ The ONE exception is `heard`, which also sends the URL's gclid / rdt_cid for the third
+         conversion (see bump()); the server holds it outside UK/EEA/CH only, for 7 days at most.
+         "Heard a sentence" is counted ONCE per visit: the first credit adds te_p=1 to the URL
+         (history.replaceState), and every carried link takes it along, so a later page or a
+         reload does not count the same visitor again.
+
+     ⚠⚠ NOTHING HERE TOUCHES DEVICE STORAGE — URL and memory only — which is what keeps it outside
+     PECR reg 6 and consent-free, the same reasoning as fromUrl() and /api/seen. Do NOT "simplify"
+     the carry into sessionStorage: that moves it behind the consent gate, which is shut.
+     ⚠ The UK/EEA/CH strip still happens where it always did, server-side in /api/attrib, so a
+     carried gclid is never STORED for those visitors — and /api/lp applies the SAME strip (the
+     same imported Set) to the click id a `heard` event carries. */
+  var AD_SRC = { reddit: 1, google: 1, youtube: 1 };
+  var CARRY = PARAMS.concat(['te_p']);
+  function qs() { return ls(function () { return new URLSearchParams(location.search); }, null); }
+  function adSource() {
+    var q = qs(), s = q && String(q.get('utm_source') || '').toLowerCase();
+    if (s && AD_SRC[s]) return s;
+    var m = /^\/from-([a-z]+)\/?$/.exec(location.pathname);
+    return (m && AD_SRC[m[1]]) ? m[1] : null;
+  }
+  function carried() {
+    var q = qs(), out = {}, any = false;
+    if (!q) return null;
+    CARRY.forEach(function (p) { var v = q.get(p); if (v) { out[p] = v; any = true; } });
+    var s = adSource();
+    if (s && !out.utm_source) { out.utm_source = s; any = true; }   // a bare alias still names its platform
+    return any ? out : null;
+  }
+  function carry(href) {
+    var c = carried();
+    if (!c) return href;
+    return ls(function () {
+      var u = new URL(href, location.href);
+      if (u.origin !== location.origin || /^\/api\//.test(u.pathname)) return href;
+      Object.keys(c).forEach(function (k) { if (!u.searchParams.has(k)) u.searchParams.set(k, c[k]); });
+      return u.pathname + u.search + u.hash;
+    }, href);
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest && e.target.closest('a[href]');
+    if (!a || a.hasAttribute('download')) return;
+    var raw = a.getAttribute('href') || '';
+    if (!raw || raw.charAt(0) === '#' || /^(mailto|tel|javascript):/i.test(raw)) return;
+    var next = carry(raw);
+    if (next !== raw) a.setAttribute('href', next);
+  }, true);
+
+  function bump(ev) {
+    var s = adSource();
+    if (!s) return;
+    var body = { src: s, ev: ev };
+    /* `heard` ALSO carries the click id from the URL, so the platform can be told "this click led to a
+       sentence being played" (the third conversion — functions/api/lp.js holds it, never for
+       UK/EEA/CH, never past 7 days). Every other event is a bare count. */
+    if (ev === 'heard') {
+      var q = qs();
+      if (q && q.get('gclid')) body.gclid = q.get('gclid');
+      if (q && q.get('rdt_cid')) body.rdt_cid = q.get('rdt_cid');
+    }
+    ls(function () {
+      fetch('/api/lp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body), keepalive: true,
+      }).catch(function () {});
+    });
+  }
+  var heardCounted = false;
+  function noteHeard() {
+    if (heardCounted || !adSource()) return;
+    heardCounted = true;
+    var q = qs();
+    if (q && q.get('te_p')) return;                 // this visit was already counted on an earlier page
+    bump('heard');
+    ls(function () {
+      q.set('te_p', '1');
+      history.replaceState(history.state, '', location.pathname + '?' + q.toString() + location.hash);
+    });
+  }
+  (function countLoad() {
+    if (!adSource()) return;
+    if (/^\/from-[a-z]+\/?$/.test(location.pathname)) { bump('land'); return; }
+    bump('page');
+    if (/^\/topic-\d/.test(location.pathname)) bump('topic');
+  })();
+
   /* ---------- go ------------------------------------------------------- */
 
   capture();
@@ -529,8 +628,10 @@
   window.ThaiEarAttrib = {
     /* Called by player.js's notePlaySentence(), once per sentence heard, already gated by the
        dwell rule. ⚠ This is the ONLY thing that may increment `listens` — see postSeen(). */
-    noteListen: function (n) { postSeen(Math.max(1, parseInt(n, 10) || 1)); },
+    noteListen: function (n) { noteHeard(); postSeen(Math.max(1, parseInt(n, 10) || 1)); },
     click:  stored,                                 // what click is on file
+    url:    fromUrl,                                // the click in THIS page's URL (auth.js sendMagicLink)
+    carry:  carry,                                  // add the ad params to an in-site URL (§6)
     events: function () { return queue.slice(); },  // what would have been sent
     track:  track,
     send:   function () {},                         // replaced when the tag is installed
