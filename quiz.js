@@ -2861,13 +2861,27 @@
         return (contains(a.th, w.th) ? 1 : 0) - (contains(b.th, w.th) ? 1 : 0);
       });
     }
-    var wrongs = rank(list.filter(function (x) {
-      return x.th !== w.th && headGloss(x.en) !== headGloss(w.en) && x.pos === w.pos;
+    /* ⛔⛔ A WRONG OPTION THAT ALSO ANSWERS THE PROMPT IS THE WORST DECOY (owner, 2026-10-09, W93): on
+       "question particle (yes/no)" the answer was ไหม and หรือเปล่า, itself a yes/no question particle, was
+       offered as WRONG. The same-pos preference below made it certain: a unit's few particles are each
+       other's only same-pos words. Two fields, both built by gen_quiz_data.js and both gated by
+       check_vocab_twins.py, close it:
+       · `nx` — words this card must never be offered beside (an `exclude` verdict in
+         quiz-vocab-twin-verdicts.json; both cards stay, each keeps its own question);
+       · `dx` — decoys authored for the card (quiz-q3-vocab.json `dx`), tried FIRST. Every particle,
+         classifier and exclamation card has them: other particles with a clearly different job, so the
+         question tests the job instead of drawing whatever the unit happens to hold. */
+    var nx = w.nx || [];
+    function barred(x) { return nx.indexOf(x.th) >= 0; }
+    var wrongs = rank((w.dx || []).filter(function (x) {
+      return x.th !== w.th && headGloss(x.en) !== headGloss(w.en) && !barred(x);
     })).concat(rank(list.filter(function (x) {
-      return x.th !== w.th && headGloss(x.en) !== headGloss(w.en) && x.pos !== w.pos;
-    }))).concat(rank(VT() ? pool.filter(function (x) {
+      return x.th !== w.th && headGloss(x.en) !== headGloss(w.en) && x.pos === w.pos && !barred(x);
+    }))).concat(rank(list.filter(function (x) {
+      return x.th !== w.th && headGloss(x.en) !== headGloss(w.en) && x.pos !== w.pos && !barred(x);
+    }))).concat(rank((VT() ? pool.filter(function (x) {
       return x.th !== w.th && headGloss(x.en) !== headGloss(w.en);
-    }) : pool.slice()));
+    }) : pool.slice()).filter(function (x) { return !barred(x); })));
 
     var opts = [{ th: w.th, en: w.en, tl: w.tl, ok: 1 }];
     twins.forEach(function (t) { opts.push({ th: t.th, en: t.en, tl: t.tl, ok: 1 }); });
