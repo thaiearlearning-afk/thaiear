@@ -383,6 +383,10 @@
     .nav-auth { font-size: calc(13px * var(--te-ui, 1)); font-weight: 500; color: var(--accent);
       text-decoration: none; white-space: nowrap; flex-shrink: 0; }
     .nav-auth:hover { color: var(--accent-mid); }
+    /* Desktop reads "Sign up / Log in", a phone reads "Log in" (authLinkHtml). The pending
+       placeholder holds the DESKTOP label's width so the row does not shift when auth lands. */
+    .nav-auth-short { display: none; }
+    .nav-auth-pending { display: inline-block; min-width: 96px; opacity: 0; }
     .nav-username { font-size: calc(13px * var(--te-ui, 1)); font-weight: 500; color: var(--text-primary);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 12ch; }
 
@@ -421,6 +425,9 @@
       .site-nav { padding: 0 1rem; }
       .nav-links { gap: 1rem; }
       .nav-links a { font-size: calc(12px * var(--te-ui, 1)); }
+      .nav-auth-long { display: none; }
+      .nav-auth-short { display: inline; }
+      .nav-auth-pending { min-width: 44px; }
       /* Android "display size" shrinks the CSS viewport as well as inflating text, so the
          phone case is the narrow one AND the big-text one at the same time. Give the name
          less rope here — the person icon beside it is what actually identifies the account. */
@@ -596,9 +603,8 @@
       if (guess && guess.state === 'in') {
         return `<span class="nav-username">${escapeHtml(guess.user.username)}</span>` + personMenuHtml();
       }
-      if (guess && guess.state === 'out') return `<a class="nav-auth" href="${loginHref()}">Log in</a>`;
-      return '<span class="nav-auth nav-auth-pending" aria-hidden="true" ' +
-        'style="display:inline-block;min-width:48px;opacity:0"></span>';
+      if (guess && guess.state === 'out') return authLinkHtml();
+      return '<span class="nav-auth nav-auth-pending" aria-hidden="true"></span>';
     }
     const user = getUser();
     if (user) {
@@ -608,9 +614,20 @@
         personMenuHtml()
       );
     }
-    // Logged out: send to the account page, which shows the Terms/Privacy notice next
+    // Logged out: send to the sign-in page, which shows the Terms/Privacy notice next
     // to the "Sign in with Google" button (rather than firing OAuth silently from the nav).
-    return `<a class="nav-auth" href="${loginHref()}">Log in</a>`;
+    return authLinkHtml();
+  }
+  /* ⭐ 2026-10-09 (owner): on DESKTOP the link reads "Sign up / Log in" — "Log in" alone hid that
+     the same page creates an account, and a desktop visitor has no "Create a free account" button
+     in view the way a phone does (home-cta.js). On a phone (≤600px) it stays "Log in": the blue
+     button already says the rest and the bar has no room. ONE link, TWO labels, CSS picks: the
+     markup is identical on every width, so r149's "rebuild only when the markup changed" and the
+     identity readers (.nav-auth present = signed out) are unaffected. Same href either way. */
+  function authLinkHtml() {
+    return `<a class="nav-auth" href="${loginHref()}">` +
+      '<span class="nav-auth-long">Sign up / Log in</span>' +
+      '<span class="nav-auth-short">Log in</span></a>';
   }
   /* ⭐ 2026-10-08 (owner: "return to page they clicked sign up on please"). "Log in" goes to the
      sign-in page (join.html) with ?next=<this page>, and join.html sends them back here once signed
