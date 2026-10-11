@@ -513,9 +513,12 @@
     /* ⚠ NO Socials entry (owner, 2026-09-29): the posts do not suit the brand yet, so the page
        is unplugged — no menu entry, no footer link, noindex, out of the sitemap. socials.html
        itself stays live for anyone holding the URL. Restore all five together. */
-    // Visible everywhere INCLUDING inside the Capacitor app (owner, 2026-08-02 — the page now
-    // documents offline downloads/playlists, useful in-app; supersedes the old fourth-wall hide).
-    { label: 'App', page: 'app.html', public: true },
+    /* ⛔ HIDDEN INSIDE THE ANDROID APP (owner, 2026-10-11; supersedes 2026-08-02, which kept it
+       for the offline-downloads explainer). The page is mostly "get the app" — pointless when you
+       are in it — and it now tells website visitors to upgrade on the website first, which inside
+       the app would be the payment steering Google Play forbids. app.html also hides that
+       paragraph in the app, in case the page is reached some other way. */
+    { label: 'App', page: 'app.html', public: true, hideInApp: true },
   ];
   // Personal / account items — these live in the person-icon dropdown (logged in only),
   // NOT the generic Menu above.
