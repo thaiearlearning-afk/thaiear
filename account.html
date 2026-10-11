@@ -720,8 +720,8 @@ function renderMembershipBox(s) {
      browser". Saying where the thing CAN be done turns a statement of fact into a signpost,
      which is the shape Google Play's anti-steering rule is about; "use a web browser" gives
      the same practical help without pointing anywhere. Do not put the domain back.
-     ⚠ Still shown ONLY to people who have already paid — the Free branch deliberately renders
-     nothing in the app. That is the branch that would be steering; keep it empty. */
+     ⚠ The browser line is shown ONLY to people who have already paid. The Free branch gets a
+     bare statement of fact and no browser line — that is the branch that would be steering. */
   function noteBox(text) {
     return '<div style="padding:0.85rem 1rem;background:var(--surface);' +
       'border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:13.5px;' +
@@ -776,7 +776,14 @@ function renderMembershipBox(s) {
     /* Free takes var(--accent) — the Topics region's purple on the home page — the way Premium
        takes the gold. Grey was the inherited default of the line it sits in, which made the
        tier read as absent rather than as a tier you are actually on. */
-    line.innerHTML = 'Membership: <strong style="color:var(--accent)">Free</strong>';
+    /* ⚠ IN THE APP, A STATEMENT OF FACT AND NOTHING MORE (owner, 2026-10-11, after a free user
+       emailed to ask how to upgrade from the app — the page said nothing, so it read as broken).
+       Same words as player.js premiumInfoSheet()'s signed-in note, approved 2026-08-15. ⛔ No
+       "use a web browser" here: said to a FREE user that can only mean "go and buy it there",
+       which is the steering Google Play's payments rule forbids. The paid branches above may say
+       it because for them it means "manage what you already have". */
+    line.innerHTML = 'Membership: <strong style="color:var(--accent)">Free</strong>' +
+      (native ? '<br><span class="acct-muted">Membership can’t be managed in the app.</span>' : '');
     acts.innerHTML = '';
     setIsland(native ? '' :
       '<a class="btn btn-gold btn-wide" href="subscribe" style="text-decoration:none">Upgrade to Premium</a>');
