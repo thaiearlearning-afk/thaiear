@@ -234,7 +234,7 @@
     <!-- ⛔ WEBSITE ONLY (owner, 2026-10-11). Inside the Android app this line is payment steering
          under Google Play's rule, so the script just below removes it there (Capacitor injects its bridge before the page parses), and
          nav.js hides the App menu item in the app. Never show it in the app. -->
-    <p id="premium-web-note">Premium can’t be bought inside the app. Upgrade here on the website first, then sign in to the app with the same account to unlock everything.</p>
+    <p id="premium-web-note"><strong>Premium can’t be bought inside the app. Upgrade here on the website first, then sign in to the app with the same account to unlock everything.</strong></p>
     <script>
       try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { var n = document.getElementById('premium-web-note'); if (n) n.remove(); } } catch (_) {}
     </script>
