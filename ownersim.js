@@ -636,9 +636,22 @@
      caches, the newer one not yet active. Everything else means activations are not happening,
      which is precisely the v408 stall in a milder dress.
 
-     States: tidy · installing (transient, 2) · undeleted (newest active, others survived —
-     activate() ran but its delete did not finish) · stuck (newest NOT active) · unknown. */
-  function swVerdict(list, activeCache) {
+     States: tidy · installing (transient: a newer worker installing or waiting with ONE newer
+     cache, or the new one active with one older cache not yet deleted) · undeleted (newest
+     active, others survived — activate() ran but its delete did not finish) · stuck (newest NOT
+     active, and no install running) · unknown.
+
+     ⛔ 2026-10-11 — AN INSTALL IN PROGRESS IS NOT STUCK. install() opens thaiear-v<new> the moment
+     it starts, so for the whole install the device holds two caches with the OLDER one active:
+     exactly the benign window described above, which this function called STUCK because it never
+     looked at the registration. Owner's Android app, v801 → v802: "STUCK … installs are not
+     activating" printed directly under "installing: a newer worker is downloading now", and the
+     release activated on its own minutes later. On his phone an install always runs past its 8 s
+     budget and then re-fetches the gaps, so the window is routinely tens of seconds, not a blink.
+     `flight` is { installing, waiting } from the registration. ⚠ Only with exactly ONE cache newer
+     than the active one: two or more newer caches mean an EARLIER install never activated, which
+     is the v408 stall whatever is installing now. */
+  function swVerdict(list, activeCache, flight) {
     var n = list.length;
     var newest = list[n - 1];
     if (!activeCache) {
@@ -646,6 +659,17 @@
     }
     if (n === 1) return { code: 'tidy', html: 'tidy — one cache, and it is the active one.' };
     if (newest !== activeCache) {
+      var at = list.indexOf(activeCache);
+      var newer = at < 0 ? n : n - 1 - at;
+      if (flight && (flight.installing || flight.waiting) && newer === 1) {
+        return { code: 'installing', html: newest.slice(8) + ' is ' +
+          (flight.installing ? 'installing now' : 'installed and about to take over') +
+          ' — normal for up to a minute on a slow connection, and it takes over by itself. ' +
+          'Until it does, this device runs the older build and its quiz list. If it is still ' +
+          'here after a minute, tap Check for update.' +
+          (at > 0 ? ' Separately, ' + at + ' older cache' + (at === 1 ? '' : 's') +
+            ' survived an earlier update; tap Clear orphan caches once this one has finished.' : '') };
+      }
       /* The active worker is older than a build this device has already downloaded. */
       return { code: 'stuck', html: '<b>STUCK: ' + (n - 1) + ' cache(s) newer than the active one (newest is ' +
         newest.slice(8) + ').</b> This device downloaded builds it is not running — installs are ' +
@@ -685,6 +709,7 @@
           : 'none controlling this page')));
 
     var reg = out.reg;
+    var flight = { installing: !!(reg && reg.installing), waiting: !!(reg && reg.waiting) };
     if (reg) {
       if (reg.waiting) rows.push('waiting: a newer worker is installed and ready — tap Update');
       if (reg.installing) rows.push('installing: a newer worker is downloading now');
@@ -717,7 +742,7 @@
         rows.push('<span style="color:#1F5D3A">re-fetch record: none pending</span>');
       }
       rows.push('<span data-pcverify style="opacity:.75">precache vs live: checking…</span>');
-      var v = swVerdict(out.caches, activeCache);
+      var v = swVerdict(out.caches, activeCache, flight);
       var tone = (v.code === 'stuck' || v.code === 'undeleted') ? 'color:#7A1F1F'
                : v.code === 'unknown' ? 'opacity:.75' : 'color:#1F5D3A';
       rows.push('<span style="' + tone + '">' + v.html + '</span>');
@@ -729,8 +754,13 @@
     el.innerHTML = rows.join('<br>') +
       '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
         '<button type="button" id="ownersim-sw-update" style="' + SWBTN + '">Check for update</button>' +
+        /* ⚠ 2026-10-11 — DISABLED WHILE AN INSTALL IS RUNNING. The newest cache then belongs to the
+           install in progress, and the sweep keeps only the active cache: it would delete the cache
+           the new worker is writing into, and its activate() would open an empty one and rescue the
+           OLD build's files into it (migrateGaps). */
         '<button type="button" id="ownersim-sw-sweep" style="' + SWBTN + '"' +
-          (activeCache && out.caches.length > 1 ? '' : ' disabled') + '>Clear orphan caches</button>' +
+          (activeCache && out.caches.length > 1 && !flight.installing && !flight.waiting ? '' : ' disabled') +
+          '>Clear orphan caches</button>' +
         '<button type="button" id="ownersim-sw-refresh" style="' + SWBTN + '"' +
           (activeCache ? '' : ' disabled') + '>Re-download app files</button>' +
         /* ⚠ THE LAYOUT DEBUGGER'S ONLY REACHABLE SWITCH. layoutdbg.js is armed by
@@ -1063,6 +1093,110 @@
     setTimeout(fin, 5000);
   }
   function staleReport(el) { withTopics(function () { staleReportNow(el); }); }
+  /* ONE judgement of a download against a quiz list. The row verdict is the card's: the list this
+     phone's worker serves (topics-page.js loadQz reads it the same way). 2026-10-11: the same rules
+     are applied to the LIVE list too (liveCompare, below), so it is factored out here and the second
+     opinion cannot drift from the first; the only difference between them is the list they read. */
+  function judgeRow(e, unit, sig, pver, avStale) {
+    var pub = (sig && sig[unit] != null) ? sig[unit] : null;
+    var pv = (pver && pver[unit] != null) ? pver[unit] : null;
+    var verdict, why;
+    if (pub == null) { verdict = 'quiet'; why = 'no published stamp for this unit'; }
+    else if (!e.ver) { verdict = 'UPDATE'; why = 'no ver — predates the content stamp'; }
+    else if (e.qz == null) { verdict = 'UPDATE'; why = 'no qz — updated before v645'; }
+    else if (e.qz !== pub) { verdict = 'UPDATE'; why = 'qz differs — quiz re-published'; }
+    /* r217 — the PUBLISHED PAGE HASH as well. Without it this probe reported "quiet"
+       for a unit the card was correctly flagging, because it could only see the quiz
+       sig: a third opinion, which is the last thing this bug needed. */
+    else if (pv != null && e.ver !== pv) { verdict = 'UPDATE'; why = 'page differs — text or quiz block re-published'; }
+    else { verdict = 'quiet'; why = 'current'; }
+    if (avStale) {
+      if (verdict === 'UPDATE') why += '; audio differs too';
+      else { verdict = 'UPDATE'; why = 'audio differs — clips re-recorded'; }
+    }
+    return { verdict: verdict, why: why, pub: pub, pv: pv };
+  }
+  /* ⭐ 2026-10-11 — THE LIVE SITE'S QUIZ LIST, BESIDE THE PHONE'S OWN. Owner's Android app,
+     v801 → v802: he updated Dâi (ได้) and Emergencies: Calling for help, both cards kept the dotted
+     circle, and this section read UPDATE for both with their saved copies "✗ OLD". Both downloads
+     were in fact exactly the live release. An Update reads the list PAST the worker (player.js
+     dynQzSigLoad(true), r245); the cards, the unit pages and this section read the list the
+     phone's worker holds, and the phone was still installing v802 (DOWNLOAD_UPDATE_PATH.md §4b,
+     "what it deliberately does NOT change"). Proving it meant matching every stamp in the paste
+     against each release's published list by hand. This reads the live list the way an Update
+     does, and says when the phone's is older.
+     ⚠ The ROW verdict stays the phone-list one, because it is what the card shows: a probe that
+     disagreed with the card would be a third opinion (§0). The live judgement is printed BESIDE
+     it, labelled, and only for units whose stamps differ between the two lists.
+     ⚠ `?te-save=` is the one query sw.js never intercepts (network or nothing), and no-store skips
+     the HTTP cache; without both, the precache answers whatever the request asks for. Capped, so a
+     dead link leaves the rows exactly as they were. Never rejects. */
+  var LIVE_QZ_MS = 10000;
+  function getLiveQz() {
+    return new Promise(function (resolve) {
+      var done = false, ctl = null, p;
+      function fin(v) { if (done) return; done = true; clearTimeout(timer); resolve(v); }
+      try { ctl = new AbortController(); } catch (_) {}
+      var timer = setTimeout(function () { try { if (ctl) ctl.abort(); } catch (_) {} fin(null); }, LIVE_QZ_MS);
+      try {
+        p = fetch('/quiz-data/index.json?te-save=' + Date.now(),
+                  { cache: 'no-store', credentials: 'same-origin', signal: ctl ? ctl.signal : undefined });
+      } catch (_) { p = Promise.reject(new Error('fetch threw')); }
+      p.then(function (r) { return (r && r.ok) ? r.json() : null; })
+       .then(function (j) { fin(j && j.sig ? j : null); }, function () { fin(null); });
+    });
+  }
+  function liveCompare(el, phone, live, recs) {
+    var line = el.querySelector('[data-qzlive]');
+    if (!line) return;
+    if (!live) {
+      line.textContent = 'quiz list vs the live site: the live list could not be read (offline or a slow link), ' +
+        'so the rows judge the phone’s list only';
+      return;
+    }
+    if (!phone || !phone.sig) { line.textContent = 'quiz list vs the live site: the live list loaded, the phone’s did not'; return; }
+    var pv0 = phone.ver || {}, lv0 = live.ver || {}, keys = {}, moved = {}, nMoved = 0, k;
+    [phone.sig, live.sig, pv0, lv0].forEach(function (m) { for (k in m) keys[k] = 1; });
+    for (k in keys) {
+      if ((phone.sig[k] == null ? null : phone.sig[k]) !== (live.sig[k] == null ? null : live.sig[k]) ||
+          (pv0[k] == null ? null : pv0[k]) !== (lv0[k] == null ? null : lv0[k])) { moved[k] = 1; nMoved++; }
+    }
+    if (!nMoved) {
+      line.innerHTML = '<span style="color:#1F5D3A">quiz list: the same as the live site ✓</span>';
+      return;
+    }
+    var slots = {}, saved = {}, i, q;
+    q = el.querySelectorAll('[data-qzrow]');
+    for (i = 0; i < q.length; i++) slots[q[i].getAttribute('data-qzrow')] = q[i];
+    q = el.querySelectorAll('[data-saved]');
+    for (i = 0; i < q.length; i++) saved[q[i].getAttribute('data-saved')] = q[i];
+    var nLive = 0, nHere = 0;
+    recs.forEach(function (r) {
+      var L = judgeRow(r.e, r.unit, live.sig, live.ver, r.avStale);
+      if (L.verdict === 'UPDATE') nLive++;
+      if (!moved[r.unit]) return;
+      nHere++;
+      var txt;
+      if (L.verdict === 'UPDATE') {
+        txt = '<b style="color:#B00">live site: UPDATE' + (r.verdict === 'UPDATE' ? ' too' : '') + '</b> (' + esc(L.why) + ')' +
+          (r.verdict === 'UPDATE' ? '' : ' — the card shows it once this phone holds the live list');
+      } else if (L.why === 'current' && r.verdict === 'UPDATE') {
+        txt = '<b style="color:#1F5D3A">live site: current ✓</b> — this download IS the live release; ' +
+          'it reads UPDATE only against the phone’s older list';
+      } else {
+        txt = 'live site: quiet (' + esc(L.why) + ')';
+      }
+      if (slots[r.unit]) slots[r.unit].innerHTML = '<br><span style="font-size:11px">' + txt + '</span>';
+      var sp = saved[r.unit];
+      if (sp) { sp.setAttribute('data-lpv', L.pv == null ? '' : String(L.pv)); paintCopies(sp); }
+    });
+    line.innerHTML = '<b style="color:#B00">⚠ this phone’s quiz list is OLDER than the live site’s</b> ' +
+      '(' + nMoved + ' unit' + (nMoved === 1 ? '' : 's') + ' differ, ' + nHere + ' of them downloaded here): a release ' +
+      'still installing, or a file not yet re-fetched (see precache vs live above). The cards, the unit pages and ' +
+      'the rows below judge the phone’s list; an Update stamps from the live one, so a unit you have just ' +
+      'updated reads UPDATE here, and keeps the dotted circle on its card, until the phone holds the live list. ' +
+      'Against the live site: <b>' + nLive + '</b> should offer an update.';
+  }
   function staleReportNow(el) {
     var T = window.ThaiEarTopics;
     var man = {};
@@ -1074,30 +1208,19 @@
       return fetch(u, { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; })
         .catch(function () { return null; });
     }
+    var liveP = getLiveQz();   // beside the phone's own read, never instead of it
     Promise.all([getJson('/quiz-data/index.json'), getJson('/audio-versions.json')])
       .then(function (got) {
         var j = got[0], AV = (got[1] && typeof got[1] === 'object') ? got[1] : null;
         var sig = (j && j.sig) || null, pver = (j && j.ver) || null;
         var all = T ? [].concat(T.topics || [], T.structures || []) : [];
-        var rows = [], nStale = 0;
+        var rows = [], nStale = 0, recs = [];
         prefixes.forEach(function (pfx) {
           var e = man[pfx] || {};
           if (!e.refs || e.refs.indexOf('topic') === -1) return;   // not a topic's own download
           var u = null;
           for (var i = 0; i < all.length; i++) if (all[i].audio === pfx) { u = all[i]; break; }
           var unit = u ? String(u.page || '').replace(/\.html$/, '') : '?';
-          var pub = (sig && sig[unit] != null) ? sig[unit] : null;
-          var pv = (pver && pver[unit] != null) ? pver[unit] : null;
-          var verdict, why;
-          if (pub == null) { verdict = 'quiet'; why = 'no published stamp for this unit'; }
-          else if (!e.ver) { verdict = 'UPDATE'; why = 'no ver — predates the content stamp'; }
-          else if (e.qz == null) { verdict = 'UPDATE'; why = 'no qz — updated before v645'; }
-          else if (e.qz !== pub) { verdict = 'UPDATE'; why = 'qz differs — quiz re-published'; }
-          /* r217 — the PUBLISHED PAGE HASH as well. Without it this probe reported "quiet"
-             for a unit the card was correctly flagging, because it could only see the quiz
-             sig: a third opinion, which is the last thing this bug needed. */
-          else if (pv != null && e.ver !== pv) { verdict = 'UPDATE'; why = 'page differs — text or quiz block re-published'; }
-          else { verdict = 'quiet'; why = 'current'; }
           /* sw v794 — AND THE AUDIO STAMP, asked exactly as the card asks it (topics-page.js
              avStale): no published map or no recorded baseline means NOT stale. ⚠ topics.js avFor /
              avMoved are CALLED, not re-derived: they are the one implementation of the two-scheme
@@ -1107,11 +1230,10 @@
              say whether an Update had finished (only a finished Update moves an existing `av`). */
           var avPub = (AV && T && T.avFor) ? T.avFor(AV, pfx, e.av) : null;
           var avStale = !!(AV && e.av != null && avPub != null && T && T.avMoved && T.avMoved(e.av, avPub));
-          if (avStale) {
-            if (verdict === 'UPDATE') why += '; audio differs too';
-            else { verdict = 'UPDATE'; why = 'audio differs — clips re-recorded'; }
-          }
+          var J = judgeRow(e, unit, sig, pver, avStale);
+          var verdict = J.verdict, why = J.why, pub = J.pub, pv = J.pv;
           if (verdict === 'UPDATE') nStale++;
+          if (unit !== '?') recs.push({ unit: unit, e: e, avStale: avStale, verdict: verdict });
           rows.push('<div style="margin:3px 0 0"><b>' + esc(unit) + '</b> — ' +
             (verdict === 'UPDATE' ? '<b style="color:#B00">UPDATE</b>' : 'quiet') +
             ' <span style="color:#8A8A8A">(' + esc(why) + ')</span><br>' +
@@ -1121,6 +1243,7 @@
             '  pageVer:' + (pv == null ? '—' : esc(String(pv))) +
             '  av:' + (e.av == null ? '—' : esc(String(e.av))) +
             '  avPub:' + (avPub == null ? '—' : esc(String(avPub))) + '</span>' +
+            (unit !== '?' ? '<span data-qzrow="' + esc(unit) + '"></span>' : '') +
             (unit !== '?' ? '<br><span data-saved="' + esc(unit) + '" data-pv="' + esc(pv == null ? '' : String(pv)) +
               '" style="color:#8A8A8A;font-size:11px">saved copies: …</span>' : '') + '</div>');
         });
@@ -1131,14 +1254,22 @@
           (sig ? '' : ' <span style="color:#B00">⚠ stamp map did not load — every row reads quiet</span>') +
           (AV ? '' : ' <span style="color:#B00">⚠ audio map did not load — audio changes are not counted</span>') +
           (all.length ? '' : ' <span style="color:#B00">⚠ topic list did not load — units show as ? and every row reads quiet</span>') +
+          '<div data-qzlive style="color:#8A8A8A;font-size:11px">quiz list vs the live site: checking…</div>' +
           '<div data-pjs style="color:#8A8A8A;font-size:11px">player.js: …</div>' +
           rows.join('');
         /* 2026-09-24 — WHICH player.js WILL A TOPIC PAGE RUN? The r226 cachePage() fix deletes
            same-path strays, and the phone re-saved /topic-01 with the strays still there; this
            tells "the old code ran" from "the delete failed" without inference. */
         var pj = el.querySelector('[data-pjs]');
-        caches.keys().then(function (ks) {
-          var act = ks.filter(function (k) { return /^thaiear-v\d+$/.test(k); }).pop();
+        /* ⚠ 2026-10-11 — THE ACTIVE CACHE, NOT THE NEWEST. A page runs the player.js its worker
+           serves, and during an install the newest cache is the installing worker's, which has not
+           fetched player.js yet: the owner's panel read "player.js: not in thaiear-v802" mid v801 →
+           v802 while every page ran v801's copy. Ask the worker which cache it serves (te-version,
+           as the service-worker section does); the newest is only the fallback for no answer. */
+        Promise.all([swAsk().catch(function () { return null; }), caches.keys()]).then(function (got) {
+          var ks = got[1].filter(function (k) { return /^thaiear-v\d+$/.test(k); });
+          var said = got[0] && got[0].cache && ks.indexOf(got[0].cache) !== -1 ? got[0].cache : null;
+          var act = said || ks.pop();
           if (!act) { pj.textContent = 'player.js: no version cache'; return; }
           return caches.open(act).then(function (c) { return c.match('/player.js'); }).then(function (r) {
             if (!r) { pj.textContent = 'player.js: not in ' + act; return; }
@@ -1148,13 +1279,15 @@
                  worker, and the lock-screen trace obeys its switch): the next phone check needs to
                  know that code is what a topic page will run. It was the r226 page-key fix. */
               var has = t.indexOf('dynQzSigLoad(true)') !== -1;
-              pj.innerHTML = 'player.js in ' + esc(act) + ': ' + (has ? 'HAS the r245 quiz-list fix ✓'
-                : '<b style="color:#B00">OLD — no r245 fix</b>') + ' (' + esc(d) + ', ' + t.length + ' chars)';
+              pj.innerHTML = 'player.js in ' + esc(act) + (said ? ' (active)' : '') + ': ' +
+                (has ? 'HAS the r245 quiz-list fix ✓' : '<b style="color:#B00">OLD — no r245 fix</b>') +
+                ' (' + esc(d) + ', ' + t.length + ' chars)';
             });
           });
         }).catch(function () { pj.textContent = 'player.js: read failed'; });
         var spans = el.querySelectorAll('[data-saved]');
         for (var k = 0; k < spans.length; k++) savedCopies(spans[k]);
+        liveP.then(function (L) { liveCompare(el, j, L, recs); });
       });
   }
   /* 2026-09-24 — THE PAGE BYTES THEMSELVES, which the rows above cannot see. Owner, on the
@@ -1167,7 +1300,7 @@
      hashes BOTH copies with player.js's exact construction and prints when each was fetched.
      ⚠ Read-only: a probe that repaired what it measured would destroy the evidence. */
   function savedCopies(span) {
-    var unit = span.getAttribute('data-saved'), pv = span.getAttribute('data-pv');
+    var unit = span.getAttribute('data-saved');
     if (!window.caches) { span.textContent = 'saved copies: caches API unavailable'; return; }
     function h53(t) {
       var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
@@ -1195,6 +1328,8 @@
        re-save lands under a DIFFERENT key (query string, .html) beside the old one, which a
        single match cannot show. keys() is in insertion order, which is also match() order, so
        the first entry listed is the one an offline lookup is answered with. */
+    /* 2026-10-11: each copy is READ here and MARKED in paintCopies(), so the live list (which can
+       land before or after this read) re-marks the same line without reading the caches twice. */
     function one(name) {
       return caches.open(name).then(function (c) {
         return c.keys().then(function (reqs) {
@@ -1202,31 +1337,60 @@
             var p = new URL(q.url).pathname;
             return p === '/' + unit || p === '/' + unit + '.html';
           });
-          if (!mine.length) return name + ': none';
+          if (!mine.length) return { name: name, none: true };
           return Promise.all(mine.map(function (q) {
             var u = new URL(q.url);
             return c.match(q).then(function (r) {
-              if (!r) return u.pathname + u.search + ' → gone';
+              if (!r) return { path: u.pathname + u.search, gone: true };
               var d = r.headers.get('date') || '';
               return r.text().then(function (t) {
-                var hv = pageHash(t);
-                return u.pathname + u.search + ' ' + hv + (pv ? (hv === pv ? ' ✓' : ' ✗ OLD') : '') +
-                  (d ? ' (' + localStamp(d) + ')' : '') +
-                  (r.redirected ? ' [redirected]' : '');
+                return { path: u.pathname + u.search, hv: pageHash(t), d: d, redirected: !!r.redirected };
               });
             });
-          })).then(function (ls) { return name + ' [' + mine.length + ']: ' + ls.join(' | '); });
+          })).then(function (items) { return { name: name, items: items }; });
         });
-      }).catch(function () { return name + ': read failed'; });
+      }).catch(function () { return { name: name, failed: true }; });
     }
     caches.keys().then(function (ks) {
       var list = ks.filter(function (k) { return /^thaiear-v\d+$/.test(k) || k === 'thaiear-dl'; });
       return Promise.all(list.map(one));
     }).then(function (parts) {
-      span.innerHTML = 'saved copies — ' + parts.map(function (p) {
-        return /✗/.test(p) ? '<b style="color:#B00">' + esc(p) + '</b>' : esc(p);
-      }).join(' · ');
+      span.__teCopies = parts;
+      paintCopies(span);
     }).catch(function () { span.textContent = 'saved copies: read failed'; });
+  }
+  /* ⭐ 2026-10-11 — A COPY THAT IS THE LIVE PAGE IS NOT "OLD". `data-pv` is the page hash in the
+     phone's own list; when the live list carries a different one for the unit, liveCompare() sets
+     `data-lpv`. That day a correct Update's copy of Dâi (ได้) read "✗ OLD", because only the
+     phone's older hash was there to compare it with.
+     ⚠ "✗ OLD" with no live list to hand still means what it always meant, and so does the Step 1
+     tell "quiet + ✗ OLD = a stamp written without its bytes". "✗ OLD vs live (= the phone's older
+     list)" is a copy that matches the phone's list and not the live one: a unit not updated since
+     the release, not a writer fault. */
+  function copyMark(hv, pv, lpv) {
+    if (lpv && lpv !== pv) {
+      if (hv === lpv) return ' ✓ = live (the phone’s list is older)';
+      if (pv && hv === pv) return ' ✗ OLD vs live (= the phone’s older list)';
+      return ' ✗ OLD';
+    }
+    return pv ? (hv === pv ? ' ✓' : ' ✗ OLD') : '';
+  }
+  function paintCopies(span) {
+    var parts = span.__teCopies;
+    if (!parts) return;             // the cache read has not finished; it paints when it does
+    var pv = span.getAttribute('data-pv') || '', lpv = span.getAttribute('data-lpv') || '';
+    span.innerHTML = 'saved copies — ' + parts.map(function (p) {
+      var s;
+      if (p.failed) s = p.name + ': read failed';
+      else if (p.none) s = p.name + ': none';
+      else s = p.name + ' [' + p.items.length + ']: ' + p.items.map(function (it) {
+        if (it.gone) return it.path + ' → gone';
+        return it.path + ' ' + it.hv + copyMark(it.hv, pv, lpv) +
+          (it.d ? ' (' + localStamp(it.d) + ')' : '') +
+          (it.redirected ? ' [redirected]' : '');
+      }).join(' | ');
+      return /✗/.test(s) ? '<b style="color:#B00">' + esc(s) + '</b>' : esc(s);
+    }).join(' · ');
   }
   function esc(x) {
     return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;')
