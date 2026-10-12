@@ -1905,7 +1905,7 @@
     function summaryHtml() {
       var done = Object.keys(marks).length;
       var got = Object.keys(marks).filter(function (k) { return marks[k] === 'got'; }).length;
-      if (!done) return 'Read each word aloud — tone included — then check with the audio and mark yourself.';
+      if (!done) return 'Read each ' + (part === 'C' ? 'sentence' : 'word') + ' aloud — tone included — then check with the audio and mark yourself.';
       return '<strong>' + got + ' / ' + done + '</strong> marked right' +
         (done === order.length ? ' — finished! Shuffle to run it again.' : ' · ' + (order.length - done) + ' to go');
     }
@@ -1915,16 +1915,14 @@
     }
     var html =
       '<div class="quiz-tabs">' +
-      '<button class="tq-icon-btn' + (part === 'A' ? ' on' : '') + '" id="qp-a" type="button">Part A — everyday words</button>' +
-      '<button class="tq-icon-btn' + (part === 'B' ? ' on' : '') + '" id="qp-b" type="button">Part B — full coverage</button>' +
-      '<button class="tq-icon-btn' + (part === 'C' ? ' on' : '') + '" id="qp-c" type="button">Part C — short sentences</button>' +
+      '<button class="tq-icon-btn' + (part === 'A' ? ' on' : '') + '" id="qp-a" type="button">Part A</button>' +
+      '<button class="tq-icon-btn' + (part === 'B' ? ' on' : '') + '" id="qp-b" type="button">Part B</button>' +
+      '<button class="tq-icon-btn' + (part === 'C' ? ' on' : '') + '" id="qp-c" type="button">Part C</button>' +
       '</div>' +
       '<div class="tq-top">' +
       '<span class="tq-count">' + order.length + (part === 'C' ? ' sentences' : ' words') + ' · shuffled every load</span>' +
       '<button class="tq-icon-btn" id="quiz-shuffle" type="button" title="Shuffle and clear marks">' + SVG_REFRESH + 'Shuffle</button>' +
       '</div>' +
-      (part === 'B' ? '<div class="read-note">' + esc(D.quizBNote) + '</div>' : '') +
-      (part === 'C' ? '<div class="read-note">' + esc(D.quizCNote) + '</div>' : '') +
       '<div class="quiz-summary" id="quiz-summary">' + summaryHtml() + '</div>' +
       '<div class="quiz-cards">' +
       order.map(function (w, i) {

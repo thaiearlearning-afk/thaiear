@@ -368,8 +368,6 @@ window.ThaiEarRead = {
     { "thai": "หนังสือ", "t": "nǎng-sǔue", "en": "book",      "audio": "quiz-nangsuue", "note": "silent ห on the second syllable" },
     { "thai": "ยาก",    "t": "yâak",      "en": "difficult", "audio": "quiz-yaak" }
   ],
-
-  "quizBNote": "Part B fills in the letters and vowels Part A doesn't reach — every word is one you've already met on the letter and vowel pages. The rarest letters (ฆ ฌ ฎ ฏ ฑ ฒ ณ ฐ ภ ษ ฬ) barely exist outside their own name-words — revisit their consonant pages to read those.",
   "quizB": [
     { "thai": "ใบไม้",  "t": "bai-máai", "en": "leaf",           "audio": "baw-baimaai-word" },
     { "thai": "อ่าง",    "t": "àang",     "en": "basin",          "audio": "aw-aang-word" },
@@ -402,8 +400,6 @@ window.ThaiEarRead = {
     { "thai": "เอา",    "t": "ao",       "en": "to take",        "audio": "sara-ao-ex" },
     { "thai": "ฤดู",     "t": "rúe-duu",  "en": "season",         "audio": "rue-ex" }
   ],
-
-  "quizCNote": "10 short sentences, all beginner words. Same drill: read each one aloud, tone by tone, then check by ear and mark yourself.",
   "quizC": [
     { "thai": "ผมกินข้าว",     "t": "phǒm gin khâao",        "en": "I eat rice.",                 "audio": "qs-01" },
     { "thai": "หมาตัวใหญ่",    "t": "mǎa dtua yài",          "en": "The dog is big.",             "audio": "qs-02" },
