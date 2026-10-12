@@ -9,6 +9,7 @@
      checkout.session.completed         → activate (first subscribe)
      customer.subscription.updated      → renew / past_due / cancel-at-period-end
      customer.subscription.deleted      → ended → status canceled
+   ⚠ except onto a Google Play member's row: keepGoogleRow() below.
 
    Env: STRIPE_WEBHOOK_SECRET (secret), STRIPE_SECRET_KEY (secret),
         SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (secret)
@@ -30,6 +31,7 @@ export async function onRequestPost({ request, env }) {
         const sub = await stripeGet(env, 'subscriptions/' + obj.subscription);
         const row = rowFromSub(uid, sub, obj.customer);
         if (await isLifetime(env, sub)) row.lifetime = true; // STICKY: only ever auto-set true
+        if (await keepGoogleRow(env, row)) return new Response('ok: kept the Google Play membership', { status: 200 });
         await upsert(env, row);
       }
     } else if (event.type === 'customer.subscription.updated' ||
@@ -39,6 +41,7 @@ export async function onRequestPost({ request, env }) {
       if (uid) {
         const row = rowFromSub(uid, obj, obj.customer);
         if (await isLifetime(env, obj)) row.lifetime = true; // STICKY: only ever auto-set true
+        if (await keepGoogleRow(env, row)) return new Response('ok: kept the Google Play membership', { status: 200 });
         await upsert(env, row);
       }
     }
@@ -124,6 +127,34 @@ function subPeriodEnd(sub) {
   if (sub && sub.current_period_end) return sub.current_period_end;
   const it = sub && sub.items && sub.items.data && sub.items.data[0];
   return (it && it.current_period_end) || null;
+}
+
+/* ⚠ THE ROW MAY BELONG TO A GOOGLE PLAY MEMBER (source = 'google', written by google-play.js;
+   GOOGLE_PAYMENTS_PLAN.md §3c). Two paid writers share one row now, so before writing:
+     · a Google row + a Stripe state that grants NOTHING (an old subscription ending, an abandoned
+       one expiring) → write nothing. A late Stripe event must never strip a membership Google is
+       still being paid for; the event is answered 200 so Stripe does not retry it.
+     · a Google row + a Stripe state that GRANTS access (they lapsed in the app and subscribed on
+       the website) → the row becomes Stripe's, and says so, or the account page would keep
+       offering "Manage in Google Play" for a Stripe subscription.
+   ⚠ `source` is written ONLY in that takeover. Every other row is upserted exactly as before,
+   with no new column in the payload, so this file does not depend on the migration having run.
+   A failed read throws (→ 500 → Stripe retries) rather than writing blind. */
+async function keepGoogleRow(env, row) {
+  const prior = await currentRow(env, row.user_id);
+  if (!prior || prior.source !== 'google') return false;
+  if (row.status !== 'active' && row.status !== 'trialing') return true;
+  row.source = 'stripe';
+  return false;
+}
+
+async function currentRow(env, uid) {
+  const r = await fetch(env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + encodeURIComponent(uid) + '&select=*', {
+    headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY },
+  });
+  if (!r.ok) throw new Error('supabase read ' + r.status + ': ' + (await r.text()).slice(0, 300));
+  const rows = await r.json();
+  return (rows && rows[0]) || null;
 }
 
 async function upsert(env, row) {

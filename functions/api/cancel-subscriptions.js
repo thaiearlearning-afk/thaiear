@@ -3,7 +3,8 @@
    ------------------------------------------------------------
    POST /api/cancel-subscriptions  (authenticated). Finds every Stripe customer
    matching the signed-in user's email, cancels every non-cancelled subscription
-   on them IMMEDIATELY, and clears the user's Supabase row. Scoped to the caller's
+   on them IMMEDIATELY, and clears the user's Supabase row (never a Google Play
+   member's row: see below). Scoped to the caller's
    own email, so it can only affect their own data. Runs in whatever Stripe
    environment the site's key belongs to (test now), so no dashboard needed.
 
@@ -44,6 +45,16 @@ export async function onRequestPost({ request, env }) {
       }
     }
 
+    /* ⚠ NOT A GOOGLE PLAY MEMBER'S ROW (source = 'google'; GOOGLE_PAYMENTS_PLAN.md §4). Nothing
+       here can cancel a Google subscription, so deleting its row would take Premium away while
+       Google goes on charging. The Stripe half above still ran; the row stays, and follows
+       Google (google-play.js) once they cancel in the Play Store. The read is strict: no answer
+       means no delete, never a blind one. */
+    const own = await svcRow(env, user.id);
+    if (own && own.source === 'google') {
+      return json({ ok: true, customers: customers.size, canceled, google: true, kept_row: true }, 200);
+    }
+
     // Reset the app's view: drop the user's subscription row (service role).
     await fetch(env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + user.id, {
       method: 'DELETE',
@@ -64,6 +75,16 @@ async function storedCustomerId(env, token, uid) {
     const rows = await r.json();
     return rows[0] && rows[0].stripe_customer_id || null;
   } catch (_) { return null; }
+}
+
+// The whole row (select=*, so it reads whether or not `source` exists yet), service role.
+async function svcRow(env, uid) {
+  const r = await fetch(env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + encodeURIComponent(uid) + '&select=*', {
+    headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY },
+  });
+  if (!r.ok) throw new Error('supabase read ' + r.status);
+  const rows = await r.json();
+  return (rows && rows[0]) || null;
 }
 
 async function stripeGet(env, path) {

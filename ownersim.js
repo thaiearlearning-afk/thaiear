@@ -362,6 +362,58 @@
     paintTr();
     d.appendChild(atr);
 
+    /* ── GOOGLE PLAY BILLING CHECK (2026-10-12, GOOGLE_PAYMENTS_PLAN.md §3b) ─────────────────
+       App 1.7 carries RevenueCat's billing plugin with no button anywhere yet; this is how the
+       owner proves on the phone that it loads, takes the server's key, and sees what is for sale.
+       ⛔ READ-ONLY: it calls ThaiEarBilling.diagnose(), which never buys or restores. Its output
+       holds no user id and no key (billing.js guarantees it), because it gets pasted into chats.
+       ✅ ownersim.js and billing.js are both NOT precached, so this needs no VERSION bump. */
+    var bil = document.createElement('div');
+    bil.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px dashed #d8c8c8;' +
+      'font-size:12px;line-height:1.65';
+    function bilPluginInApp() {
+      try {
+        var hs = (window.Capacitor && window.Capacitor.PluginHeaders) || [];
+        return hs.some(function (h) { return h && h.name === 'Purchases'; });
+      } catch (_) { return false; }
+    }
+    function bilLoad() {
+      if (window.ThaiEarBilling) return Promise.resolve(window.ThaiEarBilling);
+      return new Promise(function (res) {
+        var s = document.createElement('script');
+        s.src = '/billing.js';
+        s.onload = function () { res(window.ThaiEarBilling || null); };
+        s.onerror = function () { res(null); };
+        document.head.appendChild(s);
+      });
+    }
+    var inApp = !!(window.ThaiEarAuth && window.ThaiEarAuth.isNative && window.ThaiEarAuth.isNative());
+    bil.innerHTML = '<strong style="color:#7A1F1F">Google Play billing</strong><br>' +
+      '<span>' + (!inApp ? 'Website: billing only exists inside the Android app.'
+        : bilPluginInApp() ? 'This app has the billing plugin (1.7 or later).'
+        : 'This app has NO billing plugin: it is 1.6 or older. Install 1.7 from internal testing.') + '</span>' +
+      '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button type="button" id="ownersim-bil-check" style="' + SWBTN + '">Check billing</button>' +
+      '</div>' +
+      '<textarea id="ownersim-bil-out" readonly style="width:100%;box-sizing:border-box;' +
+        'margin-top:8px;height:150px;font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;' +
+        'border:1px solid #c9c0b0;border-radius:6px;padding:6px;display:none"></textarea>' +
+      '<span style="display:block;margin-top:6px;color:#7A1F1F">Never buys anything. Before the ' +
+      'product exists in Play Console, "offering" reads as an error; that is expected.</span>';
+    bil.querySelector('#ownersim-bil-check').addEventListener('click', function () {
+      var ta = bil.querySelector('#ownersim-bil-out');
+      ta.style.display = 'block';
+      ta.value = 'checking…';
+      bilLoad().then(function (B) {
+        if (!B) { ta.value = 'billing.js did not load (offline?)'; return null; }
+        return B.diagnose().then(function (out) {
+          ta.value = JSON.stringify(out, null, 1);
+          try { ta.focus(); ta.select(); } catch (_) {}
+        });
+      }).catch(function (e) { ta.value = 'check failed: ' + String((e && e.message) || e); });
+    });
+    d.appendChild(bil);
+
     /* ── QUIZ REJECTION LOG (QUIZ_GO_LIVE_PLAN.md §2.10, 2026-09-22) ────────────────────────
        ⭐⭐ WHY THIS READER IS WORTH A PANEL. SOLUTION_FINDER.md §6c: the precision/recall
        asymmetry means a wrongly-ACCEPTED answer NEVER comes back — a learner told they are

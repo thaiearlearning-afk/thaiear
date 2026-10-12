@@ -5,6 +5,7 @@
    straight from Stripe so the account page is always accurate immediately (the
    Supabase copy, written by the webhook, can lag a few seconds). Returns:
      { subscribed, status, cancel_at_period_end, current_period_end }
+   plus `comped` (a grant, no Stripe) or `google` (bought in the Android app) when either applies.
 
    The audio gate still uses the Supabase copy; this is display-only.
    Env: SUPABASE_URL, SUPABASE_ANON_KEY, STRIPE_SECRET_KEY
@@ -53,11 +54,27 @@ export async function onRequestGet({ request, env }) {
      ⚠ AND IT IS REPORTED AS `comped` SO THE UI KNOWS NOT TO OFFER STRIPE ACTIONS. There is
      no subscription to cancel and no card to update — showing those buttons would hand
      someone a control that can only fail. */
-  const comped = await compedRow(env, token, user.id);
+  const own = await ownRow(env, token, user.id);
+  const comped = compedRow(own);
   if (comped) {
     return json({ subscribed: true, status: 'active', comped: true,
                   lifetime: !!comped.lifetime, cancel_at_period_end: false,
                   current_period_end: comped.current_period_end || null }, 200);
+  }
+
+  /* ⚠ A GOOGLE PLAY MEMBER (source = 'google', written by functions/api/google-play.js) ALSO HAS
+     NO STRIPE SUBSCRIPTION, so before this branch existed the comped test above matched them and
+     the account page would have shown a store-bought membership as complimentary. Answered from
+     the row, which google-play.js keeps in step with Google, and reported as `google` so the page
+     can offer Google Play's own controls and never Stripe's (GOOGLE_PAYMENTS_PLAN.md §3e).
+     On hold (past_due) is answered here too: the payment problem is Google's to fix. A canceled
+     Google row falls through to Stripe, exactly as any lapsed row does. */
+  if (own && own.source === 'google' &&
+      (own.status === 'active' || own.status === 'trialing' || own.status === 'past_due')) {
+    const live = own.status !== 'past_due';
+    return json({ subscribed: live, needsPayment: !live, google: true, status: own.status,
+                  lifetime: !!own.lifetime, cancel_at_period_end: !!own.cancel_at_period_end,
+                  current_period_end: own.current_period_end || null }, 200);
   }
 
   if (!env.STRIPE_SECRET_KEY) return json({ subscribed: false }, 200);
@@ -132,22 +149,27 @@ function periodEnd(s) {
 
 /* The user's own subscriptions row, read under THEIR token so RLS applies exactly as it does
    for auth.js — this endpoint must not be able to see more than the client already can.
-   A row only counts as comped when it is active AND carries no Stripe subscription: a real
-   paying member also has a row here, and for them Stripe stays the authority on dates,
-   cancellation and card state. */
-async function compedRow(env, token, uid) {
+   ⚠ select=* rather than a column list: a list naming `source` would fail as a WHOLE wherever
+   that column does not exist yet, and every member would read as Free. */
+async function ownRow(env, token, uid) {
   try {
-    const r = await fetch(env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + uid +
-      '&select=status,lifetime,current_period_end,stripe_subscription_id',
+    const r = await fetch(env.SUPABASE_URL + '/rest/v1/subscriptions?user_id=eq.' + uid + '&select=*',
       { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + token } });
     if (!r.ok) return null;
     const rows = await r.json();
-    const row = rows && rows[0];
-    if (!row) return null;
-    if (row.status !== 'active' && row.status !== 'trialing') return null;
-    if (row.stripe_subscription_id) return null;      // a real Stripe sub — let Stripe answer
-    return row;
+    return (rows && rows[0]) || null;
   } catch (_) { return null; }
+}
+
+/* A row only counts as comped when it is active AND carries no Stripe subscription: a real
+   paying member also has a row here, and for them Stripe stays the authority on dates,
+   cancellation and card state. Nor is a Google Play row comped (see the branch above). */
+function compedRow(row) {
+  if (!row) return null;
+  if (row.status !== 'active' && row.status !== 'trialing') return null;
+  if (row.stripe_subscription_id) return null;      // a real Stripe sub — let Stripe answer
+  if (row.source === 'google') return null;         // a Google Play sub — google-play.js keeps it
+  return row;
 }
 
 async function storedCustomerId(env, token, uid) {
