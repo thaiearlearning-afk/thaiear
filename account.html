@@ -111,6 +111,9 @@
      all look much neater"). One width, one height, one type size; the only thing that varies
      between them is COLOUR, which is what tells you a destructive one apart. */
   .btn-wide { display: block; width: 100%; text-align: center; }
+  /* An <a> styled as a button inherits the body's 1.6 line-height, a <button> does not — so a
+     link-button came out 6px taller than its neighbours (42 vs 36px, measured 2026-10-12). */
+  a.btn { line-height: normal; }
 
   /* ⚠ THE ACTIONS ARE A COLUMN WITH A GAP, NOT BUTTONS CARRYING THEIR OWN MARGINS. The old
      page spaced them with a margin-top typed at each call site, which is why the gaps were
@@ -139,7 +142,7 @@
      an empty box, and is why the state changes read as the card moving rather than the button
      changing its label. */
   .acct-danger { margin-top: 1.75rem; }
-  #account-danger:empty, #account-membership:empty { display: none; }
+  #account-danger:empty, #account-membership:empty, #account-rate:empty { display: none; }
 
   .acct-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
   /* In the danger card the stack IS the card, so it needs no top offset of its own. */
@@ -331,6 +334,7 @@
   </div>
   <div class="acct-card" id="account-body"><p class="acct-muted">Loading…</p></div>
   <div class="acct-card acct-danger" id="account-membership"></div>
+  <div class="acct-card acct-danger" id="account-rate"></div>
   <div class="acct-card acct-danger" id="account-danger"></div>
 </div>
 <script>
@@ -697,6 +701,32 @@ function saveDisplayName() {
 
 // Render the membership box from a subscription-state object. Shared by the instant
 // cache render and the Stripe refine, so both paths produce identical markup.
+/* True inside the Android app. ⚠ `?mockapp=1` fakes it ON LOCALHOST ONLY, so the app-only
+   parts of this page can be previewed in a desktop browser; on thaiear.com the param is inert. */
+function appView() {
+  if (window.ThaiEarAuth && window.ThaiEarAuth.isNative && window.ThaiEarAuth.isNative()) return true;
+  try {
+    return /^(localhost|127\.)/.test(location.hostname) &&
+      new URLSearchParams(location.search).get('mockapp') === '1';
+  } catch (_) { return false; }
+}
+/* ── RATE THAIEAR: its own island, between the membership CTA and the danger card ──────
+   App only, and signed-in only (owner, 2026-10-12): the store listing is the Android app's,
+   and a website visitor may never have installed it. Gold because it reads as five stars, not because it costs
+   money — the one exception to the button vocabulary above.
+   ⚠ A PLAIN LINK TO THE STORE PAGE, NEVER Google's in-app review card. The card must not be
+   started from a button: its time-bound quota means a tap can silently show nothing, and
+   Google's guidelines say a user-initiated rating goes to the Play Store instead. The card,
+   when it ships, is triggered by the app at a good moment, never from here.
+   The app shell sends any off-site link to Android as an intent, so this opens the Play
+   Store app, not a page inside the webview. */
+function renderRateBox(signedIn) {
+  var box = document.getElementById('account-rate');
+  if (!box) return;
+  box.innerHTML = signedIn && appView()
+    ? '<a class="btn btn-gold btn-wide" href="https://play.google.com/store/apps/details?id=com.thaiear.app" style="text-decoration:none">Rate ThaiEar on Google Play</a>'
+    : '';
+}
 function renderMembershipBox(s) {
   var line = document.getElementById('membership-line');
   var acts = document.getElementById('membership-actions');
@@ -715,7 +745,7 @@ function renderMembershipBox(s) {
      belongs with "Signed in as …" at the top; the buttons belong in the one action stack with
      everything else. Splitting them at the render is what keeps both true when the Stripe
      refine re-runs — it rewrites both halves, so they can never disagree about your tier. */
-  var native = !!(window.ThaiEarAuth && window.ThaiEarAuth.isNative && window.ThaiEarAuth.isNative());
+  var native = appView();
   /* ⚠ NO DESTINATION IS NAMED (2026-08-15). These used to read "visit thaiear.com in your web
      browser". Saying where the thing CAN be done turns a statement of fact into a signpost,
      which is the shape Google Play's anti-steering rule is about; "use a web browser" gives
@@ -1175,6 +1205,7 @@ function renderAccount() {
      visitor whose guess was 'in', or any future trim to the copy). */
   el.classList.remove('acct-wait-in', 'acct-wait-out');
   var user = a.getUser();
+  renderRateBox(!!user);
   var uid = user ? user.id : null;
   // Same signed-in user already rendered → don't rebuild the whole body (that reloads
   // the membership box and makes it flicker); just keep the consent block in sync.
