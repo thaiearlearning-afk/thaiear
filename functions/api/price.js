@@ -5,10 +5,11 @@
    Public (the price is public). Lets the site show the real price without it
    being hardcoded, so changing the Stripe Price is the only edit needed.
 
-   ⚠ MULTI-CURRENCY (2026-10-12, sw v808). The Price carries currency_options — GBP (the
-   default) plus USD EUR AUD NZD SGD HKD THB — and Stripe Checkout charges the one for the
-   buyer's country. This picks the same option from Cloudflare's country, so the subscribe
-   page shows what checkout will charge; a country not listed below gets the default (GBP).
+   ⚠ MULTI-CURRENCY (2026-10-12, sw v808; CAD added the same evening). The Price carries
+   currency_options — GBP (the default) plus USD EUR CAD AUD NZD SGD HKD THB — and Stripe
+   Checkout charges the one for the buyer's country. This picks the same option from
+   Cloudflare's country, so the subscribe page shows what checkout will charge; a country
+   not listed below gets the default (GBP).
    The two are separate geolocations and can disagree at the margin (a VPN, travel), which is
    why terms.html still says "the price shown at checkout".
    ⚠ A currency added to the Price in Stripe needs its countries added to LOCAL/EURO here,
@@ -18,10 +19,10 @@
    Env: STRIPE_SECRET_KEY, STRIPE_PRICE_ID
    ============================================================ */
 
-const SYMBOLS = { GBP: '£', USD: '$', EUR: '€', AUD: 'A$', NZD: 'NZ$', SGD: 'S$', HKD: 'HK$', THB: '฿' };
+const SYMBOLS = { GBP: '£', USD: '$', EUR: '€', CAD: 'CA$', AUD: 'A$', NZD: 'NZ$', SGD: 'S$', HKD: 'HK$', THB: '฿' };
 
 // Country (ISO 3166, as Cloudflare reports it) → a currency the Price carries.
-const LOCAL = { US: 'USD', PR: 'USD', AU: 'AUD', NZ: 'NZD', SG: 'SGD', HK: 'HKD', TH: 'THB' };
+const LOCAL = { US: 'USD', PR: 'USD', CA: 'CAD', AU: 'AUD', NZ: 'NZD', SG: 'SGD', HK: 'HKD', TH: 'THB' };
 // The euro area (Bulgaria joined 2026-01-01), then the states that use the euro by agreement.
 const EURO = 'AT BE BG CY DE EE ES FI FR GR HR IE IT LT LU LV MT NL PT SI SK AD MC SM VA ME XK'.split(' ');
 
