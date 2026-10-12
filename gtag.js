@@ -48,7 +48,7 @@
   var CONVERSIONS = {
     activation:   '2yhQCOv9quAcEKbN4L1E',            // Page view · Primary · the Smart Bidding target
     signup:       'KY8OCLiJmuAcEKbN4L1E',            // Sign-up · Primary (its goal is not an account default)
-    subscription: 'ado3CLuJmuAcEKbN4L1E',            // Subscribe · £6.99 GBP · Secondary where allowed
+    subscription: 'ado3CLuJmuAcEKbN4L1E',            // Subscribe · Secondary where allowed · ⚠ never sent yet, see send()
   };
 
   var loaded = false;
@@ -104,6 +104,10 @@
     if (!label || !window.ThaiEarConsent.granted('advertising')) return false;
 
     var payload = { send_to: ADS_ID + '/' + label };
+    // ⚠ NOTHING SENDS 'subscription' YET: attrib.js only ever calls track('signup') and
+    // track('activation'), so this branch has never run. Whoever wires it must replace the fixed
+    // 6.99 GBP with the amount and currency actually charged: since sw v808 the price is
+    // multi-currency (S$11.99, ฿299, $8.99 ... see functions/api/price.js).
     if (name === 'subscription') { payload.value = 6.99; payload.currency = 'GBP'; }
     window.gtag('event', 'conversion', payload);
     return true;
