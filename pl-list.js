@@ -412,6 +412,10 @@
       if (html === lastListHtml) return false;
       lastListHtml = html;
       root.innerHTML = html;
+      /* A real write has just destroyed any open "Remove sentences" tick list, so its state and its
+         bar go WITH it — here, the one place a write happens, so the two can never come apart.
+         render() puts the selection back if its row is still open; see the ⛔ note there. */
+      exitRemove();
       return true;
     }
     function authReady() { return !!(window.ThaiEarAuth && window.ThaiEarAuth.isReady); }
@@ -1366,11 +1370,23 @@
     }
 
     function render() {
-      // a re-render invalidates any live batch-remove tick mode
-      removing = null;
+      /* ⛔⛔ A REPAINT NEVER ENDS AN OPEN "REMOVE SENTENCES" SELECTION (2026-10-12). Owner: "it
+         showed me the list of sentences in the playlist, but none were selectable. i had to back
+         out of that and try again to get the selection circles and then the red remove button."
+         This used to open with `removing = null` and delete #dyn-rm-bar — "a re-render
+         invalidates any live batch-remove tick mode", which was true while every render rewrote
+         root.innerHTML. Since 2026-08-15 setList() SKIPS an identical write, so a repaint ended the
+         selection and deleted its bar but LEFT THE TICK LIST ON SCREEN: every tap hit
+         `if (!removing) return`, nothing ticked, there was no Done, and only closing the row (a
+         real rebuild) cleared it. auth.js notifies ~5 times at startup, on every token refresh and
+         once per recorded play, and each one lands here, so tapping "Remove sentences" in a
+         page's first seconds was enough.
+         Now: an identical write is skipped and the selection, its ticks and its bar are left
+         exactly as they are; a real write ends them inside setList() and they are put back below,
+         ticks carried, if the row is still open. The user ends a selection — Cancel, Done, or
+         closing / leaving its row — never a repaint. Covered by test_pl_remove.js. */
+      var keepRm = removing;
       setTimeout(dlPaintBar, 0);
-      var rb = document.getElementById('dyn-rm-bar');
-      if (rb) rb.parentNode.removeChild(rb);
       if (authReady() && !user()) {
         paintedJson = null;
         /* The old "Sign in (via the Menu) to create and play playlists…" note is GONE
@@ -1518,11 +1534,22 @@
           });
         });
       });
+      /* The write above ended an open selection (setList). Put it back while its row is still open
+         and still has sentences — with the ticks that still exist — but never mid-save: Done is
+         already removing them, and a fresh bar would offer the same sentences a second time. */
+      if (keepRm && !keepRm.saving && keepRm.id === openId) {
+        var kp = lists.filter(function (x) { return x.id === keepRm.id; })[0];
+        var kb = Array.prototype.filter.call(root.querySelectorAll('.pl-box'), function (b) {
+          return b.getAttribute('data-id') === keepRm.id;
+        })[0];
+        if (kp && kb && kp.items.length) enterRemove(kb, kp, keepRm.marked);
+      }
     }
 
     /* ── Remove sentences: native tick mode over simple item rows ── */
-    var removing = null;   // { id, marked: {tk|num: {topic_key, num}} }
-    function enterRemove(box, p) {
+    var removing = null;   // { id, marked: {tk|num: {topic_key, num}}, saving } — see render()'s ⛔ note
+    // keep (optional) = the marks of a selection a rebuild interrupted; those still listed stay ticked.
+    function enterRemove(box, p, keep) {
       if (removing) return;
       removing = { id: p.id, marked: {} };
       box.classList.add('rm-mode');   /* r76: hide this row's other actions while selecting */
@@ -1531,8 +1558,9 @@
       listEl.className = 'dyn-list removing pl-rm-list';
       listEl.innerHTML = p.items.map(function (it) {
         var key = it.topic_key + '|' + it.num;
+        if (keep && keep[key]) removing.marked[key] = keep[key];
         return '<div class="dyn-card" data-key="' + esc(key) + '">' +
-          '<span class="dyn-tick" aria-hidden="true"></span>' +
+          '<span class="dyn-tick' + (removing.marked[key] ? ' on' : '') + '" aria-hidden="true"></span>' +
           '<div class="dyn-txt"><div class="dyn-th">' + esc(String(it.thai).replace(/\s*\|\s*/g, ' ')) + '</div>' +
           '<div class="dyn-en">' + esc(it.english) + '</div></div></div>';
       }).join('');
@@ -1583,6 +1611,7 @@
       var items = [];
       for (var k in removing.marked) items.push(removing.marked[k]);
       if (!items.length) { exitRemove(); return; }
+      removing.saving = true;   // a rebuild from here on must not reopen the selection (render())
       /* r78: capture the prefixes of the sentences about to go, from the playlist's CURRENT items
          — after the removals land those entries are gone and the prefix is unrecoverable. */
       var affected = {};
@@ -1607,6 +1636,7 @@
         .then(function () { return dlPruneUnneeded(Object.keys(affected)).catch(function () {}); })
         .then(function () { render(); })
         .catch(function () {
+          if (removing) removing.saving = false;   // the selection is live again, so a rebuild may carry it
           btns.forEach(function (b) { b.disabled = false; });
           rmCount();
           msgModal('Couldn’t remove', 'You appear to be offline. Reconnect and try again.');
@@ -1706,8 +1736,10 @@
     /* r80 — REPAINT ON RETURN. Two different responses:
          · pageshow[persisted] = a genuine bfcache restore, rare → reload contents AND repaint;
          · visibilitychange = app foregrounded, frequent → repaint only.
-       ⚠ Skipped while a remove-sentences selection is open: render() clears `removing`, so
-       repainting on app-switch would silently discard the user's ticks. */
+       ⚠ Skipped while a remove-sentences selection is open. Until 2026-10-12 that was the only
+       thing stopping an app-switch from discarding the user's ticks; render() now carries a
+       selection across a rebuild itself (its ⛔ note), so this only spares a rebuild under the
+       finger mid-selection. */
     function repaintOnReturn(reload) {
       if (removing) return;  // never destroy an open selection
       if (reload && PL() && user() && navigator.onLine) {
