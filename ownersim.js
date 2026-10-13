@@ -414,6 +414,95 @@
     });
     d.appendChild(bil);
 
+    /* ── GOOGLE PLAY REVIEW CARD TEST (2026-10-13, GOOGLE_PAYMENTS_PLAN.md §8) ───────────────
+       App 1.8 carries our InAppReview plugin (InAppReviewPlugin.java): Play's own rating card.
+       WHEN learners are asked is review.js + functions/api/review.js (the end of a quiz, the
+       server's rule). "Show review card" proves the plugin can show the card at all; "Check the
+       rule" shows what the server would answer now, and records nothing.
+       ⚠ ONLY HERE may a button start the card. Google's guidance against buttons is about
+       learners (its quota can make a button silently do nothing); on an internal-testing install
+       the quota is lifted, so the card shows every time, unless that Google account already has
+       a review of ThaiEar. Nothing is stored. Not precached, so no VERSION bump. */
+    var rvw = document.createElement('div');
+    rvw.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px dashed #d8c8c8;' +
+      'font-size:12px;line-height:1.65';
+    function rvwPlugin() {
+      try {
+        var hs = (window.Capacitor && window.Capacitor.PluginHeaders) || [];
+        var has = hs.some(function (h) {
+          return h && h.name === 'InAppReview' &&
+            (h.methods || []).some(function (m) { return m && m.name === 'requestReview'; });
+        });
+        return has ? ((window.Capacitor.Plugins && window.Capacitor.Plugins.InAppReview) || null) : null;
+      } catch (_) { return null; }
+    }
+    rvw.innerHTML = '<strong style="color:#7A1F1F">Google Play review card</strong><br>' +
+      '<span>' + (!inApp ? 'Website: the review card only exists inside the Android app.'
+        : rvwPlugin() ? 'This app has the review card plugin (1.8 or later).'
+        : 'This app has NO review card plugin: it is 1.7 or older. Install 1.8 from internal testing.') + '</span>' +
+      '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button type="button" id="ownersim-rvw-show" style="' + SWBTN + '">Show review card</button>' +
+        '<button type="button" id="ownersim-rvw-check" style="' + SWBTN + '">Check the rule</button>' +
+      '</div>' +
+      '<textarea id="ownersim-rvw-out" readonly style="width:100%;box-sizing:border-box;' +
+        'margin-top:8px;height:70px;font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;' +
+        'border:1px solid #c9c0b0;border-radius:6px;padding:6px;display:none"></textarea>' +
+      '<span style="display:block;margin-top:6px;color:#7A1F1F">Close the card without submitting: ' +
+      'Play rules bar reviewing your own app. If nothing appears, that Google account may already ' +
+      'have a review of ThaiEar.</span>';
+    rvw.querySelector('#ownersim-rvw-show').addEventListener('click', function () {
+      var ta = rvw.querySelector('#ownersim-rvw-out');
+      ta.style.display = 'block';
+      var P = rvwPlugin();
+      if (!P) {
+        ta.value = inApp ? 'This app has no review card plugin (1.7 or older).' : 'Website: nothing to show.';
+        return;
+      }
+      ta.value = 'asking Google Play…';
+      Promise.resolve().then(function () { return P.requestReview(); }).then(function (out) {
+        var ms = (out && typeof out.ms === 'number') ? out.ms : null;
+        ta.value = 'done' + (ms != null ? ', the card flow lasted ' + ms + ' ms' : '') +
+          (ms != null && ms < 500 ? '\n(that short usually means Google chose not to show it)' : '');
+      }, function (e) {
+        ta.value = 'refused, code ' + String((e && e.code) || '?') + ': ' + String((e && e.message) || e) +
+          '\n(-1 = no Play Store, -2 = invalid request, -100 = Play internal error)';
+      });
+    });
+    /* "Check the rule": what the SERVER would answer at the end of a quiz right now
+       (functions/api/review.js via review.js check(), a GET). Records nothing, shows no card. */
+    var RVW_WHY = {
+      not_ready: 'the database change (supabase_user_activity_review.sql) has not been run yet',
+      no_row: 'this account has no activity record yet',
+      not_yet: 'fewer than 3 days of use so far',
+      gap: 'asked once already; the second ask waits for 6 more days of use',
+      done: 'asked twice already, so never again',
+      signed_out: 'not signed in',
+    };
+    function rvwLoad() {
+      if (window.ThaiEarReview) return Promise.resolve(window.ThaiEarReview);
+      return new Promise(function (res) {
+        var s = document.createElement('script');
+        s.src = '/review.js';
+        s.onload = function () { res(window.ThaiEarReview || null); };
+        s.onerror = function () { res(null); };
+        document.head.appendChild(s);
+      });
+    }
+    rvw.querySelector('#ownersim-rvw-check').addEventListener('click', function () {
+      var ta = rvw.querySelector('#ownersim-rvw-out');
+      ta.style.display = 'block';
+      ta.value = 'asking the server…';
+      rvwLoad().then(function (R) {
+        if (!R) { ta.value = 'review.js did not load (offline?)'; return null; }
+        return R.check().then(function (out) {
+          ta.value = (out.ask ? 'yes: the next quiz you finish in the app would offer the card'
+              : 'not now: ' + (RVW_WHY[out.reason] || out.reason || 'no answer')) +
+            '\n(plugin in this app: ' + (out.plugin ? 'yes' : 'no') + ')';
+        });
+      }).catch(function (e) { ta.value = 'check failed: ' + String((e && e.message) || e); });
+    });
+    d.appendChild(rvw);
+
     /* ── QUIZ REJECTION LOG (QUIZ_GO_LIVE_PLAN.md §2.10, 2026-09-22) ────────────────────────
        ⭐⭐ WHY THIS READER IS WORTH A PANEL. SOLUTION_FINDER.md §6c: the precision/recall
        asymmetry means a wrongly-ACCEPTED answer NEVER comes back — a learner told they are

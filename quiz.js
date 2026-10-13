@@ -3320,6 +3320,30 @@
     exits[exits.length - 1].onclick = function () { run = null; openPicker(); };
     sheet.querySelector('.tq-return').onclick = goBack;
     if (st) st.flush();
+    reviewAfterQuiz();
+  }
+
+  /* ── GOOGLE PLAY'S RATING CARD (2026-10-13, GOOGLE_PAYMENTS_PLAN.md §8b) ──────────────────────
+     A finished quiz, any score, is the one moment the app may offer it (owner: "quizzes only").
+     ⛔ The Android app only: the website never loads review.js. ⛔ Not in the allow-listed area.
+     review.js checks the rest (the app has the 1.8 plugin, signed in, online, on screen) and the
+     SERVER owns the rule (3rd day of use, 6 more days, then never: functions/api/review.js). */
+  var reviewLoad = null;
+  function reviewAfterQuiz() {
+    try {
+      var C = window.Capacitor;
+      if (!C || !C.isNativePlatform || !C.isNativePlatform() || VT()) return;
+      if (!reviewLoad) {
+        reviewLoad = window.ThaiEarReview ? Promise.resolve(window.ThaiEarReview) : new Promise(function (res) {
+          var s = document.createElement('script');
+          s.src = '/review.js';
+          s.onload = function () { res(window.ThaiEarReview || null); };
+          s.onerror = function () { reviewLoad = null; res(null); };
+          document.head.appendChild(s);
+        });
+      }
+      reviewLoad.then(function (R) { if (R && R.quizDone) R.quizDone(); });
+    } catch (_) {}
   }
 
 
