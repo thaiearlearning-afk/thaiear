@@ -183,6 +183,9 @@
   /* Same reason: the consent answer arrives from Supabase after first paint, and an empty
      wrapper in a gap:10px column is a visible 10px of nothing until it does. */
   #consent-area { display: flex; flex-direction: column; gap: 10px; }
+  /* The Subscribe slot inside the Google Play card (renderRateBox): its button, line and status
+     stack with the card's own 10px rhythm; empty, the stack's `> div:empty` rule removes it. */
+  #gp-subscribe { display: flex; flex-direction: column; gap: 10px; }
   #consent-area:empty { display: none; }
 
   /* ⚠ THE TWO IDENTITY LINES MATCH, AND SIT TOGETHER. "Membership: Premium (active)" is the
@@ -781,11 +784,24 @@ function subscribeGooglePlay() {
    when it ships, is triggered by the app at a good moment, never from here.
    The app shell sends any off-site link to Android as an intent, so this opens the Play
    Store app, not a page inside the webview. */
+/* ⭐ ONE GOOGLE PLAY CARD (owner, 2026-10-13: Subscribe with Google Play "should be grouped with
+   the rate ThaiEar on Google Play — the rate can sit above it since it has no writing underneath").
+   This card holds Rate, then a slot (#gp-subscribe) that renderMembershipBox fills with Subscribe
+   and its line for a free member. ⚠ DRAWN ONLY WHEN ITS STATE CHANGES: renderAccount calls this on
+   every auth notify, and rewriting it each time would empty the slot until the next membership
+   render (which runs only when the tier changes), so Subscribe would vanish. */
+var _rateDrawn = null;
 function renderRateBox(signedIn) {
   var box = document.getElementById('account-rate');
   if (!box) return;
-  box.innerHTML = signedIn && appView()
-    ? '<a class="btn btn-gold btn-wide" href="https://play.google.com/store/apps/details?id=com.thaiear.app" style="text-decoration:none">Rate ThaiEar on Google Play</a>'
+  var want = !!(signedIn && appView());
+  if (want === _rateDrawn) return;
+  _rateDrawn = want;
+  box.innerHTML = want
+    ? '<div class="acct-stack">' +
+        '<a class="btn btn-gold btn-wide" href="https://play.google.com/store/apps/details?id=com.thaiear.app" style="text-decoration:none">Rate ThaiEar on Google Play</a>' +
+        '<div id="gp-subscribe"></div>' +
+      '</div>'
     : '';
 }
 function renderMembershipBox(s) {
@@ -802,6 +818,9 @@ function renderMembershipBox(s) {
      Upgrade island under an active subscription — which is exactly the kind of thing the
      Stripe refine exists to correct. */
   function setCancel(html) { if (cancelSlot) cancelSlot.innerHTML = html || ''; }
+  /* The fifth destination: Subscribe with Google Play, inside the Google Play card under Rate.
+     Every branch sets it too, so a tier change never leaves a stale Subscribe behind. */
+  function setGp(html) { var g = document.getElementById('gp-subscribe'); if (g) g.innerHTML = html || ''; }
   /* ⚠ ONE FUNCTION, TWO DESTINATIONS, AND THAT IS THE POINT. The statement of what you have
      belongs with "Signed in as …" at the top; the buttons belong in the one action stack with
      everything else. Splitting them at the render is what keeps both true when the Stripe
@@ -823,7 +842,7 @@ function renderMembershipBox(s) {
      button in the main stack, where Update payment method sits for a Stripe member, so the
      card keeps the same shape whichever way someone pays. */
   if (s && s.google && (s.subscribed || s.needsPayment)) {
-    setCancel(''); setIsland('');
+    setCancel(''); setIsland(''); setGp('');
     var gEnd = '';
     if (s.current_period_end) { try { gEnd = new Date(s.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) {} }
     line.innerHTML = s.needsPayment
@@ -837,6 +856,7 @@ function renderMembershipBox(s) {
     return;
   }
   if (s && s.subscribed) {
+    setGp('');
     var endStr = '';
     if (s.current_period_end) { try { endStr = new Date(s.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) {} }
     /* ⚠ A COMPED MEMBERSHIP IS PREMIUM WITH NO STRIPE BEHIND IT. It cannot be cancelled
@@ -872,7 +892,7 @@ function renderMembershipBox(s) {
       '<button class="btn btn-gold btn-wide" onclick="resumeMembership()">Resume membership</button>' +
       '<p id="cancel-status" class="acct-muted" style="margin:0"></p>');
   } else if (s && s.needsPayment) {
-    setCancel(''); setIsland('');
+    setCancel(''); setIsland(''); setGp('');
     line.innerHTML = 'Membership: <strong style="color:#B00020">Payment problem</strong> — your last payment didn\u2019t go through. Update your card to keep it; access resumes once it clears.';
     acts.innerHTML = native
       ? reserve
@@ -904,14 +924,14 @@ function renderMembershipBox(s) {
     line.innerHTML = 'Membership: <strong style="color:var(--accent)">Free</strong>' +
       (why ? '<br><span class="acct-muted">' + why + '</span>' : '');
     acts.innerHTML = '';
-    setIsland(native
-      ? (gp ? '<div class="acct-stack">' +
-                '<button class="btn btn-gold btn-wide" onclick="subscribeGooglePlay()">Subscribe with Google Play</button>' +
-                '<p class="acct-muted" style="margin:0;font-size:12.5px;line-height:1.5;text-align:center">Monthly, billed by Google Play. Cancel anytime in the Play Store.</p>' +
-                '<p id="gp-status" class="acct-muted" style="margin:0"></p>' +
-              '</div>'
-            : '')
-      : '<a class="btn btn-gold btn-wide" href="subscribe" style="text-decoration:none">Upgrade to Premium</a>');
+    // In the app the purchase lives in the Google Play card, under Rate (see renderRateBox).
+    setGp(gp
+      ? '<button class="btn btn-gold btn-wide" onclick="subscribeGooglePlay()">Subscribe with Google Play</button>' +
+        '<p class="acct-muted" style="margin:0;font-size:12.5px;line-height:1.5;text-align:center">Monthly, billed by Google Play. Cancel anytime in the Play Store.</p>' +
+        '<p id="gp-status" class="acct-muted" style="margin:0"></p>'
+      : '');
+    setIsland(native ? '' :
+      '<a class="btn btn-gold btn-wide" href="subscribe" style="text-decoration:none">Upgrade to Premium</a>');
   }
 }
 // Build a membership-state object from the cached Supabase subscription (instant).
