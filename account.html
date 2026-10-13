@@ -67,10 +67,14 @@
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
-  .page-wrap { max-width: 560px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+  /* ⚠ HORIZONTAL PADDING IN px, VERTICAL MAY STAY rem (TEXT_SCALING.md rule 1). As rem, the page
+     and card gutters grew with Android's text size: at 320px wide and 2x text the card's
+     content column was 150px, and "Subscribe with Google Play" no longer fitted its button
+     (measured 2026-10-13). At default size these px values are the rem values exactly. */
+  .page-wrap { max-width: 560px; margin: 0 auto; padding: 3rem 24px 4rem; }
   .acct-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
   .acct-title { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 1.5rem; line-height: 1.2; }
-  .acct-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem 1.4rem; }
+  .acct-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem 22.4px; }
   .acct-card p { color: var(--text-secondary); margin-bottom: 1rem; }
   .acct-card .email { color: var(--text-primary); font-weight: 500; overflow-wrap: anywhere; }
   .acct-muted { font-size: 13px; color: var(--text-tertiary); }
@@ -298,14 +302,14 @@
      changes colour again. */
   .btn .tick-anim { color: inherit; }
   /* ── modal ── */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(20,16,48,0.45); display: flex; align-items: center; justify-content: center; padding: 1.25rem; z-index: 1000; }
-  .modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 400px; width: 100%; padding: 1.5rem 1.5rem 1.35rem; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(20,16,48,0.45); display: flex; align-items: center; justify-content: center; padding: 1.25rem 20px; z-index: 1000; }
+  .modal-card { background: var(--surface); border-radius: var(--radius-lg); max-width: 400px; width: 100%; padding: 1.5rem 24px 1.35rem; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
   .modal-card h2 { font-size: 18px; font-weight: 600; margin-bottom: 0.5rem; }
   .modal-card p { font-size: 14px; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.55; }
   .modal-card input { width: 100%; font-family: var(--font-ui); font-size: 14px; padding: 9px 11px; border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); margin-bottom: 1rem; }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
   @media (max-width: 600px) {
-    .page-wrap { padding: 2rem 1rem 3rem; }
+    .page-wrap { padding: 2rem 16px 3rem; }
     .acct-title { font-size: 22px; }
     /* .btn-row is only the modal's action row now; the account's own buttons are all
        .btn-wide in a column, at every width. */
@@ -470,7 +474,21 @@ function openDeleteModal() {
    does NOT mean the delete failed — the server may still have finished — so the message says to
    reload and check rather than claiming either outcome. */
 var deleteInFlight = false;
-function doDeleteAccount() {
+/* ⚠ A RENEWING GOOGLE PLAY MEMBER IS REFUSED ONCE (409 google_subscription_active, §7 row 15):
+   we cannot stop Google charging them, and deleting the account first would leave them paying
+   for nothing they can reach. Told so, with the way to cancel, then allowed to go ahead anyway
+   ({ google_ack: true }): it is their account. */
+function googleDeleteModal() {
+  showModal({
+    title: 'Cancel in Google Play first',
+    body: 'Your Premium is billed by Google Play, and deleting your account won’t stop Google charging you. ' +
+      '<a href="' + esc(playManageUrl()) + '" style="color:var(--accent);font-weight:500;text-decoration:none">Cancel it in Google Play</a>, ' +
+      'then come back and delete your account.',
+    confirmText: 'Delete anyway', cancelText: 'Keep account', danger: true,
+    onConfirm: function () { doDeleteAccount(true); },
+  });
+}
+function doDeleteAccount(googleAck) {
   if (deleteInFlight) return;
   var a = window.ThaiEarAuth;
   if (!a || !a.getAccessToken || !a.getAccessToken()) return;
@@ -483,8 +501,13 @@ function doDeleteAccount() {
      branch below reads as "session expired" and signs the person out mid-delete. */
   (a.freshToken ? a.freshToken() : Promise.resolve(a.getAccessToken()))
     .then(function (token) {
-      return fetch('/api/delete-account', { method: 'POST', headers: { Authorization: 'Bearer ' + token },
-                                            signal: ctrl ? ctrl.signal : undefined });
+      var init = { method: 'POST', headers: { Authorization: 'Bearer ' + token },
+                   signal: ctrl ? ctrl.signal : undefined };
+      if (googleAck === true) {
+        init.headers['Content-Type'] = 'application/json';
+        init.body = JSON.stringify({ google_ack: true });
+      }
+      return fetch('/api/delete-account', init);
     })
     .then(function (r) { return r.text(); })
     .then(function (t) {
@@ -496,6 +519,7 @@ function doDeleteAccount() {
         Promise.resolve(a.signOut()).catch(function () {}).then(go); // wait for the session to clear
         return;
       }
+      if (j && j.error === 'google_subscription_active') { if (st) st.textContent = ''; googleDeleteModal(); return; }
       if (j && j.error === 'forbidden') { Promise.resolve(a.signOut()).catch(function () {}); if (st) st.textContent = 'Your session expired — please sign in again, then retry.'; return; }
       if (st) st.textContent = 'Error: ' + (j.detail || j.error || t || 'unknown');
     })
@@ -710,6 +734,43 @@ function appView() {
       new URLSearchParams(location.search).get('mockapp') === '1';
   } catch (_) { return false; }
 }
+/* ── GOOGLE PLAY BILLING (GOOGLE_PAYMENTS_PLAN.md §7 rows 4–6, step F) ──────────────────────
+   Whether THIS app may show the Subscribe button now: identity.js's ThaiEarPlaySales (an app
+   with the plugin, and sales open or this device a tester). ⚠ SYNCHRONOUS, ON PURPOSE: the island
+   is drawn in the same pass as the card, so it is there from the first paint or never (the email
+   button's late arrival is the shift this avoids). billing.js is only needed when it is TAPPED. */
+function playBilling() {
+  var P = window.ThaiEarPlaySales;
+  return !!(appView() && P && P.canSell());
+}
+function playManageUrl() {
+  var B = window.ThaiEarBilling;
+  return B ? B.manageUrl('premium_monthly')
+           : 'https://play.google.com/store/account/subscriptions?package=com.thaiear.app&sku=premium_monthly';
+}
+/* The Google purchase. Every ThaiEarBilling call resolves (never rejects), so the button can
+   never be left half-pressed; `gpBusy` stops a second sheet while one is open. */
+var gpBusy = false;
+function subscribeGooglePlay() {
+  if (gpBusy) return;
+  var st = document.getElementById('gp-status');
+  function say(t, err) { if (st) { st.style.color = err ? '#B00020' : ''; st.textContent = t || ''; } }
+  var B = window.ThaiEarBilling;
+  if (!navigator.onLine || !B) { say('You’re offline — reconnect to subscribe.', true); return; }
+  gpBusy = true;
+  say('Opening Google Play…');
+  B.purchase().then(function (r) {
+    gpBusy = false;
+    var m = B.message(r);
+    say(m.text, m.error);
+    if (r.ok || r.reason === 'already_premium') {
+      loadMembership();   // this card; purchase() re-read the session's row
+      /* A sync that did not land leaves the row to RevenueCat's webhook (about a minute), so the
+         card looks again rather than sitting on Free until the next visit. */
+      if (r.ok && !r.synced) { setTimeout(loadMembership, 8000); setTimeout(loadMembership, 30000); }
+    }
+  });
+}
 /* ── RATE THAIEAR: its own island, between the membership CTA and the danger card ──────
    App only, and signed-in only (owner, 2026-10-12): the store listing is the Android app's,
    and a website visitor may never have installed it. Gold because it reads as five stars, not because it costs
@@ -746,16 +807,34 @@ function renderMembershipBox(s) {
      everything else. Splitting them at the render is what keeps both true when the Stripe
      refine re-runs — it rewrites both halves, so they can never disagree about your tier. */
   var native = appView();
-  /* ⚠ NO DESTINATION IS NAMED (2026-08-15). These used to read "visit thaiear.com in your web
-     browser". Saying where the thing CAN be done turns a statement of fact into a signpost,
-     which is the shape Google Play's anti-steering rule is about; "use a web browser" gives
-     the same practical help without pointing anywhere. Do not put the domain back.
-     ⚠ The browser line is shown ONLY to people who have already paid. The Free branch gets a
-     bare statement of fact and no browser line — that is the branch that would be steering. */
-  function noteBox(text) {
-    return '<div style="padding:0.85rem 1rem;background:var(--surface);' +
-      'border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:13.5px;' +
-      'color:var(--text-secondary);line-height:1.5">' + text + '</div>';
+  /* ⛔ THE "USE A WEB BROWSER" NOTES ARE RETIRED (owner, 2026-10-13: "isn't relevant to anyone …
+     blank reserved space is better than wrong info"). They told a Stripe member in the app where
+     to manage it. Now a Stripe member in the app gets no control here at all (the line above
+     still says what they have), and a Google member gets Google's own button.
+     ⚠ UNTIL THE PAGE KNOWS WHO BILLS THEM it holds ONE button's height blank instead of guessing:
+     cacheSub() marks `sourceUnknown` on a device that has never had a /api/subscription answer
+     for this account (a first visit). The refine then fills it (Google) or releases it (Stripe). */
+  var reserve = (native && s && s.sourceUnknown)
+    ? '<div aria-hidden="true" style="min-height:36px"></div>' : '';
+  /* ── BOUGHT THROUGH GOOGLE PLAY (`google: true` from /api/subscription; §7 rows 5, 6, 16) ──
+     Google bills it, so Google's subscriptions screen is the ONE control, on the website and in
+     the app alike: no Stripe button (they would only ever fail), no Cancel in the danger card
+     (it is cancelled in Google Play), no Resume island (resubscribing is Google's too). One
+     button in the main stack, where Update payment method sits for a Stripe member, so the
+     card keeps the same shape whichever way someone pays. */
+  if (s && s.google && (s.subscribed || s.needsPayment)) {
+    setCancel(''); setIsland('');
+    var gEnd = '';
+    if (s.current_period_end) { try { gEnd = new Date(s.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (_) {} }
+    line.innerHTML = s.needsPayment
+      ? 'Membership: <strong style="color:#B00020">Payment problem</strong> — Google Play couldn’t take your last payment. Update it in Google Play to get Premium back.'
+      : 'Membership: <strong style="color:#B29234">Premium</strong>' +
+        (s.cancel_at_period_end && gEnd ? ' — active until ' + gEnd + ', won’t renew' : ' (active)') +
+        '<br><span class="acct-muted">Billed through Google Play.</span>';
+    acts.innerHTML = '<a class="btn btn-primary btn-wide" href="' + playManageUrl() + '"' +
+      (native ? '' : ' target="_blank" rel="noopener"') +
+      ' style="text-decoration:none">Manage in Google Play</a>';
+    return;
   }
   if (s && s.subscribed) {
     var endStr = '';
@@ -770,7 +849,7 @@ function renderMembershipBox(s) {
       ? 'Membership: <strong style="color:#B29234">Premium</strong> — active until ' + endStr + ', won\u2019t renew'
       : 'Membership: <strong style="color:#B29234">Premium</strong> (active)';
     acts.innerHTML = (native || s.comped)
-      ? (s.comped ? '' : noteBox('To manage your premium membership, use a web browser.'))
+      ? (s.comped ? '' : reserve)
       /* ⚠ UPDATE PAYMENT METHOD SITS ABOVE CANCEL MEMBERSHIP (owner, 2026-08-22). The two
          are not peers: one keeps the thing going, one ends it, and the one that ends it
          belongs with the other endings at the foot of the stack. */
@@ -796,7 +875,7 @@ function renderMembershipBox(s) {
     setCancel(''); setIsland('');
     line.innerHTML = 'Membership: <strong style="color:#B00020">Payment problem</strong> — your last payment didn\u2019t go through. Update your card to keep it; access resumes once it clears.';
     acts.innerHTML = native
-      ? noteBox('To update your payment details, use a web browser.')
+      ? reserve
       : '<button class="btn btn-primary btn-wide" onclick="openPortal()">Update payment method</button>' +
         '<p id="portal-status" class="acct-muted" style="margin:0"></p>';   // payment-problem branch
   } else {
@@ -806,17 +885,33 @@ function renderMembershipBox(s) {
     /* Free takes var(--accent) — the Topics region's purple on the home page — the way Premium
        takes the gold. Grey was the inherited default of the line it sits in, which made the
        tier read as absent rather than as a tier you are actually on. */
-    /* ⚠ IN THE APP, A STATEMENT OF FACT AND NOTHING MORE (owner, 2026-10-11, after a free user
-       emailed to ask how to upgrade from the app — the page said nothing, so it read as broken).
-       Same words as player.js premiumInfoSheet()'s signed-in note, approved 2026-08-15. ⛔ No
-       "use a web browser" here: said to a FREE user that can only mean "go and buy it there",
-       which is the steering Google Play's payments rule forbids. The paid branches above may say
-       it because for them it means "manage what you already have". */
+    /* ⛔ NEVER A BROWSER OR WEBSITE LINE FOR A FREE USER IN THE APP: said to them it can only mean
+       "go and buy it there", the steering Google Play's payments rule forbids (a free user
+       emailed on 2026-10-11 asking how to upgrade from the app; the page then said nothing). */
+    /* ⭐ FROM APP 1.7 THE APP SELLS PREMIUM ITSELF, THROUGH GOOGLE PLAY (GOOGLE_PAYMENTS_PLAN.md
+       §7 row 4). A Google purchase is not steering; it is the route Google's rule asks for. The
+       island is the same gold card the website's Upgrade uses, so a free member finds the
+       one way to start paying in the same place on both. ⛔ Still never the website, a price
+       or a browser line here. An app too old to have the plugin (1.6) keeps a statement of
+       fact, now with the one thing that changes it: updating the app. */
+    var gp = native && playBilling();
+    var P = window.ThaiEarPlaySales;
+    /* Not selling here: an app too old to (sales open) is told the one thing that changes it;
+       before sales open, the statement of fact approved 2026-08-15 stays. */
+    var why = !native || gp ? ''
+      : (P && P.open && !P.appCanBuy()) ? 'Update ThaiEar from Google Play to subscribe in the app.'
+      : 'Membership can’t be managed in the app.';
     line.innerHTML = 'Membership: <strong style="color:var(--accent)">Free</strong>' +
-      (native ? '<br><span class="acct-muted">Membership can’t be managed in the app.</span>' : '');
+      (why ? '<br><span class="acct-muted">' + why + '</span>' : '');
     acts.innerHTML = '';
-    setIsland(native ? '' :
-      '<a class="btn btn-gold btn-wide" href="subscribe" style="text-decoration:none">Upgrade to Premium</a>');
+    setIsland(native
+      ? (gp ? '<div class="acct-stack">' +
+                '<button class="btn btn-gold btn-wide" onclick="subscribeGooglePlay()">Subscribe with Google Play</button>' +
+                '<p class="acct-muted" style="margin:0;font-size:12.5px;line-height:1.5;text-align:center">Monthly, billed by Google Play. Cancel anytime in the Play Store.</p>' +
+                '<p id="gp-status" class="acct-muted" style="margin:0"></p>' +
+              '</div>'
+            : '')
+      : '<a class="btn btn-gold btn-wide" href="subscribe" style="text-decoration:none">Upgrade to Premium</a>');
   }
 }
 // Build a membership-state object from the cached Supabase subscription (instant).
@@ -831,7 +926,23 @@ function cacheSub() {
   var sub = (a && a.getSubscription && a.getSubscription()) || null;
   var subscribedNow = !!(a && a.isSubscribed && a.isSubscribed());
   if (sub || subscribedNow) {
+    /* ⚠ WHO BILLS IT IS NOT IN auth.js's ROW (it selects three columns, on purpose), so it is
+       carried over from the last /api/subscription answer for this account. Without it a Google
+       member's first paint drew the Stripe shape, and the refine then swapped the button
+       under them. A cold cache can still do that once; every visit after is right first time. */
+    var known = null;
+    try {
+      var gu = a && a.getUser && a.getUser();
+      var gc = JSON.parse(localStorage.getItem('thaiear_membership') || 'null');
+      if (gc && gc.s && gu && gc.uid === gu.id) known = gc.s;
+    } catch (_) {}
+    /* comped / lifetime come from the same answer, for the same reason: auth.js's row cannot tell
+       a lifetime grant from a Stripe member, so a cold first paint showed Stripe's buttons. */
     return {
+      google: !!(known && known.google),
+      comped: !!(known && known.comped),
+      lifetime: !!(known && known.lifetime),
+      sourceUnknown: !known,
       subscribed: subscribedNow,
       needsPayment: !!(sub && (sub.status === 'past_due' || sub.status === 'unpaid')),
       status: sub && sub.status,
@@ -850,7 +961,7 @@ function cacheSub() {
 }
 function subSig() {
   var s = cacheSub();
-  return s.subscribed + '|' + s.needsPayment + '|' + s.status + '|' + s.cancel_at_period_end + '|' + s.current_period_end;
+  return s.subscribed + '|' + s.needsPayment + '|' + s.status + '|' + s.cancel_at_period_end + '|' + s.current_period_end + '|' + !!s.google + '|' + !!s.comped + '|' + !!s.sourceUnknown;
 }
 // Refine the box with the authoritative Stripe state (no webhook lag), in place.
 function loadMembership() {
@@ -1603,6 +1714,24 @@ else renderAccount();
      above, and both are already in sw.js's PRECACHE. -->
 <script src="dl-core.js"></script>
 <script src="app-cta.js"></script>
+<!-- Google Play billing (app 1.7+). Deferred and NOT precached: the Subscribe button's existence
+     is decided without it (playBilling()), and only a tap needs it, which needs the network anyway.
+     autoInit() finishes a payment that completed after the app closed (Google refunds what is not
+     acknowledged within 3 days); a no-op on any device that never opened the purchase sheet. -->
+<script src="billing.js" defer></script>
+<script>
+(function () {
+  var tried = false;
+  function go() {
+    var B = window.ThaiEarBilling, a = window.ThaiEarAuth;
+    if (tried || !B || !a || !a.isReady || !(a.getUser && a.getUser())) return;
+    tried = true;
+    B.autoInit();
+  }
+  window.addEventListener('thaiear:auth', go);
+  document.addEventListener('DOMContentLoaded', go);
+})();
+</script>
 <script src="consent.js" defer></script>
 <script src="attrib.js" defer></script>
 <script src="gtag.js" defer></script>

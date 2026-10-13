@@ -14,8 +14,10 @@
    ⚠ EVERY CALL RESOLVES, NONE REJECTS: { ok: true, … } or { ok: false, reason }. The website, an
       app older than 1.7, signed out, no key on the server — each is a plain reason, so a button
       wired to this can never be left half-pressed by an exception.
-   ⚠ NOT LOADED BY ANY PAGE YET (B: the build, "no visible button"). The owner panel loads it for
-      its billing check. Not in sw.js PRECACHE: buying needs the network anyway.
+   Loaded (deferred) by account.html and subscribe.html, injected by player.js's Premium sheet on a
+      tap, and by the owner panel for its billing check. Not in sw.js PRECACHE: buying needs the
+      network anyway, and no page decides what to DRAW from it (they test the plugin themselves,
+      synchronously, so the button is there from the first paint or never).
    ⛔ diagnose() never returns the user id or the key. The owner copies its output into a chat, and
       a user id is personal data (CLAUDE.md Golden Rule 0).
    ============================================================ */
@@ -275,6 +277,51 @@
     });
   }
 
+  /* ── what a Subscribe button does, in ONE place (the account page, subscribe.html, the topic
+     page's Premium sheet) ─────────────────────────────────────────────────────────────────────
+     buy(); "already owned" means this Google account already pays. Most likely for THIS ThaiEar
+     account with the row not yet written, so the server is asked to look (sync()): Premium →
+     a success. Otherwise it is paid for under another ThaiEar account → owned_by_other_account.
+     ⛔ NOT restore(): whether a restore MOVES a subscription between accounts is a RevenueCat
+     dashboard setting ("Keep with original App User ID" today), and a button must not depend on
+     a setting someone can change. A sync only reads. On success the session re-reads its row,
+     so every gate on the page opens without a reload. */
+  function purchase() {
+    return buy().then(function (r) {
+      if (r.ok || r.reason !== 'already_owned') return r;
+      return sync().then(function (s) {
+        if (!s.ok) return s;                                   // could not ask: never guess "someone else's"
+        return s.premium ? { ok: true, synced: true, premium: true, source: s.source }
+                         : fail('owned_by_other_account');
+      });
+    }).then(function (r) {
+      if (r.ok) { try { var a = auth(); if (a && a.refreshSubscription) a.refreshSubscription(); } catch (_) {} }
+      return r;
+    });
+  }
+  /* The words for a purchase() answer: { text, error }. '' = say nothing (the buyer closed the
+     sheet; they know). ⚠ Wording approved by the owner with GOOGLE_PAYMENTS_PLAN.md §7. */
+  var SAY = {
+    cancelled: '',
+    busy: '',
+    pending: 'Your payment is pending. Premium starts as soon as Google Play confirms it.',
+    already_premium: 'You already have Premium.',
+    owned_by_other_account: 'This Google Play subscription belongs to a different ThaiEar account. Sign in with that account to use it.',
+    offline: 'You’re offline — reconnect to subscribe.',
+    network: 'You’re offline — reconnect to subscribe.',
+    signed_out: 'Please sign in first.',
+    sync_failed: 'Couldn’t confirm your Premium just now. Please try again in a minute.'
+  };
+  var NOT_ERRORS = { cancelled: 1, busy: 1, pending: 1, already_premium: 1 };
+  function message(r) {
+    if (r && r.ok) return { text: 'Welcome to Premium!', error: false };
+    var why = (r && r.reason) || 'error';
+    return {
+      text: Object.prototype.hasOwnProperty.call(SAY, why) ? SAY[why] : 'Google Play couldn’t start the purchase. Please try again.',
+      error: !NOT_ERRORS[why]
+    };
+  }
+
   /* Google's own subscriptions screen for this app. In the app, a play.google.com address leaves
      the WebView for the Play Store (Capacitor hands non-site URLs to the system). */
   function manageUrl(productId) {
@@ -346,6 +393,8 @@
     available: function () { return !!plugin(); },
     buy: buy,
     restore: restore,
+    purchase: purchase,
+    message: message,
     sync: sync,
     offering: function () { return offering().then(function (o) { if (o.ok) delete o.pkg; return o; }); },
     manageUrl: manageUrl,

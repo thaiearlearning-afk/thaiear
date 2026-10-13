@@ -180,3 +180,51 @@
     greetingName: greetingName
   };
 })();
+
+/* ── ThaiEarPlaySales: CAN THIS APP SELL PREMIUM THROUGH GOOGLE PLAY, RIGHT NOW? ───────────────
+ * 2026-10-13, GOOGLE_PAYMENTS_PLAN.md step F. Here, not in billing.js, for the same reason as the
+ * identity above: every surface that draws a Subscribe button (account, subscribe, join, the topic
+ * page's Premium sheet) has to decide BEFORE first paint, and this file is the one blocking script
+ * they all load first. billing.js (deferred, not precached) is only needed when the button is TAPPED.
+ *
+ * Two conditions:
+ *   1. The installed app carries RevenueCat's "Purchases" plugin (app 1.7+). Capacitor publishes its
+ *      plugin list before any page script runs; billing.js makes the same test.
+ *   2. Sales are OPEN, or this device is a tester (the owner panel's switch, `te_gp_test`).
+ *      ⚠ OPEN is false for release 1 (the owner's test purchase on his phone) and becomes true in
+ *      release 2, with the terms / refunds / privacy wording, in ONE change. Flipping it is a
+ *      precached-file change: sw.js VERSION bump.
+ * `?mockapp=1` on localhost counts as an app that can sell, for previewing; inert on thaiear.com.
+ */
+(function () {
+  'use strict';
+  var OPEN = false;
+  var TEST_KEY = 'te_gp_test';
+  function native() {
+    var c = window.Capacitor;
+    try { return !!(c && c.isNativePlatform && c.isNativePlatform()); } catch (_) { return false; }
+  }
+  function mock() {
+    try {
+      return /^(localhost|127\.)/.test(location.hostname) &&
+        new URLSearchParams(location.search).get('mockapp') === '1';
+    } catch (_) { return false; }
+  }
+  function hasPlugin() {
+    try {
+      var hs = (window.Capacitor && window.Capacitor.PluginHeaders) || [];
+      for (var i = 0; i < hs.length; i++) if (hs[i] && hs[i].name === 'Purchases') return true;
+    } catch (_) {}
+    return false;
+  }
+  function testing() { try { return localStorage.getItem(TEST_KEY) === '1'; } catch (_) { return false; } }
+  window.ThaiEarPlaySales = {
+    // In an app that can buy at all (1.7+), whether or not sales are open yet.
+    appCanBuy: function () { return mock() || (native() && hasPlugin()); },
+    // The question every Subscribe button asks.
+    canSell: function () { return this.appCanBuy() && (OPEN || testing()); },
+    open: OPEN,
+    testing: testing,
+    setTesting: function (on) { try { if (on) localStorage.setItem(TEST_KEY, '1'); else localStorage.removeItem(TEST_KEY); } catch (_) {} }
+  };
+})();

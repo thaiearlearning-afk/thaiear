@@ -210,11 +210,15 @@
    quizzes and the Read Thai tests are open signed out, so a visitor arrives here to SAVE something
    (progress, a playlist, a download) — the gateSignIn() callers in player.js. ?next=<page> sends them back to the topic they wanted once signed in. */
 
-// Reader-app compliance: in the Capacitor app, hide the "See premium membership" link (it leads to
-// the web checkout). Direct Capacitor check so it applies immediately, before auth.js resolves.
-if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-  var pn = document.getElementById('premium-note'); if (pn) pn.style.display = 'none';
-}
+// In the app the link opens subscribe.html, which there sells through Google Play
+// (GOOGLE_PAYMENTS_PLAN.md step F). Where this app cannot sell (≤ 1.6, or sales not open), it would
+// only reach the neutral note, so the link is hidden. identity.js answers before first paint.
+(function () {
+  var c = window.Capacitor;
+  if (!(c && c.isNativePlatform && c.isNativePlatform())) return;
+  var P = window.ThaiEarPlaySales;
+  if (!(P && P.canSell())) { var pn = document.getElementById('premium-note'); if (pn) pn.style.display = 'none'; }
+})();
 
 // (The old ?feature= lede variant is gone — one owner-approved lede serves both arrival
 // paths since 2026-08-01. The ?feature param itself remains harmless in links.)

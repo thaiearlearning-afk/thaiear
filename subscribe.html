@@ -61,7 +61,10 @@
     --font-ui: 'Inter', system-ui, sans-serif; --font-thai: 'Sarabun', system-ui, sans-serif;
   }
   body { background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; line-height: 1.6; }
-  .page-wrap { position: relative; max-width: 620px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+  /* ⚠ HORIZONTAL PADDING IN px (TEXT_SCALING.md rule 1): as rem these gutters grew with Android's
+     text size, leaving a 159px column at 320px / 2x text, where the Subscribe button's words no
+     longer fitted (measured 2026-10-13). At default size the px values equal the old rem ones. */
+  .page-wrap { position: relative; max-width: 620px; margin: 0 auto; padding: 3rem 24px 4rem; }
 
   .gate-close {
     position: absolute; top: 1.5rem; right: 1.25rem;
@@ -84,7 +87,7 @@
   .sub-title { font-size: 30px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.75rem; }
   .sub-lede { color: var(--text-secondary); max-width: 48ch; margin-bottom: 2rem; }
 
-  .sub-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem 1.6rem; }
+  .sub-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem 25.6px; }
 
   .benefits { list-style: none; display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.75rem; }
   .benefit { display: flex; align-items: flex-start; gap: 11px; }
@@ -111,9 +114,9 @@
   .sub-back:hover { color: var(--accent-mid); }
 
   @media (max-width: 600px) {
-    .page-wrap { padding: 2rem 1rem 3rem; }
+    .page-wrap { padding: 2rem 16px 3rem; }
     .sub-title { font-size: 25px; }
-    .sub-card { padding: 1.4rem 1.25rem; }
+    .sub-card { padding: 1.4rem 20px; }
   }
 </style>
 <!-- identity.js: who is this, synchronously, before Supabase answers. Must be a plain
@@ -163,7 +166,7 @@
 
     <button class="btn btn-primary" id="subscribe-btn">Subscribe</button>
     <p class="sub-status" id="sub-status"></p>
-    <p style="font-size:12px;color:var(--text-tertiary);text-align:center;margin-top:0.9rem;line-height:1.6">
+    <p id="sub-terms" style="font-size:12px;color:var(--text-tertiary);text-align:center;margin-top:0.9rem;line-height:1.6">
       By subscribing you agree to our <a href="terms" style="color:var(--accent);text-decoration:none">Terms</a>
       and <a href="refunds" style="color:var(--accent);text-decoration:none">Refund Policy</a>, and ask us to
       start your access immediately — so the 14-day cancellation right no longer applies once it begins.
@@ -186,6 +189,30 @@ function esc(s) {
    Checkout does (S$11.99, ฿299, $8.99 …). The £6.99 in the HTML stays hidden until the answer
    arrives, so a visitor abroad never sees £ flash up before their own price; on a failure, or
    after 1.5 s, the £6.99 shows. Until then PRICE is '' and the button says just "Subscribe". */
+/* ── IN THE APP (1.7+): GOOGLE PLAY SELLS IT (GOOGLE_PAYMENTS_PLAN.md §7 row 8) ───────────────
+   Decided synchronously (identity.js loads first), so the page is drawn the right way from the
+   first paint. ⛔ Still never Stripe inside the app: an app that cannot sell keeps the neutral note. */
+function isNativeApp() {
+  var c = window.Capacitor;
+  try { return !!(c && c.isNativePlatform && c.isNativePlatform()); } catch (_) { return false; }
+}
+function gpApp() {
+  // identity.js ThaiEarPlaySales: an app with the plugin, and sales open or this device a tester.
+  var P = window.ThaiEarPlaySales;
+  return !!(P && P.canSell());
+}
+/* Google's terms, not ours, govern billing and refunds for a Google purchase: the small print says
+   so. Set here, synchronously, before the first paint (this script follows the elements). */
+(function () {
+  if (!gpApp()) return;
+  var t = document.getElementById('sub-terms');
+  if (t) t.innerHTML = 'Billed monthly by Google Play, and renews until you cancel it in the Play Store. ' +
+    'Refunds follow Google Play’s policy. By subscribing you agree to our ' +
+    '<a href="terms" style="color:var(--accent);text-decoration:none">Terms</a>. See our ' +
+    '<a href="privacy" style="color:var(--accent);text-decoration:none">Privacy Policy</a>.';
+  var n = document.querySelector('.price-note');
+  if (n) n.textContent = 'Cancel anytime in the Play Store.';
+})();
 var PRICE = '';
 function loadPrice() {
   var pv = document.getElementById('price-value');
@@ -204,11 +231,47 @@ function loadPrice() {
   fetch('/api/price').then(function (r) { return r.json(); }).then(function (p) {
     show(p && p.display && p.interval ? p : null);
   }).catch(function () { show(null); });
+  /* In the app the store charges ITS price for the buyer's Play country, so that replaces ours
+     once known. It needs a signed-in account (RevenueCat is never configured anonymously), so a
+     signed-out visitor sees the website's price, which Play matches in the main currencies. The
+     swap is one short line in place: nothing below it moves. */
+  if (gpApp()) whenBilling(function (B) {
+    B.offering().then(function (o) { if (o.ok && o.price) show({ display: o.price, interval: 'month' }); });
+  });
+}
+function whenBilling(fn) {
+  var done = false;
+  function go() {
+    var a = window.ThaiEarAuth, B = window.ThaiEarBilling;
+    if (done || !B || !a || !a.isReady || !(a.getUser && a.getUser())) return;
+    done = true; fn(B);
+  }
+  window.addEventListener('thaiear:auth', go);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+}
+var gpBusy = false, gpSaid = false;   // gpSaid: a purchase message is showing; renderSub leaves it
+function subscribeGooglePlay() {
+  var a = window.ThaiEarAuth;
+  var st = document.getElementById('sub-status');
+  // Signed out → sign in first (the account page has both ways in); the purchase belongs to an account.
+  if (!(a && a.getUser && a.getUser())) { window.location.href = 'account'; return; }
+  if (gpBusy) return;
+  var B = window.ThaiEarBilling;
+  if (!navigator.onLine || !B) { gpSaid = true; st.style.color = '#B00020'; st.textContent = 'You’re offline — reconnect to subscribe.'; return; }
+  gpBusy = true; gpSaid = true;
+  st.style.color = ''; st.textContent = 'Opening Google Play…';
+  B.purchase().then(function (r) {
+    gpBusy = false;
+    var m = B.message(r);
+    st.style.color = m.error ? '#B00020' : ''; st.textContent = m.text;
+    if (r.ok) renderSub();
+  });
 }
 function startCheckout() {
   var a = window.ThaiEarAuth;
-  // Reader-app compliance: never start web checkout from inside the app (no in-app purchase / steering).
-  if (a && a.isNative && a.isNative()) return;
+  // Never Stripe inside the app (Google Play's payments rule): the app's purchase is Google's.
+  if (gpApp()) { subscribeGooglePlay(); return; }
+  if (isNativeApp() || (a && a.isNative && a.isNative())) return;
   var token = a && a.getAccessToken && a.getAccessToken();
   if (!token) { if (a) a.signInWithGoogle(); return; }
   var btn = document.getElementById('subscribe-btn');
@@ -249,9 +312,23 @@ function renderSub() {
   var el = document.getElementById('sub-status');
   if (!btn || !el) return;
   var a = window.ThaiEarAuth;
-  // Reader-app compliance: in the app, no Subscribe CTA at all — just a neutral, non-steering note.
-  // (No in-app link reaches this page now; this is a defensive belt-and-braces.)
-  if (a && a.isNative && a.isNative()) {
+  if (gpApp()) {
+    var gu = a && a.isReady && a.getUser && a.getUser();
+    if (gu && a.isSubscribed && a.isSubscribed()) {
+      btn.textContent = 'You’re a member ✓'; btn.disabled = true;
+      el.style.color = '';
+      el.innerHTML = 'You already have Premium — <a href="account" style="color:var(--accent);font-weight:500;text-decoration:none">see your account</a>.';
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Subscribe with Google Play';
+      if (!gpSaid) el.innerHTML = gu
+        ? 'Signed in as <strong>' + esc(gu.username || gu.email) + '</strong>.'
+        : 'It’s a free sign-in first, then Google Play.';
+    }
+    return;
+  }
+  // An app too old to sell (no plugin, ≤ 1.6): no Subscribe CTA at all, just a neutral note.
+  if (isNativeApp() || (a && a.isNative && a.isNative())) {
     btn.style.display = 'none';
     var nu = a.getUser && a.getUser();
     el.textContent = (nu && a.isSubscribed && a.isSubscribed()) ? 'You’re a premium member ✓' : 'Premium membership unlocks every topic.';
@@ -293,6 +370,7 @@ loadPrice();
   });
 })();
 </script>
+<script src="billing.js" defer></script>
 <script src="consent.js" defer></script>
 <script src="attrib.js" defer></script>
 <script src="gtag.js" defer></script>

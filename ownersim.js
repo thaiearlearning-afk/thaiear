@@ -367,7 +367,8 @@
        owner proves on the phone that it loads, takes the server's key, and sees what is for sale.
        ⛔ READ-ONLY: it calls ThaiEarBilling.diagnose(), which never buys or restores. Its output
        holds no user id and no key (billing.js guarantees it), because it gets pasted into chats.
-       ✅ ownersim.js and billing.js are both NOT precached, so this needs no VERSION bump. */
+       ✅ ownersim.js and billing.js are both NOT precached, so this needs no VERSION bump.
+       Has buttons since 2026-10-13: the step F tester switch, below. */
     var bil = document.createElement('div');
     bil.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px dashed #d8c8c8;' +
       'font-size:12px;line-height:1.65';
@@ -394,12 +395,36 @@
         : 'This app has NO billing plugin: it is 1.6 or older. Install 1.7 from internal testing.') + '</span>' +
       '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
         '<button type="button" id="ownersim-bil-check" style="' + SWBTN + '">Check billing</button>' +
+        '<button type="button" id="ownersim-bil-test" style="' + SWBTN + '"></button>' +
       '</div>' +
+      '<span id="ownersim-bil-test-note" style="display:block;margin-top:6px"></span>' +
       '<textarea id="ownersim-bil-out" readonly style="width:100%;box-sizing:border-box;' +
         'margin-top:8px;height:150px;font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;' +
         'border:1px solid #c9c0b0;border-radius:6px;padding:6px;display:none"></textarea>' +
       '<span style="display:block;margin-top:6px;color:#7A1F1F">Never buys anything. Before the ' +
       'product exists in Play Console, "offering" reads as an error; that is expected.</span>';
+    /* ── THE TESTER SWITCH (step F release 1, 2026-10-13) ──────────────────────────────────────
+       Until sales open (identity.js ThaiEarPlaySales.open), the Subscribe with Google Play buttons
+       show only on a device switched on here: the owner's test purchase, on his phone, before any
+       learner sees a button. Per device (localStorage te_gp_test), read by every surface before its
+       first paint, so a reload is needed after flipping it. Once sales are open it does nothing. */
+    function paintGpTest() {
+      var P = window.ThaiEarPlaySales;
+      var on = !!(P && P.testing());
+      var btn = bil.querySelector('#ownersim-bil-test');
+      btn.textContent = on ? 'Test buttons: ON (tap to turn off)' : 'Test buttons: OFF (tap to turn on)';
+      bil.querySelector('#ownersim-bil-test-note').textContent = !P ? 'identity.js not loaded.'
+        : P.open ? 'Sales are OPEN: every 1.7+ app shows the buttons; this switch no longer matters.'
+        : (on ? 'This device shows "Subscribe with Google Play" (account page, Premium sheet, subscribe and join pages). Reload a page to see it.'
+              : 'Sales are closed: no device shows the buttons unless switched on here.');
+    }
+    bil.querySelector('#ownersim-bil-test').addEventListener('click', function () {
+      var P = window.ThaiEarPlaySales;
+      if (!P) return;
+      P.setTesting(!P.testing());
+      paintGpTest();
+    });
+    paintGpTest();
     bil.querySelector('#ownersim-bil-check').addEventListener('click', function () {
       var ta = bil.querySelector('#ownersim-bil-out');
       ta.style.display = 'block';

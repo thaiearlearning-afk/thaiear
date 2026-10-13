@@ -1499,9 +1499,13 @@
       if (!this.isReady) return false;          // auth still resolving → never lock a paying user
       return !(this.getUser && this.getUser());
     },
-    // True inside the Capacitor app. Pages use this to HIDE any upgrade-to-premium / checkout CTA
-    // (Google Play reader-app rule: no in-app purchase or steering to web payment). Web is unaffected.
+    // True inside the Capacitor app. Pages use this to HIDE any WEBSITE upgrade / checkout CTA
+    // (Google Play's payments rule: no steering to web payment). The app's own purchase is Google
+    // Play's (billing.js, from app 1.7); a page shows it only where ThaiEarBilling.available().
     isNative: function () { return isNative(); },
+    // Re-read the subscriptions row now (after a Google Play purchase: the server has just written
+    // it). Fires thaiear:auth when the answer lands, like every other refresh.
+    refreshSubscription: function () { refreshSubscription(); },
     // Marketing-email consent (cached). setMarketingConsent upserts the profiles row.
     getMarketingConsent: function () { return currentConsent; },
     // Has the consent flag finished loading from the profiles row? Lets the account
