@@ -1031,7 +1031,6 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
 .tq-fill-res .tq-pct { font-size: min(calc(64px * var(--tq-scale, 1)), 19vw); line-height: 1; }
 .tq-fill-res .tq-raw { font-size: calc(16.5px * var(--tq-scale, 1)); margin-top: 8px; }
 .tq-fill-res .tq-best { font-size: calc(14px * var(--tq-scale, 1)); margin-top: 14px; }
-.tq-selfnote { margin: 20px auto 0; max-width: 300px; text-align: left; }
 .tq-acts { display: flex; flex-direction: column; gap: 9px; margin-top: auto; }
 .tq-acts .tq-exit, .tq-acts .tq-return {
   background: none; border: 0.5px solid var(--border-strong, rgba(0,0,0,.16));

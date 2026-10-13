@@ -3290,8 +3290,9 @@
       + '<div class="tq-raw">' + r + ' of ' + n + ' right</div>'
       + '<div class="tq-best' + (isBest ? ' tq-newbest' : '') + '">'
       + (isBest ? 'Your best yet' : 'Your best is ' + prev + '%') + '</div>'
-      + (q.id === 4 ? '<p class="tq-say tq-selfnote">You marked this one yourself, so it is not '
-          + 'comparable with the other quizzes.</p>' : '')
+      /* ⛔ No self-marking note under Speak Thai's score (owner, 2026-10-13: "its blindingly
+         obvious ... please remove all instances"). It was the only one; topics, grammar units and
+         playlists all draw this screen. test_quiz_engine.js holds it gone. */
       + '</div>'
       + '<div class="tq-acts">'
       + '<button type="button" class="startbtn t-again">Try again</button>'
@@ -3327,7 +3328,9 @@
      A finished quiz, any score, is the one moment the app may offer it (owner: "quizzes only").
      ⛔ The Android app only: the website never loads review.js. ⛔ Not in the allow-listed area.
      review.js checks the rest (the app has the 1.8 plugin, signed in, online, on screen) and the
-     SERVER owns the rule (3rd day of use, 6 more days, then never: functions/api/review.js). */
+     SERVER owns the rule (3rd day of use, 6 more days, then never: functions/api/review.js).
+     ⚠ The callback is review.js's stillOk: after its pause, a quiz already under way again
+     ("Try again") means no card, and nothing counted (owner, 2026-10-13). */
   var reviewLoad = null;
   function reviewAfterQuiz() {
     try {
@@ -3342,7 +3345,7 @@
           document.head.appendChild(s);
         });
       }
-      reviewLoad.then(function (R) { if (R && R.quizDone) R.quizDone(); });
+      reviewLoad.then(function (R) { if (R && R.quizDone) R.quizDone(function () { return !runInProgress(); }); });
     } catch (_) {}
   }
 
