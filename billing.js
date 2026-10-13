@@ -83,34 +83,26 @@
   /* ── EVERY STEP BEFORE GOOGLE'S SHEET IS NAMED AND TIME-LIMITED (2026-10-13) ──────────────────
      The owner's first test purchase hung on "Opening Google Play…" for good, and the sheet's
      button then did nothing: the purchase never settled, so the page's one-at-a-time flag never
-     cleared. `step()` names each call (the probe below shows them) and rejects it after
+     cleared. `step()` names each call (kept for a tester's error message) and rejects it after
      STEP_LIMIT, so a stuck step ends as { reason: 'timeout' } instead of hanging the page.
      ⚠ purchasePackage gets NO limit: once Google's sheet is up, the buyer may take minutes. */
   var STEP_LIMIT = 15000;
   var trail = [], trailT0 = 0;
   function step(name, fn, limit) {
     trail.push(name + ' ' + (Date.now() - trailT0) + 'ms');
-    probe();
     var run = call(fn);
     var ms = limit === undefined ? STEP_LIMIT : limit;
     if (!ms) return run;
     return new Promise(function (res, rej) {
-      var t = setTimeout(function () { trail.push(name + ' TIMED OUT'); probe(); rej({ timeout: true, step: name, message: name + ' timed out' }); }, ms);
+      var t = setTimeout(function () { trail.push(name + ' TIMED OUT'); rej({ timeout: true, step: name, message: name + ' timed out' }); }, ms);
       run.then(function (v) { clearTimeout(t); res(v); }, function (e) { clearTimeout(t); rej(e); });
     });
   }
-  /* The PROBE: on a tester device only (the owner panel's te_gp_test), the steps reached are
-     written under "Opening Google Play…" on whichever purchase surface is open, so a hang names
-     the step it hung on. Learners never see it. */
+  /* The steps reached are kept, and a TESTER device (the owner panel's te_gp_test) sees them only
+     inside an error message (message() below), where they name what failed. ⛔ Never painted live
+     while a purchase runs (owner, 2026-10-13: the flashing step names "seem like backend stuff
+     that shouldn't be visible"); the buyer sees "Opening Google Play…" and nothing else. */
   function tester() { try { return localStorage.getItem('te_gp_test') === '1'; } catch (_) { return false; } }
-  function probe() {
-    if (!tester()) return;
-    var el = null, ids = ['te-ps-status', 'gp-status', 'sub-status'];
-    for (var i = 0; i < ids.length && !el; i++) el = document.getElementById(ids[i]);
-    if (!el) return;
-    el.style.display = '';
-    el.textContent = 'Opening Google Play… [' + trail.join(' › ') + ']';
-  }
   function fail(reason, extra) {
     var o = { ok: false, reason: reason };
     if (extra) for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) o[k] = extra[k];
@@ -378,7 +370,7 @@
     if (r && r.ok) return { text: 'Welcome to Premium!', error: false };
     var why = (r && r.reason) || 'error';
     var text = Object.prototype.hasOwnProperty.call(SAY, why) ? SAY[why] : 'Google Play couldn’t start the purchase. Please try again.';
-    // A tester also sees the reason and the steps reached (the probe above); learners never do.
+    // A tester also sees the reason and the steps reached; learners never do.
     if (tester() && trail.length) text += ' [' + why + (r && r.message ? ': ' + r.message : '') + ' · ' + trail.join(' › ') + ']';
     return { text: text, error: !NOT_ERRORS[why] };
   }

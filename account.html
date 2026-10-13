@@ -1751,6 +1751,29 @@ function dlLoadList() {
   }).catch(function () {});
 }
 
+/* ⭐ BACK FROM THE PLAY STORE, LOOK AGAIN (owner's test, 2026-10-13: he cancelled in Google Play,
+   came back, and the page still said Premium renewing until he force-closed the app). The page
+   is not reloaded when the app returns to the front, so it re-asks when it becomes visible: for a
+   Google member, the server first re-reads RevenueCat (ThaiEarBilling.sync(), so a cancel shows at
+   once rather than when Google's notification reaches the webhook); then this card and the
+   session's row. At most once per RETURN_GAP, and only for a signed-in visitor. */
+var RETURN_GAP = 5000, _lastReturn = 0;
+function refreshOnReturn() {
+  var a = window.ThaiEarAuth;
+  if (!(a && a.isReady && a.getUser && a.getUser())) return;
+  if (Date.now() - _lastReturn < RETURN_GAP) return;
+  _lastReturn = Date.now();
+  function again() {
+    loadMembership();
+    try { if (a.refreshSubscription) a.refreshSubscription(); } catch (_) {}
+  }
+  var s = _lastMembership, B = window.ThaiEarBilling;
+  if (s && s.google && B && B.sync) B.sync().then(again, again); else again();
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') refreshOnReturn();
+});
+
 // auth.js (loaded by nav.js) fires this when the session resolves or changes
 window.addEventListener('thaiear:auth', renderAccount);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderAccount);

@@ -153,24 +153,9 @@
   }
   @keyframes fluency-dots { from { width: 0; } to { width: 1.05em; } }
 
-  /* Android direct-download CTA + install steps */
+  /* The Android section (the direct .apk download was removed 2026-10-13, owner: every install goes through Play) */
   .dl-section h2 { font-size: 18px; font-weight: 600; color: #1C124E; letter-spacing: -0.01em; margin: 2rem 0 0.5rem; }
   .dl-section p { color: var(--text-secondary); margin-bottom: 0.75rem; }
-  .dl-cta { display: block; width: 100%; text-align: center; background: var(--accent); color: #fff;
-    font-size: 16px; font-weight: 600; padding: 0.95rem 1.25rem; border-radius: var(--radius-lg);
-    text-decoration: none; transition: background .15s; }
-  .dl-cta:hover { background: var(--accent-mid); }
-  .dl-meta { font-size: 13px; color: var(--text-tertiary); text-align: center; margin-top: 0.55rem; }
-  .dl-steps { margin: 0 0 0.75rem 1.15rem; color: var(--text-secondary); }
-  .dl-steps li { margin-bottom: 0.4rem; padding-left: 0.15rem; }
-  .dl-note-inline { font-size: 13px; color: var(--text-tertiary); }
-  /* ⛔ THIS LINK HAD NO RULE AT ALL and was rendering in the BROWSER DEFAULT #0000EE - not a
-     recolour miss but a long-standing one, spotted by the owner (2026-09-22: "you missed the
-     'direct download' hyperlink on the app page"). Measured, not guessed: getComputedStyle gave
-     rgb(0, 0, 238) against a .dl-note-inline parent of rgb(90, 90, 90).
-     ⚠ The lesson is for the SWEEP, not for this page: a hue sweep over the SOURCE cannot see a
-     colour nobody declared. Only the rendered page knows. */
-  .dl-note-inline a { color: var(--accent); font-weight: 500; }
   .divider { height: 1px; background: var(--border); border: 0; margin: 2.25rem 0; }
   .stores-lead { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.75rem; }
 
@@ -234,7 +219,7 @@
     <!-- ⛔ WEBSITE ONLY (owner, 2026-10-11). Inside the Android app this line is payment steering
          under Google Play's rule, so the script just below removes it there (Capacitor injects its bridge before the page parses), and
          nav.js hides the App menu item in the app. Never show it in the app. -->
-    <p id="premium-web-note"><strong>Premium can’t be bought inside the app. Upgrade here on the website first, then sign in to the app with the same account to unlock everything.</strong></p>
+    <p id="premium-web-note"><strong>Premium can be bought here on the website or in the Android app — either one unlocks it everywhere you sign in with the same account.</strong></p>
     <script>
       try { if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) { var n = document.getElementById('premium-web-note'); if (n) n.remove(); } } catch (_) {}
     </script>
@@ -251,7 +236,6 @@
       </a>
     </div>
 
-    <p class="dl-note-inline">Prefer to install directly, without the Play Store? There’s a <a href="#direct-download">direct download</a> at the bottom of this page.</p>
   </div>
 
   <hr class="divider">
@@ -282,23 +266,6 @@
     </div>
   </div>
 
-  <hr class="divider">
-
-  <div class="dl-section" id="direct-download">
-    <h2>Prefer a direct download?</h2>
-    <p>You can also install ThaiEar for Android directly, without the Play Store — handy on phones without Google services. Your phone will show a security warning when you install it — that’s completely normal for any app installed this way. Here’s how:</p>
-    <!-- Each APK release: move ?v= and the label below TOGETHER. The file is served with
-         max-age=86400, so a browser that fetched the old one keeps it a day unless the URL changes. -->
-    <a class="dl-cta" href="https://audio.thaiear.com/ThaiEar.apk?v=1.6">Download ThaiEar for Android (.apk)</a>
-    <p class="dl-meta">Version 1.6 · 8.6 MB · Android 7.0+</p>
-    <ol class="dl-steps">
-      <li>Tap <strong>Download ThaiEar for Android (.apk)</strong> above.</li>
-      <li>When it finishes, open the file. Android will ask to allow installs from your browser — tap <strong>Settings → Allow from this source</strong>, then go back and tap <strong>Install</strong>.</li>
-      <li>If you see “Unsafe app blocked” or a Play Protect prompt, tap <strong>More details → Install anyway</strong>.</li>
-      <li>Open ThaiEar and sign in as normal.</li>
-    </ol>
-    <p class="dl-note-inline">You stay in control — you can switch that “allow” permission back off afterwards.</p>
-  </div>
 
   <p class="note">Everything works in your browser today — the app adds offline listening, offline quizzes and lock-screen playback.</p>
 </div>

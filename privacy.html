@@ -123,7 +123,9 @@
       sign-in provider gave us.</li>
     <li><strong>Subscription &amp; billing data</strong> — if you subscribe, our payment provider
       Stripe processes your payment. We store your Stripe customer/subscription identifiers and
-      subscription status. <strong>We never see or store your card details.</strong></li>
+      subscription status. If you subscribe in the Android app, Google Play processes your payment,
+      and RevenueCat (which manages app subscriptions for us) receives your ThaiEar account identifier
+      and your purchase history. <strong>We never see or store your card details.</strong></li>
     <li><strong>Marketing preference</strong> — whether you have opted in to update emails.</li>
     <li><strong>Technical data</strong> — standard server/security logs (e.g. IP address, browser
       type) handled by our hosting/CDN provider.</li>
@@ -236,6 +238,8 @@
   <ul>
     <li><strong>Supabase</strong> — authentication and our database (EU-hosted).</li>
     <li><strong>Stripe</strong> — payment processing and subscription billing.</li>
+    <li><strong>Google Play</strong> — payment processing for subscriptions bought in the Android app.</li>
+    <li><strong>RevenueCat</strong> — managing and verifying Android app subscriptions.</li>
     <li><strong>Google</strong> — "Sign in with Google" authentication.</li>
     <li><strong>Cloudflare</strong> — website hosting, content delivery and security.</li>
     <li><strong>MailerSend</strong> — sending sign-in and account emails.</li>
@@ -253,7 +257,7 @@
       time — never your name or email.</li>
   </ul>
   <p>We do not sell your personal data. Some providers may process data outside the UK/EU — including
-    Google, Reddit and Stripe in the United States; where they do, appropriate safeguards (such as the UK
+    Google, Reddit, Stripe and RevenueCat in the United States; where they do, appropriate safeguards (such as the UK
     International Data Transfer Addendum and Standard Contractual Clauses) are in place.</p>
 
   <h2>4. How long we keep it</h2>

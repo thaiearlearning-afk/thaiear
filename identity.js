@@ -198,7 +198,7 @@
  */
 (function () {
   'use strict';
-  var OPEN = false;
+  var OPEN = true;   // release 2, 2026-10-13: the owner's test purchase passed; sales open
   var TEST_KEY = 'te_gp_test';
   function native() {
     var c = window.Capacitor;
