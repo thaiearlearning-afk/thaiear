@@ -325,7 +325,17 @@
       if (nm) nm.insertAdjacentHTML('afterend', '<span class="v-sub">' + esc(t['name_' + L] || t.name_en) + '</span>');
     });
     paintMenu(me);
-    window.addEventListener('thaiear:auth', function () { paintMenu(ME); });   // ME: refreshMe() may replace it
+    if (!menuAuthHooked) {                         // once: renderMenu() can run again (refreshMe, a changed menu)
+      menuAuthHooked = true;
+      window.addEventListener('thaiear:auth', function () { paintMenu(ME); });   // ME: refreshMe() may replace it
+    }
+  }
+  var menuAuthHooked = false;
+  /* What the menu shows of each unit: a change here needs a redraw, not a repaint. */
+  function menuSig(me) {
+    return ((me && me.topics) || []).map(function (t) {
+      return [t.key, t.name_de, t.name_en, t.name_th].join('|');
+    }).join(';');
   }
   /* Listening time, the download mark and the quiz figures — the area's own, from its own stores. */
   function paintMenu(me) {
@@ -378,7 +388,7 @@
       sentences: d.sentences.map(function (s) {
         var pv = firstContent(s.chips, gi);
         return { num: s.num, display: s.label, preview: pv[0], previewEn: pv[1],
-          thai: s.de, translit: null, english: s[L],
+          thai: s.de, translit: null, english: s[L], syl: s.syl || 0,
           gloss: s.chips.map(function (c) { return [c[0], c[gi], '']; }),
           cultural: s['note_' + L] || '' };
       }),
@@ -467,8 +477,11 @@
         if (!me2 || !me2.topics) return;
         lsSet(LS_UID, u.id);
         cachePut(K_ME, t);
+        var before = ME;
         ME = me2;
-        if (!tKey) paintMenu(ME);
+        /* A unit added or renamed since the saved copy: draw the menu again. paintMenu only updates the cards
+           already on screen, so until sw v816 a new unit showed only on the NEXT open (three were added). */
+        if (!tKey) { if (menuSig(before) !== menuSig(me2)) renderMenu(ME); else paintMenu(ME); }
         else if (window.ThaiEarPlayerRecheck) window.ThaiEarPlayerRecheck();
       });
     }).catch(function () {});
