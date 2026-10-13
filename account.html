@@ -457,19 +457,27 @@ function deleteAccount() {
     if (st) { st.style.color = '#B00020'; st.textContent = 'You’re offline — reconnect to delete your account.'; }
   };
   if (!navigator.onLine) { offline(); return; }
-  if (!a || !a.checkOnline) { openDeleteModal(); return; }
+  if (!a || !a.checkOnline) { startDelete(); return; }
   deleteChecking = true;
   a.checkOnline().then(function (on) {
     deleteChecking = false;
-    if (on) { if (st) st.textContent = ''; openDeleteModal(); } else offline();
+    if (on) { if (st) st.textContent = ''; startDelete(); } else offline();
   });
 }
-function openDeleteModal() {
+/* ⭐ A RENEWING GOOGLE PLAY MEMBER IS WARNED BEFORE THEY TYPE DELETE, NOT AFTER (owner's test,
+   2026-10-13: the DELETE box came first and the Google warning only after it). The page already
+   knows who bills them (the last membership render), so the warning comes first; "Delete anyway"
+   then leads to the usual DELETE box, which sends { google_ack: true }. The server's 409 stays
+   as the backstop for a page that did not know. */
+function startDelete() {
+  if (googleRenewing()) googleDeleteModal(false); else openDeleteModal(false);
+}
+function openDeleteModal(googleAck) {
   showModal({
     title: 'Delete your account?',
     body: 'This cancels any membership immediately and permanently erases your data. It cannot be undone.',
     requireText: 'DELETE', confirmText: 'Delete account', cancelText: 'Keep account', danger: true,
-    onConfirm: doDeleteAccount,
+    onConfirm: function () { doDeleteAccount(googleAck === true); },
   });
 }
 /* ⚠ ONE REQUEST AT A TIME, AND A 20 s CEILING (2026-09-23). With no timeout, a stalled connection
@@ -481,14 +489,15 @@ var deleteInFlight = false;
    we cannot stop Google charging them, and deleting the account first would leave them paying
    for nothing they can reach. Told so, with the way to cancel, then allowed to go ahead anyway
    ({ google_ack: true }): it is their account. */
-function googleDeleteModal() {
+function googleDeleteModal(afterTyped) {
   showModal({
     title: 'Cancel in Google Play first',
     body: 'Your Premium is billed by Google Play, and deleting your account won’t stop Google charging you. ' +
       '<a href="' + esc(playManageUrl()) + '" style="color:var(--accent);font-weight:500;text-decoration:none">Cancel it in Google Play</a>, ' +
       'then come back and delete your account.',
     confirmText: 'Delete anyway', cancelText: 'Keep account', danger: true,
-    onConfirm: function () { doDeleteAccount(true); },
+    // Before typing: on to the DELETE box (with the acknowledgement). After (the server's 409): delete.
+    onConfirm: function () { if (afterTyped) doDeleteAccount(true); else openDeleteModal(true); },
   });
 }
 function doDeleteAccount(googleAck) {
@@ -522,7 +531,7 @@ function doDeleteAccount(googleAck) {
         Promise.resolve(a.signOut()).catch(function () {}).then(go); // wait for the session to clear
         return;
       }
-      if (j && j.error === 'google_subscription_active') { if (st) st.textContent = ''; googleDeleteModal(); return; }
+      if (j && j.error === 'google_subscription_active') { if (st) st.textContent = ''; googleDeleteModal(true); return; }
       if (j && j.error === 'forbidden') { Promise.resolve(a.signOut()).catch(function () {}); if (st) st.textContent = 'Your session expired — please sign in again, then retry.'; return; }
       if (st) st.textContent = 'Error: ' + (j.detail || j.error || t || 'unknown');
     })
@@ -806,7 +815,15 @@ function renderRateBox(signedIn) {
       '</div>'
     : '';
 }
+/* The last membership state drawn, for the delete flow (startDelete): who bills them decides
+   whether the Google warning comes before the DELETE box. */
+var _lastMembership = null;
+function googleRenewing() {
+  var s = _lastMembership;
+  return !!(s && s.google && (s.subscribed || s.needsPayment) && !s.cancel_at_period_end);
+}
 function renderMembershipBox(s) {
+  _lastMembership = s || null;
   var line = document.getElementById('membership-line');
   var acts = document.getElementById('membership-actions');
   var cancelSlot = document.getElementById('membership-cancel');
