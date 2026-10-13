@@ -79,6 +79,38 @@
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   // Every plugin call goes through here, so even a synchronous throw arrives as a rejection.
   function call(fn) { return Promise.resolve().then(fn); }
+
+  /* ── EVERY STEP BEFORE GOOGLE'S SHEET IS NAMED AND TIME-LIMITED (2026-10-13) ──────────────────
+     The owner's first test purchase hung on "Opening Google Play…" for good, and the sheet's
+     button then did nothing: the purchase never settled, so the page's one-at-a-time flag never
+     cleared. `step()` names each call (the probe below shows them) and rejects it after
+     STEP_LIMIT, so a stuck step ends as { reason: 'timeout' } instead of hanging the page.
+     ⚠ purchasePackage gets NO limit: once Google's sheet is up, the buyer may take minutes. */
+  var STEP_LIMIT = 15000;
+  var trail = [], trailT0 = 0;
+  function step(name, fn, limit) {
+    trail.push(name + ' ' + (Date.now() - trailT0) + 'ms');
+    probe();
+    var run = call(fn);
+    var ms = limit === undefined ? STEP_LIMIT : limit;
+    if (!ms) return run;
+    return new Promise(function (res, rej) {
+      var t = setTimeout(function () { trail.push(name + ' TIMED OUT'); probe(); rej({ timeout: true, step: name, message: name + ' timed out' }); }, ms);
+      run.then(function (v) { clearTimeout(t); res(v); }, function (e) { clearTimeout(t); rej(e); });
+    });
+  }
+  /* The PROBE: on a tester device only (the owner panel's te_gp_test), the steps reached are
+     written under "Opening Google Play…" on whichever purchase surface is open, so a hang names
+     the step it hung on. Learners never see it. */
+  function tester() { try { return localStorage.getItem('te_gp_test') === '1'; } catch (_) { return false; } }
+  function probe() {
+    if (!tester()) return;
+    var el = null, ids = ['te-ps-status', 'gp-status', 'sub-status'];
+    for (var i = 0; i < ids.length && !el; i++) el = document.getElementById(ids[i]);
+    if (!el) return;
+    el.style.display = '';
+    el.textContent = 'Opening Google Play… [' + trail.join(' › ') + ']';
+  }
   function fail(reason, extra) {
     var o = { ok: false, reason: reason };
     if (extra) for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) o[k] = extra[k];
@@ -99,6 +131,7 @@
                  ['PURCHASENOTALLOWED', 'not_allowed'], ['INVALIDCREDENTIALS', 'bad_key'],
                  ['CONFIGURATION', 'store_config']];
   function errReason(e) {
+    if (e && e.timeout) return 'timeout';
     var d = (e && e.data) || {};
     if (d.userCancelled === true) return 'cancelled';
     var code = (e && e.code != null) ? String(e.code) : (d.code != null ? String(d.code) : '');
@@ -116,10 +149,12 @@
   var configP = null;
   function getConfig() {
     if (configP) return configP;
-    var p = token().then(function (t) {
+    var p = step('token', token).then(function (t) {
       if (!t) return null;
-      return fetch(API, { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
-        .then(function (r) { return r.ok ? r.json() : null; });
+      return step('key', function () {
+        return fetch(API, { headers: { Authorization: 'Bearer ' + t }, cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; });
+      });
     }).then(function (j) {
       if (!j || !j.apiKey) return null;
       return { apiKey: String(j.apiKey), serverReady: !!j.serverReady };
@@ -144,16 +179,16 @@
     if (!uid) return Promise.resolve(fail('signed_out'));
     if (readyP && readyFor === uid) return readyP;
     readyFor = uid;
-    var p = call(function () { return P.isConfigured(); }).then(function (r) {
+    var p = step('isConfigured', function () { return P.isConfigured(); }).then(function (r) {
       if (r && r.isConfigured) {
-        return call(function () { return P.getAppUserID(); }).then(function (g) {
+        return step('getAppUserID', function () { return P.getAppUserID(); }).then(function (g) {
           if (g && String(g.appUserID) === uid) return { ok: true };
-          return call(function () { return P.logIn({ appUserID: uid }); }).then(function () { return { ok: true, switched: true }; });
+          return step('logIn', function () { return P.logIn({ appUserID: uid }); }).then(function () { return { ok: true, switched: true }; });
         });
       }
       return getConfig().then(function (c) {
         if (!c) return fail('not_configured');
-        return call(function () { return P.configure({
+        return step('configure', function () { return P.configure({
           apiKey: c.apiKey,
           appUserID: uid,
           // No device identifiers: ThaiEar has no ad-attribution integration for them to serve.
@@ -187,7 +222,7 @@
   function offering() {
     return ready().then(function (r) {
       if (!r.ok) return r;
-      return call(function () { return plugin().getOfferings(); }).then(function (o) {
+      return step('getOfferings', function () { return plugin().getOfferings(); }).then(function (o) {
         var pkg = pickPackage(o);
         if (!pkg) return fail('no_offering');
         var pr = pkg.product || {};
@@ -252,7 +287,7 @@
       return offering().then(function (o) {
         if (!o.ok) return o;
         markSeen();
-        return call(function () { return plugin().purchasePackage({ aPackage: o.pkg }); }).then(settled, function (e) {
+        return step('purchasePackage', function () { return plugin().purchasePackage({ aPackage: o.pkg }); }, 0).then(settled, function (e) {
           var why = errReason(e);
           /* A payment the store has not finished (some cash and bank methods) completes later; the
              webhook writes the row then. "pending", never "failed". */
@@ -287,6 +322,7 @@
      a setting someone can change. A sync only reads. On success the session re-reads its row,
      so every gate on the page opens without a reload. */
   function purchase() {
+    trail = []; trailT0 = Date.now();
     return buy().then(function (r) {
       if (r.ok || r.reason !== 'already_owned') return r;
       return sync().then(function (s) {
@@ -310,16 +346,17 @@
     offline: 'You’re offline — reconnect to subscribe.',
     network: 'You’re offline — reconnect to subscribe.',
     signed_out: 'Please sign in first.',
+    timeout: 'Google Play didn’t answer. Please try again.',
     sync_failed: 'Couldn’t confirm your Premium just now. Please try again in a minute.'
   };
   var NOT_ERRORS = { cancelled: 1, busy: 1, pending: 1, already_premium: 1 };
   function message(r) {
     if (r && r.ok) return { text: 'Welcome to Premium!', error: false };
     var why = (r && r.reason) || 'error';
-    return {
-      text: Object.prototype.hasOwnProperty.call(SAY, why) ? SAY[why] : 'Google Play couldn’t start the purchase. Please try again.',
-      error: !NOT_ERRORS[why]
-    };
+    var text = Object.prototype.hasOwnProperty.call(SAY, why) ? SAY[why] : 'Google Play couldn’t start the purchase. Please try again.';
+    // A tester also sees the reason and the steps reached (the probe above); learners never do.
+    if (tester() && trail.length) text += ' [' + why + (r && r.message ? ': ' + r.message : '') + ' · ' + trail.join(' › ') + ']';
+    return { text: text, error: !NOT_ERRORS[why] };
   }
 
   /* Google's own subscriptions screen for this app. In the app, a play.google.com address leaves
