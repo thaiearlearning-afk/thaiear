@@ -206,6 +206,12 @@
     injectCss();
     var href = pageHref('join.html') + '?feature=1' + (next ? '&next=' + encodeURIComponent(next) : '');
     var withApp = (opts && typeof opts.app === 'boolean') ? opts.app : noDownloadUi();
+    /* ⛔ NO SIGN-UP ASK ABOVE A TOPIC'S PLAYER (owner, 2026-10-13: "let's also retire that please.
+       the one at the bottom of the page is good enough. its clutter atm. the study offline box can
+       stay"). A signed-out visitor on the topic surface gets the plain Study offline card, the same
+       one a signed-in visitor gets; the sign-up ask lives at the foot of the page. The playlist
+       and reading-course surfaces keep the full card. */
+    if (surface === 'topic') return withApp ? html('topic') : '';
     var desc = SIGNUP_DESC[surface] || SIGNUP_DESC.topic;
     var appT = SIGNUP_APP_TITLE[surface] || SIGNUP_APP_TITLE.topic;
     return '<div class="te-signup te-signup--' + surface + (withApp ? '' : ' te-signup--noapp') + '">' +
