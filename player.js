@@ -438,6 +438,8 @@
     NA.addListener('time', function (d) { if (d) { st.currentTime = d.position || 0; if (d.duration) st.duration = d.duration; st.at = d.at || 0; } emit('timeupdate'); });
     // r234: a unit became current with no prepare from here (queue roll-over, lock-screen ⏭, repeat).
     NA.addListener('transition', function (d) { try { nativeTransition(d || {}); } catch (e) { dynLog('transition ERR ' + e); } });
+    // r254 (A5): app 1.9+ reports a unit its engine could not play (it has already moved on or stopped).
+    NA.addListener('error', function (d) { try { if (typeof nativeError === 'function') nativeError(d || {}); } catch (e) { dynLog('error ERR ' + e); } });
     NA.addListener('ended', function () { st.paused = true; emit('ended'); });
     /* r247: and SAY so, as an element fires play / pause. A pause made on the lock screen, the
        notification or headphones goes straight to Media3, never through this page; this event is
@@ -484,7 +486,15 @@
       play: function () {
         if (!NA) return Promise.resolve();
         // resume (same track already prepared) → just play; new track → prepare with metadata first
-        if (st.preparedSrc === st.src && st.src) { st.paused = false; return NA.play(); }
+        if (st.preparedSrc === st.src && st.src) {
+          /* r254 (A5): a resume that never starts means a dead engine — see nativePlayWatch. Only
+             when it WAS paused: a play() on an engine already playing gets no `playing` event (the
+             plugin reports changes), and the watch would then restart a healthy track (R1 #5). */
+          var wasPaused = st.paused;
+          st.paused = false;
+          if (wasPaused && typeof nativePlayWatch === 'function') nativePlayWatch(st.src);
+          return NA.play();
+        }
         // Lock screen shows the unit ACTUALLY playing: dyn chain hops set dynTitle explicitly
         // (round-11 item 2); classic keeps the resolveMainTitle lookup.
         nativeMeta.title = (DYN && dynTitle) ? dynTitle : resolveMainTitle();
@@ -493,10 +503,11 @@
                      key: nativeItemKey() };   // r234: the unit's identity, so a native transition can name it
         naKey = prep.key;                        // r244: the engine is on this from the moment it is asked
         if (DYN) {
-          // dyn session (this page's, or an adopted neighbour's persisted one) → 'dyn' + marks;
-          // adopted static placeholder (no session) → plain 'std'.
-          if (dynSession && !dynStdRemote) { prep.mode = 'dyn'; prep.marks = dynSession.map.map(function (m) { return m.start; }); }
-          else prep.mode = 'std';
+          /* r254 (Release A): every dyn source is a built session now, so the lock screen always gets
+             the sentence layout: 'dyn' + the sentence marks. The combined track that went as 'std' is
+             gone (TE_ET_RETIREMENT.md, A6). */
+          prep.mode = 'dyn';
+          prep.marks = (dynSession && dynSession.map) ? dynSession.map.map(function (m) { return m.start; }) : [];
         }
         return NA.prepare(prep)
           .then(function () {
@@ -543,6 +554,13 @@
         st.src = st.preparedSrc = src || '__live__';
         st.currentTime = 0; st.duration = 0; st.seek = null;
       },
+      /* r254 (A5): forget that the current track is prepared, so the next play() prepares it again
+         (the same file included) instead of resuming an engine that stopped with an error. Its
+         position goes too, as on a new src (T1 §37): kept, the last tick hid the resume from
+         togglePlay (it seeks only from near 0), and the prepare started at 0:00. The caller
+         anchors the SENTENCE first (dynPlayStalled → dynDropHeld); the Play path seeks to it, and a
+         seek asked for now is held and lands after the prepare. */
+      reprepare: function () { st.preparedSrc = null; st.seek = null; st.currentTime = 0; },
       // r247: true while this page holds the engine's track (prepared or adopted), so its button may follow the engine.
       get owned() { return !!st.src && st.preparedSrc === st.src; },
       addEventListener: function (t, fn) { if (L[t]) L[t].push(fn); }
@@ -725,8 +743,7 @@
          true to the map whatever route arrives here. Sound for topics too: no two units in
          topics.js share an `audio:` prefix, so namespace equality means the same unit. */
       dynSessionIsLocal = !!(dm && dynUnitNs(t) === DYN_KEY_NS);
-      dynStdRemote = false;
-      if (dynAdopted) dynStripPaint(t, false); // "Now playing: X" + ↩ Return
+      if (dynAdopted) dynStripPaint(t); // "Now playing: X" + ↩ Return
     } else {
       // r244: reached mid-session (the engine came back to this page's own unit unqueued), the page
       // first comes home. On mount it is home already and this does nothing.
@@ -740,14 +757,17 @@
         if (dm2) {
           dynSession = { url: null, fileUri: null, blob: null, map: dm2.map, key: dm2.key, duration: dm2.duration, display: true };
           dynSessionIsLocal = true;
-          dynStdRemote = false;
         }
       }
     }
     // r16: adopting the live track can flip the direction — settings are per mode, so the
     // controls must repaint onto THIS unit's settings for the mode now playing.
     dynLoadSettings(); dynPrefsRepaintControls();
-    dynAttached = true;                        // src belongs to the live engine — never rebuild under it
+    /* r254 (W100): a Play pressed later compares the engine's session with today's settings
+       (dynHeldIsCurrent). For an adopted TOPIC that needs the sentence map, and the tap must not
+       wait on a fetch: load it now. */
+    try { var T0 = window.ThaiEarTopics; if (dynAdopted && T0 && T0.loadSentenceNums) T0.loadSentenceNums().catch(function () {}); } catch (_) {}
+    dynAttached = true;                        // src belongs to the live engine — a visible Play checks it first (r254)
     mainSrcReady = true;
     if (mainAudio.attach) mainAudio.attach();  // control the live track without restarting it (position preserved)
     setMainIcon(true);
@@ -792,7 +812,8 @@
       currentMode = r.mode;
       currentMainFile = mainPrefix + '_' + currentMode.toUpperCase() + '.mp3';
       mainSrcReady = false;
-      if (!mainGated && !OFFLINE && !(WEB_DL && isDownloaded(mainPrefix))) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
+      // r254 (R1 #11): never the combined file on a dyn page; ensureMainSrc builds the session.
+      if (!DYN && !mainGated && !OFFLINE && !(WEB_DL && isDownloaded(mainPrefix))) { mainAudio.src = AUDIO_BASE + '/' + currentMainFile; mainSrcReady = true; }
       var bte = $('btn-te'), bet = $('btn-et');
       if (bte) bte.classList.toggle('active', currentMode === 'te');
       if (bet) bet.classList.toggle('active', currentMode === 'et');
@@ -4951,7 +4972,7 @@
   /* r97 — DERIVED from sim.js's single BUILD constant (sim.js loads first on every test page:
      topic-test.html:549 vs :551). The literal is only a fallback for a page without sim.js.
      ▶ Do NOT bump this by hand — bump `BUILD` in sim.js and every tag on every test page moves. */
-  var DYN_BUILD = 'r253';   // r253 (2026-10-13): two fixes to r252 (owner, on his phone). (1) The Pauses bar no longer changes length mid-drag: its value label had a 34px MINIMUM that the wide labels ("0.25x", "0.75x") outgrew under OS text scaling, and r252's bar grows into whatever the label leaves, so every label change resized the bar under the finger (measured 189/193px at 115% text, 126-138px at 140%); the label is now a fixed 3em. (2) "pretty sure its about 2 seconds for 0.25x": the Andovar takes end on ~1.0s of silence (median; the English ~0.4s; ~1 Thai take in 10 almost none), heard on top of every inserted pause. Every clip's tail is now cut to 0.2s after its last sound when the session is stitched (dynTrimTail: deterministic, only ever removes silence, verified over every clip on disk by verify_tails.js), so 0.25x is heard as ~1.4s and every stop ~0.8s shorter than before, as the r147 floors intended. Every session keys with |f3 and rebuilds once. r252 (2026-10-13): PAUSES (owner). (1) Below 0.75x the pause floors step down: repeat and gap 2.0 -> 1.5 s at 0.5x and 1.0 s at 0.25x, recall 3.0 -> 2.25 / 1.5 s ("sliding the pauses shorter doesnt do anything because they are already at their base 2 or three seconds"; at 0.25x 88% of the 2,444 live sentences sat on the 2 s floor). 0.75x and up are unchanged. The session's LAST silence stays >= 2.0 s: the app's 1.2 s pre-loop / pre-advance window (DYN_NATIVE_LEAD_S) must land in silence. (2) The Pauses range is 0.25x-1.5x, 6 stops ("nobody is going to use 2x pauses"); a stored 1.75 or 2 reads as 1.5. (3) The bar is 200px where it fits; on a phone it takes its own line and grows from a 120px basis to 200px. (4) A session below 0.75x keys with |f2, so one built under the old floors rebuilds once; offline, a stored session that differs only by that token plays as it is. (5) dynParseKey reads the option tokens (|s speed, |g gloss, |f2) instead of folding them into the num list, where an offline settings revert reset a slowed Thai to Normal and excluded the first sentence; dynParseSessionKey reads |s too, so the desktop MP3 of a slowed session is slowed. (6) The Pauses info text: the minimum is about a second at 0.25x. r251 (2026-10-13): the pause between repeats and before recall comes from a sentence's own syllable estimate when it carries one (s.syl > 0), else from its text as before. The allow-listed area gives one sentence the floor (owner: a playful line she needn't dwell on). Nothing else carries syl, so every other session's timing is unchanged. r250 (2026-10-13): W98 Step 1, the iPhone probe (owner-only). The owner panel's "Test: build while locked" (localStorage te_probe_hidden) lets the web build-ahead start while the page is hidden, and with it on every dynLog line, plus the audio element's events while hidden, goes to the lock-screen trace tagged (hidden)/(visible). Off by default: nothing changes for anyone else. r249 (2026-10-13): the quiz-area mini player shows only while the audio plays (owner: paused audio, then the quiz menus, and the paused bar appeared). A pause from the bar on a menu keeps it until a run or close (miniQuizHold). r248 (2026-10-12): the playlist player's playback settings fold under "Playback settings" like a topic page's (owner: "playback settings in playlists are not collapsible … parity with topic dyn player"). The fold is built when STYLE2 || PLMODE, and its six DYN_STYLES rules name body.dyn-plmode beside body.te-v2; the playlist player stays off te-v2. r247 (2026-10-12): THE APP'S PLAY BUTTON FOLLOWS THE ENGINE (owner, Android: paused on the lock screen, came back to the topic, and the button still showed ⏸ over a paused track; a tap then played it). The shim's `playing` event now reaches the page as `playstate`; the button follows it while this page holds the engine's track (a drop after 700 ms, so a buffering stall or a hop between queued units does not flicker it), and an engine hop keeps the play state instead of forcing "playing" (a lock-screen ⏭ on a paused player lands paused). Web unchanged. r246 (2026-10-10): the settings block's corner tag ("r245 · mp4 · 0.84 MB") is removed for everyone (owner: learners do not need the build, codec or session size); the classic playlists link drops its "· build" suffix. The build still shows in the owner panel. r245 (2026-10-09): A DOWNLOAD STAMPS FROM THE SERVER'S QUIZ LIST (owner, Android: Thai culture & customs: Face & values opened while the app was switching to the previous evening's release, so the visit held the old quiz list; its Update stamped the old qz, the page save was refused, and the bar flipped straight back until he left and came back). dynQzSigLoad(true) reads quiz-data/index.json ?te-save= past the worker and replaces the held copy; dynDownloadHere() awaits it before the finalize; a failed or slow read (10 s) keeps the held copy. DOWNLOAD_UPDATE_PATH.md §4b. Also: the lock-screen tail trace obeys te_tail_trace_off, the owner panel's Arm/Disarm switch ("i have no way of pausing it"). r244 (2026-10-06): THE PAGE FOLLOWS THE ENGINE (owner, Android: lock-screen ⏭ from Hobbies & free time 1 ended on Technology: Calls & messaging, the "Now playing" bar said Hobbies & free time 1 and opened Getting around: Directions & journeys). The queue map is merged, never wiped (a transition during the async rebuild was dropped as unqueued); the record's name comes from the same unit as its link (dynTitle, not the last play's title); the page asks the engine (getCurrent) after each queue and on becoming visible, and on mount trusts the engine over thaiear_np; every queued unit's identity is saved (thaiear_np_ids) so pages without a player and unqueued hops can name it, and an unknown unit clears the record's name and link instead of leaving the old ones. r243 (2026-10-06): dynChainPlayable counts a foreground, online cfg.vault unit (noStd + nums) as buildable, so prev/next constructs it instead of skipping it. r242 (2026-10-06): ThaiEarQuizAudio.pauseMain; the mini player shows on the quiz picker and a quiz's menu, never during a run (html.tq-running). r241 (2026-10-06): cfg.vault cards render all rows; the CSS picks per stage and direction. r240 (2026-10-06): cfg.vault - built cards carry st-N, ThaiEarPlayerRelang (in-place switch + dyn rebuild, gloss in the session key), ThaiEarPlayerRecheck, short ep label. r239 (2026-10-06): cfg.vault — the allow-listed area's units (sideOf/langTxt, cachePage saves their data, one stale predicate, account-only quiz gate). r238 (owner, 2026-09-28): TWO LOCKED-LISTENING UPGRADES. (1) THE WHOLE SEQUENCE: the native autoplay queue holds every unit the locked walk reaches, not ten. Anything needing no signed url (a built session, a download, a free unit) is unlimited; a member/premium STANDARD recording is queued only while a fresh url could outlast it (a pessimistic clock: the current unit's remaining time, each session's own length, a standard recording at DYN_NQ_STD_MAX_S = 16 min, against the mint cache's 5 h), and the queue ENDS cleanly before the first one that could not - an expired url makes ExoPlayer error and stop dead. Those urls come in ONE batch, each with the life its unit needs (mintMany's per-file minLife), so nothing is issued that could never be used (audio_quota). (2) BUILD AHEAD ("can't we have it autobuild?"): once a unit plays, the next DYN_AHEAD_N = 2 units the chain would reach are quietly built and persisted (dynAheadKick), one at a time, only while nothing else builds, three lanes, pausing for sentence taps, no status line, skipped when already built at today's settings - so a hop onto them is instant and, in the app, the queue carries them as custom versions for a LOCKED hop. A hop onto a unit mid-build joins that build (dynUnitBuild) instead of starting a second; a build-ahead whose unit got a newer build meanwhile is discarded, never persisted over it; its decoded clips are dropped when it finishes. Also: a build's gated clip urls are minted in one batch (dynPremint) instead of one request per clip. // r237 (owner, 2026-09-28): LISTENING ON A UNIT YOU WERE CARRIED TO IS COUNTED. The play count's only route was dynHighlight(), which runs only while dynSessionIsLocal, and every adopt (autoplay, prev/next, the native queue, a page opened mid-play of another unit) sets that false - so a reached topic was never credited, on the web as much as in the app. Now dynCreditTick() drives the same dwell for the unit actually playing, without painting cards; map entries carry `g`, the GLOBAL sentence number, fixed at build (a playlist's num is a page position that only its own page can resolve); dynCreditKey() takes g, else a topic's num (already global), else credits nothing rather than the wrong sentence; notePlayGlobal() takes the key directly; and a hop flushes the sentence in progress before the switch (dynApplyAdoptState / dynResetToLocal). A unit playing its standard recording has no map, so it still credits nothing. // r236 (owner, 2026-09-28): (1) the native autoplay queue holds TEN units, not six (~2-2.5 h locked), and a queued member/premium standard recording now gets a signed url with at least 3 h of trusted life (mintGet/buildUrl/dynAdoptStdSrc take minLifeMs; dynQueueSrc no longer reuses dynAdoptPlaceholder's cached url of unknown age), so a unit reached hours later cannot fail on an expired link. (2) A download keeps the screen from auto-locking while it runs: nav.js window.ThaiEarAwake (a Screen Wake Lock, reference-counted by surface, re-acquired on return to the page), held by setDownloadingNow here, pl-list.js dlSetBusy and read.js leaveGuardSync — the page's JS stops soon after the phone locks, so a download left to the auto-lock used to stall. // r235: THE LOCK SCREEN'S ⏮ AND ⏭ WORK WHATEVER THE TOGGLES, AND LOCKED LISTENING IS COUNTED (APK v8 / 1.6). Owner, 2026-09-28: the lock-screen ⏮ only acted at unlock. The engine now always holds [previous, CURRENT, next…] (dynNativeQueueSync walks one back and DYN_NQ_DEPTH forward, the same locked walk), so ⏮/⏭ from the lock screen, notification, headset or car move natively; Autoplay goes as `advance` (off, the engine pauses at the unit's end instead of rolling on) and `current` lets the engine drop a set computed for a unit it already left. The play-count dwell now banks playback on the ENGINE's clock (the tick's `at`): read in one burst at unlock, the old Date.now() gaps were ~0 and nothing heard after the first locked minute was ever credited; the app's 500 ms tick also gets a 1.2 s gap ceiling instead of the web's 600 ms. The trace gains the Chromium freeze/resume events and a 20 s timer, to tell WHO stops the page (§5f-3). // r234: END-OF-TRACK BEHAVIOUR MOVES INTO THE ENGINE, FOR APK v8 (1.6). The r233 trace showed the app's WebView stops running JS about a minute into a lock and runs the whole backlog at unlock (DYN_ROLLOUT.md §5f), so repeat, autoplay and the lock-screen ⏭ cannot be decided here while locked. With an app that has them (NA_LOOP / NA_QUEUE, read from Capacitor.PluginHeaders): nativeRepeatSync() pushes repeatOn on EVERY prepare and toggle and ExoPlayer loops; dynNativeQueueSync() walks the chain as a locked hop does (dynWalk, lifted out of advanceTopic so there is one copy of the skip rules) and hands the engine the next 6 units' no-build sources; nativeTransition() takes on a unit the engine moved to without re-sourcing it; a tick older than 2 s (v8 ticks carry `at`) decides nothing, so the unlock backlog cannot loop or hop a second time. The foreground is unchanged (visible autoplay still builds, r213). On an app < v8 every one of these is a no-op. // r233: A LOCK-SCREEN TRACE, APP ONLY (owner, 2026-09-28, on r232: Repeat on, locked with 1 min 10 s left, silent at the end on the second of two runs — too short for the ~5-minute background freeze, and not separable by inference from "that page was still on r231"). tailTrace() writes a 120-line ring buffer (te_tail_trace) of mount/build, hide/show, a 30 s heartbeat while locked, every tick in a track's last 5 s, gaps of 3 s+ with no tick, the PRE-LOOP/PRE-ADVANCE decisions and the `ended` handler, each stamped with when JS PROCESSED it; the owner panel prints it. Frozen JS shows as a gap line and events bunched at the unlock time. Remove once DYN_ROLLOUT.md §5f is settled. // r232: IN THE ANDROID APP, REPEAT AND AUTOPLAY COULD MISS THE END OF A TOPIC WITH THE SCREEN LOCKED (owner, 2026-09-28: "at end of topic, i just hear silence", "this isnt alwasy the case"). r199's pre-loop acts in the last 0.45 s, sized for a real <audio> element whose timeupdate fires every ~250 ms; the app hears position from NativeAudioPlugin's 500 ms ticker, which jumps that window clean on 10.1% of track ends (25% with the ticker 20% late, measured in test_repeat_loop.js §H), falling through to `ended`, which does not survive a locked screen. The native window is now 1.2 s (DYN_NATIVE_LEAD_S), inside the silence every session ends on (dyn gap floor 2.0 s; prefab tails 3.2-4.1 s measured). The web keeps 0.45 s. ⚠ Does not reach a WebView frozen outright (Chromium freezes a silent background page after ~5 min): DYN_ROLLOUT.md §5f. // r231: the topic Update finalize no longer writes a provisional page stamp (`e.ver = contentHash()`, the page ON SCREEN) before cachePage() has saved anything. On a dropping link the new page was on screen, the verified save failed, and the unit read 'downloaded' over its old saved copy for good (owner's phone, Greetings & farewells). cachePage() is now the only writer of `ver` (DOWNLOAD_UPDATE_PATH.md fault 14). // r230: a TOPIC Update now holds its downloading state until the verified page save (cachePage, which alone writes `ver`) and the quiz stamp (dynStampUnitQz) have settled, capped at 45 s, as r229 did for playlists. It said 'downloaded' first, so the bar could flip back to 'update' and leaving early left the offline copy old (DOWNLOAD_UPDATE_PATH.md fault 13). // r229: a playlist Update holds its downloading state until dynPlSaveQuiz() has saved and stamped the quiz (capped at 45 s), then repaints once; the save skips side-cars already on disk that hash to their sig. It used to say 'downloaded' before the stamp existed, so it flipped back to 'update' and needed several tries on a slow link (DOWNLOAD_UPDATE_PATH.md fault 12). // r228: the page stamp `ver` is written ONLY by cachePage(), from bytes it saved and verified against the published pageVer (dynStampUnitQz no longer writes it), and dynPlSaveQuiz() stamps a playlist's quiz from ThaiEarDL.saveQuizSidecars(), which fetches past the worker and writes only files matching their sig. It used to read sig from the whole manifest and stamp qz: {} for ever. DOWNLOAD_UPDATE_PATH.md faults 10 and 11. // r227: dlLeaveOk is cleared on a bfcache pageshow, so a page restored after 'Leave anyway' is guarded again; pointer to LEAVE_GUARDS.md. // r226: A BACK SWIPE MID-DOWNLOAD ON A TOPIC PAGE now gets the site's own 'Download in progress' dialog instead of the browser's grey beforeunload box (owner, 2026-09-24, Android app). The link-tap guard existed; the swipe half existed only on My Playlists (pl-list.js r93). Same same-URL sentinel mechanism, made quiz-aware (quiz.js pushes its own entry here), scroll-preserving across the sentinel pops, and beforeunload stands down once they chose Leave anyway. // r224: .g-eng gains `font-family: var(--font-ui), var(--font-thai)`. The grammar units now carry Thai script inside the GLOSS (the named pair, e.g. "owing to (เนื่องจาก…จึง)"), and Inter has no Thai glyphs, so without this it resolved in the OS Thai face beside the Sarabun of the chip's own .g-thai. Per-character fallback, so the English is untouched. ⚠ The twin rule for the Font pill lives in player-dyn.css (html.te-thai-modern .g-eng) and is NOT in the existing selector list on purpose -- Noto Sans Thai has Latin glyphs and would restyle the English. Editing one is a silent half-fix, same shape as r223's slider track. // r223: THE DYN SLIDER TRACK WAS BLACK ON PREMIUM IN THE ANDROID APP. Owner, 2026-09-19: on a premium topic the Pauses and Thai-speed bars are black to the right of the thumb in the app, neutral grey on the iPhone. CAUSE, MEASURED IN CHROME 151 (Blink, the engine the Android WebView runs) AND NOT REASONED: with `accent-color` alone Blink DERIVES the unfilled track from the accent, and from the premium gold (--accent: #F0CC5C inside #player-root) it derives near-black; WebKit ignores the accent for the track and keeps its default grey, so the split is engine-deep, not a ThaiEar bug. ⚠ BOTH OBVIOUS ONE-LINE FIXES WERE TRIED IN THE BROWSER AND BOTH FAIL: a darker gold (#B29234) is ALSO black, so it is not a luminance threshold; and `color-scheme: only light` changes nothing, so it is not the app being in dark mode. The fix is to stop deriving the track at all -- a manual ::-webkit-slider-runnable-track gradient (plus the -moz- twins), gold to --te-fill and --border-strong after it. ⚠ NOT TIER-KEYED ON PURPOSE: the non-premium purple renders identically to the UA default it replaces (verified side by side on topic-01 vs topic-40), so one rule serves both and there is no second path to keep in step. dynFillSlider() keeps --te-fill on the value and is called after EVERY write to .value -- init, the account sync, a TE/ET switch, an adopted unit -- not only on user input. The speed slider gains an `input` listener that ONLY repaints: `change` stays the sole writer, or dragging across stops would queue a rebuild per stop. ⚠ THE RULE EXISTS TWICE, in player.js's injected CSS and in player-dyn-mount.css (the inline copy is deliberate, for CLS) -- both were edited; editing one is a silent half-fix. // r222: THE PREV/NEXT WALK NOW BUILDS AN UNCONSTRUCTED PLAYLIST INSTEAD OF SKIPPING IT. Owner, 2026-09-19: "on playlists, if i hit the next button in the dyn player it doesnt attempt to construct the next playlist - it just skips to the next constructed playlist... on topics, we do always try to construct a session". Exactly right, and the asymmetry was never a decision. dynChainPlayable()'s ONLY clause meaning "online, so it can be built from nothing" is dynStdUsable(), which opens `if (!t.prefix) return false` -- a playlist spans prefixes and has none (playlists.html builds its chain entry with prefix: ''), so it never reached the navigator.onLine line that makes every topic playable online. What was left for playlists was the foreground pl- test, and that tests ONE thing: a download record. So online, a playlist qualified only if it was already CONSTRUCTED (persisted meta) or DOWNLOADED, and the walk skipped to the next that was. ⚠ THAT pl- TEST WAS WRITTEN IN r216 FOR THE OFFLINE CASE, where "downloaded" genuinely is the equivalent of a topic's clips being on disk, and it reads as though it were the whole answer -- it was half of one. Now: foreground + navigator.onLine + dynPlBuildable(t), whose preconditions are what a build actually needs rather than a proxy for them -- the items in the local playlist cache (the same one dynChainSentences reads) AND at least one of them not locked, via dynUnitLocked, so r216's rule stands and the walk still never hops onto a unit that can only fail. OFFLINE IS UNTOUCHED BY CONSTRUCTION (the new clause requires navigator.onLine) and so is the LOCK SCREEN (it requires fg, and a backgrounded build is refused anyway) -- offline the walk still takes the first unit with a persisted session or a download record, in chain order, which is the behaviour the owner specified. SECOND EDIT, same defect family: dynAdvance's one-shot local-build retry read `t.prefix && isDownloaded(t.prefix)` and was therefore unreachable for a playlist. That retry is the cover for navigator.onLine LYING in the WebView; harmless while the walk refused to hop onto an unbuilt playlist, load-bearing now that it does. dynPlDownloaded() is extracted rather than copied -- a second inline copy of a localStorage shape is how the tier-rule divergences started. ⚠ KNOWN AND ACCEPTED: a hop onto an unbuilt playlist now shows "Constructing dynamic mp3..." for a few seconds rather than being instant. That is the same trade r213 made for topics, and the start-the-prefab-then-swap hybrid was put to the owner then and REJECTED because the swap restarts the audio mid-listen. test_dyn_chain.js 82 -- the 3 assertions of §28 go red on r221. ⚠ §29/§30 (skip when there is nothing to build from, nothing entitled, offline, or backgrounded) pass on BOTH and are vacuous on the pre-fix source, which skipped everything -- they guard against over-fixing, not the fix. // r221: IN THE ANDROID APP A TOPIC PAGE WAS FOREIGN TO ITSELF, so nothing ever highlighted. Owner, 2026-09-19: hop to the next topic with the dyn player, tap the "Now playing" link, and the position carries over but the playing card never lights -- and +1/-1 does not light it either. That pair IS the diagnosis: both highlight call sites (the timeupdate handler, and dynPaintPos() which the sentence-skip buttons repaint through) are gated on dynSessionIsLocal, so one false flag kills every route at once rather than one of them. syncToPlayingTrack() is the NATIVE-only mount path -- the Media3 engine keeps playing across a navigation, so the new page adopts the live track instead of starting one -- and it asked "is the playing unit mine?" as `np.key !== cfg.dynKey`. np.key is stamped from the CHAIN ENTRY's dynKey, which resolveDynChain() synthesises as the bare page id for a derived chain; cfg.dynKey is set by PLAYLIST pages only. So on every topic and grammar page the comparison was 'topic-07' !== null -> foreign, ALWAYS, and the else-branch commented "own unit playing (its page opened mid-play)" was unreachable there. The foreign branch then hydrated the display session from dynUnitNs(t) -- which for a topic resolves to its own prefix, i.e. THE RIGHT MAP -- and set dynSessionIsLocal = false over the top of it. ⚠ NOT SPECIFIC TO THE LINK: any arrival on a topic page while the app is playing that topic hit it (the home page's now-playing strip does too); the dyn link is just the reliable way to trigger it. ⚠ THE IPHONE WAS NEVER AFFECTED and that is not luck -- syncToPlayingTrack starts `if (!NA) return`, so the web never runs any of it; navigation destroys the <audio>, the page restores its own session, and the flag keeps its default true. Native-only by construction, which is why it survived every desktop and PWA pass. Two edits: ownKey falls back to this page's own chain entry (dynChain[dynHomeIdx].dynKey), and the flag in the foreign branch is DERIVED from the namespace rather than hard-coded, so it stays true to the map whatever route reaches it. test_dyn_sync.js 23 -- 4 assertions go red on r220 (the ownKey pair, and the flag on both an own-namespace topic and a playlist). // r220: THAI SPEED STOPS 100/90/80 -> 100/92/84 (owner, 2026-09-19 -- 80% dragged on long sentences, and a stretch artefact over a paid studio recording is worse than a speed nobody can quite reach). SP_STEPS is now ONE module-scope constant instead of three literals, and dynSnapSp() moves any stored value onto the nearest current stop at all three read sites. THAT SNAP IS THE ONLY NON-OBVIOUS PART: a saved 0.9 is still finite and in range so nothing rejects it, but it is not in SP_STEPS, so indexOf returns -1 and the slider reads "Normal" while the build stays at 0.9. Old middle -> new middle, old slowest -> new slowest, so the choice survives. The session key already carries |s<rate>, so an old-speed session self-invalidates and rebuilds. test_dyn_speed.js 52. // r219: THE ANDROID APP COULD NOT RESUME A RECONSTRUCT, AND NOTHING ELSE COULD REPRODUCE IT. Owner, 2026-09-15: change a dyn setting mid-play and the app rebuilds (r197, as intended) but restarts at 0:00, while the iPhone PWA and desktop carry on from the same sentence. That split IS the diagnosis: the web is a real <audio>, the app is makeNativeAudio()'s shim, and the shim did not do what load() does -- it carried the REPLACED track's currentTime and duration into the next one. Three failures fell out of one missing reset, all inside dynAutoRebuild. (a) `want` is bounded by mainAudio.duration; stale, that is the OLD session's length, so raising the repeat count -- which lengthens the session and pushes every sentence later -- put the anchor past it and the resume was abandoned before it was attempted. (b) The pre-play `currentTime = want` issued NA.seekTo against a player still holding the outgoing media item, and NA.prepare then started the new one at 0. (c) The repair for exactly that, `currentTime < 0.5` after play() resolves, read the value the setter had just written and concluded the seek had landed. Each one alone is enough to lose the position, which is why it never half-worked. Now a src change resets currentTime/duration (what an element does), and a seek asked for before the item is prepared is HELD and applied after prepare -- Media3 takes a seek on a buffering item, and CMD_SEEK skips its clamp while getDuration() is TIME_UNSET. NO APK CHANGE: prepare/seekTo/play are the plugin surface as shipped. The PAUSED route was broken the same way and by the same value (togglePlay's `want` has the same `currentTime < 0.5` test), so it is fixed by the same edit. test_dyn_resume.js 55. // r218: THE PLAYLISTS LOOP DID NOT GET r217'S REVERT, and the owner asking "this will work on topics and playlists too?" is what found it -- he had verified favourites and grammar, which are topic units with no PLMODE. Two guards at the TOP of dynEnsureMainSrc ask whether THIS PAGE's own playlist has anything playable (nothing downloaded / nothing entitled). Right when the page is playing itself; wrong when the player is on an adopted neighbour -- and they run BEFORE the adopted branch, so offline on a playlist page whose own clips are absent they reported "Nothing in this playlist is downloaded yet" about a playlist nobody was listening to, and r217's revert never got the chance. They now stand down while dynAdopted is set. Same class as r214's namespace bug: a page-scoped question asked about a unit that is not the page. // r217: A SETTINGS CHANGE ON AN ADOPTED UNIT, OFFLINE, HAD NO WAY BACK. Owner named the mechanism: "this mechanism broke because we now call auto reconstruction of dyn mp3s when settings toggle -- before you would hit play, and you'd get the message 'can't reconstruct'". Exactly right. r18e's revert-to-the-stored-session lives in the LOCAL path's catch; r215 routed a settings change made while a neighbour is adopted through dynEnsureMainSrc's ADOPTED branch, which had no catch at all -- so offline, with the neighbour's clips not on the device, the rebuild simply rejected: no revert, no usable message, and a perfectly playable session still in the cache under the previous settings. The adopted branch now gets the same safety net. THREE THINGS THE FIX ITSELF GOT WRONG FIRST, all found by the harness: (a) dynRevertToStored() read DYN_KEY_NS, but since r214 the settings follow the adopted unit -- it now reads dynActiveNs(); (b) it verified via dynKey(), which describes THIS PAGE's sentence numbers, so an adopted revert always reported failure after succeeding -- the full-key check is now scoped to our own unit, where the nums are ours; (c) its exclusion restore would have written the NEIGHBOUR's num list as THIS page's exclusions, silently excluding every sentence on screen -- now also scoped. And r213's unconditional dynStatus(null) on the adopted branch wiped the revert's own explanation, because the revert resolves through that same branch: dynRevertMsgUntil holds it, the same shape offBarHoldUntil settles for the offline bar. NOTE the topic's OWN page was never broken -- isMissingOffline() returns false when !PLMODE, so a missing clip is re-thrown as a plain network error and the general path already reverted. The first diagnosis blamed 'nodl' and was wrong. test_dyn_chain.js 69. // r216: two OFFLINE chain faults, both on all four loops (topics, playlists, grammar, favourites), both diagnosed by a parallel session and fixed here because this is the file and the second reverses part of r214. (1) THE FOREGROUND WALK SKIPPED NOTHING: `fg || dynChainPlayable(...)` rested on the stated premise that anything can be built in the foreground -- true online, FALSE offline, where no clips on the device and no persisted session means there is nothing to build FROM. So it hopped onto a unit that could only fail, and it fails as a STALL rather than an error, which is why the owner read it as a choke. Same hoist the entitlement check already got out of the same shortcut, for the same class of reason. dynChainPlayable() now takes `fg` and answers two questions: without building (lock screen) it wants a session or a usable placeholder; with a build (foreground) the clips must still be GETTABLE, which offline means on this device. Online dynStdUsable() is true for every topic, so the change is offline-only by construction. (2) A FAILED FORWARD NAVIGATION LOST THE ADOPTION: r214 un-adopts on a bfcache restore, and could not tell 'the visitor went to the neighbour's page' from 'the navigation failed and they came straight back' -- offline, tapping the Now-playing strip for an uncached page gives the offline notice, and going back dropped what was playing for a navigation that never happened. They ARE distinguishable: a real navigation MOUNTS a page and the SW's offline fallback is a self-contained string with no player.js, so te_mount (sessionStorage) records whether one completed. The question asked is 'did ANY page mount since we adopted', not 'did the target mount' -- A->B->C then back to A is still a real navigation. test_dyn_chain.js 59; both go red on r215. // r215: A SETTINGS CHANGE WHILE ADOPTED BELONGS TO THE ADOPTED UNIT. Owner, 2026-08-27: changing settings while a neighbour was playing showed "Constructing dynamic mp3..." for ever, and opening that topic afterwards rebuilt it at the OLD settings -- "its like the settings change isnt communicated with the owning topic page", and he later confirmed the reconstruct genuinely fails. dynInvalidate() asked all of its questions about THIS PAGE'S unit -- dynKey(), dynReadMeta(DYN_KEY_NS) -- while a neighbour was what was playing. Two failures fell out of that: the rebuild reached dynEnsureMainSrc's adopted branch, dynResolveAdopt handed back the session already in dynAdoptCache (built moments earlier at the old settings), and NOTHING on that path cleared the status line -- so the message outlived a rebuild that never happened; and because no new session was ever built or persisted, the unit's own page later restored the old one, its restore being deliberately lenient. Now: dynInvalidateAdopted() drops the adopted unit's cached session and sets dynAdoptStale, which makes dynResolveAdopt bypass BOTH caches and build; the build persists under that unit's own namespace at its own settings, so its page finds it; and the adopted branch clears the status line on every route through it. The owner's read was right -- the page cannot own this, because the page is not what is playing. test_dyn_chain.js 51; 3 assertions go red on r214. // r214: THE UNIT OWNS ITS SETTINGS, and the built session lands where that unit's own page looks for it. Owner, 2026-08-27: hopping to a neighbour then opening its page via the "Now playing" link REBUILT the mp3 instead of continuing, and back-swiping to the previous page resumed the OTHER topic. Three causes. (1) NAMESPACE: a page stores per-unit settings/exclusions/sessions under `cfg.dynKey || PREFIX`, and a TOPIC page sets no dynKey -- so its namespace is its PREFIX, while the chain entry carries the synthesised bare page id ('topic-07'). Every adopt-path lookup used the chain key, so for a topic it read and wrote a namespace that unit's page never touches: a persisted session was NEVER found (which is why a topic adopt always fell through to the prefab, invisible while the prefab worked), r213's build then persisted under the same wrong namespace, and dynSettingsFor() returned defaults instead of the unit's own settings. dynUnitNs() is now the one answer. (2) KEY SHAPE: dynKeyFor() emits `prefix:num` for a sentence carrying a prefix and a bare `num` otherwise; the synthesised list must carry a prefix or the clips resolve against the wrong topic, while a topic page's own sentences never do -- so the two sides disagreed by construction. The stored key is now computed page-shaped. A foreign unit's own exclusions are applied too, for the same reason. (3) BFCACHE: iOS restores a page with its JS state intact, dynAdopted included, so it woke believing it was still playing the neighbour and resumed it. Adoption is only TRUE on native, where the engine really does keep running across a navigation; on the web a persisted pageshow now un-adopts QUIETLY -- home, but not playing, since the visitor arrived by going back rather than by pressing play. And per the owner's spec, the settings panel follows what is PLAYING: adopt B and the controls show B's repeats/pause/English, Return and they show this page's again, with edits filed against whichever unit is displayed. Exclusions deliberately do NOT travel -- they belong to the card list on screen, which is always this page's. test_dyn_chain.js 45; 6 assertions go red on r213. // r213: a FOREGROUND prev/next hop BUILDS the neighbour rather than playing its prefab _TE/_ET. That track is a pre-dyn artefact -- fixed order, both languages, and none of the listener's settings (no repeats, no pause length, no exclusions) -- so prev/next quietly played something different from what the same topic plays when you open its page, and after r212 the OFFLINE hop was the one getting it right. The obvious hybrid (start the prefab, swap when the build lands) was put to the owner and rejected: the swap restarts the audio mid-listen, which is worse than a few seconds of "Constructing...". A build persists its session, so the second hop onto the same unit is instant. THE PREFAB IS NOT DEAD AND MUST NOT BE DELETED: a lock-screen hop cannot build (WebKit suspends media loading for a backgrounded page and dynAdoptBuild refuses when hidden), so it is still the only source there, and it is the fallback when a build fails online -- but never when offline, where a remote URL cannot resolve and reporting the failure honestly is the only truthful option. dynChainPlayable() is now the honest lock-screen predicate (what can play WITHOUT building) rather than "has a prefix". test_dyn_chain.js 32; 8 assertions go red on r212 while every offline section and the lock-screen section pass on both. // r212: PREV/NEXT WORKS OFFLINE ON A DOWNLOADED TOPIC. Owner, 2026-08-27, iPhone PWA in airplane mode: the next topic flashed up as "Now playing:..." and the page then stayed where it was -- that flash was dynApplyAdoptState painting and the snap-back was dynAdvance's catch reverting. Three faults, all in the adopt path. (1) dynAdoptPlaceholder() and dynPrefetchNeighbours() called buildUrl() DIRECTLY, so the source was always a remote URL with no hasLocalFile() check -- a divergent copy of resolution logic that mainSrcFor/sentSrcFor/dynClipUrl all do local-first, and sw.js does not handle audio at all (other origin), so offline that URL cannot resolve however much is downloaded. (2) Even resolved locally there is nothing to find: D0c deletes _TE/_ET on a dyn topic download. (3) dynAdoptBuild/dynChainSentences were playlist-only on the premise that "topic units always have a placeholder" -- false offline -- so the ONE unit type that can always be rebuilt from disk was the one type never allowed to try. Now: the placeholder resolves local-first, dynStdUsable() asks whether a remote source can work at all, a topic's sentence list comes from the PRECACHED topic-sentences.json, and dynChainPlayable() stops claiming every topic is playable. One local-build retry in the catch covers navigator.onLine lying. isGateCode() hoisted to module scope rather than copied. ONLINE IS UNCHANGED BY CONSTRUCTION: dynStdUsable() is true for every topic with a connection. test_dyn_chain.js (25) is the first harness this surface has ever had -- its 20 online assertions were written and run against the pre-fix source FIRST, and they pass identically before and after. // r211: a REPLAY of a sentence block is more listening, not the same listening. plysDwell.heard was a running max capped at the session's repeat count and held for the whole VISIT to a block -- and back-to-start (dynSentSkip(-1) when already 1.5s in) seeks backwards WITHOUT changing num, so the same dwell record survived and rp was the ceiling for the visit rather than for the pass through it. Owner, 2026-08-27, on 3 repeats: two heard, back to start, three more heard, count went up by 3 instead of 5. The loop button was the same shape (ten loops at rp=1 credited one). A backwards jump now BANKS the run and starts a fresh one, with the wall clock reset alongside it -- which is the anti-inflation half, because each new run must bank its own dwell out of real timeupdate ticks, so tapping back repeatedly with nothing played still credits nothing. That reset also closes a leak in the other direction: after a full listen, dragging to the end of the block used to credit an extra repetition for free (ms already banked, byPos jumps). Still ONE pass carrying N repetitions -- /api/plays reads reps[k] only where deltas[k] > 0, so passes stay <= reps and the topic roll-up's complete-listens figure does not move on a replay. The proportional fallback (PLAYS_COUNTER.md 2b addendum) is deliberately untouched. // r210: the FIRST download tap now shows its own progress. renderOfflineBar() re-derives the bar from what is on disk and is wired to thaiear:auth, which fires ~25x per page on a real device -- so a download that had just started was not on disk yet, resolved to 'idle', and had "Download for offline" painted straight over its progress line; the owner tapped again, the storm had settled by then, and only the second tap appeared to work. Reported on the iPhone PWA on a topic page and on a playlist, which is the tell: one function, both surfaces (the playlists LIST is unaffected -- its render() compares markup and dlWorking makes a busy row differ). setOfflineState()'s idempotence guard could not catch it: it stops a repeat paint, not a wrong one. The same event also erased offlineBarFlash's transient 'offline'/'error' message within milliseconds, which is why a download failing for a REAL reason presented as "nothing happened" -- offBarHoldUntil now holds the bar for the message's own 4-6s, released by any genuine state change. ?lat=1 gains dl:start / dl:first / dl:done / dl:FAIL, with a count of the repaints suppressed, because the PWA has no console. // r209: the bulk prewarm starts when the HEAD pass finishes instead of on a fixed 2500ms timer -- measured on a free topic, head done at 242ms and bulk not until 2541ms, so a tap at 1828ms on the 11th sentence found 26 of 30 clips still cold. Head raised 4 -> 8 (a phone shows more than four), and thaiear:auth no longer queues a bulk timer per event (~25 of them per page). r208: a tap no longer aborts the download of the clip it is asking for. prewarmYield() spared nothing, so with a 4-clip head pass and a tap near the top of the list the cancelled download was very often the tapped one -- measured on the owner's phone: yield aborted 4, TAP s395, PLAYING 1170ms later. It now spares that file and ADOPTS the fetch already in flight instead of asking for the same bytes again, bounded by SENT_ADOPT_MS so a stalled one cannot hold the button (armSentStall only arms AFTER the src resolves). r207: a SHARE button on the probe panel, where navigator.share exists. The clipboard is not a reliable way off a phone -- execCommand needs user activation and the async clipboard API can be refused outright in a WebView -- and when both fail the owner is hand-selecting 1,600 characters on a handset. r206: the probe's copy button actually copies on a phone -- .select() on a READ-ONLY textarea is refused on iOS and leaves an empty selection in an Android WebView, so the field is made writable for the duration and selected with setSelectionRange, then execCommand('copy') runs synchronously inside the gesture (the async clipboard API can be a silent no-op in a WebView). The button now reports 'copied' vs 'select all + copy'. r205: the probe panel repaints on setTimeout, not requestAnimationFrame -- rAF does not fire in a backgrounded tab or app, and latQueued had already latched true, so the panel never appeared and never recovered. r204: the latency probe is usable ON A PHONE -- copy renders a selectable textarea as well as trying the clipboard (a WebView clipboard write can be refused or a silent no-op, and there is no console in the app), and the panel is 92vw on a handset instead of a 46vw ribbon. r203: a RESTORED signed-URL cache no longer waits for auth. The prewarm asked for a token whenever the topic was gated, not whenever it still had something to mint -- so a second visit, with every url already in the persisted cache, stopped at 789ms and did not start until 1245ms for an /api/audio call it was never going to make. r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
+  var DYN_BUILD = 'r254';   // r254 (2026-10-13): RELEASE A of the TE/ET retirement (W98 + W90 + W100; TE_ET_RETIREMENT.md section 4, _w98/BRIEF.md in the tooling repo). No hop plays a combined _TE/_ET track any more: every unit plays a built session. (1) One walk (dynWalk / dynChainPlayable lost fg): visible or hidden, a hop may build; a failed visible build says "Couldn't load the audio - check your connection" and stays on the unit you were on. (2) A hidden hop (a lock-screen next/prev the page handles, web autoplay with the screen off) builds the target first while the current audio plays on, then switches (dynHiddenHop, dynResolveLenient, dynPendingHop); a target with any stored session switches at once; a pause, Return or a TE/ET switch drops the pending hop, a press back onto the playing unit cancels it, and it gives up after 60 s. (3) The app's lock-screen queue holds BUILT units only, in the walk's order, probed in order and stopping at the first unbuilt one: no signed links, no 'std' items (the DYN_NQ clock and dynQueueSrc are gone). (4) Build-ahead: 4 ahead + 1 back about 1 s after playback starts, 45 min ahead with Autoplay on, a last call 30 s before a unit ends, a kick on unlock; a hidden web page may build. (5) App 1.9's error event drops the failed unit's session (nativeError); a Play on a paused engine that has not started within 2.5 s prepares the session again at the same sentence, rebuilding a missing file (nativePlayWatch, dynPlayStalled; the shim's reprepare forgets the position as a new src does). (6) W100: a visible Play, hop or Return uses a stored session only if its SETTINGS are the ones the unit's own page computes now (dynHeldIsCurrent, dynUnitKeyNow, the strict dynResolveAdopt, dynKeySettings); a stale one is rebuilt and resumes at the same sentence (dynDropHeld, dynResumeInto); the lock screen stays lenient; on the allow-listed area's page another space's unit is never rebuilt (dynForeignToArea); a TE/ET switch while a Play still builds re-resolves in the new direction (dynEnsureMainSrc's modeAt). (7) Removed: dynStdRemote and the strip's " - standard audio", dynStdUsable / dynAdoptStdSrc / dynAdoptPlaceholder / dynAdoptBuildElsePrefab, the neighbour url mint, the trace's (std) tag, the r250 probe (dynProbeOn). Offline, a pre-dyn classic download is skipped by the walk (dynDlHasClips): nothing plays its combined pair now. r253 (2026-10-13): two fixes to r252 (owner, on his phone). (1) The Pauses bar no longer changes length mid-drag: its value label had a 34px MINIMUM that the wide labels ("0.25x", "0.75x") outgrew under OS text scaling, and r252's bar grows into whatever the label leaves, so every label change resized the bar under the finger (measured 189/193px at 115% text, 126-138px at 140%); the label is now a fixed 3em. (2) "pretty sure its about 2 seconds for 0.25x": the Andovar takes end on ~1.0s of silence (median; the English ~0.4s; ~1 Thai take in 10 almost none), heard on top of every inserted pause. Every clip's tail is now cut to 0.2s after its last sound when the session is stitched (dynTrimTail: deterministic, only ever removes silence, verified over every clip on disk by verify_tails.js), so 0.25x is heard as ~1.4s and every stop ~0.8s shorter than before, as the r147 floors intended. Every session keys with |f3 and rebuilds once. r252 (2026-10-13): PAUSES (owner). (1) Below 0.75x the pause floors step down: repeat and gap 2.0 -> 1.5 s at 0.5x and 1.0 s at 0.25x, recall 3.0 -> 2.25 / 1.5 s ("sliding the pauses shorter doesnt do anything because they are already at their base 2 or three seconds"; at 0.25x 88% of the 2,444 live sentences sat on the 2 s floor). 0.75x and up are unchanged. The session's LAST silence stays >= 2.0 s: the app's 1.2 s pre-loop / pre-advance window (DYN_NATIVE_LEAD_S) must land in silence. (2) The Pauses range is 0.25x-1.5x, 6 stops ("nobody is going to use 2x pauses"); a stored 1.75 or 2 reads as 1.5. (3) The bar is 200px where it fits; on a phone it takes its own line and grows from a 120px basis to 200px. (4) A session below 0.75x keys with |f2, so one built under the old floors rebuilds once; offline, a stored session that differs only by that token plays as it is. (5) dynParseKey reads the option tokens (|s speed, |g gloss, |f2) instead of folding them into the num list, where an offline settings revert reset a slowed Thai to Normal and excluded the first sentence; dynParseSessionKey reads |s too, so the desktop MP3 of a slowed session is slowed. (6) The Pauses info text: the minimum is about a second at 0.25x. r251 (2026-10-13): the pause between repeats and before recall comes from a sentence's own syllable estimate when it carries one (s.syl > 0), else from its text as before. The allow-listed area gives one sentence the floor (owner: a playful line she needn't dwell on). Nothing else carries syl, so every other session's timing is unchanged. r250 (2026-10-13): W98 Step 1, the iPhone probe (owner-only). The owner panel's "Test: build while locked" (localStorage te_probe_hidden) lets the web build-ahead start while the page is hidden, and with it on every dynLog line, plus the audio element's events while hidden, goes to the lock-screen trace tagged (hidden)/(visible). Off by default: nothing changes for anyone else. r249 (2026-10-13): the quiz-area mini player shows only while the audio plays (owner: paused audio, then the quiz menus, and the paused bar appeared). A pause from the bar on a menu keeps it until a run or close (miniQuizHold). r248 (2026-10-12): the playlist player's playback settings fold under "Playback settings" like a topic page's (owner: "playback settings in playlists are not collapsible … parity with topic dyn player"). The fold is built when STYLE2 || PLMODE, and its six DYN_STYLES rules name body.dyn-plmode beside body.te-v2; the playlist player stays off te-v2. r247 (2026-10-12): THE APP'S PLAY BUTTON FOLLOWS THE ENGINE (owner, Android: paused on the lock screen, came back to the topic, and the button still showed ⏸ over a paused track; a tap then played it). The shim's `playing` event now reaches the page as `playstate`; the button follows it while this page holds the engine's track (a drop after 700 ms, so a buffering stall or a hop between queued units does not flicker it), and an engine hop keeps the play state instead of forcing "playing" (a lock-screen ⏭ on a paused player lands paused). Web unchanged. r246 (2026-10-10): the settings block's corner tag ("r245 · mp4 · 0.84 MB") is removed for everyone (owner: learners do not need the build, codec or session size); the classic playlists link drops its "· build" suffix. The build still shows in the owner panel. r245 (2026-10-09): A DOWNLOAD STAMPS FROM THE SERVER'S QUIZ LIST (owner, Android: Thai culture & customs: Face & values opened while the app was switching to the previous evening's release, so the visit held the old quiz list; its Update stamped the old qz, the page save was refused, and the bar flipped straight back until he left and came back). dynQzSigLoad(true) reads quiz-data/index.json ?te-save= past the worker and replaces the held copy; dynDownloadHere() awaits it before the finalize; a failed or slow read (10 s) keeps the held copy. DOWNLOAD_UPDATE_PATH.md §4b. Also: the lock-screen tail trace obeys te_tail_trace_off, the owner panel's Arm/Disarm switch ("i have no way of pausing it"). r244 (2026-10-06): THE PAGE FOLLOWS THE ENGINE (owner, Android: lock-screen ⏭ from Hobbies & free time 1 ended on Technology: Calls & messaging, the "Now playing" bar said Hobbies & free time 1 and opened Getting around: Directions & journeys). The queue map is merged, never wiped (a transition during the async rebuild was dropped as unqueued); the record's name comes from the same unit as its link (dynTitle, not the last play's title); the page asks the engine (getCurrent) after each queue and on becoming visible, and on mount trusts the engine over thaiear_np; every queued unit's identity is saved (thaiear_np_ids) so pages without a player and unqueued hops can name it, and an unknown unit clears the record's name and link instead of leaving the old ones. r243 (2026-10-06): dynChainPlayable counts a foreground, online cfg.vault unit (noStd + nums) as buildable, so prev/next constructs it instead of skipping it. r242 (2026-10-06): ThaiEarQuizAudio.pauseMain; the mini player shows on the quiz picker and a quiz's menu, never during a run (html.tq-running). r241 (2026-10-06): cfg.vault cards render all rows; the CSS picks per stage and direction. r240 (2026-10-06): cfg.vault - built cards carry st-N, ThaiEarPlayerRelang (in-place switch + dyn rebuild, gloss in the session key), ThaiEarPlayerRecheck, short ep label. r239 (2026-10-06): cfg.vault — the allow-listed area's units (sideOf/langTxt, cachePage saves their data, one stale predicate, account-only quiz gate). r238 (owner, 2026-09-28): TWO LOCKED-LISTENING UPGRADES. (1) THE WHOLE SEQUENCE: the native autoplay queue holds every unit the locked walk reaches, not ten. Anything needing no signed url (a built session, a download, a free unit) is unlimited; a member/premium STANDARD recording is queued only while a fresh url could outlast it (a pessimistic clock: the current unit's remaining time, each session's own length, a standard recording at DYN_NQ_STD_MAX_S = 16 min, against the mint cache's 5 h), and the queue ENDS cleanly before the first one that could not - an expired url makes ExoPlayer error and stop dead. Those urls come in ONE batch, each with the life its unit needs (mintMany's per-file minLife), so nothing is issued that could never be used (audio_quota). (2) BUILD AHEAD ("can't we have it autobuild?"): once a unit plays, the next DYN_AHEAD_N = 2 units the chain would reach are quietly built and persisted (dynAheadKick), one at a time, only while nothing else builds, three lanes, pausing for sentence taps, no status line, skipped when already built at today's settings - so a hop onto them is instant and, in the app, the queue carries them as custom versions for a LOCKED hop. A hop onto a unit mid-build joins that build (dynUnitBuild) instead of starting a second; a build-ahead whose unit got a newer build meanwhile is discarded, never persisted over it; its decoded clips are dropped when it finishes. Also: a build's gated clip urls are minted in one batch (dynPremint) instead of one request per clip. // r237 (owner, 2026-09-28): LISTENING ON A UNIT YOU WERE CARRIED TO IS COUNTED. The play count's only route was dynHighlight(), which runs only while dynSessionIsLocal, and every adopt (autoplay, prev/next, the native queue, a page opened mid-play of another unit) sets that false - so a reached topic was never credited, on the web as much as in the app. Now dynCreditTick() drives the same dwell for the unit actually playing, without painting cards; map entries carry `g`, the GLOBAL sentence number, fixed at build (a playlist's num is a page position that only its own page can resolve); dynCreditKey() takes g, else a topic's num (already global), else credits nothing rather than the wrong sentence; notePlayGlobal() takes the key directly; and a hop flushes the sentence in progress before the switch (dynApplyAdoptState / dynResetToLocal). A unit playing its standard recording has no map, so it still credits nothing. // r236 (owner, 2026-09-28): (1) the native autoplay queue holds TEN units, not six (~2-2.5 h locked), and a queued member/premium standard recording now gets a signed url with at least 3 h of trusted life (mintGet/buildUrl/dynAdoptStdSrc take minLifeMs; dynQueueSrc no longer reuses dynAdoptPlaceholder's cached url of unknown age), so a unit reached hours later cannot fail on an expired link. (2) A download keeps the screen from auto-locking while it runs: nav.js window.ThaiEarAwake (a Screen Wake Lock, reference-counted by surface, re-acquired on return to the page), held by setDownloadingNow here, pl-list.js dlSetBusy and read.js leaveGuardSync — the page's JS stops soon after the phone locks, so a download left to the auto-lock used to stall. // r235: THE LOCK SCREEN'S ⏮ AND ⏭ WORK WHATEVER THE TOGGLES, AND LOCKED LISTENING IS COUNTED (APK v8 / 1.6). Owner, 2026-09-28: the lock-screen ⏮ only acted at unlock. The engine now always holds [previous, CURRENT, next…] (dynNativeQueueSync walks one back and DYN_NQ_DEPTH forward, the same locked walk), so ⏮/⏭ from the lock screen, notification, headset or car move natively; Autoplay goes as `advance` (off, the engine pauses at the unit's end instead of rolling on) and `current` lets the engine drop a set computed for a unit it already left. The play-count dwell now banks playback on the ENGINE's clock (the tick's `at`): read in one burst at unlock, the old Date.now() gaps were ~0 and nothing heard after the first locked minute was ever credited; the app's 500 ms tick also gets a 1.2 s gap ceiling instead of the web's 600 ms. The trace gains the Chromium freeze/resume events and a 20 s timer, to tell WHO stops the page (§5f-3). // r234: END-OF-TRACK BEHAVIOUR MOVES INTO THE ENGINE, FOR APK v8 (1.6). The r233 trace showed the app's WebView stops running JS about a minute into a lock and runs the whole backlog at unlock (DYN_ROLLOUT.md §5f), so repeat, autoplay and the lock-screen ⏭ cannot be decided here while locked. With an app that has them (NA_LOOP / NA_QUEUE, read from Capacitor.PluginHeaders): nativeRepeatSync() pushes repeatOn on EVERY prepare and toggle and ExoPlayer loops; dynNativeQueueSync() walks the chain as a locked hop does (dynWalk, lifted out of advanceTopic so there is one copy of the skip rules) and hands the engine the next 6 units' no-build sources; nativeTransition() takes on a unit the engine moved to without re-sourcing it; a tick older than 2 s (v8 ticks carry `at`) decides nothing, so the unlock backlog cannot loop or hop a second time. The foreground is unchanged (visible autoplay still builds, r213). On an app < v8 every one of these is a no-op. // r233: A LOCK-SCREEN TRACE, APP ONLY (owner, 2026-09-28, on r232: Repeat on, locked with 1 min 10 s left, silent at the end on the second of two runs — too short for the ~5-minute background freeze, and not separable by inference from "that page was still on r231"). tailTrace() writes a 120-line ring buffer (te_tail_trace) of mount/build, hide/show, a 30 s heartbeat while locked, every tick in a track's last 5 s, gaps of 3 s+ with no tick, the PRE-LOOP/PRE-ADVANCE decisions and the `ended` handler, each stamped with when JS PROCESSED it; the owner panel prints it. Frozen JS shows as a gap line and events bunched at the unlock time. Remove once DYN_ROLLOUT.md §5f is settled. // r232: IN THE ANDROID APP, REPEAT AND AUTOPLAY COULD MISS THE END OF A TOPIC WITH THE SCREEN LOCKED (owner, 2026-09-28: "at end of topic, i just hear silence", "this isnt alwasy the case"). r199's pre-loop acts in the last 0.45 s, sized for a real <audio> element whose timeupdate fires every ~250 ms; the app hears position from NativeAudioPlugin's 500 ms ticker, which jumps that window clean on 10.1% of track ends (25% with the ticker 20% late, measured in test_repeat_loop.js §H), falling through to `ended`, which does not survive a locked screen. The native window is now 1.2 s (DYN_NATIVE_LEAD_S), inside the silence every session ends on (dyn gap floor 2.0 s; prefab tails 3.2-4.1 s measured). The web keeps 0.45 s. ⚠ Does not reach a WebView frozen outright (Chromium freezes a silent background page after ~5 min): DYN_ROLLOUT.md §5f. // r231: the topic Update finalize no longer writes a provisional page stamp (`e.ver = contentHash()`, the page ON SCREEN) before cachePage() has saved anything. On a dropping link the new page was on screen, the verified save failed, and the unit read 'downloaded' over its old saved copy for good (owner's phone, Greetings & farewells). cachePage() is now the only writer of `ver` (DOWNLOAD_UPDATE_PATH.md fault 14). // r230: a TOPIC Update now holds its downloading state until the verified page save (cachePage, which alone writes `ver`) and the quiz stamp (dynStampUnitQz) have settled, capped at 45 s, as r229 did for playlists. It said 'downloaded' first, so the bar could flip back to 'update' and leaving early left the offline copy old (DOWNLOAD_UPDATE_PATH.md fault 13). // r229: a playlist Update holds its downloading state until dynPlSaveQuiz() has saved and stamped the quiz (capped at 45 s), then repaints once; the save skips side-cars already on disk that hash to their sig. It used to say 'downloaded' before the stamp existed, so it flipped back to 'update' and needed several tries on a slow link (DOWNLOAD_UPDATE_PATH.md fault 12). // r228: the page stamp `ver` is written ONLY by cachePage(), from bytes it saved and verified against the published pageVer (dynStampUnitQz no longer writes it), and dynPlSaveQuiz() stamps a playlist's quiz from ThaiEarDL.saveQuizSidecars(), which fetches past the worker and writes only files matching their sig. It used to read sig from the whole manifest and stamp qz: {} for ever. DOWNLOAD_UPDATE_PATH.md faults 10 and 11. // r227: dlLeaveOk is cleared on a bfcache pageshow, so a page restored after 'Leave anyway' is guarded again; pointer to LEAVE_GUARDS.md. // r226: A BACK SWIPE MID-DOWNLOAD ON A TOPIC PAGE now gets the site's own 'Download in progress' dialog instead of the browser's grey beforeunload box (owner, 2026-09-24, Android app). The link-tap guard existed; the swipe half existed only on My Playlists (pl-list.js r93). Same same-URL sentinel mechanism, made quiz-aware (quiz.js pushes its own entry here), scroll-preserving across the sentinel pops, and beforeunload stands down once they chose Leave anyway. // r224: .g-eng gains `font-family: var(--font-ui), var(--font-thai)`. The grammar units now carry Thai script inside the GLOSS (the named pair, e.g. "owing to (เนื่องจาก…จึง)"), and Inter has no Thai glyphs, so without this it resolved in the OS Thai face beside the Sarabun of the chip's own .g-thai. Per-character fallback, so the English is untouched. ⚠ The twin rule for the Font pill lives in player-dyn.css (html.te-thai-modern .g-eng) and is NOT in the existing selector list on purpose -- Noto Sans Thai has Latin glyphs and would restyle the English. Editing one is a silent half-fix, same shape as r223's slider track. // r223: THE DYN SLIDER TRACK WAS BLACK ON PREMIUM IN THE ANDROID APP. Owner, 2026-09-19: on a premium topic the Pauses and Thai-speed bars are black to the right of the thumb in the app, neutral grey on the iPhone. CAUSE, MEASURED IN CHROME 151 (Blink, the engine the Android WebView runs) AND NOT REASONED: with `accent-color` alone Blink DERIVES the unfilled track from the accent, and from the premium gold (--accent: #F0CC5C inside #player-root) it derives near-black; WebKit ignores the accent for the track and keeps its default grey, so the split is engine-deep, not a ThaiEar bug. ⚠ BOTH OBVIOUS ONE-LINE FIXES WERE TRIED IN THE BROWSER AND BOTH FAIL: a darker gold (#B29234) is ALSO black, so it is not a luminance threshold; and `color-scheme: only light` changes nothing, so it is not the app being in dark mode. The fix is to stop deriving the track at all -- a manual ::-webkit-slider-runnable-track gradient (plus the -moz- twins), gold to --te-fill and --border-strong after it. ⚠ NOT TIER-KEYED ON PURPOSE: the non-premium purple renders identically to the UA default it replaces (verified side by side on topic-01 vs topic-40), so one rule serves both and there is no second path to keep in step. dynFillSlider() keeps --te-fill on the value and is called after EVERY write to .value -- init, the account sync, a TE/ET switch, an adopted unit -- not only on user input. The speed slider gains an `input` listener that ONLY repaints: `change` stays the sole writer, or dragging across stops would queue a rebuild per stop. ⚠ THE RULE EXISTS TWICE, in player.js's injected CSS and in player-dyn-mount.css (the inline copy is deliberate, for CLS) -- both were edited; editing one is a silent half-fix. // r222: THE PREV/NEXT WALK NOW BUILDS AN UNCONSTRUCTED PLAYLIST INSTEAD OF SKIPPING IT. Owner, 2026-09-19: "on playlists, if i hit the next button in the dyn player it doesnt attempt to construct the next playlist - it just skips to the next constructed playlist... on topics, we do always try to construct a session". Exactly right, and the asymmetry was never a decision. dynChainPlayable()'s ONLY clause meaning "online, so it can be built from nothing" is dynStdUsable(), which opens `if (!t.prefix) return false` -- a playlist spans prefixes and has none (playlists.html builds its chain entry with prefix: ''), so it never reached the navigator.onLine line that makes every topic playable online. What was left for playlists was the foreground pl- test, and that tests ONE thing: a download record. So online, a playlist qualified only if it was already CONSTRUCTED (persisted meta) or DOWNLOADED, and the walk skipped to the next that was. ⚠ THAT pl- TEST WAS WRITTEN IN r216 FOR THE OFFLINE CASE, where "downloaded" genuinely is the equivalent of a topic's clips being on disk, and it reads as though it were the whole answer -- it was half of one. Now: foreground + navigator.onLine + dynPlBuildable(t), whose preconditions are what a build actually needs rather than a proxy for them -- the items in the local playlist cache (the same one dynChainSentences reads) AND at least one of them not locked, via dynUnitLocked, so r216's rule stands and the walk still never hops onto a unit that can only fail. OFFLINE IS UNTOUCHED BY CONSTRUCTION (the new clause requires navigator.onLine) and so is the LOCK SCREEN (it requires fg, and a backgrounded build is refused anyway) -- offline the walk still takes the first unit with a persisted session or a download record, in chain order, which is the behaviour the owner specified. SECOND EDIT, same defect family: dynAdvance's one-shot local-build retry read `t.prefix && isDownloaded(t.prefix)` and was therefore unreachable for a playlist. That retry is the cover for navigator.onLine LYING in the WebView; harmless while the walk refused to hop onto an unbuilt playlist, load-bearing now that it does. dynPlDownloaded() is extracted rather than copied -- a second inline copy of a localStorage shape is how the tier-rule divergences started. ⚠ KNOWN AND ACCEPTED: a hop onto an unbuilt playlist now shows "Constructing dynamic mp3..." for a few seconds rather than being instant. That is the same trade r213 made for topics, and the start-the-prefab-then-swap hybrid was put to the owner then and REJECTED because the swap restarts the audio mid-listen. test_dyn_chain.js 82 -- the 3 assertions of §28 go red on r221. ⚠ §29/§30 (skip when there is nothing to build from, nothing entitled, offline, or backgrounded) pass on BOTH and are vacuous on the pre-fix source, which skipped everything -- they guard against over-fixing, not the fix. // r221: IN THE ANDROID APP A TOPIC PAGE WAS FOREIGN TO ITSELF, so nothing ever highlighted. Owner, 2026-09-19: hop to the next topic with the dyn player, tap the "Now playing" link, and the position carries over but the playing card never lights -- and +1/-1 does not light it either. That pair IS the diagnosis: both highlight call sites (the timeupdate handler, and dynPaintPos() which the sentence-skip buttons repaint through) are gated on dynSessionIsLocal, so one false flag kills every route at once rather than one of them. syncToPlayingTrack() is the NATIVE-only mount path -- the Media3 engine keeps playing across a navigation, so the new page adopts the live track instead of starting one -- and it asked "is the playing unit mine?" as `np.key !== cfg.dynKey`. np.key is stamped from the CHAIN ENTRY's dynKey, which resolveDynChain() synthesises as the bare page id for a derived chain; cfg.dynKey is set by PLAYLIST pages only. So on every topic and grammar page the comparison was 'topic-07' !== null -> foreign, ALWAYS, and the else-branch commented "own unit playing (its page opened mid-play)" was unreachable there. The foreign branch then hydrated the display session from dynUnitNs(t) -- which for a topic resolves to its own prefix, i.e. THE RIGHT MAP -- and set dynSessionIsLocal = false over the top of it. ⚠ NOT SPECIFIC TO THE LINK: any arrival on a topic page while the app is playing that topic hit it (the home page's now-playing strip does too); the dyn link is just the reliable way to trigger it. ⚠ THE IPHONE WAS NEVER AFFECTED and that is not luck -- syncToPlayingTrack starts `if (!NA) return`, so the web never runs any of it; navigation destroys the <audio>, the page restores its own session, and the flag keeps its default true. Native-only by construction, which is why it survived every desktop and PWA pass. Two edits: ownKey falls back to this page's own chain entry (dynChain[dynHomeIdx].dynKey), and the flag in the foreign branch is DERIVED from the namespace rather than hard-coded, so it stays true to the map whatever route reaches it. test_dyn_sync.js 23 -- 4 assertions go red on r220 (the ownKey pair, and the flag on both an own-namespace topic and a playlist). // r220: THAI SPEED STOPS 100/90/80 -> 100/92/84 (owner, 2026-09-19 -- 80% dragged on long sentences, and a stretch artefact over a paid studio recording is worse than a speed nobody can quite reach). SP_STEPS is now ONE module-scope constant instead of three literals, and dynSnapSp() moves any stored value onto the nearest current stop at all three read sites. THAT SNAP IS THE ONLY NON-OBVIOUS PART: a saved 0.9 is still finite and in range so nothing rejects it, but it is not in SP_STEPS, so indexOf returns -1 and the slider reads "Normal" while the build stays at 0.9. Old middle -> new middle, old slowest -> new slowest, so the choice survives. The session key already carries |s<rate>, so an old-speed session self-invalidates and rebuilds. test_dyn_speed.js 52. // r219: THE ANDROID APP COULD NOT RESUME A RECONSTRUCT, AND NOTHING ELSE COULD REPRODUCE IT. Owner, 2026-09-15: change a dyn setting mid-play and the app rebuilds (r197, as intended) but restarts at 0:00, while the iPhone PWA and desktop carry on from the same sentence. That split IS the diagnosis: the web is a real <audio>, the app is makeNativeAudio()'s shim, and the shim did not do what load() does -- it carried the REPLACED track's currentTime and duration into the next one. Three failures fell out of one missing reset, all inside dynAutoRebuild. (a) `want` is bounded by mainAudio.duration; stale, that is the OLD session's length, so raising the repeat count -- which lengthens the session and pushes every sentence later -- put the anchor past it and the resume was abandoned before it was attempted. (b) The pre-play `currentTime = want` issued NA.seekTo against a player still holding the outgoing media item, and NA.prepare then started the new one at 0. (c) The repair for exactly that, `currentTime < 0.5` after play() resolves, read the value the setter had just written and concluded the seek had landed. Each one alone is enough to lose the position, which is why it never half-worked. Now a src change resets currentTime/duration (what an element does), and a seek asked for before the item is prepared is HELD and applied after prepare -- Media3 takes a seek on a buffering item, and CMD_SEEK skips its clamp while getDuration() is TIME_UNSET. NO APK CHANGE: prepare/seekTo/play are the plugin surface as shipped. The PAUSED route was broken the same way and by the same value (togglePlay's `want` has the same `currentTime < 0.5` test), so it is fixed by the same edit. test_dyn_resume.js 55. // r218: THE PLAYLISTS LOOP DID NOT GET r217'S REVERT, and the owner asking "this will work on topics and playlists too?" is what found it -- he had verified favourites and grammar, which are topic units with no PLMODE. Two guards at the TOP of dynEnsureMainSrc ask whether THIS PAGE's own playlist has anything playable (nothing downloaded / nothing entitled). Right when the page is playing itself; wrong when the player is on an adopted neighbour -- and they run BEFORE the adopted branch, so offline on a playlist page whose own clips are absent they reported "Nothing in this playlist is downloaded yet" about a playlist nobody was listening to, and r217's revert never got the chance. They now stand down while dynAdopted is set. Same class as r214's namespace bug: a page-scoped question asked about a unit that is not the page. // r217: A SETTINGS CHANGE ON AN ADOPTED UNIT, OFFLINE, HAD NO WAY BACK. Owner named the mechanism: "this mechanism broke because we now call auto reconstruction of dyn mp3s when settings toggle -- before you would hit play, and you'd get the message 'can't reconstruct'". Exactly right. r18e's revert-to-the-stored-session lives in the LOCAL path's catch; r215 routed a settings change made while a neighbour is adopted through dynEnsureMainSrc's ADOPTED branch, which had no catch at all -- so offline, with the neighbour's clips not on the device, the rebuild simply rejected: no revert, no usable message, and a perfectly playable session still in the cache under the previous settings. The adopted branch now gets the same safety net. THREE THINGS THE FIX ITSELF GOT WRONG FIRST, all found by the harness: (a) dynRevertToStored() read DYN_KEY_NS, but since r214 the settings follow the adopted unit -- it now reads dynActiveNs(); (b) it verified via dynKey(), which describes THIS PAGE's sentence numbers, so an adopted revert always reported failure after succeeding -- the full-key check is now scoped to our own unit, where the nums are ours; (c) its exclusion restore would have written the NEIGHBOUR's num list as THIS page's exclusions, silently excluding every sentence on screen -- now also scoped. And r213's unconditional dynStatus(null) on the adopted branch wiped the revert's own explanation, because the revert resolves through that same branch: dynRevertMsgUntil holds it, the same shape offBarHoldUntil settles for the offline bar. NOTE the topic's OWN page was never broken -- isMissingOffline() returns false when !PLMODE, so a missing clip is re-thrown as a plain network error and the general path already reverted. The first diagnosis blamed 'nodl' and was wrong. test_dyn_chain.js 69. // r216: two OFFLINE chain faults, both on all four loops (topics, playlists, grammar, favourites), both diagnosed by a parallel session and fixed here because this is the file and the second reverses part of r214. (1) THE FOREGROUND WALK SKIPPED NOTHING: `fg || dynChainPlayable(...)` rested on the stated premise that anything can be built in the foreground -- true online, FALSE offline, where no clips on the device and no persisted session means there is nothing to build FROM. So it hopped onto a unit that could only fail, and it fails as a STALL rather than an error, which is why the owner read it as a choke. Same hoist the entitlement check already got out of the same shortcut, for the same class of reason. dynChainPlayable() now takes `fg` and answers two questions: without building (lock screen) it wants a session or a usable placeholder; with a build (foreground) the clips must still be GETTABLE, which offline means on this device. Online dynStdUsable() is true for every topic, so the change is offline-only by construction. (2) A FAILED FORWARD NAVIGATION LOST THE ADOPTION: r214 un-adopts on a bfcache restore, and could not tell 'the visitor went to the neighbour's page' from 'the navigation failed and they came straight back' -- offline, tapping the Now-playing strip for an uncached page gives the offline notice, and going back dropped what was playing for a navigation that never happened. They ARE distinguishable: a real navigation MOUNTS a page and the SW's offline fallback is a self-contained string with no player.js, so te_mount (sessionStorage) records whether one completed. The question asked is 'did ANY page mount since we adopted', not 'did the target mount' -- A->B->C then back to A is still a real navigation. test_dyn_chain.js 59; both go red on r215. // r215: A SETTINGS CHANGE WHILE ADOPTED BELONGS TO THE ADOPTED UNIT. Owner, 2026-08-27: changing settings while a neighbour was playing showed "Constructing dynamic mp3..." for ever, and opening that topic afterwards rebuilt it at the OLD settings -- "its like the settings change isnt communicated with the owning topic page", and he later confirmed the reconstruct genuinely fails. dynInvalidate() asked all of its questions about THIS PAGE'S unit -- dynKey(), dynReadMeta(DYN_KEY_NS) -- while a neighbour was what was playing. Two failures fell out of that: the rebuild reached dynEnsureMainSrc's adopted branch, dynResolveAdopt handed back the session already in dynAdoptCache (built moments earlier at the old settings), and NOTHING on that path cleared the status line -- so the message outlived a rebuild that never happened; and because no new session was ever built or persisted, the unit's own page later restored the old one, its restore being deliberately lenient. Now: dynInvalidateAdopted() drops the adopted unit's cached session and sets dynAdoptStale, which makes dynResolveAdopt bypass BOTH caches and build; the build persists under that unit's own namespace at its own settings, so its page finds it; and the adopted branch clears the status line on every route through it. The owner's read was right -- the page cannot own this, because the page is not what is playing. test_dyn_chain.js 51; 3 assertions go red on r214. // r214: THE UNIT OWNS ITS SETTINGS, and the built session lands where that unit's own page looks for it. Owner, 2026-08-27: hopping to a neighbour then opening its page via the "Now playing" link REBUILT the mp3 instead of continuing, and back-swiping to the previous page resumed the OTHER topic. Three causes. (1) NAMESPACE: a page stores per-unit settings/exclusions/sessions under `cfg.dynKey || PREFIX`, and a TOPIC page sets no dynKey -- so its namespace is its PREFIX, while the chain entry carries the synthesised bare page id ('topic-07'). Every adopt-path lookup used the chain key, so for a topic it read and wrote a namespace that unit's page never touches: a persisted session was NEVER found (which is why a topic adopt always fell through to the prefab, invisible while the prefab worked), r213's build then persisted under the same wrong namespace, and dynSettingsFor() returned defaults instead of the unit's own settings. dynUnitNs() is now the one answer. (2) KEY SHAPE: dynKeyFor() emits `prefix:num` for a sentence carrying a prefix and a bare `num` otherwise; the synthesised list must carry a prefix or the clips resolve against the wrong topic, while a topic page's own sentences never do -- so the two sides disagreed by construction. The stored key is now computed page-shaped. A foreign unit's own exclusions are applied too, for the same reason. (3) BFCACHE: iOS restores a page with its JS state intact, dynAdopted included, so it woke believing it was still playing the neighbour and resumed it. Adoption is only TRUE on native, where the engine really does keep running across a navigation; on the web a persisted pageshow now un-adopts QUIETLY -- home, but not playing, since the visitor arrived by going back rather than by pressing play. And per the owner's spec, the settings panel follows what is PLAYING: adopt B and the controls show B's repeats/pause/English, Return and they show this page's again, with edits filed against whichever unit is displayed. Exclusions deliberately do NOT travel -- they belong to the card list on screen, which is always this page's. test_dyn_chain.js 45; 6 assertions go red on r213. // r213: a FOREGROUND prev/next hop BUILDS the neighbour rather than playing its prefab _TE/_ET. That track is a pre-dyn artefact -- fixed order, both languages, and none of the listener's settings (no repeats, no pause length, no exclusions) -- so prev/next quietly played something different from what the same topic plays when you open its page, and after r212 the OFFLINE hop was the one getting it right. The obvious hybrid (start the prefab, swap when the build lands) was put to the owner and rejected: the swap restarts the audio mid-listen, which is worse than a few seconds of "Constructing...". A build persists its session, so the second hop onto the same unit is instant. THE PREFAB IS NOT DEAD AND MUST NOT BE DELETED: a lock-screen hop cannot build (WebKit suspends media loading for a backgrounded page and dynAdoptBuild refuses when hidden), so it is still the only source there, and it is the fallback when a build fails online -- but never when offline, where a remote URL cannot resolve and reporting the failure honestly is the only truthful option. dynChainPlayable() is now the honest lock-screen predicate (what can play WITHOUT building) rather than "has a prefix". test_dyn_chain.js 32; 8 assertions go red on r212 while every offline section and the lock-screen section pass on both. // r212: PREV/NEXT WORKS OFFLINE ON A DOWNLOADED TOPIC. Owner, 2026-08-27, iPhone PWA in airplane mode: the next topic flashed up as "Now playing:..." and the page then stayed where it was -- that flash was dynApplyAdoptState painting and the snap-back was dynAdvance's catch reverting. Three faults, all in the adopt path. (1) dynAdoptPlaceholder() and dynPrefetchNeighbours() called buildUrl() DIRECTLY, so the source was always a remote URL with no hasLocalFile() check -- a divergent copy of resolution logic that mainSrcFor/sentSrcFor/dynClipUrl all do local-first, and sw.js does not handle audio at all (other origin), so offline that URL cannot resolve however much is downloaded. (2) Even resolved locally there is nothing to find: D0c deletes _TE/_ET on a dyn topic download. (3) dynAdoptBuild/dynChainSentences were playlist-only on the premise that "topic units always have a placeholder" -- false offline -- so the ONE unit type that can always be rebuilt from disk was the one type never allowed to try. Now: the placeholder resolves local-first, dynStdUsable() asks whether a remote source can work at all, a topic's sentence list comes from the PRECACHED topic-sentences.json, and dynChainPlayable() stops claiming every topic is playable. One local-build retry in the catch covers navigator.onLine lying. isGateCode() hoisted to module scope rather than copied. ONLINE IS UNCHANGED BY CONSTRUCTION: dynStdUsable() is true for every topic with a connection. test_dyn_chain.js (25) is the first harness this surface has ever had -- its 20 online assertions were written and run against the pre-fix source FIRST, and they pass identically before and after. // r211: a REPLAY of a sentence block is more listening, not the same listening. plysDwell.heard was a running max capped at the session's repeat count and held for the whole VISIT to a block -- and back-to-start (dynSentSkip(-1) when already 1.5s in) seeks backwards WITHOUT changing num, so the same dwell record survived and rp was the ceiling for the visit rather than for the pass through it. Owner, 2026-08-27, on 3 repeats: two heard, back to start, three more heard, count went up by 3 instead of 5. The loop button was the same shape (ten loops at rp=1 credited one). A backwards jump now BANKS the run and starts a fresh one, with the wall clock reset alongside it -- which is the anti-inflation half, because each new run must bank its own dwell out of real timeupdate ticks, so tapping back repeatedly with nothing played still credits nothing. That reset also closes a leak in the other direction: after a full listen, dragging to the end of the block used to credit an extra repetition for free (ms already banked, byPos jumps). Still ONE pass carrying N repetitions -- /api/plays reads reps[k] only where deltas[k] > 0, so passes stay <= reps and the topic roll-up's complete-listens figure does not move on a replay. The proportional fallback (PLAYS_COUNTER.md 2b addendum) is deliberately untouched. // r210: the FIRST download tap now shows its own progress. renderOfflineBar() re-derives the bar from what is on disk and is wired to thaiear:auth, which fires ~25x per page on a real device -- so a download that had just started was not on disk yet, resolved to 'idle', and had "Download for offline" painted straight over its progress line; the owner tapped again, the storm had settled by then, and only the second tap appeared to work. Reported on the iPhone PWA on a topic page and on a playlist, which is the tell: one function, both surfaces (the playlists LIST is unaffected -- its render() compares markup and dlWorking makes a busy row differ). setOfflineState()'s idempotence guard could not catch it: it stops a repeat paint, not a wrong one. The same event also erased offlineBarFlash's transient 'offline'/'error' message within milliseconds, which is why a download failing for a REAL reason presented as "nothing happened" -- offBarHoldUntil now holds the bar for the message's own 4-6s, released by any genuine state change. ?lat=1 gains dl:start / dl:first / dl:done / dl:FAIL, with a count of the repaints suppressed, because the PWA has no console. // r209: the bulk prewarm starts when the HEAD pass finishes instead of on a fixed 2500ms timer -- measured on a free topic, head done at 242ms and bulk not until 2541ms, so a tap at 1828ms on the 11th sentence found 26 of 30 clips still cold. Head raised 4 -> 8 (a phone shows more than four), and thaiear:auth no longer queues a bulk timer per event (~25 of them per page). r208: a tap no longer aborts the download of the clip it is asking for. prewarmYield() spared nothing, so with a 4-clip head pass and a tap near the top of the list the cancelled download was very often the tapped one -- measured on the owner's phone: yield aborted 4, TAP s395, PLAYING 1170ms later. It now spares that file and ADOPTS the fetch already in flight instead of asking for the same bytes again, bounded by SENT_ADOPT_MS so a stalled one cannot hold the button (armSentStall only arms AFTER the src resolves). r207: a SHARE button on the probe panel, where navigator.share exists. The clipboard is not a reliable way off a phone -- execCommand needs user activation and the async clipboard API can be refused outright in a WebView -- and when both fail the owner is hand-selecting 1,600 characters on a handset. r206: the probe's copy button actually copies on a phone -- .select() on a READ-ONLY textarea is refused on iOS and leaves an empty selection in an Android WebView, so the field is made writable for the duration and selected with setSelectionRange, then execCommand('copy') runs synchronously inside the gesture (the async clipboard API can be a silent no-op in a WebView). The button now reports 'copied' vs 'select all + copy'. r205: the probe panel repaints on setTimeout, not requestAnimationFrame -- rAF does not fire in a backgrounded tab or app, and latQueued had already latched true, so the panel never appeared and never recovered. r204: the latency probe is usable ON A PHONE -- copy renders a selectable textarea as well as trying the clipboard (a WebView clipboard write can be refused or a silent no-op, and there is no console in the app), and the panel is 92vw on a handset instead of a 46vw ribbon. r203: a RESTORED signed-URL cache no longer waits for auth. The prewarm asked for a token whenever the topic was gated, not whenever it still had something to mint -- so a second visit, with every url already in the persisted cache, stopped at 789ms and did not start until 1245ms for an /api/audio call it was never going to make. r202: the signed-URL cache SURVIVES NAVIGATION. R2 signs for 6h and mintPut clamps to 5h, but mintCache was memory-only, so every topic open paid a fresh /api/audio round trip (495-1558ms measured -- it is the Worker verifying the JWT against Supabase) for urls it had minted and thrown away minutes earlier. Persisted in localStorage, KEYED ON THE USER via identity.js's synchronous guess and re-checked against the first real thaiear:auth: a signed url is a bearer token for its clip, so an unkeyed store would hand the next person to sign in on that browser the previous one's premium urls for five hours. r201: ONE batch mint per page, not two -- mintMany() now dedupes against batches that are IN FLIGHT (mintCache only fills when a batch RESOLVES, so the head pass and the bulk pass both minted the same files: live, batch(4) at 1252ms and batch(38) at 1420ms). Duplicate issuance is noise in the audio_quota extraction signal. Also: the head pass mints the whole topic in its one request, and thaiear:auth stops re-arming a prewarm that already started (it fires ~15x). r200: the FIRST individual-sentence tap. The idle prewarm re-arms on thaiear:auth instead of polling every 6s for a token (measured: attempt 1 at 2946ms, attempt 2 at 9262ms), and a HEAD pass warms the first 4 clips with no idle wait at all -- before this, the batch mint did not start until 3423ms (topic-08) / 7841ms (topic-06) and the first clip was not in memory until ~5.0s / ~9.4s, so the clip a visitor actually tapped was never the warm one. ?lat=1 arms the probe that measured it. r199: REPEAT loops a fraction before the end instead of waiting for the ended event — the screen-locked stop. r198: play counting credits ONE listen per repetition ACTUALLY HEARD — repeats=4 no longer awards four listens two seconds in. r197: the individual-sentence tap always starts the clip — `ended`/`pause`/`timeupdate` now say which attempt they belong to (a queued event from the clip you switched AWAY from was un-lighting the one you tapped, whenever the new src resolved asynchronously: any downloaded clip, any gated clip with no cached mint), #sent-audio-el gets the same in-gesture priming the top player got in r195, and the idle prewarm no longer latches dead when auth has not produced a token yet. r196: per-sentence play counts on every pill + the minimum on topic/playlist cards; flags and the progress bar retired; listens now counts sentences. r195: prime the top player inside the tap (a built dyn mp3 now starts on the FIRST press) + the play icon follows the promise. r193: playlist cards survive a reveal — dyn-live/dyn-off re-derived in cardHtml, decoration re-attached after the non-SSR rebuild. r192: sentence-clip latency — signed-URL cache, batch minting, idle prewarm. r191: repair the pill hint on stale/downloaded pre-2026-08-18 markup. r190: direction-aware pill hint (previewEn). P3: sim.js (the old single BUILD source) is gone — bump THIS literal per release
   // Round-14: the account copy of the dyn settings lands whenever auth (re)resolves.
   if (DYN) {
     window.addEventListener('thaiear:auth', function () { dynPrefsApply(); });
@@ -4970,22 +4991,8 @@
       if (e.key.indexOf('te_dyn_set_') === 0 || e.key.indexOf('te_dyn_gdef_') === 0) dynRefreshSettingsUI();
     });
   }
-  /* r250 (W98 Step 1, TE_ET_RETIREMENT.md §4): THE IPHONE PROBE. Can a hidden (locked) web page
-     build a session? Never tried: the build-ahead refuses to start hidden on the web. The owner
-     panel's "Test: build while locked" sets this key; with it on, the web build-ahead may start
-     hidden, and every dynLog line also goes to the lock-screen trace (te_tail_trace, printed by
-     the owner panel) tagged with the visibility the page saw. Web only (the app already builds
-     hidden). Read per call, so the switch needs no reload. Remove with Release A. */
-  function dynProbeOn() {
-    if (NATIVE) return false;
-    try { return localStorage.getItem('te_probe_hidden') === '1'; } catch (_) { return false; }
-  }
   var dynLogEl = null;
   function dynLog(msg) {
-    if (typeof dynProbeOn === 'function' && dynProbeOn() && typeof tailTrace === 'function') {
-      msg += document.visibilityState === 'visible' ? ' (visible)' : ' (hidden)';
-      tailTrace(msg);
-    }
     if (!DYN_DBG) return;
     try {
       if (!dynLogEl) {
@@ -5377,7 +5384,6 @@
     });
   }
   var dynAttached = false;             // adopted a live native track via attach() — src must not be rebuilt under it
-  var dynStdRemote = false;   // adopted target is playing its STATIC combined file (no session/map)
   var DYN_KEY_NS = cfg.dynKey || PREFIX;   // namespace for exclusions + persisted sessions
 
   /* -- session persistence (per topic, per mode) --
@@ -6617,13 +6623,71 @@
         if (dynSession && dynSession.url && dynSessionIsLocal && dynSession.url !== sess.url) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
         dynSession = sess;
         dynSessionIsLocal = true;
-        dynStdRemote = false;
         dynBuilding = null;
         dynSyncSentBtns();
         return sess;
       }).catch(function (e) { dynBuilding = null; return Promise.reject(e); });
     dynBuilding = { key: key, p: p };
     return p;
+  }
+  /* r254 (W100): was the session the player HOLDS built with the settings the controls show now?
+     The page's own unit answers with dynKey(); an adopted unit with the key its own page would
+     compute (dynUnitKeyNow, the build-ahead's key). Anything that cannot be told yet (no session
+     key, the topic list not loaded) answers yes: leave it as it is, as before. */
+  function dynHeldIsCurrent() {
+    if (!dynSession || !dynSession.key) return true;
+    // This page's own unit: its sentence list is this page's too, so the whole key counts.
+    if (!dynAdopted) return dynSession.key === dynKey();
+    /* A unit from ANOTHER space while the ALLOW-LISTED AREA's page is open (a public topic still
+       playing in the app's engine): its key cannot be computed here, because the area's own state
+       leaks into it (its gloss token, its apply-to-all store, its clip side). r254's review (R1 #1):
+       the area page rebuilt a public topic from `_DE` clips that do not exist. Leave it as it is,
+       as r253 did. On every other page another space's unit keys as its own page would. */
+    if (dynForeignToArea(dynAdopted)) return true;
+    var want = dynUnitKeyNow(dynAdopted);
+    // SETTINGS only (dynKeySettings): an adopted unit's sentence list as seen from here can differ
+    // legitimately from its own page's (a playlist's locked or not-downloaded items).
+    return want == null || dynKeySettings(dynSession.key) === dynKeySettings(want);
+  }
+  function dynInChain(t) { return !!(t && dynChain && dynChain.indexOf(t) >= 0); }
+  function dynForeignToArea(t) { return !!((typeof VAULT !== 'undefined' && VAULT) && t && !dynInChain(t)); }
+  /* r254: a session key without its sentence list, i.e. the SETTINGS it was built with (mode,
+     pauses, repeats, English, speed, the pause model, the area's gloss). W100 is about settings;
+     the list is not a setting the panel shows, and a unit's list seen from another page can differ
+     from its own page's for good reasons (R1 #6). The list is always the last field. */
+  function dynKeySettings(k) { k = String(k || ''); var i = k.lastIndexOf('|'); return i < 0 ? k : k.slice(0, i); }
+  /* r254: land the sentence anchor (dynResumeNum, set by dynDropHeld) in the session now in place.
+     Every route that puts a new timeline in after a session was let go must do this, or the resume
+     starts at 0:00 (R1 #4: the offline fallbacks did not). dynSession must already be the new one. */
+  function dynResumeInto(map) {
+    dynPosStale = false;
+    if (dynResumeNum == null) return;
+    var ri = dynResumeIndex(map, dynResumeNum);
+    dynResumeNum = null;
+    if (ri >= 0) dynLastPos = dynCue(ri);
+  }
+  /* …and when it was not: let it go, keeping the sentence it was on (by the map that measured it),
+     so the rebuild resumes there rather than at the old timeline's seconds. The prime runs inside
+     the Play tap that got us here (togglePlay calls in synchronously), because on iOS the rebuild's
+     play() lands seconds outside the gesture — the same reason togglePlay primes. */
+  function dynDropHeld(why) {
+    // 'stalled' (dynPlayStalled) is the one caller whose session is not stale: say what happens.
+    var what = why === 'stalled' ? 'the stalled session is let go, keeping its sentence'
+      : 'the ' + why + ' session was built with other settings: rebuilding';
+    dynLog('play: ' + what);
+    tailTrace('play: ' + what);
+    var map = dynSession && dynSession.map;
+    if (map && map.length) {
+      var i = dynBlockAt(mainAudio.currentTime || 0);
+      if (i >= 0) dynResumeNum = map[i].num;
+    }
+    dynAttached = false;
+    mainSrcReady = false;
+    dynLastPos = 0;
+    dynPosStale = true;       // no late tick may write the old timeline back over the anchor
+    if (dynSession && dynSession.url && dynSessionIsLocal) { try { URL.revokeObjectURL(dynSession.url); } catch (_) {} }
+    dynSession = null;
+    primeMainAudio();
   }
   // The DYN branch of ensureMainSrc: build (restore, or reuse) the session and point mainAudio
   // at it. When the top player has ADOPTED a neighbour topic (dyn cross-topic nav), re-resolve
@@ -6663,9 +6727,33 @@
     }
     // Attached to a live native track (page-open adoption): the engine owns the src — play/
     // pause/seek control it directly and a rebuild would restart it (round-11 item 3).
-    if (dynAttached && mainSrcReady) return Promise.resolve();
+    /* ⚠⚠ r254 (W100) — …BUT A VISIBLE PLAY ONLY RESUMES WHAT TODAY'S SETTINGS WOULD BUILD. Owner,
+       2026-10-13, Android, the allow-listed area: a unit built at 0.25x pauses resumed on Play after
+       the settings showed 1x, and only a translation-language switch and back rebuilt it. The page
+       had ATTACHED to the engine's track on opening (syncToPlayingTrack), and this line resumed
+       whatever the engine held; the switch rebuilt only because it is the one thing that clears
+       dynAttached. The adopted branch below had the same hole: a session reached by a queued engine
+       hop, or restored by a hop, is played whatever settings it was built with.
+       So a Play pressed in the page (visible) first asks whether the session held was built with the
+       settings the controls now show; if not, it is let go, keeping the sentence, and the strict path
+       below builds the current one. The lock screen stays lenient: hidden, or `lenient`, resumes as
+       before (a stale session beats a build there; TE_ET_RETIREMENT.md §3). */
+    var visibleNow = document.visibilityState === 'visible';
+    /* r254 (T1 §46): the direction this resolve is FOR. A Play that now rebuilds (above) leaves the
+       engine paused for seconds, so a TE/ET switch in that time starts no resolve of its own
+       (switchAudio resolves only when something was playing); this one's answer would then be the
+       OTHER direction's track, played under the new button. Both branches below re-resolve
+       instead, strictly, and the Play that asked plays the new direction. */
+    var modeAt = currentMode;
+    if (dynAttached && mainSrcReady) {
+      if (lenient || !visibleNow || dynHeldIsCurrent()) return Promise.resolve();
+      dynDropHeld('attached');
+    }
     if (dynAdopted) {
-      if (mainSrcReady) return Promise.resolve();
+      if (mainSrcReady) {
+        if (lenient || !visibleNow || dynHeldIsCurrent()) return Promise.resolve();
+        dynDropHeld('adopted');
+      }
       var adoptedT = dynAdopted;
       return dynResolveAdopt(adoptedT).catch(function (e) {
         /* ⚠⚠ THE ADOPTED BRANCH HAD NO FALLBACK AT ALL, and r215 routed a settings change through
@@ -6676,28 +6764,22 @@
            offline simply rejected and left the visitor with nothing — no revert, no message worth
            reading, and the session that WOULD play still sitting in the cache.
            Same shape as r18e, same 1200 ms, and deliberately only when there is something to fall
-           back to: a stored session for the unit that is actually playing. */
-        if (isGateCode(e && e.code) || !dynReadMeta(dynUnitNs(adoptedT), currentMode)) return Promise.reject(e);
-        dynStatus('Couldn’t rebuild — putting your settings back…', false);
-        return new Promise(function (res) { setTimeout(res, 1200); }).then(function () {
-          if (dynAdopted !== adoptedT) return Promise.reject(e);
-          if (!dynRevertToStored()) return Promise.reject(e);
-          dynAdoptStale = false;               // the reverted settings ARE the stored session's
-          dynStatus('No connection — your settings have been put back to the version saved on this device.', false);
-          dynRevertMsgUntil = Date.now() + 6000;
-          var rseq = dynStatusSeq;
-          setTimeout(function () { if (rseq === dynStatusSeq) { dynRevertMsgUntil = 0; dynStatus(null); } }, 6000);
-          return dynResolveAdopt(adoptedT);
-        });
+           back to: a stored session for the unit that is actually playing.
+           r254: the revert itself is dynAdoptRevert(), shared with a visible hop's exit. */
+        return dynAdoptRevert(adoptedT, e);
       }).then(function (r) {
         if (dynAdopted !== adoptedT || !r) return;
+        if (currentMode !== modeAt) return dynEnsureMainSrc();   // a TE/ET switch landed meanwhile (modeAt)
         dynSession = r.sess;
-        dynStdRemote = r.std;
-        dynStripPaint(adoptedT, r.std);
+        dynStripPaint(adoptedT);
         mainAudio.src = r.src;
         mainAudio.load();
         mainSrcReady = true;
         dynPreAdvanced = false;   // new track → re-arm autoplay's once-per-track guard
+        /* r254: a new timeline is in place, and the sentence a stale session was let go on
+           (dynDropHeld) resumes in it. Exact hit only: the map's nums are the adopted unit's, so the
+           page-order fallback inside dynResumeIndex finds nothing and starts at 0. */
+        dynResumeInto(r.sess && r.sess.map);
         dynSyncSentBtns();
         /* ⚠ THE LOCAL PATH CLEARS THIS AND THIS ONE NEVER DID. dynAutoRebuild() puts
            "Re-constructing dynamic mp3" up before calling in here; when the resolve was satisfied
@@ -6710,10 +6792,16 @@
       });
     }
     if (mainSrcReady && dynSession && dynSessionIsLocal && !dynSession.display && (lenient || dynSession.key === dynKey())) return Promise.resolve();
+    /* r254 (W100): this page's OWN session, held but built with other settings (a lenient return
+       home, an engine hop back onto this unit). The rebuild below always happened here; what was
+       missing is the sentence, so it is kept before the session goes (it used to resume at the OLD
+       timeline's seconds, which is a different sentence once the pauses change). */
+    if (mainSrcReady && dynSession && !dynSession.display && dynSession.map && dynSession.key !== dynKey()) dynDropHeld('own');
     var noDlBefore = Object.keys(dynNoDlSeen).length;
     return dynEnsureSession(function (done, total) {
       var c = $('dyn-status-count'); if (c) c.textContent = done + '/' + total;
     }, lenient).then(function (sess) {
+      if (currentMode !== modeAt) return dynEnsureMainSrc();   // a TE/ET switch landed meanwhile (modeAt)
       mainAudio.src = (NATIVE && sess.fileUri) ? sess.fileUri : sess.url;
       mainAudio.load();
       mainSrcReady = true;
@@ -6791,6 +6879,7 @@
           mainAudio.src = (NATIVE && sess.fileUri) ? sess.fileUri : sess.url;
           mainAudio.load();
           mainSrcReady = true;
+          dynResumeInto(sess.map);   // r254 (R1 #4): a session let go on Play resumes at its sentence here too
         });
       }
       // r18e: the build failed, but there IS a playable session on the device, built with
@@ -6810,6 +6899,7 @@
           mainAudio.src = (NATIVE && sess.fileUri) ? sess.fileUri : sess.url;
           mainAudio.load();
           mainSrcReady = true;
+          dynResumeInto(sess.map);   // r254 (R1 #4)
         });
       });
     });
@@ -8246,21 +8336,12 @@
       var mode = currentMode;
       var old = dynAdoptCache[t.page];
       if (old && old.sess && old.sess.url && old.sess !== dynSession) { try { URL.revokeObjectURL(old.sess.url); } catch (_) {} }
-      var entry = { mode: mode, src: null, sess: null };
+      var entry = { mode: mode, sess: null };
       dynAdoptCache[t.page] = entry;
-      /* ⚠ DO NOT PIN A REMOTE URL WHEN A DOWNLOADED COPY EXISTS. This cache is consulted before
-         anything else resolves, so pre-filling it with a remote URL made the local copy
-         unreachable. Left null in that case, so dynAdoptPlaceholder() resolves it properly at
-         hop time — which is also where the blob URL should be minted, since minting one here for
-         two neighbours on every hop would leak an object URL per prefetch. */
-      if (t.prefix && !t.noStd) {
-        var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
-        if (!hasLocalFile(t.prefix, file)) {
-          buildUrl(file, t.tier === 'member' || t.tier === 'premium')
-            .then(function (u) { entry.src = u; })
-            .catch(function () {});   // signed-out on a gated neighbour etc. — adopt falls back to a live mint
-        }
-      }
+      /* r254 (Release A): no url is minted here any more. This used to sign each neighbour's
+         COMBINED track on every hop, for a lock-screen hop that could not build; a hop now plays a
+         session or builds one (TE_ET_RETIREMENT.md, A1 / A6), so the only thing worth having in hand
+         is the neighbour's persisted session. */
       // Round-7 (item 10): restore the neighbour's PERSISTED session eagerly too, so a
       // lock-screen hop resolves synchronously (same shape as classic advanceTopic).
       var ns = dynUnitNs(t);
@@ -8268,44 +8349,12 @@
       if (meta) dynRestoreSession(ns, mode, meta).then(function (sess) { if (sess) entry.sess = sess; }).catch(function () {});
     });
   }
-  /* CAN the prefab combined track actually be a source right now? (2026-08-27.)
-     ⚠⚠ THE SERVICE WORKER DOES NOT HANDLE AUDIO AT ALL — clips live on audio.thaiear.com, out
-     of its scope (sw.js's own header says so). So a remote combined-file URL is playable exactly
-     when there is a network, and the only offline copy is one this device downloaded. Asking the
-     question explicitly is what lets the adopt route to a local build instead of handing the
-     element a URL that cannot resolve.
-     ⚠ ONLINE THIS IS TRUE FOR EVERY TOPIC, so every online path below behaves exactly as it did
-     before this existed. That is deliberate: prev/next online was not broken. */
-  function dynStdUsable(t, mode) {
-    if (!t.prefix || t.noStd) return false;   // noStd: the unit has no combined track (cfg.vault chains)
-    if (hasLocalFile(t.prefix, t.prefix + '_' + mode.toUpperCase() + '.mp3') && canUseOffline(t.tier)) return true;
-    return navigator.onLine;
-  }
-  /* The combined track for a NEIGHBOUR, resolved the way mainSrcFor() resolves this page's own:
-     downloaded copy first, remote second.
-     ⚠⚠ THIS WAS THE BUG. dynAdoptPlaceholder() called buildUrl() DIRECTLY, so the adopt source
-     was always remote — no hasLocalFile() check — while every other source resolver in this file
-     (mainSrcFor, sentSrcFor, dynClipUrl) checks local first. A divergent copy that dropped the
-     offline half, which is the exact failure mode the tier-rule note further down warns about.
-     Parameterised by the TARGET's prefix/tier rather than reading the module's main* state,
-     because the prefetch runs while those still point at this page — same treatment sentSrcFor
-     already got for playlists. */
-  function dynAdoptStdSrc(t, file, minLifeMs) {   // r236: minLifeMs → buildUrl (the native queue only)
-    var gated = (t.tier === 'member' || t.tier === 'premium');
-    if (hasLocalFile(t.prefix, file) && canUseOffline(t.tier)) {
-      if (OFFLINE) return localUri(t.prefix, file).then(function (u) { return u || buildUrl(file, gated, minLifeMs); });
-      if (WEB_DL) return cachedBlobUrl(t.prefix, file).then(function (u) { return u || buildUrl(file, gated, minLifeMs); });
-    }
-    return buildUrl(file, gated, minLifeMs);
-  }
-  function dynAdoptPlaceholder(t, mode) {
-    var c = dynAdoptCache[t.page];
-    if (c && c.mode === mode && c.src) return Promise.resolve({ src: c.src, std: true, sess: null });
-    // Playlists have no pre-rendered combined file — nothing to fall back on without a session.
-    if (!t.prefix) return Promise.reject({ code: 'nosess' });
-    var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
-    return dynAdoptStdSrc(t, file).then(function (u) { return { src: u, std: true, sess: null }; });
-  }
+  /* r254 (Release A, TE_ET_RETIREMENT.md): dynStdUsable, dynAdoptStdSrc and dynAdoptPlaceholder are GONE.
+     They resolved a unit's COMBINED track (_TE / _ET) as a hop's source when no session could be had:
+     the hidden hop, a failed foreground build, and the lock-screen queue. Every one of those was a
+     fallback that played audio the listener did not choose (his W98 report), and offline it was an
+     internet link a dyn download never fetches. A hop now plays a session or builds one; nothing
+     else is a source. Do not bring a prefab back as a "last resort": that is exactly what this was. */
   // Chain-walk helpers (round-11).
   function dynChainStep(dir, fromIdx) {
     if (!dynChain || dynChain.length < 2) return null;
@@ -8330,9 +8379,23 @@
     return a.lockedFor({ tier: (t && t.tier) || 'free', prefix: t && t.prefix },
                        { canStoreOffline: !!(OFFLINE || WEB_DL || DYN_WEB_DL) });
   }
-  // Can this unit produce audio WITHOUT building? (persisted session — stale ok — or a static
-  // placeholder). Locked-screen hops skip units that can't (mirrors classic's nextPlayable skip).
-  function dynChainPlayable(t, idx, fg) {
+  /* r254: does this prefix's DOWNLOAD hold sentence clips (a dyn download), so a build can run from it?
+     A classic (pre-dyn) record lists only the combined pair, or no files at all (a legacy full
+     download); neither can be built from. */
+  function dynDlHasClips(prefix) {
+    var e = getManifest()[prefix];
+    if (!e || !e.files || !e.files.length) return false;
+    for (var i = 0; i < e.files.length; i++) if (/_S\d+_[A-Z]{2}\.mp3$/.test(e.files[i])) return true;
+    return false;
+  }
+  /* CAN THIS UNIT PRODUCE AUDIO? The walk's one question, and since r254 it has ONE answer.
+     Until r254 there were two, told apart by `fg`: a lock-screen hop could not build, so it asked
+     "a session, or a usable prefab?", and the foreground asked "a session, or can it be built?". A
+     hop now builds wherever the page runs (TE_ET_RETIREMENT.md A2) and the prefab is gone (A1), so
+     the foreground's answer is the only one. ONLINE it reaches exactly the units both walks reached
+     (every topic was "usable" online through its prefab, and is buildable online now); OFFLINE, the
+     units with a session or with their clips on this device, as the foreground always did. */
+  function dynChainPlayable(t, idx) {
     if (idx === dynHomeIdx && dynSession && dynSessionIsLocal) return true;
     var pns = dynUnitNs(t);
     if (pns) {
@@ -8340,51 +8403,33 @@
       if (c && c.sess) return true;
       if (dynReadMeta(pns, currentMode)) return true;   // best sync guess (restore may still miss)
     }
-    /* CAN THIS UNIT PRODUCE AUDIO AT ALL? Two answers, because the two callers ask different
-       questions — `fg` is what separates them.
-       WITHOUT BUILDING (the lock screen, !fg): a persisted session, or a usable placeholder.
-       "has a prefix" used to stand in for the latter; offline that is false, because the combined
-       track is network-only unless this device downloaded it. A downloaded topic does NOT rescue
-       the backgrounded case — dynAdoptBuild refuses when hidden — so skipping is honest there.
-       ⚠ Online dynStdUsable() is true for every topic, so with a connection this is byte-identical
-       to the old `return !!t.prefix` in BOTH modes. The change is offline-only, by construction. */
-    if (dynStdUsable(t, currentMode)) return true;
-    /* WITH A BUILD (the foreground, fg): the clips still have to be gettable. Offline that means
-       ON THIS DEVICE — otherwise the build has nothing to fetch and the hop stalls.
-       ⚠ THE SENTENCE THAT USED TO END THIS NOTE — "online is already covered by dynStdUsable
-       above, so this clause never has to trust navigator.onLine" — WAS TRUE ONLY FOR TOPICS, and
-       believing it of playlists is r222's bug. See the pl- branch. */
-    if (fg) {
-      if (t.prefix && isDownloaded(t.prefix)) return true;
-      /* A unit with NO combined track that carries its own sentence list (cfg.vault chains: `noStd`
-         + `nums`) is built from its clips exactly as a topic is, online, in the foreground. The
-         clause that makes every topic buildable online is dynStdUsable(), and it answers false for
-         such a unit by design (there is no prefab), so the walk skipped every unit not built or
-         downloaded yet and prev/next did nothing (owner, 2026-10-06, sw v778: "can it attempt to
-         construct a dyn mp3 session please?"). A lock-screen hop (!fg) still skips it: building
-         needs the page visible. */
-      if (t.noStd && Array.isArray(t.nums) && t.nums.length && navigator.onLine) return true;
-      // A playlist spans prefixes and has no `prefix` of its own; its own download record is the
-      // equivalent claim (the same map pl-list.js and dynDlWasDownloaded read).
-      if (t.dynKey && String(t.dynKey).indexOf('pl-') === 0) {
-        if (dynPlDownloaded(t)) return true;
-        /* ⚠⚠ AND ONLINE A PLAYLIST IS BUILDABLE EXACTLY AS A TOPIC IS (r222). The ONLY clause in
-           this function that means "online, so it can be built from nothing" is dynStdUsable(),
-           and that opens `if (!t.prefix) return false` — a playlist has no prefix, so it never
-           reaches the navigator.onLine line that makes every topic playable. The foreground walk
-           therefore skipped every never-constructed playlist and hopped to the next CONSTRUCTED
-           one, while the identical walk over topics always builds (owner, 2026-09-19).
-           ⚠ NOBODY CHOSE THAT. The pl- test above was written in r216 for the OFFLINE case, where
-           "downloaded" really is the equivalent of a topic's clips being on disk, and it reads as
-           if it were the whole answer. It was only ever half of one.
-           The preconditions are what a build actually needs, not a proxy for them: the items on
-           this device (the same local cache dynChainSentences reads) AND at least one of them
-           entitled — so r216's rule still holds, and the walk never hops onto a unit that can
-           only fail. navigator.onLine LIES in the WebView; that is survivable here for the same
-           reason it is for topics, which have relied on it since r212 — dynAdvance's catch retries
-           the build locally once, and that retry is extended to playlists in this same build. */
-        if (fg && navigator.onLine && dynPlBuildable(t)) return true;
-      }
+    /* A TOPIC ONLINE can be built: its sentence list ships with the site (topic-sentences.json,
+       precached). This is the clause dynStdUsable()'s `navigator.onLine` stood in for, which is why
+       the walk online is what it was. `noStd` units carry their own `nums` (their clause is below). */
+    if (t.prefix && !t.noStd && navigator.onLine) return true;
+    /* The clips still have to be gettable. Offline that means ON THIS DEVICE — otherwise the build
+       has nothing to fetch and the hop stalls. r254: a DYN download, i.e. one holding sentence
+       clips; a pre-dyn (classic) record holds only the combined pair, which nothing plays now, so
+       offline the walk skips it rather than dead-ending on a build that cannot run (R1's note).
+       typeof-guarded: harnesses run this function alone (test_vault.js §8). */
+    if (t.prefix && isDownloaded(t.prefix) &&
+        (typeof dynDlHasClips !== 'function' || dynDlHasClips(t.prefix))) return true;
+    /* A unit with NO combined track that carries its own sentence list (cfg.vault chains: `noStd`
+       + `nums`) is built from its clips exactly as a topic is (owner, 2026-10-06, sw v778: "can it
+       attempt to construct a dyn mp3 session please?"). */
+    if (t.noStd && Array.isArray(t.nums) && t.nums.length && navigator.onLine) return true;
+    // A playlist spans prefixes and has no `prefix` of its own; its own download record is the
+    // equivalent claim (the same map pl-list.js and dynDlWasDownloaded read).
+    if (t.dynKey && String(t.dynKey).indexOf('pl-') === 0) {
+      if (dynPlDownloaded(t)) return true;
+      /* ⚠⚠ AND ONLINE A PLAYLIST IS BUILDABLE EXACTLY AS A TOPIC IS (r222). A playlist has no
+         prefix, so the topic clause above never reaches it, and without this the walk skipped every
+         never-constructed playlist and hopped to the next CONSTRUCTED one (owner, 2026-09-19).
+         The preconditions are what a build actually needs: the items on this device (the same local
+         cache dynChainSentences reads) AND at least one of them entitled, so the walk never hops
+         onto a unit that can only fail. navigator.onLine LIES in the WebView; survivable here for
+         the same reason it is for topics — dynAdvance's catch retries the build locally once. */
+      if (navigator.onLine && dynPlBuildable(t)) return true;
     }
     return false;
   }
@@ -8437,28 +8482,34 @@
   function dynTopicSentences(t) {
     if (!t || !t.prefix) return Promise.resolve(null);
     if (t.dynKey && String(t.dynKey).indexOf('pl-') === 0) return Promise.resolve(null);
-    var T = window.ThaiEarTopics;
     /* cfg.vault chains carry their own `nums`: those units are not in the public topic-sentences.json. */
-    var own = Array.isArray(t.nums) ? Promise.resolve(null) : null;
-    if (!own && (!T || !T.loadSentenceNums)) return Promise.resolve(null);   // stale topics.js — degrade, never throw
-    return (own || T.loadSentenceNums()).then(function (map) {
-      var nums = Array.isArray(t.nums) ? t.nums : (map && (map[bareKey(t.page)] || (t.dynKey ? map[String(t.dynKey)] : null)));
-      if (!nums || !nums.length) return null;
-      /* ⚠ THE TARGET UNIT'S OWN EXCLUSIONS, not this page's. dynExcluded is module state for the
-         page we are standing on; the unit being adopted keeps its own list under its own key, and
-         its page will apply that list when it computes its session key. Ignore them here and the
-         key we persist can never match the one that page looks for. */
-      var excl = {};
-      try {
-        var raw = JSON.parse(localStorage.getItem('te_dyn_excl_' + dynUnitNs(t)) || '[]');
-        if (Array.isArray(raw)) raw.forEach(function (n) { excl[n] = true; });
-      } catch (_) {}
-      var keep = nums.filter(function (n) { return !excl[n]; });
-      if (!keep.length) return null;
-      return keep.map(function (n) {
-        return { num: n, clipNum: n, prefix: t.prefix, tier: t.tier || 'free' };
-      });
-    }).catch(function () { return null; });
+    if (Array.isArray(t.nums)) return Promise.resolve(dynTopicSentencesFrom(t, null));
+    var T = window.ThaiEarTopics;
+    if (!T || !T.loadSentenceNums) return Promise.resolve(null);   // stale topics.js — degrade, never throw
+    return T.loadSentenceNums().then(function (map) { return dynTopicSentencesFrom(t, map); })
+      .catch(function () { return null; });
+  }
+  /* r254: the same list from a map ALREADY IN HAND, synchronously (null when it cannot say). Split
+     out so dynUnitKeyNow() can answer inside a Play tap without waiting on a promise. */
+  function dynTopicSentencesFrom(t, map) {
+    if (!t || !t.prefix) return null;
+    if (t.dynKey && String(t.dynKey).indexOf('pl-') === 0) return null;
+    var nums = Array.isArray(t.nums) ? t.nums : (map && (map[bareKey(t.page)] || (t.dynKey ? map[String(t.dynKey)] : null)));
+    if (!nums || !nums.length) return null;
+    /* ⚠ THE TARGET UNIT'S OWN EXCLUSIONS, not this page's. dynExcluded is module state for the
+       page we are standing on; the unit being adopted keeps its own list under its own key, and
+       its page will apply that list when it computes its session key. Ignore them here and the
+       key we persist can never match the one that page looks for. */
+    var excl = {};
+    try {
+      var raw = JSON.parse(localStorage.getItem('te_dyn_excl_' + dynUnitNs(t)) || '[]');
+      if (Array.isArray(raw)) raw.forEach(function (n) { excl[n] = true; });
+    } catch (_) {}
+    var keep = nums.filter(function (n) { return !excl[n]; });
+    if (!keep.length) return null;
+    return keep.map(function (n) {
+      return { num: n, clipNum: n, prefix: t.prefix, tier: t.tier || 'free' };
+    });
   }
   // Playlist first (its cached items are authoritative), then the topic map.
   function dynAdoptSentences(t) {
@@ -8466,31 +8517,26 @@
     if (pl) return Promise.resolve(pl);
     return dynTopicSentences(t);
   }
-  /* ⭐ BUILD THE UNIT, AND ONLY FALL BACK TO THE PREFAB WHEN A BUILD IS IMPOSSIBLE
-     (owner, 2026-08-27). The combined `_TE`/`_ET` track is a pre-dyn artefact: fixed order, both
-     languages, and NONE of the listener's dyn settings — no repeats, no pause length, no
-     exclusions. Hopping onto it meant prev/next quietly played something different from what the
-     same topic plays when you open its page.
-     ⚠ A HYBRID WAS CONSIDERED AND REJECTED BY THE OWNER: start the prefab instantly, swap to
-     the built session when it is ready. *"the prefab would start, then once the dyn mp3 is
-     generated the first sentences would start playing again."* Exactly right — the swap restarts
-     the audio mid-listen, which is worse than a few seconds of "Constructing…". So the build is
-     unconditional in the foreground and the wait is shown honestly.
-     ⚠ THE PREFAB IS NOT DEAD, and must not be deleted: a LOCK-SCREEN hop cannot build (WebKit
-     suspends media loading for a backgrounded page, and dynAdoptBuild refuses when hidden), so it
-     is still the only source there. It is also the fallback when a build fails online — audio the
-     listener did not ask for beats silence — but NOT when offline, where a remote URL cannot
-     resolve and reporting the failure honestly is the only truthful option.
+  /* ⭐ A HOP PLAYS A SESSION BUILT WITH THE UNIT'S CURRENT SETTINGS, AND BUILDS ONE WHEN IT HAS TO
+     (owner, 2026-08-27; r254 = Release A of TE_ET_RETIREMENT.md, and W100). The combined
+     `_TE`/`_ET` track was a pre-dyn artefact: fixed order, both languages, and NONE of the
+     listener's dyn settings. Until r254 it survived as the source of a lock-screen hop and the
+     fallback of a failed build; it is no source anywhere now.
+     ⚠ A HYBRID WAS CONSIDERED AND REJECTED BY THE OWNER: start the prefab instantly, swap to the
+     built session when it is ready. *"the prefab would start, then once the dyn mp3 is generated
+     the first sentences would start playing again."* So a VISIBLE hop builds and shows the wait
+     honestly ("Constructing…"), and a HIDDEN hop builds before it switches (dynHiddenHop, which
+     resolves with dynResolveLenient below, not with this).
+     ⚠⚠ r254 (W100): a stored session counts only if it was built with the unit's settings AS THEY
+     ARE NOW (dynUnitPlan's key: the key that unit's own page computes). r253 handed back any cached
+     or persisted session, so a hop onto a unit built at 0.25x pauses played it at 0.25x under
+     controls that said 1x. A stale one is rebuilt. When that build fails (offline, the clips not
+     on the device), a session differing only by the pause-model token is still the audio chosen
+     and plays as it is (r252's rule); any other stale session goes back to the caller, whose
+     dynAdoptRevert() puts the unit's settings back to it so the controls say what plays.
      ⚠ A build PERSISTS its session (dynPersistSessionFor), so the second hop onto the same unit
      resolves instantly from disk. The wait is paid once per unit per settings change. */
-  function dynAdoptBuildElsePrefab(t, mode) {
-    return dynAdoptBuild(t).catch(function (e) {
-      if (isGateCode(e && e.code)) return Promise.reject(e);   // a paywall is not a load failure
-      if (!dynStdUsable(t, mode)) return Promise.reject(e);    // no prefab available — say so
-      dynLog('adopt: prefab (build unavailable)');
-      return dynAdoptPlaceholder(t, mode);
-    });
-  }
+  function dynSrcOf(sess) { return (NATIVE && sess.fileUri) ? sess.fileUri : sess.url; }
   function dynResolveAdopt(t) {
     /* BACKSTOP for the entitlement skip above (r50, §B7). The chain WALK now refuses to hop onto a
        locked unit, but that is not the only way to get here: the now-playing restore (line ~193)
@@ -8501,34 +8547,82 @@
     if (dynUnitLocked(t)) { dynLog('adopt: REFUSED (not entitled)'); return Promise.reject({ code: 'licence' }); }
     var mode = currentMode;
     var c = dynAdoptCache[t.page];
-    /* ⚠ …UNLESS A SETTINGS CHANGE JUST INVALIDATED IT. Both caches hold audio built under the
-       OLD settings, and handing either back is what made the change look forgotten. */
-    if (dynAdoptStale) {
-      dynLog('adopt: build (settings changed)');
-      return dynAdoptBuildElsePrefab(t, mode);
-    }
-    /* ⚠ A CACHED SESSION STILL WINS OUTRIGHT — it is real audio, already built, and it works
-       offline. Only the cached PLACEHOLDER half moved below the usability check, because that is
-       the half that can be a URL nothing can load. */
-    if (c && c.mode === mode && c.sess) {
-      dynLog('adopt: cached session');
-      return Promise.resolve({ src: (NATIVE && c.sess.fileUri) ? c.sess.fileUri : c.sess.url, std: false, sess: c.sess });
-    }
     var ns = dynUnitNs(t);
-    var meta = ns ? dynReadMeta(ns, mode) : null;   // synchronous pre-check (stale-lenient by design)
-    /* WHICH BRANCH did the adopt take? To the BOOT TRACE, because this is the difference between
-       "restored a real session from disk" (works offline) and "fell back to the prefab TE/ET file"
-       (network-only — dyn downloads never fetch TE/ET, so offline it CANNOT work). That distinction
-       is the likeliest explanation for the iPhone-airplane failure passing on Android, and it can
-       only be told apart by looking. */
-    if (!meta) {
-      dynLog('adopt: build (no persisted session)');
-      return dynAdoptBuildElsePrefab(t, mode);
-    }
-    return dynRestoreSession(ns, mode, meta).then(function (sess) {
-      if (sess) { dynLog('adopt: restored persisted'); return { src: (NATIVE && sess.fileUri) ? sess.fileUri : sess.url, std: false, sess: sess }; }
-      dynLog('adopt: build (restore miss)');
-      return dynAdoptBuildElsePrefab(t, mode);
+    return dynUnitPlan(t).then(function (plan) {
+      /* null: nothing to build from, so nothing to compare with either: any session will do. So
+         for another space's unit on the allow-listed area's page, whose key that page cannot
+         compute (dynHeldIsCurrent's note, R1 #1). Compared by SETTINGS only (dynKeySettings, R1 #6). */
+      var want = (plan && !dynForeignToArea(t)) ? plan.key : null;
+      var fits = function (k) { return !!k && (want == null || dynKeySettings(k) === dynKeySettings(want)); };
+      /* ⚠ …AND NEITHER CACHE WHILE A SETTINGS CHANGE HAS JUST INVALIDATED THE ADOPTED UNIT
+         (dynAdoptStale): both hold audio built under the OLD settings. */
+      if (!dynAdoptStale && c && c.mode === mode && c.sess && fits(c.sess.key)) {
+        dynLog('adopt: cached session');
+        return { src: dynSrcOf(c.sess), sess: c.sess };
+      }
+      var meta = (!dynAdoptStale && ns) ? dynReadMeta(ns, mode) : null;
+      return ((meta && fits(meta.key)) ? dynRestoreSession(ns, mode, meta) : Promise.resolve(null)).then(function (sess) {
+        if (sess) { dynLog('adopt: restored persisted'); return { src: dynSrcOf(sess), sess: sess }; }
+        dynLog('adopt: build (' + (dynAdoptStale ? 'settings changed' : meta ? 'built with other settings' : 'nothing on the device') + ')');
+        return dynAdoptBuild(t, plan).catch(function (e) {
+          if (isGateCode(e && e.code) || want == null) return Promise.reject(e);   // a paywall is not a load failure
+          // r252's rule: the same settings under an older pause timing are still the audio chosen.
+          var same = function (k) {
+            return !!k && dynKeySettings(k) !== dynKeySettings(want) &&
+              dynKeySettings(dynKeySansModel(k)) === dynKeySettings(dynKeySansModel(want));
+          };
+          if (c && c.mode === mode && c.sess && same(c.sess.key)) return { src: dynSrcOf(c.sess), sess: c.sess };
+          var m2 = ns ? dynReadMeta(ns, mode) : null;
+          if (!m2 || !same(m2.key)) return Promise.reject(e);
+          return dynRestoreSession(ns, mode, m2).then(function (s2) {
+            if (!s2) return Promise.reject(e);
+            dynLog('adopt: older pause timing, played as it is (offline)');
+            return { src: dynSrcOf(s2), sess: s2 };
+          });
+        });
+      });
+    });
+  }
+  /* r254 (A2): what a HIDDEN hop plays — any session for `t` on this device, whatever settings it
+     was built with (the lock path's leniency, TE_ET_RETIREMENT.md §3: there, a stale session beats
+     a wait), else a quiet build. Never the status line, never a prefab. */
+  // `noBuild`: only what is on the device (dynAdoptRevert's restore after the put-back); rejects 'nosess'.
+  function dynResolveLenient(t, noBuild) {
+    if (dynUnitLocked(t)) return Promise.reject({ code: 'licence' });
+    var mode = currentMode, c = dynAdoptCache[t.page], ns = dynUnitNs(t);
+    if (c && c.mode === mode && c.sess) return Promise.resolve({ src: dynSrcOf(c.sess), sess: c.sess });
+    var meta = ns ? dynReadMeta(ns, mode) : null;
+    return (meta ? dynRestoreSession(ns, mode, meta) : Promise.resolve(null)).then(function (sess) {
+      if (sess) return { src: dynSrcOf(sess), sess: sess };
+      if (noBuild) return Promise.reject({ code: 'nosess' });
+      return dynAdoptBuild(t, null, true);
+    });
+  }
+  /* ⚠⚠ r217's REVERT, lifted out of dynEnsureMainSrc (r254) so a VISIBLE HOP takes the same exit as
+     a Play press. A build of the adopted unit failed, and a session built with OTHER settings sits on
+     the device: say so, put the unit's settings back to that session's (dynRevertToStored reads the
+     adopted namespace), and resolve it. Same 1200 ms, same two messages, as before.
+     Before r254 a hop never needed this: it played any stored session whatever its settings, which
+     is W100. Only when there is something to fall back to; otherwise the original failure stands. */
+  function dynAdoptRevert(t, e) {
+    var code = e && e.code;
+    // A paywall, a TE/ET switch mid-build ('mode') or a unit with nothing to build ('nosess') is not
+    // a failed rebuild: no put-back, no "No connection" (R1 #8).
+    if (isGateCode(code) || code === 'mode' || code === 'nosess' || !dynReadMeta(dynUnitNs(t), currentMode)) return Promise.reject(e);
+    dynStatus('Couldn’t rebuild — putting your settings back…', false);
+    return new Promise(function (res) { setTimeout(res, 1200); }).then(function () {
+      if (dynAdopted !== t) return Promise.reject(e);
+      if (!dynRevertToStored()) return Promise.reject(e);
+      dynAdoptStale = false;               // the reverted settings ARE the stored session's
+      dynStatus('No connection — your settings have been put back to the version saved on this device.', false);
+      dynRevertMsgUntil = Date.now() + 6000;
+      var rseq = dynStatusSeq;
+      setTimeout(function () { if (rseq === dynStatusSeq) { dynRevertMsgUntil = 0; dynStatus(null); } }, 6000);
+      /* r254: RESTORE the stored session as it is, never build. The put-back settings ARE its, so a
+         strict resolve could only find it current or (a session from before today's pause model, or
+         one whose sentence list differs) try one more build: "Constructing", the failure, and the
+         message just shown wiped (T2 §26/§27, R1 #6). */
+      return dynResolveLenient(t, true).catch(function () { return Promise.reject(e); });
     });
   }
   /* r238: WHAT BUILDING UNIT `t` TAKES — its sentences, namespace, own settings, and the session key
@@ -8539,26 +8633,42 @@
     // The topic list arrives from a precached JSON, so this is a promise.
     return dynAdoptSentences(t).then(function (sents) {
       if (!sents || !sents.length) return null;
-      var mode = currentMode;
-      // r16: build it with the TARGET unit's own settings, not this page's.
-      var ns = dynUnitNs(t);
-      var st = dynSettingsFor(ns, mode);
-      /* ⚠⚠ PERSIST UNDER THE KEY THAT UNIT'S OWN PAGE WILL LOOK FOR (2026-08-27, owner: *"when i
-         then use the dyn player to navigate to that topic - the dyn player starts reconstructing the
-         dyn mp3 rather than just seamlessly continuing play"*).
-         dynKeyFor() emits `prefix:num` for a sentence carrying a `prefix` and a bare `num` for one
-         that does not. A PLAYLIST's sentences carry it on both sides, so its key matches either way.
-         A TOPIC's do NOT — a topic page's own sentences have no per-sentence prefix — but the list
-         synthesised here must carry one, or dynClipRef() would resolve the clips against THIS page's
-         PREFIX instead of the target's. So the two sides disagreed by construction: we stored
-         `Dates_BEG:1100,…` and topic-07 then looked for `1100,…`, found nothing, and rebuilt from
-         scratch a session that was already sitting on the device.
-         The key is namespaced by dynKey in the store, so bare nums are unambiguous within the unit. */
-      var keyList = (t.dynKey && String(t.dynKey).indexOf('pl-') === 0)
-        ? sents
-        : sents.map(function (s) { return { num: s.num }; });
-      return { t: t, sents: sents, mode: mode, ns: ns, st: st, key: dynKeyFor(keyList, st) };
+      return dynPlanFrom(t, sents);
     });
+  }
+  /* r254 (W100): the key unit `t`'s own page would compute RIGHT NOW, synchronously, for a Play tap
+     to compare with the session it is about to resume (dynHeldIsCurrent). null when it cannot say
+     without waiting: a topic whose sentence map has not been loaded yet. */
+  function dynUnitKeyNow(t) {
+    if (!t) return null;
+    var sents = dynChainSentences(t);
+    if (!sents) {
+      var map = Array.isArray(t.nums) ? null : (window.ThaiEarSentenceNums || null);
+      if (!map && !Array.isArray(t.nums)) return null;
+      sents = dynTopicSentencesFrom(t, map);
+    }
+    return (sents && sents.length) ? dynPlanFrom(t, sents).key : null;
+  }
+  function dynPlanFrom(t, sents) {
+    var mode = currentMode;
+    // r16: build it with the TARGET unit's own settings, not this page's.
+    var ns = dynUnitNs(t);
+    var st = dynSettingsFor(ns, mode);
+    /* ⚠⚠ PERSIST UNDER THE KEY THAT UNIT'S OWN PAGE WILL LOOK FOR (2026-08-27, owner: *"when i
+       then use the dyn player to navigate to that topic - the dyn player starts reconstructing the
+       dyn mp3 rather than just seamlessly continuing play"*).
+       dynKeyFor() emits `prefix:num` for a sentence carrying a `prefix` and a bare `num` for one
+       that does not. A PLAYLIST's sentences carry it on both sides, so its key matches either way.
+       A TOPIC's do NOT — a topic page's own sentences have no per-sentence prefix — but the list
+       synthesised here must carry one, or dynClipRef() would resolve the clips against THIS page's
+       PREFIX instead of the target's. So the two sides disagreed by construction: we stored
+       `Dates_BEG:1100,…` and topic-07 then looked for `1100,…`, found nothing, and rebuilt from
+       scratch a session that was already sitting on the device.
+       The key is namespaced by dynKey in the store, so bare nums are unambiguous within the unit. */
+    var keyList = (t.dynKey && String(t.dynKey).indexOf('pl-') === 0)
+      ? sents
+      : sents.map(function (s) { return { num: s.num }; });
+    return { t: t, sents: sents, mode: mode, ns: ns, st: st, key: dynKeyFor(keyList, st) };
   }
   /* r238: ONE BUILD PER UNIT AT A TIME. The hop (dynAdoptBuild) and the build-ahead both build
      foreign units now, and two builds of one unit racing is worse than slow: whichever persists
@@ -8579,25 +8689,30 @@
     e.p.then(clear, clear);
     return e.p;
   }
-  // Round-11: a playlist unit with no session and no placeholder can still be BUILT in place —
-  // but only in the foreground (never from the lock screen; the chain walk skips it there).
-  function dynAdoptBuild(t) {
-    if (document.visibilityState !== 'visible') return Promise.reject({ code: 'nosess' });
-    return dynUnitPlan(t).then(function (plan) {
+  /* Build unit `t` in place (round-11), persisted where its own page will look (dynUnitPlan's key).
+     `plan0`: a plan already computed by the caller. `quiet` (r254): no status line, for a HIDDEN
+     hop's build, which nothing on screen is waiting for.
+     ⚠ r254: NO LONGER REFUSED WHILE THE PAGE IS HIDDEN. That refusal (WebKit suspends loading in a
+     background page) was measured for the <audio> element and never for a build; Step 1 measured a
+     build on the owner's LOCKED iPhone (TE_ET_RETIREMENT.md §4: fetch, decode and encode all ran
+     hidden), and the app's page always could, in the minute before its freeze. A hidden hop now
+     builds first and then switches (dynHiddenHop). */
+  function dynAdoptBuild(t, plan0, quiet) {
+    return (plan0 ? Promise.resolve(plan0) : dynUnitPlan(t)).then(function (plan) {
       if (!plan) return Promise.reject({ code: 'nosess' });
       var cur = dynUnitInflight[plan.ns + '|' + plan.mode];
-      dynLog('adopt: building ' + t.dynKey + ((cur && cur.key === plan.key) ? ' (joining the build-ahead)' : ''));
-      dynStatus('Constructing dynamic mp3 file', true);
-      return dynUnitBuild(plan, function (d, tot) {
+      dynLog('adopt: building ' + (t.dynKey || t.prefix) + ((cur && cur.key === plan.key) ? ' (joining the build-ahead)' : '') + (quiet ? ' (hidden)' : ''));
+      if (!quiet) dynStatus('Constructing dynamic mp3 file', true);
+      return dynUnitBuild(plan, quiet ? null : function (d, tot) {
         var cEl = $('dyn-status-count'); if (cEl) cEl.textContent = d + '/' + tot;
       }).then(function (sess) {
         dynPersistSessionFor(sess, plan.mode, plan.ns);
         dynAdoptStale = false;   // this build IS the current settings
-        dynStatus(null);
+        if (!quiet) dynStatus(null);
         var entry = dynAdoptCache[t.page];
         if (entry && entry.mode === plan.mode) entry.sess = sess;   // future hops resolve synchronously
-        return { src: (NATIVE && sess.fileUri) ? sess.fileUri : sess.url, std: false, sess: sess };
-      }).catch(function (e) { dynStatus(null); return Promise.reject(e); });
+        return { src: dynSrcOf(sess), sess: sess };
+      }).catch(function (e) { if (!quiet) dynStatus(null); return Promise.reject(e); });
     });
   }
   /* ── r238: BUILD AHEAD (owner, 2026-09-28) ──────────────────────────────────────────────────
@@ -8620,13 +8735,28 @@
        · the clips it decoded are dropped when it finishes (dynAheadEvict): the session is on disk
          and the clips are another unit's, so a long autoplay run no longer grows the page by
          ~10 MB of decoded audio per unit.
-     ⚠ Never STARTS on a hidden web page (WebKit suspends loads there — dynAdoptBuild's rule). In the
-       app it may, in the minute before the freeze: that is when an engine hop gets caught up. */
-  var DYN_AHEAD_N = 2;                  // the owner's choice: ~5 MB when a unit starts
-  var DYN_AHEAD_WAIT_MS = 4000;         // after playback starts — it has the network first
+     ⭐ r254 (Release A, the owner's rulings of 2026-10-13, TE_ET_RETIREMENT.md §3): SOONER, FURTHER,
+       BOTH WAYS. The lock-screen queue now holds BUILT units only and stops at the first unbuilt one
+       (A3), so what this has built before the app's page freezes is how far a locked listen reaches.
+       · ~1 s after playback starts, not 4: his W98 ⏭ came two seconds after he pressed play.
+       · the next 4 units, then the previous one (decision 1); with Autoplay on, then onwards until
+         45 minutes of built units lie ahead (decision 2: his sessions are short, 2-4 min each, so a
+         count of units is the wrong measure).
+       · a LAST CALL 30 s before a unit ends (once per unit), so the next one is built while this
+         one still plays and the engine rolls on natively (`ended` is not where audio starts, §7).
+       · a kick when the page becomes visible again (unlock), as well as on every play / hop.
+       · ⚠ it RUNS on a hidden web page now. r238 refused, on WebKit's suspension of <audio> loads;
+         a build is fetch + decode + encode, and Step 1 measured all three running on his LOCKED
+         iPhone (the r250 probe). The app's page always could, in the minute before its freeze. */
+  var DYN_AHEAD_N = 4;                  // the owner's ruling (r254): 4 ahead + 1 back
+  var DYN_AHEAD_BACK = 1;
+  var DYN_AHEAD_AUTOPLAY_S = 45 * 60;   // the owner's ruling (r254): with Autoplay on, keep 45 min built ahead
+  var DYN_AHEAD_LASTCALL_S = 30;        // a pass this long before a unit ends
+  var DYN_AHEAD_WAIT_MS = 1000;         // after playback starts (r238: 4000) — the unit's own audio has the network first
   var DYN_AHEAD_POOL = 3;
-  var DYN_AHEAD_RETRY_MAX = 15;         // × DYN_AHEAD_WAIT_MS: a minute of someone else building, then wait for the next start
+  var DYN_AHEAD_RETRY_MAX = 60;         // × DYN_AHEAD_WAIT_MS: a minute of someone else building, then wait for the next start
   var dynAheadTimer = 0, dynAheadBusy = false, dynAheadAgain = false, dynAheadTries = 0;
+  var dynAheadCalled = '';              // the unit (src + length) the last call has already fired for
   function dynAheadKick(why) {
     if (!DYN || DYN_PREBUILD) return;
     if (why !== 'busy') dynAheadTries = 0;
@@ -8636,7 +8766,6 @@
   function dynAheadAllowed() {
     if (!DYN || DYN_PREBUILD) return false;
     if (mainAudio.paused || mainOnSilence()) return false;   // only while someone is listening
-    if (document.visibilityState !== 'visible' && !NATIVE && !dynProbeOn()) return false;   // r250 probe
     var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (conn && (conn.saveData || /2g/.test(conn.effectiveType || ''))) return false;   // the prewarm's rule
     return true;
@@ -8644,22 +8773,28 @@
   function dynAheadGate() {
     return sentBusy() ? new Promise(function (r) { setTimeout(r, 250); }).then(dynAheadGate) : Promise.resolve();
   }
-  // The next DYN_AHEAD_N units by the FOREGROUND walk (entitled, and buildable) — the units a hop
-  // from here reaches — less the page's own.
+  /* WHAT the build-ahead may reach (r254): `fwd`, every unit a ⏭ from here reaches by the hop walk
+     (entitled, and playable or buildable), each once and nearest first; `back`, the unit ⏮ reaches.
+     The page's own unit stays IN `fwd` (its session counts towards the minutes ahead) but is never
+     built from here (dynAheadOne). A wrapping chain can reach one unit both ways: it is built once. */
   function dynAheadTargets() {
     resolveDynChain();
-    if (!dynChain || dynChain.length < 2) return [];
+    var none = { fwd: [], back: null };
+    if (!dynChain || dynChain.length < 2) return none;
     // Playing a unit from ANOTHER space: its chain is not ours (dynNativeQueueSync's rule too).
-    if (dynAdopted && dynChain.indexOf(dynAdopted) < 0) return [];
-    var out = [], from = dynChainIdx, seen = {};
+    if (dynAdopted && dynChain.indexOf(dynAdopted) < 0) return none;
+    var fwd = [], from = dynChainIdx, seen = {};
     seen[from] = true;
-    for (var n = 0; n < DYN_AHEAD_N; n++) {
-      var h = dynWalk(1, from, true);
+    for (var n = 0; n < dynChain.length; n++) {
+      var h = dynWalk(1, from);
       if (!h || seen[h.idx]) break;
       seen[h.idx] = true; from = h.idx;
-      if (h.idx !== dynHomeIdx) out.push(h);
+      fwd.push(h);
     }
-    return out;
+    var back = DYN_AHEAD_BACK ? dynWalk(-1, dynChainIdx) : null;
+    if (back && (back.idx === dynChainIdx || back.idx === dynHomeIdx)) back = null;
+    if (back && fwd.slice(0, DYN_AHEAD_N).some(function (h) { return h.idx === back.idx; })) back = null;
+    return { fwd: fwd, back: back };
   }
   function dynAheadPass() {
     if (dynAheadBusy) { dynAheadAgain = true; return; }
@@ -8668,35 +8803,60 @@
       if (++dynAheadTries <= DYN_AHEAD_RETRY_MAX) dynAheadKick('busy');
       return;
     }
-    var hops = dynAheadTargets();
-    if (!hops.length) return;
+    var tg = dynAheadTargets();
+    if (!tg.fwd.length && !tg.back) return;
     dynAheadBusy = true;
-    var chain = Promise.resolve();
-    hops.forEach(function (h) {
-      chain = chain.then(function () {
-        if (!dynAheadAllowed()) return;                    // paused: the next start picks it up
-        if (dynBuildsActive > 0 || dynBuilding) { dynAheadAgain = true; return; }
-        return dynAheadOne(h).then(function (built) { if (built) dynNativeQueueSync(); });
+    /* Nearest first, ONE at a time: the next DYN_AHEAD_N, then the one back, then (Autoplay on)
+       onwards until the built units ahead add up to DYN_AHEAD_AUTOPLAY_S. `ahead` counts every
+       forward unit's session length, built now or already current; a unit that cannot be built
+       adds nothing (the queue stops there anyway). */
+    var i = 0, backDone = !tg.back, ahead = 0;
+    function step() {
+      if (!dynAheadAllowed()) return Promise.resolve();      // paused: the next start picks it up
+      if (dynBuildsActive > 0 || dynBuilding) { dynAheadAgain = true; return Promise.resolve(); }
+      var h = null, fwdOne = true;
+      if (i < tg.fwd.length && i < DYN_AHEAD_N) h = tg.fwd[i++];
+      else if (!backDone) { backDone = true; h = tg.back; fwdOne = false; }
+      else if (autoplayOn && ahead < DYN_AHEAD_AUTOPLAY_S && i < tg.fwd.length) h = tg.fwd[i++];
+      if (!h) return Promise.resolve();
+      return dynAheadOne(h).then(function (r) {
+        if (r.built) dynNativeQueueSync();
+        if (fwdOne) ahead += r.dur || 0;
+        return step();
       });
-    });
+    }
     var fin = function () {
       dynAheadBusy = false;
       if (dynAheadAgain) { dynAheadAgain = false; dynAheadKick('busy'); }
     };
-    chain.then(fin, fin);
+    step().then(fin, fin);
   }
+  /* r254: kick a pass when the page comes back into view (an unlock): the app's page was frozen and
+     the engine may have rolled on by several units since it last ran. */
+  if (DYN && !DYN_PREBUILD) document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') dynAheadKick('unlock');
+  });
   // This unit's clip files — for the eviction, which must touch nothing but its own.
   function dynAheadClips(plan) {
     var out = [];
     plan.sents.forEach(function (s) { out.push(dynClipRef(s, 'TH').file, dynClipRef(s, 'EN').file); });
     return out;
   }
+  /* One unit: build it unless it is already built with today's settings. Resolves { built, dur }:
+     `built` = a new session landed (the queue is re-sent), `dur` = the unit's session length in
+     seconds once there is a current one (0 when there is none), for the Autoplay minutes. */
   function dynAheadOne(h) {
     var t = h.t, tag = String(t.dynKey || t.prefix || '');
+    var no = { built: false, dur: 0 };
+    if (h.idx === dynHomeIdx) {
+      // The page's own unit is never built from here (dynEnsureSession owns it); its session counts.
+      var hm = dynReadMeta(DYN_KEY_NS, currentMode);
+      return Promise.resolve({ built: false, dur: (hm && hm.duration) || 0 });
+    }
     return dynUnitPlan(t).then(function (plan) {
-      if (!plan || plan.mode !== currentMode) return false;
+      if (!plan || plan.mode !== currentMode) return no;
       var meta = dynReadMeta(plan.ns, plan.mode);
-      if (meta && meta.key === plan.key) return false;          // already built with today's settings
+      if (meta && meta.key === plan.key) return { built: false, dur: meta.duration || 0 };   // already built with today's settings
       var before = meta ? meta.at : null;
       var had = {};
       dynAheadClips(plan).forEach(function (f) { if (dynClipCache[f]) had[f] = true; });
@@ -8710,13 +8870,13 @@
         dynAheadEvict(plan, had);
         if (entry && entry.joined) {                            // a hop took it over: the hop persists it
           tailTrace('ahead: ' + tag + ' built in ' + took() + ', taken by a hop');
-          return true;
+          return { built: true, dur: sess.duration || 0 };
         }
         var now = dynReadMeta(plan.ns, plan.mode);
         if ((now ? now.at : null) !== before) {                 // another build landed meanwhile: never sweep it
           dynAheadDiscard(sess);
           tailTrace('ahead: ' + tag + ' discarded (a newer build landed)');
-          return false;
+          return { built: false, dur: (now && now.key === plan.key && now.duration) || 0 };
         }
         dynPersistSessionFor(sess, plan.mode, plan.ns);
         var c = dynAdoptCache[t.page];
@@ -8726,14 +8886,14 @@
         }
         dynLog('ahead: built ' + tag + ' in ' + took());
         tailTrace('ahead: ' + tag + ' built in ' + took() + ' (' + Math.round(sess.duration / 60) + ' min)');
-        return true;
+        return { built: true, dur: sess.duration || 0 };
       }, function (e) {
         dynAheadEvict(plan, had);
         dynLog('ahead: ' + tag + ' failed ' + ((e && (e.code || e.name)) || e));
         tailTrace('ahead: ' + tag + ' failed (' + ((e && (e.code || e.name)) || e) + ')');
-        return false;
+        return no;
       });
-    }, function () { return false; });
+    }, function () { return no; });
   }
   /* Drop the decoded clips a build-ahead added. ⚠ ONLY WHEN NO OTHER BUILD IS IN FLIGHT: a build
      reads this cache synchronously at its stitch, after its fetches, and a clip removed in between
@@ -8752,7 +8912,7 @@
   // Now-playing strip, set directly — topics.js can't resolve test pages. The name is a LINK
   // to the playing topic's page (round-7 item 9); the strip's existing `a` styling (accent,
   // no underline) covers it.
-  function dynStripPaint(t, std) {
+  function dynStripPaint(t) {
     var box = $('now-playing'), txt = $('now-playing-text');
     if (box) box.classList.add('show');
     if (txt) {
@@ -8764,8 +8924,8 @@
          Pinning matters here: this link sits inside #player-root, where a premium PAGE remaps
          --accent to gold, so a free/member destination would otherwise inherit the wrong colour. */
       var npTier = (t.tier === 'premium') ? ' np-premium' : (t.tier === 'member' ? ' np-member' : '');
+      // r254: no " — standard audio" suffix any more: a hop only ever plays a built session.
       txt.innerHTML = '<a class="dyn-np-link' + npTier + '" href="' + escapeHtml(pageLinkHref(t.page)) + '">Now playing: <strong>' + escapeHtml(t.name) + '</strong></a>' +
-        (std ? ' — standard audio' : '') +
         ' <a href="#" class="np-return" id="dyn-np-return" title="Bring the player back to this page">↩ Return</a>';
       var rb = $('dyn-np-return');
       if (rb) rb.onclick = function (e) { e.preventDefault(); dynReturnLocal(); };
@@ -8800,7 +8960,6 @@
     dynChainIdx = dynHomeIdx;       // the pointer comes home with us
     dynTitle = dynChain && dynChain[dynHomeIdx] ? dynChain[dynHomeIdx].name : null;
     dynAttached = false;
-    dynStdRemote = false;
     dynLastPos = 0;
     dynResumeNum = null;   // r197: different unit — its map's nums mean nothing here
     dynSession = null;     // the neighbour's session is not ours to keep playing
@@ -8813,12 +8972,14 @@
     // ↩ Return brings THIS page's own settings back with it (dynAdopted is null by now).
     dynLoadSettings(); dynPrefsRepaintControls();
   }
-  function dynReturnLocal() {
-    dynLog('return local');
+  function dynReturnLocal(lenient) {
+    dynLog('return local' + (lenient ? ' (lenient)' : ''));
     dynResetToLocal();
-    // Lenient (round-10 item 3): play the latest LOCAL persisted session even if its key is
-    // stale — reconstruction only happens on a real foreground play press.
-    ensureMainSrc(true).then(function () { if (!dynAdopted) return mainAudio.play(); })
+    /* Lenient (round-10 item 3) ONLY FROM THE LOCK SCREEN (r254, W100): a hidden back-hop plays the
+       latest LOCAL persisted session even if its key is stale, as every hidden hop does. The strip's
+       ↩ Return is a tap on a visible page, and there the session must be the one the controls
+       describe: r253 restored the stale one here too, under controls that said otherwise. */
+    ensureMainSrc(!!lenient).then(function () { if (!dynAdopted) return mainAudio.play(); })
       // setupMediaSession() also rewrites the lock-screen title from dynTitle (r59), which
       // dynReturnLocal has already reset to the home unit. Without it, coming home kept naming the
       // topic we just left while playing this one.
@@ -8836,7 +8997,6 @@
     dynAttached = false;            // we're deliberately re-sourcing the player
     dynSession = null;              // the resolve step lands the target's session (if it has one)
     dynSessionIsLocal = false;
-    dynStdRemote = true;
     dynAdopted = t;
     dynTitle = t.name;              // lock screen must show the unit ACTUALLY playing (round-11 item 2)
     mainPage = t.page;
@@ -8852,14 +9012,19 @@
        same numbers. Before this the panel showed A's while B played, and the build used A's, which
        is why the session it stored could never match the one B's own page looks for. */
     dynLoadSettings(); dynPrefsRepaintControls();
-    dynStripPaint(t, true);
+    dynStripPaint(t);
     dynSyncSentBtns();   // session nulled until the resolve lands
+    /* r254 (W100): a visible Play later compares the session held with today's settings
+       (dynHeldIsCurrent), synchronously, and for a topic that needs the sentence map. A hop that
+       resolved without a plan (a lenient hidden hop, an engine hop) never loaded it (T2 §49). */
+    try { var T1m = window.ThaiEarTopics; if (T1m && T1m.loadSentenceNums) T1m.loadSentenceNums().catch(function () {}); } catch (_) {}
   }
-  function dynAdvance(t, revertIdx) {
+  function dynAdvance(t, revertIdx, pre) {
     // Structurally IDENTICAL shape to classic advanceTopic (works from the iPhone lock
     // screen): synchronous state swap + transport reset, then ONE promise hop that sets
-    // src → load → play. dynResolveAdopt resolves synchronously when pre-resolved; a
-    // sessionless playlist unit builds in place — foreground only. NEVER navigates.
+    // src → load → play. A unit with no current session builds in place. NEVER navigates.
+    // `pre` (r254): the session already in hand — a hidden hop built it before switching
+    // (dynHiddenHop), so the switch is immediate, exactly as a hop onto a built unit.
     /* r26: do NOT pause first. Classic advanceTopic never does — it keeps the element playing
        right up to the src assignment, which implicitly stops it. Pausing leaves a window where
        no audio is playing, and WebKit suspends media LOADING for a backgrounded page without an
@@ -8875,17 +9040,26 @@
     var f = $('scrubber-fill'); if (f) f.style.width = '0%';
     var c = $('time-cur'); if (c) c.textContent = '0:00';
     var tt = $('time-total'); if (tt) tt.textContent = '0:00';
-    dynResolveAdopt(t).then(function (r) {
+    var buildFailed = false;   // r254: the RESOLVE failed (not play()), so the status line says so
+    var resolved = pre ? Promise.resolve(pre) : dynResolveAdopt(t).catch(function (e) {
+      /* r254 (W100): the build failed, and a session of this unit built with OTHER settings may be
+         on the device (offline, its clips not downloaded). The same exit a Play press takes: the
+         unit's settings go back to that session's and it plays (dynAdoptRevert). r253 played it
+         silently, whatever the controls said. With nothing to fall back on, the failure stands. */
+      if (dynAdopted !== t) return Promise.reject(e);
+      return dynAdoptRevert(t, e).catch(function (e2) { buildFailed = true; return Promise.reject(e2); });
+    });
+    var switched = false;      // r254: the target's session is loaded; only play() can still fail
+    resolved.then(function (r) {
       if (dynAdopted !== t) return;                 // superseded by a newer hop
       dynSession = r.sess;
-      dynStdRemote = r.std;
-      dynSyncSentBtns();                            // placeholder hop → ① grey; session hop → live
-      if (!r.std) dynStripPaint(t, false);
-      dynLog('src set (' + (r.std ? 'std' : 'dyn') + ', ' +
-        (String(r.src || '').indexOf('blob:') === 0 ? 'blob' : 'url') + ')');
+      dynSyncSentBtns();                            // the ① buttons follow the unit's map
+      dynStripPaint(t);
+      dynLog('src set (dyn, ' + (String(r.src || '').indexOf('blob:') === 0 ? 'blob' : 'file') + ')');
       mainAudio.src = r.src;
       mainAudio.load();
       mainSrcReady = true;
+      switched = true;
       dynPreAdvanced = false;
       // If play() hangs again, these say whether the element is stuck LOADING (readyState
       // stays 0 while backgrounded) or whether it loaded fine and play() itself was blocked.
@@ -8911,10 +9085,30 @@
       if (dynAdopted === t) { setMainIcon(true); setupMediaSession(); dynPrefetchNeighbours(); dynAheadKick('hop'); }
     }).catch(function (e) {
       dynLog('adopt FAIL ' + ((e && (e.name || e.code)) || '') + ' ' + ((e && e.message) || ''));
+      /* r254: A SUPERSEDED HOP'S FAILURE IS NOBODY'S BUSINESS. A second press moved on while this
+         one built; reverting the pointer now would undo the newer hop, which then lands on a page
+         that no longer names it and stays silent (R1 #3). Only the current hop may revert. */
+      if (dynAdopted !== t) { dynLog('adopt FAIL ignored (superseded)'); return; }
+      /* r254: THE UNIT IS LOADED, ONLY play() WAS REFUSED (iOS outside a gesture: a hidden hop whose
+         build outlasted the unit before it, so the switch came after `ended`). Stay on it, paused,
+         and say so. Reverting the pointer, as before, left the page naming the unit it came from
+         over the audio of the one it went to. Only for a REFUSAL (NotAllowedError / AbortError):
+         anything else (an undecodable session, the shim's `refmt`) keeps the old path (R1 #9). */
+      var refused = e && (e.name === 'NotAllowedError' || e.name === 'AbortError');
+      if (switched && refused) {
+        setMainIcon(false);
+        setupMediaSession();   // the lock screen names the unit now loaded (R1 #9)
+        dynStatus('Tap play to continue', false);
+        var pseq = dynStatusSeq;
+        setTimeout(function () { if (pseq === dynStatusSeq) dynStatus(null); }, 6000);
+        tailTrace('hop: ' + String(t.dynKey || t.prefix || '') + ' loaded, play() refused (' + ((e && (e.name || e.code)) || e) + '): waiting for a tap');
+        return;
+      }
       /* ⚠⚠ ONE LAST HONEST ATTEMPT BEFORE REVERTING (2026-08-27). navigator.onLine LIES in the
          WebView — it reports online in airplane mode, which this file says in three other places
-         — so dynStdUsable() can wave a remote URL through and the load then fails here. Rather
-         than revert on that, rebuild from what is on the device, which is the same recovery the
+         — so a source it waved through can fail here (until r254 that was the prefab's remote
+         URL; now it is a build that tried the network first). Rather than revert on that, rebuild
+         from what is on the device, which is the same recovery the
          offline path takes deliberately. Bounded to ONE retry, to a unit that is actually
          downloaded, in the FOREGROUND, and never for an entitlement refusal (a paywall is not a
          load failure and must not turn into a build). If the retry fails too, the revert below
@@ -8934,21 +9128,31 @@
         dynLog('adopt: retry via local build');
         return dynAdoptBuild(t).then(function (r) {
           if (dynAdopted !== t) return;
-          dynSession = r.sess; dynStdRemote = r.std;
+          dynSession = r.sess;
           dynSyncSentBtns();
-          if (!r.std) dynStripPaint(t, false);
+          dynStripPaint(t);
           mainAudio.src = r.src; mainAudio.load(); mainSrcReady = true;
           return mainAudio.play();
         }).then(function () {
           if (dynAdopted === t) { setMainIcon(true); setupMediaSession(); dynPrefetchNeighbours(); dynAheadKick('hop'); }
-        }).catch(function (e2) { dynAdoptFallback(t, revertIdx, e2); });
+        }).catch(function (e2) { if (dynAdopted === t) dynAdoptFallback(t, revertIdx, e2, true); });   // r254: not a superseded hop's (R1 #3)
       }
-      dynAdoptFallback(t, revertIdx, e);
+      dynAdoptFallback(t, revertIdx, e, buildFailed);
     });
   }
   /* The revert, lifted out so the retry above and the original failure share one exit. Byte-for
      byte what the catch used to do. */
-  function dynAdoptFallback(t, revertIdx, e) {
+  function dynAdoptFallback(t, revertIdx, e, buildFailed) {
+    /* r254 (A1): a build that failed SAYS SO. Until r254 an online one fell back to the prefab
+       silently; with the prefab gone, a hop whose build fails (a dropped connection, a WebView
+       claiming to be online in airplane mode) goes back to the unit you were on, and the status
+       line tells you why. Not for a paywall (its own overlay) or a unit with nothing to build. */
+    var bc = e && e.code;
+    if (buildFailed && !isGateCode(bc) && bc !== 'nosess' && bc !== 'mode') {
+      dynStatus('Couldn’t load the audio — check your connection', false);
+      var bseq = dynStatusSeq;
+      setTimeout(function () { if (bseq === dynStatusSeq) dynStatus(null); }, 6000);
+    }
     {
       /* ⚠ ALSO to the BOOT TRACE. dynLog does not reach it, so this failure was invisible on a
          phone — and it is the one the owner hit on iPhone in airplane mode (strip flashes, then
@@ -8964,6 +9168,66 @@
       }
       if (!(e && e.code === 'nosess')) handleDenied(e, (t.tier === 'member' || t.tier === 'premium') ? t.tier : null);
     }
+  }
+  /* ── r254 (Release A, A2): A HIDDEN HOP BUILDS FIRST, THEN SWITCHES ────────────────────────────
+     A hop made while the page is hidden (a lock-screen ⏭/⏮ on the web, the app's ⏭ forwarded past
+     its queue, a headset, autoplay with the screen off) used to swap the page's identity at once and
+     then play whatever needed no build: the unit's COMBINED track (the owner's W98 report). Now:
+       · a session for the target on this device, whatever its settings → switch at once (lenient,
+         the lock path's rule: there, a stale session beats a wait);
+       · otherwise build it FIRST, quietly, while the current audio plays on. NOTHING about the page
+         changes until the build lands (pointer, strip, lock-screen title, source); then the switch
+         is exactly a hop onto a built unit (dynAdvance with the session in hand);
+       · a second press while one is pending walks on from the pending target (the latest press
+         wins, advanceTopic); the earlier build still finishes and is persisted, never switched to;
+       · a build that fails changes nothing: the current audio plays on;
+       · autoplay never stacks a second hop on a pending one (advanceTopic's `auto`), so the
+         `ended` fallback cannot hop twice.
+     ⚠ The page's own unit is a target like any other: built under the page's namespace if it has
+       no session, then the return restores it (leniently, as any hidden hop). */
+  var dynPendingHop = null;   // { idx, t, seq } while a hidden hop's target is being built
+  var dynHopSeq = 0;
+  var DYN_HOP_MAX_MS = 60000;  // a pending hop older than this is abandoned: a hung fetch must not hold autoplay (R1 #7)
+  function dynHiddenHop(hop) {
+    var t = hop.t, seq = ++dynHopSeq, tag = String(t.dynKey || t.prefix || '');
+    /* The player as it is at the press. If any of it moves before the build lands (↩ Return, the
+       bfcache un-adopt, a TE/ET switch), the switch is dropped: the listener has gone somewhere
+       else, and landing the old target would undo that (R1 #2). A pause cancels outright
+       (togglePlay), an engine hop too (nativeTransition). The build itself is kept either way. */
+    var at = { mode: currentMode, idx: dynChainIdx, adopted: dynAdopted };
+    dynPendingHop = { idx: hop.idx, t: t, seq: seq };
+    var giveUp = setTimeout(function () {
+      if (dynPendingHop && dynPendingHop.seq === seq) {
+        dynPendingHop = null;
+        tailTrace('hop (hidden) → ' + tag + ': abandoned after ' + (DYN_HOP_MAX_MS / 1000) + ' s');
+      }
+    }, DYN_HOP_MAX_MS);
+    tailTrace('hop (hidden) → ' + tag);
+    dynResolveLenient(t).then(function (r) {
+      clearTimeout(giveUp);
+      if (!dynPendingHop || dynPendingHop.seq !== seq) { dynLog('hop (hidden): ' + tag + ' ready but superseded'); return; }
+      dynPendingHop = null;
+      if (currentMode !== at.mode || dynChainIdx !== at.idx || dynAdopted !== at.adopted) {
+        tailTrace('hop (hidden): ' + tag + ' ready, but the player moved meanwhile: not switching');
+        return;
+      }
+      tailTrace('hop (hidden): ' + tag + ' ready, switching');
+      var revertIdx = dynChainIdx;   // the unit still playing: where a failed switch goes back to
+      dynChainIdx = hop.idx;
+      if (hop.idx === dynHomeIdx) {
+        /* The page's own unit: the return restores (or uses) the page's session itself. The copy in
+           hand only proved there is one; let its blob go unless the neighbour cache holds it. */
+        var hc = dynAdoptCache[t.page];
+        if (r && r.sess && r.sess.url && !(hc && hc.sess === r.sess)) { try { URL.revokeObjectURL(r.sess.url); } catch (_) {} }
+        dynReturnLocal(true);
+        return;
+      }
+      dynAdvance(t, revertIdx, r);
+    }, function (e) {
+      clearTimeout(giveUp);
+      if (dynPendingHop && dynPendingHop.seq === seq) dynPendingHop = null;
+      tailTrace('hop (hidden): ' + tag + ' could not be built (' + ((e && (e.code || e.name)) || e) + '), staying');
+    });
   }
   /* -- batch add-to-playlist (select mode) --
      dyn-addpl-btn → playlist chooser modal → SELECT MODE: card taps toggle a tick instead of
@@ -10396,7 +10660,7 @@
   var TAIL_TRACE_OFF_KEY = 'te_tail_trace_off';
   var tailLastTickAt = 0, tailLastBeat = 0;
   function tailTrace(ev) {
-    if (!DYN || (!NA && !(typeof dynProbeOn === 'function' && dynProbeOn()))) return;   // r250: the web probe writes it too
+    if (!NA || !DYN) return;
     try {
       if (localStorage.getItem(TAIL_TRACE_OFF_KEY) === '1') return;
       var a = JSON.parse(localStorage.getItem(TAIL_TRACE_KEY) || '[]');
@@ -10409,26 +10673,17 @@
   function tailPos() {
     return (mainAudio.currentTime || 0).toFixed(1) + '/' + (mainAudio.duration || 0).toFixed(1);
   }
-  if ((NA || dynProbeOn()) && DYN) {   // r250: the web probe (dynProbeOn) records the same trace
+  if (NA && DYN) {
     tailTrace('mount ' + DYN_BUILD + ' ' + PAGE_HREF + ' repeat=' + (repeatOn ? 1 : 0) + ' autoplay=' + (autoplayOn ? 1 : 0));
     document.addEventListener('visibilitychange', function () {
       tailTrace((document.visibilityState === 'visible' ? 'show at ' : 'hide at ') + tailPos());
     });
-    if (NA) {
-      // A pause stops the native ticker, so the next tick after it is not a gap — forget the last one.
-      NA.addListener('playing', function (d) {
-        tailLastTickAt = 0;
-        if (document.visibilityState !== 'visible') tailTrace('playing=' + (d && d.playing ? 1 : 0) + ' at ' + tailPos());
-      });
-      NA.addListener('ended', function () { tailTrace('native ended received'); });
-    } else {
-      // r250 probe: what the <audio> element did while hidden (an end, a start, a stall).
-      ['ended', 'playing', 'pause', 'waiting', 'error'].forEach(function (ev) {
-        mainAudio.addEventListener(ev, function () {
-          if (document.visibilityState !== 'visible' && !mainOnSilence()) tailTrace('audio ' + ev + ' at ' + tailPos());
-        });
-      });
-    }
+    // A pause stops the native ticker, so the next tick after it is not a gap — forget the last one.
+    NA.addListener('playing', function (d) {
+      tailLastTickAt = 0;
+      if (document.visibilityState !== 'visible') tailTrace('playing=' + (d && d.playing ? 1 : 0) + ' at ' + tailPos());
+    });
+    NA.addListener('ended', function () { tailTrace('native ended received'); });
     /* r235: WHO stops this page ~1 minute into a lock? Two probes that answer it. Chromium fires
        `freeze` just before it freezes a page itself (and `resume` after); the OS freezing the whole
        renderer process fires nothing. And a plain timer: if these lines keep coming while the ticks
@@ -10454,14 +10709,15 @@
      a track while locked has to be ExoPlayer's job, set up WHILE WE ARE AWAKE:
        • REPEAT — nativeRepeatSync() pushes repeatOn on every prepare and toggle; ExoPlayer loops
          (REPEAT_MODE_ONE). The JS pre-loop then stands down (its seek would fight the engine).
-       • AUTOPLAY — dynNativeQueueSync() walks the chain exactly as a LOCKED hop does (dynWalk,
-         fg=false: entitled, and playable without a build) and hands the engine the units ahead
-         (r238: the whole sequence) — a persisted session's file, else the prefab track, i.e.
-         what dynResolveAdopt would pick on the lock screen. ⚠ It NEVER builds: a build per queued
-         unit on every prepare would be minutes of work, and a hop from the lock screen cannot
-         build either, so a queued unit sounds exactly as a locked hop always has. What makes the
-         next ones CUSTOM versions is the build-ahead (r238, dynAheadKick): it builds them in the
-         background while the page is awake and re-runs this after each one.
+       • AUTOPLAY — dynNativeQueueSync() hands the engine the units a ⏭ from here reaches (the hop
+         walk, dynWalk), in order, WHILE EACH IS BUILT (r254: a session file on the phone, whatever
+         settings it was built with), and stops at the first that is not. ⚠ It never builds, and
+         it never queues anything but a session: until r254 an unbuilt unit went in as its COMBINED
+         track, which is how the owner's W98 trace heard "standard audio" and how an offline queue
+         held an internet link that killed the engine. What makes the queue reach further is the
+         build-ahead (dynAheadKick: 4 ahead, 1 back, 45 min with Autoplay on), which re-runs this
+         after each build. Where it stops is the owner's decision 3 (STOP): locked and asleep, the
+         engine stops at the end of the last built unit; awake, the page builds the next one.
        • nativeTransition() is the catch-up: the engine names the unit it moved to (by the key we
          gave it) and the page takes on that unit's state WITHOUT re-sourcing it.
        • r235 — THE NEIGHBOURS, BOTH WAYS, WHATEVER THE TOGGLES (owner, 2026-09-28: the lock-screen
@@ -10472,31 +10728,18 @@
          themselves; Repeat still loops before any end is reached. `current` names the unit they
          were computed for, and the engine ignores a set computed for a unit it has already left.
      ⚠ The FOREGROUND is unchanged: awake and visible, autoplay still pre-advances here and BUILDS
-       the next unit (r213). dynAdvance pauses first there, so the engine never rolls onto the
-       queued prefab under a build — the start-prefab-then-swap the owner rejected cannot happen.
+       the next unit (r213) if it is not built yet. dynAdvance pauses first there, so the engine
+       never rolls on underneath a page-driven hop.
      ⚠ All of it is conditional on NA_LOOP / NA_QUEUE: an app older than v8 behaves as r233. */
-  /* r238 — THE WHOLE SEQUENCE (owner, 2026-09-28, choosing it over r236's ten). The engine is handed
-     every unit the locked walk reaches from here, each once (a wrapping chain stops before it comes
-     round again), so autoplay runs to the end with the screen off: the page is frozen a minute into
-     a lock and can never extend the queue later. Nothing is downloaded early — ExoPlayer loads an
-     item as it is reached — so the cost is resolving the sources, per prepare / toggle / hop: local
-     reads, plus one batch of signed urls.
-     ⚠ THE ONE THING THAT CANNOT LAST IS A SIGNED URL. A member/premium STANDARD recording plays from
-     one; R2 signs for 6 h and the mint cache trusts 5 (MINT_TTL_MS). An expired url is not a skip:
-     ExoPlayer ERRORS and the whole queue stops dead. So the walk keeps a pessimistic clock — the
-     current unit's remaining time, then each queued unit's length (a built session's own duration,
-     a standard recording at DYN_NQ_STD_MAX_S) — and the queue ENDS before the first such unit that
-     could not be FINISHED inside a fresh url's trusted life (finished, not started: the engine may
-     re-open a url mid-track). Ending is clean — the engine stops at the end of the last unit it
-     holds, and at unlock autoplay carries on — and it comes after at least ~3 h of standard
-     recordings. Anything that needs no signed url (a built session, which the build-ahead makes
-     more of; a download; a free unit) is unlimited.
-     Each url is minted with the life its own unit needs (mintMany's per-file minLife), in ONE batch:
-     audio_quota counts issuance, and links that could never be used would be noise in the one
-     number whose job is to spot scraping (ANTI_THEFT_PLAN.md §14b.7). */
-  var DYN_NQ_STD_MAX_S = 16 * 60;               // measured 2026-09-28: the longest live standard track is 15.5 min (ET), 14.2 (TE); the 15-min ET cap is a standing rule
-  var DYN_NQ_LINK_MARGIN_MS = 15 * 60 * 1000;   // a pause, a slow start, the device clock
-  var DYN_NQ_MINLIFE_MS = 3 * 60 * 60 * 1000;   // the ⏮ unit: reached by a press, at no predictable time (r236's figure)
+  /* r238 — THE WHOLE SEQUENCE (owner, 2026-09-28, choosing it over r236's ten); r254 — WHILE BUILT.
+     The engine is handed every unit the walk reaches from here, each once (a wrapping chain stops
+     before it comes round again), up to the first one with no session on the phone. Every item is a
+     file already on the device, so nothing is fetched to queue it and nothing can expire.
+     ⚠ r254: THE SIGNED-LINK CLOCK IS GONE WITH THE PREFAB. r238's queue ended before the first
+     member/premium STANDARD recording whose signed url could not outlast it (an expired url is an
+     ExoPlayer error, and before app 1.9 an error killed the whole queue), and minted the rest in one
+     batch. A session file never expires, so the clock, the batch mint and the "ends N short" cut
+     (DYN_NQ_STD_MAX_S, DYN_NQ_LINK_MARGIN_MS, DYN_NQ_MINLIFE_MS) went with it. */
   var DYN_TICK_STALE_MS = 2000;     // a tick older than this reached us in a post-unlock backlog
   // len = units queued AFTER the current (what an autoplay roll-over can reach); prev = one before it.
   var dynNQ = { seq: 0, len: 0, prev: false, map: {} };   // map: item key → { idx, t, r } for nativeTransition
@@ -10521,8 +10764,8 @@
     nativeRepeatSync();
     if (DYN) dynNativeQueueSync();
   }
-  // `short` (r238) = units the walk reached but left out because a signed url could not outlast them.
-  function nativeQueuePush(prev, items, map, short) {
+  // `stop` (r254) = the first unit the walk reached that is not built yet: the queue ends before it.
+  function nativeQueuePush(prev, items, map, stop) {
     /* ⚠⚠ r244 — MERGED, NEVER REPLACED OR WIPED. The engine plays from the last queue it ACCEPTED,
        and it refuses one computed for a unit it has already left (PlaybackService CMD_SET_QUEUE),
        so the newest map is not always the engine's. A key → unit entry stays true whichever queue
@@ -10538,13 +10781,12 @@
     }));
     dynNQ.len = items.length;
     dynNQ.prev = !!prev;
-    var tag = function (x) { return x.key + (x.mode === 'dyn' ? '' : '(std)'); };
-    // The whole sequence can run to a hundred units: name the first few, count the rest.
-    var custom = items.filter(function (x) { return x.mode === 'dyn'; }).length;
+    // The whole sequence can run to a hundred units: name the first few, count the rest. Every item
+    // is a built session since r254, so the "(std)" tag and the "(N custom)" count are gone.
+    var tag = function (x) { return x.key; };
     tailTrace('queue ' + (prev ? '⏮ ' + tag(prev) + ' | ' : '') + items.length + ' next' +
-      (items.length ? ': ' + items.slice(0, 4).map(tag).join(', ') + (items.length > 4 ? ', …' : '') +
-        ' (' + custom + ' custom)' : '') +
-      (short ? ' · ends ' + short + ' short (signed-link life)' : '') +
+      (items.length ? ': ' + items.slice(0, 4).map(tag).join(', ') + (items.length > 4 ? ', …' : '') : '') +
+      (stop ? ' · stops before ' + stop + ' (not built yet)' : '') +
       (autoplayOn ? '' : ' (no autoplay: pause at end)'));
     // The map is kept: it still names whatever queue the engine does hold.
     var clear = function () { dynNQ.len = 0; dynNQ.prev = false; };
@@ -10575,38 +10817,21 @@
   if (NA_CUR) document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') nativeCheck('visible');
   });
-  /* What a LOCKED hop onto `t` would play, found WITHOUT building and WITHOUT minting: a session in
-     hand or persisted on disk ({ sess } — its FILE: ExoPlayer cannot open a blob: URL), else the
-     prefab track ({ file, link }) — read from a download, a free unit's public url, or (`link`) a
-     member/premium one that needs a signed url, minted afterwards in one batch. Rejects for anything
-     that cannot play natively; the queue leaves it out, as the lock-screen walk would. */
+  /* What the engine may hold for `t` (r254): a session FILE on this device, in hand or persisted
+     (ExoPlayer cannot open a blob: URL), whatever settings it was built with: the lock path is
+     lenient (TE_ET_RETIREMENT.md §3). Rejects when there is none; the queue then ENDS there (A3),
+     and that unit is the build-ahead's first job. Never a prefab, never a fetch, never a mint. */
   function dynQueueProbe(t) {
     if (dynUnitLocked(t)) return Promise.reject({ code: 'licence' });
     var mode = currentMode;
     var c = dynAdoptCache[t.page];
-    if (!dynAdoptStale && c && c.mode === mode && c.sess && c.sess.fileUri) return Promise.resolve({ sess: c.sess });
+    if (c && c.mode === mode && c.sess && c.sess.fileUri) return Promise.resolve({ sess: c.sess });
     var ns = dynUnitNs(t);
-    var meta = (!dynAdoptStale && ns) ? dynReadMeta(ns, mode) : null;
-    var got = meta
-      ? dynRestoreSession(ns, mode, meta).then(function (s) { return (s && s.fileUri) ? { sess: s } : null; },
-                                                function () { return null; })
-      : Promise.resolve(null);
-    return got.then(function (r) {
-      if (r) return r;
-      if (!t.prefix) return Promise.reject({ code: 'nosess' });   // a playlist has no prefab
-      var file = t.prefix + '_' + mode.toUpperCase() + '.mp3';
-      var gated = (t.tier === 'member' || t.tier === 'premium');
-      // dynAdoptStdSrc's own local-first test: a download is read from the device, no url.
-      var local = hasLocalFile(t.prefix, file) && canUseOffline(t.tier);
-      return { sess: null, file: file, link: gated && !local };
-    });
-  }
-  /* The probe made playable. A standard recording goes through dynAdoptStdSrc — NOT
-     dynAdoptPlaceholder, whose cached url is a signed one of unknown age (r236) — asking for the
-     life its unit needs; after the batch in dynNativeQueueSync that is a mint-cache hit. */
-  function dynQueueSrc(t, probe, minLifeMs) {
-    if (probe.sess) return Promise.resolve({ src: probe.sess.fileUri, std: false, sess: probe.sess });
-    return dynAdoptStdSrc(t, probe.file, minLifeMs || 0).then(function (u) { return { src: u, std: true, sess: null }; });
+    var meta = ns ? dynReadMeta(ns, mode) : null;
+    if (!meta) return Promise.reject({ code: 'nosess' });
+    return dynRestoreSession(ns, mode, meta).then(function (s) {
+      return (s && s.fileUri) ? { sess: s } : Promise.reject({ code: 'nosess' });
+    }, function () { return Promise.reject({ code: 'nosess' }); });
   }
   function dynNativeQueueSync() {
     if (!NA_QUEUE || !DYN) return;
@@ -10620,73 +10845,53 @@
     // r244: the unit playing now goes in the map as well, as the page holds it — so a ⏮ back onto
     // it (the engine's queue starts one before it) is a known unit, not an unqueued key.
     var curKey = nativeItemKey(), curEntry = dynChain[cur]
-      ? { idx: cur, t: dynChain[cur], r: { src: mainAudio.src, sess: dynSession, std: !!dynStdRemote } } : null;
-    // One back — the unit ⏮ would reach from here, by the same locked walk.
-    var back = dynWalk(-1, cur, false);
+      ? { idx: cur, t: dynChain[cur], r: { src: mainAudio.src, sess: dynSession } } : null;
+    // One back — the unit ⏮ would reach from here, by the same walk.
+    var back = dynWalk(-1, cur);
     if (back && back.idx === cur) back = null;
-    // And forward: the whole sequence (r238), each unit once.
+    // And forward: the whole sequence (r238), each unit once — cut below at the first unbuilt one.
     var hops = [], from = cur, seen = {};
     seen[cur] = true;
     for (var n = 0; n < dynChain.length; n++) {
-      var h = dynWalk(1, from, false);
+      var h = dynWalk(1, from);
       if (!h || seen[h.idx]) break;
       seen[h.idx] = true; hops.push(h); from = h.idx;
     }
     var wanted = [back].concat(hops);   // slot 0 is the previous unit (or null)
-    var life = {}, cut = wanted.length;
-    Promise.all(wanted.map(function (h) {
-      if (!h) return Promise.resolve(null);
-      return dynQueueProbe(h.t).then(function (p) { return { h: h, p: p }; }, function () { return null; });
-    })).then(function (probes) {
-      if (seq !== dynNQ.seq) return null;   // superseded by a newer prepare / toggle / catch-up
-      // The pessimistic clock: by when could each unit ahead be FINISHED, at the latest?
-      var d = mainAudio.duration, pos = mainAudio.currentTime || 0;
-      // Right after a prepare the engine may not have reported a length yet; a built session knows its own.
-      if (!(d > 0 && isFinite(d)) && dynSession && dynSession.duration) d = dynSession.duration;
-      var clock = ((d && isFinite(d) && d > pos) ? d - pos : DYN_NQ_STD_MAX_S) * 1000;
-      var links = [];
-      for (var i = 1; i < probes.length; i++) {
-        var x = probes[i];
-        if (!x) continue;                                  // left out, as the lock-screen walk would
-        var len = ((x.p.sess && x.p.sess.duration) || DYN_NQ_STD_MAX_S) * 1000;
-        if (x.p.link) {
-          var need = clock + len + DYN_NQ_LINK_MARGIN_MS;
-          // A fresh url could not outlast it: the queue ends here. (A minute short of the full 5 h, so
-          // a url minted a moment ago still reads as good enough when it is collected below.)
-          if (need > MINT_TTL_MS - 60000) { cut = i; break; }
-          life[x.p.file] = Math.max(life[x.p.file] || 0, need);
-          links.push(x.p.file);
-        }
-        clock += len;
-      }
-      var x0 = probes[0];
-      if (x0 && x0.p.link) { life[x0.p.file] = Math.max(life[x0.p.file] || 0, DYN_NQ_MINLIFE_MS); links.push(x0.p.file); }
-      return (links.length ? mintMany(links, life) : Promise.resolve()).then(function () {
-        if (seq !== dynNQ.seq) return null;
-        return Promise.all(probes.slice(0, cut).map(function (x) {
-          if (!x) return null;
-          return dynQueueSrc(x.h.t, x.p, x.p.link ? life[x.p.file] : 0)
-            .then(function (r) { return { h: x.h, r: r }; }, function () { return null; });
-        }));
-      });
-    }).then(function (res) {
-      if (!res || seq !== dynNQ.seq) return;
-      var prev = null, items = [], map = {};
-      res.forEach(function (x, i) {
-        if (!x || !x.r || !x.r.src || String(x.r.src).indexOf('blob:') === 0) return;
+    /* Probed in order and NO FURTHER than the first unit ahead that is not built: nothing past it
+       can be queued (A3), and each probe of a persisted session is a file check across the bridge.
+       This re-runs after every build-ahead build, and with Autoplay on that is a dozen builds. */
+    var probeFrom = function (i, acc) {
+      if (i >= wanted.length) return Promise.resolve(acc);
+      var h = wanted[i];
+      if (!h) { acc.push(null); return probeFrom(i + 1, acc); }
+      return dynQueueProbe(h.t).then(function (p) { return { h: h, sess: p.sess }; },
+                                     function () { return { h: h, sess: null }; })
+        .then(function (x) { acc.push(x); return (i > 0 && !x.sess) ? acc : probeFrom(i + 1, acc); });
+    };
+    probeFrom(0, []).then(function (res) {
+      if (seq !== dynNQ.seq) return;   // superseded by a newer prepare / toggle / catch-up
+      var prev = null, items = [], map = {}, stop = '';
+      for (var i = 0; i < res.length; i++) {
+        var x = res[i];
+        if (!x) continue;
         var t = x.h.t, key = String(t.dynKey || t.prefix || '');
-        if (!key) return;
-        var it = { url: x.r.src, title: t.name || 'ThaiEar', subtitle: nativeMeta.subtitle,
-                   artwork: nativeMeta.artwork, mode: x.r.sess ? 'dyn' : 'std',
-                   marks: x.r.sess && x.r.sess.map ? x.r.sess.map.map(function (m) { return m.start; }) : [],
+        if (!x.sess || !key) {
+          // ⏮ only when it is built; ⏭ — the queue STOPS here (A3, the owner's decision 3).
+          if (i > 0) { stop = key || '?'; break; }
+          continue;
+        }
+        var it = { url: x.sess.fileUri, title: t.name || 'ThaiEar', subtitle: nativeMeta.subtitle,
+                   artwork: nativeMeta.artwork, mode: 'dyn',
+                   marks: x.sess.map ? x.sess.map.map(function (m) { return m.start; }) : [],
                    key: key };
         if (i === 0) prev = it;
-        else if (map[key] && map[key].idx !== x.h.idx) return;   // never two units under one key
+        else if (map[key] && map[key].idx !== x.h.idx) continue;   // never two units under one key
         else items.push(it);
-        map[key] = { idx: x.h.idx, t: t, r: x.r };
-      });
+        map[key] = { idx: x.h.idx, t: t, r: { src: x.sess.fileUri, sess: x.sess } };
+      }
       if (curKey && curEntry && !map[curKey]) map[curKey] = curEntry;
-      nativeQueuePush(prev, items, map, wanted.length - cut);
+      nativeQueuePush(prev, items, map, stop);
     });
   }
   /* The engine is on a unit the page did not prepare. Take on that unit's state — the same
@@ -10699,18 +10904,20 @@
       return;
     }
     if (d.key) naKey = String(d.key);   // r244: wherever it is, that is where the engine is now
+    // r254: the engine moved on by itself (a native ⏮/⏭, a roll-over, 1.9's error skip): a hidden
+    // hop still building is out of date, and switching to it later would undo the engine's move.
+    if (dynPendingHop) { tailTrace('hop (hidden) to ' + (dynPendingHop.t.dynKey || dynPendingHop.t.prefix) + ' dropped: the engine moved'); dynPendingHop = null; }
     var q = dynNQ.map[d.key];
     if (!q) { nativeAdoptUnqueued(String(d.key || '')); return; }
     var t = q.t, r = q.r;
     dynChainIdx = q.idx;
     if (q.idx === dynHomeIdx) {
       dynResetToLocal();
-      dynSession = r.sess; dynSessionIsLocal = !!r.sess; dynStdRemote = !!r.std;
+      dynSession = r.sess; dynSessionIsLocal = !!r.sess;
     } else {
       dynAdoptRetried = false; dynAdoptedAt = Date.now();
       dynApplyAdoptState(t);
-      dynSession = r.sess; dynStdRemote = !!r.std;
-      if (!r.std) dynStripPaint(t, false);
+      dynSession = r.sess;
     }
     mainSrcReady = true;
     dynPreAdvanced = false; dynPreLooped = false;
@@ -10721,10 +10928,10 @@
     setupMediaSession();
     writeNowPlaying();
     /* The engine still holds the rest of the old queue; recompute it from where we now are.
-       ⚠ r244: the map is NOT wiped here any more. The rebuild is async (probes, then a signed-url
-       batch for premium units — seconds), and every transition that arrived meanwhile found an
-       empty map and was dropped: quick ⏭ presses and the whole unlock backlog. nativeQueuePush
-       merges the new map in when it lands. */
+       ⚠ r244: the map is NOT wiped here any more. The rebuild is async (session probes; until r254
+       a signed-url batch as well), and every transition that arrived meanwhile found an empty map
+       and was dropped: quick ⏭ presses and the whole unlock backlog. nativeQueuePush merges the new
+       map in when it lands. */
     dynNQ.len = 0;
     dynNativeQueueSync();
     dynAheadKick('engine hop');   // r238: and build ahead of the unit the engine is now on
@@ -10745,6 +10952,90 @@
     dynAdoptLive({ page: id.page, name: id.name, prefix: id.prefix, key: id.key, access: id.access, mode: currentMode });
     nativeMeta.title = dynTitle || id.name;
     writeNowPlaying();
+  }
+  /* ── r254 (A5): A DEAD ENGINE COMES BACK (TE_ET_RETIREMENT.md, Release A + Release C) ───────────
+     Two halves, one rule: a session record that points at nothing playable is dropped, so the next
+     resolve of that unit BUILDS it instead of handing the engine the same dead file.
+     · APP 1.9+ SAYS SO. Its engine no longer dies on a failed load: it drops the unit and plays the
+       next queued one, or stops paused on the last that played (the `transition` with reason
+       "error" that follows is followed like any hop). `error` names the unit that failed.
+     · APPS 1.6–1.8 SAY NOTHING, so the page watches its own Play. Media3 re-prepares an IDLE
+       player on a controller's Play (Util.handlePlayButtonAction, read in the 1.4.1 bytecode), so
+       a file that is still there simply plays; one that is gone fails again, silently, and the
+       owner's 2026-10-13 offline report was exactly that: Play pressed, nothing. A Play that only
+       RESUMED a prepared track and hears no `playing` within DYN_PLAY_WATCH_MS goes round the Play
+       path once more: the session file gone → its record goes too and the unit is rebuilt; still
+       there → it is prepared again. Either way at the same sentence. Once per press: the second
+       round prepares, and only a resume arms the watch.
+     ⚠ Only on apps that send `playing` (v8+, the same builds as setQueue): on older ones every Play
+       would look dead. */
+  function dynDropUnitSession(t, why) {
+    var ns = dynUnitNs(t), mode = currentMode;
+    if (!ns) return;
+    var meta = dynReadMeta(ns, mode);
+    if (meta) dynEvictSession({ lsKey: dynMetaLsKey(ns, mode), ns: ns, mode: mode, ext: meta.ext || 'wav', file: meta.file || null });
+    var c = dynAdoptCache[t.page];
+    if (c && c.sess) {
+      if (c.sess.url && c.sess !== dynSession) { try { URL.revokeObjectURL(c.sess.url); } catch (_) {} }
+      c.sess = null;
+    }
+    tailTrace('session dropped: ' + ns + ' (' + why + ')');
+  }
+  function nativeError(d) {
+    if (!DYN) return;
+    var key = String((d && d.key) || '');
+    tailTrace('engine error ' + (key || '?') + ' ' + ((d && (d.name || d.code)) || '') + ((d && d.now) ? ', now on ' + d.now : ', stopped'));
+    if (!key) return;
+    var t = (dynNQ.map[key] && dynNQ.map[key].t) || null;
+    if (!t) {
+      resolveDynChain();
+      (dynChain || []).forEach(function (u) { if (!t && u && String(u.dynKey || u.prefix || '') === key) t = u; });
+    }
+    if (!t) return;
+    dynDropUnitSession(t, 'the engine could not play it');
+    dynAheadKick('engine error');   // it is behind or ahead of where the engine is now: rebuild it there
+  }
+  var DYN_PLAY_WATCH_MS = 2500;
+  var naWatch = null;     // { src, timer } while a resumed Play waits for the engine's `playing`
+  function nativePlayWatch(src) {
+    if (!NA_QUEUE || !DYN) return;
+    if (naWatch) clearTimeout(naWatch.timer);
+    var w = { src: src, timer: 0, at: Date.now() };
+    naWatch = w;
+    w.timer = setTimeout(function () {
+      if (naWatch !== w) return;
+      naWatch = null;
+      if (mainAudio.src !== w.src || mainAudio.paused) return;   // re-sourced or paused meanwhile: not ours
+      dynPlayStalled();
+    }, DYN_PLAY_WATCH_MS);
+  }
+  if (NA && NATIVE) mainAudio.addEventListener('playstate', function () {
+    if (naWatch && !mainAudio.paused) { clearTimeout(naWatch.timer); naWatch = null; }
+  });
+  /* …and a FRESH tick counts as alive too: the plugin's ticker runs only while the engine plays
+     (T1's note), so a tick sampled after the Play proves it started even if no `playing` edge came. */
+  if (NA && NATIVE) mainAudio.addEventListener('timeupdate', function () {
+    if (naWatch && mainAudio.tickAt && mainAudio.tickAt >= naWatch.at) { clearTimeout(naWatch.timer); naWatch = null; }
+  });
+  function dynPlayStalled() {
+    var ns = dynAdopted ? dynUnitNs(dynAdopted) : DYN_KEY_NS;
+    var meta = ns ? dynReadMeta(ns, currentMode) : null;
+    var file = (dynSession && dynSession.file) || (meta && meta.file) || null;
+    var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+    var there = (FS && FS.stat && file)
+      ? FS.stat({ path: file, directory: 'DATA' }).then(function () { return true; }, function () { return false; })
+      : Promise.resolve(!!file);
+    there.then(function (ok) {
+      tailTrace('play: no start in ' + (DYN_PLAY_WATCH_MS / 1000) + ' s; the session file is ' + (ok ? 'there: preparing it again' : 'gone: rebuilding'));
+      if (!ok) {
+        if (dynAdopted) dynDropUnitSession(dynAdopted, 'its file is gone');
+        else if (meta) dynEvictSession({ lsKey: dynMetaLsKey(DYN_KEY_NS, currentMode), ns: DYN_KEY_NS, mode: currentMode, ext: meta.ext || 'wav', file: meta.file || null });
+      }
+      dynDropHeld('stalled');                      // keep the sentence; the next play re-resolves
+      if (mainAudio.reprepare) mainAudio.reprepare();
+      try { mainAudio.pause(); } catch (_) {}      // the shim thinks it is playing; the Play path below starts it
+      togglePlay();
+    });
   }
 
   mainAudio.addEventListener('timeupdate', function () {
@@ -10776,11 +11067,22 @@
       : mainTailAction(mainAudio.currentTime || 0, mainAudio.duration, mainAudio.paused,
                        { repeat: repeatOn && !NA_LOOP, autoplay: autoplayOn && !engineHops,
                          dyn: DYN, lead: DYN_TAIL_LEAD_S });
+    /* r254 (A4): THE LAST CALL. Once per unit, DYN_AHEAD_LASTCALL_S before it ends, a build-ahead
+       pass: if the next unit is still not built with today's settings it is built now, while this
+       one plays, so the engine (app) rolls on natively and the web's pre-advance finds it ready.
+       Neither has to start audio after `ended` (§7 of TE_ET_RETIREMENT.md). */
+    if (DYN && !tailStale && !mainAudio.paused) {
+      var lcD = mainAudio.duration, lcT = mainAudio.currentTime || 0;
+      if (lcD && isFinite(lcD) && lcD - lcT > 0 && lcD - lcT <= DYN_AHEAD_LASTCALL_S) {
+        var lcId = String(mainAudio.src || '') + '|' + Math.round(lcD);
+        if (lcId !== dynAheadCalled) { dynAheadCalled = lcId; dynAheadKick('last call'); }
+      }
+    }
     if (tailAct === 'advance' && !dynPreAdvanced) {
       dynPreAdvanced = true;   // once per track; cleared whenever a new source is set
       dynLog('AUTO pre-advance at ' + mainAudio.currentTime.toFixed(1) + '/' + mainAudio.duration.toFixed(1));
       tailTrace('PRE-ADVANCE at ' + tailPos());
-      advanceTopic(1);
+      advanceTopic(1, true);
     } else if (tailAct === 'loop' && !dynPreLooped) {
       /* ⚠ SEEK, DO NOT STOP AND RESTART. The element keeps playing across a seek, so the audio
          session never goes inactive and nothing has to be re-prepared — which is the whole reason
@@ -10819,7 +11121,7 @@
       mainAudio.play().then(function () { setMainIcon(true); }).catch(function () {});
       return;
     }
-    if (autoplayOn) advanceTopic(1);
+    if (autoplayOn) advanceTopic(1, true);   // r254: autoplay's, so it never stacks on a pending hidden hop
   });
   // Dyn + web: after a lock/unlock the OS may have paused the <audio> without our icon ever
   // hearing about it — re-sync the play glyph from the element's real state on return.
@@ -10893,6 +11195,8 @@
       }).catch(function (e) { setMainIcon(false); handleDenied(e, mainTier); });
     } else {
       if (DYN && !dynPosStale) dynLastPos = mainAudio.currentTime || dynLastPos;   // remember where we paused
+      // r254 (R1 #2): a pause cancels a hidden hop still building; landing it would start the audio again.
+      if (DYN && dynPendingHop) { tailTrace('hop (hidden) → ' + (dynPendingHop.t.dynKey || dynPendingHop.t.prefix) + ' cancelled: paused'); dynPendingHop = null; }
       mainAudio.pause(); setMainIcon(false); writeWebResume(true);
     }
     resumeMainAfter = false;   // a manual tap on the top player overrides auto-resume
@@ -11091,36 +11395,52 @@
     return null;
   }
 
-  function advanceTopic(dir) {
+  // `auto` (r254): the hop is autoplay's (the pre-advance, the `ended` fallback), not a press.
+  function advanceTopic(dir, auto) {
     // Dyn pages (round-11): walk the CHAIN in place — audio swaps, the page never navigates.
     if (DYN) {
       resolveDynChain();   // D4 first-use lazy retry — see resolveDynChain's own note
       // Round-11: prev/next ALWAYS moves the chain pointer and swaps audio IN PLACE —
-      // never a navigation. When locked, units with nothing playable (no persisted
-      // session, no placeholder) are skipped, mirroring classic's nextPlayable walk;
-      // in the foreground anything can be built, so nothing is skipped.
+      // never a navigation. Units with nothing playable (no session, and nothing to build
+      // from) are skipped, mirroring classic's nextPlayable walk.
       if (!dynChain || dynChain.length < 2) { dynLog('advanceTopic: no chain'); return; }
+      // r254 (A2): autoplay never stacks a second hop on a hidden one still building.
+      if (auto && dynPendingHop) { dynLog('advanceTopic: auto, a hop is already pending'); return; }
       var fg = document.visibilityState === 'visible';
-      var fromIdx = dynChainIdx;
-      var hop = dynWalk(dir, fromIdx, fg);
+      // r254: a press while a hidden hop is pending walks on from ITS target (the latest press wins).
+      var fromIdx = dynPendingHop ? dynPendingHop.idx : dynChainIdx;
+      var hop = dynWalk(dir, fromIdx);
       dynLog('advanceTopic dir=' + dir + (hop ? ' → ' + (hop.t.dynKey || hop.t.prefix) : ' (nothing playable)'));
       /* ⚠ The OUTCOME of the walk, to the boot trace. The r52 capture showed no adopt lines at all,
          which means nothing was adopted — so either the walk skipped everything (r50 working) or it
          never ran. Those are opposite conclusions and dynLog could not tell them apart, because it
          does not reach the trace. This line does. */
       if (!hop) return;
+      /* r254: back onto the unit that is still playing while a hop to another is pending (⏭ then ⏮,
+         or two presses round a two-unit chain): that cancels the pending hop and nothing else. A
+         "switch" onto the playing unit would re-source it and restart it (R1 #5). */
+      if (dynPendingHop && hop.idx === dynChainIdx) {
+        tailTrace('hop: back onto the unit playing, the pending hop is cancelled');
+        dynPendingHop = null;
+        return;
+      }
+      // r254 (A2): hidden → build first, then switch; nothing changes until then.
+      if (!fg) { dynHiddenHop(hop); return; }
+      dynPendingHop = null;          // a visible press takes over from a pending hidden one
+      var revertIdx = dynChainIdx;   // the unit playing now (not a pending target)
       dynChainIdx = hop.idx;
       if (hop.idx === dynHomeIdx) { dynReturnLocal(); return; }
-      dynAdvance(hop.t, fromIdx);
+      dynAdvance(hop.t, revertIdx);
       return;
     }
     return advanceTopicClassic(dir);
   }
   /* The chain WALK, lifted out of advanceTopic (r234) so the native queue walks with exactly the
-     same rules a hop does — never a second copy of the skip logic. `fg` is advanceTopic's
-     "can we build here" (visible); the queue always passes false, because a unit reached by the
-     engine on its own is reached exactly as a locked hop would reach it. */
-  function dynWalk(dir, fromIdx, fg) {
+     same rules a hop does — never a second copy of the skip logic. r254: ONE walk. Until then `fg`
+     ("can we build here") split it in two, and the queue walked as a locked hop that could not
+     build; every hop can build now (A2), and the queue holds the units THIS walk reaches while they
+     are built (A3), so the engine's order and the page's order cannot differ. */
+  function dynWalk(dir, fromIdx) {
       if (!dynChain || dynChain.length < 2) return null;
       var hop = null, probe = fromIdx, guardN = dynChain.length;
       while (guardN-- > 0) {
@@ -11150,7 +11470,7 @@
            ⚠ NOT gated on navigator.onLine, which this file says LIES in the WebView in three
            places. dynChainPlayable() already asks the honest question; it simply was not being
            asked. */
-        if (dynChainPlayable(stp.t, stp.idx, fg)) { hop = stp; break; }
+        if (dynChainPlayable(stp.t, stp.idx)) { hop = stp; break; }
         dynLog('chain skip ' + (stp.t.dynKey || stp.t.prefix) + ' (nothing playable)');
       }
       return hop;
@@ -12223,7 +12543,8 @@
     return {
       build: DYN_BUILD, dyn: !!DYN, native: !!NATIVE, mode: currentMode, ns: DYN_KEY_NS,
       sess: !!dynSession, display: !!(dynSession && dynSession.display), local: dynSessionIsLocal,
-      attached: dynAttached, stdRemote: dynStdRemote,
+      attached: dynAttached,
+      pendingHop: dynPendingHop ? String(dynPendingHop.t.dynKey || dynPendingHop.t.prefix || '') : null,   // r254 (A2)
       adopted: dynAdopted ? (dynAdopted.page || '?') : null,
       chainIdx: dynChainIdx, homeIdx: dynHomeIdx, chainLen: dynChain ? dynChain.length : 0,
       mapLen: m ? m.length : 0, blk: blk, lastLive: dynLastLive,

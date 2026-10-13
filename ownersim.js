@@ -1145,19 +1145,16 @@
      show even when the trace is empty, so it can be switched off before it writes anything.
      ⚠ An older player.js ignores the switch; the player.js line under "downloads" says which runs. */
   var TAIL_OFF = 'te_tail_trace_off';
-  /* r250 / sw v815 - W98 Step 1, THE IPHONE PROBE (TE_ET_RETIREMENT.md section 4). "Test: build
-     while locked" sets te_probe_hidden: player.js r250+ then lets the WEB build-ahead start while
-     the page is hidden and writes this same trace on the web, each line tagged (hidden)/(visible).
-     Turning it on arms and empties the trace. Copy puts the lines on the clipboard for chat.
-     Remove with Release A. */
-  var PROBE_KEY = 'te_probe_hidden';
+  /* Copy (r250 / sw v815) puts the lines on the clipboard for chat: the app's panel text cannot be
+     selected on the phone. The r250 iPhone probe's "Test: build while locked" switch went with
+     Release A (sw v819, player.js r254): it measured that a locked iPhone builds, and the web now
+     builds while hidden for everyone (TE_ET_RETIREMENT.md section 4). */
   function tailTracePaint(span, esc) {
     if (!span) return;
     var a = null;
     try { a = JSON.parse(localStorage.getItem('te_tail_trace') || 'null'); } catch (_) {}
     if (!Array.isArray(a)) a = [];
     var on = get(TAIL_OFF) !== '1';
-    var probe = get(PROBE_KEY) === '1';
     var pad = function (n) { return ('0' + n).slice(-2); };
     var prev = 0;
     var btn = SWBTN + ';padding:1px 6px;font-size:11px';
@@ -1166,10 +1163,8 @@
       ' · ' + (a.length ? a.length + ' line' + (a.length === 1 ? '' : 's') + ', oldest first' : 'empty') + ' ' +
       '<button type="button" data-tailarm style="' + btn + '">' + (on ? 'Disarm' : 'Arm') + '</button> ' +
       '<button type="button" data-tailclear style="' + btn + '"' + (a.length ? '' : ' disabled') + '>Clear</button> ' +
-      '<button type="button" data-tailcopy style="' + btn + '"' + (a.length ? '' : ' disabled') + '>Copy</button> ' +
-      '<button type="button" data-tailprobe style="' + btn + '">' +
-        (probe ? 'Test: build while locked: <b>ON</b>' : 'Test: build while locked: off') + '</button>' +
-      (a.length ? '' : '<br>(the Android app writes it while a topic plays; on the web, only with the test on)') +
+      '<button type="button" data-tailcopy style="' + btn + '"' + (a.length ? '' : ' disabled') + '>Copy</button>' +
+      (a.length ? '' : '<br>(the Android app writes it while a topic plays)') +
       a.map(function (r) {
         var d = new Date(r[0]);
         var step = prev ? ' +' + ((r[0] - prev) / 1000).toFixed(1) + 's' : '';
@@ -1180,13 +1175,6 @@
     var arm = span.querySelector('[data-tailarm]');
     if (arm) arm.addEventListener('click', function () {
       set(TAIL_OFF, on ? '1' : null);
-      tailTracePaint(span, esc);
-    });
-    var pb = span.querySelector('[data-tailprobe]');
-    if (pb) pb.addEventListener('click', function () {
-      // Turning it on starts a clean capture: the trace armed and emptied.
-      if (!probe) { set(TAIL_OFF, null); try { localStorage.removeItem('te_tail_trace'); } catch (_) {} }
-      set(PROBE_KEY, probe ? null : '1');
       tailTracePaint(span, esc);
     });
     var cp = span.querySelector('[data-tailcopy]');

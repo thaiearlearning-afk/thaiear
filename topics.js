@@ -596,8 +596,8 @@
      ⚠⚠ THE MAP CARRIES TWO SCHEMES AT ONCE, ON PURPOSE (2026-08-27, AUDIO_VERSIONS_MIGRATION_PLAN.md).
        "<Prefix>"    → the ORIGINAL value: md5 of the two combined _TE/_ET files.
        "<Prefix>#c"  → "c1:<hex>", derived from the per-sentence CLIPS that are actually played.
-     The clip-derived stamp is the real answer — the combined pair is reached only by a lock-screen
-     hop — but the old key must stay and must keep its value, because a client that predates this
+     The clip-derived stamp is the real answer — since player.js r254 (sw v819) nothing plays the
+     combined pair at all — but the old key must stay and must keep its value, because a client that predates this
      is still reading it. An ADDITIONAL key is invisible to such a client; a changed value would
      tell it that every downloaded topic had changed at once. */
   function avPick(map, prefix) {
