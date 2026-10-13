@@ -384,8 +384,10 @@
       }),
       quiz: {
         q3: d.vocab.map(function (c) {
+          /* nx: words this card must never be offered beside as a WRONG option - they also answer it
+             (quiz.js barred(); the data builder computes them from every card's meanings). */
           return { th: c.de, en: c[L], tl: '', pos: c.pos, num: c.num, hl: c.hl, xt: c.xt,
-            appears: c.appears, first: c.first };
+            appears: c.appears, first: c.first, nx: c.nx || [] };
         }),
         q3x: d.pool.map(function (c) { return { th: c.de, en: c[L], tl: '', pos: c.pos }; })
       },
