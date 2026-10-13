@@ -379,7 +379,10 @@
     me.topics.forEach(function (t) { names[t.prefix] = t['name_' + L] || t.name_en; });
     var chain = me.topics.map(function (t) {
       return { page: 'v?t=' + t.key, prefix: t.prefix, tier: 'member', name: names[t.prefix],
-        dynKey: t.prefix, nums: (t.secs || []).map(function (x) { return x[0]; }), noStd: true };
+        dynKey: t.prefix, nums: (t.secs || []).map(function (x) { return x[0]; }), noStd: true,
+        // r262: each sentence's syllables (the data's third field), so a build from ANOTHER unit's page sizes
+        // its pauses as this unit's own page does. Older data has none: the player falls back to the floor.
+        syl: (t.secs || []).reduce(function (m, x) { if (x[2] > 0) m[x[0]] = x[2]; return m; }, {}) };
     });
     return {
       dyn: true, style2: true, ssr: false, tier: 'member',
