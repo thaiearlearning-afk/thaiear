@@ -948,101 +948,33 @@
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') npCheck(); });
     npCheck();
 
-    // ---- track control on NON-topic pages (no player.js here, so the lock-screen ⏮/⏭/autoplay would
-    //      otherwise do nothing). Advances the persistent native player straight from this page. ----
-    const AUDIO_BASE = 'https://audio.thaiear.com';
+    /* ---- track control on pages WITHOUT a player (home, account …; the app only) ----
+       ⛔ r261 (TE_ET_RETIREMENT.md map A, owner 2026-10-13): THIS PAGE NEVER STARTS A UNIT ITSELF. Until
+       r261 a lock-screen ⏭/⏮ past the engine's queue, and autoplay's `ended`, prepared the next unit's
+       COMBINED _TE/_ET track from here: the last path that still played one after Release A. A page
+       without player.js cannot BUILD a session, so it does what a locked phone does (the owner's
+       decision 3): the engine moves through the units the player page queued (built ones, natively),
+       and past them it STOPS at the end of a unit. A press past the queue changes nothing; opening a
+       topic page carries on from there. Repeat still loops the unit (the engine's own, since v8). */
     if (!window.ThaiEarTopics && !document.getElementById('te-topics-js')) {
       const sc = document.createElement('script'); sc.id = 'te-topics-js'; sc.src = 'topics.js'; sc.defer = true;
-      document.head.appendChild(sc);                           // need the topic list for next/prev
-    }
-    function isDl(prefix) { try { return !!JSON.parse(localStorage.getItem('thaiear_offline') || '{}')[prefix]; } catch (_) { return false; } }
-    // Same premium offline-licence rule as the topic player — applied here so an expired member can't
-    // advance into a downloaded premium topic from a non-topic page. KEEP OFFLINE_GRACE_MS IN SYNC WITH
-    // player.js (1 min for testing → 30 days for prod).
-    const OFFLINE_GRACE_MS = 50 * 24 * 60 * 60 * 1000;   // 50 days (prod) — keep in sync with player.js
-    function canUseOffline(tier) {
-      if (tier !== 'premium') return true;
-      try { if (localStorage.getItem('thaiear_lifetime') === '1') return true; } catch (_) {} // lifetime → no offline timeout
-      const a = window.ThaiEarAuth, subbed = a && a.isSubscribed && a.isSubscribed();
-      // Only GRANT on the online fast-path — never DENY from it (navigator.onLine lies in the WebView,
-      // reporting online in airplane mode / at cold start). Denial = grace window + end-date below only.
-      if (navigator.onLine && subbed) return true;
-      // Trust the captured real end date when present (correct billing semantics); the backstop window
-      // is only a fallback for when no end date was captured. KEEP IN SYNC WITH player.js canUseOffline.
-      const last = parseInt(localStorage.getItem('thaiear_lastVerified') || '0', 10);
-      const until = parseInt(localStorage.getItem('thaiear_sub_until') || '0', 10);
-      if (until && Date.now() < until) return true;   // valid captured end date
-      return !!last && (Date.now() - last) < OFFLINE_GRACE_MS;   // fallback: verified within backstop
-    }
-    function remoteUrl(file, access) {
-      if (access !== 'member' && access !== 'premium') return Promise.resolve(AUDIO_BASE + '/' + file);
-      const tok = window.ThaiEarAuth && window.ThaiEarAuth.getAccessToken && window.ThaiEarAuth.getAccessToken();
-      if (!tok) return Promise.reject({ code: 'noauth' });
-      return fetch('/api/audio?file=' + encodeURIComponent(file), { headers: { Authorization: 'Bearer ' + tok } })
-        .then(function (r) { if (!r.ok) return Promise.reject({ code: r.status }); return r.json(); })
-        .then(function (j) { if (!j || !j.url) return Promise.reject({ code: 'nourl' }); return j.url; });
-    }
-    function resolveUrl(file, prefix, access) {
-      const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
-      if (FS && isDl(prefix) && canUseOffline(access)) {       // offline: prefer the local download (if licence ok)
-        return FS.getUri({ directory: 'DATA', path: 'offline/' + prefix + '/' + file })
-          .then(function (r) { return (r && r.uri) ? r.uri : remoteUrl(file, access); })
-          .catch(function () { return remoteUrl(file, access); });
-      }
-      return remoteUrl(file, access);
+      document.head.appendChild(sc);                           // npFollow names an engine unit from it
     }
     function npGet() { try { return JSON.parse(localStorage.getItem('thaiear_np') || 'null'); } catch (_) { return null; } }
     function bareP(p) { return String(p || '').toLowerCase().replace(/\.html$/, ''); }
     function htmlPage(p) { const b = bareP(p); return b ? b + '.html' : ''; }   // the record's page form ('topic-07.html')
-    function playable(unit) {                       // genuinely playable now? (same rule as the topic player)
-      if (!unit || !unit.audio) return false;
-      const T = window.ThaiEarTopics;
-      if (navigator.onLine && T && T.canAccess && T.canAccess(unit.access)) return true;
-      return isDl(unit.audio) && canUseOffline(unit.access);
-    }
-    function nextPlayable(fromPage, dir) {          // skip non-playable topics → next that actually plays
-      const T = window.ThaiEarTopics;
-      if (!T || !T.nextAccessible) return null;
-      let page = fromPage, max = (T.liveSequence ? T.liveSequence().length : 60) + 1;
-      for (let i = 0; i < max; i++) {
-        const unit = T.nextAccessible(page, dir);
-        if (!unit || !unit.audio) return null;
-        if (playable(unit)) return unit;
-        if (bareP(unit.page) === bareP(fromPage)) return null;
-        page = unit.page;
-      }
-      return null;
-    }
-    function navAdvance(dir) {
-      const np = npGet();
-      if (!np || !np.page) return;
-      const unit = nextPlayable(np.page, dir);      // skip anything that can't actually play now
-      if (!unit || !unit.audio) return;
-      const file = unit.audio + '_' + (np.mode === 'et' ? 'ET' : 'TE') + '.mp3';
-      // r244: the engine item carries the unit's key (its page id, as player.js keys a topic) and so
-      // does the record — so a later engine check can tell whether the two still agree.
-      const key = bareP(unit.page);
-      resolveUrl(file, unit.audio, unit.access).then(function (url) {
-        return NA.prepare({ url: url, title: unit.name || 'ThaiEar', subtitle: 'ThaiEar', artwork: 'https://thaiear.com/apple-touch-icon.png', key: key })
-          .then(function () { return NA.play(); })
-          .then(function () {
-            try { localStorage.setItem('thaiear_np', JSON.stringify({ page: htmlPage(unit.page), name: unit.name, prefix: unit.audio, mode: np.mode || 'te', access: unit.access || 'free', key: key })); } catch (_) {}
-          });
-      }).catch(function () {});
-    }
     NA.addListener('command', function (d) {
       if (hasPlayer()) return;                  // player.js took over on this page
       const a = d && d.action;
-      if (a === 'thaiear.NEXT') navAdvance(1);
-      else if (a === 'thaiear.PREV') navAdvance(-1);
-      else if (a === 'thaiear.REPEAT') { try { localStorage.setItem('thaiear_repeat', localStorage.getItem('thaiear_repeat') === '1' ? '0' : '1'); } catch (_) {} }
+      // thaiear.NEXT / thaiear.PREV past the queue: nothing to play here (see above).
+      if (a === 'thaiear.REPEAT') { try { localStorage.setItem('thaiear_repeat', localStorage.getItem('thaiear_repeat') === '1' ? '0' : '1'); } catch (_) {} }
     });
     NA.addListener('ended', function () {
       if (hasPlayer()) return;                  // player.js took over on this page
-      let rep = false, auto = false;
-      try { rep = localStorage.getItem('thaiear_repeat') === '1'; auto = localStorage.getItem('thaiear_autoplay') === '1'; } catch (_) {}
+      let rep = false;
+      try { rep = localStorage.getItem('thaiear_repeat') === '1'; } catch (_) {}
       if (rep) { NA.seekTo({ seconds: 0 }).then(function () { NA.play(); }).catch(function () {}); }   // repeat-one
-      else if (auto) { navAdvance(1); }                                                                // autoplay continues off-page
+      // Autoplay: the built units have run out, so it stops here (r261), as on a locked phone.
     });
   }
 
