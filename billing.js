@@ -331,8 +331,32 @@
                          : fail('owned_by_other_account');
       });
     }).then(function (r) {
-      if (r.ok) { try { var a = auth(); if (a && a.refreshSubscription) a.refreshSubscription(); } catch (_) {} }
-      return r;
+      if (!r.ok) return r;
+      return confirmed().then(function () { return r; });
+    });
+  }
+  /* ⚠ AFTER A PURCHASE, WAIT UNTIL THIS DEVICE KNOWS (owner's test, 2026-10-13: "welcome", the sheet
+     went, and the Premium audio still opened the sheet; leaving the topic and coming back played it).
+     The re-read of the row was STARTED and the page reloaded before it landed, so the new page had
+     neither the fresh answer nor the offline licence stamps that read writes, and refused until its
+     own read finished. So: re-read, then wait (up to CONFIRM_MS) for auth.js to report Premium from a
+     FRESH read, which is also when it has stamped the licence and cached the row. A device that
+     never confirms (the server's row comes from the webhook a minute later) still goes on: the
+     purchase stands, and the page's own read will catch up. */
+  var CONFIRM_MS = 8000;
+  function confirmed() {
+    var a = auth();
+    if (!a || !a.refreshSubscription) return Promise.resolve(false);
+    try { a.refreshSubscription(); } catch (_) {}
+    var t0 = Date.now();
+    return new Promise(function (res) {
+      (function tick() {
+        var ok = false;
+        try { ok = !!(a.isSubscriptionFresh && a.isSubscriptionFresh() && a.isSubscribed && a.isSubscribed()); } catch (_) {}
+        if (ok) { res(true); return; }
+        if (Date.now() - t0 > CONFIRM_MS) { res(false); return; }
+        setTimeout(tick, 250);
+      })();
     });
   }
   /* The words for a purchase() answer: { text, error }. '' = say nothing (the buyer closed the

@@ -183,7 +183,7 @@
   /* Same reason: the consent answer arrives from Supabase after first paint, and an empty
      wrapper in a gap:10px column is a visible 10px of nothing until it does. */
   #consent-area { display: flex; flex-direction: column; gap: 10px; }
-  /* The Subscribe slot inside the Google Play card (renderRateBox): its button, line and status
+  /* The membership slot inside the Google Play card (renderRateBox): its button, line and status
      stack with the card's own 10px rhythm; empty, the stack's `> div:empty` rule removes it. */
   #gp-subscribe { display: flex; flex-direction: column; gap: 10px; }
   #consent-area:empty { display: none; }
@@ -786,8 +786,10 @@ function subscribeGooglePlay() {
    Store app, not a page inside the webview. */
 /* ⭐ ONE GOOGLE PLAY CARD (owner, 2026-10-13: Subscribe with Google Play "should be grouped with
    the rate ThaiEar on Google Play — the rate can sit above it since it has no writing underneath").
-   This card holds Rate, then a slot (#gp-subscribe) that renderMembershipBox fills with Subscribe
-   and its line for a free member. ⚠ DRAWN ONLY WHEN ITS STATE CHANGES: renderAccount calls this on
+   This card holds Rate, then a slot (#gp-subscribe) that renderMembershipBox fills with the
+   membership button, whatever form it takes: Subscribe + its line for a free member, Manage in
+   Google Play for a Google member (owner, same day: "the rate button always should sit above the
+   membership button"). ⚠ DRAWN ONLY WHEN ITS STATE CHANGES: renderAccount calls this on
    every auth notify, and rewriting it each time would empty the slot until the next membership
    render (which runs only when the tier changes), so Subscribe would vanish. */
 var _rateDrawn = null;
@@ -818,7 +820,8 @@ function renderMembershipBox(s) {
      Upgrade island under an active subscription — which is exactly the kind of thing the
      Stripe refine exists to correct. */
   function setCancel(html) { if (cancelSlot) cancelSlot.innerHTML = html || ''; }
-  /* The fifth destination: Subscribe with Google Play, inside the Google Play card under Rate.
+  /* The fifth destination: the app's membership button (Subscribe, or Manage in Google Play),
+     inside the Google Play card under Rate.
      Every branch sets it too, so a tier change never leaves a stale Subscribe behind. */
   function setGp(html) { var g = document.getElementById('gp-subscribe'); if (g) g.innerHTML = html || ''; }
   /* ⚠ ONE FUNCTION, TWO DESTINATIONS, AND THAT IS THE POINT. The statement of what you have
@@ -850,9 +853,16 @@ function renderMembershipBox(s) {
       : 'Membership: <strong style="color:#B29234">Premium</strong>' +
         (s.cancel_at_period_end && gEnd ? ' — active until ' + gEnd + ', won’t renew' : ' (active)') +
         '<br><span class="acct-muted">Billed through Google Play.</span>';
-    acts.innerHTML = '<a class="btn btn-primary btn-wide" href="' + playManageUrl() + '"' +
+    var manage = '<a class="btn btn-primary btn-wide" href="' + playManageUrl() + '"' +
       (native ? '' : ' target="_blank" rel="noopener"') +
       ' style="text-decoration:none">Manage in Google Play</a>';
+    /* ⭐ RATE ALWAYS SITS ABOVE THE MEMBERSHIP BUTTON, WHATEVER FORM IT TAKES (owner, 2026-10-13).
+       In the app the Google Play card exists (renderRateBox), so Manage goes into it under Rate,
+       where Subscribe sits for a free member. The website has no Rate card: Manage stays in the
+       main stack there. */
+    var inCard = native && document.getElementById('gp-subscribe');
+    acts.innerHTML = inCard ? '' : manage;
+    setGp(inCard ? manage : '');
     return;
   }
   if (s && s.subscribed) {
