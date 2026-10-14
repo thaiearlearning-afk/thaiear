@@ -422,25 +422,26 @@ function upgradeStripe(currency) {
    disagree with ours. This button's checkout is fixed to /api/price's `paypal.currency` (the price
    shown, or US dollars where that is baht), so PayPal is always on it. ⛔ The note sits UNDER the
    PayPal button, never between the two buttons (owner, 2026-10-15). Same as subscribe.html. */
-var PAYPAL = null, paypalAsked = false;
+/* ⚠ DRAWN WITH UPGRADE, NEVER WAITING FOR THE PRICE (owner, 2026-10-15: it popped in late). Only
+   the currency comes from /api/price, fetched as the card is drawn; a tap before it answers waits
+   for it (paypalCurrency), and with no answer at all uses pounds, the Price's default. */
+var PAYPAL = null, paypalAsked = null;
 function paypalHtml() {
-  if (!PAYPAL) return '';
   // no price on the button: Upgrade shows none either. The note goes UNDER it (owner, 2026-10-15).
   return '<button class="btn btn-gold btn-wide" onclick="upgradePayPal()">Pay with PayPal</button>' +
     '<p class="acct-muted" style="margin:0;font-size:12.5px;line-height:1.5;text-align:center">Want to pay with PayPal but can’t see it at checkout? Use this button instead.</p>';
 }
-function upgradePayPal() { if (PAYPAL) upgradeStripe(String(PAYPAL.currency).toLowerCase()); }
+function upgradePayPal() {
+  loadPayPal().then(function () { upgradeStripe(String(PAYPAL ? PAYPAL.currency : 'GBP').toLowerCase()); });
+}
 function loadPayPal() {
-  if (paypalAsked) return;
-  paypalAsked = true;
+  if (paypalAsked) return paypalAsked;
   // ?cc=TH on this page passes through to /api/price: see another country's buttons (testing).
   var cc = (location.search.match(/[?&]cc=([A-Za-z]{2})(?:&|$)/) || [])[1];
-  fetch('/api/price' + (cc ? '?cc=' + cc : '')).then(function (r) { return r.json(); }).then(function (p) {
-    if (!(p && p.paypal)) return;
-    PAYPAL = p.paypal;
-    var up = document.getElementById('upgrade-status');
-    if (up) up.insertAdjacentHTML('beforebegin', paypalHtml());
+  paypalAsked = fetch('/api/price' + (cc ? '?cc=' + cc : '')).then(function (r) { return r.json(); }).then(function (p) {
+    if (p && p.paypal) PAYPAL = p.paypal;
   }).catch(function () {});
+  return paypalAsked;
 }
 // Back from Stripe restores this page from the bfcache, still saying "Opening checkout…".
 window.addEventListener('pageshow', function (e) {

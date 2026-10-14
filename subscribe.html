@@ -171,8 +171,11 @@
          fixed to a currency PayPal takes, so PayPal is on it even when Stripe's own location
          lookup would have picked baht. ⛔ The note sits UNDER the PayPal button, never between
          the two buttons (owner, 2026-10-15). -->
-    <button class="btn btn-primary btn-paypal" id="paypal-btn" hidden>Pay with PayPal</button>
-    <p class="paypal-note" id="paypal-note" hidden></p>
+    <!-- ⚠ VISIBLE FROM THE FIRST PAINT (owner, 2026-10-15: it popped in ~6 s late, waiting for the
+         price and the sign-in check). The app hides it synchronously below; its currency is looked
+         up on the tap if the price has not answered yet. -->
+    <button class="btn btn-primary btn-paypal" id="paypal-btn">Pay with PayPal</button>
+    <p class="paypal-note" id="paypal-note">Want to pay with PayPal but can’t see it at checkout? Use this button instead.</p>
     <p class="sub-status" id="sub-status"></p>
     <p id="sub-terms" style="font-size:12px;color:var(--text-tertiary);text-align:center;margin-top:0.9rem;line-height:1.6">
       By subscribing you agree to our <a href="terms" style="color:var(--accent);text-decoration:none">Terms</a>
@@ -212,6 +215,8 @@ function gpApp() {
 /* Google's terms, not ours, govern billing and refunds for a Google purchase: the small print says
    so. Set here, synchronously, before the first paint (this script follows the elements). */
 (function () {
+  // Never in the app: hidden before the first paint, not after the price or sign-in answers.
+  if (gpApp() || isNativeApp()) renderPayPal(false);
   if (!gpApp()) return;
   var t = document.getElementById('sub-terms');
   if (t) t.innerHTML = 'Billed monthly by Google Play, and renews until you cancel it in the Play Store. ' +
@@ -326,7 +331,9 @@ function renderSub() {
   var el = document.getElementById('sub-status');
   if (!btn || !el) return;
   var a = window.ThaiEarAuth;
-  renderPayPal(false);
+  // The PayPal backup: every website visitor except a known member (no wait on the price or sign-in).
+  renderPayPal(!gpApp() && !isNativeApp() && !(a && a.isNative && a.isNative()) &&
+    !(a && a.isReady && a.getUser && a.getUser() && a.isSubscribed && a.isSubscribed()));
   if (gpApp()) {
     var gu = a && a.isReady && a.getUser && a.getUser();
     if (gu && a.isSubscribed && a.isSubscribed()) {
@@ -357,7 +364,6 @@ function renderSub() {
   } else {
     btn.disabled = false;
     btn.textContent = user ? (PRICE ? 'Subscribe — ' + PRICE : 'Subscribe') : 'Sign in to subscribe';
-    renderPayPal(true);
     el.innerHTML = user
       ? 'Signed in as <strong>' + esc(user.username || user.email) + '</strong>.'
       : 'It’s a free Google sign-in first, then checkout.';
@@ -369,16 +375,20 @@ function renderSub() {
    baht), so PayPal is always on it. Same rule and wording as account.html's. */
 function renderPayPal(show) {
   var b = document.getElementById('paypal-btn'), n = document.getElementById('paypal-note');
-  if (!b || !n) return;
-  var on = !!(show && PAYPAL);
-  b.hidden = n.hidden = !on;
-  if (!on || b.disabled) return;
-  b.textContent = 'Pay with PayPal';   // no price: it is the one shown just above (owner, 2026-10-15)
-  n.textContent = 'Want to pay with PayPal but can’t see it at checkout? Use this button instead.';
+  if (b && n) b.hidden = n.hidden = !show;
 }
 document.getElementById('subscribe-btn').addEventListener('click', function () { startCheckout(); });
+/* The currency is normally known by the tap. If the price has not answered yet, ask now; with no
+   answer at all, pounds (the Price's default, and a currency PayPal takes). */
 document.getElementById('paypal-btn').addEventListener('click', function () {
-  if (PAYPAL) startCheckout(String(PAYPAL.currency).toLowerCase());
+  if (PAYPAL) { startCheckout(String(PAYPAL.currency).toLowerCase()); return; }
+  var b = document.getElementById('paypal-btn');
+  if (b.disabled) return;
+  b.disabled = true;
+  var cc = (location.search.match(/[?&]cc=([A-Za-z]{2})(?:&|$)/) || [])[1];
+  fetch('/api/price' + (cc ? '?cc=' + cc : '')).then(function (r) { return r.json(); })
+    .then(function (p) { return p && p.paypal ? p.paypal.currency : 'GBP'; }, function () { return 'GBP'; })
+    .then(function (cur) { b.disabled = false; startCheckout(String(cur).toLowerCase()); });
 });
 window.addEventListener('thaiear:auth', renderSub);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderSub);
