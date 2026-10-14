@@ -69,7 +69,20 @@ async function handle({ request, env }) {
   p.set('customer_update[address]', 'auto'); // let Stripe Tax save the collected address
   p.set('automatic_tax[enabled]', 'true');   // VAT/sales tax by buyer location
 
-  const res = await createSession(env, p);
+  /* A REQUIRED "I agree to the Terms" tick box on Stripe's page (owner, 2026-10-15). The account
+     page's Upgrade now skips subscribe.html, the page whose small print said "By subscribing you
+     agree to our Terms", so the agreement moves onto Stripe's page for every route.
+     ⚠ Stripe refuses the WHOLE session unless a Terms of service URL is saved in the Dashboard
+     (Settings → Business → Public details). So on a terms error we retry without the box: a
+     missing setting costs the tick box, never the sale. */
+  const t = new URLSearchParams(p);
+  t.set('consent_collection[terms_of_service]', 'required');
+  t.set('custom_text[terms_of_service_acceptance][message]',
+    'I agree to the ThaiEar [Terms](' + site + '/terms) and have read the [Privacy Policy](' + site + '/privacy).');
+  let res = await createSession(env, t);
+  if (!res.ok && /terms of service|terms_of_service|consent/i.test(String(res.data && res.data.error && res.data.error.message))) {
+    res = await createSession(env, p);
+  }
   if (!res.ok) return json({ error: 'stripe_error', detail: res.data && res.data.error && res.data.error.message }, 502);
   return json({ url: res.data.url }, 200);
 }
