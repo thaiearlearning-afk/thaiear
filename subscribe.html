@@ -373,7 +373,7 @@ function renderPayPal(show) {
   var on = !!(show && PAYPAL);
   b.hidden = n.hidden = !on;
   if (!on || b.disabled) return;
-  b.textContent = 'Pay with PayPal — ' + PAYPAL.display + '/month';
+  b.textContent = 'Pay with PayPal';   // no price: it is the one shown just above (owner, 2026-10-15)
   n.textContent = 'Want to pay with PayPal but can’t see it at checkout? Use this button instead.';
 }
 document.getElementById('subscribe-btn').addEventListener('click', function () { startCheckout(); });
