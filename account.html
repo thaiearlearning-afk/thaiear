@@ -429,7 +429,9 @@ function upgradePayPal() { upgradeStripe('usd'); }
 function loadPayPal() {
   if (paypalAsked) return;
   paypalAsked = true;
-  fetch('/api/price').then(function (r) { return r.json(); }).then(function (p) {
+  // ?cc=TH on this page passes through to /api/price: see another country's buttons (testing).
+  var cc = (location.search.match(/[?&]cc=([A-Za-z]{2})(?:&|$)/) || [])[1];
+  fetch('/api/price' + (cc ? '?cc=' + cc : '')).then(function (r) { return r.json(); }).then(function (p) {
     if (!(p && p.paypal)) return;
     PAYPAL = p.paypal;
     var up = document.getElementById('upgrade-status');

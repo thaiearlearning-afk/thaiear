@@ -235,7 +235,9 @@ function loadPrice() {
     if (pv) pv.style.visibility = '';
     renderSub();
   }
-  fetch('/api/price').then(function (r) { return r.json(); }).then(function (p) {
+  // ?cc=TH on this page passes through to /api/price: see another country's price and buttons (testing).
+  var cc = (location.search.match(/[?&]cc=([A-Za-z]{2})(?:&|$)/) || [])[1];
+  fetch('/api/price' + (cc ? '?cc=' + cc : '')).then(function (r) { return r.json(); }).then(function (p) {
     show(p && p.display && p.interval ? p : null);
   }).catch(function () { show(null); });
   /* In the app the store charges ITS price for the buyer's Play country, so that replaces ours
