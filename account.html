@@ -422,7 +422,7 @@ function upgradeStripe(currency) {
 var PAYPAL = null, paypalAsked = false;
 function paypalHtml() {
   if (!PAYPAL) return '';
-  return '<button class="btn btn-gold btn-wide" onclick="upgradePayPal()">Pay with PayPal — ' + esc(PAYPAL.display) + '/month</button>' +
+  return '<button class="btn btn-gold btn-wide" onclick="upgradePayPal()">Pay with PayPal</button>' +   // no price: Upgrade shows none either (owner, 2026-10-15)
     '<p class="acct-muted" style="margin:0;font-size:12.5px;line-height:1.5;text-align:center">PayPal can’t take payments in ' + esc(PAYPAL.local) + ', so this one is charged in US dollars.</p>';
 }
 function upgradePayPal() { upgradeStripe('usd'); }
@@ -1018,10 +1018,13 @@ function renderMembershipBox(s) {
     /* Upgrade goes STRAIGHT to Stripe Checkout (owner, 2026-10-15: "this is what the button
        advertises") — the subscribe page is the advert, and a signed-in free member on their own
        account page has already been sold. Stripe's page shows the price in their currency. */
+    // .acct-stack: the same 10px column as every other card, now that PayPal can add a second button.
     setIsland(native ? '' :
+      '<div class="acct-stack">' +
       '<button class="btn btn-gold btn-wide" onclick="upgradeStripe()">Upgrade to Premium</button>' +
       paypalHtml() +
-      '<p id="upgrade-status" class="acct-muted" style="margin:0"></p>');
+      '<p id="upgrade-status" class="acct-muted" style="margin:0"></p>' +
+      '</div>');
     if (!native) loadPayPal();
   }
 }
