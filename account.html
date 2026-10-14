@@ -387,6 +387,41 @@ function openPortal() {
     })
     .catch(function () { if (el) el.textContent = 'Could not open the billing portal. Please try again.'; });
 }
+/* Website only (the island is empty in the app; the app's purchase is Google Play's). Same call
+   as subscribe.html's startCheckout; Stripe returns to account?sub=success, or to subscribe on cancel. */
+var upgradeBusy = false;
+function upgradeStripe() {
+  if (offlineGuard('upgrade-status', 'You’re offline — reconnect to upgrade.')) return;
+  var a = window.ThaiEarAuth;
+  var token = a && a.getAccessToken && a.getAccessToken();
+  if (!token) { window.location.href = 'subscribe'; return; }
+  if (upgradeBusy) return;
+  upgradeBusy = true;
+  var el = document.getElementById('upgrade-status');
+  if (el) { el.style.color = ''; el.textContent = 'Opening checkout…'; }
+  var code;
+  fetch('/api/checkout', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ native: false })
+  })
+    .then(function (r) { code = r.status; return r.text(); })
+    .then(function (t) {
+      var j = {}; try { j = JSON.parse(t); } catch (_) {}
+      if (j && j.url) { window.location.href = j.url; return; }
+      upgradeBusy = false;
+      if (code === 409 || (j && j.error === 'already_subscribed')) { loadMembership(); return; }
+      if (el) el.textContent = 'Could not open checkout. Please try again.';
+    })
+    .catch(function () { upgradeBusy = false; if (el) el.textContent = 'Could not open checkout. Please try again.'; });
+}
+// Back from Stripe restores this page from the bfcache, still saying "Opening checkout…".
+window.addEventListener('pageshow', function (e) {
+  if (!e.persisted) return;
+  upgradeBusy = false;
+  var el = document.getElementById('upgrade-status');
+  if (el) el.textContent = '';
+});
 // On-brand confirmation modal (replaces the gray browser popups).
 // opts: { title, body(html), confirmText, cancelText, danger, requireText, onConfirm }
 function showModal(opts) {
@@ -957,8 +992,12 @@ function renderMembershipBox(s) {
         '<p class="acct-muted" style="margin:0;font-size:12.5px;line-height:1.5;text-align:center">Monthly, billed by Google Play. Cancel anytime in the Play Store.</p>' +
         '<p id="gp-status" class="acct-muted" style="margin:0"></p>'
       : '');
+    /* Upgrade goes STRAIGHT to Stripe Checkout (owner, 2026-10-15: "this is what the button
+       advertises") — the subscribe page is the advert, and a signed-in free member on their own
+       account page has already been sold. Stripe's page shows the price in their currency. */
     setIsland(native ? '' :
-      '<a class="btn btn-gold btn-wide" href="subscribe" style="text-decoration:none">Upgrade to Premium</a>');
+      '<button class="btn btn-gold btn-wide" onclick="upgradeStripe()">Upgrade to Premium</button>' +
+      '<p id="upgrade-status" class="acct-muted" style="margin:0"></p>');
   }
 }
 // Build a membership-state object from the cached Supabase subscription (instant).
