@@ -83,9 +83,11 @@ async function handle({ request, env }) {
     'for access to start immediately, so the 14-day cancellation right no longer applies once it begins. ' +
     'See our [Privacy Policy](' + site + '/privacy).');
 
-  /* "Pay with PayPal" for a visitor whose own currency PayPal cannot take (price.js `paypal`):
-     fix the session to USD, which PayPal accepts, on the same Price. Only USD is honoured. */
-  if (body && body.currency === 'usd') p.set('currency', 'usd');
+  /* The "Pay with PayPal" backup (price.js `paypal`): fix the session to the currency it names, so
+     Stripe cannot re-localise it into one PayPal cannot take. Only currencies the Price carries
+     AND PayPal accepts are honoured (THB never). */
+  const PAYPAL_OK = ['usd', 'gbp', 'eur', 'cad', 'aud', 'nzd', 'sgd', 'hkd'];
+  if (body && PAYPAL_OK.includes(body.currency)) p.set('currency', body.currency);
 
   const res = await createSession(env, p);
   if (!res.ok) return json({ error: 'stripe_error', detail: res.data && res.data.error && res.data.error.message }, 502);

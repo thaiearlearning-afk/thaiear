@@ -25,8 +25,6 @@ const SYMBOLS = { GBP: '£', USD: '$', EUR: '€', CAD: 'CA$', AUD: 'A$', NZD: '
 const LOCAL = { US: 'USD', PR: 'USD', CA: 'CAD', AU: 'AUD', NZ: 'NZD', SG: 'SGD', HK: 'HKD', TH: 'THB' };
 // The currencies PayPal through Stripe can charge in (docs.stripe.com/payments/paypal, 2026-10-15).
 const PAYPAL = 'EUR GBP USD CHF CZK DKK NOK PLN SEK AUD CAD HKD NZD SGD'.split(' ');
-// What the PayPal note calls a currency PayPal cannot take.
-const NAMES = { THB: 'baht' };
 // The euro area (Bulgaria joined 2026-01-01), then the states that use the euro by agreement.
 const EURO = 'AT BE BG CY DE EE ES FI FR GR HR IE IT LT LU LV MT NL PT SI SK AD MC SM VA ME XK'.split(' ');
 
@@ -49,14 +47,18 @@ export async function onRequestGet({ request, env }) {
     const symbol = SYMBOLS[currency] || '';
     const num = Number.isInteger(amount) ? String(amount) : amount.toFixed(2);   // £6.99, but ฿299 and HK$69
     const display = symbol ? symbol + num : num + ' ' + currency;
-    /* PayPal through Stripe cannot charge in every currency the Price carries (THB today), and
-       Stripe shows a payment method only when it can take the checkout's currency. So for such a
-       currency the answer also carries the US-dollar price: the account and subscribe pages offer
-       a PayPal button that opens a checkout fixed to USD (checkout.js `currency`). */
+    /* THE PAYPAL BACKUP (owner, 2026-10-15). Stripe shows PayPal only when it can take the
+       checkout's currency, and Stripe picks that currency from ITS OWN location lookup, which can
+       disagree with Cloudflare's (VPNs, travel eSIMs). So every website visitor gets a backup
+       "Pay with PayPal" button whose checkout is FIXED (checkout.js `currency`) to the currency
+       shown here when PayPal takes it, else to USD (baht today). A fixed currency is one Stripe
+       cannot re-localise, so PayPal is always on that page. */
     const out = { amount, currency, interval, display };
     const usd = p.currency_options && p.currency_options.usd;
-    if (!PAYPAL.includes(currency) && usd && usd.unit_amount != null) {
-      out.paypal = { currency: 'USD', display: '$' + (usd.unit_amount / 100).toFixed(2), local: NAMES[currency] || currency };
+    if (PAYPAL.includes(currency)) {
+      out.paypal = { currency, display };
+    } else if (usd && usd.unit_amount != null) {
+      out.paypal = { currency: 'USD', display: '$' + (usd.unit_amount / 100).toFixed(2) };
     }
     return json(out);
   } catch (_) {

@@ -108,8 +108,8 @@
   .btn { font-family: var(--font-ui); font-size: 15px; font-weight: 500; border-radius: var(--radius-sm); padding: 11px 20px; cursor: pointer; border: 0.5px solid var(--border-strong); transition: background 0.15s, border-color 0.15s, color 0.15s; width: 100%; }
   .btn-primary { background: var(--gold); color: #3D2E00; border-color: var(--gold-dark); }
   .btn-primary:hover:not([disabled]) { background: #E3BC48; }
-  .btn-paypal { margin-top: 10px; }
-  .paypal-note { font-size: 12.5px; color: var(--text-tertiary); text-align: center; margin: 6px 0 0; line-height: 1.5; }
+  .btn-paypal { margin-top: 8px; }
+  .paypal-note { font-size: 12.5px; color: var(--text-tertiary); text-align: center; margin: 12px 0 0; line-height: 1.5; }
   .btn[disabled] { background: var(--border); color: var(--text-tertiary); border-color: var(--border); cursor: default; }
   .sub-status { font-size: 13px; color: var(--text-secondary); text-align: center; margin-top: 0.9rem; min-height: 1.2em; }
   .sub-back { display: inline-block; margin-top: 1.75rem; font-size: 14px; font-weight: 500; color: var(--accent); text-decoration: none; }
@@ -167,10 +167,11 @@
     </div>
 
     <button class="btn btn-primary" id="subscribe-btn">Subscribe</button>
-    <!-- Shown only where PayPal cannot take the visitor's currency (/api/price `paypal`): a
-         checkout fixed to US dollars, where Stripe offers PayPal. Never in the app. -->
-    <button class="btn btn-primary btn-paypal" id="paypal-btn" hidden>Pay with PayPal</button>
+    <!-- The PayPal backup (/api/price `paypal`), every website visitor, never the app: a checkout
+         fixed to a currency PayPal takes, so PayPal is on it even when Stripe's own location
+         lookup would have picked baht. The note comes first: the button is the backup. -->
     <p class="paypal-note" id="paypal-note" hidden></p>
+    <button class="btn btn-primary btn-paypal" id="paypal-btn" hidden>Pay with PayPal</button>
     <p class="sub-status" id="sub-status"></p>
     <p id="sub-terms" style="font-size:12px;color:var(--text-tertiary);text-align:center;margin-top:0.9rem;line-height:1.6">
       By subscribing you agree to our <a href="terms" style="color:var(--accent);text-decoration:none">Terms</a>
@@ -219,7 +220,7 @@ function gpApp() {
   var n = document.querySelector('.price-note');
   if (n) n.textContent = 'Cancel anytime in the Play Store.';
 })();
-var PRICE = '', PAYPAL = null;   // PAYPAL: /api/price `paypal`, when PayPal cannot take the local currency
+var PRICE = '', PAYPAL = null;   // PAYPAL: /api/price `paypal`, the backup PayPal checkout's currency
 function loadPrice() {
   var pv = document.getElementById('price-value');
   var timer = setTimeout(function () { show(null); }, 1500);
@@ -284,7 +285,7 @@ function startCheckout(currency) {
   var token = a && a.getAccessToken && a.getAccessToken();
   if (!token) { if (a) a.signInWithGoogle(); return; }
   var main = document.getElementById('subscribe-btn');
-  var btn = currency === 'usd' ? document.getElementById('paypal-btn') : main;
+  var btn = currency ? document.getElementById('paypal-btn') : main;
   var label = btn.textContent;
   var st = document.getElementById('sub-status');
   if (!navigator.onLine) { if (st) { st.style.color = '#B00020'; st.textContent = 'You’re offline — reconnect to subscribe.'; } return; }
@@ -295,8 +296,8 @@ function startCheckout(currency) {
   fetch('/api/checkout', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-    // native: return via the app deep link. currency 'usd': the PayPal button's checkout (see PAYPAL).
-    body: JSON.stringify(currency === 'usd' ? { native: native, currency: 'usd' } : { native: native })
+    // native: return via the app deep link. currency: the PayPal backup's fixed currency (see PAYPAL).
+    body: JSON.stringify(currency ? { native: native, currency: currency } : { native: native })
   })
     .then(function (r) { code = r.status; return r.text(); })
     .then(function (t) {
@@ -361,8 +362,10 @@ function renderSub() {
       : 'It’s a free Google sign-in first, then checkout.';
   }
 }
-/* The PayPal button: website only, a non-member, and only where /api/price says PayPal cannot take
-   the local currency. Its checkout is fixed to US dollars, the one place Stripe can offer PayPal. */
+/* The PayPal backup (owner, 2026-10-15): website only, any non-member. Stripe offers PayPal only in
+   a currency PayPal takes, and picks the currency from its OWN location lookup, which can disagree
+   with ours; this checkout is fixed to PAYPAL.currency (the price shown, or US dollars where that is
+   baht), so PayPal is always on it. Same rule and wording as account.html's. */
 function renderPayPal(show) {
   var b = document.getElementById('paypal-btn'), n = document.getElementById('paypal-note');
   if (!b || !n) return;
@@ -370,10 +373,12 @@ function renderPayPal(show) {
   b.hidden = n.hidden = !on;
   if (!on || b.disabled) return;
   b.textContent = 'Pay with PayPal — ' + PAYPAL.display + '/month';
-  n.textContent = 'PayPal can’t take payments in ' + PAYPAL.local + ', so this one is charged in US dollars.';
+  n.textContent = 'Want to pay with PayPal but can’t see it at checkout? Use this button instead.';
 }
 document.getElementById('subscribe-btn').addEventListener('click', function () { startCheckout(); });
-document.getElementById('paypal-btn').addEventListener('click', function () { startCheckout('usd'); });
+document.getElementById('paypal-btn').addEventListener('click', function () {
+  if (PAYPAL) startCheckout(String(PAYPAL.currency).toLowerCase());
+});
 window.addEventListener('thaiear:auth', renderSub);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderSub);
 else renderSub();
