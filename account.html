@@ -420,13 +420,14 @@ function upgradeStripe(currency) {
 /* THE PAYPAL BACKUP (website only, every free visitor; owner, 2026-10-15). Stripe offers PayPal only
    in a currency PayPal takes, and picks the currency from its OWN location lookup, which can
    disagree with ours. This button's checkout is fixed to /api/price's `paypal.currency` (the price
-   shown, or US dollars where that is baht), so PayPal is always on it. The note comes FIRST: it is
-   a backup for when PayPal is missing at checkout. Same rule and wording as subscribe.html's. */
+   shown, or US dollars where that is baht), so PayPal is always on it. ⛔ The note sits UNDER the
+   PayPal button, never between the two buttons (owner, 2026-10-15). Same as subscribe.html. */
 var PAYPAL = null, paypalAsked = false;
 function paypalHtml() {
   if (!PAYPAL) return '';
-  return '<p class="acct-muted" style="margin:0;font-size:12.5px;line-height:1.5;text-align:center">Want to pay with PayPal but can’t see it at checkout? Use this button instead.</p>' +
-    '<button class="btn btn-gold btn-wide" onclick="upgradePayPal()">Pay with PayPal</button>';   // no price: Upgrade shows none either (owner, 2026-10-15)
+  // no price on the button: Upgrade shows none either. The note goes UNDER it (owner, 2026-10-15).
+  return '<button class="btn btn-gold btn-wide" onclick="upgradePayPal()">Pay with PayPal</button>' +
+    '<p class="acct-muted" style="margin:0;font-size:12.5px;line-height:1.5;text-align:center">Want to pay with PayPal but can’t see it at checkout? Use this button instead.</p>';
 }
 function upgradePayPal() { if (PAYPAL) upgradeStripe(String(PAYPAL.currency).toLowerCase()); }
 function loadPayPal() {
