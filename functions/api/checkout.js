@@ -45,7 +45,8 @@ async function handle({ request, env }) {
     p.set('cancel_url', site + '/checkout-return.html?status=cancel');
   } else {
     p.set('success_url', site + '/account.html?sub=success');
-    p.set('cancel_url', site + '/subscribe.html');
+    // "Back to ThaiEar" returns to the page the checkout started from (account or subscribe).
+    p.set('cancel_url', site + (body && body.from === 'account' ? '/account' : '/subscribe'));
   }
   p.set('client_reference_id', user.id);
   p.set('subscription_data[metadata][user_id]', user.id);

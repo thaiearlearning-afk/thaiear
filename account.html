@@ -404,7 +404,8 @@ function upgradeStripe(currency) {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
     // currency 'usd': the PayPal button's checkout (see loadPayPal).
-    body: JSON.stringify(currency === 'usd' ? { native: false, currency: 'usd' } : { native: false })
+    // from 'account': Stripe's "Back to ThaiEar" returns here, not to the subscribe page.
+    body: JSON.stringify(currency === 'usd' ? { native: false, currency: 'usd', from: 'account' } : { native: false, from: 'account' })
   })
     .then(function (r) { code = r.status; return r.text(); })
     .then(function (t) {
