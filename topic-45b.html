@@ -88,7 +88,7 @@
   /* Sits LOWER in the same band (owner, 2026-08-20): the margin moves from below the line to
      above it, so the line drops without the space around it growing. Font up 13->14px — at 13
      it read as fine print rather than orientation. */
-  .topic-meta { font-size: 14px; line-height: 1.28; color: var(--text-tertiary); margin: 0.2rem 0 0.5rem; }
+  .topic-meta { font-size: 15px; line-height: 1.45; color: var(--text-tertiary); margin: 0.2rem 0 0.5rem; }
   .topic-meta strong { color: var(--text-secondary); font-weight: 500; }
   /* Tap/Click: the affordance is a property of the INPUT, not the viewport width, so
      this asks (pointer:fine) rather than a breakpoint -- a touch laptop keeps "Tap".
@@ -110,7 +110,7 @@
   .topic-nav-right { text-align: right; }
   @media (max-width: 800px) { .page-wrap { padding: 1.5rem 1.25rem 3rem; } .topic-title { font-size: 22px; } }
   @media (max-width: 600px) {
-    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 13px; margin: 0.2rem 0 0.45rem; }
+    .page-wrap { padding: 1.25rem 1rem 2.5rem; } .topic-eyebrow { font-size: 10px; } .topic-title { font-size: 20px; } .topic-meta { font-size: 14px; margin: 0.2rem 0 0.45rem; }
     .topic-nav-btn { font-size: calc(12px * var(--te-ui, 1)); padding: 6px 10px; }
   }
   @media (max-width: 380px) { .topic-title { font-size: 18px; } }
@@ -165,9 +165,7 @@
 <div class="page-wrap">
   <div class="topic-eyebrow" id="topic-eyebrow"></div>
   <h1 class="topic-title">School &amp; university: Student life</h1>
-  <div class="te-intro-wrap"><p class="topic-intro">Step into Thai university life. Here you'll talk degrees — ปริญญาตรี (bachelor's), ปริญญาโท (master's) and ปริญญาเอก (doctorate) — say which สาขา (field) you're in, sit through a เลกเชอร์ (lecture) and a สัมมนา (seminar), and hand in each ชิ้นงาน (assignment) before it costs you marks. Away from class there's หอใน (on-campus halls), the odd ปาร์ตี้ (party), and the pressure of การสอบเข้ามหาวิทยาลัย (university entrance exams). Practise all 32 sentences by ear.</p><button type="button" class="te-intro-more">Read more</button></div>
-  <p class="topic-subtitle">Regional identity & food culture</p>
-  <p class="topic-meta"><strong>30 sentences</strong> &middot; <span class="tm-tap">Tap</span><span class="tm-click">Click</span> to reveal Thai, English and notes. <a class="tm-quiz" href="?quiz=menu">Take the quiz</a></p>
+  <p class="topic-meta"><span class="tm-tap">Tap</span><span class="tm-click">Click</span> the pills to reveal Thai, English and notes.<br><a class="tm-quiz" href="?quiz=menu">Take the quiz</a></p>
   <div id="player-root"></div>
 
   <!-- SSR content: static, source-visible accordion cards (collapsed via st-0).

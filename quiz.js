@@ -3633,7 +3633,11 @@
      still does what it says. */
   function tmQuizLink(ok) {
     var a;
-    try { a = document.querySelector('.topic-meta .tm-quiz'); } catch (_) { return; }
+    /* ⚠ NOT the playlist player's copy (#pl-quiz-link, 2026-10-14). quiz.js boots there before
+       playlists.html has built window.ThaiEarTopic, so boot() reads "no quiz" and would delete the
+       link after paint, shifting the page. That link's href is set by launchPlayer() and its quiz
+       is pl-quiz.js's to serve. */
+    try { a = document.querySelector('.topic-meta .tm-quiz:not(#pl-quiz-link)'); } catch (_) { return; }
     if (!a) return;
     if (!ok) { if (a.parentNode) a.parentNode.removeChild(a); return; }
     if (a.getAttribute('data-tq-bound')) return;      /* boot() re-runs on thaiear:auth */
