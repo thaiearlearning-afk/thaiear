@@ -1107,8 +1107,6 @@
     const pill = !premium ? '<span class="topic-nonmember">Free</span>'
                : open    ? '<span class="topic-premium unlocked">Premium</span>'
                          : '<span class="topic-premium">' + CARD_LOCK_SVG + 'Premium</span>';
-    const count = (typeof u.sentences === 'number' && u.sentences > 0)
-      ? u.sentences + ' sentences' : '';
     /* ⚠⚠ `has-quiz` IS EMITTED HERE, NOT ADDED AT RUNTIME (r214). It used to be added only
        by topics-page.js's paintQuizStrips(), inside its `if (!strip)` branch — so a card that
        already SHIPPED with a strip never got it. That is every card on the five band pages and
@@ -1132,7 +1130,12 @@
          units served from one path); the caller owns its cleanliness, exactly as hrefFor() does. */
       '<a class="topic-card-link" href="' + cardEsc(opts.href || hrefFor(u.page)) + '">' +
         '<span class="topic-name">' + cardEsc(u.name) + '</span></a>' +
-      '<div class="topic-meta-row"><span class="topic-sent-count">' + count + '</span></div>' +
+      /* ⚠ EMPTY ON PURPOSE (owner, 2026-10-14): the "N sentences" caption, and the " · downloaded"
+         / " · update" suffix applyDownloadState() appended to it, are gone. The row stays as the
+         HOST for the download tick / update dot (topics-page.js, v.js), which are absolutely
+         positioned against the card, so an empty row has no height whether or not a mark is in
+         it. Do not delete the row; do not put text back in it (PILL_RENDER_MAP.md §2 row 4). */
+      '<div class="topic-meta-row"></div>' +
       /* Ships EMPTY on every card and is filled at runtime — see gen_topics_pages.js's note.
          Creating it on demand made a row with one captioned card ~16px taller than its
          neighbours (99px vs 83px, measured). */

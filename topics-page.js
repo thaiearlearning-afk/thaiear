@@ -277,15 +277,14 @@
       var mark = slot.querySelector('.dl-badge, .dl-select');
       if ((mark ? mark.getAttribute('data-state') : '') === want) continue;   // already right
       if (mark) mark.parentNode.removeChild(mark);
-      var cap = slot.querySelector('.topic-sent-count');
-      if (cap) cap.textContent = cap.textContent.split(' · ')[0];
+      /* The card has no text caption any more (owner, 2026-10-14): the tick / update dot alone
+         reports the state. */
       if (!want) continue;
       var holder = document.createElement('span');
       holder.innerHTML = want === 'dl' ? TICK : UPDATE;
       var node = holder.firstChild;
       node.setAttribute('data-state', want);
       slot.appendChild(node);
-      if (cap) cap.textContent += ' · ' + (want === 'dl' ? 'downloaded' : 'update');
     }
   }
 

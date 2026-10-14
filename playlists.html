@@ -33,6 +33,12 @@ if(/[?&]quiz=/.test(_s))document.documentElement.className+=' te-quiz-boot';
 if(/[?&]pl=/.test(_s)){document.documentElement.className+=' te-pl-boot';window.ThaiEarPlayerPage=true;}}catch(e){}</script>
 <style>html.te-quiz-boot #pl-player-wrap,html.te-quiz-boot #pl-list-wrap{visibility:hidden}
 html.te-pl-boot #pl-list-wrap{display:none}
+/* The © footer waits for the player (owner's layout debugger, Android app, 2026-10-14). The player
+   view builds its sentence list after load (a topic page ships its cards in the HTML), so the
+   footer painted ~250px down a near-empty page and was pushed off-screen when the player mounted:
+   a recorded layout shift. Hidden until player.js stamps te-player-mounted, it appears once, in
+   its final place. footer.js appends it as a direct child of <body>. */
+html.te-pl-boot body:not(.te-player-mounted) > .site-copyright{display:none}
 /* ⭐ THE WAIT IS NO LONGER A BLANK PAGE (owner, 2026-09-22: playlist quizzes "are slow to load
    ... can we have a loading screen"). te-quiz-boot hides BOTH views, so until now a ?quiz=
    arrival showed nothing at all while the side-cars and the engine were fetched.

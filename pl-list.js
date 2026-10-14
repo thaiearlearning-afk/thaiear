@@ -224,7 +224,10 @@
     '@keyframes dots { from { width: 0 } to { width: 1.05em } }' +
     /* image + caption block, mirroring guide.html's .fluency-* (khwai) pattern */
     '.fluency-block { text-align: center; margin: 1.25rem 0 1.5rem; }' +
-    '.fluency-img { width: 150px; max-width: 42%; height: auto; display: block; margin: 0 auto 0.4rem; }' +
+    /* aspect-ratio + the real width/height on the <img> reserve its box before the file arrives. Without them
+       it painted 0px tall and grew ~201px at ~300ms, pushing the caption, add-card and list down (owner's
+       layout debugger, Android app, 2026-10-14). meditator.png is 642x862. */
+    '.fluency-img { width: 150px; max-width: 42%; height: auto; aspect-ratio: 642 / 862; display: block; margin: 0 auto 0.4rem; }' +
     '.fluency-text { font-size: 15px; font-weight: 500; color: var(--accent); letter-spacing: 0.02em; }' +
     '.fluency-text .dots::after { animation-duration: 1.5s; }' +
     /* Layout B (owner-approved r101) — the full-width dashed "add playlist" card. */
@@ -252,7 +255,7 @@
   var HTML =
     '<p class="lede">Build custom sessions from sentences you\'ve added on any topic page. Open a playlist to play it — the session file is constructed on your device, exactly like a topic.</p>' +
     '<div class="fluency-block">' +
-      '<img class="fluency-img" src="meditator.png" alt="Meditating learner" width="150">' +
+      '<img class="fluency-img" src="meditator.png" alt="Meditating learner" width="642" height="862">' +
       '<div class="fluency-text">Eerily effective<span class="dots" aria-hidden="true"></span></div>' +
     '</div>' +
     '<div class="pl-add-card">' +
@@ -1441,13 +1444,17 @@
       }
       var html = lists.map(function (p) {
         var st = dlState(p);
-        return '<div class="pl-box' + (p.id === openId ? ' open' : '') + '" data-id="' + p.id + '">' +
+        /* ⚠ data-n IS LOAD-BEARING, NOT DECORATION (2026-10-14). The visible "N sentences" line
+           went (owner), and it was the only part of a row's markup that changed when a sentence
+           was removed. Without it a shrink renders byte-identical markup, setList() skips the
+           write, and an open "Remove sentences" list keeps showing the removed sentence
+           (test_pl_remove.js §4 caught it). The count keeps the markup honest. */
+        return '<div class="pl-box' + (p.id === openId ? ' open' : '') + '" data-id="' + p.id + '"' +
+          ' data-n="' + p.items.length + '">' +
           '<button class="pl-box-head" type="button">' +
             '<span class="pl-box-name">' + esc(p.name) + '</span>' +
-            '<span class="pl-box-meta">' + p.items.length + ' sentence' + (p.items.length === 1 ? '' : 's') +
-              (st === 'downloaded' ? ' · downloaded'
-                : st === 'available' ? ' · available offline'
-                : st === 'update' ? ' · update available' : '') + '</span>' +
+            /* No "N sentences · downloaded" line any more (owner, 2026-10-14), the same as the
+               topic cards: the tick / update dot from dlControl() reports the state. */
             listenCaption(p) +           // its own line beneath the meta — see .pl-box-plays
             dlControl(p, st) +
           '</button>' +
@@ -1731,6 +1738,14 @@
       });
     })();
     window.addEventListener('thaiear:auth', function () {
+      /* ⚠ PAINT NOW, THEN RELOAD (owner, 2026-10-14: the playlist cards' "Thai listening time"
+         line "always appears after a slight perceptible delay, which is never the case for topic
+         pills"). The caption needs only the session and the cached plays, both of which are in
+         by this event, and a topic card paints it right here (topics-page.js refresh()). This
+         listener used to repaint only after load(true), a network round trip for the playlists
+         themselves, so the caption always landed one fetch late. render() costs nothing when
+         the markup is unchanged (setList's byte check), so the extra call writes at most once. */
+      render();
       if (PL()) PL().load(true).then(render);
     });
     /* r80 — REPAINT ON RETURN. Two different responses:
