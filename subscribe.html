@@ -108,6 +108,8 @@
   .btn { font-family: var(--font-ui); font-size: 15px; font-weight: 500; border-radius: var(--radius-sm); padding: 11px 20px; cursor: pointer; border: 0.5px solid var(--border-strong); transition: background 0.15s, border-color 0.15s, color 0.15s; width: 100%; }
   .btn-primary { background: var(--gold); color: #3D2E00; border-color: var(--gold-dark); }
   .btn-primary:hover:not([disabled]) { background: #E3BC48; }
+  .btn-paypal { margin-top: 10px; }
+  .paypal-note { font-size: 12.5px; color: var(--text-tertiary); text-align: center; margin: 6px 0 0; line-height: 1.5; }
   .btn[disabled] { background: var(--border); color: var(--text-tertiary); border-color: var(--border); cursor: default; }
   .sub-status { font-size: 13px; color: var(--text-secondary); text-align: center; margin-top: 0.9rem; min-height: 1.2em; }
   .sub-back { display: inline-block; margin-top: 1.75rem; font-size: 14px; font-weight: 500; color: var(--accent); text-decoration: none; }
@@ -165,6 +167,10 @@
     </div>
 
     <button class="btn btn-primary" id="subscribe-btn">Subscribe</button>
+    <!-- Shown only where PayPal cannot take the visitor's currency (/api/price `paypal`): a
+         checkout fixed to US dollars, where Stripe offers PayPal. Never in the app. -->
+    <button class="btn btn-primary btn-paypal" id="paypal-btn" hidden>Pay with PayPal</button>
+    <p class="paypal-note" id="paypal-note" hidden></p>
     <p class="sub-status" id="sub-status"></p>
     <p id="sub-terms" style="font-size:12px;color:var(--text-tertiary);text-align:center;margin-top:0.9rem;line-height:1.6">
       By subscribing you agree to our <a href="terms" style="color:var(--accent);text-decoration:none">Terms</a>
@@ -213,7 +219,7 @@ function gpApp() {
   var n = document.querySelector('.price-note');
   if (n) n.textContent = 'Cancel anytime in the Play Store.';
 })();
-var PRICE = '';
+var PRICE = '', PAYPAL = null;   // PAYPAL: /api/price `paypal`, when PayPal cannot take the local currency
 function loadPrice() {
   var pv = document.getElementById('price-value');
   var timer = setTimeout(function () { show(null); }, 1500);
@@ -221,6 +227,7 @@ function loadPrice() {
     clearTimeout(timer);
     if (p) {
       PRICE = p.display + '/' + p.interval;
+      if (p.paypal) PAYPAL = p.paypal;
       if (pv) pv.innerHTML = esc(p.display) + ' <span style="font-size:13px;color:var(--text-tertiary);font-weight:400">/ ' + esc(p.interval) + '</span>';
     } else if (!PRICE) {
       PRICE = '£6.99/month';                 // the HTML's own figure
@@ -267,14 +274,16 @@ function subscribeGooglePlay() {
     if (r.ok) renderSub();
   });
 }
-function startCheckout() {
+function startCheckout(currency) {
   var a = window.ThaiEarAuth;
   // Never Stripe inside the app (Google Play's payments rule): the app's purchase is Google's.
   if (gpApp()) { subscribeGooglePlay(); return; }
   if (isNativeApp() || (a && a.isNative && a.isNative())) return;
   var token = a && a.getAccessToken && a.getAccessToken();
   if (!token) { if (a) a.signInWithGoogle(); return; }
-  var btn = document.getElementById('subscribe-btn');
+  var main = document.getElementById('subscribe-btn');
+  var btn = currency === 'usd' ? document.getElementById('paypal-btn') : main;
+  var label = btn.textContent;
   var st = document.getElementById('sub-status');
   if (!navigator.onLine) { if (st) { st.style.color = '#B00020'; st.textContent = 'You’re offline — reconnect to subscribe.'; } return; }
   btn.disabled = true; btn.textContent = 'Redirecting…';
@@ -284,7 +293,8 @@ function startCheckout() {
   fetch('/api/checkout', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ native: native })   // tells the API to return via the app deep link
+    // native: return via the app deep link. currency 'usd': the PayPal button's checkout (see PAYPAL).
+    body: JSON.stringify(currency === 'usd' ? { native: native, currency: 'usd' } : { native: native })
   })
     .then(function (r) { code = r.status; return r.text(); })
     .then(function (t) {
@@ -297,14 +307,14 @@ function startCheckout() {
         else window.location.href = j.url;
         return;
       }
-      btn.disabled = false; btn.textContent = 'Subscribe';
+      btn.disabled = false; btn.textContent = label;
       if (code === 409 || (j && j.error === 'already_subscribed')) {
         st.innerHTML = 'You already have an active membership — <a href="account" style="color:var(--accent);font-weight:500;text-decoration:none">manage it here</a>.';
         return;
       }
       st.textContent = 'Checkout error [' + code + ']: ' + (j.detail || j.error || (t || '').slice(0, 180) || 'unknown');
     })
-    .catch(function (e) { btn.disabled = false; btn.textContent = 'Subscribe';
+    .catch(function (e) { btn.disabled = false; btn.textContent = label;
       st.textContent = 'Checkout error (network): ' + e; });
 }
 function renderSub() {
@@ -312,6 +322,7 @@ function renderSub() {
   var el = document.getElementById('sub-status');
   if (!btn || !el) return;
   var a = window.ThaiEarAuth;
+  renderPayPal(false);
   if (gpApp()) {
     var gu = a && a.isReady && a.getUser && a.getUser();
     if (gu && a.isSubscribed && a.isSubscribed()) {
@@ -342,12 +353,25 @@ function renderSub() {
   } else {
     btn.disabled = false;
     btn.textContent = user ? (PRICE ? 'Subscribe — ' + PRICE : 'Subscribe') : 'Sign in to subscribe';
+    renderPayPal(true);
     el.innerHTML = user
       ? 'Signed in as <strong>' + esc(user.username || user.email) + '</strong>.'
       : 'It’s a free Google sign-in first, then checkout.';
   }
 }
-document.getElementById('subscribe-btn').addEventListener('click', startCheckout);
+/* The PayPal button: website only, a non-member, and only where /api/price says PayPal cannot take
+   the local currency. Its checkout is fixed to US dollars, the one place Stripe can offer PayPal. */
+function renderPayPal(show) {
+  var b = document.getElementById('paypal-btn'), n = document.getElementById('paypal-note');
+  if (!b || !n) return;
+  var on = !!(show && PAYPAL);
+  b.hidden = n.hidden = !on;
+  if (!on || b.disabled) return;
+  b.textContent = 'Pay with PayPal — ' + PAYPAL.display + '/month';
+  n.textContent = 'PayPal can’t take payments in ' + PAYPAL.local + ', so this one is charged in US dollars.';
+}
+document.getElementById('subscribe-btn').addEventListener('click', function () { startCheckout(); });
+document.getElementById('paypal-btn').addEventListener('click', function () { startCheckout('usd'); });
 window.addEventListener('thaiear:auth', renderSub);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderSub);
 else renderSub();

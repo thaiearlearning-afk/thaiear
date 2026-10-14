@@ -390,7 +390,7 @@ function openPortal() {
 /* Website only (the island is empty in the app; the app's purchase is Google Play's). Same call
    as subscribe.html's startCheckout; Stripe returns to account?sub=success, or to subscribe on cancel. */
 var upgradeBusy = false;
-function upgradeStripe() {
+function upgradeStripe(currency) {
   if (offlineGuard('upgrade-status', 'You’re offline — reconnect to upgrade.')) return;
   var a = window.ThaiEarAuth;
   var token = a && a.getAccessToken && a.getAccessToken();
@@ -403,7 +403,8 @@ function upgradeStripe() {
   fetch('/api/checkout', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ native: false })
+    // currency 'usd': the PayPal button's checkout (see loadPayPal).
+    body: JSON.stringify(currency === 'usd' ? { native: false, currency: 'usd' } : { native: false })
   })
     .then(function (r) { code = r.status; return r.text(); })
     .then(function (t) {
@@ -414,6 +415,26 @@ function upgradeStripe() {
       if (el) el.textContent = 'Could not open checkout. Please try again.';
     })
     .catch(function () { upgradeBusy = false; if (el) el.textContent = 'Could not open checkout. Please try again.'; });
+}
+/* The PayPal button (website only): where PayPal cannot take the visitor's own currency (baht),
+   /api/price carries `paypal`, and this second button opens a checkout fixed to US dollars, the
+   one place Stripe can offer PayPal. Same rule and wording as subscribe.html's. */
+var PAYPAL = null, paypalAsked = false;
+function paypalHtml() {
+  if (!PAYPAL) return '';
+  return '<button class="btn btn-gold btn-wide" onclick="upgradePayPal()">Pay with PayPal — ' + esc(PAYPAL.display) + '/month</button>' +
+    '<p class="acct-muted" style="margin:0;font-size:12.5px;line-height:1.5;text-align:center">PayPal can’t take payments in ' + esc(PAYPAL.local) + ', so this one is charged in US dollars.</p>';
+}
+function upgradePayPal() { upgradeStripe('usd'); }
+function loadPayPal() {
+  if (paypalAsked) return;
+  paypalAsked = true;
+  fetch('/api/price').then(function (r) { return r.json(); }).then(function (p) {
+    if (!(p && p.paypal)) return;
+    PAYPAL = p.paypal;
+    var up = document.getElementById('upgrade-status');
+    if (up) up.insertAdjacentHTML('beforebegin', paypalHtml());
+  }).catch(function () {});
 }
 // Back from Stripe restores this page from the bfcache, still saying "Opening checkout…".
 window.addEventListener('pageshow', function (e) {
@@ -997,7 +1018,9 @@ function renderMembershipBox(s) {
        account page has already been sold. Stripe's page shows the price in their currency. */
     setIsland(native ? '' :
       '<button class="btn btn-gold btn-wide" onclick="upgradeStripe()">Upgrade to Premium</button>' +
+      paypalHtml() +
       '<p id="upgrade-status" class="acct-muted" style="margin:0"></p>');
+    if (!native) loadPayPal();
   }
 }
 // Build a membership-state object from the cached Supabase subscription (instant).

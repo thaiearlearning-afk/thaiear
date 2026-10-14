@@ -76,7 +76,15 @@ async function handle({ request, env }) {
      (Settings → Business → Public details: https://thaiear.com/terms). */
   p.set('consent_collection[terms_of_service]', 'required');
   p.set('custom_text[terms_of_service_acceptance][message]',
-    'I agree to the ThaiEar [Terms](' + site + '/terms) and have read the [Privacy Policy](' + site + '/privacy).');
+    /* The same agreement as subscribe.html's small print, refund policy and 14-day waiver
+       included: the account page's Upgrade reaches here without passing that page. */
+    'I agree to the ThaiEar [Terms](' + site + '/terms) and [Refund Policy](' + site + '/refunds), and ask ' +
+    'for access to start immediately, so the 14-day cancellation right no longer applies once it begins. ' +
+    'See our [Privacy Policy](' + site + '/privacy).');
+
+  /* "Pay with PayPal" for a visitor whose own currency PayPal cannot take (price.js `paypal`):
+     fix the session to USD, which PayPal accepts, on the same Price. Only USD is honoured. */
+  if (body && body.currency === 'usd') p.set('currency', 'usd');
 
   const res = await createSession(env, p);
   if (!res.ok) return json({ error: 'stripe_error', detail: res.data && res.data.error && res.data.error.message }, 502);

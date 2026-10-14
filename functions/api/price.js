@@ -23,6 +23,10 @@ const SYMBOLS = { GBP: '£', USD: '$', EUR: '€', CAD: 'CA$', AUD: 'A$', NZD: '
 
 // Country (ISO 3166, as Cloudflare reports it) → a currency the Price carries.
 const LOCAL = { US: 'USD', PR: 'USD', CA: 'CAD', AU: 'AUD', NZ: 'NZD', SG: 'SGD', HK: 'HKD', TH: 'THB' };
+// The currencies PayPal through Stripe can charge in (docs.stripe.com/payments/paypal, 2026-10-15).
+const PAYPAL = 'EUR GBP USD CHF CZK DKK NOK PLN SEK AUD CAD HKD NZD SGD'.split(' ');
+// What the PayPal note calls a currency PayPal cannot take.
+const NAMES = { THB: 'baht' };
 // The euro area (Bulgaria joined 2026-01-01), then the states that use the euro by agreement.
 const EURO = 'AT BE BG CY DE EE ES FI FR GR HR IE IT LT LU LV MT NL PT SI SK AD MC SM VA ME XK'.split(' ');
 
@@ -45,7 +49,16 @@ export async function onRequestGet({ request, env }) {
     const symbol = SYMBOLS[currency] || '';
     const num = Number.isInteger(amount) ? String(amount) : amount.toFixed(2);   // £6.99, but ฿299 and HK$69
     const display = symbol ? symbol + num : num + ' ' + currency;
-    return json({ amount, currency, interval, display });
+    /* PayPal through Stripe cannot charge in every currency the Price carries (THB today), and
+       Stripe shows a payment method only when it can take the checkout's currency. So for such a
+       currency the answer also carries the US-dollar price: the account and subscribe pages offer
+       a PayPal button that opens a checkout fixed to USD (checkout.js `currency`). */
+    const out = { amount, currency, interval, display };
+    const usd = p.currency_options && p.currency_options.usd;
+    if (!PAYPAL.includes(currency) && usd && usd.unit_amount != null) {
+      out.paypal = { currency: 'USD', display: '$' + (usd.unit_amount / 100).toFixed(2), local: NAMES[currency] || currency };
+    }
+    return json(out);
   } catch (_) {
     return json({ error: 'failed' });
   }
