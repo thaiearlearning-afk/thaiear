@@ -208,7 +208,12 @@
 :root{
   --navy:#261B65;
   --cream:#FAF6EC;
-  --line-w:3px;
+  /* 5px at every width, phone included (owner, 2026-10-15: "smaller logo and bold lines for both
+     mobile and desktop"). Was 3px desktop / 2.5px phone. */
+  --line-w:5px;
+  /* The mark's diameter, read by BOTH .medal-disc and .medal-shadow so the shadow disc can never
+     drift off the mark. ~85% of the pre-2026-10-15 size (was clamp(104px, min(15vw, 19vh), 168px)). */
+  --medal-w:clamp(88px, min(12.75vw, 16vh), 143px);
   /* ⚠ ONE NUMBER, UNITLESS, FOR BOTH THE CLIP EDGES AND THE DRAWN LINES.
      It was two: the clip-path took a percentage while the SVG carried y2="83.33" as a hard
      attribute. They agree at the desktop value, so nothing looked wrong — but the phone
@@ -354,10 +359,10 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
 
    preserveAspectRatio="none" keeps the line ENDPOINTS at the right percentages
    on any aspect ratio; vector-effect="non-scaling-stroke" stops the stroke
-   stretching with it. Two passes: a soft navy underlay gives the line definition
-   on the light regions, the white line on top reads against the purple. */
+   stretching with it. ONE pass, plain white (owner, 2026-10-15). There used to be a soft navy
+   underlay for definition on the light region; at 5px it made the two lower lines read GREY
+   against the cream and left a visible seam where each line met the white ring. Do not re-add it. */
 .lines{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; }
-.lines .under{ stroke:rgba(28,18,78,.16); stroke-width:calc(var(--line-w) + 3px); }
 .lines .over { stroke:#FFFFFF; stroke-width:var(--line-w); }
 .lines line{ vector-effect:non-scaling-stroke; stroke-linecap:round; }
 /* ⚠ THE DRAWN ENDPOINTS ARE SET IN JS, NOT CSS, AND THAT IS NOT LAZINESS.
@@ -386,7 +391,21 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
      the disc would have silently deleted the white ring the mark needs to read against three
      different backgrounds. */
   border-radius:50%;
-  box-shadow:0 0 0 5px rgba(255,255,255,.9), 0 10px 30px rgba(28,18,78,.28);
+  /* ⚠ SOLID WHITE, BOTH THE RING AND THE FILL (owner, 2026-10-15: the lines must merge into the
+     ring). A 90%-white ring let the lines show through it as seams; the white fill closes the
+     anti-aliased hairline between the clipped disc and the ring, where the top line showed
+     "inside" the ring. The DROP shadow is no longer here: drawn at z 3 it tinted the lines grey
+     where they meet the ring, so it is its own disc under the lines (.medal-shadow). */
+  background:#fff;
+  box-shadow:0 0 0 5px #fff;
+}
+/* The mark's drop shadow, at z 1: above the three regions, BELOW the lines (z 2), so lines and
+   ring stay one even white. Same centre as .medal; the +10px is the 5px ring on each side. */
+.medal-shadow{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  z-index:1; pointer-events:none; border-radius:50%;
+  width:calc(var(--medal-w) + 10px); aspect-ratio:1;
+  box-shadow:0 10px 30px rgba(28,18,78,.28);
 }
 .medal-disc{
   /* ⚠ display:block is load-bearing. It is a <span>, and width / border-radius /
@@ -394,7 +413,7 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
      blockify it went with the wordmark, and the mark instantly rendered as a
      full-size SQUARE (icon-512.png is a square canvas; the disc is painted on it). */
   display:block;
-  width:clamp(104px, min(15vw, 19vh), 168px); aspect-ratio:1;
+  width:var(--medal-w); aspect-ratio:1;
   border-radius:50%; overflow:hidden;
   /* ⚠ clip-path, NOT just border-radius, AND THAT IS THE WHOLE POINT OF IT HERE.
      border-radius rounds the PAINT but leaves the hit area a square, so the mark's four corners
@@ -439,7 +458,7 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
      enough to hold its label, and the higher that label can sit. The cost is that the
      bottom band takes a little more than a third on a phone — the "roughly equal"
      caveat that already applies at this size. */
-  :root{ --split-n:72; --line-w:2.5px; }
+  :root{ --split-n:72; --medal-w:min(25.5vw, 17vh, 112px); }
   /* ⚠ THE `--s12-lift` NUDGE (owner, 2026-08-23: "the 2000+ sentences line and the online or
      offline lines are very close to the central logo - moving them up a touch would be nice ...
      maybe just move them up by however many pixels tall the ONLINE OR OFFLINE line is").
@@ -478,7 +497,6 @@ body{ background:var(--cream); display:flex; flex-direction:column; min-height:1
   .s-title{ font-size:calc(clamp(20px,6vw,26px) * var(--te-ui, 1)); }
   .s3 .s-title{ font-size:calc(clamp(20px,6vw,26px) * var(--te-ui, 1)); }
   .s-sub{ font-size:calc(12px * var(--te-ui, 1)); }
-  .medal-disc{ width:min(30vw, 20vh, 132px); }
   /* The chevron buttons go on phones (owner, 2026-08-21): with three coloured regions filling
      the screen it is obvious you tap the one you want, so they are clutter — and clutter is
      expensive here, because the regions are short. Kept on desktop, where there is room and a
@@ -960,10 +978,8 @@ html.te-nosub .s-sub{ display:none; }
     </span>
   </a>
 
+  <div class="medal-shadow" aria-hidden="true"></div>
   <svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-    <line class="under" x1="50" y1="50" x2="50" y2="0"/>
-    <line class="under down" x1="50" y1="50" x2="0"  y2="83.33"/>
-    <line class="under down" x1="50" y1="50" x2="100" y2="83.33"/>
     <line class="over"  x1="50" y1="50" x2="50" y2="0"/>
     <line class="over down"  x1="50" y1="50" x2="0"  y2="83.33"/>
     <line class="over down"  x1="50" y1="50" x2="100" y2="83.33"/>
@@ -979,11 +995,12 @@ html.te-nosub .s-sub{ display:none; }
     <span class="medal-disc"><!-- ⚠ NOT icon-512.png. That is the PWA/app-store icon: 512x512 RGBA, 433 KB, and it was
          being shown here at 168 CSS px at most — so the centrepiece of the home page was
          downloading nearly half a megabyte and painting in visible stages (owner: "sometimes
-         half loads"). home-swirl.png is the same artwork at 420x420, palette-quantised to 96
-         colours: 68 KB, an 85% cut, with no visible banding in the gold. 420 covers 2.5x DPR
-         against the 168px cap. Regenerate it FROM icon-512.png, and quantise — a straight
-         RGBA re-save comes out at 230 KB, the same trap gen_og_image.py records. -->
-    <img src="home-swirl.png" alt="ThaiEar" width="420" height="420" fetchpriority="high" decoding="async"></span>
+         half loads"). home-swirl.png is the same artwork at 336x336 (Lanczos from icon-512.png),
+         palette-quantised to 96 colours: 27.5 KB. It was 420x420 / 68 KB until the mark shrank
+         on 2026-10-15; 336 covers 3x DPR against the 112px phone cap and 2.3x against the 143px
+         desktop cap. Regenerate it FROM icon-512.png, and quantise — a straight RGBA re-save
+         comes out at 230 KB, the same trap gen_og_image.py records. -->
+    <img src="home-swirl.png" alt="ThaiEar" width="336" height="336" fetchpriority="high" decoding="async"></span>
   </div>
   <!-- ⚠ AFTER the mark, not before it. This script binds the spin trigger to .medal-disc,
        and when it sat above the medal that lookup returned null and the easter egg simply
