@@ -71,8 +71,8 @@
 /vendor/supabase-js-*
   Cache-Control: public, max-age=31536000, immutable
 
-# 2026-10-08: the ad landing aliases (_redirects) are the homepage under another path; keep them out
-# of search so the homepage is never indexed twice. Its canonical already points at "/".
+# 2026-10-08: the ad landing aliases (_redirects); keep them out of search. Since 2026-10-15 they serve
+# pick-level.html (the "Pick your level" ad landing page), which also carries <meta robots noindex>.
 /from-reddit
   X-Robots-Tag: noindex
 /from-google
