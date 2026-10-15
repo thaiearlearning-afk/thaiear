@@ -37,7 +37,13 @@
   // pyfyyiegmxwmfshgwvze.supabase.co URL still works server-side (functions use it via env).
   var SUPABASE_URL = 'https://auth.thaiear.com';
   var SUPABASE_KEY = 'sb_publishable_Msf5wsXw0KdugHGd5C2-mA_TNxbhT0e';
-  var SUPABASE_ESM = 'https://esm.sh/@supabase/supabase-js@2';
+  /* ⭐ sw v847: ONE same-origin file, not esm.sh (LOADING_SPEED.md §2). The esm.sh @2 import was ~25
+     module requests to a third-party origin on a cold phone, each found only when its parent had
+     arrived; this is the same version (2.117.3) pre-bundled by build_supabase_vendor.js. The
+     version is in the filename, so sw.js keeps it in the never-swept thaiear-vendor cache for
+     offline sign-in (SUPABASE_BUNDLE there must match). Upgrading supabase-js = re-run the build
+     with a new VERSION and move all three names; test_supabase_vendor.js checks they agree. */
+  var SUPABASE_ESM = '/vendor/supabase-js-2.117.3.js';
 
   var client = null;
   var currentUser = null;

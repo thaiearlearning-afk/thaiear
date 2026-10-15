@@ -65,6 +65,12 @@
   Cache-Control: public, max-age=0, must-revalidate
 /topic-test2
   Cache-Control: public, max-age=0, must-revalidate
+# 2026-10-15 (sw v847): the self-hosted Supabase bundle. Its VERSION IS IN THE FILENAME, so the bytes
+# behind a name never change and a browser may keep it for a year without asking. An upgrade is a new
+# file name (build_supabase_vendor.js), never new bytes under this one. LOADING_SPEED.md §2.
+/vendor/supabase-js-*
+  Cache-Control: public, max-age=31536000, immutable
+
 # 2026-10-08: the ad landing aliases (_redirects) are the homepage under another path; keep them out
 # of search so the homepage is never indexed twice. Its canonical already points at "/".
 /from-reddit
