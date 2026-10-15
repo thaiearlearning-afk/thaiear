@@ -297,7 +297,25 @@
         }).catch(function () {});
         return;
       }
-      navigator.serviceWorker.register('/sw.js').catch(function (e) { console.warn('SW register failed', e); });
+      /* ⭐ sw v846 (2026-10-15): ON A FIRST VISIT, NOT YET. Registering installs the worker, and
+         install downloads the whole PRECACHE (~1 MB on the wire) — on `load`, exactly when a new
+         visitor on a weak phone signal is reaching for the play button (SEO_PERFORMANCE.md §13:
+         a cold topic page on slow 4G was already 2 MB before this). So a browser with NO worker
+         yet waits for the first of: a sentence actually playing (media `play`, captured — the
+         same signal attrib.js uses), the tab being hidden (the network is free then), or 20 s.
+         ⛔ Unchanged, on purpose: a device that already HAS a worker registers at once (that is
+         how it hears about a new release), and so does the Android app, whose offline cache
+         must be seeded from its very first launch. */
+      var swStarted = false;
+      function swRegister() {
+        if (swStarted) return;
+        swStarted = true;
+        navigator.serviceWorker.register('/sw.js').catch(function (e) { console.warn('SW register failed', e); });
+      }
+      if (navigator.serviceWorker.controller || isNativeApp()) { swRegister(); return; }
+      document.addEventListener('play', function () { setTimeout(swRegister, 3000); }, true);
+      document.addEventListener('visibilitychange', function () { if (document.hidden) swRegister(); });
+      setTimeout(swRegister, 20000);
     });
   }
 
