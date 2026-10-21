@@ -3054,7 +3054,13 @@
      IDENTITY) but our identity record keeps the person signed in (the restore at boot, or the
      authChange GUARD), currentUser is set and supabase sends the anon key. The outbox then
      re-sent EVERY queued op on EVERY `thaiear:auth` — which fires on each notify(), including
-     every counted listen — and each one bounced. A few such devices made the whole storm.
+     every counted listen — and each one bounced.
+     ⚠⚠ MEASURED SOURCE (same day, the request log by referer and user agent): ALL 50,283 refused
+     writes in 7 days came from ONE page — this site served from the dev laptop at localhost:8765,
+     whose storage held a HAND-PLANTED test identity (user id "u1", no supabase session) and 703
+     queued ops, flushed whole each time. No learner's device had a single write refused; there was
+     no broken login. The guard stays: the state it closes (our record signed in, supabase not) is
+     real by construction, and a test page must never be able to write to production either.
      So: (1) before sending, ask supabase for its own session; if it has none or a dead token,
      re-seed it from our record (reseedSession), and send nothing if that fails — the queue keeps
      every op; (2) a token the server refuses becomes badToken, so the next try renews instead of
