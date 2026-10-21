@@ -877,6 +877,12 @@
      toggled twice (a no-op). Such a page declares itself synchronously (window.ThaiEarPlayerPage),
      and every handler here also stands down once a player exists, for any page that builds later. */
   function hasPlayer() { return !!(window.ThaiEarTopic || window.ThaiEarPlayerPage); }
+  /* v850: the engine's latest PLAYING tick, as wall-clock ms in localStorage. identity.js reads it
+     before first paint to reserve the bar's row (see the note there); player.js writes it too, on
+     pages with a player. Removed on a pause or the end, so paused audio reserves nothing. */
+  const NP_H = 36;   // px, the bar's fixed height; = identity.js NP_H
+  function npLive(at) { try { localStorage.setItem('thaiear_np_live', String(at || Date.now())); } catch (_) {} }
+  function npLiveClear() { try { localStorage.removeItem('thaiear_np_live'); } catch (_) {} }
   function setupNowPlayingBar(navEl) {
     if (hasPlayer()) return;                  // pages with a player display now-playing in the player
     const NA = (window.Capacitor && window.Capacitor.Plugins) ? window.Capacitor.Plugins.NativeAudio : null;
@@ -885,9 +891,12 @@
       const s = document.createElement('style');
       s.id = 'te-np-styles';
       s.textContent =
+        // v850: a FIXED height (NP_H), so identity.js can reserve exactly this row before first paint.
+        // One line only (nowrap + ellipsis below), so a fixed height cannot clip a second line.
         '.te-np-bar{position:sticky;top:54px;z-index:40;display:none;align-items:center;gap:9px;' +
         'background:var(--accent-light,#ECEBFA);color:var(--accent,#261B65);text-decoration:none;' +
-        'padding:9px 14px;font-family:var(--font-ui,system-ui,sans-serif);font-size:calc(13px * var(--te-ui, 1));font-weight:500;' +
+        'box-sizing:border-box;height:' + NP_H + 'px;overflow:hidden;' +
+        'padding:0 14px;font-family:var(--font-ui,system-ui,sans-serif);font-size:calc(13px * var(--te-ui, 1));font-weight:500;' +
         'border-bottom:0.5px solid var(--border,rgba(0,0,0,0.1))}' +
         '.te-np-bar.show{display:flex}' +
         // Premium playing topic → the premium CARD tint, exactly as a premium topic card shows it
@@ -924,11 +933,18 @@
       bar.classList.add('show');
     }
     let stale = null;
-    function alive() { update(); if (stale) clearTimeout(stale); stale = setTimeout(function () { bar.classList.remove('show'); }, 1600); }
-    function hide() { if (stale) clearTimeout(stale); bar.classList.remove('show'); }
+    function alive(d) { if (d) npLive(d.at); update(); if (stale) clearTimeout(stale); stale = setTimeout(function () { bar.classList.remove('show'); }, 1600); }
+    function hide() { npLiveClear(); if (stale) clearTimeout(stale); bar.classList.remove('show'); }
     NA.addListener('time', alive);                              // a tick = something is playing
     NA.addListener('ended', hide);
     NA.addListener('playing', function (d) { if (d && d.playing === false) hide(); });
+    /* v850: identity.js reserved this row before first paint (the audio was playing a moment ago), so
+       show the bar NOW, from the saved record, instead of on the first tick. If no tick confirms it
+       within 2.5 s (the audio stopped during the tap) it hides, as the stale timer always has. */
+    if (document.documentElement.classList.contains('te-np-pre')) {
+      update();
+      stale = setTimeout(function () { bar.classList.remove('show'); }, 2500);
+    }
 
     /* ⚠⚠ r244 — THE BAR FOLLOWS THE ENGINE (owner, 2026-10-06, Android: it named one unit and opened
        another, while the lock screen showed a third). The lock-screen ⏮/⏭ and autoplay move the

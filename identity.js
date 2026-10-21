@@ -228,3 +228,43 @@
     setTesting: function (on) { try { if (on) localStorage.setItem(TEST_KEY, '1'); else localStorage.removeItem(TEST_KEY); } catch (_) {} }
   };
 })();
+
+/* ---- the app's "Now playing" bar: RESERVE ITS ROW BEFORE FIRST PAINT (sw v850) ----
+   Owner, 2026-10-21 (Android app): the bar "consistently appears late and causes the elements of the
+   page to shift down slightly". nav.js draws it (setupNowPlayingBar), but nav.js is deferred, so it
+   runs after the first paint, and it only showed the bar on the engine's first 0.5 s tick.
+   The fix is the identity.js idea again: answer from localStorage, synchronously, in the head.
+   `thaiear_np_live` is the wall-clock time of the engine's latest tick while it PLAYS (written by
+   player.js on pages with a player and by nav.js on pages without one; removed on a pause or the
+   end). Fresh within NP_FRESH_MS and this page has no player of its own = the bar WILL show, so
+   <html> gets `te-np-pre` and the nav placeholder grows by the bar's height. nav.js then shows the
+   bar at once (it reads the same class), replacing the placeholder 1:1, so nothing moves.
+   ⚠ The bar's height is FIXED in nav.js (NP_H there) and must equal NP_H here: change both.
+   ⚠ "Has a player" here is read from the URL (no page body exists yet). It must agree with
+   nav.js hasPlayer(): a page this test misses that then builds a player would collapse the reserve,
+   which is the old shift and no worse. Web and iPhone never write the stamp, so this never fires
+   there. */
+(function () {
+  'use strict';
+  var NP_FRESH_MS = 3000;   // ticks come every 500 ms; a navigation's own gap sits well inside this
+  var NP_H = 36;            // px; = nav.js NP_H
+  try {
+    var t = parseInt(localStorage.getItem('thaiear_np_live') || '', 10);
+    var age = Date.now() - t;
+    if (!(t > 0) || age > NP_FRESH_MS || age < -NP_FRESH_MS) return;
+    var np = JSON.parse(localStorage.getItem('thaiear_np') || 'null');
+    if (!np || !np.page || !np.name) return;   // nav.js would not show a bar it cannot name
+    var p = location.pathname.toLowerCase(), q = location.search;
+    if (/^\/(topic-|grammar-|latlab|_pl-live)/.test(p)) return;
+    if (/^\/playlists/.test(p) && /[?&]pl=/.test(q)) return;
+    if (/^\/v(\.html)?$/.test(p) && /[?&]t=\d/.test(q)) return;
+    var de = document.documentElement;
+    de.className += ' te-np-pre' + (np.access === 'premium' ? ' te-np-pre-prem' : '');
+    var s = document.createElement('style');
+    s.textContent =
+      'html.te-np-pre #site-nav-root{min-height:' + (54 + NP_H) + 'px!important;' +
+      'background:linear-gradient(var(--surface,#fff) 54px,var(--accent-light,#ECEBFA) 54px)!important}' +
+      'html.te-np-pre-prem #site-nav-root{background:linear-gradient(var(--surface,#fff) 54px,var(--card-tint-premium,#F7F4EC) 54px)!important}';
+    document.head.appendChild(s);
+  } catch (_) {}
+})();
