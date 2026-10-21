@@ -173,14 +173,18 @@
      `lag` is how late the event was handled (ms) — a busy main thread shows here. Each page's
      `load` row carries the navigation timing that delivered it. ⛔ Paths and class names only:
      never a query string, text or anything about the account. Armed from the home-page panel. */
-  var K_TAP = 'te_taptrace', K_TAP_ON = 'te_taptrace_on';
+  var K_TAP = 'te_taptrace', K_TAP_ON = 'te_taptrace_on', K_TAP_SEQ = 'te_taptrace_seq';
   function tapRows() { try { return JSON.parse(get(K_TAP) || '[]') || []; } catch (_) { return []; } }
   function tapPush(r) {
     var rows = tapRows();
     if (!r.w) r.w = Date.now();
     r.p = location.pathname;
+    r.s = (parseInt(get(K_TAP_SEQ), 10) || 0) + 1;   // the sync clears by sequence number (traceSync)
+    set(K_TAP_SEQ, r.s);
     rows.push(r);
-    if (rows.length > 300) rows = rows.slice(rows.length - 300);   // was 120; stall rows (below) need the room
+    /* 1500: the ring is cleared by every sync, so this only fills while offline. (Was 300, then 120;
+       each event re-writes the whole ring, so it must not grow without bound on a slow phone.) */
+    if (rows.length > 1500) rows = rows.slice(rows.length - 1500);
     set(K_TAP, JSON.stringify(rows));
   }
   function tapWhat(t) {
@@ -244,6 +248,117 @@
         if (now !== was) { was = now; tapPush({ e: now ? 'quiz-open' : 'quiz-close' }); }
       }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     } catch (_) {}
+    traceSyncStart();
+  }
+
+  /* ── TRACE SYNC (2026-10-21) — the traces collect themselves into the owner's account ─────────
+     Owner: "a private supabase table for just me that just collects them all, syncs online when
+     online (and clears local) and builds up locally until online … then i tell you when something
+     strange happened". While the tap trace is armed, every 60 s (and on load, on `online`, on
+     leaving the page) the tap ring AND the Android app's lock-screen trace (te_tail_trace, written
+     by player.js tailTrace) go to `owner_traces` (owner_traces.sql) as one batch, and what was sent
+     is deleted here. Offline it simply builds up. Read from tooling: read_owner_traces.js.
+     ⛔ REPLAY-SAFE: the batch is recorded (id + what it covers) BEFORE it is sent, and a batch that
+     never got its answer is re-sent with the SAME id, which the insert ignores if it already landed.
+     ⛔ Deletes only what was sent: tap rows by sequence number, lock rows by count + last stamp;
+     anything written during the request stays for the next batch. */
+  var K_TAIL = 'te_tail_trace', K_FLIGHT = 'te_trace_inflight', K_SYNC = 'te_trace_sync';
+  var SB_URL = 'https://auth.thaiear.com', SB_KEY = 'sb_publishable_Msf5wsXw0KdugHGd5C2-mA_TNxbhT0e';   // as auth.js
+  var traceBusy = false;
+  function tailRows() { try { var a = JSON.parse(get(K_TAIL) || '[]'); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
+  function realUid() {
+    try { var id = JSON.parse(localStorage.getItem('thaiear_identity') || 'null'); return (id && id.user && id.user.id) || ''; }
+    catch (_) { return ''; }
+  }
+  function traceDevice() {
+    var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var app = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    var standalone = navigator.standalone === true ||
+      !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    if (app) return 'android-app';
+    if (ios) return standalone ? 'iphone-pwa' : 'iphone-browser';
+    if (/Android/.test(ua)) return 'android-browser';
+    return 'desktop';
+  }
+  function traceUuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    var b = new Uint8Array(16); crypto.getRandomValues(b); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+    var h = Array.prototype.map.call(b, function (x) { return (x + 256).toString(16).slice(1); }).join('');
+    return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+  }
+  var TRACE_MAX = 400;   // events per batch: keeps a keepalive body (64 KB cap) small
+  // The batch to send: the one in flight if a previous send never heard back, else a new one.
+  function traceBatch() {
+    var fl = null;
+    try { fl = JSON.parse(get(K_FLIGHT) || 'null'); } catch (_) {}
+    var taps = tapRows(), tails = tailRows();
+    if (!fl) {
+      if (!taps.length && !tails.length) return null;
+      var tapN = Math.min(taps.length, TRACE_MAX), tailN = Math.min(tails.length, Math.max(0, TRACE_MAX - tapN));
+      fl = { id: traceUuid(), maxS: tapN ? (taps[tapN - 1].s || 0) : 0, tailN: tailN,
+             tailLast: tailN ? tails[tailN - 1][0] : 0 };
+      set(K_FLIGHT, JSON.stringify(fl));
+    }
+    var ev = taps.filter(function (r) { return (r.s || 0) <= fl.maxS; }).map(function (r) {
+      var o = { k: 'tap', w: r.w, e: r.e, p: r.p };
+      if (r.x) o.x = r.x; if (r.lag != null) o.lag = r.lag; if (r.f) o.f = r.f;
+      return o;
+    });
+    tails.filter(function (t) { return t[0] <= fl.tailLast; }).slice(0, fl.tailN).forEach(function (t) {
+      ev.push({ k: 'lock', w: t[0], e: String(t[1]) });
+    });
+    ev.sort(function (a, b) { return a.w - b.w; });
+    return { fl: fl, ev: ev };
+  }
+  function traceClear(fl) {
+    var taps = tapRows().filter(function (r) { return (r.s || 0) > fl.maxS; });
+    set(K_TAP, taps.length ? JSON.stringify(taps) : null);
+    if (fl.tailN) {
+      var t = tailRows(), drop = 0;
+      while (drop < t.length && drop < fl.tailN && t[drop][0] <= fl.tailLast) drop++;
+      try { localStorage.setItem(K_TAIL, JSON.stringify(t.slice(drop))); } catch (_) {}
+    }
+    set(K_FLIGHT, null);
+  }
+  function traceStat() { try { return JSON.parse(get(K_SYNC) || 'null') || {}; } catch (_) { return {}; } }
+  function traceSync(leaving) {
+    if (traceBusy || get(K_TAP_ON) !== '1') return Promise.resolve();
+    if (navigator.onLine === false) return Promise.resolve();
+    var uid = realUid(), A = window.ThaiEarAuth;
+    if (!uid || !A || !A.freshToken) return Promise.resolve();
+    var b = traceBatch();
+    if (!b) return Promise.resolve();
+    traceBusy = true;
+    var st = traceStat();
+    return A.freshToken().then(function (tok) {
+      if (!tok) throw new Error('no session');
+      if (!b.ev.length) return { ok: true };   // a batch whose rows are all gone: just retire it
+      var body = JSON.stringify({ id: b.fl.id, user_id: uid, device: traceDevice(),
+        first_at: new Date(b.ev[0].w).toISOString(), last_at: new Date(b.ev[b.ev.length - 1].w).toISOString(),
+        n: b.ev.length, events: b.ev });
+      return fetch(SB_URL + '/rest/v1/owner_traces?on_conflict=id', {
+        method: 'POST', keepalive: !!leaving && body.length < 60000,
+        headers: { apikey: SB_KEY, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json',
+                   Prefer: 'resolution=ignore-duplicates,return=minimal' },
+        body: body
+      });
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      traceClear(b.fl);
+      set(K_SYNC, JSON.stringify({ at: Date.now(), n: (st.n || 0) + b.ev.length, err: null }));
+      traceBusy = false;
+      if (tapRows().length + tailRows().length >= TRACE_MAX) return traceSync(leaving);   // more queued behind it
+    }).catch(function (e) {
+      traceBusy = false;
+      st.err = String((e && e.message) || e).slice(0, 80); st.errAt = Date.now();
+      set(K_SYNC, JSON.stringify(st));
+    });
+  }
+  function traceSyncStart() {
+    setTimeout(function () { traceSync(); }, 5000);
+    setInterval(function () { if (!document.hidden) traceSync(); }, 60000);
+    window.addEventListener('online', function () { setTimeout(function () { traceSync(); }, 2000); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) traceSync(true); });
   }
   function tapDump() {
     var rows = tapRows();
@@ -463,10 +578,14 @@
       'font-size:12px;line-height:1.65';
     function paintTap() {
       var on = get(K_TAP_ON) === '1', n = tapRows().length;
+      var ss = traceStat(), hm = function (ms) { var d = new Date(ms); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); };
+      var synced = ss.at ? ('Last sent to your account at ' + hm(ss.at) + ' (' + (ss.n || 0) + ' events so far).') : 'Nothing sent to your account yet.';
+      if (ss.err && (!ss.at || ss.errAt > ss.at)) synced += ' Last try failed at ' + hm(ss.errAt) + ' (' + ss.err + '); it retries every minute.';
       ttr.innerHTML = '<strong style="color:#7A1F1F">Tap trace</strong> — a link that needs several taps<br>' +
         '<span>' + (on
-          ? ('ON, ' + n + ' event' + (n === 1 ? '' : 's') + '. Use the site as normal. When a link or the logo ' +
-             'needs several taps, keep tapping until it works, then come here, press Show and paste the text to Claude.')
+          ? ('ON, collecting. ' + n + ' event' + (n === 1 ? '' : 's') + ' waiting on this device (they go to your account ' +
+             'every minute while online, with the app’s lock-screen trace, and are cleared here). ' + synced +
+             ' When something strange happens, just tell Claude roughly when.')
           : 'Off. Press Arm (works from the next page you open).') + '</span>' +
         '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
           '<button type="button" id="ownersim-tap-arm" style="' + SWBTN + '">' + (on ? 'Disarm + clear' : 'Arm') + '</button>' +
@@ -478,7 +597,7 @@
           'margin-top:8px;height:150px;font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;' +
           'border:1px solid #c9c0b0;border-radius:6px;padding:6px;display:none"></textarea>';
       ttr.querySelector('#ownersim-tap-arm').addEventListener('click', function () {
-        if (get(K_TAP_ON) === '1') { set(K_TAP_ON, null); set(K_TAP, null); } else set(K_TAP_ON, '1');
+        if (get(K_TAP_ON) === '1') { set(K_TAP_ON, null); set(K_TAP, null); set(K_FLIGHT, null); } else set(K_TAP_ON, '1');
         paintTap();
       });
       ttr.querySelector('#ownersim-tap-show').addEventListener('click', function () {
@@ -504,7 +623,7 @@
         try { navigator.clipboard.writeText(txt).then(done, fallback); } catch (_) { fallback(); }
       });
       ttr.querySelector('#ownersim-tap-clear').addEventListener('click', function () {
-        set(K_TAP, null);
+        set(K_TAP, null); set(K_FLIGHT, null);
         paintTap();
       });
     }
