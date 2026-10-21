@@ -313,9 +313,30 @@
         navigator.serviceWorker.register('/sw.js').catch(function (e) { console.warn('SW register failed', e); });
       }
       if (navigator.serviceWorker.controller || isNativeApp()) { swRegister(); return; }
-      document.addEventListener('play', function () { setTimeout(swRegister, 3000); }, true);
-      document.addEventListener('visibilitychange', function () { if (document.hidden) swRegister(); });
-      setTimeout(swRegister, 20000);
+      /* ⭐ sw v854 (2026-10-21, LOADING_SPEED.md §1.6): …AND NEVER WHILE THIS PAGE IS BUILDING A DYN
+         SESSION. The v846 "first play + 3 s" trigger fires for a sentence tap or a quiz clip (fine:
+         nothing else is on the wire) but also for Play on the dyn player — whose tap starts a build
+         that fetches every clip of the unit (~2 MB), so the precache download landed INSIDE the
+         build on the slowest links (owner: the build is faster when nothing else shares the link).
+         player.js announces every build start/end on the document (thaiear:dynbuild, detail.active =
+         builds in flight); any trigger that fires during one is held until the count reaches zero,
+         with a ceiling so a hung fetch can never leave a visitor without a worker. A page where no
+         build ever runs behaves exactly as v846. */
+      var swBuilds = 0, swHeld = false, swCeiling = null;
+      var SW_BUILD_CEILING_MS = 90000;
+      document.addEventListener('thaiear:dynbuild', function (e) {
+        swBuilds = (e && e.detail && e.detail.active) | 0;
+        if (!swBuilds && swHeld) swRegister();
+      });
+      function swWhenIdle() {
+        if (swStarted) return;
+        if (!swBuilds) { swRegister(); return; }
+        swHeld = true;
+        if (!swCeiling) swCeiling = setTimeout(swRegister, SW_BUILD_CEILING_MS);
+      }
+      document.addEventListener('play', function () { setTimeout(swWhenIdle, 3000); }, true);
+      document.addEventListener('visibilitychange', function () { if (document.hidden) swWhenIdle(); });
+      setTimeout(swWhenIdle, 20000);
     });
   }
 
