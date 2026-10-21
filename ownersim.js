@@ -180,7 +180,7 @@
     if (!r.w) r.w = Date.now();
     r.p = location.pathname;
     rows.push(r);
-    if (rows.length > 120) rows = rows.slice(rows.length - 120);
+    if (rows.length > 300) rows = rows.slice(rows.length - 300);   // was 120; stall rows (below) need the room
     set(K_TAP, JSON.stringify(rows));
   }
   function tapWhat(t) {
@@ -217,7 +217,25 @@
       }, { capture: true, passive: true });
     });
     window.addEventListener('pagehide', function () { tapPush({ e: 'pagehide' }); });
-    document.addEventListener('visibilitychange', function () { tapPush({ e: document.hidden ? 'hidden' : 'visible' }); });
+    document.addEventListener('visibilitychange', function () {
+      tapPush({ e: document.hidden ? 'hidden' : 'visible' });
+      tapLast = performance.now();   // a gap that spans the lock is the lock, not a stall
+    });
+    /* STALLS + UNIT CHANGES (2026-10-21) — owner, iPhone PWA: after ~10 min of a topic with the phone
+       locked, the dyn player moved to the next topic and its "Now playing" link took three taps over
+       ~5 s. The rows above cannot tell "the page was busy" from "the navigation was slow", and the
+       lock-screen trace is Android-only. So: a 100 ms heartbeat while the page is VISIBLE; a beat
+       that arrives 250 ms+ late is a `stall` row (the main thread was not running for that long), and
+       the "Now playing <other unit>" row appearing or going is an `np-show` / `np-hide` row (the
+       player moved unit, i.e. a build is starting). Nothing is written unless one of those happens. */
+    var tapLast = performance.now(), tapNp = false;
+    setInterval(function () {
+      var now = performance.now();
+      if (!document.hidden && now - tapLast > 350) tapPush({ e: 'stall', x: Math.round(now - tapLast - 100) + 'ms', f: tapFlags() });
+      tapLast = now;
+      var np = !!document.querySelector('#te-mini-np.show, #now-playing.show');
+      if (np !== tapNp) { tapNp = np; tapPush({ e: np ? 'np-show' : 'np-hide' }); }
+    }, 100);
     /* quiz enter / exit, so a trace shows how long the quiz had been open */
     try {
       var was = document.documentElement.classList.contains('tq-mode');
@@ -445,10 +463,10 @@
       'font-size:12px;line-height:1.65';
     function paintTap() {
       var on = get(K_TAP_ON) === '1', n = tapRows().length;
-      ttr.innerHTML = '<strong style="color:#7A1F1F">Tap trace</strong> — the logo after a long quiz<br>' +
+      ttr.innerHTML = '<strong style="color:#7A1F1F">Tap trace</strong> — a link that needs several taps<br>' +
         '<span>' + (on
-          ? ('ON, ' + n + ' event' + (n === 1 ? '' : 's') + '. Do a long quiz, exit, tap the logo until it ' +
-             'works, then press Show here and paste the text to Claude.')
+          ? ('ON, ' + n + ' event' + (n === 1 ? '' : 's') + '. Use the site as normal. When a link or the logo ' +
+             'needs several taps, keep tapping until it works, then come here, press Show and paste the text to Claude.')
           : 'Off. Press Arm (works from the next page you open).') + '</span>' +
         '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
           '<button type="button" id="ownersim-tap-arm" style="' + SWBTN + '">' + (on ? 'Disarm + clear' : 'Arm') + '</button>' +
