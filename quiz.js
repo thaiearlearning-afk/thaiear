@@ -911,8 +911,17 @@
   var au = null, auRevoke = null, auCredited = false, auNum = null;
   var auBtn = null;        /* the button currently showing this clip's state */
   var auPending = null;    /* the num whose clip is being minted right now */
+  /* ⚠ RELEASE THE ELEMENT, NOT JUST PAUSE IT (owner, 2026-10-21, iPhone PWA: after ~15 min in a
+     quiz the nav logo needed several taps). Every clip is a new <audio>; a paused one keeps its
+     media resource until it is collected, and WebKit is slow to collect a media element that
+     still has a source, so a long run piled up a hundred of them for the page to carry and tear
+     down. Removing the src and calling load() frees it now. Every listener below reads `au`,
+     which is already null by the time `emptied` fires, so nothing repaints. */
   function stopAudio() {
-    if (au) { try { au.pause(); } catch (_) {} }
+    if (au) {
+      try { au.pause(); } catch (_) {}
+      try { au.removeAttribute('src'); au.load(); } catch (_) {}
+    }
     if (auRevoke) { try { auRevoke(); } catch (_) {} auRevoke = null; }
     au = null; auNum = null; auCredited = false; auBtn = null; auPending = null;
   }
@@ -1776,7 +1785,33 @@
      ⚠ It writes to THIS quiz's list only (§3A.2), so the label has to say so, or it reads as
      global — five separate lists per unit is the whole point of that section. */
   function foot() {
-    return '<div class="tq-foot"><button type="button" class="tq-skip"></button></div>';
+    return '<div class="tq-foot"><button type="button" class="tq-skip"></button>'
+      + '<button type="button" class="tq-skip tq-again"></button></div>';
+  }
+
+  /* ⭐ "SEE THIS AGAIN LATER" (owner, 2026-10-21): a toggle under the exclude control that puts
+     this card back on the END of this run when you leave it, so a 10-question quiz becomes 11.
+     The tick lives on run.again, reset by question(), so a repeated card arrives unticked; there
+     is no cap, and re-adding the last card forever is fine (owner). Every appearance is scored,
+     so the result is "x of 11" — the honest arithmetic for eleven questions sat.
+     ⛔ It and "Don't test me on this again" are NEVER both ticked: the LATEST tap wins and the
+     other visibly unticks (owner: "both cant be ticked simultaneously because thats not clear to
+     the user what is going to happen"). */
+  function paintAgain(b, on) {
+    b.classList.toggle('done', !!on);
+    b.innerHTML = on
+      ? '✓ You\'ll see this again'
+        + '<span class="tq-skip-sub">at the end of this quiz — tap to undo</span>'
+      : 'See this again later'
+        + '<span class="tq-skip-sub">adds it to the end of this quiz</span>';
+  }
+  /* "See your score" only while nothing follows this card — a ticked "see again" means one does. */
+  function nextLabel() {
+    return (run.i + 1 >= run.items.length && !run.again) ? 'See your score' : 'Next';
+  }
+  function relabelNext() {
+    var n = sheet && sheet.querySelectorAll('.t-rev .nextbtn:not(.t-submit)');
+    for (var i = 0; n && i < n.length; i++) n[i].textContent = nextLabel();
   }
   function paintSkip(b, on, answered) {
     b.classList.toggle('done', !!on);
@@ -1802,21 +1837,44 @@
 
   /* Repaint the skip footer against the CURRENT answer state, without rebinding anything. */
   function refreshFoot() {
-    var b = sheet && sheet.querySelector('.tq-skip');
+    var b = sheet && sheet.querySelector('.tq-skip:not(.tq-again)');
     if (!b || !run || !run.items[run.i]) return;
     var st = store();
     paintSkip(b, st && st.isExcluded(ctx.unit, run.q.id, run.items[run.i].key), answeredNow());
+    var a = sheet.querySelector('.tq-again');
+    if (a) paintAgain(a, run.again);
   }
 
   function wireFoot() {
-    var b = sheet.querySelector('.tq-skip');
+    var b = sheet.querySelector('.tq-skip:not(.tq-again)');
     if (!b) return;
     var st = store(), key = run.items[run.i].key;
     var answered = answeredNow();
     paintSkip(b, st && st.isExcluded(ctx.unit, run.q.id, key), answered);
+    var a = sheet.querySelector('.tq-again');
+    if (a) {
+      paintAgain(a, run.again);
+      a.onclick = function () {
+        run.again = !run.again;
+        /* Latest wins: ticking this unticks an exclusion taken on this card (only possible once
+           it is answered — an unanswered exclusion has already skipped the card). */
+        if (run.again && st && st.isExcluded(ctx.unit, run.q.id, key)) {
+          st.toggleExcluded(ctx.unit, run.q.id, key);
+          paintSkip(b, false, answeredNow());
+        }
+        paintAgain(a, run.again);
+        relabelNext();
+      };
+    }
     b.onclick = function () {
       if (!st) return;
       var on = st.toggleExcluded(ctx.unit, run.q.id, key);
+      /* Latest wins: excluding unticks "see this again". */
+      if (on && run.again) {
+        run.again = false;
+        if (a) paintAgain(a, false);
+        relabelNext();
+      }
 
       /* ⭐⭐ EXCLUDING AN UNANSWERED QUESTION SKIPS IT NOW (owner, 2026-09-20, replacing §3A.5's
          "applies from the next run"): "you should auto navigate to the next question ... if doing
@@ -1855,6 +1913,7 @@
        nodes and silently locks nothing. */
     run.relayout = null;
     run.repaint = null;
+    run.again = false;        /* a repeated card arrives with "see this again" unticked */
     var id = run.q.id;
     if (id === 1) qListen();
     else if (id === 2) qBuild();
@@ -1865,6 +1924,13 @@
   function advance(itemKey, correct) {
     run.answers.push({ item: itemKey, correct: !!correct });
     if (correct) run.right++;
+    /* "See this again later": a fresh copy on the end of the queue, so nothing an engine hangs
+       on this appearance's object follows it to the next one. */
+    if (run.again) {
+      var it = run.items[run.i], copy = {};
+      for (var k in it) if (Object.prototype.hasOwnProperty.call(it, k)) copy[k] = it[k];
+      run.items.push(copy);
+    }
     run.i++;
     stopAudio();
     question();
@@ -1914,7 +1980,7 @@
       d.innerHTML = '<div class="reveal"><p class="thaibig">' + esc(b.main) + '</p>'
         + (b.sub ? '<p class="tl">' + esc(b.sub) + '</p>' : '')
         + '<div class="chips">' + chipsOf(s).map(function (g) { return chipHtml(g); }).join('') + '</div>'
-        + '<button class="nextbtn" type="button">' + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
+        + '<button class="nextbtn" type="button">' + nextLabel() + '</button></div>';
       d.querySelector('.nextbtn').onclick = function () { advance(String(s.num), ok); };
     }
     draw();
@@ -2386,7 +2452,7 @@
           + modelAnswer(s, canon, p, exact ? 'exact' : 'variant')
           + kaHint(canon, p, built) + (sHint ? renderStructHint(sHint, p) : '') + replay
           + '<button class="nextbtn" type="button">'
-          + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
+          + nextLabel() + '</button></div>';
       } else {
         /* ⛔⛔ THE WRITTEN CORRECTION HONOURS THE LEARNER'S SCRIPT SETTING. Someone working in
            transliteration must not be handed a wall of Thai at the one moment they are trying to
@@ -2396,7 +2462,7 @@
           + modelAnswer(s, canon, p, 'wrong')
           + kaHint(canon, p, built) + (sHint ? renderStructHint(sHint, p) : '') + replay
           + '<button class="nextbtn" type="button">'
-          + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
+          + nextLabel() + '</button></div>';
       }
       /* ⚠ toggleSentence, not playSentence: the clip is ALREADY playing from the automatic
          play on submit, so a fresh call would stop it and start it again from the top. This is
@@ -3109,7 +3175,7 @@
         + '<button class="playbtn" type="button"><span class="tri"></span>Play the sentence</button>';
     }
     html += '<button class="nextbtn" type="button">'
-      + (run.i + 1 >= run.items.length ? 'See your score' : 'Next') + '</button></div>';
+      + nextLabel() + '</button></div>';
     d.innerHTML = html;
     var pb = d.querySelector('.playbtn');
     if (pb && s) {

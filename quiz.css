@@ -799,6 +799,18 @@ html.te-thai-modern .tq-exitem .x-th { font-family: 'Noto Sans Thai', var(--font
   .tq-skip.done:hover { border-color: #1F5D3A; color: #1F5D3A; }
 }
 .tq-skip.done .tq-skip-sub { color: #3E7A57; }
+/* "See this again later" (owner, 2026-10-21): the same control, stacked under the exclude one.
+   ⚠ The accent, not red/green — it keeps the card in this run, it removes nothing. The `.tq-skip`
+   prefix is load-bearing: a lone `.tq-again` loses to `.tq-skip.done` (CLAUDERULES layout §TOUCH 3). */
+.tq-skip.tq-again { margin-top: 8px; }
+@media (hover: hover) {
+  .tq-skip.tq-again:hover { border-color: var(--accent, #261B65); color: var(--accent, #261B65); }
+}
+.tq-skip.tq-again.done { border-color: var(--accent, #261B65); background: var(--accent-light, #ECEBFA); color: var(--accent, #261B65); }
+@media (hover: hover) {
+  .tq-skip.tq-again.done:hover { border-color: var(--accent, #261B65); color: var(--accent, #261B65); }
+}
+.tq-skip.tq-again.done .tq-skip-sub { color: var(--accent, #261B65); opacity: .75; }
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════
    JOB 6 — QUIZ TEXT SIZE (owner, 2026-09-20)

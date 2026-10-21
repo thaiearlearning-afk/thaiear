@@ -159,7 +159,84 @@
     ownerOk = isOwner;
     if (!ownerOk) return;
     start();
+    tapTrace();
   });
+
+  /* ── TAP TRACE (2026-10-21) — "the logo needs several taps after a long quiz" ───────────────
+     Owner, iPhone PWA: after ~15 min in a quiz, exiting worked but the nav logo took several taps
+     to "prime". Not reproducible off the device, so this records what the device actually did,
+     on EVERY page (ownersim.js loads site-wide for the owner), into a localStorage ring that
+     survives the navigation the tap causes. It answers which of three things happened:
+       · no click at all after the touch       → iOS swallowed the tap (scroll in flight, busy thread)
+       · click, but no pagehide for seconds    → the navigation itself was slow (SW boot, network)
+       · a click-cancelled row                  → a script cancelled it
+     `lag` is how late the event was handled (ms) — a busy main thread shows here. Each page's
+     `load` row carries the navigation timing that delivered it. ⛔ Paths and class names only:
+     never a query string, text or anything about the account. Armed from the home-page panel. */
+  var K_TAP = 'te_taptrace', K_TAP_ON = 'te_taptrace_on';
+  function tapRows() { try { return JSON.parse(get(K_TAP) || '[]') || []; } catch (_) { return []; } }
+  function tapPush(r) {
+    var rows = tapRows();
+    if (!r.w) r.w = Date.now();
+    r.p = location.pathname;
+    rows.push(r);
+    if (rows.length > 120) rows = rows.slice(rows.length - 120);
+    set(K_TAP, JSON.stringify(rows));
+  }
+  function tapWhat(t) {
+    if (!t || !t.closest) return '?';
+    var a = t.closest('a[href]');
+    if (a) return 'a:' + (a.getAttribute('href') || '').split('?')[0].slice(0, 40);
+    var b = t.closest('button');
+    if (b) return 'btn.' + String(b.className || '').split(' ')[0].slice(0, 30);
+    return null;                                   /* not a control — not recorded */
+  }
+  function tapFlags() {
+    var c = document.documentElement.classList;
+    return (c.contains('tq-mode') ? 'Q' : '') + (c.contains('tq-running') ? 'R' : '') +
+      ' y' + Math.round(window.pageYOffset || 0);
+  }
+  function tapTrace() {
+    if (get(K_TAP_ON) !== '1') return;
+    try {
+      var nv = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      /* stamped at NAVIGATION START, so tap → new page is a true gap, not when this script ran */
+      tapPush({ e: 'load', w: Math.round(performance.timeOrigin || Date.now()), x: nv ? (nv.type + ' sw' + Math.round(nv.workerStart || 0) +
+        ' resp' + Math.round(nv.responseStart || 0) + ' dcl' + Math.round(nv.domContentLoadedEventEnd || 0)) : '' });
+    } catch (_) {}
+    ['touchstart', 'touchend', 'click'].forEach(function (type) {
+      window.addEventListener(type, function (e) {
+        var w = tapWhat(e.target);
+        if (!w) return;
+        var lag = Math.round(performance.now() - e.timeStamp);
+        tapPush({ e: type, x: w, lag: lag, f: tapFlags() });
+        /* ⚠ Written NOW, not deferred: a link click unloads the page, and a timer set here can
+           die with it (measured: the deferred row landed after pagehide). defaultPrevented is
+           only final once every listener has run, so a CANCELLED click gets a second row. */
+        if (type === 'click') setTimeout(function () { if (e.defaultPrevented) tapPush({ e: 'click-cancelled', x: w }); }, 0);
+      }, { capture: true, passive: true });
+    });
+    window.addEventListener('pagehide', function () { tapPush({ e: 'pagehide' }); });
+    document.addEventListener('visibilitychange', function () { tapPush({ e: document.hidden ? 'hidden' : 'visible' }); });
+    /* quiz enter / exit, so a trace shows how long the quiz had been open */
+    try {
+      var was = document.documentElement.classList.contains('tq-mode');
+      new MutationObserver(function () {
+        var now = document.documentElement.classList.contains('tq-mode');
+        if (now !== was) { was = now; tapPush({ e: now ? 'quiz-open' : 'quiz-close' }); }
+      }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    } catch (_) {}
+  }
+  function tapDump() {
+    var rows = tapRows();
+    if (!rows.length) return '(empty)';
+    var t0 = rows[0].w;
+    return rows.map(function (r) {
+      return String(Math.round((r.w - t0) / 100) / 10).padStart(8, ' ') + 's  ' + r.e +
+        (r.x ? '  ' + r.x : '') + (r.lag != null ? '  lag' + r.lag : '') +
+        (r.f ? '  [' + r.f + ']' : '') + '  ' + r.p;
+    }).join('\n');
+  }
 
   /* ── UI ────────────────────────────────────────────────────────────────────────────────────
      A banner on EVERY page while armed — a simulation left on by accident would otherwise quietly
@@ -361,6 +438,38 @@
     }
     paintTr();
     d.appendChild(atr);
+
+    /* ── TAP TRACE panel (2026-10-21) — the recorder is tapTrace(), above ── */
+    var ttr = document.createElement('div');
+    ttr.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px dashed #d8c8c8;' +
+      'font-size:12px;line-height:1.65';
+    function paintTap() {
+      var on = get(K_TAP_ON) === '1', n = tapRows().length;
+      ttr.innerHTML = '<strong style="color:#7A1F1F">Tap trace</strong> — the logo after a long quiz<br>' +
+        '<span>' + (on
+          ? ('ON, ' + n + ' event' + (n === 1 ? '' : 's') + '. Do a long quiz, exit, tap the logo until it ' +
+             'works, then press Show here and paste the text to Claude.')
+          : 'Off. Press Arm (works from the next page you open).') + '</span>' +
+        '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
+          '<button type="button" id="ownersim-tap-arm" style="' + SWBTN + '">' + (on ? 'Disarm + clear' : 'Arm') + '</button>' +
+          '<button type="button" id="ownersim-tap-show" style="' + SWBTN + '">Show (' + n + ')</button>' +
+        '</div>' +
+        '<textarea id="ownersim-tap-out" readonly style="width:100%;box-sizing:border-box;' +
+          'margin-top:8px;height:150px;font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;' +
+          'border:1px solid #c9c0b0;border-radius:6px;padding:6px;display:none"></textarea>';
+      ttr.querySelector('#ownersim-tap-arm').addEventListener('click', function () {
+        if (get(K_TAP_ON) === '1') { set(K_TAP_ON, null); set(K_TAP, null); } else set(K_TAP_ON, '1');
+        paintTap();
+      });
+      ttr.querySelector('#ownersim-tap-show').addEventListener('click', function () {
+        var ta = ttr.querySelector('#ownersim-tap-out');
+        ta.value = tapDump();
+        ta.style.display = 'block';
+        try { ta.focus(); ta.select(); } catch (_) {}
+      });
+    }
+    paintTap();
+    d.appendChild(ttr);
 
     /* ── GOOGLE PLAY BILLING CHECK (2026-10-12, GOOGLE_PAYMENTS_PLAN.md §3b) ─────────────────
        App 1.7 carries RevenueCat's billing plugin with no button anywhere yet; this is how the
