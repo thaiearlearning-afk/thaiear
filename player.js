@@ -7026,7 +7026,9 @@
     }
     dynBuildSessionFor(inc, DYN_KEY_NS, key, onProg, st, stage ? { stage: stage } : undefined).then(function (sess) {
       if (dynStage && dynStage.key === key) dynStage = null;
-      if (dynKey() === key) dynPersistSession(sess, mode);
+      // Stored unless a LATER change of the same direction's settings has its own build behind this one
+      // (its meta must not be overwritten by this one landing late); the other direction's meta is its own.
+      if (mode !== currentMode || dynKey() === key) dynPersistSession(sess, mode);
       if (!settled) { settled = true; resolveP(sess); return; }
       dynStageLand(sess);
     }, function (e) {
@@ -7045,8 +7047,16 @@
       if (FS) { try { FS.deleteFile({ path: sess.file, directory: 'DATA' }).catch(function () {}); } catch (_) {} }
     }
   }
+  /* Is the partial in the player the one `next` continues? The same key, the same direction as the
+     controls show, and actually in the element (a TE/ET switch mid-build leaves a partial that resolved
+     late in dynSession while the element plays the other direction: test_native_queue.js §46c). */
+  function dynStageOurs(next) {
+    if (!(dynSession && dynSession.partial && dynSessionIsLocal && dynSession.key === next.key)) return false;
+    if (String(next.key).split('|')[0] !== currentMode) return false;
+    return mainSrcReady && String(mainAudio.src || '') === String(dynSrcOf(dynSession) || '');
+  }
   function dynStageLand(full) {
-    var ours = dynSession && dynSession.partial && dynSessionIsLocal && dynSession.key === full.key;
+    var ours = dynStageOurs(full);
     if (!ours) {
       if (dynBuilding && dynBuilding.key === full.key) dynBuilding = null;
       dynLog('stage: the full session landed with nothing to swap (' + (dynSession ? 'another session is in' : 'no session') + ')');
@@ -7058,7 +7068,7 @@
     dynStageTick();
   }
   function dynStageOffer(part) {
-    var ours = dynSession && dynSession.partial && dynSessionIsLocal && dynSession.key === part.key;
+    var ours = dynStageOurs(part);
     if (!ours || dynStageFull || (dynSession.to != null && part.to <= dynSession.to)) { dynLetGo(part, true); return; }
     if (dynStageNext) dynLetGo(dynStageNext, true);
     dynStageNext = part;
@@ -7079,6 +7089,7 @@
   function dynStageTick() {
     var next = dynStageFull || dynStageNext;
     if (!next || !dynStagePartial()) return;
+    if (!dynStageOurs(next)) { dynStageFull = null; if (dynStageNext) { dynLetGo(dynStageNext, true); dynStageNext = null; } if (dynBuilding && dynBuilding.key === next.key) dynBuilding = null; return; }
     if (dynPrep || dynPendingHop) return;
     if (NA && mainAudio.tickAge > DYN_TICK_STALE_MS) return;
     var t = mainAudio.currentTime || 0, map = dynSession.map, i = dynBlockAt(t);
@@ -7116,7 +7127,7 @@
     mainSrcReady = true;
     dynPreAdvanced = false; dynPreLooped = false;
     dynPosStale = false; dynLastPos = ft; dynResumeNum = null;
-    try { mainAudio.currentTime = ft; } catch (_) {}   // the shim holds it until the prepare; an element applies it at load
+    if (ft > 0) { try { mainAudio.currentTime = ft; } catch (_) {} }   // the shim holds it until the prepare; an element applies it at load; 0 needs no seek
     var land = function () { if (ft > 0.5 && (mainAudio.currentTime || 0) < 0.5) { try { mainAudio.currentTime = ft; } catch (_) {} } };
     var done = function () {
       if (!isFull) return;
@@ -7210,6 +7221,10 @@
       .then(function (sess) {
         // Only ever revoke a LOCAL session's blob URL — an adopted session's URL lives in
         // dynAdoptCache and must survive for future re-adoption.
+        /* r270: a PARTIAL of a direction the controls no longer show (a TE/ET switch landed while it was
+           built) is not installed: the caller re-resolves in the new direction (dynEnsureMainSrc's modeAt),
+           and a partial left here would make the late full session swap itself in over the other one. */
+        if (sess.partial && mode !== currentMode) { dynLetGo(sess, true); return sess; }
         if (dynSession && dynSessionIsLocal && dynSession.url !== sess.url) dynLetGo(dynSession, true);
         dynSession = sess;
         dynSessionIsLocal = true;
