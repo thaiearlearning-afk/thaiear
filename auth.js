@@ -2719,8 +2719,8 @@
      belonged to no one: sign-out did not clear it, so the next person to sign in on the device saw
      the last one's scores and exclusions, and the last one's QUEUED ops flushed into the new
      account. Now, exactly like the plays store (plysRead): a blob stamped for another uid reads as
-     blank, and the first write overwrites it. Signed out uses its own key, is never queued and is
-     never synced or merged into an account that signs in later.
+     blank, and the first write overwrites it. Signed out uses its own key and is never queued or
+     synced WHILE signed out — ⭐ but the next sign-in ADOPTS it, once (qzAdoptAnon, 2026-10-21).
      ⚠ An UNSTAMPED blob predates this and is adopted by the first SIGNED-IN reader (it was that
      device's account's data in every ordinary case); a signed-out reader does not adopt it.
      ⚠ readUid(), not uid(): auth resolves after first paint, and a quiz opened at load must read
@@ -2755,7 +2755,81 @@
     var b = qzBlank();
     Object.keys(b).forEach(function (k) { if (!qzCache[k]) qzCache[k] = b[k]; });
     if (!who) qzCache.outbox = [];        // signed out never syncs, so nothing may sit queued
+    else qzAdoptAnon(qzCache);
     return qzCache;
+  }
+
+  /* ⭐⭐ SIGNED-OUT QUIZ WORK MOVES INTO THE ACCOUNT AT SIGN-IN (owner, 2026-10-21, overruling W72's
+     "never merged into an account that signs in later": "doing some quizzes then logging in for
+     first time is more common so let's cater to that"). The free quizzes are playable signed out,
+     and their results now reach the account the learner then creates or signs in to.
+     ⚠ The case W72 guarded — two people on one phone, the second one's signed-out work landing in
+     the first one's account — is accepted as the rarer one, knowingly. What still holds: nothing is
+     SENT while signed out (no Supabase request at all), and one account's blob never reaches another.
+     Each store is folded in by its own sync shape and queued like a fresh change:
+       scores  best = max, taken = sum (they are separate attempts)   → a score op
+       stats   counters added here AND sent as deltas in one batch      → a stats op
+       excl    adds only (a signed-out list has no record of removals)  → excl on ops
+       prefs   only where the account blob has none of its own          → prefs ops
+       rej     the Builder rejection log, never sent while signed out   → rej ops (their ids kept)
+     Then the signed-out blob is DELETED — saved here first, so a crash between can at worst repeat
+     the adoption, never lose it — and it can reach exactly one account, once.
+     Harness: test_quiz_sync.js §L. */
+  function qzAdoptAnon(d) {
+    if (QZ_V) return;                     // the private area never syncs anything (QZ_V)
+    var a = null;
+    try { a = JSON.parse(localStorage.getItem(QZ_LS_ANON) || 'null'); } catch (_) {}
+    if (!a || typeof a !== 'object') return;
+    var ops = [], rows = [];
+    Object.keys(a.scores || {}).forEach(function (k) {
+      var u = qzUnkey(k), s = a.scores[k];
+      if (!u || !s) return;
+      var cur = d.scores[k] || { best: 0, taken: 0 };
+      cur.best = Math.max(cur.best || 0, s.best || 0);
+      cur.taken = (cur.taken || 0) + (s.taken || 0);
+      d.scores[k] = cur;
+      ops.push({ k: 'score', unit: u.unit, type: u.type, best: cur.best, taken: cur.taken });
+    });
+    Object.keys(a.stats || {}).forEach(function (k) {
+      var u = qzUnkey(k);
+      if (!u) return;
+      Object.keys(a.stats[k] || {}).forEach(function (it) {
+        var c = a.stats[k][it] || {}, seen = c.seen || 0, corr = c.correct || 0;
+        if (!seen && !corr) return;
+        var m = d.stats[k] = d.stats[k] || {};
+        var cur = m[it] || { seen: 0, correct: 0 };
+        cur.seen += seen; cur.correct += corr;
+        m[it] = cur;
+        rows.push({ unit_key: u.unit, quiz_type: u.type, item: String(it), seen: seen, correct: corr });
+      });
+    });
+    if (rows.length) ops.push({ k: 'stats', batch: qzUuid(), rows: rows });
+    Object.keys(a.excl || {}).forEach(function (k) {
+      var u = qzUnkey(k);
+      if (!u) return;
+      Object.keys(a.excl[k] || {}).forEach(function (it) {
+        var set = d.excl[k] = d.excl[k] || {};
+        if (set[it]) return;
+        set[it] = 1;
+        ops.push({ k: 'excl', unit: u.unit, type: u.type, item: String(it), on: true });
+      });
+    });
+    Object.keys(a.prefs || {}).forEach(function (k) {
+      var u = qzUnkey(k), p = a.prefs[k];
+      if (!u || !p || !Object.keys(p).length) return;
+      if (d.prefs[k] && Object.keys(d.prefs[k]).length) return;   // the account's own setting stands
+      d.prefs[k] = p;
+      ops.push({ k: 'prefs', unit: u.unit, type: u.type, data: p });
+    });
+    (a.rej || []).forEach(function (r) {
+      if (!r || !r.id) return;
+      d.rej = (d.rej || []).concat([r]).slice(-300);
+      ops.push({ k: 'rej', id: r.id, unit: r.unit, type: r.type, item: String(r.item),
+                 built: r.built, canon: r.canon || '', at: r.at });
+    });
+    d.outbox = d.outbox.concat(ops);
+    qzSave();
+    try { localStorage.removeItem(QZ_LS_ANON); } catch (_) {}
   }
   function qzSave() {
     var d = qzLoadLocal();
@@ -2812,14 +2886,73 @@
   /* ⛔ Signed out: the change stays on this device only (W72 — see QZ_LS). */
   function qzQueue(op) { if (QZ_V) return; var d = qzLoadLocal(); if (!qzCacheUid) return; d.outbox.push(op); qzSave(); qzFlush(); }
 
+  /* ⛔⛔ A DELTA BATCH MAY HOLD EACH KEY ONCE (2026-10-21, measured in the Postgres log: "ON
+     CONFLICT DO UPDATE command cannot affect row a second time", 29 in one day). Both rpcs end in
+     INSERT … ON CONFLICT DO UPDATE, and Postgres refuses the WHOLE statement when two rows of it
+     hit the same key. A round that asks one item twice (noteAnswers gets one row per answer) did
+     exactly that, the rpc rolled back — batch row included — and the op failed again on every
+     flush, for ever. Summing per key sends the same totals in a statement Postgres accepts. */
+  function qzMergeStats(rows) {
+    var out = [], at = {};
+    (rows || []).forEach(function (r) {
+      var k = qzKey(r.unit_key, r.quiz_type) + '|' + String(r.item);
+      if (at[k] === undefined) {
+        at[k] = out.length;
+        out.push({ unit_key: r.unit_key, quiz_type: r.quiz_type, item: String(r.item),
+                   seen: r.seen || 0, correct: r.correct || 0 });
+      } else {
+        out[at[k]].seen += r.seen || 0;
+        out[at[k]].correct += r.correct || 0;
+      }
+    });
+    return out;
+  }
+  /* The same for Read Thai results. attempts/correct/total add; the best is kept as a PAIR by
+     apply_read_scores()'s own rule (higher ratio, then the longer test), never a column at a time. */
+  function qzBetterRead(a, b) {        // is pair b strictly better than pair a?
+    if (!(b.best_total > 0)) return false;
+    if (!(a.best_total > 0)) return true;
+    var ra = a.best_correct / a.best_total, rb = b.best_correct / b.best_total;
+    return rb > ra || (rb === ra && b.best_total > a.best_total);
+  }
+  function qzMergeRead(rows) {
+    var out = [], at = {};
+    (rows || []).forEach(function (r) {
+      if (!r || r.key == null) return;
+      var k = String(r.key);
+      if (at[k] === undefined) {
+        at[k] = out.length;
+        out.push({ key: r.key, attempts: r.attempts || 0, correct: r.correct || 0, total: r.total || 0,
+                   best_correct: r.best_correct || 0, best_total: r.best_total || 0 });
+        return;
+      }
+      var m = out[at[k]];
+      m.attempts += r.attempts || 0; m.correct += r.correct || 0; m.total += r.total || 0;
+      var pair = { best_correct: r.best_correct || 0, best_total: r.best_total || 0 };
+      if (qzBetterRead(m, pair)) { m.best_correct = pair.best_correct; m.best_total = pair.best_total; }
+    });
+    return out;
+  }
+
   function qzSend(op, uid) {
     if (op.k === 'score') {
-      /* ⚠ We always send the LOCAL BEST, and the local best only rises, so re-sending is safe
-         without a server-side greatest(). */
-      return client.from('quiz_scores').upsert({
-        user_id: uid, unit_key: op.unit, quiz_type: op.type,
-        best: op.best, taken: op.taken, updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id,unit_key,quiz_type' });
+      /* ⚠ We always send the LOCAL BEST, and the local best only rises, so re-sending is safe.
+         ⛔ BUT NOT AGAINST ANOTHER DEVICE'S HIGHER ONE (2026-10-21). A plain upsert writes this
+         device's values whole, so a device that had not yet pulled — a first sign-in, which now
+         also carries adopted signed-out scores (qzAdoptAnon) — overwrote a better best and a
+         higher count with its own. So: read the row, send the max of each. Still idempotent; a
+         race between two devices inside one round trip is the only window left. */
+      return client.from('quiz_scores').select('best,taken')
+        .eq('user_id', uid).eq('unit_key', op.unit).eq('quiz_type', op.type).maybeSingle()
+        .then(function (r) {
+          if (r && r.error) return r;
+          var s = (r && r.data) || {};
+          return client.from('quiz_scores').upsert({
+            user_id: uid, unit_key: op.unit, quiz_type: op.type,
+            best: Math.max(op.best || 0, s.best || 0), taken: Math.max(op.taken || 0, s.taken || 0),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id,unit_key,quiz_type' });
+        });
     }
     if (op.k === 'prefs') {
       return client.from('quiz_prefs').upsert({
@@ -2849,8 +2982,10 @@
     }
     if (op.k === 'stats') {
       /* ⛔ Deltas via the rpc, keyed on a batch id the SERVER dedupes. Absolute values here
-         would lose every answer given on a second device. */
-      return client.rpc('apply_quiz_stats', { p_batch: op.batch, p_rows: op.rows });
+         would lose every answer given on a second device.
+         ⛔ ONE ROW PER ITEM — qzMergeStats(). Merged HERE, at send time, not only where the op is
+         made, so a batch already stuck in someone's outbox heals on its next flush. */
+      return client.rpc('apply_quiz_stats', { p_batch: op.batch, p_rows: qzMergeStats(op.rows) });
     }
     if (op.k === 'readsc') {
       /* ⭐ Read Thai test results (2026-09-23). Same delta-plus-batch-id shape as `stats`
@@ -2872,7 +3007,7 @@
          device, which is what the course did before today. ⛔ Only a MISSING FUNCTION is
          swallowed — a network failure, an RLS refusal or a bad row still retries and still
          keeps the learner's data. */
-      return client.rpc('apply_read_scores', { p_batch: op.batch, p_rows: op.rows })
+      return client.rpc('apply_read_scores', { p_batch: op.batch, p_rows: qzMergeRead(op.rows) })
         .then(function (r) {
           var e = r && r.error;
           if (e && qzMissingFn(e)) return { error: null };
@@ -2910,23 +3045,77 @@
     return Promise.resolve({});
   }
 
-  function qzFlush() {
+  /* ⛔⛔ NEVER SEND THE OUTBOX WITHOUT A LIVE SESSION THAT SUPABASE ITSELF HOLDS (2026-10-21).
+     MEASURED (Supabase logs, one day): quiz_scores POST → 401 ×18,162 against 3 successes, and
+     "permission denied for table quiz_scores" ×6,141 in Postgres — 93% of every error the project
+     logged. The grants are right (authenticated may write), so those requests arrived as ANON.
+     HOW: client.from() authenticates with supabase-js's OWN stored session, not currentSession.
+     When supabase has purged its session (a refresh it could not complete — see DURABLE OFFLINE
+     IDENTITY) but our identity record keeps the person signed in (the restore at boot, or the
+     authChange GUARD), currentUser is set and supabase sends the anon key. The outbox then
+     re-sent EVERY queued op on EVERY `thaiear:auth` — which fires on each notify(), including
+     every counted listen — and each one bounced. A few such devices made the whole storm.
+     So: (1) before sending, ask supabase for its own session; if it has none or a dead token,
+     re-seed it from our record (reseedSession), and send nothing if that fails — the queue keeps
+     every op; (2) a token the server refuses becomes badToken, so the next try renews instead of
+     re-sending it; (3) a flush that fails backs off (30 s doubling to 15 min) before an AUTOMATIC
+     retry. An explicit flush (pull, flush(), reconnect) skips only the wait — never the session
+     check. ⚠ The learner's data is never dropped by any of this: it waits on the device. */
+  var qzWaitUntil = 0, qzBackoff = 0;
+  var qzFailTok = null;     // the session token in hand when a flush last failed; a NEW one ends the wait
+  function qzAuthErr(r) {
+    var e = (r && r.error) || {};
+    var st = Number(r && r.status), code = String(e.code || ''), msg = String(e.message || e.msg || '');
+    return st === 401 || st === 403 || code === '42501' || code === 'PGRST301' || code === 'PGRST303' ||
+           /permission denied|jwt expired|invalid jwt/i.test(msg);
+  }
+  function qzOwnSession(uid) {
+    return client.auth.getSession().then(function (r) {
+      var s = r && r.data && r.data.session;
+      return (s && s.user && s.user.id === uid && tokenLive(s.access_token)) ? s.access_token : null;
+    }, function () { return null; });
+  }
+  /* Resolves the access token supabase will send, or null when there is no live one to send. */
+  function qzLiveToken(uid) {
+    return qzOwnSession(uid).then(function (tok) {
+      if (tok) return tok;
+      return reseedSession().then(function (ok) { return ok ? qzOwnSession(uid) : null; });
+    }).catch(function () { return null; });
+  }
+
+  function qzFlush(force) {
     if (QZ_V) return Promise.resolve(false);   // the area's store never syncs — see QZ_V
     var d = qzLoadLocal();
     if (qzFlushing || !client || !currentUser || !d.outbox.length) return Promise.resolve(false);
     /* ⛔ Only this account's queue, ever (W72): the blob in hand must be the signed-in user's. */
     if (qzCacheUid !== currentUser.id) return Promise.resolve(false);
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(false);
+    if (force !== true && Date.now() < qzWaitUntil) return Promise.resolve(false);   // backing off
     qzFlushing = true;
     qzFlushGen++;                      /* pull() reads this to see a flush cross its read (W72) */
     var batch = d.outbox.slice();
     var uid = currentUser.id;
+    var tok = null;
 
-    return Promise.all(batch.map(function (op) {
-      return Promise.resolve(qzSend(op, uid)).then(
-        function (r) { return (r && r.error) ? { error: r.error } : { ok: 1 }; },
-        function (e) { return { error: e }; });
-    })).then(function (res) {
+    return qzLiveToken(uid).then(function (t) {
+      tok = t;
+      if (!tok) {
+        return batch.map(function () {
+          return { error: { message: 'no live session on this device (queue kept)' }, auth: 1 };
+        });
+      }
+      return Promise.all(batch.map(function (op) {
+        return Promise.resolve(qzSend(op, uid)).then(
+          function (r) { return (r && r.error) ? { error: r.error, auth: qzAuthErr(r) } : { ok: 1 }; },
+          function (e) { return { error: e }; });
+      }));
+    }).then(function (res) {
+      if (tok && res.some(function (r) { return r.auth; })) badToken = tok;   // renew, never re-send it
+      if (res.some(function (r) { return r.error; })) {
+        qzBackoff = Math.min(Math.max(qzBackoff * 2, 30000), 15 * 60000);
+        qzWaitUntil = Date.now() + qzBackoff;
+        qzFailTok = (currentSession && currentSession.access_token) || null;
+      } else { qzBackoff = 0; qzWaitUntil = 0; qzFailTok = null; }
       /* ⚠ Drop only the entries that SUCCEEDED. Clearing the whole box on a partial failure is
          the fault that loses a learner's offline run. */
       var keep = [];
@@ -2979,7 +3168,7 @@
        must not clear anything on it. */
     pull: function () {
       if (!client || !currentUser) return Promise.resolve(null);
-      return qzFlush().then(function () {
+      return qzFlush(true).then(function () {
         return client.from('read_scores')
           .select('key,attempts,sum_correct,sum_total,best_correct,best_total')
           .eq('user_id', currentUser.id);
@@ -3170,7 +3359,7 @@
         .catch(function () { return null; });
     },
 
-    flush: function () { return qzFlush(); },
+    flush: function () { return qzFlush(true); },
     pending: function () { return qzLoadLocal().outbox.length; },
     /* The first error from the last flush, or null after a clean one. Owner-facing only — it is
        what the rejection panel prints when the queue will not drain. */
@@ -3206,7 +3395,7 @@
       var uid = currentUser.id;
       var tries = 0;
       function read() {
-        return qzIdle().then(function () { return qzFlush(); }).then(qzIdle).then(function () {
+        return qzIdle().then(function () { return qzFlush(true); }).then(qzIdle).then(function () {
           var gen = qzFlushGen;
           return Promise.all([
             client.from('quiz_scores').select('unit_key,quiz_type,best,taken').eq('user_id', uid),
@@ -3276,10 +3465,16 @@
     _reset: function () { qzCache = qzBlank(); qzSave(); }
   };
 
-  /* Drain on reconnect and on sign-in — the two moments every other outbox here uses. */
+  /* Drain on reconnect and on sign-in — the two moments every other outbox here uses.
+     ⚠ `thaiear:auth` fires on EVERY notify(), not only on sign-in, so it respects the back-off —
+     unless the session token has changed since the failure (a sign-in or a refresh), which is
+     exactly the moment a retry can succeed. */
   try {
-    window.addEventListener('online', function () { qzFlush(); });
-    window.addEventListener('thaiear:auth', function () { qzFlush(); });
+    window.addEventListener('online', function () { qzFlush(true); });
+    window.addEventListener('thaiear:auth', function () {
+      var t = (currentSession && currentSession.access_token) || null;
+      qzFlush(!!t && t !== qzFailTok);
+    });
   } catch (_) {}
 
   /* ══ OAUTH / MAGIC-LINK FAILURE SURFACING (2026-08-17) ══════════════════════════════════════
