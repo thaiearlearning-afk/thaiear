@@ -470,7 +470,9 @@
           : 'Off. Press Arm (works from the next page you open).') + '</span>' +
         '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
           '<button type="button" id="ownersim-tap-arm" style="' + SWBTN + '">' + (on ? 'Disarm + clear' : 'Arm') + '</button>' +
+          '<button type="button" id="ownersim-tap-copy" style="' + SWBTN + '"' + (n ? '' : ' disabled') + '>Copy all</button>' +
           '<button type="button" id="ownersim-tap-show" style="' + SWBTN + '">Show (' + n + ')</button>' +
+          '<button type="button" id="ownersim-tap-clear" style="' + SWBTN + '"' + (n ? '' : ' disabled') + '>Clear (stay armed)</button>' +
         '</div>' +
         '<textarea id="ownersim-tap-out" readonly style="width:100%;box-sizing:border-box;' +
           'margin-top:8px;height:150px;font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;' +
@@ -484,6 +486,26 @@
         ta.value = tapDump();
         ta.style.display = 'block';
         try { ta.focus(); ta.select(); } catch (_) {}
+      });
+      /* Copy all (owner, 2026-10-21: selecting the textarea on the phone was hopeless). The clipboard API
+         first; where it refuses, the old select-and-copy on a hidden textarea. */
+      var cp = ttr.querySelector('#ownersim-tap-copy');
+      cp.addEventListener('click', function () {
+        var txt = tapDump();
+        var done = function () { cp.textContent = 'Copied ✓'; }, fallback = function () {
+          var ta = document.createElement('textarea');
+          ta.value = txt; ta.setAttribute('readonly', '');
+          ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+          document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, txt.length);
+          var ok = false; try { ok = document.execCommand('copy'); } catch (_) {}
+          ta.remove();
+          cp.textContent = ok ? 'Copied ✓' : 'Copy failed — use Show';
+        };
+        try { navigator.clipboard.writeText(txt).then(done, fallback); } catch (_) { fallback(); }
+      });
+      ttr.querySelector('#ownersim-tap-clear').addEventListener('click', function () {
+        set(K_TAP, null);
+        paintTap();
       });
     }
     paintTap();
