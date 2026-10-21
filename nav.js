@@ -1028,6 +1028,10 @@
       if (hasPlayer()) return;                  // player.js took over on this page
       let rep = false;
       try { rep = localStorage.getItem('thaiear_repeat') === '1'; } catch (_) {}
+      // r270 (player.js): a PARTIAL session — the first sentences of a unit whose rest was still building when
+      // its page was left — is never looped: it would replay three sentences for ever. It stops, like autoplay.
+      const np = npGet();
+      if (np && np.partial) rep = false;
       if (rep) { NA.seekTo({ seconds: 0 }).then(function () { NA.play(); }).catch(function () {}); }   // repeat-one
       // Autoplay: the built units have run out, so it stops here (r261), as on a locked phone.
     });
