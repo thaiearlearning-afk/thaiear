@@ -154,15 +154,22 @@
     } catch (_) {}
     return null;
   }
-  /* /api/ is never cached by sw.js, so this is the network or nothing. */
+  /* /api/ is never cached by sw.js, so this is the network or nothing.
+     ⛔ ONLY A LIVE TOKEN IS SENT (sw v872). Once auth.js is ready its token can still be the saved
+     session's expired one (a boot that restored it before the refresh landed), and the endpoint
+     answers that with the same 404 as "not allowed", so the menu came up empty. auth.liveToken()
+     renews first and never hands out a stale token; the saved token (storedToken: a minute left)
+     is the fallback, as it is before auth.js is ready. */
   function api(q) {
-    var a = A(), tok = (a && a.isReady && a.getAccessToken) ? a.getAccessToken() : null;
-    if (!tok) tok = storedToken();
-    if (!tok) return Promise.resolve(null);
-    return fetchT('/api/vault?' + q, { headers: { Authorization: 'Bearer ' + tok }, cache: 'no-store',
-      credentials: 'same-origin' }, 9000)
-      .then(function (r) { return (r && r.ok) ? r.text() : null; })
-      .catch(function () { return null; });
+    var a = A();
+    var pick = (a && a.isReady && a.liveToken) ? a.liveToken() : Promise.resolve(null);
+    return pick.then(function (tok) {
+      tok = tok || storedToken();
+      if (!tok) return null;
+      return fetchT('/api/vault?' + q, { headers: { Authorization: 'Bearer ' + tok }, cache: 'no-store',
+        credentials: 'same-origin' }, 9000)
+        .then(function (r) { return (r && r.ok) ? r.text() : null; });
+    }).catch(function () { return null; });
   }
   function cacheText(key) {
     if (!window.caches) return Promise.resolve(null);

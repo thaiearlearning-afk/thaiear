@@ -558,10 +558,21 @@
    PRIVATE data, never from this file. Nothing is requested signed out; a refused account is
    remembered for a day (te_x_chk) so an ordinary visit does not ask again; an allowed one is
    remembered on the device (te_v_entry, wiped with the area by auth.js privateWipe), so the entry
-   is there offline too. */
+   is there offline too.
+   ⛔ THE ENDPOINT'S 404 IS AMBIGUOUS BY DESIGN: no token, a stale token, a failed check upstream and
+   "not on the list" all get the same answer. Until sw v872 every 404 was taken as a refusal: the
+   entry was deleted and the refusal kept for a day, so an allowed account lost its entry for a day
+   whenever a page booted on the saved session's expired token (typically the first open after an
+   update) and asked before the refresh landed. Since v872:
+   1. only a LIVE token is sent (auth.liveToken() renews first and never hands out a stale one). No
+      live token = no question; the refresh's thaiear:auth asks again;
+   2. an account this device has seen allowed is NEVER forgotten on a 404: it keeps its entry and is
+      asked again on the next page. Only privateWipe (sign-out, another account) removes it;
+   3. a refusal is remembered only for an account with no entry here, and only a record written by
+      this rule counts (v: 2). Older records may have come from a stale token, so they are ignored. */
 (function () {
   'use strict';
-  var KEY = 'te_v_entry', NO = 'te_x_chk', DAY = 86400000;
+  var KEY = 'te_v_entry', NO = 'te_x_chk', DAY = 86400000, NO_V = 2;
   var LOCAL = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
   var busy = false, doneFor = null;
   function get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } }
@@ -592,24 +603,30 @@
     }
     var u = A.getUser && A.getUser();
     if (!u || !u.id) { paint(null); doneFor = null; return; }
-    var have = get(KEY);
-    paint(have && have.u === u.id ? have.label : null);
+    var have = get(KEY), known = !!(have && have.u === u.id);
+    paint(known ? have.label : null);
     if (busy || doneFor === u.id) return;
     var no = get(NO);
-    if (no && no.u === u.id && Date.now() - no.t < DAY) { doneFor = u.id; return; }
-    var tok = A.getAccessToken && A.getAccessToken();
-    if (!tok || navigator.onLine === false) return;
+    if (!known && no && no.v === NO_V && no.u === u.id && Date.now() - no.t < DAY) { doneFor = u.id; return; }
+    if (navigator.onLine === false) return;
     busy = true;
-    fetch('/api/vault?q=me', { headers: { Authorization: 'Bearer ' + tok }, cache: 'no-store' })
-      .then(function (r) {
-        if (r.status === 404) return { refused: true };
-        return r.ok ? r.json() : null;
+    (A.liveToken ? A.liveToken() : Promise.resolve(null))   // an older auth.js: ask nothing rather than risk a stale token
+      .then(function (tok) {
+        if (!tok) return null;                             // (1) nothing the server would accept yet
+        return fetch('/api/vault?q=me', { headers: { Authorization: 'Bearer ' + tok }, cache: 'no-store' })
+          .then(function (r) {
+            if (r.status === 404) return { refused: true };
+            return r.ok ? r.json() : null;
+          });
       })
       .then(function (me) {
         busy = false;
-        if (!me) return;                                   // a network fault: keep what we had
+        if (!me) return;                                   // no live token, or a network fault: keep what we had
         doneFor = u.id;
-        if (me.refused || !me.label) { put(KEY, null); put(NO, { u: u.id, t: Date.now() }); paint(null); return; }
+        if (me.refused || !me.label) {
+          if (known) return;                               // (2) kept; asked again on the next page
+          put(KEY, null); put(NO, { u: u.id, t: Date.now(), v: NO_V }); paint(null); return;
+        }
         put(NO, null);
         put(KEY, { u: u.id, label: me.label });
         try { localStorage.setItem('te_v_uid', u.id); } catch (_) {}

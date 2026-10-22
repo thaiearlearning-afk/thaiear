@@ -1721,6 +1721,17 @@
         return (currentSession && currentSession.access_token) || null;
       });
     },
+    /* The same renewal, but NEVER a stale token: null unless the token held afterwards is live
+       (offline, or a refresh that failed, leaves the expired one in place, and freshToken hands it
+       out). For a caller that must not read the server's answer to a stale token as a verdict: the
+       allow-listed area's 404 is the same for "not allowed" and "bad token" by design
+       (functions/api/vault.js), and topics-page.js once stored it as a refusal for a day (sw v872). */
+    liveToken: function () {
+      return ensureFreshToken().then(function () {
+        var t = currentSession && currentSession.access_token;
+        return tokenLive(t) ? t : null;
+      });
+    },
     resetPlays: function () {
       if (!currentUser || !currentSession) return Promise.resolve(false);
       return ensureFreshToken().then(function () {
