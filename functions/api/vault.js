@@ -28,7 +28,7 @@ import { json, signerFor, presignR2Get } from './audio.js';
 
 const URL_TTL = 21600;   // same lifetime as audio.js (player.js clamps its own cache below it)
 const MAX_BATCH = 120;
-const CLIP_RE = /^X\d_S9\d{4}_(DE|EN|TH)\.mp3$/;
+const CLIP_RE = /^X\d{1,2}_S9\d{4}_(DE|EN|TH)\.mp3$/;   // X1 … X99: the area passed nine units in 2026-10
 
 const nothing = () => json({ error: 'not_found' }, 404);
 
@@ -65,7 +65,7 @@ export async function onRequestGet(context) {
   if (!user) return nothing();
 
   const q = params.get('q');
-  if (q === 'me' || /^t\d$/.test(q || '')) {
+  if (q === 'me' || /^t\d{1,2}$/.test(q || '')) {
     let body = null;
     try { body = await readObject(env, 'v-' + q + '.json'); } catch (_) {}
     if (body == null) return nothing();

@@ -395,7 +395,7 @@
      Everything the area writes is recognisable by NAME, so this needs no list kept in step:
        localStorage `te_v_*` · download-manifest prefixes `X<n>` · te_mint_v1 / thaiear-audio-dl entries for
        clips `X<n>_S9nnnn_<LANG>.mp3` · thaiear-dl entries under `/v`. test_vault.js pins the shapes. */
-  var VCLIP_RE = /X\d_S9\d{4}_(DE|EN|TH)\.mp3/;
+  var VCLIP_RE = /X\d{1,2}_S9\d{4}_(DE|EN|TH)\.mp3/;   // X1 … X99: the area passed nine units in 2026-10
   // dyn settings, exclusions, session metas and the area's own 'apply to all' (player.js dynSetKey,
   // DYN_EXCL_KEY, dynMetaLsKey, dynGdefKey): the namespace is the unit's prefix, X<n>, or X_ for defaults.
   var VDYN_KEY_RE = /^te_dyn_[a-z]+_X(\d|_)/;
@@ -408,7 +408,7 @@
       var man = JSON.parse(localStorage.getItem('thaiear_offline') || 'null');
       if (man && typeof man === 'object') {
         var hit = false;
-        Object.keys(man).forEach(function (p) { if (/^X\d$/.test(p)) { delete man[p]; hit = true; } });
+        Object.keys(man).forEach(function (p) { if (/^X\d{1,2}$/.test(p)) { delete man[p]; hit = true; } });
         if (hit) localStorage.setItem('thaiear_offline', JSON.stringify(man));
       }
       for (var si = sessionStorage.length - 1; si >= 0; si--) {   // v.js keeps this tab's copy here too
@@ -427,13 +427,17 @@
     try {
       var FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
       if (FS) {
-        ['X1', 'X2', 'X3', 'X4', 'X5', 'X6'].forEach(function (p) {
-          FS.rmdir({ directory: 'DATA', path: 'offline/' + p, recursive: true }).catch(function () {});
-        });
+        // the unit folders by NAME, like everything else here: a list of units went stale when the area grew
+        FS.readdir({ path: 'offline', directory: 'DATA' }).then(function (r) {
+          ((r && r.files) || []).forEach(function (f) {
+            var n = (typeof f === 'string') ? f : (f && f.name);
+            if (n && /^X\d{1,2}$/.test(n)) FS.rmdir({ directory: 'DATA', path: 'offline/' + n, recursive: true }).catch(function () {});
+          });
+        }).catch(function () {});
         FS.readdir({ path: '', directory: 'DATA' }).then(function (r) {
           ((r && r.files) || []).forEach(function (f) {
             var n = (typeof f === 'string') ? f : (f && f.name);
-            if (n && /^dyn-X\d-/.test(n)) FS.deleteFile({ path: n, directory: 'DATA' }).catch(function () {});
+            if (n && /^dyn-X\d{1,2}-/.test(n)) FS.deleteFile({ path: n, directory: 'DATA' }).catch(function () {});
           });
         }).catch(function () {});
       }
@@ -447,7 +451,7 @@
               var p = '';
               try { p = new URL(r.url).pathname; } catch (_) { return; }
               if (VCLIP_RE.test(p) || p === '/v' || p === '/v.html' || p.indexOf('/v-') === 0 ||
-                  /^\/dyn\/X\d\//.test(p)) c.delete(r).catch(function () {});
+                  /^\/dyn\/X\d{1,2}\//.test(p)) c.delete(r).catch(function () {});
             });
           });
         }).catch(function () {});
