@@ -159,7 +159,9 @@
     ownerOk = isOwner;
     if (!ownerOk) return;
     start();
-    tapTrace();
+    /* ⚠ Always on since v873, so it runs before every panel test too: a throw here must never take
+       the simulator (and its Turn-off button) down with it. */
+    try { tapTrace(); } catch (_) {}
   });
 
   /* ── TAP TRACE (2026-10-21) — "the logo needs several taps after a long quiz" ───────────────
@@ -172,20 +174,63 @@
        · a click-cancelled row                  → a script cancelled it
      `lag` is how late the event was handled (ms) — a busy main thread shows here. Each page's
      `load` row carries the navigation timing that delivered it. ⛔ Paths and class names only:
-     never a query string, text or anything about the account. Armed from the home-page panel. */
-  var K_TAP = 'te_taptrace', K_TAP_ON = 'te_taptrace_on', K_TAP_SEQ = 'te_taptrace_seq';
-  function tapRows() { try { return JSON.parse(get(K_TAP) || '[]') || []; } catch (_) { return []; } }
+     never a query string, text or anything about the account.
+     ⭐ ALWAYS ON FOR THE OWNER (owner, 2026-10-22: "dont want to be arming traces pre emptively.
+     just have it running"). There is no Arm switch any more; the panel keeps Show / Copy / Clear. */
+  /* ⛔⛔ ONE localStorage KEY PER EVENT, NEVER ONE SHARED BLOB (2026-10-22). Until v873 the whole
+     trace was ONE JSON array that every event read, appended to and wrote back, and the sync
+     rewrote it minus what it sent. On the iPhone PWA two documents of the same origin do NOT see
+     one localStorage at the same instant (an old page and the one a tap opened run in different
+     WebKit processes and their writes reach each other late) — proven on 2026-10-22 18:09, when two
+     batches with DIFFERENT ids carried the same 48 events: each page's sync had seen no flight of
+     the other's. A page writing back the whole array from a view like that deletes every event it
+     had not seen yet, and the same day an hour of the owner's offline use (11:53 → 15:17, the
+     12:59 logo taps among it) never arrived although the panel said nothing was waiting.
+     ✅ Now an event is written once under its own key and never rewritten; the sync removes exactly
+     the keys it sent and nothing else, so a stale page can at worst send an event twice — and
+     each event carries its key (`i`), which read_owner_traces.js de-duplicates on.
+     The key is `te_tt:<page id>.<n>`: a page id per document, so no counter is shared either. */
+  var K_TAP = 'te_taptrace', K_TT = 'te_tt:', TAP_CAP = 3000;   // K_TAP: the old blob, migrated once
+  var tapPage = Date.now().toString(36) + Math.random().toString(36).slice(2, 6), tapN = 0;
+  function tapKeys() {
+    var out = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(K_TT) === 0) out.push(k);
+      }
+    } catch (_) {}
+    return out;
+  }
+  // oldest first; `_k` is the event's own storage key (sent as `i`)
+  function tapRows() {
+    var rows = [];
+    tapKeys().forEach(function (k) {
+      try { var r = JSON.parse(get(k)); if (r && r.w) { r._k = k; rows.push(r); } } catch (_) {}
+    });
+    rows.sort(function (a, b) { return a.w - b.w; });
+    return rows;
+  }
   function tapPush(r) {
-    var rows = tapRows();
     if (!r.w) r.w = Date.now();
     r.p = location.pathname;
-    r.s = (parseInt(get(K_TAP_SEQ), 10) || 0) + 1;   // the sync clears by sequence number (traceSync)
-    set(K_TAP_SEQ, r.s);
-    rows.push(r);
-    /* 1500: the ring is cleared by every sync, so this only fills while offline. (Was 300, then 120;
-       each event re-writes the whole ring, so it must not grow without bound on a slow phone.) */
-    if (rows.length > 1500) rows = rows.slice(rows.length - 1500);
-    set(K_TAP, JSON.stringify(rows));
+    set(K_TT + tapPage + '.' + (++tapN), JSON.stringify(r));
+    /* The cap only bites after a long time offline (every sync removes what it sent). Checked every
+       200th event, because counting means walking every key. */
+    if (tapN % 200 === 0) {
+      var rows = tapRows();
+      if (rows.length > TAP_CAP) rows.slice(0, rows.length - TAP_CAP).forEach(function (o) { set(o._k, null); });
+    }
+  }
+  function tapClearAll() { tapKeys().forEach(function (k) { set(k, null); }); set(K_FLIGHT, null); }
+  // a device still holding the pre-v873 blob: re-file its events one per key, then drop it
+  function tapMigrate() {
+    var old = null;
+    try { old = JSON.parse(get(K_TAP) || 'null'); } catch (_) {}
+    if (Array.isArray(old)) old.forEach(function (r, i) {
+      if (r && r.w) { delete r.s; set(K_TT + 'old' + tapPage + '.' + i, JSON.stringify(r)); }
+    });
+    set(K_TAP, null); set('te_taptrace_seq', null); set('te_taptrace_on', null);
   }
   function tapWhat(t) {
     if (!t || !t.closest) return '?';
@@ -201,13 +246,18 @@
       ' y' + Math.round(window.pageYOffset || 0);
   }
   function tapTrace() {
-    if (get(K_TAP_ON) !== '1') return;
+    tapMigrate();
     try {
       var nv = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
-      /* stamped at NAVIGATION START, so tap → new page is a true gap, not when this script ran */
-      tapPush({ e: 'load', w: Math.round(performance.timeOrigin || Date.now()), x: nv ? (nv.type + ' sw' + Math.round(nv.workerStart || 0) +
-        ' resp' + Math.round(nv.responseStart || 0) + ' dcl' + Math.round(nv.domContentLoadedEventEnd || 0)) : '' });
+      /* stamped at NAVIGATION START, so tap → new page is a true gap, not when this script ran.
+         ` offline` = the page opened with no network, so a long gap after it is not a lost upload. */
+      tapPush({ e: 'load', w: Math.round(performance.timeOrigin || Date.now()), x: (nv ? (nv.type + ' sw' + Math.round(nv.workerStart || 0) +
+        ' resp' + Math.round(nv.responseStart || 0) + ' dcl' + Math.round(nv.domContentLoadedEventEnd || 0)) : '') +
+        (navigator.onLine === false ? ' offline' : '') });
     } catch (_) {}
+    /* Other code may add its own rows (quiz.js: what the quiz's audio did, 2026-10-22). Exists only
+       for the owner, so a caller's `if (window.ThaiEarTrace)` is the whole gate. */
+    window.ThaiEarTrace = { note: function (e, x) { tapPush({ e: String(e), x: x ? String(x).slice(0, 120) : '', f: tapFlags() }); } };
     ['touchstart', 'touchend', 'click'].forEach(function (type) {
       window.addEventListener(type, function (e) {
         var w = tapWhat(e.target);
@@ -254,13 +304,13 @@
   /* ── TRACE SYNC (2026-10-21) — the traces collect themselves into the owner's account ─────────
      Owner: "a private supabase table for just me that just collects them all, syncs online when
      online (and clears local) and builds up locally until online … then i tell you when something
-     strange happened". While the tap trace is armed, every 60 s (and on load, on `online`, on
-     leaving the page) the tap ring AND the Android app's lock-screen trace (te_tail_trace, written
+     strange happened". Every 60 s (and on load, on `online`, on
+     leaving the page) the tap events AND the Android app's lock-screen trace (te_tail_trace, written
      by player.js tailTrace) go to `owner_traces` (owner_traces.sql) as one batch, and what was sent
      is deleted here. Offline it simply builds up. Read from tooling: read_owner_traces.js.
      ⛔ REPLAY-SAFE: the batch is recorded (id + what it covers) BEFORE it is sent, and a batch that
      never got its answer is re-sent with the SAME id, which the insert ignores if it already landed.
-     ⛔ Deletes only what was sent: tap rows by sequence number, lock rows by count + last stamp;
+     ⛔ Deletes only what was sent: tap events by their own keys, lock rows by count + last stamp;
      anything written during the request stays for the next batch. */
   var K_TAIL = 'te_tail_trace', K_FLIGHT = 'te_trace_inflight', K_SYNC = 'te_trace_sync';
   var SB_URL = 'https://auth.thaiear.com', SB_KEY = 'sb_publishable_Msf5wsXw0KdugHGd5C2-mA_TNxbhT0e';   // as auth.js
@@ -295,12 +345,16 @@
     if (!fl) {
       if (!taps.length && !tails.length) return null;
       var tapN = Math.min(taps.length, TRACE_MAX), tailN = Math.min(tails.length, Math.max(0, TRACE_MAX - tapN));
-      fl = { id: traceUuid(), maxS: tapN ? (taps[tapN - 1].s || 0) : 0, tailN: tailN,
+      fl = { id: traceUuid(), keys: taps.slice(0, tapN).map(function (r) { return r._k; }), tailN: tailN,
              tailLast: tailN ? tails[tailN - 1][0] : 0 };
       set(K_FLIGHT, JSON.stringify(fl));
     }
-    var ev = taps.filter(function (r) { return (r.s || 0) <= fl.maxS; }).map(function (r) {
-      var o = { k: 'tap', w: r.w, e: r.e, p: r.p };
+    /* ⚠ A pre-v873 flight has no `keys` (it named a sequence number): it sends its lock lines, if
+       any, and retires; its tap events are still on the device and go in the next batch. */
+    var want = {};
+    (fl.keys || []).forEach(function (k) { want[k] = 1; });
+    var ev = taps.filter(function (r) { return want[r._k]; }).map(function (r) {
+      var o = { k: 'tap', i: r._k.slice(K_TT.length), w: r.w, e: r.e, p: r.p };
       if (r.x) o.x = r.x; if (r.lag != null) o.lag = r.lag; if (r.f) o.f = r.f;
       return o;
     });
@@ -311,8 +365,7 @@
     return { fl: fl, ev: ev };
   }
   function traceClear(fl) {
-    var taps = tapRows().filter(function (r) { return (r.s || 0) > fl.maxS; });
-    set(K_TAP, taps.length ? JSON.stringify(taps) : null);
+    (fl.keys || []).forEach(function (k) { set(k, null); });   // ⛔ only what was sent: see K_TT
     if (fl.tailN) {
       var t = tailRows(), drop = 0;
       while (drop < t.length && drop < fl.tailN && t[drop][0] <= fl.tailLast) drop++;
@@ -322,7 +375,7 @@
   }
   function traceStat() { try { return JSON.parse(get(K_SYNC) || 'null') || {}; } catch (_) { return {}; } }
   function traceSync(leaving) {
-    if (traceBusy || get(K_TAP_ON) !== '1') return Promise.resolve();
+    if (traceBusy) return Promise.resolve();
     if (navigator.onLine === false) return Promise.resolve();
     var uid = realUid(), A = window.ThaiEarAuth;
     if (!uid || !A || !A.freshToken) return Promise.resolve();
@@ -577,29 +630,22 @@
     ttr.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px dashed #d8c8c8;' +
       'font-size:12px;line-height:1.65';
     function paintTap() {
-      var on = get(K_TAP_ON) === '1', n = tapRows().length;
+      var n = tapRows().length;
       var ss = traceStat(), hm = function (ms) { var d = new Date(ms); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); };
       var synced = ss.at ? ('Last sent to your account at ' + hm(ss.at) + ' (' + (ss.n || 0) + ' events so far).') : 'Nothing sent to your account yet.';
       if (ss.err && (!ss.at || ss.errAt > ss.at)) synced += ' Last try failed at ' + hm(ss.errAt) + ' (' + ss.err + '); it retries every minute.';
       ttr.innerHTML = '<strong style="color:#7A1F1F">Tap trace</strong> — a link that needs several taps<br>' +
-        '<span>' + (on
-          ? ('ON, collecting. ' + n + ' event' + (n === 1 ? '' : 's') + ' waiting on this device (they go to your account ' +
-             'every minute while online, with the app’s lock-screen trace, and are cleared here). ' + synced +
-             ' When something strange happens, just tell Claude roughly when.')
-          : 'Off. Press Arm (works from the next page you open).') + '</span>' +
+        '<span>Always on. ' + n + ' event' + (n === 1 ? '' : 's') + ' waiting on this device (they go to your account ' +
+             'every minute while online, with the app’s lock-screen trace, and are cleared here; offline they wait). ' + synced +
+             ' When something strange happens, just tell Claude roughly when.</span>' +
         '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
-          '<button type="button" id="ownersim-tap-arm" style="' + SWBTN + '">' + (on ? 'Disarm + clear' : 'Arm') + '</button>' +
           '<button type="button" id="ownersim-tap-copy" style="' + SWBTN + '"' + (n ? '' : ' disabled') + '>Copy all</button>' +
           '<button type="button" id="ownersim-tap-show" style="' + SWBTN + '">Show (' + n + ')</button>' +
-          '<button type="button" id="ownersim-tap-clear" style="' + SWBTN + '"' + (n ? '' : ' disabled') + '>Clear (stay armed)</button>' +
+          '<button type="button" id="ownersim-tap-clear" style="' + SWBTN + '"' + (n ? '' : ' disabled') + '>Clear</button>' +
         '</div>' +
         '<textarea id="ownersim-tap-out" readonly style="width:100%;box-sizing:border-box;' +
           'margin-top:8px;height:150px;font:11px/1.45 ui-monospace,Menlo,Consolas,monospace;' +
           'border:1px solid #c9c0b0;border-radius:6px;padding:6px;display:none"></textarea>';
-      ttr.querySelector('#ownersim-tap-arm').addEventListener('click', function () {
-        if (get(K_TAP_ON) === '1') { set(K_TAP_ON, null); set(K_TAP, null); set(K_FLIGHT, null); } else set(K_TAP_ON, '1');
-        paintTap();
-      });
       ttr.querySelector('#ownersim-tap-show').addEventListener('click', function () {
         var ta = ttr.querySelector('#ownersim-tap-out');
         ta.value = tapDump();
@@ -623,7 +669,7 @@
         try { navigator.clipboard.writeText(txt).then(done, fallback); } catch (_) { fallback(); }
       });
       ttr.querySelector('#ownersim-tap-clear').addEventListener('click', function () {
-        set(K_TAP, null); set(K_FLIGHT, null);
+        tapClearAll();
         paintTap();
       });
     }

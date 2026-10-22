@@ -917,8 +917,26 @@
      still has a source, so a long run piled up a hundred of them for the page to carry and tear
      down. Removing the src and calling load() frees it now. Every listener below reads `au`,
      which is already null by the time `emptied` fires, so nothing repaints. */
+  /* ── OWNER TRACE (2026-10-22) — "in quiz tried to play sentence and didnt work - have to press
+     pause and play again or it hangs forever showing the pause button" (owner, iPhone PWA). The
+     tap trace showed the taps arriving on time and could not show what the AUDIO did, so every
+     quiz clip now writes its own rows: which path a tap took, where the clip came from, and each
+     element event with the element's state. `au-` rows, `c<n>` = one <audio>, `#` = the sentence.
+     ⛔ Never the URL: a network clip's src is a signed bearer token ('net' / 'blob' only).
+     ✅ window.ThaiEarTrace exists only for the owner (ownersim.js), so for anyone else this is one
+     property read. No safety net is built on it (owner: wait for the real fix). */
+  var auClipN = 0;
+  function auTrace(e, el, x) {
+    try {
+      if (!window.ThaiEarTrace) return;
+      var st = el ? (' rs' + el.readyState + ' ns' + el.networkState + ' t' + (el.currentTime || 0).toFixed(1) +
+        (el.paused ? ' paused' : '') + (el.ended ? ' ended' : '')) : '';
+      window.ThaiEarTrace.note('au-' + e, (x || '') + st);
+    } catch (_) {}
+  }
   function stopAudio() {
     if (au) {
+      auTrace('stop', au, au._cid);
       try { au.pause(); } catch (_) {}
       try { au.removeAttribute('src'); au.load(); } catch (_) {}
     }
@@ -961,8 +979,9 @@
   function toggleSentence(num, btn) {
     /* ⚠ A tap while this same clip is still being minted ADOPTS the pending play. Starting a
        second one was the race behind "first tap nothing, second shows pause, third plays". */
-    if (auPending === num) { auBtn = btn; setPlayUI(btn, true); return; }
+    if (auPending === num) { auTrace('tap', null, '#' + num + ' while-minting'); auBtn = btn; setPlayUI(btn, true); return; }
     if (au && auNum === num) {
+      auTrace('tap', au, au._cid + ' #' + num + (au.ended ? ' replay' : au.paused ? ' resume' : ' pause'));
       auBtn = btn;
       /* ⚠ An ENDED element is not a paused one to resume — rewind it first. play() on a
          finished clip is specified to seek to the start, but only once it is not also being
@@ -983,13 +1002,16 @@
          deliberately left alone. */
       if (au.ended) { try { au.currentTime = 0; } catch (_) {} auCredited = false; }
       if (au.paused) {
-        au.play().then(function () { setPlayUI(btn, true); }).catch(function () {});
+        var el = au, t0 = Date.now();
+        au.play().then(function () { auTrace('play-ok', el, el._cid + ' ' + (Date.now() - t0) + 'ms'); setPlayUI(btn, true); })
+          .catch(function (err) { auTrace('play-refused', el, el._cid + ' ' + ((err && err.name) || '')); });
       } else {
         au.pause();
         setPlayUI(btn, false);
       }
       return;
     }
+    auTrace('tap', null, '#' + num + ' fresh');
     playSentence(num, btn);
   }
 
@@ -999,11 +1021,22 @@
     stopAudio();
     auNum = num; auCredited = false; auBtn = btn; auPending = num;
     setPlayUI(btn, true);
+    var cid = 'c' + (++auClipN), t0 = Date.now();
+    auTrace('mint', null, cid + ' #' + num);
     return QA.clip(num, 'TH').then(function (r) {
       /* ⚠ A newer play may have superseded this one while the mint was in flight. */
-      if (auPending !== num) { try { r.revoke && r.revoke(); } catch (_) {} return false; }
+      if (auPending !== num) { auTrace('superseded', null, cid); try { r.revoke && r.revoke(); } catch (_) {} return false; }
       auPending = null;
       au = new Audio(r.url); auRevoke = r.revoke;
+      au._cid = cid;
+      auTrace('src', null, cid + ' ' + (/^blob:/.test(String(r.url)) ? 'blob' : 'net') + ' ' + (Date.now() - t0) + 'ms');
+      (function (el) {
+        ['play', 'playing', 'waiting', 'stalled', 'pause', 'ended', 'error'].forEach(function (ev) {
+          el.addEventListener(ev, function () {
+            auTrace(ev, el, cid + (ev === 'error' && el.error ? ' code' + el.error.code : '') + ' +' + (Date.now() - t0) + 'ms');
+          });
+        });
+      })(au);
       function creditOnce() {
         if (auCredited) return;
         auCredited = true;
@@ -1023,11 +1056,14 @@
       au.addEventListener('pause', function () { if (au && !au.ended) setPlayUI(auBtn, false); });
       au.addEventListener('play', function () { setPlayUI(auBtn, true); });
       au.addEventListener('error', function () { setPlayUI(auBtn, false); });
-      return au.play().then(function () { return true; }).catch(function () {
+      var el = au;
+      return au.play().then(function () { auTrace('play-ok', el, cid + ' +' + (Date.now() - t0) + 'ms'); return true; }).catch(function (err) {
+        auTrace('play-refused', el, cid + ' ' + ((err && err.name) || ''));
         setPlayUI(auBtn, false);
         return false;
       });
-    }).catch(function () {
+    }).catch(function (err) {
+      auTrace('mint-failed', null, cid + ' ' + String((err && (err.code || err.name)) || '').slice(0, 30));
       if (auPending === num) auPending = null;
       setPlayUI(auBtn || btn, false);
       return false;
